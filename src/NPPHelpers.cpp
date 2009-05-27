@@ -184,7 +184,8 @@ int deleteLine(HWND window,int line)
 
 	int lines=0;
 	int marker=SendMessageA(window, SCI_MARKERGET, line, 0);
-	int blankMask=pow(2.0,blank);
+	//int blankMask=pow(2.0,blank);
+    int blankMask = 1 << blank;
 	while((marker&blankMask)!=0){
 		int lineLength=::SendMessageA(window, SCI_LINELENGTH, line, 0);		
 		
@@ -235,7 +236,8 @@ blankLineList *removeEmptyLines(HWND window,bool saveList)
 	//int curPosBeg = ::SendMessage(window, SCI_GETSELECTIONSTART, 0, 0);
 	//int curPosEnd = ::SendMessage(window, SCI_GETSELECTIONEND, 0, 0);
 	double marker=pow(2.0,blank);
-	int line=SendMessageA(window, SCI_MARKERNEXT, 0, marker);	
+	//int line=SendMessageA(window, SCI_MARKERNEXT, 0, (LPARAM)marker);	
+    int line=SendMessageA(window, SCI_MARKERNEXT, 0, marker);	
 	while(line!=-1){
 		int lines=deleteLine(window,line);
 		if(lines>0&&saveList){
@@ -246,7 +248,8 @@ blankLineList *removeEmptyLines(HWND window,bool saveList)
 			newLine->length=lines;
 			list=newLine;
 		}
-		line=SendMessageA(window, SCI_MARKERNEXT, 0, marker);	
+		//line=SendMessageA(window, SCI_MARKERNEXT, 0, marker);	
+        line=SendMessageA(window, SCI_MARKERNEXT, 0, (LPARAM)marker);	
 	}
 
 	//::SendMessage(window, SCI_SETSEL, curPosBeg, curPosEnd);

@@ -956,11 +956,7 @@ bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2){
 
 
     return chunk1.changeCount+chunk2.changeCount>0;
-
-
-
-    return true;
-
+    //return true;
 }
 
 
