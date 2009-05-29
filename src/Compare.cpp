@@ -61,7 +61,6 @@ const TCHAR changedColorOption[]=TEXT("Changed");
 const TCHAR movedColorOption[]=TEXT("Moved");
 const TCHAR blankColorOption[]=TEXT("Blank");
 
-
 const TCHAR localConfFile[] = TEXT("doLocalConf.xml");
 
 TCHAR compareFilePath[MAX_PATH];
@@ -754,7 +753,8 @@ int getWords(diff_edit* e, char** doc,chunk_info *chunk  ){
                 hash=HASH(hash,l);
             }else{
                 if(len>0){
-                    if(Settings.IncludeSpace || type!=SPACECHAR){
+                    //if(Settings.IncludeSpace || type!=SPACECHAR){
+                    if(!Settings.IncludeSpace || type!=SPACECHAR){
                         Word *word=(Word*)varray_get(words,wordIndex++);
                         //word->text=text;
                         word->length=len;
@@ -773,7 +773,8 @@ int getWords(diff_edit* e, char** doc,chunk_info *chunk  ){
 
         }
         if(len>0){
-            if(Settings.IncludeSpace || type!=SPACECHAR){
+            //if(Settings.IncludeSpace || type!=SPACECHAR){
+            if(!Settings.IncludeSpace || type!=SPACECHAR){
                 Word *word=(Word*)varray_get(words,wordIndex++);
                 //word->text=text;
                 word->length=len;
@@ -1205,7 +1206,8 @@ unsigned int *computeHashes(char** doc,int docLength){
         unsigned int hash=0;
         for(int j=0;doc[i][j]!=0;j++){
             if(doc[i][j]==' ' || doc[i][j]=='\t'){
-                if(Settings.IncludeSpace){
+                //if(Settings.IncludeSpace){
+                if(!Settings.IncludeSpace){
                     hash=HASH(hash,doc[i][j]);
                 }
             }else{
