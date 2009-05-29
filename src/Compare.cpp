@@ -297,12 +297,10 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID lpReserved)
 
             loadSettings();
 
-            funcItem[6]._init2Check = Settings.AddLine;
-            funcItem[7]._init2Check = Settings.IncludeSpace;
-            funcItem[8]._init2Check = Settings.DetectMove;
-            
-            // SCI_SETMARGINMASKN
-            //
+            //funcItem[6]._init2Check = true; //Settings.AddLine;
+            //funcItem[7]._init2Check = true; //Settings.IncludeSpace;
+            //funcItem[8]._init2Check = true; //Settings.DetectMove;
+
         }
         break;
 
@@ -1592,6 +1590,13 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 {
     switch (notifyCode->nmhdr.code) 
     {
+    case NPPN_TBMODIFICATION:
+        {
+            ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[6]._cmdID, (LPARAM)Settings.AddLine);
+            ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[7]._cmdID, (LPARAM)Settings.IncludeSpace);
+            ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[8]._cmdID, (LPARAM)Settings.DetectMove);
+            break;
+        }
     case NPPN_FILEBEFORECLOSE:
     case NPPN_FILECLOSED:
     case NPPN_FILEBEFOREOPEN:
