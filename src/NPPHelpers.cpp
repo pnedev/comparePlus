@@ -3,7 +3,7 @@
 extern NppData nppData;
 extern UINT	EOLtype;
 
-int MarkerStart   = 8;
+int MarkerStart   = 0;
 int removed       = MarkerStart + 7; // 24;
 int removedSymbol = MarkerStart + 6; // 23;
 int added         = MarkerStart + 5; // 22;
@@ -83,8 +83,13 @@ void setBlank(HWND window,int color){
 
 void setStyles(sColorSettings Settings)
 {
-    //::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINMASKN, (WPARAM)4, (LPARAM)0);
-    //::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINMASKN, (WPARAM)4, (LPARAM)0);
+    int MarginMask = (1 << changedSymbol) | (1 << addedSymbol) | (1 << removedSymbol);
+
+    ::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINMASKN, (WPARAM)4, (LPARAM)MarginMask);
+    ::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINMASKN, (WPARAM)4, (LPARAM)MarginMask);
+
+    ::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINWIDTHN, (WPARAM)4, (LPARAM)14);
+    ::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINWIDTHN, (WPARAM)4, (LPARAM)14);
         
     setBlank(nppData._scintillaMainHandle, Settings.blank);
 	setBlank(nppData._scintillaSecondHandle, Settings.blank);

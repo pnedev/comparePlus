@@ -19,7 +19,7 @@
 // Compare plugin by Ty Landercasper & Jean-sébastien Leroy
 //--------------------------------------------------------------------------
 
-#define UNICODE
+//#define UNICODE
 
 /* Rotate a value n bits to the left. */
 #define UINT_BIT (sizeof (unsigned) * CHAR_BIT)
