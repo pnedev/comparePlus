@@ -39,7 +39,7 @@ public:
 		Window::init(hInst, nppData._nppHandle);
 	};
 
-    void doDialog(struct sColorSettings * Settings);
+    UINT doDialog(struct sColorSettings * Settings);
 
     virtual void destroy() {};
 

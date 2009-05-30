@@ -295,11 +295,6 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID lpReserved)
             }
 
             loadSettings();
-
-            //funcItem[6]._init2Check = true; //Settings.AddLine;
-            //funcItem[7]._init2Check = true; //Settings.IncludeSpace;
-            //funcItem[8]._init2Check = true; //Settings.DetectMove;
-
         }
         break;
 
@@ -398,9 +393,11 @@ void saveSettings(void)
 
 void openOptionDlg(void)
 {
-    OptionDlg.doDialog(&Settings.ColorSettings);
-    saveSettings();
-    setStyles(Settings.ColorSettings);
+    if (OptionDlg.doDialog(&Settings.ColorSettings) == IDOK)
+    {
+        saveSettings();
+        setStyles(Settings.ColorSettings);
+    }
 }
 
 void openAboutDlg(void)
@@ -578,9 +575,16 @@ void reset()
 
         }
 
+        // Remove margin mask
+        ::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINMASKN, (WPARAM)4, (LPARAM)0);
+        ::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINMASKN, (WPARAM)4, (LPARAM)0);
+
+        // Remove margin
+        ::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINWIDTHN, (WPARAM)4, (LPARAM)0);
+        ::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINWIDTHN, (WPARAM)4, (LPARAM)0);
+
         removeCompare(doc1);
         removeCompare(doc2);
-
 
         panelsOpened=false;
         active=false;

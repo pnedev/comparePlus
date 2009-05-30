@@ -6,10 +6,10 @@
 
 typedef HRESULT (WINAPI * ETDTProc) (HWND, DWORD);
 
-void OptionDialog::doDialog(struct sColorSettings * Settings)
+UINT OptionDialog::doDialog(struct sColorSettings * Settings)
 {
     _ColorSettings = Settings;
-    DialogBoxParam(_hInst, MAKEINTRESOURCE(IDD_OPTION_DIALOG), _hParent,  (DLGPROC)dlgProc, (LPARAM)this);
+    return (UINT)::DialogBoxParam(_hInst, MAKEINTRESOURCE(IDD_OPTION_DIALOG), _hParent,  (DLGPROC)dlgProc, (LPARAM)this);
 	//goToCenter();
 }
 
