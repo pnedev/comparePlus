@@ -60,6 +60,8 @@ const TCHAR removedColorOption[] = TEXT("Removed");
 const TCHAR changedColorOption[]=TEXT("Changed");
 const TCHAR movedColorOption[]=TEXT("Moved");
 const TCHAR blankColorOption[]=TEXT("Blank");
+const TCHAR highlightColorOption[]=TEXT("Highlight");
+const TCHAR highlightAlphaOption[]=TEXT("Alpha");
 
 const TCHAR localConfFile[] = TEXT("doLocalConf.xml");
 
@@ -354,11 +356,13 @@ void loadSettings(void)
     // If there is no previous color settings, load default value
     if(colors == -1)
     {
-        Settings.ColorSettings.added   = ::GetPrivateProfileInt(colorsSection, addedColorOption, DEFAULT_ADDED_COLOR, iniFilePath);
-        Settings.ColorSettings.deleted = ::GetPrivateProfileInt(colorsSection, removedColorOption, DEFAULT_DELETED_COLOR, iniFilePath);
-        Settings.ColorSettings.changed = ::GetPrivateProfileInt(colorsSection, changedColorOption, DEFAULT_CHANGED_COLOR, iniFilePath);
-        Settings.ColorSettings.moved   = ::GetPrivateProfileInt(colorsSection, movedColorOption, DEFAULT_MOVED_COLOR, iniFilePath);
-        Settings.ColorSettings.blank   = ::GetPrivateProfileInt(colorsSection, blankColorOption, DEFAULT_BLANK_COLOR, iniFilePath);   
+        Settings.ColorSettings.added     = ::GetPrivateProfileInt(colorsSection, addedColorOption, DEFAULT_ADDED_COLOR, iniFilePath);
+        Settings.ColorSettings.deleted   = ::GetPrivateProfileInt(colorsSection, removedColorOption, DEFAULT_DELETED_COLOR, iniFilePath);
+        Settings.ColorSettings.changed   = ::GetPrivateProfileInt(colorsSection, changedColorOption, DEFAULT_CHANGED_COLOR, iniFilePath);
+        Settings.ColorSettings.moved     = ::GetPrivateProfileInt(colorsSection, movedColorOption, DEFAULT_MOVED_COLOR, iniFilePath);
+        Settings.ColorSettings.blank     = ::GetPrivateProfileInt(colorsSection, blankColorOption, DEFAULT_BLANK_COLOR, iniFilePath);
+        Settings.ColorSettings.highlight = ::GetPrivateProfileInt(colorsSection, highlightColorOption, DEFAULT_HIGHLIGHT_COLOR, iniFilePath);
+        Settings.ColorSettings.alpha     = ::GetPrivateProfileInt(colorsSection, highlightAlphaOption, DEFAULT_HIGHLIGHT_ALPHA, iniFilePath);
     }
     // Else load stored color settings
     else
@@ -367,7 +371,9 @@ void loadSettings(void)
         Settings.ColorSettings.deleted = ::GetPrivateProfileInt(colorsSection, removedColorOption, DEFAULT_DELETED_COLOR, iniFilePath);
         Settings.ColorSettings.changed = ::GetPrivateProfileInt(colorsSection, changedColorOption, DEFAULT_CHANGED_COLOR, iniFilePath);
         Settings.ColorSettings.moved   = ::GetPrivateProfileInt(colorsSection, movedColorOption, DEFAULT_MOVED_COLOR, iniFilePath);
-        Settings.ColorSettings.blank   = ::GetPrivateProfileInt(colorsSection, blankColorOption, DEFAULT_BLANK_COLOR, iniFilePath);    
+        Settings.ColorSettings.blank   = ::GetPrivateProfileInt(colorsSection, blankColorOption, DEFAULT_BLANK_COLOR, iniFilePath); 
+        Settings.ColorSettings.highlight = ::GetPrivateProfileInt(colorsSection, highlightColorOption, DEFAULT_HIGHLIGHT_COLOR, iniFilePath);
+        Settings.ColorSettings.alpha     = ::GetPrivateProfileInt(colorsSection, highlightAlphaOption, DEFAULT_HIGHLIGHT_ALPHA, iniFilePath);
     }
 
     // Try loading behavior settings, else load default value
@@ -386,6 +392,8 @@ void saveSettings(void)
     ::WritePrivateProfileString(colorsSection, changedColorOption, _itow (Settings.ColorSettings.changed, buffer+2,16)-2, iniFilePath);
     ::WritePrivateProfileString(colorsSection, movedColorOption, _itow (Settings.ColorSettings.moved, buffer+2,16)-2, iniFilePath);
     ::WritePrivateProfileString(colorsSection, blankColorOption, _itow (Settings.ColorSettings.blank, buffer+2,16)-2, iniFilePath);
+    ::WritePrivateProfileString(colorsSection, highlightColorOption, _itow (Settings.ColorSettings.highlight, buffer+2,16)-2, iniFilePath);
+    ::WritePrivateProfileString(colorsSection, highlightAlphaOption, _itow (Settings.ColorSettings.alpha, buffer, 10)-2, iniFilePath);
     ::WritePrivateProfileString(sectionName, addLinesOption, Settings.AddLine ? TEXT("1") : TEXT("0"), iniFilePath);
     ::WritePrivateProfileString(sectionName, ignoreSpacesOption, Settings.IncludeSpace ? TEXT("1") : TEXT("0"), iniFilePath);
     ::WritePrivateProfileString(sectionName, detectMovesOption, Settings.DetectMove ? TEXT("1") : TEXT("0"), iniFilePath);
@@ -396,7 +404,10 @@ void openOptionDlg(void)
     if (OptionDlg.doDialog(&Settings.ColorSettings) == IDOK)
     {
         saveSettings();
-        setStyles(Settings.ColorSettings);
+        if (active)
+        {
+            setStyles(Settings.ColorSettings);
+        }
     }
 }
 

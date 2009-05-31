@@ -53,6 +53,8 @@ using namespace std;
 #define DEFAULT_CHANGED_COLOR   0xe0ffe0
 #define DEFAULT_MOVED_COLOR     0xc8c8c8
 #define DEFAULT_BLANK_COLOR     0xe4e4e4
+#define DEFAULT_HIGHLIGHT_COLOR 0x010101
+#define DEFAULT_HIGHLIGHT_ALPHA 30
 
 struct blankLineList
 {
@@ -83,6 +85,8 @@ struct sColorSettings
     int changed;
     int moved;
     int blank;
+    int highlight;
+    int alpha;
 };
 
 struct sUserSettings

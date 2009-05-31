@@ -42,21 +42,21 @@ void defineSymbol(int type,int symbol){
 }
 
 
-void setChangedStyle(HWND window){
-	::SendMessageA(window, SCI_INDICSETSTYLE,1, (LPARAM)7);
-	::SendMessageA(window,SCI_INDICSETFORE,1,(LPARAM)0x010101);
-	//::SendMessage(window, SCI_INDICSETUNDER,2, (LPARAM)1);
+void setChangedStyle(HWND window, sColorSettings Settings){
+	::SendMessageA(window, SCI_INDICSETSTYLE, 1, (LPARAM)7);
+    ::SendMessageA(window, SCI_INDICSETFORE, 1, (LPARAM)Settings.highlight);
+    ::SendMessageA(window, SCI_INDICSETALPHA, 1, (LPARAM)Settings.alpha);
 }
 
 
-void setTextStyle(HWND window){
-	setChangedStyle(window);
+void setTextStyle(HWND window, sColorSettings Settings){
+	setChangedStyle(window, Settings);
 }
 
-void setTextStyles(){
+void setTextStyles(sColorSettings Settings){
 
-	setTextStyle(nppData._scintillaMainHandle);
-	setTextStyle(nppData._scintillaSecondHandle);
+	setTextStyle(nppData._scintillaMainHandle, Settings);
+	setTextStyle(nppData._scintillaSecondHandle, Settings);
 
 }
 
@@ -103,7 +103,7 @@ void setStyles(sColorSettings Settings)
 	defineSymbol(removedSymbol, SC_MARK_MINUS);
 	defineSymbol(changedSymbol, SC_MARK_ARROWS); //SC_MARK_ARROWS);
 
-	setTextStyles();
+	setTextStyles(Settings);
 }
 
 void markAsBlank(HWND window,int line)
@@ -292,7 +292,7 @@ void clearWindow(HWND window,bool clearUndo)
 	::SendMessageA(window, SCI_MARKERDELETEALL, changedSymbol, (LPARAM)changedSymbol);		
 	::SendMessageA(window, SCI_MARKERDELETEALL, addedSymbol, (LPARAM)addedSymbol);
 	::SendMessageA(window, SCI_MARKERDELETEALL, removedSymbol, (LPARAM)removedSymbol);	
-	
+
 	//very aggressive approach to removing the indicators
 	//clear style, than tell Notepad++ to unfold all lines, which forces it to redo the page style
 	::SendMessageA(window, SCI_CLEARDOCUMENTSTYLE, 0, (LPARAM)0);	

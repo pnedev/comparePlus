@@ -60,6 +60,7 @@ private:
 	ColorCombo _ColorComboRemoved;
 	ColorCombo _ColorComboChanged;
 	ColorCombo _ColorComboBlank;
+    ColorCombo _ColorComboHighlight;
 
     struct sColorSettings* _ColorSettings;
 };
