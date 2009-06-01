@@ -278,6 +278,7 @@ _ses(const void *a, int aoff, int n,
 
 	return d;
 }
+
 int
 diff(const void *a, int aoff, int n,
 		const void *b, int boff, int m,

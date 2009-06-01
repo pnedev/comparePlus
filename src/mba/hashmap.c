@@ -30,7 +30,7 @@
 
 #include "msgno.h"
 #include "iterator.h"
-#include "allocator.h"
+//#include "allocator.h"
 #include "suba.h"
 #include "hashmap.h"
 

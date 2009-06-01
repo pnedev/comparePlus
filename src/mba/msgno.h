@@ -51,22 +51,22 @@ struct msgno_entry {
 	const char *msg;
 };
 
-LIBMBA_API struct msgno_entry msgno_builtin_codes[];
-LIBMBA_API char msgno_buf[];
-LIBMBA_API int msgno_buf_idx;
-LIBMBA_API int msgno_append(const char *src, int n);
-LIBMBA_API int msgno_loc0(const char *loc0, const char *loc1);
-LIBMBA_API int msgno_mmsg0(const char *fmt, ...);
-LIBMBA_API int msgno_mmno0(int msgno);
-LIBMBA_API int msgno_mmnf0(int msgno, const char *fmt, ...);
-LIBMBA_API int msgno_amsg0(const char *fmt, ...);
-LIBMBA_API int msgno_amno0(int msgno);
-LIBMBA_API int msgno_amnf0(int msgno, const char *fmt, ...);
-LIBMBA_API int msgno_hdlr_stderr(const char *fmt, ...);
+struct msgno_entry msgno_builtin_codes[];
+char msgno_buf[];
+int msgno_buf_idx;
+int msgno_append(const char *src, int n);
+int msgno_loc0(const char *loc0, const char *loc1);
+int msgno_mmsg0(const char *fmt, ...);
+int msgno_mmno0(int msgno);
+int msgno_mmnf0(int msgno, const char *fmt, ...);
+int msgno_amsg0(const char *fmt, ...);
+int msgno_amno0(int msgno);
+int msgno_amnf0(int msgno, const char *fmt, ...);
+int msgno_hdlr_stderr(const char *fmt, ...);
 
-LIBMBA_API int (*msgno_hdlr)(const char *fmt, ...);
-LIBMBA_API int msgno_add_codes(struct msgno_entry *lst);
-LIBMBA_API const char *msgno_msg(int msgno);
+int (*msgno_hdlr)(const char *fmt, ...);
+int msgno_add_codes(struct msgno_entry *lst);
+const char *msgno_msg(int msgno);
 
 #ifdef __cplusplus
 }

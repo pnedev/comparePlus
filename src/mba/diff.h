@@ -58,7 +58,9 @@ struct diff_edit {
 
 /* consider alternate behavior for each NULL parameter
  */
-LIBMBA_API int diff(const void *a, int aoff, int n,
+
+//LIBMBA_API
+int diff(const void *a, int aoff, int n,
 		const void *b, int boff, int m,
 		idx_fn idx, cmp_fn cmp, void *context, int dmax,
 		struct varray *ses, int *sn,

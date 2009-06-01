@@ -59,13 +59,13 @@ struct allocator {
 	ref_t userref;
 };
 
-LIBMBA_API struct allocator *global_allocator;
-LIBMBA_API struct allocator *stdlib_allocator;
+extern struct allocator *global_allocator;
+extern struct allocator *stdlib_allocator;
 
-LIBMBA_API void *allocator_alloc(struct allocator *al, size_t size, int flags);
-LIBMBA_API void *allocator_realloc(struct allocator *al, void *obj, size_t size);
-LIBMBA_API int allocator_free(void *al, void *obj);
-LIBMBA_API void allocator_set_reclaim(struct allocator *al, reclaim_fn recl, void *arg);
+extern void *allocator_alloc(struct allocator *al, size_t size, int flags);
+extern void *allocator_realloc(struct allocator *al, void *obj, size_t size);
+extern int allocator_free(void *al, void *obj);
+extern void allocator_set_reclaim(struct allocator *al, reclaim_fn recl, void *arg);
 
 #ifdef __cplusplus
 }

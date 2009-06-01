@@ -21,17 +21,17 @@ extern "C" {
 #endif /* LIBMBA_API */
 
 #include <stddef.h>
-#include <mba/allocator.h>
+#include <allocator.h>
 
 #define SUBA_PTR_SIZE(ptr) ((ptr) ? (*((size_t *)(ptr) - 1)) : 0)
 
-LIBMBA_API struct allocator *suba_init(void *mem, size_t size, int rst, size_t mincell);
-LIBMBA_API void *suba_alloc(struct allocator *suba, size_t size, int zero);
-LIBMBA_API void *suba_realloc(struct allocator *suba, void *ptr, size_t size);
-LIBMBA_API int suba_free(void *suba, void *ptr);
+struct allocator *suba_init(void *mem, size_t size, int rst, size_t mincell);
+void *suba_alloc(struct allocator *suba, size_t size, int zero);
+void *suba_realloc(struct allocator *suba, void *ptr, size_t size);
+int suba_free(void *suba, void *ptr);
 
-LIBMBA_API void *suba_addr(const struct allocator *suba, const ref_t ref);
-LIBMBA_API ref_t suba_ref(const struct allocator *suba, const void *ptr);
+void *suba_addr(const struct allocator *suba, const ref_t ref);
+ref_t suba_ref(const struct allocator *suba, const void *ptr);
 
 #ifdef __cplusplus
 }

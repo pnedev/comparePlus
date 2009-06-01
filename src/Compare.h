@@ -22,14 +22,15 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define COMPARE_H
 
 #define WIN32_LEAN_AND_MEAN
+
 #include <math.h>
 #include <shlobj.h>
 #include <shlwapi.h>
 #include <string>
 #include <stdio.h>
 #include <assert.h>
+//#include "msgno.h"
 #include "diff.h"
-#include "msgno.h"
 #include "PluginInterface.h"
 #include "Scintilla.h"
 #include "Notepad_plus_rc.h"
