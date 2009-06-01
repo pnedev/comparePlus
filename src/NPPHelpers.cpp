@@ -242,8 +242,9 @@ blankLineList *removeEmptyLines(HWND window,bool saveList)
 	blankLineList *list=NULL;	
 	//int curPosBeg = ::SendMessage(window, SCI_GETSELECTIONSTART, 0, 0);
 	//int curPosEnd = ::SendMessage(window, SCI_GETSELECTIONEND, 0, 0);
-	double marker=pow(2.0,blank);
+	//double marker=pow(2.0,blank);
 	//int line=SendMessageA(window, SCI_MARKERNEXT, 0, (LPARAM)marker);	
+    int marker = 1 << blank;
     int line=SendMessageA(window, SCI_MARKERNEXT, 0, marker);	
 	while(line!=-1){
 		int lines=deleteLine(window,line);
