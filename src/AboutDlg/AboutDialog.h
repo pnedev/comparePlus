@@ -37,7 +37,8 @@ public:
    	void doDialog();
 
     virtual void destroy() {
-        _emailLink.destroy();
+        _emailLinkJSL.destroy();
+        _emailLinkTY.destroy();
 		_urlNppPlugins.destroy();
     };
 
@@ -51,7 +52,8 @@ private:
     HWND			_HSource;
 	
 	/* for eMail */
-    URLCtrl			_emailLink;
+    URLCtrl			_emailLinkJSL;
+    URLCtrl			_emailLinkTY;
 	URLCtrl			_urlNppPlugins;
 };
 

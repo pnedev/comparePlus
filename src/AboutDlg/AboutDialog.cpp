@@ -32,15 +32,12 @@ BOOL CALLBACK AboutDialog::run_dlgProc(HWND hwnd, UINT Message, WPARAM wParam, L
 	{
         case WM_INITDIALOG :
 		{
-            _emailLink.init(_hInst, _hSelf);
-            _emailLink.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK_JSL), 
-                _T("mailto:jean.sebastien.leroy@club-internet.fr"));
-            _emailLink.init(_hInst, _hSelf);
-            _emailLink.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK_TYL), 
-                _T("mailto:Ty@ibudesigns.com"));
+            _emailLinkJSL.init(_hInst, _hSelf);
+            _emailLinkJSL.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK_JSL), _T("mailto:jean.sebastien.leroy@club-internet.fr"));
+            _emailLinkTY.init(_hInst, _hSelf);
+            _emailLinkTY.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK_TYL), _T("mailto:Ty@ibudesigns.com"));
             _urlNppPlugins.init(_hInst, _hSelf);
-            _urlNppPlugins.create(::GetDlgItem(_hSelf, IDC_NPP_PLUGINS_URL), 
-                _T("http://sourceforge.net/projects/npp-plugins/"));
+            _urlNppPlugins.create(::GetDlgItem(_hSelf, IDC_NPP_PLUGINS_URL), _T("http://sourceforge.net/projects/npp-plugins/"));
 
 			return TRUE;
 		}
