@@ -98,8 +98,7 @@ void URLCtrl::create(HWND itemHandle, LPTSTR link, COLORREF linkColor)
     ::SetWindowLongPtr(itemHandle, GWL_STYLE, ::GetWindowLong(itemHandle, GWL_STYLE) | SS_NOTIFY);
 
 	// set the URL text (not the display text)
-	if (link)
-		_tcscpy(_URL, link);
+	if (link) _tcscpy(_URL, link);
 
 	// set the hyperlink colour
     _linkColor = linkColor;

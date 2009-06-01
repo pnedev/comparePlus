@@ -7,8 +7,7 @@
 #define IDD_ABOUT_DIALOG                101
 #define IDD_COLOR_POPUP                 102
 #define IDD_OPTION_DIALOG               103
-#define IDI_COMPARE                     107
-#define IDI_SMALL                       108
+#define IDB_COMPARE                     104
 #define IDC_ABOUT_CLOSE_BUTTON          1001
 #define IDC_COLOR_LIST                  1002
 #define IDC_NPP_PLUGINS_URL             1009
@@ -23,17 +22,15 @@
 #define IDC_COMBO_CHANGED_COLOR         1019
 #define IDC_COMBO_BLANK_COLOR           1020
 #define IDC_COMBO_HIGHLIGHT_COLOR       1021
-#define IDC_ALPHA_SLIDER                1024
 #define IDC_SPIN_BOX                    1035
 #define IDC_SPIN_CTL                    1036
-#define IDC_SPIN5                       1037
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        104
+#define _APS_NEXT_RESOURCE_VALUE        105
 #define _APS_NEXT_COMMAND_VALUE         40001
 #define _APS_NEXT_CONTROL_VALUE         1038
 #define _APS_NEXT_SYMED_VALUE           101

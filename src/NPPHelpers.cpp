@@ -179,33 +179,35 @@ int deleteLine(HWND window,int line)
 {
 	int posAdd = ::SendMessageA(window, SCI_POSITIONFROMLINE, line, 0);
 	::SendMessageA(window, SCI_SETTARGETSTART, posAdd, 0);
-	int docLength=::SendMessageA(window, SCI_GETLINECOUNT, 0, 0)-1;
-	int length=0;//::SendMessageA(window, SCI_LINELENGTH, line, 0);
+	int docLength = ::SendMessageA(window, SCI_GETLINECOUNT, 0, 0)-1;
+	int length = 0;//::SendMessageA(window, SCI_LINELENGTH, line, 0);
 	UINT EOLtype = ::SendMessageA(window,SCI_GETEOLMODE,0,0);
 
 	//::SendMessageA(window,SCI_TARGETFROMSELECTION,0,0);
-	int start=line;
-
-
-	int lines=0;
-	int marker=SendMessageA(window, SCI_MARKERGET, line, 0);
+	int start = line;
+	int lines = 0;
+	int marker = SendMessageA(window, SCI_MARKERGET, line, 0);
 	//int blankMask=pow(2.0,blank);
     int blankMask = 1 << blank;
-	while((marker&blankMask)!=0){
-		int lineLength=::SendMessageA(window, SCI_LINELENGTH, line, 0);		
+
+	while((marker & blankMask) != 0)
+    {
+		unsigned int lineLength = ::SendMessageA(window, SCI_LINELENGTH, line, 0);		
 		
 		//don't delete lines that actually have text in them
-		if(line<docLength && lineLength>lenEOL[EOLtype] ){
+		if(line < docLength && lineLength > lenEOL[EOLtype])
+        {
 			//lineLength-=lenEOL[EOLtype];
 			break;
-		}else if(line== docLength&& lineLength>0){			
+		}
+        else if(line == docLength && lineLength > 0)
+        {			
 			break;
 		}
 		lines++;
-		length+=lineLength;
+		length += lineLength;
 		line++;
-
-		marker=SendMessageA(window, SCI_MARKERGET, line, 0);
+		marker = SendMessageA(window, SCI_MARKERGET, line, 0);
 	}
 	
 
@@ -362,39 +364,48 @@ void addEmptyLines(HWND hSci, int offset, int length){
 			posAdd=lenEOL[EOLtype]-1;
 		}
 	}
+
 	::SendMessageA(hSci, SCI_SETTARGETSTART, posAdd, 0);	
 	::SendMessageA(hSci, SCI_SETTARGETEND, posAdd+1, 0);
-	int blankLinesLength=lenEOL[EOLtype]*length+1;
-	int off=0;
-	char *buff=new char[blankLinesLength];
 
+	int blankLinesLength = lenEOL[EOLtype] * length + 1;
+	int off = 0;
+	char *buff = new char[blankLinesLength];
+	int marker = 0;
 
-	int marker;
-	if(offset==0){
-		marker=::SendMessageA(hSci, SCI_MARKERGET, 0, 0);
+	if(offset == 0)
+    {
+		marker = ::SendMessageA(hSci, SCI_MARKERGET, 0, 0);
 		::SendMessageA(hSci, SCI_MARKERDELETE, 0, (LPARAM)-1);
-		buff[blankLinesLength-1]=SendMessageA(hSci, SCI_GETCHARAT, posAdd, (LPARAM)0);
-		off=0;
-	}else{
-		buff[0]=SendMessageA(hSci, SCI_GETCHARAT, posAdd, (LPARAM)0);
-		off=1;
-		
+		buff[blankLinesLength-1] = SendMessageA(hSci, SCI_GETCHARAT, posAdd, (LPARAM)0);
+		off = 0;
 	}
-	for(int j=0;j<length;j++){
-		for(int i=0;i<lenEOL[EOLtype];i++){
-			buff[j*lenEOL[EOLtype]+i+off]=strEOL[EOLtype][i];
+    else
+    {
+		buff[0] = SendMessageA(hSci, SCI_GETCHARAT, posAdd, (LPARAM)0);
+		off = 1;
+	}
+
+	for(int j = 0; j < length; j++)
+    {
+		for(unsigned int i = 0; i < lenEOL[EOLtype]; i++)
+        {
+			buff[j * lenEOL[EOLtype] + i + off] = strEOL[EOLtype][i];
 		}
 	}
 
 	::SendMessageA(hSci, SCI_REPLACETARGET, blankLinesLength, (LPARAM)buff);
 
-	for (int i = 0; i < length; i++){
-			markAsBlank(hSci,offset+i);
+	for (int i = 0; i < length; i++)
+    {
+	    markAsBlank(hSci, offset + i);
 	}
-	if(offset==0){
-		SendMessageA(hSci, SCI_MARKERADDSET, length, marker);
-		
+	
+    if(offset == 0)
+    {
+		SendMessageA(hSci, SCI_MARKERADDSET, length, marker);		
 	}
+
 #if CLEANUP
 	delete[] buff;
 #endif

@@ -104,8 +104,6 @@ void OptionDialog::SetParams(void)
 
 BOOL OptionDialog::GetParams(void)
 {
-    COLORREF color;
-
 	_ColorComboAdded.getColor((LPCOLORREF)&_ColorSettings->added);
     _ColorComboMoved.getColor((LPCOLORREF)&_ColorSettings->moved);
 	_ColorComboRemoved.getColor((LPCOLORREF)&_ColorSettings->deleted);

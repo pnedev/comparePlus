@@ -456,7 +456,7 @@ HWND openTempFile(void){
     HWND window=getCurrentWindow();		
     int win=SendMessageA(window, SCI_GETDOCPOINTER, 0,0);
     if(result==0 || win!=tempWindow){
-        int result=::SendMessage(nppData._nppHandle,WM_COMMAND,IDM_FILE_NEW,(LPARAM)0);
+        ::SendMessage(nppData._nppHandle,WM_COMMAND,IDM_FILE_NEW,(LPARAM)0);
         ::SendMessage(nppData._nppHandle,NPPM_GETFILENAME,0,(LPARAM)compareFilePath);
         tempWindow=SendMessageA(window, SCI_GETDOCPOINTER, 0,0);
     }	
@@ -575,7 +575,7 @@ void reset()
 
         if(tempWindow!=-1){
 
-            int result=::SendMessage(nppData._nppHandle,NPPM_SWITCHTOFILE,0,(LPARAM)compareFilePath);
+            ::SendMessage(nppData._nppHandle,NPPM_SWITCHTOFILE,0,(LPARAM)compareFilePath);
             window=getCurrentWindow();	
             int tempPointer=SendMessageA(window, SCI_GETDOCPOINTER, 0,0);
             if(tempPointer==tempWindow){
@@ -849,7 +849,9 @@ bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2){
     int sn;
     struct varray *ses = varray_new(sizeof(struct diff_edit), NULL);
 
-    int result=(diff(chunk1.words, 0, chunk1.count, chunk2.words, 0, chunk2.count, (idx_fn)(getWord), (cmp_fn)(compareWord), NULL, 0, ses, &sn, NULL));
+    //int result=(diff(chunk1.words, 0, chunk1.count, chunk2.words, 0, chunk2.count, (idx_fn)(getWord), (cmp_fn)(compareWord), NULL, 0, ses, &sn, NULL));
+
+    diff(chunk1.words, 0, chunk1.count, chunk2.words, 0, chunk2.count, (idx_fn)(getWord), (cmp_fn)(compareWord), NULL, 0, ses, &sn, NULL);
 
     chunk1.changes = varray_new(sizeof(struct diff_change), NULL);
     chunk2.changes = varray_new(sizeof(struct diff_change), NULL);
@@ -978,7 +980,7 @@ bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2){
 int setDiffLines(diff_edit *e,diff_edit changes[],int *i,int op,int altLocation){
     int index=*i;
     int addedLines=0;
-    int startLocation=altLocation;
+    //int startLocation = altLocation;
     for(int j=0;j<(e->len);j++){
 
         changes[index].set=e->set;
