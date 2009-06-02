@@ -50,7 +50,7 @@ std::basic_string<TCHAR> purgeMenuItemString(const TCHAR * menuItemStr, bool kee
 	#define generic_strftime wcsftime
 	#define generic_fprintf fwprintf
 	#define generic_sscanf swscanf
-	#define generic_fopen _wfopen
+	#define generic_fopen _wfopen_s
 	#define generic_fgets fgetws
 	#define generic_stat _wstat
 	#define COPYDATA_FILENAMES COPYDATA_FILENAMESW

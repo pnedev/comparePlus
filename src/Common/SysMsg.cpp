@@ -49,7 +49,8 @@ void printStr(const TCHAR *str2print)
 
 void writeLog(const TCHAR *logFileName, const TCHAR *log2write)
 {	
-	FILE *f = generic_fopen(logFileName, TEXT("a+"));
+	FILE *f;
+    errno_t err = generic_fopen(&f, logFileName, TEXT("a+"));
 	const TCHAR * ptr = log2write;
 	fwrite(log2write, sizeof(log2write[0]), lstrlen(log2write), f);
 	fputc('\n', f);
