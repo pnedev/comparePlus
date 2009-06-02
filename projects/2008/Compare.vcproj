@@ -45,12 +45,12 @@
 				EnableIntrinsicFunctions="false"
 				FavorSizeOrSpeed="0"
 				AdditionalIncludeDirectories="../../src;../../src/MBA;../../src/AboutDlg;../../src/OptionDlg/;../../src/Common"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
-				WarningLevel="4"
+				WarningLevel="3"
 				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="4"
 			/>
@@ -129,7 +129,7 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="false"
 				AdditionalIncludeDirectories="../../src;../../src/MBA;../../src/AboutDlg;../../src/OptionDlg/;../../src/Common"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_NO_WARNINGS"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -415,6 +415,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\Compare.rc"
+				>
+			</File>
+			<File
+				RelativePath="..\..\res\icon1.ico"
 				>
 			</File>
 			<File
