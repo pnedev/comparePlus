@@ -272,11 +272,10 @@ void clearUndoBuffer(HWND window){
 			::SendMessageA(window, SCI_BEGINUNDOACTION, 0, (LPARAM)0);
 			char fake[2];
 			fake[1]=0;
-			fake[0]=::SendMessageA(window, SCI_GETCHARAT, 0, (LPARAM)0);
+			fake[0]=(char)::SendMessageA(window, SCI_GETCHARAT, 0, (LPARAM)0);
 			::SendMessageA(window, SCI_SETTARGETSTART, 0, 0);	
 			::SendMessageA(window, SCI_SETTARGETEND, 1, 0);
 			::SendMessageA(window, SCI_REPLACETARGET, 1, (LPARAM)fake);
-
 			::SendMessageA(window, SCI_ENDUNDOACTION, 0, (LPARAM)0);
 		}
 }
@@ -378,12 +377,12 @@ void addEmptyLines(HWND hSci, int offset, int length){
     {
 		marker = ::SendMessageA(hSci, SCI_MARKERGET, 0, 0);
 		::SendMessageA(hSci, SCI_MARKERDELETE, 0, (LPARAM)-1);
-		buff[blankLinesLength-1] = SendMessageA(hSci, SCI_GETCHARAT, posAdd, (LPARAM)0);
+		buff[blankLinesLength-1] = (char)SendMessageA(hSci, SCI_GETCHARAT, posAdd, (LPARAM)0);
 		off = 0;
 	}
     else
     {
-		buff[0] = SendMessageA(hSci, SCI_GETCHARAT, posAdd, (LPARAM)0);
+		buff[0] = (char)SendMessageA(hSci, SCI_GETCHARAT, posAdd, (LPARAM)0);
 		off = 1;
 	}
 

@@ -176,7 +176,8 @@ _find_middle_snake(const void *a, int aoff, int n,
 }
 
 static void
-_edit(struct _ctx *ctx, int op, int off, int len)
+//_edit(struct _ctx *ctx, int op, int off, int len)
+_edit(struct _ctx *ctx, short op, int off, int len)
 {
 	struct diff_edit *e;
 
