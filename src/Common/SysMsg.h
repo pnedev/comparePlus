@@ -39,7 +39,7 @@ std::basic_string<TCHAR> purgeMenuItemString(const TCHAR * menuItemStr, bool kee
 	#define NppMainEntry wWinMain
 	#define generic_strtol wcstol
 	#define generic_strncpy wcsncpy
-	#define generic_stricmp wcsicmp
+	#define generic_stricmp _wcsicmp
 	#define generic_strncmp wcsncmp
 	#define generic_strnicmp wcsnicmp
 	#define generic_strncat wcsncat
