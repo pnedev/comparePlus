@@ -76,6 +76,8 @@ sUserSettings Settings;
 AboutDialog   AboutDlg;
 OptionDialog  OptionDlg;
 
+void EmptyFunc(void) { };
+
 int getCompare(int window)
 {
     for(int i = 0; i < MAXCOMPARE; i++) if(compareDocs[i] == window) return i;
@@ -201,7 +203,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID lpReserved)
             funcItem[CMD_CLEAR_RESULTS]._pShKey->_isShift = false;
             funcItem[CMD_CLEAR_RESULTS]._pShKey->_key = 'D';
 
-            funcItem[CMD_SEPARATOR_1]._pFunc = NULL;
+            funcItem[CMD_SEPARATOR_1]._pFunc = EmptyFunc;
             lstrcpy(funcItem[CMD_SEPARATOR_1]._itemName, TEXT("-----------"));
             funcItem[CMD_SEPARATOR_1]._pShKey = NULL;
 
@@ -221,7 +223,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID lpReserved)
             funcItem[CMD_COMAPRE_SVN_BASE]._pShKey->_isShift = false;
             funcItem[CMD_COMAPRE_SVN_BASE]._pShKey->_key = 'B';
 
-            funcItem[CMD_SEPARATOR_2]._pFunc = NULL;
+            funcItem[CMD_SEPARATOR_2]._pFunc = EmptyFunc;
             lstrcpy(funcItem[CMD_SEPARATOR_2]._itemName, TEXT("------------"));
             funcItem[CMD_SEPARATOR_2]._pShKey = NULL;
 
@@ -237,7 +239,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID lpReserved)
             lstrcpy(funcItem[CMD_DETECT_MOVES]._itemName, TEXT("Detect Moves"));
             funcItem[CMD_DETECT_MOVES]._pShKey = NULL;
 
-            funcItem[CMD_SEPARATOR_3]._pFunc = NULL;
+            funcItem[CMD_SEPARATOR_3]._pFunc = EmptyFunc;
             lstrcpy(funcItem[CMD_SEPARATOR_3]._itemName, TEXT("-----------"));
             funcItem[CMD_SEPARATOR_3]._pShKey = NULL;
 
@@ -254,6 +256,10 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID lpReserved)
                 compareDocs[i]=-1;
             }
 
+            // Disable non implemented menu item
+            //HMENU hMenu = (HMENU)(::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0 ));
+            //::EnableMenuItem(hMenu, CMD_PREVIOUS, MF_GRAYED);
+            //::EnableMenuItem(hMenu, CMD_NEXT, MF_GRAYED);
 
             TCHAR nppPath[MAX_PATH];
             GetModuleFileName((HMODULE)hModule, nppPath, sizeof(nppPath));
@@ -428,9 +434,9 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM wParam
     if (Message == WM_CREATE)
     {
         HMENU	hMenu = ::GetMenu(nppData._nppHandle);
-        ::ModifyMenu(hMenu, funcItem[2]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
-        ::ModifyMenu(hMenu, funcItem[5]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
-        ::ModifyMenu(hMenu, funcItem[9]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
+        ::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_1]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
+        ::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_2]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
+        ::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_3]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
     }
 
     return TRUE;
@@ -1662,9 +1668,9 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
     {
     case NPPN_TBMODIFICATION:
         {
-            ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[6]._cmdID, (LPARAM)Settings.AddLine);
-            ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[7]._cmdID, (LPARAM)Settings.IncludeSpace);
-            ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[8]._cmdID, (LPARAM)Settings.DetectMove);
+            ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID, (LPARAM)Settings.AddLine);
+            ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACING]._cmdID, (LPARAM)Settings.IncludeSpace);
+            ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID, (LPARAM)Settings.DetectMove);
             break;
         }
     case NPPN_FILEBEFORECLOSE:
