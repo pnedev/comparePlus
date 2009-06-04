@@ -36,7 +36,7 @@ entity ip_snd is
     port (
         clk         : in  std_logic;
         rst         : in  std_logic;
-        header_in   : in  ip_t;        
+        header_in   : in  ip_t;
         data_in     : in  std_logic_vector(7 downto 0);
         sof_in      : in  std_logic;
         eof_in      : in  std_logic;
@@ -56,25 +56,25 @@ end entity;
 architecture rtl of ip_snd is
 
     -- control fsm signals
-    type state_t is (wait_sof, pass_header, pass_data);  
+    type state_t is (wait_sof, pass_header, pass_data);
     signal state : state_t := wait_sof;
-    
+
     -- header container
-    signal ip : ip_t;    
+    signal ip : ip_t;
 
     -- frame byte counter
     signal cnt : std_logic_vector(7 downto 0);
-    
+
     -- checksum
     signal checksum_long : std_logic_vector(16 downto 0);
     signal checksum_i    : std_logic_vector(15 downto 0);
-    signal checksum      : std_logic_vector(15 downto 0);    
-    
+    signal checksum      : std_logic_vector(15 downto 0);
+
 begin
 
     checksum_i <= checksum_long(15 downto 0) + checksum_long(16);
     checksum <= not(checksum_i);
-      
+
     ----------------------------------------------------------------------------
     -- frame byte counter
     ----------------------------------------------------------------------------
@@ -90,5 +90,5 @@ begin
             end if;
         end if;
     end process;
-   
+
 end architecture rtl;
