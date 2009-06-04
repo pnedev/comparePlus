@@ -68,16 +68,13 @@ TCHAR compareFilePath[MAX_PATH];
 TCHAR compareFile[]=TEXT("Compare File");
 NppData nppData;
 
-const int nbFunc = 12;
-FuncItem funcItem[nbFunc];
+FuncItem funcItem[NB_MENU_COMMANDS];
 
 HANDLE g_hModule;
 
 sUserSettings Settings;
 AboutDialog   AboutDlg;
 OptionDialog  OptionDlg;
-
-void EmptyFunction(void) {}
 
 int getCompare(int window)
 {
@@ -188,69 +185,69 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID lpReserved)
     {
     case DLL_PROCESS_ATTACH:
         {
-            funcItem[0]._pFunc = compare;
-            lstrcpy(funcItem[0]._itemName, TEXT("Compare"));
-            funcItem[0]._pShKey = new ShortcutKey;
-            funcItem[0]._pShKey->_isAlt = true;
-            funcItem[0]._pShKey->_isCtrl = false;
-            funcItem[0]._pShKey->_isShift = false;
-            funcItem[0]._pShKey->_key = 'D';
+            funcItem[CMD_COMPARE]._pFunc = compare;
+            lstrcpy(funcItem[CMD_COMPARE]._itemName, TEXT("Compare"));
+            funcItem[CMD_COMPARE]._pShKey = new ShortcutKey;
+            funcItem[CMD_COMPARE]._pShKey->_isAlt = true;
+            funcItem[CMD_COMPARE]._pShKey->_isCtrl = false;
+            funcItem[CMD_COMPARE]._pShKey->_isShift = false;
+            funcItem[CMD_COMPARE]._pShKey->_key = 'D';
 
-            funcItem[1]._pFunc = reset;
-            lstrcpy(funcItem[1]._itemName, TEXT("Clear Results"));
-            funcItem[1]._pShKey = new ShortcutKey;
-            funcItem[1]._pShKey->_isAlt = true;
-            funcItem[1]._pShKey->_isCtrl = true;
-            funcItem[1]._pShKey->_isShift = false;
-            funcItem[1]._pShKey->_key = 'D';
+            funcItem[CMD_CLEAR_RESULTS]._pFunc = reset;
+            lstrcpy(funcItem[CMD_CLEAR_RESULTS]._itemName, TEXT("Clear Results"));
+            funcItem[CMD_CLEAR_RESULTS]._pShKey = new ShortcutKey;
+            funcItem[CMD_CLEAR_RESULTS]._pShKey->_isAlt = true;
+            funcItem[CMD_CLEAR_RESULTS]._pShKey->_isCtrl = true;
+            funcItem[CMD_CLEAR_RESULTS]._pShKey->_isShift = false;
+            funcItem[CMD_CLEAR_RESULTS]._pShKey->_key = 'D';
 
-            funcItem[2]._pFunc = EmptyFunction;
-            lstrcpy(funcItem[2]._itemName, TEXT("-----------"));
-            funcItem[2]._pShKey = NULL;
+            funcItem[CMD_SEPARATOR_1]._pFunc = NULL;
+            lstrcpy(funcItem[CMD_SEPARATOR_1]._itemName, TEXT("-----------"));
+            funcItem[CMD_SEPARATOR_1]._pShKey = NULL;
 
-            funcItem[3]._pFunc = compareLocal;
-            lstrcpy(funcItem[3]._itemName, TEXT("Compare to last save"));
-            funcItem[3]._pShKey = new ShortcutKey;
-            funcItem[3]._pShKey->_isAlt = true;
-            funcItem[3]._pShKey->_isCtrl = false;
-            funcItem[3]._pShKey->_isShift = false;
-            funcItem[3]._pShKey->_key = 'S';
+            funcItem[CMD_COMPARE_LAST_SAVE]._pFunc = compareLocal;
+            lstrcpy(funcItem[CMD_COMPARE_LAST_SAVE]._itemName, TEXT("Compare to last save"));
+            funcItem[CMD_COMPARE_LAST_SAVE]._pShKey = new ShortcutKey;
+            funcItem[CMD_COMPARE_LAST_SAVE]._pShKey->_isAlt = true;
+            funcItem[CMD_COMPARE_LAST_SAVE]._pShKey->_isCtrl = false;
+            funcItem[CMD_COMPARE_LAST_SAVE]._pShKey->_isShift = false;
+            funcItem[CMD_COMPARE_LAST_SAVE]._pShKey->_key = 'S';
 
-            funcItem[4]._pFunc = compareBase;
-            lstrcpy(funcItem[4]._itemName, TEXT("Compare against SVN base"));
-            funcItem[4]._pShKey = new ShortcutKey;
-            funcItem[4]._pShKey->_isAlt = true;
-            funcItem[4]._pShKey->_isCtrl = false;
-            funcItem[4]._pShKey->_isShift = false;
-            funcItem[4]._pShKey->_key = 'B';
+            funcItem[CMD_COMAPRE_SVN_BASE]._pFunc = compareBase;
+            lstrcpy(funcItem[CMD_COMAPRE_SVN_BASE]._itemName, TEXT("Compare against SVN base"));
+            funcItem[CMD_COMAPRE_SVN_BASE]._pShKey = new ShortcutKey;
+            funcItem[CMD_COMAPRE_SVN_BASE]._pShKey->_isAlt = true;
+            funcItem[CMD_COMAPRE_SVN_BASE]._pShKey->_isCtrl = false;
+            funcItem[CMD_COMAPRE_SVN_BASE]._pShKey->_isShift = false;
+            funcItem[CMD_COMAPRE_SVN_BASE]._pShKey->_key = 'B';
 
-            funcItem[5]._pFunc = EmptyFunction;
-            lstrcpy(funcItem[5]._itemName, TEXT("------------"));
-            funcItem[5]._pShKey = NULL;
+            funcItem[CMD_SEPARATOR_2]._pFunc = NULL;
+            lstrcpy(funcItem[CMD_SEPARATOR_2]._itemName, TEXT("------------"));
+            funcItem[CMD_SEPARATOR_2]._pShKey = NULL;
 
-            funcItem[6]._pFunc = alignMatches;
-            lstrcpy(funcItem[6]._itemName, TEXT("Align Matches"));
-            funcItem[6]._pShKey = NULL;
+            funcItem[CMD_ALIGN_MATCHES]._pFunc = alignMatches;
+            lstrcpy(funcItem[CMD_ALIGN_MATCHES]._itemName, TEXT("Align Matches"));
+            funcItem[CMD_ALIGN_MATCHES]._pShKey = NULL;
 
-            funcItem[7]._pFunc = includeSpacing;
-            lstrcpy(funcItem[7]._itemName, TEXT("Ignore Spacing"));
-            funcItem[7]._pShKey = NULL;
+            funcItem[CMD_IGNORE_SPACING]._pFunc = includeSpacing;
+            lstrcpy(funcItem[CMD_IGNORE_SPACING]._itemName, TEXT("Ignore Spacing"));
+            funcItem[CMD_IGNORE_SPACING]._pShKey = NULL;
 
-            funcItem[8]._pFunc = detectMoves;
-            lstrcpy(funcItem[8]._itemName, TEXT("Detect Moves"));
-            funcItem[8]._pShKey = NULL;
+            funcItem[CMD_DETECT_MOVES]._pFunc = detectMoves;
+            lstrcpy(funcItem[CMD_DETECT_MOVES]._itemName, TEXT("Detect Moves"));
+            funcItem[CMD_DETECT_MOVES]._pShKey = NULL;
 
-            funcItem[9]._pFunc = EmptyFunction;
-            lstrcpy(funcItem[9]._itemName, TEXT("-----------"));
-            funcItem[9]._pShKey = NULL;
+            funcItem[CMD_SEPARATOR_3]._pFunc = NULL;
+            lstrcpy(funcItem[CMD_SEPARATOR_3]._itemName, TEXT("-----------"));
+            funcItem[CMD_SEPARATOR_3]._pShKey = NULL;
 
-            funcItem[10]._pFunc = openOptionDlg;
-            lstrcpy(funcItem[10]._itemName, TEXT("Option"));
-            funcItem[10]._pShKey = NULL;
+            funcItem[CMD_OPTION]._pFunc = openOptionDlg;
+            lstrcpy(funcItem[CMD_OPTION]._itemName, TEXT("Option"));
+            funcItem[CMD_OPTION]._pShKey = NULL;
 
-            funcItem[11]._pFunc = openAboutDlg;
-            lstrcpy(funcItem[11]._itemName, TEXT("About"));
-            funcItem[11]._pShKey = NULL;
+            funcItem[CMD_ABOUT]._pFunc = openAboutDlg;
+            lstrcpy(funcItem[CMD_ABOUT]._itemName, TEXT("About"));
+            funcItem[CMD_ABOUT]._pShKey = NULL;
 
             for(int i = 0; i < MAXCOMPARE; i++)
             {
@@ -336,7 +333,7 @@ extern "C" __declspec(dllexport) const TCHAR * getName()
 
 extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF)
 {
-    *nbF = nbFunc;
+    *nbF = NB_MENU_COMMANDS;
     return funcItem;
 }
 
@@ -366,11 +363,11 @@ void loadSettings(void)
     // Else load stored color settings
     else
     {
-        Settings.ColorSettings.added   = ::GetPrivateProfileInt(colorsSection, addedColorOption, DEFAULT_ADDED_COLOR, iniFilePath);
-        Settings.ColorSettings.deleted = ::GetPrivateProfileInt(colorsSection, removedColorOption, DEFAULT_DELETED_COLOR, iniFilePath);
-        Settings.ColorSettings.changed = ::GetPrivateProfileInt(colorsSection, changedColorOption, DEFAULT_CHANGED_COLOR, iniFilePath);
-        Settings.ColorSettings.moved   = ::GetPrivateProfileInt(colorsSection, movedColorOption, DEFAULT_MOVED_COLOR, iniFilePath);
-        Settings.ColorSettings.blank   = ::GetPrivateProfileInt(colorsSection, blankColorOption, DEFAULT_BLANK_COLOR, iniFilePath); 
+        Settings.ColorSettings.added     = ::GetPrivateProfileInt(colorsSection, addedColorOption, DEFAULT_ADDED_COLOR, iniFilePath);
+        Settings.ColorSettings.deleted   = ::GetPrivateProfileInt(colorsSection, removedColorOption, DEFAULT_DELETED_COLOR, iniFilePath);
+        Settings.ColorSettings.changed   = ::GetPrivateProfileInt(colorsSection, changedColorOption, DEFAULT_CHANGED_COLOR, iniFilePath);
+        Settings.ColorSettings.moved     = ::GetPrivateProfileInt(colorsSection, movedColorOption, DEFAULT_MOVED_COLOR, iniFilePath);
+        Settings.ColorSettings.blank     = ::GetPrivateProfileInt(colorsSection, blankColorOption, DEFAULT_BLANK_COLOR, iniFilePath); 
         Settings.ColorSettings.highlight = ::GetPrivateProfileInt(colorsSection, highlightColorOption, DEFAULT_HIGHLIGHT_COLOR, iniFilePath);
         Settings.ColorSettings.alpha     = ::GetPrivateProfileInt(colorsSection, highlightAlphaOption, DEFAULT_HIGHLIGHT_ALPHA, iniFilePath);
     }
