@@ -1,5 +1,7 @@
 #include "Compare.h"
 #include "NPPHelpers.h"
+#include "kcs_addons.h"
+
 extern NppData nppData;
 extern UINT	EOLtype;
 
@@ -13,22 +15,25 @@ int changedSymbol = MarkerStart + 2; // 19;
 int moved         = MarkerStart + 1; // 18;
 int blank         = MarkerStart;     // 17;
 
-HWND getCurrentWindow(){
-	int win=3;
-	SendMessage(nppData._nppHandle,NPPM_GETCURRENTSCINTILLA,0,(LPARAM)&win);
-	HWND window=win==0?nppData._scintillaMainHandle:nppData._scintillaSecondHandle;
+HWND getCurrentWindow()
+{
+	int win = 3;
+	SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&win);
+	HWND window = (win == 0) ? nppData._scintillaMainHandle : nppData._scintillaSecondHandle;
 	return window;
 }
 
-HWND getOtherWindow(){
-	int win=3;
-	SendMessage(nppData._nppHandle,NPPM_GETCURRENTSCINTILLA,0,(LPARAM)&win);
-	HWND window=win==1?nppData._scintillaMainHandle:nppData._scintillaSecondHandle;
+HWND getOtherWindow()
+{
+	int win = 3;
+	SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&win);
+	HWND window = (win == 1) ? nppData._scintillaMainHandle : nppData._scintillaSecondHandle;
 	return window;
 }
 
 
-void defineColor(int type,int color){
+void defineColor(int type, int color)
+{
 	::SendMessageA(nppData._scintillaMainHandle, SCI_MARKERDEFINE,type, (LPARAM)SC_MARK_BACKGROUND);	
 	::SendMessageA(nppData._scintillaMainHandle, SCI_MARKERSETBACK,type, (LPARAM)color);
 	::SendMessageA(nppData._scintillaMainHandle, SCI_MARKERSETFORE,type, (LPARAM)0);
@@ -36,50 +41,60 @@ void defineColor(int type,int color){
 	::SendMessageA(nppData._scintillaSecondHandle, SCI_MARKERSETBACK,type, (LPARAM)color);
 	::SendMessageA(nppData._scintillaSecondHandle, SCI_MARKERSETFORE,type, (LPARAM)0);
 }
-void defineSymbol(int type,int symbol){
-	::SendMessageA(nppData._scintillaMainHandle, SCI_MARKERDEFINE,type, (LPARAM)symbol);
-	::SendMessageA(nppData._scintillaSecondHandle, SCI_MARKERDEFINE,type, (LPARAM)symbol);
+void defineSymbol(int type, int symbol)
+{
+	::SendMessageA(nppData._scintillaMainHandle, SCI_MARKERDEFINE, type, (LPARAM)symbol);
+	::SendMessageA(nppData._scintillaSecondHandle, SCI_MARKERDEFINE, type, (LPARAM)symbol);
 }
 
 
-void setChangedStyle(HWND window, sColorSettings Settings){
+void setChangedStyle(HWND window, sColorSettings Settings)
+{
 	::SendMessageA(window, SCI_INDICSETSTYLE, 1, (LPARAM)7);
     ::SendMessageA(window, SCI_INDICSETFORE, 1, (LPARAM)Settings.highlight);
     ::SendMessageA(window, SCI_INDICSETALPHA, 1, (LPARAM)Settings.alpha);
 }
 
 
-void setTextStyle(HWND window, sColorSettings Settings){
+void setTextStyle(HWND window, sColorSettings Settings)
+{
 	setChangedStyle(window, Settings);
 }
 
-void setTextStyles(sColorSettings Settings){
-
+void setTextStyles(sColorSettings Settings)
+{
 	setTextStyle(nppData._scintillaMainHandle, Settings);
 	setTextStyle(nppData._scintillaSecondHandle, Settings);
-
 }
 
-void setCursor(int type){
-	::SendMessageA(nppData._scintillaMainHandle, SCI_SETCURSOR,type, (LPARAM)type);
-	::SendMessageA(nppData._scintillaSecondHandle, SCI_SETCURSOR,type, (LPARAM)type);
+void setCursor(int type)
+{
+	::SendMessageA(nppData._scintillaMainHandle, SCI_SETCURSOR, type, (LPARAM)type);
+	::SendMessageA(nppData._scintillaSecondHandle, SCI_SETCURSOR, type, (LPARAM)type);
 }
-void wait(){
+
+void wait()
+{
 	setCursor(SC_CURSORWAIT);
 }
-void ready(){
+
+void ready()
+{
 	setCursor(SC_CURSORNORMAL);
 }
 
-void setBlank(HWND window,int color){
-	::SendMessageA(window, SCI_MARKERDEFINE, blank, (LPARAM)SC_MARK_BACKGROUND);	
-	::SendMessageA(window, SCI_MARKERSETBACK, blank, (LPARAM)color);
-	::SendMessageA(window, SCI_MARKERSETFORE, blank, (LPARAM)color);
-	//::SendMessage(window, SCI_STYLESETVISIBLE,blank, (LPARAM)0);
-	//::SendMessage(window, SCI_STYLESETCHANGEABLE,blank, (LPARAM)0);
-	//int i=::SendMessage(window, SCI_STYLEGETCHANGEABLE,blank, (LPARAM)0);
+void setBlank(HWND window, int color)
+{
+	SendMessage(window, SCI_MARKERDEFINE, blank, (LPARAM)SC_MARK_BACKGROUND);	
+	SendMessage(window, SCI_MARKERSETBACK, blank, (LPARAM)color);
+	SendMessage(window, SCI_MARKERSETFORE, blank, (LPARAM)color);
 }
 
+void DefineXpmSymbol(int type, const char *xpm)
+{
+    SendMessage(nppData._scintillaMainHandle, SCI_MARKERDEFINEPIXMAP, type, (LPARAM)kcs_addons_xpm);
+    SendMessage(nppData._scintillaSecondHandle, SCI_MARKERDEFINEPIXMAP, type, (LPARAM)kcs_addons_xpm);
+}
 
 void setStyles(sColorSettings Settings)
 {
@@ -88,8 +103,8 @@ void setStyles(sColorSettings Settings)
     ::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINMASKN, (WPARAM)4, (LPARAM)MarginMask);
     ::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINMASKN, (WPARAM)4, (LPARAM)MarginMask);
 
-    ::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINWIDTHN, (WPARAM)4, (LPARAM)14);
-    ::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINWIDTHN, (WPARAM)4, (LPARAM)14);
+    ::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINWIDTHN, (WPARAM)4, (LPARAM)16);
+    ::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINWIDTHN, (WPARAM)4, (LPARAM)16);
         
     setBlank(nppData._scintillaMainHandle, Settings.blank);
 	setBlank(nppData._scintillaSecondHandle, Settings.blank);
@@ -99,9 +114,10 @@ void setStyles(sColorSettings Settings)
 	defineColor(moved, Settings.moved);
 	defineColor(removed, Settings.deleted);
 
-	defineSymbol(addedSymbol, SC_MARK_PLUS); //SC_MARK_PLUS);
+	//defineSymbol(addedSymbol, SC_MARK_PLUS);  
+    DefineXpmSymbol(addedSymbol, NULL);
 	defineSymbol(removedSymbol, SC_MARK_MINUS);
-	defineSymbol(changedSymbol, SC_MARK_ARROWS); //SC_MARK_ARROWS);
+	defineSymbol(changedSymbol, SC_MARK_ARROWS);
 
 	setTextStyles(Settings);
 }

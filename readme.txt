@@ -16,6 +16,7 @@ Change Log:
     Colors used for comparison results are now configurable in Option menu (there is now no need to edit Compare.ini).
     Compare to last save shortcut move to Alt+S
     Compare against SVN base shortcut move to Alt+B
+    Bookmark and Compare marker bugs resolved, thanks to Thell
     
 1.5.1 
     New colors. Thanks to Mark Baines for the suggestions

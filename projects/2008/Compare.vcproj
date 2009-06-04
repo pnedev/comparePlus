@@ -45,7 +45,7 @@
 				EnableIntrinsicFunctions="false"
 				FavorSizeOrSpeed="0"
 				AdditionalIncludeDirectories="../../src;../../src/MBA;../../src/AboutDlg;../../src/OptionDlg/;../../src/Common"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
@@ -290,6 +290,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\CompareResource.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\kcs_addons.h"
 				>
 			</File>
 			<File
