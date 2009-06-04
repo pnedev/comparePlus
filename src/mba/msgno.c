@@ -109,9 +109,12 @@ msgno_msg(int msgno)
 	unsigned int i;
 
 	i = msgno >> 16;
-	if (i == 0) {
+	if (i == 0) 
+    {
 		return strerror(msgno);
-	} else if (i >= MSGNO_NUM_LISTS || (te = list_tbl + (i - 1)) == NULL) {
+	} 
+    else if (i >= MSGNO_NUM_LISTS || (te = list_tbl + (i - 1)) == NULL) 
+    {
 		return "No such msgno list";
 	}
 
@@ -169,7 +172,7 @@ msgno_vsprintf(const char *fmt, va_list ap)
 #if (__STDC_VERSION__ >= 199901L)
 	if ((n = vsnprintf(msgno_buf + msgno_buf_idx, size, fmt, ap)) < 0 ||
 #else
-	if ((n = vsprintf(msgno_buf + msgno_buf_idx, fmt, ap)) < 0 ||
+	if ((n = vsprintf_s(msgno_buf + msgno_buf_idx, _countof(msgno_buf), fmt, ap)) < 0 ||
 #endif
 				(size_t)n >= size || msgno_buf_idx > MSGNO_BUFSIZ) {
 		*msgno_buf = '\0';

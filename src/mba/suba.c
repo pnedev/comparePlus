@@ -334,13 +334,15 @@ suba_print_free_list(struct allocator *suba)
 			return -1;
 		}
 		c = suba_addr(suba, c->next);
-		sprintf(buf, "%d", count++);
+		//sprintf(buf, "%d", count++);
+        sprintf_s(buf, _countof(buf), "%d", count++);
 		if (!suba_print_cell(suba, buf, c)) {
 			ret = 0;
 		}
 	}
 	c = suba_addr(suba, c->next);
-	sprintf(buf, "%d", count++);
+	//sprintf(buf, "%d", count++);
+    sprintf_s(buf, _countof(buf), "%d", count++);
 	if (!suba_print_cell(suba, buf, c)) {
 		ret = 0;
 	}
