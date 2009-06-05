@@ -44,23 +44,24 @@ int topLine=0;
 
 bool panelsOpened = false;
 
-const TCHAR SVN_BASE[]=TEXT(".svn\\text-base");
-const TCHAR SVN_END[]=TEXT(".svn-base");
+const TCHAR SVN_BASE[] = TEXT(".svn\\text-base");
+const TCHAR SVN_END[] = TEXT(".svn-base");
 const TCHAR PLUGIN_NAME[] = TEXT("Compare");
 TCHAR iniFilePath[MAX_PATH];
 const TCHAR sectionName[] = TEXT("Compare Settings");
-const TCHAR addLinesOption[]=TEXT("Align Matches");
-const TCHAR ignoreSpacesOption[]=TEXT("Include Spaces");
-const TCHAR detectMovesOption[]=TEXT("Detect Move Blocks");
+const TCHAR addLinesOption[] = TEXT("Align Matches");
+const TCHAR ignoreSpacesOption[] = TEXT("Include Spaces");
+const TCHAR detectMovesOption[] = TEXT("Detect Move Blocks");
 
-const TCHAR colorsSection[]=TEXT("Colors");
-const TCHAR addedColorOption[] =TEXT("Added");
-const TCHAR removedColorOption[] = TEXT("Removed");
-const TCHAR changedColorOption[]=TEXT("Changed");
-const TCHAR movedColorOption[]=TEXT("Moved");
-const TCHAR blankColorOption[]=TEXT("Blank");
-const TCHAR highlightColorOption[]=TEXT("Highlight");
-const TCHAR highlightAlphaOption[]=TEXT("Alpha");
+const TCHAR colorsSection[]        = TEXT("Colors");
+const TCHAR addedColorOption[]     = TEXT("Added");
+const TCHAR removedColorOption[]   = TEXT("Removed");
+const TCHAR changedColorOption[]   = TEXT("Changed");
+const TCHAR movedColorOption[]     = TEXT("Moved");
+const TCHAR blankColorOption[]     = TEXT("Blank");
+const TCHAR highlightColorOption[] = TEXT("Highlight");
+const TCHAR highlightAlphaOption[] = TEXT("Alpha");
+const TCHAR symbolsOption[]        = TEXT("Symbols");
 
 const TCHAR localConfFile[] = TEXT("doLocalConf.xml");
 
@@ -382,6 +383,7 @@ void loadSettings(void)
     Settings.AddLine      = ::GetPrivateProfileInt(sectionName, addLinesOption, 1, iniFilePath) == 1;
     Settings.IncludeSpace = ::GetPrivateProfileInt(sectionName, ignoreSpacesOption, 1, iniFilePath) == 1;
     Settings.DetectMove   = ::GetPrivateProfileInt(sectionName, detectMovesOption, 1, iniFilePath) == 1;
+    Settings.OldSymbols   = ::GetPrivateProfileInt(sectionName, symbolsOption, 1, iniFilePath) == 1;
 }
 
 void saveSettings(void)
@@ -399,16 +401,17 @@ void saveSettings(void)
     ::WritePrivateProfileString(sectionName, addLinesOption, Settings.AddLine ? TEXT("1") : TEXT("0"), iniFilePath);
     ::WritePrivateProfileString(sectionName, ignoreSpacesOption, Settings.IncludeSpace ? TEXT("1") : TEXT("0"), iniFilePath);
     ::WritePrivateProfileString(sectionName, detectMovesOption, Settings.DetectMove ? TEXT("1") : TEXT("0"), iniFilePath);
+    ::WritePrivateProfileString(sectionName, symbolsOption, Settings.OldSymbols ? TEXT("1") : TEXT("0"), iniFilePath);
 }
 
 void openOptionDlg(void)
 {
-    if (OptionDlg.doDialog(&Settings.ColorSettings) == IDOK)
+    if (OptionDlg.doDialog(&Settings) == IDOK)
     {
         saveSettings();
         if (active)
         {
-            setStyles(Settings.ColorSettings);
+            setStyles(Settings);
         }
     }
 }
@@ -1611,7 +1614,7 @@ bool startCompare()
     SendMessageA(nppData._scintillaMainHandle, SCI_SETWRAPMODE, SC_WRAP_NONE, 0);
     SendMessageA(nppData._scintillaSecondHandle, SCI_SETWRAPMODE, SC_WRAP_NONE, 0);
 
-    setStyles(Settings.ColorSettings);
+    setStyles(Settings);
 
     int doc1 = SendMessageA(nppData._scintillaMainHandle, SCI_GETDOCPOINTER, 0, 0);
     int doc2 = SendMessageA(nppData._scintillaSecondHandle, SCI_GETDOCPOINTER, 0, 0);

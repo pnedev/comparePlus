@@ -8,7 +8,7 @@ void markAsRemoved(HWND window,int line);
 void markAsChanged(HWND window,int line);
 void markAsAdded(HWND window,int line);
 void markAsBlank(HWND window,int line);
-void setStyles(sColorSettings Settings);
+void setStyles(sUserSettings Settings);
 void setBlank(HWND window,int color);
 void ready();
 void wait();

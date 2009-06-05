@@ -6,9 +6,9 @@
 
 typedef HRESULT (WINAPI * ETDTProc) (HWND, DWORD);
 
-UINT OptionDialog::doDialog(struct sColorSettings * Settings)
+UINT OptionDialog::doDialog(struct sUserSettings * Settings)
 {
-    _ColorSettings = Settings;
+    _Settings = Settings;
     return (UINT)::DialogBoxParam(_hInst, MAKEINTRESOURCE(IDD_OPTION_DIALOG), _hParent,  (DLGPROC)dlgProc, (LPARAM)this);
 	//goToCenter();
 }
@@ -54,13 +54,13 @@ BOOL CALLBACK OptionDialog::run_dlgProc(HWND hwnd, UINT Message, WPARAM wParam, 
 					::EndDialog(_hSelf, IDCANCEL);
 					return TRUE;
                 case IDDEFAULT:
-                    _ColorSettings->added     = DEFAULT_ADDED_COLOR;
-                    _ColorSettings->blank     = DEFAULT_BLANK_COLOR;
-                    _ColorSettings->changed   = DEFAULT_CHANGED_COLOR;
-                    _ColorSettings->deleted   = DEFAULT_DELETED_COLOR;
-                    _ColorSettings->moved     = DEFAULT_MOVED_COLOR;
-                    _ColorSettings->highlight = DEFAULT_HIGHLIGHT_COLOR;
-                    _ColorSettings->alpha     = DEFAULT_HIGHLIGHT_ALPHA;
+                    _Settings->ColorSettings.added     = DEFAULT_ADDED_COLOR;
+                    _Settings->ColorSettings.blank     = DEFAULT_BLANK_COLOR;
+                    _Settings->ColorSettings.changed   = DEFAULT_CHANGED_COLOR;
+                    _Settings->ColorSettings.deleted   = DEFAULT_DELETED_COLOR;
+                    _Settings->ColorSettings.moved     = DEFAULT_MOVED_COLOR;
+                    _Settings->ColorSettings.highlight = DEFAULT_HIGHLIGHT_COLOR;
+                    _Settings->ColorSettings.alpha     = DEFAULT_HIGHLIGHT_ALPHA;
                     SetParams();
                     break;
 				case IDC_COMBO_ADDED_COLOR :
@@ -92,26 +92,52 @@ BOOL CALLBACK OptionDialog::run_dlgProc(HWND hwnd, UINT Message, WPARAM wParam, 
 
 void OptionDialog::SetParams(void)
 {
-    _ColorComboAdded.setColor(_ColorSettings->added);
-    _ColorComboMoved.setColor(_ColorSettings->moved);
-    _ColorComboRemoved.setColor(_ColorSettings->deleted);
-	_ColorComboChanged.setColor(_ColorSettings->changed);
-	_ColorComboBlank.setColor(_ColorSettings->blank);
-    _ColorComboHighlight.setColor(_ColorSettings->highlight);
+    // Set current colors configured in option dialog
+    _ColorComboAdded.setColor(_Settings->ColorSettings.added);
+    _ColorComboMoved.setColor(_Settings->ColorSettings.moved);
+    _ColorComboRemoved.setColor(_Settings->ColorSettings.deleted);
+	_ColorComboChanged.setColor(_Settings->ColorSettings.changed);
+	_ColorComboBlank.setColor(_Settings->ColorSettings.blank);
+    _ColorComboHighlight.setColor(_Settings->ColorSettings.highlight);
 
-    SetDlgItemInt(_hSelf, IDC_SPIN_BOX, _ColorSettings->alpha, FALSE);
+    // Set transparency
+    SetDlgItemInt(_hSelf, IDC_SPIN_BOX, _Settings->ColorSettings.alpha, FALSE);
+
+    // Set symbols cfg
+    HWND hSymbols = GetDlgItem(_hSelf, IDC_CHECK_SYMBOLS);
+    if (_Settings->OldSymbols == TRUE)
+    {
+        SendMessage(hSymbols, BM_SETCHECK, BST_CHECKED, (LPARAM)0);
+    }
+    else
+    {
+        SendMessage(hSymbols, BM_SETCHECK, BST_UNCHECKED, (LPARAM)0);
+    }
 }
 
 BOOL OptionDialog::GetParams(void)
 {
-	_ColorComboAdded.getColor((LPCOLORREF)&_ColorSettings->added);
-    _ColorComboMoved.getColor((LPCOLORREF)&_ColorSettings->moved);
-	_ColorComboRemoved.getColor((LPCOLORREF)&_ColorSettings->deleted);
-	_ColorComboChanged.getColor((LPCOLORREF)&_ColorSettings->changed);
-	_ColorComboBlank.getColor((LPCOLORREF)&_ColorSettings->blank);
-    _ColorComboHighlight.getColor((LPCOLORREF)&_ColorSettings->highlight);
+    // Get color choosed in dialog
+	_ColorComboAdded.getColor((LPCOLORREF)&_Settings->ColorSettings.added);
+    _ColorComboMoved.getColor((LPCOLORREF)&_Settings->ColorSettings.moved);
+	_ColorComboRemoved.getColor((LPCOLORREF)&_Settings->ColorSettings.deleted);
+	_ColorComboChanged.getColor((LPCOLORREF)&_Settings->ColorSettings.changed);
+	_ColorComboBlank.getColor((LPCOLORREF)&_Settings->ColorSettings.blank);
+    _ColorComboHighlight.getColor((LPCOLORREF)&_Settings->ColorSettings.highlight);
 
-    _ColorSettings->alpha = GetDlgItemInt(_hSelf, IDC_SPIN_BOX, NULL, FALSE);
+    // Get transparency
+    _Settings->ColorSettings.alpha = GetDlgItemInt(_hSelf, IDC_SPIN_BOX, NULL, FALSE);
+
+    // Get symbols
+    HWND hSymbols = GetDlgItem(_hSelf, IDC_CHECK_SYMBOLS);
+    if (SendMessage(hSymbols, BM_GETCHECK, (WPARAM)0, (LPARAM)0) == BST_CHECKED)
+    {
+        _Settings->OldSymbols = TRUE;
+    }
+    else
+    {
+        _Settings->OldSymbols = FALSE;
+    }
 
     return TRUE;
 }

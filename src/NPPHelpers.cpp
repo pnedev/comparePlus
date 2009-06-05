@@ -1,6 +1,8 @@
 #include "Compare.h"
 #include "NPPHelpers.h"
-#include "kcs_addons.h"
+#include "icon_add_16.h"
+#include "icon_sub_16.h"
+#include "icon_warning_16.h"
 
 extern NppData nppData;
 extern UINT	EOLtype;
@@ -90,13 +92,13 @@ void setBlank(HWND window, int color)
 	SendMessage(window, SCI_MARKERSETFORE, blank, (LPARAM)color);
 }
 
-void DefineXpmSymbol(int type, const char *xpm)
+void DefineXpmSymbol(int type, char ** xpm)
 {
-    SendMessage(nppData._scintillaMainHandle, SCI_MARKERDEFINEPIXMAP, type, (LPARAM)kcs_addons_xpm);
-    SendMessage(nppData._scintillaSecondHandle, SCI_MARKERDEFINEPIXMAP, type, (LPARAM)kcs_addons_xpm);
+    SendMessage(nppData._scintillaMainHandle, SCI_MARKERDEFINEPIXMAP, type, (LPARAM)xpm);
+    SendMessage(nppData._scintillaSecondHandle, SCI_MARKERDEFINEPIXMAP, type, (LPARAM)xpm);
 }
 
-void setStyles(sColorSettings Settings)
+void setStyles(sUserSettings Settings)
 {
     int MarginMask = (1 << changedSymbol) | (1 << addedSymbol) | (1 << removedSymbol);
 
@@ -106,20 +108,28 @@ void setStyles(sColorSettings Settings)
     ::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINWIDTHN, (WPARAM)4, (LPARAM)16);
     ::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINWIDTHN, (WPARAM)4, (LPARAM)16);
         
-    setBlank(nppData._scintillaMainHandle, Settings.blank);
-	setBlank(nppData._scintillaSecondHandle, Settings.blank);
+    setBlank(nppData._scintillaMainHandle, Settings.ColorSettings.blank);
+	setBlank(nppData._scintillaSecondHandle, Settings.ColorSettings.blank);
 
-    defineColor(added, Settings.added);
-	defineColor(changed, Settings.changed);
-	defineColor(moved, Settings.moved);
-	defineColor(removed, Settings.deleted);
+    defineColor(added, Settings.ColorSettings.added);
+	defineColor(changed, Settings.ColorSettings.changed);
+	defineColor(moved, Settings.ColorSettings.moved);
+	defineColor(removed, Settings.ColorSettings.deleted);
 
-	//defineSymbol(addedSymbol, SC_MARK_PLUS);  
-    DefineXpmSymbol(addedSymbol, NULL);
-	defineSymbol(removedSymbol, SC_MARK_MINUS);
-	defineSymbol(changedSymbol, SC_MARK_ARROWS);
+    if (Settings.OldSymbols == TRUE)
+    {
+	    defineSymbol(addedSymbol, SC_MARK_PLUS);  
+	    defineSymbol(removedSymbol, SC_MARK_MINUS);
+        defineSymbol(changedSymbol, SC_MARK_ARROWS);
+    }
+    else
+    {
+        DefineXpmSymbol(addedSymbol, &icon_add_16_xpm[0]);
+        DefineXpmSymbol(removedSymbol, &icon_sub_16_xpm[0]);
+        DefineXpmSymbol(changedSymbol, &icon_warning_16_xpm[0]);
+    }   
 
-	setTextStyles(Settings);
+    setTextStyles(Settings.ColorSettings);
 }
 
 void markAsBlank(HWND window,int line)

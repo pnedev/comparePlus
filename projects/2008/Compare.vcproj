@@ -293,7 +293,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\kcs_addons.h"
+				RelativePath="..\..\src\icon_add_16.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\icon_sub_16.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\icon_warning_16.h"
 				>
 			</File>
 			<File

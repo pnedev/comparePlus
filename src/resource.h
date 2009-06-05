@@ -24,6 +24,8 @@
 #define IDC_COMBO_HIGHLIGHT_COLOR       1021
 #define IDC_SPIN_BOX                    1035
 #define IDC_SPIN_CTL                    1036
+#define IDC_CHECK_OLD_SYMBOLS           1038
+#define IDC_CHECK_SYMBOLS               1039
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -32,7 +34,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        105
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1038
+#define _APS_NEXT_CONTROL_VALUE         1040
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
