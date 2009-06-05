@@ -388,20 +388,33 @@ void loadSettings(void)
 
 void saveSettings(void)
 {
-    TCHAR buffer[20];
-    buffer[0]='0';
-    buffer[1]='x';
-    ::WritePrivateProfileString(colorsSection, addedColorOption, _itow (Settings.ColorSettings.added, buffer+2, 16)-2, iniFilePath);
-    ::WritePrivateProfileString(colorsSection, removedColorOption, _itow (Settings.ColorSettings.deleted, buffer+2,16)-2, iniFilePath);
-    ::WritePrivateProfileString(colorsSection, changedColorOption, _itow (Settings.ColorSettings.changed, buffer+2,16)-2, iniFilePath);
-    ::WritePrivateProfileString(colorsSection, movedColorOption, _itow (Settings.ColorSettings.moved, buffer+2,16)-2, iniFilePath);
-    ::WritePrivateProfileString(colorsSection, blankColorOption, _itow (Settings.ColorSettings.blank, buffer+2,16)-2, iniFilePath);
-    ::WritePrivateProfileString(colorsSection, highlightColorOption, _itow (Settings.ColorSettings.highlight, buffer+2,16)-2, iniFilePath);
-    ::WritePrivateProfileString(colorsSection, highlightAlphaOption, _itow (Settings.ColorSettings.alpha, buffer, 10)-2, iniFilePath);
+    TCHAR buffer[64];
+    ::WritePrivateProfileString(colorsSection, addedColorOption, _itot (Settings.ColorSettings.added, buffer, 10), iniFilePath);
+    ::WritePrivateProfileString(colorsSection, removedColorOption, _itot (Settings.ColorSettings.deleted, buffer, 10), iniFilePath);
+    ::WritePrivateProfileString(colorsSection, changedColorOption, _itot (Settings.ColorSettings.changed, buffer, 10), iniFilePath);
+    ::WritePrivateProfileString(colorsSection, movedColorOption, _itot (Settings.ColorSettings.moved, buffer, 10), iniFilePath);
+    ::WritePrivateProfileString(colorsSection, blankColorOption, _itot (Settings.ColorSettings.blank, buffer, 10), iniFilePath);
+    ::WritePrivateProfileString(colorsSection, highlightColorOption, _itot (Settings.ColorSettings.highlight, buffer, 10), iniFilePath);
+    ::WritePrivateProfileString(colorsSection, highlightAlphaOption, _itot (Settings.ColorSettings.alpha, buffer, 10), iniFilePath);
     ::WritePrivateProfileString(sectionName, addLinesOption, Settings.AddLine ? TEXT("1") : TEXT("0"), iniFilePath);
     ::WritePrivateProfileString(sectionName, ignoreSpacesOption, Settings.IncludeSpace ? TEXT("1") : TEXT("0"), iniFilePath);
     ::WritePrivateProfileString(sectionName, detectMovesOption, Settings.DetectMove ? TEXT("1") : TEXT("0"), iniFilePath);
     ::WritePrivateProfileString(sectionName, symbolsOption, Settings.OldSymbols ? TEXT("1") : TEXT("0"), iniFilePath);
+    
+    //TCHAR buffer[20];
+    //buffer[0]='0';
+    //buffer[1]='x';
+    //::WritePrivateProfileString(colorsSection, addedColorOption, _itow (Settings.ColorSettings.added, buffer+2, 16)-2, iniFilePath);
+    //::WritePrivateProfileString(colorsSection, removedColorOption, _itow (Settings.ColorSettings.deleted, buffer+2,16)-2, iniFilePath);
+    //::WritePrivateProfileString(colorsSection, changedColorOption, _itow (Settings.ColorSettings.changed, buffer+2,16)-2, iniFilePath);
+    //::WritePrivateProfileString(colorsSection, movedColorOption, _itow (Settings.ColorSettings.moved, buffer+2,16)-2, iniFilePath);
+    //::WritePrivateProfileString(colorsSection, blankColorOption, _itow (Settings.ColorSettings.blank, buffer+2,16)-2, iniFilePath);
+    //::WritePrivateProfileString(colorsSection, highlightColorOption, _itow (Settings.ColorSettings.highlight, buffer+2,16)-2, iniFilePath);
+    //::WritePrivateProfileString(colorsSection, highlightAlphaOption, _itow (Settings.ColorSettings.alpha, buffer, 10)-2, iniFilePath);
+    //::WritePrivateProfileString(sectionName, addLinesOption, Settings.AddLine ? TEXT("1") : TEXT("0"), iniFilePath);
+    //::WritePrivateProfileString(sectionName, ignoreSpacesOption, Settings.IncludeSpace ? TEXT("1") : TEXT("0"), iniFilePath);
+    //::WritePrivateProfileString(sectionName, detectMovesOption, Settings.DetectMove ? TEXT("1") : TEXT("0"), iniFilePath);
+    //::WritePrivateProfileString(sectionName, symbolsOption, Settings.OldSymbols ? TEXT("1") : TEXT("0"), iniFilePath);
 }
 
 void openOptionDlg(void)
