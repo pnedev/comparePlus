@@ -66,7 +66,7 @@ hash_str(const void *str, void *context)
 		s = (const unsigned char *)context + (size_t)str;
 	}
 
-	while ((c = *s++)) {
+	while ((c = *s++) != 0) {
 		h = ((h << 5) + h) + c;
 	}
 
