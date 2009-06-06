@@ -44,7 +44,7 @@
 				Optimization="0"
 				EnableIntrinsicFunctions="false"
 				FavorSizeOrSpeed="0"
-				AdditionalIncludeDirectories="../../src;../../src/MBA;../../src/AboutDlg;../../src/OptionDlg/;../../src/Common"
+				AdditionalIncludeDirectories="../../src;../../src/MBA;../../src/AboutDlg;../../src/NavDlg;../../src/OptionDlg;../../src/Common"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
@@ -208,6 +208,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\NavDlg\NavDialog.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\NPPHelpers.cpp"
 				>
 			</File>
@@ -302,6 +306,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\icon_warning_16.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\NavDlg\NavDialog.h"
 				>
 			</File>
 			<File

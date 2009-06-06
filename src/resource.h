@@ -2,12 +2,12 @@
 // Microsoft Visual C++ generated include file.
 // Used by Compare.rc
 //
-#define IDCANCEL2                       3
 #define IDDEFAULT                       3
 #define IDD_ABOUT_DIALOG                101
 #define IDD_COLOR_POPUP                 102
 #define IDD_OPTION_DIALOG               103
 #define IDB_COMPARE                     104
+#define IDD_NAV_DIALOG                  104
 #define IDC_ABOUT_CLOSE_BUTTON          1001
 #define IDC_COLOR_LIST                  1002
 #define IDC_NPP_PLUGINS_URL             1009
@@ -24,7 +24,6 @@
 #define IDC_COMBO_HIGHLIGHT_COLOR       1021
 #define IDC_SPIN_BOX                    1035
 #define IDC_SPIN_CTL                    1036
-#define IDC_CHECK_OLD_SYMBOLS           1038
 #define IDC_CHECK_SYMBOLS               1039
 #define IDC_STATIC                      -1
 

@@ -41,6 +41,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "CompareResource.h"
 #include "AboutDialog.h"
 #include "OptionDialog.h"
+#include "NavDialog.h"
 #include <window.h>
 #include <Commdlg.h>
 
@@ -68,6 +69,7 @@ enum MENU_COMMANDS
 	CMD_ALIGN_MATCHES,
 	CMD_IGNORE_SPACING,
 	CMD_DETECT_MOVES,
+    CMD_USE_NAV_BAR,
     CMD_SEPARATOR_3,
 	CMD_OPTION,
 	CMD_ABOUT,
@@ -157,6 +159,7 @@ void addEmptyLines(HWND hSci, int offset, int length);
 bool startCompare();
 void saveSettings(void);
 void loadSettings(void);
+void ViewNavigationBar(void);
 
 //BOOL CALLBACK AboutDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 

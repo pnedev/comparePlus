@@ -77,6 +77,12 @@ BEGIN
     LISTBOX         IDC_COLOR_LIST,7,7,131,86,LBS_OWNERDRAWFIXED | LBS_NOINTEGRALHEIGHT | LBS_MULTICOLUMN | NOT WS_BORDER | WS_TABSTOP
 END
 
+IDD_NAV_DIALOG DIALOGEX 0, 0, 185, 93
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
+FONT 8, "MS Shell Dlg", 400, 0, 0x0
+BEGIN
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -101,6 +107,14 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 115
     END
+
+    IDD_NAV_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 178
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 84
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -116,15 +130,6 @@ END
 LANGUAGE LANG_FRENCH, SUBLANG_FRENCH
 #pragma code_page(1252)
 #endif //_WIN32
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Icon
-//
-
-// Icon with lowest ID value placed first to ensure application icon
-// remains consistent on all systems.
-IDB_COMPARE             ICON                    "..\\res\\icon1.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -177,6 +182,15 @@ BEGIN
 END
 #endif    // APSTUDIO_INVOKED
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDB_COMPARE             ICON                    "..\\res\\icon1.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //

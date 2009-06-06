@@ -76,6 +76,7 @@ HANDLE g_hModule;
 sUserSettings Settings;
 AboutDialog   AboutDlg;
 OptionDialog  OptionDlg;
+NavDialog     NavDlg;
 
 void EmptyFunc(void) { };
 
@@ -180,7 +181,7 @@ void compareBase()
     }
 }
 
-BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID lpReserved)
+BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*/)
 {
     g_hModule = hModule;
 
@@ -195,6 +196,11 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID lpReserved)
             funcItem[CMD_COMPARE]._pShKey->_isCtrl = false;
             funcItem[CMD_COMPARE]._pShKey->_isShift = false;
             funcItem[CMD_COMPARE]._pShKey->_key = 'D';
+
+            funcItem[CMD_USE_NAV_BAR]._pFunc = ViewNavigationBar;
+            lstrcpy(funcItem[CMD_USE_NAV_BAR]._itemName, TEXT("Use navigation bar"));
+            funcItem[CMD_USE_NAV_BAR]._pShKey = NULL;
+            funcItem[CMD_USE_NAV_BAR]._init2Check = true;
 
             funcItem[CMD_CLEAR_RESULTS]._pFunc = reset;
             lstrcpy(funcItem[CMD_CLEAR_RESULTS]._itemName, TEXT("Clear Results"));
@@ -307,6 +313,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID lpReserved)
         saveSettings();
         OptionDlg.destroy();
         AboutDlg.destroy();
+        NavDlg.destroy();
 
         // Don't forget to deallocate your shortcut here
         delete funcItem[0]._pShKey;
@@ -331,6 +338,7 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 
     AboutDlg.init((HINSTANCE)g_hModule, nppData);
     OptionDlg.init((HINSTANCE)g_hModule, nppData);
+    NavDlg.init((HINSTANCE)g_hModule, nppData);
 }
 
 extern "C" __declspec(dllexport) const TCHAR * getName()
@@ -389,32 +397,32 @@ void loadSettings(void)
 void saveSettings(void)
 {
     TCHAR buffer[64];
-    ::WritePrivateProfileString(colorsSection, addedColorOption, _itot (Settings.ColorSettings.added, buffer, 10), iniFilePath);
-    ::WritePrivateProfileString(colorsSection, removedColorOption, _itot (Settings.ColorSettings.deleted, buffer, 10), iniFilePath);
-    ::WritePrivateProfileString(colorsSection, changedColorOption, _itot (Settings.ColorSettings.changed, buffer, 10), iniFilePath);
-    ::WritePrivateProfileString(colorsSection, movedColorOption, _itot (Settings.ColorSettings.moved, buffer, 10), iniFilePath);
-    ::WritePrivateProfileString(colorsSection, blankColorOption, _itot (Settings.ColorSettings.blank, buffer, 10), iniFilePath);
-    ::WritePrivateProfileString(colorsSection, highlightColorOption, _itot (Settings.ColorSettings.highlight, buffer, 10), iniFilePath);
-    ::WritePrivateProfileString(colorsSection, highlightAlphaOption, _itot (Settings.ColorSettings.alpha, buffer, 10), iniFilePath);
+
+    _itot_s(Settings.ColorSettings.added, buffer, 64, 10);
+    ::WritePrivateProfileString(colorsSection, addedColorOption, buffer, iniFilePath);
+
+    _itot_s(Settings.ColorSettings.deleted, buffer, 64, 10);
+    ::WritePrivateProfileString(colorsSection, removedColorOption, buffer, iniFilePath);
+
+    _itot_s(Settings.ColorSettings.changed, buffer, 64, 10);
+    ::WritePrivateProfileString(colorsSection, changedColorOption, buffer, iniFilePath);
+
+    _itot_s(Settings.ColorSettings.moved, buffer, 64, 10);
+    ::WritePrivateProfileString(colorsSection, movedColorOption, buffer, iniFilePath);
+
+    _itot_s(Settings.ColorSettings.blank, buffer, 64, 10);
+    ::WritePrivateProfileString(colorsSection, blankColorOption, buffer, iniFilePath);
+
+    _itot_s(Settings.ColorSettings.highlight, buffer, 64, 10);
+    ::WritePrivateProfileString(colorsSection, highlightColorOption, buffer, iniFilePath);
+
+    _itot_s(Settings.ColorSettings.alpha, buffer, 64, 10);
+    ::WritePrivateProfileString(colorsSection, highlightAlphaOption, buffer, iniFilePath);
+
     ::WritePrivateProfileString(sectionName, addLinesOption, Settings.AddLine ? TEXT("1") : TEXT("0"), iniFilePath);
     ::WritePrivateProfileString(sectionName, ignoreSpacesOption, Settings.IncludeSpace ? TEXT("1") : TEXT("0"), iniFilePath);
     ::WritePrivateProfileString(sectionName, detectMovesOption, Settings.DetectMove ? TEXT("1") : TEXT("0"), iniFilePath);
     ::WritePrivateProfileString(sectionName, symbolsOption, Settings.OldSymbols ? TEXT("1") : TEXT("0"), iniFilePath);
-    
-    //TCHAR buffer[20];
-    //buffer[0]='0';
-    //buffer[1]='x';
-    //::WritePrivateProfileString(colorsSection, addedColorOption, _itow (Settings.ColorSettings.added, buffer+2, 16)-2, iniFilePath);
-    //::WritePrivateProfileString(colorsSection, removedColorOption, _itow (Settings.ColorSettings.deleted, buffer+2,16)-2, iniFilePath);
-    //::WritePrivateProfileString(colorsSection, changedColorOption, _itow (Settings.ColorSettings.changed, buffer+2,16)-2, iniFilePath);
-    //::WritePrivateProfileString(colorsSection, movedColorOption, _itow (Settings.ColorSettings.moved, buffer+2,16)-2, iniFilePath);
-    //::WritePrivateProfileString(colorsSection, blankColorOption, _itow (Settings.ColorSettings.blank, buffer+2,16)-2, iniFilePath);
-    //::WritePrivateProfileString(colorsSection, highlightColorOption, _itow (Settings.ColorSettings.highlight, buffer+2,16)-2, iniFilePath);
-    //::WritePrivateProfileString(colorsSection, highlightAlphaOption, _itow (Settings.ColorSettings.alpha, buffer, 10)-2, iniFilePath);
-    //::WritePrivateProfileString(sectionName, addLinesOption, Settings.AddLine ? TEXT("1") : TEXT("0"), iniFilePath);
-    //::WritePrivateProfileString(sectionName, ignoreSpacesOption, Settings.IncludeSpace ? TEXT("1") : TEXT("0"), iniFilePath);
-    //::WritePrivateProfileString(sectionName, detectMovesOption, Settings.DetectMove ? TEXT("1") : TEXT("0"), iniFilePath);
-    //::WritePrivateProfileString(sectionName, symbolsOption, Settings.OldSymbols ? TEXT("1") : TEXT("0"), iniFilePath);
 }
 
 void openOptionDlg(void)
@@ -434,6 +442,13 @@ void openAboutDlg(void)
     AboutDlg.doDialog();
 }
 
+void ViewNavigationBar(void)
+{
+	HMENU	hMenu = ::GetMenu(nppData._nppHandle);
+    UINT state = ::GetMenuState(hMenu, funcItem[CMD_USE_NAV_BAR]._cmdID, MF_BYCOMMAND);
+	NavDlg.doDialog(true);
+}
+
 HWND getCurrentHScintilla(int which)
 {
     return (which == 0) ? nppData._scintillaMainHandle : nppData._scintillaSecondHandle;
@@ -445,7 +460,7 @@ HWND getCurrentHScintilla(int which)
 // Please let me know if you need to access to some messages :
 // http://sourceforge.net/forum/forum.php?forum_id=482781
 //
-extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM wParam, LPARAM lParam)
+extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM /*wParam*/, LPARAM /*lParam*/)
 {
     if (Message == WM_CREATE)
     {
@@ -611,7 +626,6 @@ void reset()
     }
 }
 
-//
 //char *getLineFromIndex(char **arr,int index,void *context){
 //	return arr[index];
 //}
@@ -619,17 +633,17 @@ void reset()
 //	 return strcmp(line1,line2);
 //}
 
-
-unsigned int getLineFromIndex(unsigned int *arr,int index,void *context){
+unsigned int getLineFromIndex(unsigned int *arr, int index, void * /*context*/)
+{
     return arr[index];
 }
-int compareLines(unsigned int  line1,unsigned int line2,void *context){
 
-    if(line1==line2) return 0;
+int compareLines(unsigned int line1, unsigned int line2, void * /*context*/)
+{
+
+    if(line1 == line2) return 0;
     return -1;
 }
-
-
 
 int checkWords(diff_edit* e,chunk_info* chunk,chunk_info* otherChunk){
     Word *word=(Word*)varray_get(chunk->words,e->off);
@@ -813,17 +827,18 @@ int getWords(diff_edit* e, char** doc,chunk_info *chunk  ){
     return wordIndex;
 }
 
-Word *getWord(varray *words,int index,void *context){
-    Word *word=(Word*)varray_get(words,index);
+Word *getWord(varray *words, int index, void * /*context*/)
+{
+    Word *word = (Word*)varray_get(words, index);
     return word;
 }
 
-int compareWord(Word *word1,Word *word2,void *context){
+int compareWord(Word *word1, Word *word2, void * /*context*/)
+{
     //return word1->text.compare(word2->text);
-    if(word1->hash==word2->hash) return 0;
+    if(word1->hash == word2->hash) return 0;
     return 1;
 }
-
 
 bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2){
     //return false;
