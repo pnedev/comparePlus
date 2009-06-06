@@ -182,7 +182,7 @@ void compareBase()
 }
 
 BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*/)
-{
+ {
     g_hModule = hModule;
 
     switch (reasonForCall)

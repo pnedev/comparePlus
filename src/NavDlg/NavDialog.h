@@ -30,9 +30,8 @@ public:
 	~NavDialog(void);
 
     void init(HINSTANCE hInst, NppData nppData);
-
 	void destroy(void) {};
-
+    void DrawRectangle(HDC hdc);
    	void doDialog(bool willBeShown = true);
 
 protected:
