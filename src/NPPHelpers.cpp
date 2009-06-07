@@ -7,15 +7,15 @@
 extern NppData nppData;
 extern UINT	EOLtype;
 
-int MarkerStart   = 0;
-int removed       = MarkerStart + 7; // 24;
-int removedSymbol = MarkerStart + 6; // 23;
-int added         = MarkerStart + 5; // 22;
-int addedSymbol   = MarkerStart + 4; // 21;
-int changed       = MarkerStart + 3; // 20;
-int changedSymbol = MarkerStart + 2; // 19;
-int moved         = MarkerStart + 1; // 18;
-int blank         = MarkerStart;     // 17;
+//int MarkerStart   = 0;
+//int removed       = MarkerStart + 7; // 24;
+//int removedSymbol = MarkerStart + 6; // 23;
+//int added         = MarkerStart + 5; // 22;
+//int addedSymbol   = MarkerStart + 4; // 21;
+//int changed       = MarkerStart + 3; // 20;
+//int changedSymbol = MarkerStart + 2; // 19;
+//int moved         = MarkerStart + 1; // 18;
+//int blank         = MarkerStart;     // 17;
 
 HWND getCurrentWindow()
 {
@@ -87,9 +87,9 @@ void ready()
 
 void setBlank(HWND window, int color)
 {
-	SendMessage(window, SCI_MARKERDEFINE, blank, (LPARAM)SC_MARK_BACKGROUND);	
-	SendMessage(window, SCI_MARKERSETBACK, blank, (LPARAM)color);
-	SendMessage(window, SCI_MARKERSETFORE, blank, (LPARAM)color);
+	SendMessage(window, SCI_MARKERDEFINE, MARKER_BLANK_LINE, (LPARAM)SC_MARK_BACKGROUND);	
+	SendMessage(window, SCI_MARKERSETBACK, MARKER_BLANK_LINE, (LPARAM)color);
+	SendMessage(window, SCI_MARKERSETFORE, MARKER_BLANK_LINE, (LPARAM)color);
 }
 
 void DefineXpmSymbol(int type, char ** xpm)
@@ -100,7 +100,9 @@ void DefineXpmSymbol(int type, char ** xpm)
 
 void setStyles(sUserSettings Settings)
 {
-    int MarginMask = (1 << changedSymbol) | (1 << addedSymbol) | (1 << removedSymbol);
+    int MarginMask = (1 << MARKER_CHANGED_SYMBOL) |
+                     (1 << MARKER_ADDED_SYMBOL) | 
+                     (1 << MARKER_REMOVED_SYMBOL);
 
     ::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINMASKN, (WPARAM)4, (LPARAM)MarginMask);
     ::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINMASKN, (WPARAM)4, (LPARAM)MarginMask);
@@ -111,22 +113,22 @@ void setStyles(sUserSettings Settings)
     setBlank(nppData._scintillaMainHandle, Settings.ColorSettings.blank);
 	setBlank(nppData._scintillaSecondHandle, Settings.ColorSettings.blank);
 
-    defineColor(added, Settings.ColorSettings.added);
-	defineColor(changed, Settings.ColorSettings.changed);
-	defineColor(moved, Settings.ColorSettings.moved);
-	defineColor(removed, Settings.ColorSettings.deleted);
+    defineColor(MARKER_ADDED_LINE,   Settings.ColorSettings.added);
+    defineColor(MARKER_CHANGED_LINE, Settings.ColorSettings.changed);
+    defineColor(MARKER_MOVED_LINE,   Settings.ColorSettings.moved);
+    defineColor(MARKER_REMOVED_LINE, Settings.ColorSettings.deleted);
 
     if (Settings.OldSymbols == TRUE)
     {
-	    defineSymbol(addedSymbol, SC_MARK_PLUS);  
-	    defineSymbol(removedSymbol, SC_MARK_MINUS);
-        defineSymbol(changedSymbol, SC_MARK_ARROWS);
+	    defineSymbol(MARKER_ADDED_SYMBOL,   SC_MARK_PLUS);  
+	    defineSymbol(MARKER_REMOVED_SYMBOL, SC_MARK_MINUS);
+        defineSymbol(MARKER_CHANGED_SYMBOL, SC_MARK_ARROWS);
     }
     else
     {
-        DefineXpmSymbol(addedSymbol, &icon_add_16_xpm[0]);
-        DefineXpmSymbol(removedSymbol, &icon_sub_16_xpm[0]);
-        DefineXpmSymbol(changedSymbol, &icon_warning_16_xpm[0]);
+        DefineXpmSymbol(MARKER_ADDED_SYMBOL,   &icon_add_16_xpm[0]);
+        DefineXpmSymbol(MARKER_REMOVED_SYMBOL, &icon_sub_16_xpm[0]);
+        DefineXpmSymbol(MARKER_CHANGED_SYMBOL, &icon_warning_16_xpm[0]);
     }   
 
     setTextStyles(Settings.ColorSettings);
@@ -134,31 +136,28 @@ void setStyles(sUserSettings Settings)
 
 void markAsBlank(HWND window,int line)
 {
-	::SendMessageA(window, SCI_MARKERADD, line, blank);
+	::SendMessageA(window, SCI_MARKERADD, line, MARKER_BLANK_LINE);
 }
 
 void markAsAdded(HWND window,int line)
 {
-	//::SendMessageA(window, SCI_MARKERADDSET, line, (LPARAM)(pow(2.0,added)+pow(2.0,addedSymbol)));
-    ::SendMessageA(window, SCI_MARKERADD, line, (LPARAM)addedSymbol);
-    ::SendMessageA(window, SCI_MARKERADD, line, (LPARAM)added);
+    ::SendMessageA(window, SCI_MARKERADD, line, (LPARAM)MARKER_ADDED_SYMBOL);
+    ::SendMessageA(window, SCI_MARKERADD, line, (LPARAM)MARKER_ADDED_LINE);
 }
 void markAsChanged(HWND window,int line)
 {
-	//::SendMessageA(window, SCI_MARKERADDSET, line, (LPARAM)(pow(2.0,changed)+pow(2.0,changedSymbol)));
-    ::SendMessageA(window, SCI_MARKERADD, line, (LPARAM)changedSymbol);
-    ::SendMessageA(window, SCI_MARKERADD, line, (LPARAM)changed);
+    ::SendMessageA(window, SCI_MARKERADD, line, (LPARAM)MARKER_CHANGED_SYMBOL);
+    ::SendMessageA(window, SCI_MARKERADD, line, (LPARAM)MARKER_CHANGED_LINE);
 }
 void markAsRemoved(HWND window,int line)
 {
-	//::SendMessageA(window, SCI_MARKERADDSET, line, (LPARAM)(pow(2.0,removed)+pow(2.0,removedSymbol)));
-    ::SendMessageA(window, SCI_MARKERADD, line, (LPARAM)removedSymbol);
-    ::SendMessageA(window, SCI_MARKERADD, line, (LPARAM)removed);
+    ::SendMessageA(window, SCI_MARKERADD, line, (LPARAM)MARKER_REMOVED_SYMBOL);
+    ::SendMessageA(window, SCI_MARKERADD, line, (LPARAM)MARKER_REMOVED_LINE);
 }
 
 void markAsMoved(HWND window,int line)
 {
-	::SendMessageA(window, SCI_MARKERADD, line, (LPARAM)moved);
+	::SendMessageA(window, SCI_MARKERADD, line, (LPARAM)MARKER_MOVED_LINE);
 }
 
 void markTextAsChanged(HWND window,int start,int length)
@@ -214,7 +213,7 @@ int deleteLine(HWND window,int line)
 	int lines = 0;
 	int marker = SendMessageA(window, SCI_MARKERGET, line, 0);
 	//int blankMask=pow(2.0,blank);
-    int blankMask = 1 << blank;
+    int blankMask = 1 << MARKER_BLANK_LINE;
 
 	while((marker & blankMask) != 0)
     {
@@ -240,7 +239,7 @@ int deleteLine(HWND window,int line)
 	//select the end of the lines, and unmark them so they aren't called for delete again
 	::SendMessageA(window, SCI_SETTARGETEND, posAdd+length, 0);
 	for(int i=start;i<line;i++){
-		::SendMessageA(window, SCI_MARKERDELETE, i, blank);
+		::SendMessageA(window, SCI_MARKERDELETE, i, MARKER_BLANK_LINE);
 	}
 
 	//if we're at the end of the document, we can't delete that line, because it doesn't have any EOL characters to delete
@@ -250,11 +249,11 @@ int deleteLine(HWND window,int line)
 		length+=lenEOL[EOLtype];
 	}
 	if(length>0){
-		::SendMessageA(window, SCI_MARKERDELETE, line, blank);	
+		::SendMessageA(window, SCI_MARKERDELETE, line, MARKER_BLANK_LINE);	
 		::SendMessageA(window, SCI_REPLACETARGET, 0, (LPARAM)"");
 		return lines;
 	}else{
-		::SendMessageA(window, SCI_MARKERDELETE, line, blank);	
+		::SendMessageA(window, SCI_MARKERDELETE, line, MARKER_BLANK_LINE);	
 		return 0;
 	}
 
@@ -270,7 +269,7 @@ blankLineList *removeEmptyLines(HWND window,bool saveList)
 	//int curPosEnd = ::SendMessage(window, SCI_GETSELECTIONEND, 0, 0);
 	//double marker=pow(2.0,blank);
 	//int line=SendMessageA(window, SCI_MARKERNEXT, 0, (LPARAM)marker);	
-    int marker = 1 << blank;
+    int marker = 1 << MARKER_BLANK_LINE;
     int line=SendMessageA(window, SCI_MARKERNEXT, 0, marker);	
 	while(line!=-1){
 		int lines=deleteLine(window,line);
@@ -312,14 +311,14 @@ void clearWindow(HWND window,bool clearUndo)
 	
 	clearUndo=(removeEmptyLines(window,false)!=NULL);
 
-    ::SendMessageA(window, SCI_MARKERDELETEALL, changed, (LPARAM)changed);	
-	::SendMessageA(window, SCI_MARKERDELETEALL, added, (LPARAM)added);
-	::SendMessageA(window, SCI_MARKERDELETEALL, removed, (LPARAM)removed);
-	::SendMessageA(window, SCI_MARKERDELETEALL, moved, (LPARAM)moved);
-	::SendMessageA(window, SCI_MARKERDELETEALL, blank, (LPARAM)blank);
-	::SendMessageA(window, SCI_MARKERDELETEALL, changedSymbol, (LPARAM)changedSymbol);		
-	::SendMessageA(window, SCI_MARKERDELETEALL, addedSymbol, (LPARAM)addedSymbol);
-	::SendMessageA(window, SCI_MARKERDELETEALL, removedSymbol, (LPARAM)removedSymbol);	
+    ::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_CHANGED_LINE,   (LPARAM)MARKER_CHANGED_LINE);	
+	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_ADDED_LINE,     (LPARAM)MARKER_ADDED_LINE);
+	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_REMOVED_LINE,   (LPARAM)MARKER_REMOVED_LINE);
+	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_MOVED_LINE,     (LPARAM)MARKER_MOVED_LINE);
+	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_BLANK_LINE,     (LPARAM)MARKER_BLANK_LINE);
+	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_CHANGED_SYMBOL, (LPARAM)MARKER_CHANGED_SYMBOL);		
+	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_ADDED_SYMBOL,   (LPARAM)MARKER_ADDED_SYMBOL);
+	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_REMOVED_SYMBOL, (LPARAM)MARKER_REMOVED_SYMBOL);	
 
 	//very aggressive approach to removing the indicators
 	//clear style, than tell Notepad++ to unfold all lines, which forces it to redo the page style

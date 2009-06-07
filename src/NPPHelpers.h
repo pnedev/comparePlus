@@ -1,5 +1,6 @@
 #ifndef NPPHELPERS_H
 #define NPPHELPERS_H
+
 HWND getCurrentWindow();
 HWND getOtherWindow();
 void markTextAsChanged(HWND window,int start,int length);
@@ -25,4 +26,5 @@ int deleteLine(HWND window,int line);
 char **getAllLines(HWND window,int *length, int **lineNum);
 void addBlankLines(HWND window,blankLineList *list);
 void addEmptyLines(HWND hSci, int offset, int length);
+
 #endif

@@ -32,7 +32,15 @@ public:
     void init(HINSTANCE hInst, NppData nppData);
 	void destroy(void) {};
     void DrawRectangle(HDC hdc);
+    void DisplayResults(HDC hdc);
+    void DrawLine(int width, int line, bool view, int marker);
    	void doDialog(bool willBeShown = true);
+
+    int added;
+    int deleted;
+    int changed;
+    int moved;
+    int blank;
 
 protected:
 
@@ -40,9 +48,14 @@ protected:
 
 private:
 
+   
+    HDC     hdc;
 	NppData	_nppData;
 	tTbData	_data;
-	
+
+    /* Internal use */
+	RECT    rLeft;
+    RECT    rRight;	
 };
 
 #endif // NAV_DLG_H

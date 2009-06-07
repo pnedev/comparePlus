@@ -32,15 +32,15 @@
 #include "Compare.h"
 #include "NPPHelpers.h"
 
-TCHAR		emptyLinesDoc[MAX_PATH];
+TCHAR emptyLinesDoc[MAX_PATH];
 #define MAXCOMPARE 50
 int compareDocs[MAXCOMPARE];
 
-int tempWindow=-1;
-bool		notepadVersionOk=false;
-bool		active=false;
+int tempWindow = -1;
+bool notepadVersionOk = false;
+bool active = false;
 blankLineList *lastEmptyLines=NULL;
-int topLine=0;
+int topLine = 0;
 
 bool panelsOpened = false;
 
@@ -66,7 +66,7 @@ const TCHAR symbolsOption[]        = TEXT("Symbols");
 const TCHAR localConfFile[] = TEXT("doLocalConf.xml");
 
 TCHAR compareFilePath[MAX_PATH];
-TCHAR compareFile[]=TEXT("Compare File");
+TCHAR compareFile[] = TEXT("Compare File");
 NppData nppData;
 
 FuncItem funcItem[NB_MENU_COMMANDS];
@@ -109,10 +109,6 @@ int setCompare(int window)
 
 void alignMatches()
 {
-    //Settings.AddLine = !Settings.AddLine;	
-    //::SendMessage(nppData._nppHandle,NPPM_SETMENUITEMCHECK,funcItem[6]._cmdID,(LPARAM)Settings.AddLine);
-    //funcItem[3]._init2Check=Settings.AddLine;
-
     HMENU hMenu = GetMenu(nppData._nppHandle);
     Settings.AddLine = !Settings.AddLine;
     if (hMenu)
@@ -122,10 +118,6 @@ void alignMatches()
 }
 void includeSpacing()
 {
-    //Settings.IncludeSpace = !Settings.IncludeSpace;	
-    //::SendMessage(nppData._nppHandle,NPPM_SETMENUITEMCHECK,funcItem[7]._cmdID,(LPARAM)!Settings.IncludeSpace);
-    //funcItem[3]._init2Check=Settings.IncludeSpace;
-
     HMENU hMenu = GetMenu(nppData._nppHandle);
     Settings.IncludeSpace = !Settings.IncludeSpace;
     if (hMenu)
@@ -135,10 +127,6 @@ void includeSpacing()
 }
 void detectMoves()
 {
-    //Settings.DetectMove = !Settings.DetectMove;
-    //::SendMessage(nppData._nppHandle,NPPM_SETMENUITEMCHECK,funcItem[8]._cmdID,(LPARAM)Settings.DetectMove);
-    //funcItem[4]._init2Check=Settings.DetectMove;
-
     HMENU hMenu = GetMenu(nppData._nppHandle);
     Settings.DetectMove = !Settings.DetectMove;
     if (hMenu)
@@ -197,11 +185,6 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_COMPARE]._pShKey->_isShift = false;
             funcItem[CMD_COMPARE]._pShKey->_key = 'D';
 
-            funcItem[CMD_USE_NAV_BAR]._pFunc = ViewNavigationBar;
-            lstrcpy(funcItem[CMD_USE_NAV_BAR]._itemName, TEXT("Use navigation bar"));
-            funcItem[CMD_USE_NAV_BAR]._pShKey = NULL;
-            funcItem[CMD_USE_NAV_BAR]._init2Check = true;
-
             funcItem[CMD_CLEAR_RESULTS]._pFunc = reset;
             lstrcpy(funcItem[CMD_CLEAR_RESULTS]._itemName, TEXT("Clear Results"));
             funcItem[CMD_CLEAR_RESULTS]._pShKey = new ShortcutKey;
@@ -245,6 +228,11 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_DETECT_MOVES]._pFunc = detectMoves;
             lstrcpy(funcItem[CMD_DETECT_MOVES]._itemName, TEXT("Detect Moves"));
             funcItem[CMD_DETECT_MOVES]._pShKey = NULL;
+
+            funcItem[CMD_USE_NAV_BAR]._pFunc = ViewNavigationBar;
+            lstrcpy(funcItem[CMD_USE_NAV_BAR]._itemName, TEXT("Navigation bar"));
+            funcItem[CMD_USE_NAV_BAR]._pShKey = NULL;
+            funcItem[CMD_USE_NAV_BAR]._init2Check = true;
 
             funcItem[CMD_SEPARATOR_3]._pFunc = EmptyFunc;
             lstrcpy(funcItem[CMD_SEPARATOR_3]._itemName, TEXT("-----------"));
@@ -433,6 +421,11 @@ void openOptionDlg(void)
         if (active)
         {
             setStyles(Settings);
+            NavDlg.blank   = Settings.ColorSettings.blank;
+            NavDlg.added   = Settings.ColorSettings.added;
+            NavDlg.changed = Settings.ColorSettings.changed;
+            NavDlg.deleted = Settings.ColorSettings.deleted;
+            NavDlg.moved   = Settings.ColorSettings.moved;
         }
     }
 }
@@ -444,9 +437,7 @@ void openAboutDlg(void)
 
 void ViewNavigationBar(void)
 {
-	HMENU	hMenu = ::GetMenu(nppData._nppHandle);
-    UINT state = ::GetMenuState(hMenu, funcItem[CMD_USE_NAV_BAR]._cmdID, MF_BYCOMMAND);
-	NavDlg.doDialog(true);
+    //NavDlg.doDialog(Settings.NavBar);
 }
 
 HWND getCurrentHScintilla(int which)
@@ -514,18 +505,17 @@ HWND openTempFile(void){
     ::SendMessageA(window,SCI_CLEARALL,0,0);
 
     return window;
-
-
 }
 
-void openFile(TCHAR *file){
-    if(file==NULL || PathFileExists(file) == FALSE){
-        ::MessageBox(nppData._nppHandle,TEXT("No file to open"),TEXT("error"),MB_OK);
+void openFile(TCHAR *file)
+{
+    if(file == NULL || PathFileExists(file) == FALSE)
+    {
+        ::MessageBox(nppData._nppHandle, TEXT("No file to open"), TEXT("error"), MB_OK);
         return;
     }
 
-
-    HWND window =openTempFile();
+    HWND window = openTempFile();
 
     //ifstream::pos_type size;
     ifstream myfile(file,ios::in|ios::ate| ios::binary);
@@ -538,25 +528,25 @@ void openFile(TCHAR *file){
         myfile.read (memblock, size);
         myfile.close();	
 
-        memblock[size]=0;
-        ::SendMessageA(window,SCI_GRABFOCUS,0,0);
-        ::SendMessageA(window,SCI_APPENDTEXT,size,(LPARAM)memblock);	
+        memblock[size] = 0;
+        ::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
+        ::SendMessageA(window, SCI_APPENDTEXT, size, (LPARAM)memblock);	
         delete[] memblock;
 
         if(startCompare())
         {
-            ::SendMessageA(window,SCI_GRABFOCUS,0,0);
-            ::SendMessageA(window,SCI_SETSAVEPOINT,1,0);
-            ::SendMessageA(window,SCI_EMPTYUNDOBUFFER,0,0);
-            ::SendMessageA(window,SCI_SETREADONLY,1,0);
+            ::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
+            ::SendMessageA(window, SCI_SETSAVEPOINT, 1, 0);
+            ::SendMessageA(window, SCI_EMPTYUNDOBUFFER, 0, 0);
+            ::SendMessageA(window, SCI_SETREADONLY, 1, 0);
             reset();
         }
         else
         {
-            ::SendMessageA(window,SCI_GRABFOCUS,0,0);
-            ::SendMessageA(window,SCI_SETSAVEPOINT,1,0);
-            ::SendMessageA(window,SCI_EMPTYUNDOBUFFER,0,0);
-            ::SendMessageA(window,SCI_SETREADONLY,1,0);
+            ::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
+            ::SendMessageA(window, SCI_SETSAVEPOINT, 1, 0);
+            ::SendMessageA(window, SCI_EMPTYUNDOBUFFER, 0, 0);
+            ::SendMessageA(window, SCI_SETREADONLY, 1, 0);            
         }
     }
     //return;
@@ -566,48 +556,48 @@ void reset()
 {
     if (active == true)
     {
-        int doc1=SendMessageA(nppData._scintillaMainHandle, SCI_GETDOCPOINTER, 0,0);
-        int doc2=SendMessageA(nppData._scintillaSecondHandle, SCI_GETDOCPOINTER, 0,0);
-        /*if(doc1a!=doc1 || doc2a!=doc2){
-        ::MessageBox(nppData._nppHandle, "Please choose the two compare windows before resetting", "About :", MB_OK);
-        return;
-        }*/
-        int doc1Index=getCompare(doc1);
-        int doc2Index=getCompare(doc2);
+        int doc1 = SendMessageA(nppData._scintillaMainHandle, SCI_GETDOCPOINTER, 0, 0);
+        int doc2 = SendMessageA(nppData._scintillaSecondHandle, SCI_GETDOCPOINTER, 0, 0);
 
+        int doc1Index = getCompare(doc1);
+        int doc2Index = getCompare(doc2);
+        int win = 3;
 
-        int win=3;
-        ::SendMessage(nppData._nppHandle,NPPM_GETCURRENTSCINTILLA,0,(LPARAM)&win);
-        HWND window=::getCurrentHScintilla(win);
+        ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&win);
+        HWND window = ::getCurrentHScintilla(win);
 
-        if(doc1Index!=-1){
-            clearWindow(nppData._scintillaMainHandle,true);
+        if(doc1Index != -1)
+        {
+            clearWindow(nppData._scintillaMainHandle, true);
         }
-        if(doc2Index!=-1){
-            clearWindow(nppData._scintillaSecondHandle,true);
+        if(doc2Index != -1)
+        {
+            clearWindow(nppData._scintillaSecondHandle, true);
         }
-
 
         ::SendMessageA(window, SCI_GRABFOCUS, 0, (LPARAM)1);
 
         ::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLV, 0), 0);
-        ::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);		
-        if(panelsOpened){
+        ::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);	
+
+        if(panelsOpened)
+        {
             ::SendMessageA(nppData._scintillaSecondHandle, SCI_GRABFOCUS, 0, (LPARAM)0);
-            SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_GOTO_ANOTHER_VIEW,0);
+            SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_GOTO_ANOTHER_VIEW, 0);
         }
 
-        if(tempWindow!=-1){
-
-            ::SendMessage(nppData._nppHandle,NPPM_SWITCHTOFILE,0,(LPARAM)compareFilePath);
-            window=getCurrentWindow();	
-            int tempPointer=SendMessageA(window, SCI_GETDOCPOINTER, 0,0);
-            if(tempPointer==tempWindow){
+        if(tempWindow!=-1)
+        {
+            ::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)compareFilePath);
+            window = getCurrentWindow();	
+            int tempPointer = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
+            
+            if(tempPointer == tempWindow)
+            {
                 SendMessageA(window,SCI_EMPTYUNDOBUFFER,0,0);
-                SendMessage(nppData._nppHandle,WM_COMMAND,IDM_FILE_CLOSE,0);
+                SendMessage(nppData._nppHandle, WM_COMMAND, IDM_FILE_CLOSE, 0);
             }
-            tempWindow=-1;
-
+            tempWindow = -1;
         }
 
         // Remove margin mask
@@ -621,17 +611,12 @@ void reset()
         removeCompare(doc1);
         removeCompare(doc2);
 
-        panelsOpened=false;
-        active=false;
+        panelsOpened = false;
+        active = false;
+
+        NavDlg.doDialog(false);
     }
 }
-
-//char *getLineFromIndex(char **arr,int index,void *context){
-//	return arr[index];
-//}
-//bool compareLines(char* line1,char* line2,void *context){
-//	 return strcmp(line1,line2);
-//}
 
 unsigned int getLineFromIndex(unsigned int *arr, int index, void * /*context*/)
 {
@@ -645,7 +630,8 @@ int compareLines(unsigned int line1, unsigned int line2, void * /*context*/)
     return -1;
 }
 
-int checkWords(diff_edit* e,chunk_info* chunk,chunk_info* otherChunk){
+int checkWords(diff_edit* e,chunk_info* chunk,chunk_info* otherChunk)
+{
     Word *word=(Word*)varray_get(chunk->words,e->off);
     int start=word->line;
     word=(Word*)varray_get(chunk->words,e->off+e->len-1);
@@ -1636,7 +1622,7 @@ bool startCompare()
         ::MessageBox(nppData._nppHandle, TEXT("Notepad v4.5 or higher is required to line up matches. This feature will be turned off"), TEXT("Incorrect Version"), MB_OK);
         //return;
         Settings.AddLine = false;
-        ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[6]._cmdID, (LPARAM)Settings.AddLine);
+        ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID, (LPARAM)Settings.AddLine);
     }
 
     SendMessageA(nppData._scintillaMainHandle, SCI_SETWRAPMODE, SC_WRAP_NONE, 0);
@@ -1676,6 +1662,22 @@ bool startCompare()
     ::SendMessageA(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
     ::SendMessageA(window, SCI_GRABFOCUS, 0, (LPARAM)1);
 
+    // Save current N++ focus
+    HWND hwnd = GetFocus();
+
+    // Configure NavBar
+    NavDlg.blank   = Settings.ColorSettings.blank;
+    NavDlg.added   = Settings.ColorSettings.added;
+    NavDlg.changed = Settings.ColorSettings.changed;
+    NavDlg.deleted = Settings.ColorSettings.deleted;
+    NavDlg.moved   = Settings.ColorSettings.moved;
+
+    // Display Navbar
+    NavDlg.doDialog(true);
+
+    // Restore N++ focus
+    SetFocus(hwnd);
+
     return result;
 }
 
@@ -1685,13 +1687,14 @@ void compare()
     ready();
 }
 
-void cleanEmptyLines(blankLineList *line){
-    if(line->next!=NULL){
+void cleanEmptyLines(blankLineList *line)
+{
+    if(line->next != NULL)
+    {
         cleanEmptyLines(line->next);
         delete line->next;
     }
 }
-
 
 extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 {
@@ -1709,9 +1712,8 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
     case NPPN_FILEBEFOREOPEN:
     case NPPN_FILEOPENED:
 
-        notepadVersionOk=true;
+        notepadVersionOk = true;
         break;
-
 
     case NPPN_FILEBEFORESAVE:
         {
@@ -1723,15 +1725,13 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
             HWND window=getCurrentWindow();						
             int win=SendMessageA(window, SCI_GETDOCPOINTER, 0,0);
 
-            if(getCompare(win)!=-1){				
-
-
+            if(getCompare(win)!=-1)
+            {				
                 topLine=SendMessageA(window,SCI_GETFIRSTVISIBLELINE,0,0);
                 lastEmptyLines=removeEmptyLines(window,true);
-
-
-
-            }else{
+            }
+            else
+            {
                 lastEmptyLines=NULL;
             }
 

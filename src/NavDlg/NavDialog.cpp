@@ -59,14 +59,14 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 	{
 		case WM_INITDIALOG:
 		{
-			break;
+    		break;
 		}
 		case WM_SIZE:
 		case WM_MOVE:
 		{
-            // Refresh display because if size change, drawing change too.
             InvalidateRect(hWnd, NULL, TRUE);
-			break;
+            UpdateWindow(hWnd);
+			return 0;
 		}
 		case WM_COMMAND:
 		{
@@ -75,10 +75,11 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 	    case WM_PAINT:
 		{
 			PAINTSTRUCT ps;
-			HDC hdc = BeginPaint(_hSelf, &ps);
-			//PaintWindow(hdc);	
-            DrawRectangle(hdc);         
-			EndPaint(_hSelf, &ps);			
+            hdc = BeginPaint(hWnd, &ps);
+            DrawRectangle(hdc);
+            DisplayResults(hdc);
+			EndPaint(hWnd, &ps);
+            break;
 		}
 		case WM_NOTIFY:
 		{
@@ -87,6 +88,7 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 		}
 		case WM_DESTROY:
 		{
+            PostQuitMessage(0); 
 			break;
 		}
 		default:
@@ -96,14 +98,9 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 	return FALSE;
 }
 
-//RECT rct = {0};
-//getClientRect(rct);
-
 void NavDialog::DrawRectangle(HDC hdc)
 {
     //HBRUSH hBrush = CreateSolidBrush(RGB(255,255,255));
-	RECT rLeft;
-    RECT rRight;
     RECT rc = {0};
     
     getClientRect(rc);
@@ -128,4 +125,100 @@ void NavDialog::DrawRectangle(HDC hdc)
     //FillRect(hdc, &r, hBrush);   
     Rectangle(hdc, rLeft.left, rLeft.top, rLeft.right, rLeft.bottom);
     Rectangle(hdc, rRight.left, rRight.top, rRight.right, rRight.bottom);
+}
+
+void NavDialog::DisplayResults(HDC hdc)
+{
+    int marker = 0;
+    int i = 0;
+    
+    int NavBarLength = rLeft.bottom - rLeft.top;
+
+    /*
+    SCI_GETLINECOUNT
+    This returns the number of lines in the document. 
+    An empty document contains 1 line. 
+    A document holding only an end of line sequence has 2 lines.
+    */
+    int MaxDocLength;
+    int doc1 = SendMessage(_nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0);
+    int doc2 = SendMessage(_nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0);
+
+    (doc1 > doc2) ? (MaxDocLength = doc1 - 1) : (MaxDocLength = doc2 - 1);
+
+    int LineWidth = NavBarLength / MaxDocLength;
+
+    /* Draw left doc results */
+    for (i = 0; i < doc1; i++)
+    {
+        marker = SendMessage(_nppData._scintillaMainHandle, SCI_MARKERGET, (WPARAM)i, 0);
+        if (marker != 0)
+        {
+            DrawLine(LineWidth, i, 0, marker);
+        }
+    }
+
+    /* Draw right doc results */
+    for (i = 0; i < doc2; i++)
+    {
+        int marker = SendMessage(_nppData._scintillaSecondHandle, SCI_MARKERGET, (WPARAM)i, 0);
+        if (marker != 0)
+        {
+            DrawLine(LineWidth, i, 1, marker);
+        }
+    }
+}
+
+void NavDialog::DrawLine(int width, int line, bool view, int marker)
+{
+    HBRUSH hBrush;
+    RECT r = {0};
+
+    /* Colorize */
+    if (marker & (1 << MARKER_BLANK_LINE))
+    {  
+        hBrush = CreateSolidBrush(blank);
+    }
+    else if (marker & (1 << MARKER_ADDED_LINE))
+    {
+        hBrush = CreateSolidBrush(added);
+    }
+    else if (marker & (1 << MARKER_CHANGED_LINE))
+    {
+        hBrush = CreateSolidBrush(changed);
+    }
+    else if (marker & (1 << MARKER_MOVED_LINE))
+    {
+        hBrush = CreateSolidBrush(moved);
+    }
+    else if (marker & (1 << MARKER_REMOVED_LINE))
+    {
+        hBrush = CreateSolidBrush(deleted);
+    }
+    else 
+    {
+        hBrush = CreateSolidBrush(RGB(255,255,255));
+    }
+
+    /* Left view */
+    if (view == 0)
+    {
+        r.top    = rLeft.top + line * width;
+        r.bottom = rLeft.top + (line + 1) * width;
+        r.left   = rLeft.left + 1;
+        r.right  = rLeft.right - 1;
+
+        FillRect(hdc, &r, hBrush);
+    }
+
+    /* Right view */
+    else
+    {
+        r.top    = rRight.top + line * width;
+        r.bottom = rRight.top + (line + 1) * width;
+        r.left   = rRight.left + 1;
+        r.right  = rRight.right - 1;
+
+        FillRect(hdc, &r, hBrush);
+    }
 }
