@@ -35,6 +35,7 @@ public:
     void DisplayResults(HDC hdc);
     void DrawLine(int width, int line, bool view, int marker);
    	void doDialog(bool willBeShown = true);
+    void UpdateBar(bool bUpdate) { Update = bUpdate; };
 
     int added;
     int deleted;
@@ -48,7 +49,8 @@ protected:
 
 private:
 
-   
+    bool    Update;
+
     HDC     hdc;
 	NppData	_nppData;
 	tTbData	_data;

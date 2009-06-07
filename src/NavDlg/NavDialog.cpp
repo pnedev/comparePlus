@@ -20,7 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "NavDialog.h"
 #include "Resource.h"
 
-NavDialog::NavDialog(void) : DockingDlgInterface(IDD_NAV_DIALOG)
+NavDialog::NavDialog(void) : DockingDlgInterface(IDD_NAV_DIALOG), Update(false)
 {
 }
 
@@ -51,6 +51,7 @@ void NavDialog::doDialog(bool willBeShown)
 		::SendMessage(_hParent, NPPM_DMMREGASDCKDLG, 0, (LPARAM)&_data);
 	}
 	display(willBeShown);
+    Update = true;
 }
 
 BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPARAM lParam)
@@ -64,6 +65,7 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 		case WM_SIZE:
 		case WM_MOVE:
 		{
+            Update = true;
             InvalidateRect(hWnd, NULL, TRUE);
             UpdateWindow(hWnd);
 			return 0;
@@ -74,11 +76,17 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 		}
 	    case WM_PAINT:
 		{
-			PAINTSTRUCT ps;
-            hdc = BeginPaint(hWnd, &ps);
-            DrawRectangle(hdc);
-            DisplayResults(hdc);
-			EndPaint(hWnd, &ps);
+            if (Update) 
+            {
+			    PAINTSTRUCT ps;
+                hdc = BeginPaint(hWnd, &ps);
+                DrawRectangle(hdc);            
+                DisplayResults(hdc);
+			    EndPaint(hWnd, &ps);
+                //InvalidateRect(hWnd, NULL, TRUE);
+                UpdateWindow(hWnd);
+                Update = false;
+            }
             break;
 		}
 		case WM_NOTIFY:
@@ -144,7 +152,7 @@ void NavDialog::DisplayResults(HDC hdc)
     int doc1 = SendMessage(_nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0);
     int doc2 = SendMessage(_nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0);
 
-    (doc1 > doc2) ? (MaxDocLength = doc1 - 1) : (MaxDocLength = doc2 - 1);
+    (doc1 > doc2) ? (MaxDocLength = doc1) : (MaxDocLength = doc2);
 
     int LineWidth = NavBarLength / MaxDocLength;
 

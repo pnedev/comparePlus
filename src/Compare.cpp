@@ -421,11 +421,14 @@ void openOptionDlg(void)
         if (active)
         {
             setStyles(Settings);
+            
             NavDlg.blank   = Settings.ColorSettings.blank;
             NavDlg.added   = Settings.ColorSettings.added;
             NavDlg.changed = Settings.ColorSettings.changed;
             NavDlg.deleted = Settings.ColorSettings.deleted;
             NavDlg.moved   = Settings.ColorSettings.moved;
+            
+            NavDlg.UpdateBar(true);
         }
     }
 }
