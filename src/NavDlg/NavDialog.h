@@ -23,6 +23,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "Compare.h"
 #include "DockingDlgInterface.h"
 
+#define SIZE_X_MIN  120
+#define SIZE_X_MAX  120
+#define SIZE_Y_MIN  0
+#define SIZE_Y_MAX  0
+
 class NavDialog : public DockingDlgInterface
 {
 public:
@@ -35,7 +40,6 @@ public:
     void DisplayResults(HDC hdc);
     void DrawLine(int width, int line, bool view, int marker);
    	void doDialog(bool willBeShown = true);
-    void UpdateBar(bool bUpdate) { Update = bUpdate; };
 
     int added;
     int deleted;
@@ -48,8 +52,6 @@ protected:
 	virtual BOOL CALLBACK run_dlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
-
-    bool    Update;
 
     HDC     hdc;
 	NppData	_nppData;

@@ -20,7 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "NavDialog.h"
 #include "Resource.h"
 
-NavDialog::NavDialog(void) : DockingDlgInterface(IDD_NAV_DIALOG), Update(false)
+NavDialog::NavDialog(void) : DockingDlgInterface(IDD_NAV_DIALOG)
 {
 }
 
@@ -51,13 +51,22 @@ void NavDialog::doDialog(bool willBeShown)
 		::SendMessage(_hParent, NPPM_DMMREGASDCKDLG, 0, (LPARAM)&_data);
 	}
 	display(willBeShown);
-    Update = true;
 }
 
 BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
 	switch (Message) 
 	{
+        case WM_GETMINMAXINFO:
+        {
+            return 0;
+        }
+        case WM_CREATE:
+        {
+            hdc = GetDC(hWnd);
+            ReleaseDC(hWnd, hdc);
+            return 0;
+        }
 		case WM_INITDIALOG:
 		{
     		break;
@@ -65,9 +74,9 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 		case WM_SIZE:
 		case WM_MOVE:
 		{
-            Update = true;
-            InvalidateRect(hWnd, NULL, TRUE);
-            UpdateWindow(hWnd);
+            RECT rc = {0};
+            getClientRect(rc);
+            InvalidateRect(hWnd, &rc, TRUE);
 			return 0;
 		}
 		case WM_COMMAND:
@@ -76,18 +85,12 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 		}
 	    case WM_PAINT:
 		{
-            if (Update) 
-            {
-			    PAINTSTRUCT ps;
-                hdc = BeginPaint(hWnd, &ps);
-                DrawRectangle(hdc);            
-                DisplayResults(hdc);
-			    EndPaint(hWnd, &ps);
-                //InvalidateRect(hWnd, NULL, TRUE);
-                UpdateWindow(hWnd);
-                Update = false;
-            }
-            break;
+            PAINTSTRUCT ps;
+            hdc = BeginPaint(hWnd, &ps);
+            DrawRectangle(hdc);            
+            DisplayResults(hdc);
+		    EndPaint(hWnd, &ps);
+            return 0;
 		}
 		case WM_NOTIFY:
 		{
@@ -96,6 +99,7 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 		}
 		case WM_DESTROY:
 		{
+            ReleaseDC(hWnd, hdc);
             PostQuitMessage(0); 
 			break;
 		}
@@ -108,31 +112,27 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 
 void NavDialog::DrawRectangle(HDC hdc)
 {
-    //HBRUSH hBrush = CreateSolidBrush(RGB(255,255,255));
     RECT rc = {0};
     
     getClientRect(rc);
 
     int w = rc.right / 5;
 
-    rLeft.top    = rc.top + 20;
-    rLeft.bottom = rc.bottom - 20;
-    rLeft.left   = w;
-    rLeft.right  = 2 * w;
+    if (w >= 1)
+    {
+        rLeft.top    = rc.top + 20;
+        rLeft.bottom = rc.bottom - 20;
+        rLeft.left   = w;
+        rLeft.right  = 2 * w;
 
-    rRight.top    = rc.top + 20;
-    rRight.bottom = rc.bottom - 20;
-    rRight.left   = 3 * w;
-    rRight.right  = 4 * w;
-
-    //r.left = rc.left + 10;
-    //r.right = r.left + 10;
-    //r.top = rc.top + 10;
-    //r.bottom = rc.bottom - 10;
-
-    //FillRect(hdc, &r, hBrush);   
-    Rectangle(hdc, rLeft.left, rLeft.top, rLeft.right, rLeft.bottom);
-    Rectangle(hdc, rRight.left, rRight.top, rRight.right, rRight.bottom);
+        rRight.top    = rc.top + 20;
+        rRight.bottom = rc.bottom - 20;
+        rRight.left   = 3 * w;
+        rRight.right  = 4 * w;
+     
+        Rectangle(hdc, rLeft.left, rLeft.top, rLeft.right, rLeft.bottom);
+        Rectangle(hdc, rRight.left, rRight.top, rRight.right, rRight.bottom);
+    }
 }
 
 void NavDialog::DisplayResults(HDC hdc)
@@ -154,27 +154,39 @@ void NavDialog::DisplayResults(HDC hdc)
 
     (doc1 > doc2) ? (MaxDocLength = doc1) : (MaxDocLength = doc2);
 
-    int LineWidth = NavBarLength / MaxDocLength;
+    int LineWidth = (NavBarLength / MaxDocLength > 0) ? (NavBarLength / MaxDocLength) : (1);
 
-    /* Draw left doc results */
-    for (i = 0; i < doc1; i++)
+    if ((LineWidth >= 1) & (NavBarLength > 0))
     {
-        marker = SendMessage(_nppData._scintillaMainHandle, SCI_MARKERGET, (WPARAM)i, 0);
-        if (marker != 0)
+        // Draw left doc results
+        for (i = 0; i < doc1; i++)
         {
-            DrawLine(LineWidth, i, 0, marker);
+            marker = SendMessage(_nppData._scintillaMainHandle, SCI_MARKERGET, (WPARAM)i, 0);
+            if (marker != 0)
+            {
+                DrawLine(LineWidth, i, 0, marker);
+            }
+        }
+
+        // Draw right doc results
+        for (i = 0; i < doc2; i++)
+        {
+            int marker = SendMessage(_nppData._scintillaSecondHandle, SCI_MARKERGET, (WPARAM)i, 0);
+            if (marker != 0)
+            {
+                DrawLine(LineWidth, i, 1, marker);
+            }
         }
     }
 
-    /* Draw right doc results */
-    for (i = 0; i < doc2; i++)
-    {
-        int marker = SendMessage(_nppData._scintillaSecondHandle, SCI_MARKERGET, (WPARAM)i, 0);
-        if (marker != 0)
-        {
-            DrawLine(LineWidth, i, 1, marker);
-        }
-    }
+    /*DrawLine(LineWidth, 5,  0, (1 << MARKER_ADDED_LINE));
+    DrawLine(LineWidth, 5,  1, (1 << MARKER_ADDED_LINE));
+    DrawLine(LineWidth, 10, 0, (1 << MARKER_CHANGED_LINE));
+    DrawLine(LineWidth, 10, 1, (1 << MARKER_CHANGED_LINE));
+    DrawLine(LineWidth, 15, 0, (1 << MARKER_MOVED_LINE));
+    DrawLine(LineWidth, 15, 1, (1 << MARKER_MOVED_LINE));
+    DrawLine(LineWidth, 20, 0, (1 << MARKER_REMOVED_LINE));
+    DrawLine(LineWidth, 20, 1, (1 << MARKER_REMOVED_LINE));*/
 }
 
 void NavDialog::DrawLine(int width, int line, bool view, int marker)

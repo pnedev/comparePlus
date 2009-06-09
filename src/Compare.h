@@ -83,6 +83,9 @@ enum MENU_COMMANDS
 	CMD_DETECT_MOVES,
     CMD_USE_NAV_BAR,
     CMD_SEPARATOR_3,
+    CMD_PREV,
+    CMD_NEXT,
+    CMD_SEPARATOR_4,
 	CMD_OPTION,
 	CMD_ABOUT,
 	NB_MENU_COMMANDS
@@ -172,6 +175,8 @@ bool startCompare();
 void saveSettings(void);
 void loadSettings(void);
 void ViewNavigationBar(void);
+void Prev(void);
+void Next(void);
 
 //BOOL CALLBACK AboutDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 

@@ -238,6 +238,26 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             lstrcpy(funcItem[CMD_SEPARATOR_3]._itemName, TEXT("-----------"));
             funcItem[CMD_SEPARATOR_3]._pShKey = NULL;
 
+            funcItem[CMD_PREV]._pFunc = Prev;
+            lstrcpy(funcItem[CMD_PREV]._itemName, TEXT("Previous"));
+            funcItem[CMD_PREV]._pShKey = new ShortcutKey;
+            funcItem[CMD_PREV]._pShKey->_isAlt = false;
+            funcItem[CMD_PREV]._pShKey->_isCtrl = true;
+            funcItem[CMD_PREV]._pShKey->_isShift = false;
+            funcItem[CMD_PREV]._pShKey->_key = VK_PRIOR;
+
+            funcItem[CMD_NEXT]._pFunc = Next;
+            lstrcpy(funcItem[CMD_NEXT]._itemName, TEXT("Next"));
+            funcItem[CMD_NEXT]._pShKey = new ShortcutKey;
+            funcItem[CMD_NEXT]._pShKey->_isAlt = false;
+            funcItem[CMD_NEXT]._pShKey->_isCtrl = true;
+            funcItem[CMD_NEXT]._pShKey->_isShift = false;
+            funcItem[CMD_NEXT]._pShKey->_key = VK_NEXT;
+
+            funcItem[CMD_SEPARATOR_4]._pFunc = EmptyFunc;
+            lstrcpy(funcItem[CMD_SEPARATOR_4]._itemName, TEXT("-----------"));
+            funcItem[CMD_SEPARATOR_4]._pShKey = NULL;
+
             funcItem[CMD_OPTION]._pFunc = openOptionDlg;
             lstrcpy(funcItem[CMD_OPTION]._itemName, TEXT("Option"));
             funcItem[CMD_OPTION]._pShKey = NULL;
@@ -427,10 +447,64 @@ void openOptionDlg(void)
             NavDlg.changed = Settings.ColorSettings.changed;
             NavDlg.deleted = Settings.ColorSettings.deleted;
             NavDlg.moved   = Settings.ColorSettings.moved;
-            
-            NavDlg.UpdateBar(true);
         }
     }
+}
+
+void jumpChangedLines( bool direction )
+{
+    HWND CurView;
+    int currentEdit;
+    ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
+
+    if (currentEdit != -1) 
+    {
+        CurView = (currentEdit == 0) ? (nppData._scintillaMainHandle) : (nppData._scintillaSecondHandle);
+    }
+
+    int sci_search_mask = (1 << MARKER_MOVED_LINE) | (1 << MARKER_CHANGED_LINE) | 
+                          (1 << MARKER_ADDED_LINE) | (1 << MARKER_REMOVED_LINE) |
+                          (1 << MARKER_BLANK_LINE);
+
+	int posStart = ::SendMessage(CurView, SCI_GETCURRENTPOS, 0, 0 );
+	int lineStart = ::SendMessage(CurView, SCI_LINEFROMPOSITION, posStart, 0 );
+	int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0 );
+
+	int currLine;
+	int nextLine;
+	int sci_marker_direction;
+
+	if ( direction ) 
+    {
+		currLine = ( lineStart < lineMax ) ? ( lineStart + 1 ) : ( 0 );
+		sci_marker_direction = SCI_MARKERNEXT;
+	}
+	else 
+    {
+		currLine = ( lineStart > 0 ) ? ( lineStart - 1 ) : ( lineMax );
+		sci_marker_direction = SCI_MARKERPREVIOUS;
+	}
+
+	nextLine = ::SendMessage(CurView, sci_marker_direction, currLine, sci_search_mask );
+
+	if ( nextLine < 0 ) 
+    {
+		currLine = ( direction ) ? ( 0 ) : ( lineMax );
+		nextLine = ::SendMessage(CurView, sci_marker_direction, currLine, sci_search_mask );
+	}
+
+	::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0 );
+	::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0 );
+}
+
+void Prev(void)
+{
+    if (active) jumpChangedLines(false);
+}
+
+void Next(void)
+{
+    if (active) jumpChangedLines(true);
 }
 
 void openAboutDlg(void)
@@ -462,12 +536,14 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM /*wPar
         ::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_1]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
         ::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_2]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
         ::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_3]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
+        ::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_4]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
     }
 
     return TRUE;
 }
 
-HWND openTempFile(void){
+HWND openTempFile(void)
+    {
     /*if(PathFileExists(compareFilePath)==false){
     ofstream myfile;
     myfile.open (compareFilePath);
@@ -617,7 +693,13 @@ void reset()
         panelsOpened = false;
         active = false;
 
+        // Close NavBar
         NavDlg.doDialog(false);
+
+        // Disable Prev/Next menu entry
+        HMENU hMenu = ::GetMenu(nppData._nppHandle);
+        EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYPOSITION | MF_GRAYED);
+        EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYPOSITION | MF_GRAYED);
     }
 }
 
@@ -1681,6 +1763,10 @@ bool startCompare()
     // Restore N++ focus
     SetFocus(hwnd);
 
+    // Enable Prev/Next menu entry
+    EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYPOSITION | MF_ENABLED);
+    EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYPOSITION | MF_ENABLED);
+
     return result;
 }
 
@@ -1705,9 +1791,12 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
     {
     case NPPN_TBMODIFICATION:
         {
+            HMENU hMenu = ::GetMenu(nppData._nppHandle);
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID, (LPARAM)Settings.AddLine);
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACING]._cmdID, (LPARAM)Settings.IncludeSpace);
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID, (LPARAM)Settings.DetectMove);
+            EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYPOSITION | MF_GRAYED);
+            EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYPOSITION | MF_GRAYED);
             break;
         }
     case NPPN_FILEBEFORECLOSE:
