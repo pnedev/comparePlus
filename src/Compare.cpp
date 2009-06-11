@@ -532,11 +532,13 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM /*wPar
 {
     if (Message == WM_CREATE)
     {
-        HMENU	hMenu = ::GetMenu(nppData._nppHandle);
+        HMENU hMenu = ::GetMenu(nppData._nppHandle);
         ::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_1]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
         ::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_2]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
         ::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_3]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
         ::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_4]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
+        ::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYCOMMAND | MF_GRAYED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_GRAYED);
     }
 
     return TRUE;
@@ -698,8 +700,8 @@ void reset()
 
         // Disable Prev/Next menu entry
         HMENU hMenu = ::GetMenu(nppData._nppHandle);
-        EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYPOSITION | MF_GRAYED);
-        EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYPOSITION | MF_GRAYED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYCOMMAND | MF_GRAYED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_GRAYED);
     }
 }
 
@@ -1764,8 +1766,8 @@ bool startCompare()
     SetFocus(hwnd);
 
     // Enable Prev/Next menu entry
-    EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYPOSITION | MF_ENABLED);
-    EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYPOSITION | MF_ENABLED);
+    ::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+    ::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYCOMMAND | MF_ENABLED);
 
     return result;
 }
@@ -1795,8 +1797,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID, (LPARAM)Settings.AddLine);
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACING]._cmdID, (LPARAM)Settings.IncludeSpace);
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID, (LPARAM)Settings.DetectMove);
-            EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYPOSITION | MF_GRAYED);
-            EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYPOSITION | MF_GRAYED);
             break;
         }
     case NPPN_FILEBEFORECLOSE:

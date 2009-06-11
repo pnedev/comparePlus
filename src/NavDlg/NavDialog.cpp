@@ -88,7 +88,7 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
             PAINTSTRUCT ps;
             hdc = BeginPaint(hWnd, &ps);
             DrawRectangle(hdc);            
-            DisplayResults(hdc);
+            //DisplayResults(hdc);
 		    EndPaint(hWnd, &ps);
             return 0;
 		}
@@ -152,12 +152,12 @@ void NavDialog::DisplayResults(HDC hdc)
     int doc1 = SendMessage(_nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0);
     int doc2 = SendMessage(_nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0);
 
-    (doc1 > doc2) ? (MaxDocLength = doc1) : (MaxDocLength = doc2);
+    (doc1 > doc2) ? (MaxDocLength = doc1 - 1) : (MaxDocLength = doc2 - 1);
 
-    int LineWidth = (NavBarLength / MaxDocLength > 0) ? (NavBarLength / MaxDocLength) : (1);
+    double LineWidth = (double)NavBarLength / (double)MaxDocLength; // > 0) ? (NavBarLength / MaxDocLength) : (1);
 
-    if ((LineWidth >= 1) & (NavBarLength > 0))
-    {
+    //if ((LineWidth >= 1) & (NavBarLength > 0))
+    //{
         // Draw left doc results
         for (i = 0; i < doc1; i++)
         {
@@ -177,7 +177,7 @@ void NavDialog::DisplayResults(HDC hdc)
                 DrawLine(LineWidth, i, 1, marker);
             }
         }
-    }
+    //}
 
     /*DrawLine(LineWidth, 5,  0, (1 << MARKER_ADDED_LINE));
     DrawLine(LineWidth, 5,  1, (1 << MARKER_ADDED_LINE));
@@ -189,7 +189,7 @@ void NavDialog::DisplayResults(HDC hdc)
     DrawLine(LineWidth, 20, 1, (1 << MARKER_REMOVED_LINE));*/
 }
 
-void NavDialog::DrawLine(int width, int line, bool view, int marker)
+void NavDialog::DrawLine(double width, int line, bool view, int marker)
 {
     HBRUSH hBrush;
     RECT r = {0};

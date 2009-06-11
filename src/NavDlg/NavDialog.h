@@ -38,7 +38,7 @@ public:
 	void destroy(void) {};
     void DrawRectangle(HDC hdc);
     void DisplayResults(HDC hdc);
-    void DrawLine(int width, int line, bool view, int marker);
+    void DrawLine(double width, int line, bool view, int marker);
    	void doDialog(bool willBeShown = true);
 
     int added;
