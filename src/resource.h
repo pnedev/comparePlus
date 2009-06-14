@@ -8,6 +8,11 @@
 #define IDD_OPTION_DIALOG               103
 #define IDB_COMPARE                     104
 #define IDD_NAV_DIALOG                  104
+#define IDB_FIRST                       120
+#define IDB_LAST                        121
+#define IDB_NEXT                        122
+#define IDB_BITMAP4                     123
+#define IDB_PREV                        123
 #define IDC_ABOUT_CLOSE_BUTTON          1001
 #define IDC_COLOR_LIST                  1002
 #define IDC_NPP_PLUGINS_URL             1009
@@ -31,7 +36,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        106
+#define _APS_NEXT_RESOURCE_VALUE        128
 #define _APS_NEXT_COMMAND_VALUE         40001
 #define _APS_NEXT_CONTROL_VALUE         1040
 #define _APS_NEXT_SYMED_VALUE           101

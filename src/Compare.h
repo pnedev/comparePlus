@@ -85,6 +85,8 @@ enum MENU_COMMANDS
     CMD_SEPARATOR_3,
     CMD_PREV,
     CMD_NEXT,
+    CMD_FIRST,
+    CMD_LAST,
     CMD_SEPARATOR_4,
 	CMD_OPTION,
 	CMD_ABOUT,
@@ -175,8 +177,11 @@ bool startCompare();
 void saveSettings(void);
 void loadSettings(void);
 void ViewNavigationBar(void);
+
 void Prev(void);
 void Next(void);
+void First(void);
+void Last(void);
 
 //BOOL CALLBACK AboutDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 

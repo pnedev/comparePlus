@@ -230,6 +230,16 @@ BEGIN
     END
 END
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_FIRST               BITMAP                  "D:\\notepad++\\Compare-plugin\\res\\first.bmp"
+IDB_LAST                BITMAP                  "D:\\notepad++\\Compare-plugin\\res\\last.bmp"
+IDB_NEXT                BITMAP                  "D:\\notepad++\\Compare-plugin\\res\\next.bmp"
+IDB_PREV                BITMAP                  "D:\\notepad++\\Compare-plugin\\res\\prev.bmp"
 #endif    // French (France) resources
 /////////////////////////////////////////////////////////////////////////////
 

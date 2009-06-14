@@ -78,6 +78,11 @@ AboutDialog   AboutDlg;
 OptionDialog  OptionDlg;
 NavDialog     NavDlg;
 
+toolbarIcons  tbPrev;
+toolbarIcons  tbNext;
+toolbarIcons  tbFirst;
+toolbarIcons  tbLast;
+
 void EmptyFunc(void) { };
 
 int getCompare(int window)
@@ -254,6 +259,22 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_NEXT]._pShKey->_isShift = false;
             funcItem[CMD_NEXT]._pShKey->_key = VK_NEXT;
 
+            funcItem[CMD_FIRST]._pFunc = First;
+            lstrcpy(funcItem[CMD_FIRST]._itemName, TEXT("First"));
+            funcItem[CMD_FIRST]._pShKey = new ShortcutKey;
+            funcItem[CMD_FIRST]._pShKey->_isAlt = false;
+            funcItem[CMD_FIRST]._pShKey->_isCtrl = true;
+            funcItem[CMD_FIRST]._pShKey->_isShift = true;
+            funcItem[CMD_FIRST]._pShKey->_key = VK_PRIOR;
+
+            funcItem[CMD_LAST]._pFunc = Last;
+            lstrcpy(funcItem[CMD_LAST]._itemName, TEXT("Last"));
+            funcItem[CMD_LAST]._pShKey = new ShortcutKey;
+            funcItem[CMD_LAST]._pShKey->_isAlt = false;
+            funcItem[CMD_LAST]._pShKey->_isCtrl = true;
+            funcItem[CMD_LAST]._pShKey->_isShift = true;
+            funcItem[CMD_LAST]._pShKey->_key = VK_NEXT;
+
             funcItem[CMD_SEPARATOR_4]._pFunc = EmptyFunc;
             lstrcpy(funcItem[CMD_SEPARATOR_4]._itemName, TEXT("-----------"));
             funcItem[CMD_SEPARATOR_4]._pShKey = NULL;
@@ -270,11 +291,6 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             {
                 compareDocs[i]=-1;
             }
-
-            // Disable non implemented menu item
-            //HMENU hMenu = (HMENU)(::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0 ));
-            //::EnableMenuItem(hMenu, CMD_PREVIOUS, MF_GRAYED);
-            //::EnableMenuItem(hMenu, CMD_NEXT, MF_GRAYED);
 
             TCHAR nppPath[MAX_PATH];
             GetModuleFileName((HMODULE)hModule, nppPath, sizeof(nppPath));
@@ -318,6 +334,12 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
         break;
 
     case DLL_PROCESS_DETACH:
+
+        if (tbNext.hToolbarBmp)  ::DeleteObject(tbNext.hToolbarBmp);
+        if (tbPrev.hToolbarBmp)  ::DeleteObject(tbPrev.hToolbarBmp);
+        if (tbFirst.hToolbarBmp) ::DeleteObject(tbFirst.hToolbarBmp);
+        if (tbLast.hToolbarBmp)  ::DeleteObject(tbLast.hToolbarBmp);
+
         saveSettings();
         OptionDlg.destroy();
         AboutDlg.destroy();
@@ -507,6 +529,14 @@ void Next(void)
     if (active) jumpChangedLines(true);
 }
 
+void First(void)
+{
+}
+
+void Last(void)
+{
+}
+
 void openAboutDlg(void)
 {
     AboutDlg.doDialog();
@@ -539,6 +569,8 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM /*wPar
         ::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_4]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
         ::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYCOMMAND | MF_GRAYED);
         ::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_GRAYED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_GRAYED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_GRAYED);
     }
 
     return TRUE;
@@ -702,6 +734,8 @@ void reset()
         HMENU hMenu = ::GetMenu(nppData._nppHandle);
         ::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYCOMMAND | MF_GRAYED);
         ::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_GRAYED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_GRAYED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_GRAYED);
     }
 }
 
@@ -1768,6 +1802,8 @@ bool startCompare()
     // Enable Prev/Next menu entry
     ::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_ENABLED);
     ::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+    ::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+    ::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
 
     return result;
 }
@@ -1792,11 +1828,23 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
     switch (notifyCode->nmhdr.code) 
     {
     case NPPN_TBMODIFICATION:
-        {
+        {         
             HMENU hMenu = ::GetMenu(nppData._nppHandle);
+
+            tbNext.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_NEXT), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
+            tbPrev.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_PREV), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
+            tbFirst.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_FIRST), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
+            tbLast.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_LAST), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
+
+			::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_FIRST]._cmdID, (LPARAM)&tbFirst);
+            ::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_PREV]._cmdID, (LPARAM)&tbPrev);
+            ::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_NEXT]._cmdID, (LPARAM)&tbNext);
+            ::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_LAST]._cmdID, (LPARAM)&tbLast);
+
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID, (LPARAM)Settings.AddLine);
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACING]._cmdID, (LPARAM)Settings.IncludeSpace);
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID, (LPARAM)Settings.DetectMove);
+
             break;
         }
     case NPPN_FILEBEFORECLOSE:
