@@ -51,12 +51,12 @@ void writeLog(const TCHAR *logFileName, const TCHAR *log2write)
 {	
 	FILE *f;
     //errno_t err = 
-    generic_fopen(&f, logFileName, TEXT("a+"));
+    //generic_fopen(&f, logFileName, TEXT("a+"));
 	//const TCHAR * ptr = log2write;
-	fwrite(log2write, sizeof(log2write[0]), lstrlen(log2write), f);
-	fputc('\n', f);
-	fflush(f);
-	fclose(f);
+	//fwrite(log2write, sizeof(log2write[0]), lstrlen(log2write), f);
+	//fputc('\n', f);
+	//fflush(f);
+	//fclose(f);
 }
 
 int filter(unsigned int code, struct _EXCEPTION_POINTERS * /*ep*/) 

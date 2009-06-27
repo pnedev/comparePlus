@@ -26,6 +26,8 @@ NavDialog::NavDialog(void) : DockingDlgInterface(IDD_NAV_DIALOG)
 
 NavDialog::~NavDialog(void)
 {
+    delete(m_ResultsDoc1);
+    delete(m_ResultsDoc2);
 }
 
 
@@ -49,7 +51,9 @@ void NavDialog::doDialog(bool willBeShown)
         _data.dlgID			= CMD_USE_NAV_BAR;
 
 		::SendMessage(_hParent, NPPM_DMMREGASDCKDLG, 0, (LPARAM)&_data);
-	}
+    }
+
+    // Display
 	display(willBeShown);
 }
 
@@ -61,22 +65,78 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
         {
             return 0;
         }
-        case WM_CREATE:
-        {
-            hdc = GetDC(hWnd);
-            ReleaseDC(hWnd, hdc);
-            return 0;
-        }
+
 		case WM_INITDIALOG:
 		{
+            // Here, I modify window styles (set H and V redraw)
+            SetClassLong(hWnd, GCL_STYLE, CS_HREDRAW | CS_VREDRAW);
+
+            m_hWnd = hWnd;
+            m_hdc  = GetDC(hWnd);
+
+            // Get max file length
+            int doc1 = SendMessage(_nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0);
+            int doc2 = SendMessage(_nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0);
+            (doc1 > doc2) ? (m_TextLength = doc1) : (m_TextLength = doc2);
+
+            // Create BMP used to store graphical representation
+            m_hMemDC1  = ::CreateCompatibleDC(m_hdc);
+            m_hMemDC2  = ::CreateCompatibleDC(m_hdc);
+            m_hMemBMP1 = ::CreateCompatibleBitmap(m_hdc, 10, m_TextLength);
+            m_hMemBMP2 = ::CreateCompatibleBitmap(m_hdc, 10, m_TextLength);
+
+            // Retrieve created BMP info (BMP1 == BMP2)
+            GetObject(m_hMemBMP1, sizeof(m_hMemBMPInfo), &m_hMemBMPInfo);
+            m_hMemBMPSize.cx = m_hMemBMPInfo.bmWidth;
+            m_hMemBMPSize.cy = m_hMemBMPInfo.bmHeight; 
+
+            // Attach BMP to a DC
+            SelectObject(m_hMemDC1, m_hMemBMP1);
+            SelectObject(m_hMemDC2, m_hMemBMP2);
+
+            // Release DC
+            ReleaseDC(hWnd, m_hdc);
+
+            // Create line array
+            int marker = 0;
+
+            m_ResultsDoc1 = new long[m_TextLength];
+            m_ResultsDoc2 = new long[m_TextLength];
+    
+            for (int i = 0; i < doc1; i++)
+            {
+                marker = SendMessage(_nppData._scintillaMainHandle, SCI_MARKERGET, (WPARAM)i, 0);
+
+                if      (marker & (1 << MARKER_BLANK_LINE))   m_ResultsDoc1[i] = MARKER_BLANK_LINE;
+                else if (marker & (1 << MARKER_ADDED_LINE))   m_ResultsDoc1[i] = MARKER_ADDED_LINE;
+                else if (marker & (1 << MARKER_CHANGED_LINE)) m_ResultsDoc1[i] = MARKER_CHANGED_LINE;
+                else if (marker & (1 << MARKER_MOVED_LINE))   m_ResultsDoc1[i] = MARKER_MOVED_LINE;
+                else if (marker & (1 << MARKER_REMOVED_LINE)) m_ResultsDoc1[i] = MARKER_REMOVED_LINE;
+                else                                          m_ResultsDoc1[i] = -1;
+            }
+
+            for (int i = 0; i < doc2; i++)
+            {
+                marker = SendMessage(_nppData._scintillaSecondHandle, SCI_MARKERGET, (WPARAM)i, 0);
+
+                if      (marker & (1 << MARKER_BLANK_LINE))   m_ResultsDoc2[i] = MARKER_BLANK_LINE;
+                else if (marker & (1 << MARKER_ADDED_LINE))   m_ResultsDoc2[i] = MARKER_ADDED_LINE;
+                else if (marker & (1 << MARKER_CHANGED_LINE)) m_ResultsDoc2[i] = MARKER_CHANGED_LINE;
+                else if (marker & (1 << MARKER_MOVED_LINE))   m_ResultsDoc2[i] = MARKER_MOVED_LINE;
+                else if (marker & (1 << MARKER_REMOVED_LINE)) m_ResultsDoc2[i] = MARKER_REMOVED_LINE;
+                else                                          m_ResultsDoc2[i] = -1;
+            }
+
+            CreateBitmap();
+
     		break;
 		}
 		case WM_SIZE:
 		case WM_MOVE:
 		{
-            RECT rc = {0};
-            getClientRect(rc);
-            InvalidateRect(hWnd, &rc, TRUE);
+            //RECT rc = {0};
+            //getClientRect(rc);
+            //InvalidateRect(hWnd, &rc, TRUE);
 			return 0;
 		}
 		case WM_COMMAND:
@@ -85,21 +145,25 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 		}
 	    case WM_PAINT:
 		{
-            PAINTSTRUCT ps;
-            hdc = BeginPaint(hWnd, &ps);
-            DrawRectangle(hdc);            
-            //DisplayResults(hdc);
-		    EndPaint(hWnd, &ps);
-            return 0;
+            return OnPaint(hWnd);
 		}
+
 		case WM_NOTIFY:
 		{
 			return DockingDlgInterface::run_dlgProc(hWnd, Message, wParam, lParam);
 			break;
 		}
+
 		case WM_DESTROY:
 		{
-            ReleaseDC(hWnd, hdc);
+            //ReleaseDC(hWnd, hdc);
+
+            // Delete objects
+            DeleteObject(m_hMemDC1);
+            DeleteObject(m_hMemDC2);
+            DeleteObject(m_hMemBMP1);
+            DeleteObject(m_hMemBMP2);
+
             PostQuitMessage(0); 
 			break;
 		}
@@ -110,135 +174,150 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 	return FALSE;
 }
 
-void NavDialog::DrawRectangle(HDC hdc)
+void NavDialog::SetColor(int added, int deleted, int changed, int moved, int blank)
 {
-    RECT rc = {0};
-    
-    getClientRect(rc);
-
-    int w = rc.right / 5;
-
-    if (w >= 1)
-    {
-        rLeft.top    = rc.top + 20;
-        rLeft.bottom = rc.bottom - 20;
-        rLeft.left   = w;
-        rLeft.right  = 2 * w;
-
-        rRight.top    = rc.top + 20;
-        rRight.bottom = rc.bottom - 20;
-        rRight.left   = 3 * w;
-        rRight.right  = 4 * w;
-     
-        Rectangle(hdc, rLeft.left, rLeft.top, rLeft.right, rLeft.bottom);
-        Rectangle(hdc, rRight.left, rRight.top, rRight.right, rRight.bottom);
-    }
+    m_AddedColor   = added;
+    m_DeletedColor = deleted;
+    m_ChangedColor = changed;
+    m_MovedColor   = moved;
+    m_BlankColor   = blank;
 }
 
-void NavDialog::DisplayResults(HDC hdc)
+void NavDialog::CreateBitmap(void)
 {
-    int marker = 0;
-    int i = 0;
-    
-    int NavBarLength = rLeft.bottom - rLeft.top;
+    HPEN whitePen = CreatePen(PS_SOLID, 1, RGB(255,255,255));
 
-    /*
-    SCI_GETLINECOUNT
-    This returns the number of lines in the document. 
-    An empty document contains 1 line. 
-    A document holding only an end of line sequence has 2 lines.
-    */
-    int MaxDocLength;
-    int doc1 = SendMessage(_nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0);
-    int doc2 = SendMessage(_nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0);
+    // Create pencils
+    m_BlankPencil   = CreatePen(PS_SOLID, 1, m_BlankColor);
+    m_AddedPencil   = CreatePen(PS_SOLID, 1, m_AddedColor);
+    m_ChangedPencil = CreatePen(PS_SOLID, 1, m_ChangedColor);
+    m_MovedPencil   = CreatePen(PS_SOLID, 1, m_MovedColor);
+    m_RemovedPencil = CreatePen(PS_SOLID, 1, m_DeletedColor);
 
-    (doc1 > doc2) ? (MaxDocLength = doc1 - 1) : (MaxDocLength = doc2 - 1);
+    // Fill BMP background
+    HBRUSH hBrush = CreateSolidBrush(RGB(255,255,255));
+    RECT bmpRect;
+    bmpRect.top = 0;
+    bmpRect.left = 0;
+    bmpRect.right = m_hMemBMPSize.cx;
+    bmpRect.bottom = m_hMemBMPSize.cy;
+    FillRect(m_hMemDC1, &bmpRect, hBrush);
+    FillRect(m_hMemDC2, &bmpRect, hBrush);
 
-    double LineWidth = (double)NavBarLength / (double)MaxDocLength; // > 0) ? (NavBarLength / MaxDocLength) : (1);
-
-    //if ((LineWidth >= 1) & (NavBarLength > 0))
-    //{
-        // Draw left doc results
-        for (i = 0; i < doc1; i++)
+    // Draw BMPs - For all lines in document 
+    // Note: doc1 nb lines == doc2 nb lines when compared
+    for (int i = 0; i < m_TextLength; i++)
+    {
+        // Choose a pencil to draw with
+        switch(m_ResultsDoc1[i])
         {
-            marker = SendMessage(_nppData._scintillaMainHandle, SCI_MARKERGET, (WPARAM)i, 0);
-            if (marker != 0)
-            {
-                DrawLine(LineWidth, i, 0, marker);
-            }
+        case MARKER_BLANK_LINE:
+            SelectObject(m_hMemDC1, m_BlankPencil);
+            break;
+        case MARKER_ADDED_LINE:
+            SelectObject(m_hMemDC1, m_AddedPencil);
+            break;
+        case MARKER_CHANGED_LINE:
+            SelectObject(m_hMemDC1, m_ChangedPencil);
+            break;
+        case MARKER_MOVED_LINE:
+            SelectObject(m_hMemDC1, m_MovedPencil);
+            break;
+        case MARKER_REMOVED_LINE:
+            SelectObject(m_hMemDC1, m_RemovedPencil);
+            break;
+        default:
+            SelectObject(m_hMemDC1, whitePen);
+            break;
         }
 
-        // Draw right doc results
-        for (i = 0; i < doc2; i++)
-        {
-            int marker = SendMessage(_nppData._scintillaSecondHandle, SCI_MARKERGET, (WPARAM)i, 0);
-            if (marker != 0)
-            {
-                DrawLine(LineWidth, i, 1, marker);
-            }
-        }
-    //}
+        // Draw line for the first document
+        MoveToEx(m_hMemDC1, 0, i, (LPPOINT) NULL); 
+        LineTo(m_hMemDC1, m_hMemBMPSize.cx, i);
 
-    /*DrawLine(LineWidth, 5,  0, (1 << MARKER_ADDED_LINE));
-    DrawLine(LineWidth, 5,  1, (1 << MARKER_ADDED_LINE));
-    DrawLine(LineWidth, 10, 0, (1 << MARKER_CHANGED_LINE));
-    DrawLine(LineWidth, 10, 1, (1 << MARKER_CHANGED_LINE));
-    DrawLine(LineWidth, 15, 0, (1 << MARKER_MOVED_LINE));
-    DrawLine(LineWidth, 15, 1, (1 << MARKER_MOVED_LINE));
-    DrawLine(LineWidth, 20, 0, (1 << MARKER_REMOVED_LINE));
-    DrawLine(LineWidth, 20, 1, (1 << MARKER_REMOVED_LINE));*/
+        // Choose a pencil to draw with
+        switch(m_ResultsDoc2[i])
+        {
+        case MARKER_BLANK_LINE:
+            SelectObject(m_hMemDC2, m_BlankPencil);
+            break;
+        case MARKER_ADDED_LINE:
+            SelectObject(m_hMemDC2, m_AddedPencil);
+            break;
+        case MARKER_CHANGED_LINE:
+            SelectObject(m_hMemDC2, m_ChangedPencil);
+            break;
+        case MARKER_MOVED_LINE:
+            SelectObject(m_hMemDC2, m_MovedPencil);
+            break;
+        case MARKER_REMOVED_LINE:
+            SelectObject(m_hMemDC2, m_RemovedPencil);
+            break;
+        default:
+            SelectObject(m_hMemDC2, whitePen);
+            break;
+        }
+
+        // Draw line for the first document
+        MoveToEx(m_hMemDC2, 0, i, (LPPOINT) NULL); 
+        LineTo(m_hMemDC2, m_hMemBMPSize.cx, i);
+    }
+
+    InvalidateRect(m_hWnd, NULL, TRUE);
 }
 
-void NavDialog::DrawLine(double width, int line, bool view, int marker)
+LRESULT NavDialog::OnPaint(HWND hWnd)
 {
-    HBRUSH hBrush;
-    RECT r = {0};
+	PAINTSTRUCT ps;
+	RECT        r;
 
-    /* Colorize */
-    if (marker & (1 << MARKER_BLANK_LINE))
-    {  
-        hBrush = CreateSolidBrush(blank);
-    }
-    else if (marker & (1 << MARKER_ADDED_LINE))
-    {
-        hBrush = CreateSolidBrush(added);
-    }
-    else if (marker & (1 << MARKER_CHANGED_LINE))
-    {
-        hBrush = CreateSolidBrush(changed);
-    }
-    else if (marker & (1 << MARKER_MOVED_LINE))
-    {
-        hBrush = CreateSolidBrush(moved);
-    }
-    else if (marker & (1 << MARKER_REMOVED_LINE))
-    {
-        hBrush = CreateSolidBrush(deleted);
-    }
-    else 
-    {
-        hBrush = CreateSolidBrush(RGB(255,255,255));
-    }
+    // Get current DC
+    m_hdc = ::BeginPaint(hWnd, &ps);
 
-    /* Left view */
-    if (view == 0)
-    {
-        r.top    = rLeft.top + line * width;
-        r.bottom = rLeft.top + (line + 1) * width;
-        r.left   = rLeft.left + 1;
-        r.right  = rLeft.right - 1;
+    // Draw bars
+    GetClientRect(hWnd, &r);
 
-        FillRect(hdc, &r, hBrush);
-    }
+    long SzX = ((r.right - r.left) - 3 * SPACE) / 2;
+    long SzY = (r.bottom - r.top) - 2 * SPACE;
 
-    /* Right view */
-    else
-    {
-        r.top    = rRight.top + line * width;
-        r.bottom = rRight.top + (line + 1) * width;
-        r.left   = rRight.left + 1;
-        r.right  = rRight.right - 1;
+    // Define left rectangle coordinates
+    m_rLeft.top    = SPACE;    
+    m_rLeft.left   = SPACE;
+    m_rLeft.right  = m_rLeft.left + SzX;
+    m_rLeft.bottom = m_rLeft.top + SzY;
 
-        FillRect(hdc, &r, hBrush);
-    }
+    // Define right rectangle coordinates
+    m_rRight.top    = SPACE;
+    m_rRight.left   = m_rLeft.right + SPACE;
+    m_rRight.right  = m_rRight.left + SzX;
+    m_rRight.bottom = m_rRight.top + SzY;
+
+    // Draw the two rectangles
+    Rectangle(m_hdc, m_rLeft.left, m_rLeft.top, m_rLeft.right, m_rLeft.bottom);
+    Rectangle(m_hdc, m_rRight.left, m_rRight.top, m_rRight.right, m_rRight.bottom);
+
+    // Draw content
+
+    // Set stretch mode
+    SetStretchBltMode(m_hdc, COLORONCOLOR);
+
+    int x, y, cx, cy;
+
+    x  = m_rLeft.left + 1;
+    y  = m_rLeft.top + 1;
+    cx = m_rLeft.right - x - 1;
+    cy = m_rLeft.bottom - y - 1;
+
+    StretchBlt(m_hdc, x, y, cx, cy, m_hMemDC1, 0, 0, m_hMemBMPSize.cx, m_hMemBMPSize.cy, SRCCOPY);
+
+    x  = m_rRight.left + 1;
+    y  = m_rRight.top + 1;
+    cx = m_rRight.right - x - 1;
+    cy = m_rRight.bottom - y - 1;
+
+    StretchBlt(m_hdc, x, y, cx, cy, m_hMemDC2, 0, 0, m_hMemBMPSize.cx, m_hMemBMPSize.cy, SRCCOPY);
+
+	::EndPaint(hWnd, &ps);
+
+    return 0;
 }

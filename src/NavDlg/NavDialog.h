@@ -23,10 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "Compare.h"
 #include "DockingDlgInterface.h"
 
-#define SIZE_X_MIN  120
-#define SIZE_X_MAX  120
-#define SIZE_Y_MIN  0
-#define SIZE_Y_MAX  0
+#define SPACE   5
 
 class NavDialog : public DockingDlgInterface
 {
@@ -36,16 +33,9 @@ public:
 
     void init(HINSTANCE hInst, NppData nppData);
 	void destroy(void) {};
-    void DrawRectangle(HDC hdc);
-    void DisplayResults(HDC hdc);
-    void DrawLine(double width, int line, bool view, int marker);
    	void doDialog(bool willBeShown = true);
-
-    int added;
-    int deleted;
-    int changed;
-    int moved;
-    int blank;
+    void SetColor(int added, int deleted, int changed, int moved, int blank);  
+    void CreateBitmap(void);
 
 protected:
 
@@ -53,13 +43,43 @@ protected:
 
 private:
 
-    HDC     hdc;
+    HWND m_hWnd;
+
+    LRESULT OnPaint(HWND hWnd);
+
+    int m_AddedColor;
+    int m_DeletedColor;
+    int m_ChangedColor;
+    int m_MovedColor;
+    int m_BlankColor;
+
+    HDC     m_hdc;
+    HDC     m_hMemDC1;
+    HDC     m_hMemDC2;
+
+    HBITMAP m_hMemBMP1;
+    HBITMAP m_hMemBMP2;
+
+    BITMAP  m_hMemBMPInfo;
+    SIZE    m_hMemBMPSize;
+
 	NppData	_nppData;
 	tTbData	_data;
 
     /* Internal use */
-	RECT    rLeft;
-    RECT    rRight;	
+	RECT    m_rLeft;
+    RECT    m_rRight;	
+
+    int     m_TextLength;
+
+    HPEN  m_BlankPencil;
+    HPEN  m_AddedPencil;
+    HPEN  m_ChangedPencil;
+    HPEN  m_MovedPencil;
+    HPEN  m_RemovedPencil;
+
+    long  *m_ResultsDoc1;
+    long  *m_ResultsDoc2;
 };
 
 #endif // NAV_DLG_H

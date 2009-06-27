@@ -83,6 +83,8 @@ toolbarIcons  tbNext;
 toolbarIcons  tbFirst;
 toolbarIcons  tbLast;
 
+bool FirstRun = false;
+
 void EmptyFunc(void) { };
 
 int getCompare(int window)
@@ -422,6 +424,9 @@ void loadSettings(void)
     Settings.IncludeSpace = ::GetPrivateProfileInt(sectionName, ignoreSpacesOption, 1, iniFilePath) == 1;
     Settings.DetectMove   = ::GetPrivateProfileInt(sectionName, detectMovesOption, 1, iniFilePath) == 1;
     Settings.OldSymbols   = ::GetPrivateProfileInt(sectionName, symbolsOption, 1, iniFilePath) == 1;
+
+    // Compare 1.5.4 NavBar beta
+    FirstRun = ::GetPrivateProfileInt(sectionName, TEXT("FirstRun"), 1, iniFilePath) == 1;
 }
 
 void saveSettings(void)
@@ -453,6 +458,8 @@ void saveSettings(void)
     ::WritePrivateProfileString(sectionName, ignoreSpacesOption, Settings.IncludeSpace ? TEXT("1") : TEXT("0"), iniFilePath);
     ::WritePrivateProfileString(sectionName, detectMovesOption, Settings.DetectMove ? TEXT("1") : TEXT("0"), iniFilePath);
     ::WritePrivateProfileString(sectionName, symbolsOption, Settings.OldSymbols ? TEXT("1") : TEXT("0"), iniFilePath);
+
+    ::WritePrivateProfileString(sectionName, TEXT("FirstRun"), TEXT("0"), iniFilePath);
 }
 
 void openOptionDlg(void)
@@ -464,18 +471,21 @@ void openOptionDlg(void)
         {
             setStyles(Settings);
             
-            NavDlg.blank   = Settings.ColorSettings.blank;
-            NavDlg.added   = Settings.ColorSettings.added;
-            NavDlg.changed = Settings.ColorSettings.changed;
-            NavDlg.deleted = Settings.ColorSettings.deleted;
-            NavDlg.moved   = Settings.ColorSettings.moved;
+            NavDlg.SetColor(
+                Settings.ColorSettings.added, 
+                Settings.ColorSettings.deleted, 
+                Settings.ColorSettings.changed, 
+                Settings.ColorSettings.moved, 
+                Settings.ColorSettings.blank);
+
+            NavDlg.CreateBitmap();
         }
     }
 }
 
 void jumpChangedLines( bool direction )
 {
-    HWND CurView;
+    HWND CurView = NULL;
     int currentEdit;
     ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
 
@@ -531,10 +541,55 @@ void Next(void)
 
 void First(void)
 {
+    if (active)
+    {
+        HWND CurView = NULL;
+        int currentEdit;
+        ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
+
+        if (currentEdit != -1) 
+        {
+            CurView = (currentEdit == 0) ? (nppData._scintillaMainHandle) : (nppData._scintillaSecondHandle);
+        }
+
+        int sci_search_mask = (1 << MARKER_MOVED_LINE) | (1 << MARKER_CHANGED_LINE) | 
+                              (1 << MARKER_ADDED_LINE) | (1 << MARKER_REMOVED_LINE) |
+                              (1 << MARKER_BLANK_LINE);
+
+	    int posStart = ::SendMessage(CurView, SCI_GETCURRENTPOS, 0, 0 );
+	    int lineStart = ::SendMessage(CurView, SCI_LINEFROMPOSITION, posStart, 0 );
+	    int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0 );
+	    int currLine = 0;
+	    int nextLine = ::SendMessage(CurView, SCI_MARKERNEXT, currLine, sci_search_mask );
+	    ::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0 );
+	    ::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0 );
+    }
 }
 
 void Last(void)
 {
+    if (active)
+    {
+        HWND CurView = NULL;
+        int currentEdit;
+        ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
+
+        if (currentEdit != -1) 
+        {
+            CurView = (currentEdit == 0) ? (nppData._scintillaMainHandle) : (nppData._scintillaSecondHandle);
+        }
+
+        int sci_search_mask = (1 << MARKER_MOVED_LINE) | (1 << MARKER_CHANGED_LINE) | 
+                              (1 << MARKER_ADDED_LINE) | (1 << MARKER_REMOVED_LINE) |
+                              (1 << MARKER_BLANK_LINE);
+
+	    int posStart = ::SendMessage(CurView, SCI_GETCURRENTPOS, 0, 0 );
+	    int lineStart = ::SendMessage(CurView, SCI_LINEFROMPOSITION, posStart, 0 );
+	    int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0 );
+	    int nextLine = ::SendMessage(CurView, SCI_MARKERPREVIOUS, lineMax, sci_search_mask );
+	    ::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0 );
+	    ::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0 );
+    }
 }
 
 void openAboutDlg(void)
@@ -571,6 +626,7 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM /*wPar
         ::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_GRAYED);
         ::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_GRAYED);
         ::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_GRAYED);
+        SendMessage(nppData._nppHandle, TB_ENABLEBUTTON, CMD_PREV, MAKELONG(FALSE, 0));
     }
 
     return TRUE;
@@ -585,37 +641,43 @@ HWND openTempFile(void)
     myfile.close();
     }*/
     char original[MAX_PATH];
-    ::SendMessage(nppData._nppHandle,NPPM_GETFULLCURRENTPATH,0,(LPARAM)original);
-    HWND originalwindow=getCurrentWindow();	
+    ::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, 0, (LPARAM)original);
+    HWND originalwindow = getCurrentWindow();	
 
-
-    int result=::SendMessage(nppData._nppHandle,NPPM_SWITCHTOFILE,0,(LPARAM)compareFilePath);
-    HWND window=getCurrentWindow();		
-    int win=SendMessageA(window, SCI_GETDOCPOINTER, 0,0);
-    if(result==0 || win!=tempWindow){
-        ::SendMessage(nppData._nppHandle,WM_COMMAND,IDM_FILE_NEW,(LPARAM)0);
-        ::SendMessage(nppData._nppHandle,NPPM_GETFILENAME,0,(LPARAM)compareFilePath);
-        tempWindow=SendMessageA(window, SCI_GETDOCPOINTER, 0,0);
+    int result = ::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)compareFilePath);
+    HWND window = getCurrentWindow();		
+    int win = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
+    
+    if(result == 0 || win != tempWindow)
+    {
+        ::SendMessage(nppData._nppHandle, WM_COMMAND, IDM_FILE_NEW, (LPARAM)0);
+        ::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)compareFilePath);
+        tempWindow = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
     }	
-    if(originalwindow==window){
-        SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_GOTO_ANOTHER_VIEW,0);
-        panelsOpened=true;
+
+    if(originalwindow == window)
+    {
+        SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_GOTO_ANOTHER_VIEW, 0);
+        panelsOpened = true;
     }
 
-    result=::SendMessage(nppData._nppHandle,NPPM_SWITCHTOFILE,0,(LPARAM)original);
+    result=::SendMessage(nppData._nppHandle,NPPM_SWITCHTOFILE, 0, (LPARAM)original);
 
-    window=getOtherWindow();
-    int pointer=SendMessageA(window, SCI_GETDOCPOINTER, 0,0);
-    if(tempWindow!=pointer){
-        window=getCurrentWindow();
-        pointer=SendMessageA(window, SCI_GETDOCPOINTER, 0,0);
+    window = getOtherWindow();
+
+    int pointer = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
+    if(tempWindow != pointer)
+    {
+        window = getCurrentWindow();
+        pointer = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
     }
-    assert(tempWindow==pointer);
+
+    assert(tempWindow == pointer);
 
     //move focus to new document, or the other document will be marked as dirty
-    ::SendMessageA(window,SCI_GRABFOCUS,0,0);
-    ::SendMessageA(window,SCI_SETREADONLY,0,0);
-    ::SendMessageA(window,SCI_CLEARALL,0,0);
+    ::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
+    ::SendMessageA(window, SCI_SETREADONLY, 0, 0);
+    ::SendMessageA(window, SCI_CLEARALL, 0, 0);
 
     return window;
 }
@@ -1787,11 +1849,12 @@ bool startCompare()
     HWND hwnd = GetFocus();
 
     // Configure NavBar
-    NavDlg.blank   = Settings.ColorSettings.blank;
-    NavDlg.added   = Settings.ColorSettings.added;
-    NavDlg.changed = Settings.ColorSettings.changed;
-    NavDlg.deleted = Settings.ColorSettings.deleted;
-    NavDlg.moved   = Settings.ColorSettings.moved;
+    NavDlg.SetColor(
+        Settings.ColorSettings.added, 
+        Settings.ColorSettings.deleted, 
+        Settings.ColorSettings.changed, 
+        Settings.ColorSettings.moved, 
+        Settings.ColorSettings.blank);
 
     // Display Navbar
     NavDlg.doDialog(true);
@@ -1829,7 +1892,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
     {
     case NPPN_TBMODIFICATION:
         {         
-            HMENU hMenu = ::GetMenu(nppData._nppHandle);
+            //HMENU hMenu = ::GetMenu(nppData._nppHandle);
 
             tbNext.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_NEXT), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
             tbPrev.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_PREV), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
@@ -1845,6 +1908,20 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACING]._cmdID, (LPARAM)Settings.IncludeSpace);
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID, (LPARAM)Settings.DetectMove);
 
+            if (FirstRun)
+            {
+                MessageBox(
+                    NULL, 
+		            TEXT("This is the first time you launch Compare 1.5.4.\r\n\r\n")
+		            TEXT("This release include a comparison results graphical view that is still in beta version.\r\n")
+                    TEXT("So please do not try to undock/move/resize it.\r\n")
+		            TEXT("\r\n")
+		            TEXT("Hopefully you find this to be a useful tool.  Enjoy!\r\n\r\n")
+		            TEXT("Jean-Sébastien Leroy"),            
+                    TEXT("Compare 1.5.4 - Beta version"), 
+                    MB_ICONWARNING);
+            }
+
             break;
         }
     case NPPN_FILEBEFORECLOSE:
@@ -1859,7 +1936,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
         {
             notepadVersionOk=true;
             //char name[MAX_PATH];
-            SendMessage(nppData._nppHandle,NPPM_GETFULLCURRENTPATH,0,(LPARAM)emptyLinesDoc);
+            SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, 0, (LPARAM)emptyLinesDoc);
             //int win=3;
             //SendMessage(nppData._nppHandle,NPPM_GETCURRENTSCINTILLA,0,(LPARAM)&win);
             HWND window=getCurrentWindow();						
