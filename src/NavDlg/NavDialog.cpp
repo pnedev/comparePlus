@@ -52,82 +52,91 @@ void NavDialog::doDialog(bool willBeShown)
 
 		::SendMessage(_hParent, NPPM_DMMREGASDCKDLG, 0, (LPARAM)&_data);
     }
+    else
+    {
+        Do();
+    }
 
     // Display
 	display(willBeShown);
+}
+
+void NavDialog::Do(void)
+{
+    m_hdc = GetDC(m_hWnd);
+
+    // Get max file length
+    int doc1 = SendMessage(_nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0);
+    int doc2 = SendMessage(_nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0);
+    (doc1 > doc2) ? (m_TextLength = doc1) : (m_TextLength = doc2);
+
+    // Create BMP used to store graphical representation
+    m_hMemDC1    = ::CreateCompatibleDC(m_hdc);
+    m_hMemDC2    = ::CreateCompatibleDC(m_hdc);
+    m_hMemDCView = ::CreateCompatibleDC(m_hdc);
+
+    m_hMemBMP1    = ::CreateCompatibleBitmap(m_hdc, 10, m_TextLength);
+    m_hMemBMP2    = ::CreateCompatibleBitmap(m_hdc, 10, m_TextLength);
+    m_hMemBMPView = ::CreateCompatibleBitmap(m_hdc, 10, m_TextLength);
+
+    // Retrieve created BMP info (BMP1 == BMP2)
+    GetObject(m_hMemBMP1, sizeof(m_hMemBMPInfo), &m_hMemBMPInfo);
+    m_hMemBMPSize.cx = m_hMemBMPInfo.bmWidth;
+    m_hMemBMPSize.cy = m_hMemBMPInfo.bmHeight; 
+
+    // Attach BMP to a DC
+    SelectObject(m_hMemDC1,    m_hMemBMP1);
+    SelectObject(m_hMemDC2,    m_hMemBMP2);
+    SelectObject(m_hMemDCView, m_hMemBMPView);
+
+    // Release DC
+    ReleaseDC(m_hWnd, m_hdc);
+
+    // Create line array
+    int marker = 0;
+
+    m_ResultsDoc1 = new long[m_TextLength];
+    m_ResultsDoc2 = new long[m_TextLength];
+
+    for (int i = 0; i < doc1; i++)
+    {
+        marker = SendMessage(_nppData._scintillaMainHandle, SCI_MARKERGET, (WPARAM)i, 0);
+
+        if      (marker & (1 << MARKER_BLANK_LINE))   m_ResultsDoc1[i] = MARKER_BLANK_LINE;
+        else if (marker & (1 << MARKER_ADDED_LINE))   m_ResultsDoc1[i] = MARKER_ADDED_LINE;
+        else if (marker & (1 << MARKER_CHANGED_LINE)) m_ResultsDoc1[i] = MARKER_CHANGED_LINE;
+        else if (marker & (1 << MARKER_MOVED_LINE))   m_ResultsDoc1[i] = MARKER_MOVED_LINE;
+        else if (marker & (1 << MARKER_REMOVED_LINE)) m_ResultsDoc1[i] = MARKER_REMOVED_LINE;
+        else                                          m_ResultsDoc1[i] = -1;
+    }
+
+    for (int i = 0; i < doc2; i++)
+    {
+        marker = SendMessage(_nppData._scintillaSecondHandle, SCI_MARKERGET, (WPARAM)i, 0);
+
+        if      (marker & (1 << MARKER_BLANK_LINE))   m_ResultsDoc2[i] = MARKER_BLANK_LINE;
+        else if (marker & (1 << MARKER_ADDED_LINE))   m_ResultsDoc2[i] = MARKER_ADDED_LINE;
+        else if (marker & (1 << MARKER_CHANGED_LINE)) m_ResultsDoc2[i] = MARKER_CHANGED_LINE;
+        else if (marker & (1 << MARKER_MOVED_LINE))   m_ResultsDoc2[i] = MARKER_MOVED_LINE;
+        else if (marker & (1 << MARKER_REMOVED_LINE)) m_ResultsDoc2[i] = MARKER_REMOVED_LINE;
+        else                                          m_ResultsDoc2[i] = -1;
+    }
+
+    CreateBitmap();
 }
 
 BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
 	switch (Message) 
 	{
-        case WM_GETMINMAXINFO:
-        {
-            return 0;
-        }
-
 		case WM_INITDIALOG:
 		{
             // Here, I modify window styles (set H and V redraw)
             SetClassLong(hWnd, GCL_STYLE, CS_HREDRAW | CS_VREDRAW);
 
             m_hWnd = hWnd;
-            m_hdc  = GetDC(hWnd);
 
-            // Get max file length
-            int doc1 = SendMessage(_nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0);
-            int doc2 = SendMessage(_nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0);
-            (doc1 > doc2) ? (m_TextLength = doc1) : (m_TextLength = doc2);
-
-            // Create BMP used to store graphical representation
-            m_hMemDC1  = ::CreateCompatibleDC(m_hdc);
-            m_hMemDC2  = ::CreateCompatibleDC(m_hdc);
-            m_hMemBMP1 = ::CreateCompatibleBitmap(m_hdc, 10, m_TextLength);
-            m_hMemBMP2 = ::CreateCompatibleBitmap(m_hdc, 10, m_TextLength);
-
-            // Retrieve created BMP info (BMP1 == BMP2)
-            GetObject(m_hMemBMP1, sizeof(m_hMemBMPInfo), &m_hMemBMPInfo);
-            m_hMemBMPSize.cx = m_hMemBMPInfo.bmWidth;
-            m_hMemBMPSize.cy = m_hMemBMPInfo.bmHeight; 
-
-            // Attach BMP to a DC
-            SelectObject(m_hMemDC1, m_hMemBMP1);
-            SelectObject(m_hMemDC2, m_hMemBMP2);
-
-            // Release DC
-            ReleaseDC(hWnd, m_hdc);
-
-            // Create line array
-            int marker = 0;
-
-            m_ResultsDoc1 = new long[m_TextLength];
-            m_ResultsDoc2 = new long[m_TextLength];
-    
-            for (int i = 0; i < doc1; i++)
-            {
-                marker = SendMessage(_nppData._scintillaMainHandle, SCI_MARKERGET, (WPARAM)i, 0);
-
-                if      (marker & (1 << MARKER_BLANK_LINE))   m_ResultsDoc1[i] = MARKER_BLANK_LINE;
-                else if (marker & (1 << MARKER_ADDED_LINE))   m_ResultsDoc1[i] = MARKER_ADDED_LINE;
-                else if (marker & (1 << MARKER_CHANGED_LINE)) m_ResultsDoc1[i] = MARKER_CHANGED_LINE;
-                else if (marker & (1 << MARKER_MOVED_LINE))   m_ResultsDoc1[i] = MARKER_MOVED_LINE;
-                else if (marker & (1 << MARKER_REMOVED_LINE)) m_ResultsDoc1[i] = MARKER_REMOVED_LINE;
-                else                                          m_ResultsDoc1[i] = -1;
-            }
-
-            for (int i = 0; i < doc2; i++)
-            {
-                marker = SendMessage(_nppData._scintillaSecondHandle, SCI_MARKERGET, (WPARAM)i, 0);
-
-                if      (marker & (1 << MARKER_BLANK_LINE))   m_ResultsDoc2[i] = MARKER_BLANK_LINE;
-                else if (marker & (1 << MARKER_ADDED_LINE))   m_ResultsDoc2[i] = MARKER_ADDED_LINE;
-                else if (marker & (1 << MARKER_CHANGED_LINE)) m_ResultsDoc2[i] = MARKER_CHANGED_LINE;
-                else if (marker & (1 << MARKER_MOVED_LINE))   m_ResultsDoc2[i] = MARKER_MOVED_LINE;
-                else if (marker & (1 << MARKER_REMOVED_LINE)) m_ResultsDoc2[i] = MARKER_REMOVED_LINE;
-                else                                          m_ResultsDoc2[i] = -1;
-            }
-
-            CreateBitmap();
+            Do();
 
     		break;
 		}
@@ -159,10 +168,12 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
             //ReleaseDC(hWnd, hdc);
 
             // Delete objects
-            DeleteObject(m_hMemDC1);
-            DeleteObject(m_hMemDC2);
+            DeleteDC(m_hMemDC1);
+            DeleteDC(m_hMemDC2);
+            DeleteDC(m_hMemDCView);
             DeleteObject(m_hMemBMP1);
             DeleteObject(m_hMemBMP2);
+            DeleteObject(m_hMemBMPView);
 
             PostQuitMessage(0); 
 			break;
@@ -317,7 +328,39 @@ LRESULT NavDialog::OnPaint(HWND hWnd)
 
     StretchBlt(m_hdc, x, y, cx, cy, m_hMemDC2, 0, 0, m_hMemBMPSize.cx, m_hMemBMPSize.cy, SRCCOPY);
 
+    // Draw current view
+    //SetStretchBltMode(m_hdc, COLORONCOLOR);
+    //StretchBlt(m_hdc, x, y, cx, cy, m_hMemDCView, 0, 0, m_hMemBMPSize.cx, m_hMemBMPSize.cy, SRCPAINT);
+
 	::EndPaint(hWnd, &ps);
 
     return 0;
+}
+
+void NavDialog::DrawView(void)
+{
+    long start, end;
+    RECT r;
+    int x, y, cx, cy;
+
+    GetClientRect(m_hWnd, &r);
+
+    x  = r.left;
+    y  = r.top;
+    cx = r.right - x;
+    cy = r.bottom - y;
+
+    start = SendMessage(_nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0) + 1;
+    end   = SendMessage(_nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0) + start;
+
+    HBRUSH hBrush = CreateSolidBrush(RGB(255,0,0));
+    RECT bmpRect;
+    bmpRect.top = start;
+    bmpRect.left = 0;
+    bmpRect.right = cx;
+    bmpRect.bottom = end;
+    FillRect(m_hMemDCView, &bmpRect, hBrush);
+    Rectangle(m_hMemDCView, 0, start, 10, end);
+
+    InvalidateRect(m_hWnd, NULL, TRUE);
 }

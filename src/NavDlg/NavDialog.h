@@ -34,6 +34,8 @@ public:
     void init(HINSTANCE hInst, NppData nppData);
 	void destroy(void) {};
    	void doDialog(bool willBeShown = true);
+    void DrawView(void);
+    void Do(void);
     void SetColor(int added, int deleted, int changed, int moved, int blank);  
     void CreateBitmap(void);
 
@@ -56,9 +58,11 @@ private:
     HDC     m_hdc;
     HDC     m_hMemDC1;
     HDC     m_hMemDC2;
+    HDC     m_hMemDCView;
 
     HBITMAP m_hMemBMP1;
     HBITMAP m_hMemBMP2;
+    HBITMAP m_hMemBMPView;
 
     BITMAP  m_hMemBMPInfo;
     SIZE    m_hMemBMPSize;
