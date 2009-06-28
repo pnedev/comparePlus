@@ -76,12 +76,6 @@ private:
 
     int     m_TextLength;
 
-    HPEN  m_BlankPencil;
-    HPEN  m_AddedPencil;
-    HPEN  m_ChangedPencil;
-    HPEN  m_MovedPencil;
-    HPEN  m_RemovedPencil;
-
     long  *m_ResultsDoc1;
     long  *m_ResultsDoc2;
 };

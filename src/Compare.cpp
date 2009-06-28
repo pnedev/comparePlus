@@ -1892,6 +1892,9 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 {
     switch (notifyCode->nmhdr.code) 
     {
+    case SCN_PAINTED:
+        if(active) NavDlg.DrawView();
+        break;
     case NPPN_TBMODIFICATION:
         {         
             //HMENU hMenu = ::GetMenu(nppData._nppHandle);

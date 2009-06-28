@@ -75,8 +75,8 @@ void NavDialog::Do(void)
     m_hMemDC2    = ::CreateCompatibleDC(m_hdc);
     m_hMemDCView = ::CreateCompatibleDC(m_hdc);
 
-    m_hMemBMP1    = ::CreateCompatibleBitmap(m_hdc, 10, m_TextLength);
-    m_hMemBMP2    = ::CreateCompatibleBitmap(m_hdc, 10, m_TextLength);
+    m_hMemBMP1    = ::CreateCompatibleBitmap(m_hdc, 1, m_TextLength);
+    m_hMemBMP2    = ::CreateCompatibleBitmap(m_hdc, 1, m_TextLength);
     m_hMemBMPView = ::CreateCompatibleBitmap(m_hdc, 10, m_TextLength);
 
     // Retrieve created BMP info (BMP1 == BMP2)
@@ -140,6 +140,9 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 
     		break;
 		}
+        case WM_CREATE:
+            m_hdc = GetDC(m_hWnd);
+            break;
 		case WM_SIZE:
 		case WM_MOVE:
 		{
@@ -196,14 +199,7 @@ void NavDialog::SetColor(int added, int deleted, int changed, int moved, int bla
 
 void NavDialog::CreateBitmap(void)
 {
-    HPEN whitePen = CreatePen(PS_SOLID, 1, RGB(255,255,255));
-
-    // Create pencils
-    m_BlankPencil   = CreatePen(PS_SOLID, 1, m_BlankColor);
-    m_AddedPencil   = CreatePen(PS_SOLID, 1, m_AddedColor);
-    m_ChangedPencil = CreatePen(PS_SOLID, 1, m_ChangedColor);
-    m_MovedPencil   = CreatePen(PS_SOLID, 1, m_MovedColor);
-    m_RemovedPencil = CreatePen(PS_SOLID, 1, m_DeletedColor);
+    long color = 0;
 
     // Fill BMP background
     HBRUSH hBrush = CreateSolidBrush(RGB(255,255,255));
@@ -222,59 +218,39 @@ void NavDialog::CreateBitmap(void)
         // Choose a pencil to draw with
         switch(m_ResultsDoc1[i])
         {
-        case MARKER_BLANK_LINE:
-            SelectObject(m_hMemDC1, m_BlankPencil);
-            break;
-        case MARKER_ADDED_LINE:
-            SelectObject(m_hMemDC1, m_AddedPencil);
-            break;
-        case MARKER_CHANGED_LINE:
-            SelectObject(m_hMemDC1, m_ChangedPencil);
-            break;
-        case MARKER_MOVED_LINE:
-            SelectObject(m_hMemDC1, m_MovedPencil);
-            break;
-        case MARKER_REMOVED_LINE:
-            SelectObject(m_hMemDC1, m_RemovedPencil);
-            break;
-        default:
-            SelectObject(m_hMemDC1, whitePen);
-            break;
+        case MARKER_BLANK_LINE:   color = m_BlankColor;     break;
+        case MARKER_ADDED_LINE:   color = m_AddedColor;     break;
+        case MARKER_CHANGED_LINE: color = m_ChangedColor;   break;
+        case MARKER_MOVED_LINE:   color = m_MovedColor;     break;
+        case MARKER_REMOVED_LINE: color = m_DeletedColor;   break;
+        default:                  color = RGB(255,255,255); break;
         }
 
         // Draw line for the first document
-        MoveToEx(m_hMemDC1, 0, i, (LPPOINT) NULL); 
-        LineTo(m_hMemDC1, m_hMemBMPSize.cx, i);
+        SetPixel(m_hMemDC1, 0, i, color);
+        //MoveToEx(m_hMemDC1, 0, i, (LPPOINT) NULL); 
+        //LineTo(m_hMemDC1, m_hMemBMPSize.cx, i);
 
         // Choose a pencil to draw with
         switch(m_ResultsDoc2[i])
         {
-        case MARKER_BLANK_LINE:
-            SelectObject(m_hMemDC2, m_BlankPencil);
-            break;
-        case MARKER_ADDED_LINE:
-            SelectObject(m_hMemDC2, m_AddedPencil);
-            break;
-        case MARKER_CHANGED_LINE:
-            SelectObject(m_hMemDC2, m_ChangedPencil);
-            break;
-        case MARKER_MOVED_LINE:
-            SelectObject(m_hMemDC2, m_MovedPencil);
-            break;
-        case MARKER_REMOVED_LINE:
-            SelectObject(m_hMemDC2, m_RemovedPencil);
-            break;
-        default:
-            SelectObject(m_hMemDC2, whitePen);
-            break;
+        case MARKER_BLANK_LINE:   color = m_BlankColor;     break;
+        case MARKER_ADDED_LINE:   color = m_AddedColor;     break;
+        case MARKER_CHANGED_LINE: color = m_ChangedColor;   break;
+        case MARKER_MOVED_LINE:   color = m_MovedColor;     break;
+        case MARKER_REMOVED_LINE: color = m_DeletedColor;   break;
+        default:                  color = RGB(255,255,255); break;
         }
 
         // Draw line for the first document
-        MoveToEx(m_hMemDC2, 0, i, (LPPOINT) NULL); 
-        LineTo(m_hMemDC2, m_hMemBMPSize.cx, i);
+        SetPixel(m_hMemDC2, 0, i, color);
+        //MoveToEx(m_hMemDC2, 0, i, (LPPOINT) NULL); 
+        //LineTo(m_hMemDC2, m_hMemBMPSize.cx, i);
     }
 
     InvalidateRect(m_hWnd, NULL, TRUE);
+
+    DeleteObject(hBrush);
 }
 
 LRESULT NavDialog::OnPaint(HWND hWnd)
@@ -303,16 +279,28 @@ LRESULT NavDialog::OnPaint(HWND hWnd)
     m_rRight.right  = m_rRight.left + SzX;
     m_rRight.bottom = m_rRight.top + SzY;
 
-    // Draw the two rectangles
-    Rectangle(m_hdc, m_rLeft.left, m_rLeft.top, m_rLeft.right, m_rLeft.bottom);
-    Rectangle(m_hdc, m_rRight.left, m_rRight.top, m_rRight.right, m_rRight.bottom);
-
-    // Draw content
+    // Draw scroll bar
+    //SetStretchBltMode(m_hdc, COLORONCOLOR);
 
     // Set stretch mode
     SetStretchBltMode(m_hdc, COLORONCOLOR);
 
     int x, y, cx, cy;
+
+    // Current doc view
+
+    x  = r.left;
+    y  = r.top + SPACE;
+    cx = r.right - x;
+    cy = r.bottom - y - SPACE;
+
+    StretchBlt(m_hdc, x, y, cx, cy, m_hMemDCView, 0, 0, m_hMemBMPSize.cx, m_hMemBMPSize.cy, SRCCOPY);
+
+    // Draw bar border
+    Rectangle(m_hdc, m_rLeft.left, m_rLeft.top, m_rLeft.right, m_rLeft.bottom);
+    Rectangle(m_hdc, m_rRight.left, m_rRight.top, m_rRight.right, m_rRight.bottom);
+
+    // Draw Left bar
 
     x  = m_rLeft.left + 1;
     y  = m_rLeft.top + 1;
@@ -321,16 +309,14 @@ LRESULT NavDialog::OnPaint(HWND hWnd)
 
     StretchBlt(m_hdc, x, y, cx, cy, m_hMemDC1, 0, 0, m_hMemBMPSize.cx, m_hMemBMPSize.cy, SRCCOPY);
 
+    // Draw Right bar
+
     x  = m_rRight.left + 1;
     y  = m_rRight.top + 1;
     cx = m_rRight.right - x - 1;
     cy = m_rRight.bottom - y - 1;
 
     StretchBlt(m_hdc, x, y, cx, cy, m_hMemDC2, 0, 0, m_hMemBMPSize.cx, m_hMemBMPSize.cy, SRCCOPY);
-
-    // Draw current view
-    //SetStretchBltMode(m_hdc, COLORONCOLOR);
-    //StretchBlt(m_hdc, x, y, cx, cy, m_hMemDCView, 0, 0, m_hMemBMPSize.cx, m_hMemBMPSize.cy, SRCPAINT);
 
 	::EndPaint(hWnd, &ps);
 
@@ -341,26 +327,22 @@ void NavDialog::DrawView(void)
 {
     long start, end;
     RECT r;
-    int x, y, cx, cy;
 
     GetClientRect(m_hWnd, &r);
 
-    x  = r.left;
-    y  = r.top;
-    cx = r.right - x;
-    cy = r.bottom - y;
-
-    start = SendMessage(_nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0) + 1;
+    start = SendMessage(_nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
     end   = SendMessage(_nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0) + start;
 
-    HBRUSH hBrush = CreateSolidBrush(RGB(255,0,0));
-    RECT bmpRect;
-    bmpRect.top = start;
-    bmpRect.left = 0;
-    bmpRect.right = cx;
-    bmpRect.bottom = end;
-    FillRect(m_hMemDCView, &bmpRect, hBrush);
-    Rectangle(m_hMemDCView, 0, start, 10, end);
+    HBRUSH hBrush = CreateSolidBrush(RGB(255,255,255));
+    //SelectObject(m_hMemDCView, GetStockObject(GRAY_BRUSH));
+    FillRect(m_hMemDCView, &r, hBrush);
+
+    hBrush = CreateSolidBrush(RGB(25,25,25));
+    r.top = start;
+    r.bottom = end;
+    FillRect(m_hMemDCView, &r, hBrush);
 
     InvalidateRect(m_hWnd, NULL, TRUE);
+
+    DeleteObject(hBrush);
 }
