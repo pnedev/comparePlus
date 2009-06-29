@@ -629,8 +629,6 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM /*wPar
         SendMessage(nppData._nppHandle, TB_ENABLEBUTTON, CMD_PREV, MAKELONG(FALSE, 0));
     }
 
-    if (active) NavDlg.DrawView();
-
     return TRUE;
 }
 
