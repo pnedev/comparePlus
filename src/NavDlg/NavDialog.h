@@ -34,10 +34,12 @@ public:
     void init(HINSTANCE hInst, NppData nppData);
 	void destroy(void) {};
    	void doDialog(bool willBeShown = true);
-    void DrawView(void);
+    void NavDialog::DrawView(long start, long end);
     void Do(void);
     void SetColor(int added, int deleted, int changed, int moved, int blank);  
     void CreateBitmap(void);
+
+    bool ReadyToDraw;
 
 protected:
 

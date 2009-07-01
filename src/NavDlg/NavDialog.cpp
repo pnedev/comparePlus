@@ -52,13 +52,10 @@ void NavDialog::doDialog(bool willBeShown)
 
 		::SendMessage(_hParent, NPPM_DMMREGASDCKDLG, 0, (LPARAM)&_data);
     }
-    else
-    {
-        Do();
-    }
-
     // Display
 	display(willBeShown);
+
+    if (willBeShown) Do();
 }
 
 void NavDialog::Do(void)
@@ -77,7 +74,7 @@ void NavDialog::Do(void)
 
     m_hMemBMP1    = ::CreateCompatibleBitmap(m_hdc, 1, m_TextLength);
     m_hMemBMP2    = ::CreateCompatibleBitmap(m_hdc, 1, m_TextLength);
-    m_hMemBMPView = ::CreateCompatibleBitmap(m_hdc, 10, m_TextLength);
+    m_hMemBMPView = ::CreateCompatibleBitmap(m_hdc, 1, m_TextLength);
 
     // Retrieve created BMP info (BMP1 == BMP2)
     GetObject(m_hMemBMP1, sizeof(m_hMemBMPInfo), &m_hMemBMPInfo);
@@ -133,30 +130,14 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 		{
             // Here, I modify window styles (set H and V redraw)
             SetClassLong(hWnd, GCL_STYLE, CS_HREDRAW | CS_VREDRAW);
-
             m_hWnd = hWnd;
-
-            Do();
-
+            ReadyToDraw = FALSE;
     		break;
 		}
-        case WM_CREATE:
-            m_hdc = GetDC(m_hWnd);
-            break;
-		case WM_SIZE:
-		case WM_MOVE:
-		{
-            //RECT rc = {0};
-            //getClientRect(rc);
-            //InvalidateRect(hWnd, &rc, TRUE);
-			return 0;
-		}
-		case WM_COMMAND:
-		{
-			break;
-		}
+
 	    case WM_PAINT:
 		{
+            ReadyToDraw = TRUE;
             return OnPaint(hWnd);
 		}
 
@@ -168,8 +149,6 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 
 		case WM_DESTROY:
 		{
-            //ReleaseDC(hWnd, hdc);
-
             // Delete objects
             DeleteDC(m_hMemDC1);
             DeleteDC(m_hMemDC2);
@@ -181,6 +160,7 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
             PostQuitMessage(0); 
 			break;
 		}
+
 		default:
 			return DockingDlgInterface::run_dlgProc(hWnd, Message, wParam, lParam);
 	}
@@ -228,8 +208,6 @@ void NavDialog::CreateBitmap(void)
 
         // Draw line for the first document
         SetPixel(m_hMemDC1, 0, i, color);
-        //MoveToEx(m_hMemDC1, 0, i, (LPPOINT) NULL); 
-        //LineTo(m_hMemDC1, m_hMemBMPSize.cx, i);
 
         // Choose a pencil to draw with
         switch(m_ResultsDoc2[i])
@@ -244,8 +222,6 @@ void NavDialog::CreateBitmap(void)
 
         // Draw line for the first document
         SetPixel(m_hMemDC2, 0, i, color);
-        //MoveToEx(m_hMemDC2, 0, i, (LPPOINT) NULL); 
-        //LineTo(m_hMemDC2, m_hMemBMPSize.cx, i);
     }
 
     InvalidateRect(m_hWnd, NULL, TRUE);
@@ -323,24 +299,18 @@ LRESULT NavDialog::OnPaint(HWND hWnd)
     return 0;
 }
 
-void NavDialog::DrawView(void)
+void NavDialog::DrawView(long start, long end)
 {
-    long start, end;
-    RECT r;
-
-    GetClientRect(m_hWnd, &r);
-
-    start = SendMessage(_nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
-    end   = SendMessage(_nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0) + start;
-
     HBRUSH hBrush = CreateSolidBrush(RGB(255,255,255));
-    //SelectObject(m_hMemDCView, GetStockObject(GRAY_BRUSH));
-    FillRect(m_hMemDCView, &r, hBrush);
+    RECT bmpRect;
+    bmpRect.top = 0;
+    bmpRect.left = 0;
+    bmpRect.right = m_hMemBMPSize.cx;
+    bmpRect.bottom = m_hMemBMPSize.cy;
 
-    hBrush = CreateSolidBrush(RGB(25,25,25));
-    r.top = start;
-    r.bottom = end;
-    FillRect(m_hMemDCView, &r, hBrush);
+    FillRect(m_hMemDCView, &bmpRect, hBrush);
+
+    for(long i = start; i <= end; i++) SetPixel(m_hMemDCView, 0, i, RGB(0,0,0));
 
     InvalidateRect(m_hWnd, NULL, TRUE);
 
