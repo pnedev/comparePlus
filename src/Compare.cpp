@@ -41,7 +41,7 @@ bool notepadVersionOk = false;
 bool active = false;
 blankLineList *lastEmptyLines=NULL;
 int topLine = 0;
-
+long start_old = -1;
 bool panelsOpened = false;
 
 const TCHAR SVN_BASE[] = TEXT(".svn\\text-base");
@@ -82,8 +82,6 @@ toolbarIcons  tbPrev;
 toolbarIcons  tbNext;
 toolbarIcons  tbFirst;
 toolbarIcons  tbLast;
-
-bool FirstRun = false;
 
 void EmptyFunc(void) { };
 
@@ -424,9 +422,6 @@ void loadSettings(void)
     Settings.IncludeSpace = ::GetPrivateProfileInt(sectionName, ignoreSpacesOption, 1, iniFilePath) == 1;
     Settings.DetectMove   = ::GetPrivateProfileInt(sectionName, detectMovesOption, 1, iniFilePath) == 1;
     Settings.OldSymbols   = ::GetPrivateProfileInt(sectionName, symbolsOption, 1, iniFilePath) == 1;
-
-    // Compare 1.5.4 NavBar beta
-    FirstRun = ::GetPrivateProfileInt(sectionName, TEXT("FirstRun"), 1, iniFilePath) == 1;
 }
 
 void saveSettings(void)
@@ -458,8 +453,6 @@ void saveSettings(void)
     ::WritePrivateProfileString(sectionName, ignoreSpacesOption, Settings.IncludeSpace ? TEXT("1") : TEXT("0"), iniFilePath);
     ::WritePrivateProfileString(sectionName, detectMovesOption, Settings.DetectMove ? TEXT("1") : TEXT("0"), iniFilePath);
     ::WritePrivateProfileString(sectionName, symbolsOption, Settings.OldSymbols ? TEXT("1") : TEXT("0"), iniFilePath);
-
-    ::WritePrivateProfileString(sectionName, TEXT("FirstRun"), TEXT("0"), iniFilePath);
 }
 
 void openOptionDlg(void)
@@ -556,9 +549,6 @@ void First(void)
                               (1 << MARKER_ADDED_LINE) | (1 << MARKER_REMOVED_LINE) |
                               (1 << MARKER_BLANK_LINE);
 
-	    int posStart = ::SendMessage(CurView, SCI_GETCURRENTPOS, 0, 0 );
-	    int lineStart = ::SendMessage(CurView, SCI_LINEFROMPOSITION, posStart, 0 );
-	    int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0 );
 	    int currLine = 0;
 	    int nextLine = ::SendMessage(CurView, SCI_MARKERNEXT, currLine, sci_search_mask );
 	    ::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0 );
@@ -583,8 +573,6 @@ void Last(void)
                               (1 << MARKER_ADDED_LINE) | (1 << MARKER_REMOVED_LINE) |
                               (1 << MARKER_BLANK_LINE);
 
-	    int posStart = ::SendMessage(CurView, SCI_GETCURRENTPOS, 0, 0 );
-	    int lineStart = ::SendMessage(CurView, SCI_LINEFROMPOSITION, posStart, 0 );
 	    int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0 );
 	    int nextLine = ::SendMessage(CurView, SCI_MARKERPREVIOUS, lineMax, sci_search_mask );
 	    ::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0 );
@@ -1022,12 +1010,6 @@ bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2){
         chunk1.lineMappings[i]=-1;
     }
 
-
-
-
-
-
-
     chunk_info chunk2;
     chunk2.lineCount=e2->len;
     chunk2.words=varray_new(sizeof(struct Word), NULL);
@@ -1247,6 +1229,7 @@ int setDiffLines(diff_edit *e,diff_edit changes[],int *i, short op,int altLocati
     return addedLines;
 
 }
+
 //Move algorithm:
 //scan for lines that are only in the other document once
 //use one-to-one match as an anchor
@@ -1858,6 +1841,7 @@ bool startCompare()
 
     // Display Navbar
     NavDlg.doDialog(true);
+    start_old = -1;
 
     // Restore N++ focus
     SetFocus(hwnd);
@@ -1888,15 +1872,24 @@ void cleanEmptyLines(blankLineList *line)
 
 extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 {
+    long start, end;
+
     switch (notifyCode->nmhdr.code) 
     {
     case SCN_PAINTED:
-        if(active) NavDlg.DrawView();
+        if(active) 
+        {            
+            start = SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
+            end   = SendMessage(nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0) + start;
+            if((start_old != start) && (NavDlg.ReadyToDraw == TRUE))
+            {
+                NavDlg.DrawView(start, end);
+                start_old = start;
+            }
+        }
         break;
     case NPPN_TBMODIFICATION:
         {         
-            //HMENU hMenu = ::GetMenu(nppData._nppHandle);
-
             tbNext.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_NEXT), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
             tbPrev.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_PREV), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
             tbFirst.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_FIRST), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
@@ -1910,20 +1903,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID, (LPARAM)Settings.AddLine);
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACING]._cmdID, (LPARAM)Settings.IncludeSpace);
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID, (LPARAM)Settings.DetectMove);
-
-            if (FirstRun)
-            {
-                MessageBox(
-                    NULL, 
-		            TEXT("This is the first time you launch Compare 1.5.4.\r\n\r\n")
-		            TEXT("This release include a comparison results graphical view that is still in beta version.\r\n")
-                    TEXT("So please do not try to undock/move/resize it.\r\n")
-		            TEXT("\r\n")
-		            TEXT("Hopefully you find this to be a useful tool.  Enjoy!\r\n\r\n")
-		            TEXT("Jean-Sébastien Leroy"),            
-                    TEXT("Compare 1.5.4 - Beta version"), 
-                    MB_ICONWARNING);
-            }
 
             break;
         }
