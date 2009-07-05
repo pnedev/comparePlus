@@ -16,9 +16,9 @@
 	</ToolFiles>
 	<Configurations>
 		<Configuration
-			Name="Debug 5.2|Win32"
-			OutputDirectory="c:\Program Files\Notepad++ 5.2\plugins"
-			IntermediateDirectory="Debug"
+			Name="Debug|Win32"
+			OutputDirectory="c:\Program Files\Notepad++\plugins"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
 			CharacterSet="2"
@@ -43,7 +43,7 @@
 				Optimization="0"
 				EnableIntrinsicFunctions="false"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="../../src;../../src/MBA;../../src/AboutDlg;../../../Common/Ccpp;../../src/OptionDlg;"
+				AdditionalIncludeDirectories="../../src;../../src/MBA;../../src/AboutDlg;../../src/NavDlg;../../src/Common;../../src/OptionDlg"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
@@ -100,8 +100,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="C:\Program Files\Notepad++\plugins"
-			IntermediateDirectory="Release"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
 			CharacterSet="2"
@@ -128,7 +128,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="false"
-				AdditionalIncludeDirectories="../../src;../../src/MBA;../../src/AboutDlg;../../../Common/Ccpp;../../src/OptionDlg;"
+				AdditionalIncludeDirectories="../../src;../../src/MBA;../../src/AboutDlg;../../src/NavDlg;../../src/Common;../../src/OptionDlg"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -185,12 +185,12 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Debug 5.3.1|Win32"
-			OutputDirectory="c:\Program Files\Notepad++ 5.3.1\plugins"
+			Name="Debug Unicode|Win32"
+			OutputDirectory="c:\Program Files\Notepad++\plugins"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
-			CharacterSet="2"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -212,7 +212,7 @@
 				Optimization="0"
 				EnableIntrinsicFunctions="false"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="../../src;../../src/MBA;../../src/AboutDlg;../../../Common/Ccpp;../../src/OptionDlg;"
+				AdditionalIncludeDirectories="../../src;../../src/MBA;../../src/AboutDlg;../../src/NavDlg;../../src/Common;../../src/OptionDlg"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
@@ -268,12 +268,12 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Debug 5.4|Win32"
-			OutputDirectory="c:\Program Files\Notepad++ 5.4\plugins"
-			IntermediateDirectory="Debug"
+			Name="Release Unicode|Win32"
+			OutputDirectory="c:\Program Files\Notepad++\plugins"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
-			CharacterSet="2"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -292,18 +292,20 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="0"
-				EnableIntrinsicFunctions="false"
+				Optimization="2"
+				InlineFunctionExpansion="1"
+				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="../../src;../../src/MBA;../../src/AboutDlg;../../../Common/Ccpp;../../src/OptionDlg;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="0"
-				RuntimeLibrary="1"
+				OmitFramePointers="false"
+				AdditionalIncludeDirectories="../../src;../../src/MBA;../../src/AboutDlg;../../src/NavDlg;../../src/Common;../../src/OptionDlg"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS"
+				StringPooling="true"
+				RuntimeLibrary="0"
+				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="3"
+				DebugInformationFormat="0"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -317,11 +319,12 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib"
-				OutputFile="$(OutDir)/ComparePlugin.dll"
-				LinkIncremental="2"
+				OutputFile="$(OutDir)\ComparePlugin.dll"
+				LinkIncremental="1"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="$(OutDir)/Compare.pdb"
 				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
 				ImportLibrary="$(OutDir)/Compare.lib"
 				TargetMachine="1"
 			/>
@@ -375,6 +378,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\NavDlg\NavDialog.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\NPPHelpers.cpp"
 				>
 			</File>
@@ -390,15 +397,15 @@
 				Name="Common"
 				>
 				<File
-					RelativePath="..\..\..\Common\Ccpp\StaticDialog.cpp"
+					RelativePath="..\..\src\Common\StaticDialog.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\Common\Ccpp\stdafx.cpp"
+					RelativePath="..\..\src\Common\stdafx.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\Common\Ccpp\SysMsg.cpp"
+					RelativePath="..\..\src\Common\SysMsg.cpp"
 					>
 				</File>
 			</Filter>
@@ -457,6 +464,22 @@
 			</File>
 			<File
 				RelativePath="..\..\src\CompareResource.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\icon_add_16.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\icon_sub_16.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\icon_warning_16.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\NavDlg\NavDialog.h"
 				>
 			</File>
 			<File
@@ -574,6 +597,22 @@
 			>
 			<File
 				RelativePath="..\..\src\Compare.rc"
+				>
+			</File>
+			<File
+				RelativePath="..\..\res\first.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\res\last.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\res\next.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\res\prev.bmp"
 				>
 			</File>
 		</Filter>
