@@ -23,7 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "Compare.h"
 #include "DockingDlgInterface.h"
 
-#define SPACE   5
+#define SPACE   2
 
 class NavDialog : public DockingDlgInterface
 {

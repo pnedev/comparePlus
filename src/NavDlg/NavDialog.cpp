@@ -46,7 +46,7 @@ void NavDialog::doDialog(bool willBeShown)
 
 		// define the default docking behaviour
 		_data.uMask			= DWS_DF_CONT_RIGHT;
-        _data.pszName       = TEXT("NavBar");
+        _data.pszName       = TEXT("Nav Bar");
 		_data.pszModuleName	= getPluginFileName();
         _data.dlgID			= CMD_USE_NAV_BAR;
 
@@ -300,13 +300,14 @@ LRESULT NavDialog::OnPaint(HWND hWnd)
 }
 
 void NavDialog::DrawView(long start, long end)
-{
-    HBRUSH hBrush = CreateSolidBrush(RGB(255,255,255));
+{    
     RECT bmpRect;
     bmpRect.top = 0;
     bmpRect.left = 0;
     bmpRect.right = m_hMemBMPSize.cx;
     bmpRect.bottom = m_hMemBMPSize.cy;
+
+	HBRUSH hBrush = CreateSolidBrush(GetSysColor(COLOR_BTNFACE));
 
     FillRect(m_hMemDCView, &bmpRect, hBrush);
 
