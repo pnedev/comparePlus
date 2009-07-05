@@ -269,7 +269,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release Unicode|Win32"
-			OutputDirectory="c:\Program Files\Notepad++\plugins"
+			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
