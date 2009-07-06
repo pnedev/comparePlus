@@ -22,6 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 NavDialog::NavDialog(void) : DockingDlgInterface(IDD_NAV_DIALOG)
 {
+    
 }
 
 NavDialog::~NavDialog(void)
@@ -48,7 +49,7 @@ void NavDialog::doDialog(bool willBeShown)
 		_data.uMask			= DWS_DF_CONT_RIGHT;
         _data.pszName       = TEXT("Nav Bar");
 		_data.pszModuleName	= getPluginFileName();
-        _data.dlgID			= CMD_USE_NAV_BAR;
+        _data.dlgID			= NULL; //CMD_USE_NAV_BAR;
 
 		::SendMessage(_hParent, NPPM_DMMREGASDCKDLG, 0, (LPARAM)&_data);
     }
@@ -243,6 +244,9 @@ LRESULT NavDialog::OnPaint(HWND hWnd)
     long SzX = ((r.right - r.left) - 3 * SPACE) / 2;
     long SzY = (r.bottom - r.top) - 2 * SPACE;
 
+    // If side bar is too small, don't draw anything
+    if ((SzX < 5) || (SzX < 5)) return false;
+
     // Define left rectangle coordinates
     m_rLeft.top    = SPACE;    
     m_rLeft.left   = SPACE;
@@ -255,10 +259,6 @@ LRESULT NavDialog::OnPaint(HWND hWnd)
     m_rRight.right  = m_rRight.left + SzX;
     m_rRight.bottom = m_rRight.top + SzY;
 
-    // Draw scroll bar
-    //SetStretchBltMode(m_hdc, COLORONCOLOR);
-
-    // Set stretch mode
     SetStretchBltMode(m_hdc, COLORONCOLOR);
 
     int x, y, cx, cy;
