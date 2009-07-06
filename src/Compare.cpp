@@ -62,6 +62,7 @@ const TCHAR blankColorOption[]     = TEXT("Blank");
 const TCHAR highlightColorOption[] = TEXT("Highlight");
 const TCHAR highlightAlphaOption[] = TEXT("Alpha");
 const TCHAR symbolsOption[]        = TEXT("Symbols");
+const TCHAR NavBarOption[]         = TEXT("Navigation bar");
 
 const TCHAR localConfFile[] = TEXT("doLocalConf.xml");
 
@@ -118,7 +119,7 @@ void alignMatches()
     Settings.AddLine = !Settings.AddLine;
     if (hMenu)
     {
-        CheckMenuItem(hMenu, funcItem[6]._cmdID, MF_BYCOMMAND | (Settings.AddLine ? MF_CHECKED : MF_UNCHECKED));
+        CheckMenuItem(hMenu, funcItem[CMD_ALIGN_MATCHES]._cmdID, MF_BYCOMMAND | (Settings.AddLine ? MF_CHECKED : MF_UNCHECKED));
     }      
 }
 void includeSpacing()
@@ -127,7 +128,7 @@ void includeSpacing()
     Settings.IncludeSpace = !Settings.IncludeSpace;
     if (hMenu)
     {
-        CheckMenuItem(hMenu, funcItem[7]._cmdID, MF_BYCOMMAND | (Settings.IncludeSpace ? MF_CHECKED : MF_UNCHECKED));
+        CheckMenuItem(hMenu, funcItem[CMD_IGNORE_SPACING]._cmdID, MF_BYCOMMAND | (Settings.IncludeSpace ? MF_CHECKED : MF_UNCHECKED));
     }  
 }
 void detectMoves()
@@ -136,7 +137,7 @@ void detectMoves()
     Settings.DetectMove = !Settings.DetectMove;
     if (hMenu)
     {
-        CheckMenuItem(hMenu, funcItem[8]._cmdID, MF_BYCOMMAND | (Settings.DetectMove ? MF_CHECKED : MF_UNCHECKED));
+        CheckMenuItem(hMenu, funcItem[CMD_DETECT_MOVES]._cmdID, MF_BYCOMMAND | (Settings.DetectMove ? MF_CHECKED : MF_UNCHECKED));
     }  
 }
 
@@ -189,6 +190,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_COMPARE]._pShKey->_isCtrl = false;
             funcItem[CMD_COMPARE]._pShKey->_isShift = false;
             funcItem[CMD_COMPARE]._pShKey->_key = 'D';
+            funcItem[CMD_COMPARE]._init2Check = false;
 
             funcItem[CMD_CLEAR_RESULTS]._pFunc = reset;
             lstrcpy(funcItem[CMD_CLEAR_RESULTS]._itemName, TEXT("Clear Results"));
@@ -197,6 +199,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_CLEAR_RESULTS]._pShKey->_isCtrl = true;
             funcItem[CMD_CLEAR_RESULTS]._pShKey->_isShift = false;
             funcItem[CMD_CLEAR_RESULTS]._pShKey->_key = 'D';
+            funcItem[CMD_CLEAR_RESULTS]._init2Check = false;
 
             funcItem[CMD_SEPARATOR_1]._pFunc = NULL; //EmptyFunc;
             lstrcpy(funcItem[CMD_SEPARATOR_1]._itemName, TEXT("-----------"));
@@ -209,6 +212,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_COMPARE_LAST_SAVE]._pShKey->_isCtrl = false;
             funcItem[CMD_COMPARE_LAST_SAVE]._pShKey->_isShift = false;
             funcItem[CMD_COMPARE_LAST_SAVE]._pShKey->_key = 'S';
+            funcItem[CMD_COMPARE_LAST_SAVE]._init2Check = false;
 
             funcItem[CMD_COMAPRE_SVN_BASE]._pFunc = compareBase;
             lstrcpy(funcItem[CMD_COMAPRE_SVN_BASE]._itemName, TEXT("Compare against SVN base"));
@@ -217,6 +221,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_COMAPRE_SVN_BASE]._pShKey->_isCtrl = false;
             funcItem[CMD_COMAPRE_SVN_BASE]._pShKey->_isShift = false;
             funcItem[CMD_COMAPRE_SVN_BASE]._pShKey->_key = 'B';
+            funcItem[CMD_COMAPRE_SVN_BASE]._init2Check = false;
 
             funcItem[CMD_SEPARATOR_2]._pFunc = NULL;
             lstrcpy(funcItem[CMD_SEPARATOR_2]._itemName, TEXT("------------"));
@@ -225,19 +230,22 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_ALIGN_MATCHES]._pFunc = alignMatches;
             lstrcpy(funcItem[CMD_ALIGN_MATCHES]._itemName, TEXT("Align Matches"));
             funcItem[CMD_ALIGN_MATCHES]._pShKey = NULL;
+            funcItem[CMD_ALIGN_MATCHES]._init2Check = false;
 
             funcItem[CMD_IGNORE_SPACING]._pFunc = includeSpacing;
             lstrcpy(funcItem[CMD_IGNORE_SPACING]._itemName, TEXT("Ignore Spacing"));
             funcItem[CMD_IGNORE_SPACING]._pShKey = NULL;
+            funcItem[CMD_IGNORE_SPACING]._init2Check = false;
 
             funcItem[CMD_DETECT_MOVES]._pFunc = detectMoves;
             lstrcpy(funcItem[CMD_DETECT_MOVES]._itemName, TEXT("Detect Moves"));
             funcItem[CMD_DETECT_MOVES]._pShKey = NULL;
+            funcItem[CMD_DETECT_MOVES]._init2Check = false;
 
             funcItem[CMD_USE_NAV_BAR]._pFunc = ViewNavigationBar;
             lstrcpy(funcItem[CMD_USE_NAV_BAR]._itemName, TEXT("Navigation bar"));
             funcItem[CMD_USE_NAV_BAR]._pShKey = NULL;
-            funcItem[CMD_USE_NAV_BAR]._init2Check = true;
+            funcItem[CMD_USE_NAV_BAR]._init2Check = false;
 
             funcItem[CMD_SEPARATOR_3]._pFunc = NULL;
             lstrcpy(funcItem[CMD_SEPARATOR_3]._itemName, TEXT("-----------"));
@@ -250,6 +258,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_PREV]._pShKey->_isCtrl = true;
             funcItem[CMD_PREV]._pShKey->_isShift = false;
             funcItem[CMD_PREV]._pShKey->_key = VK_PRIOR;
+            funcItem[CMD_PREV]._init2Check = false;
 
             funcItem[CMD_NEXT]._pFunc = Next;
             lstrcpy(funcItem[CMD_NEXT]._itemName, TEXT("Next"));
@@ -258,6 +267,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_NEXT]._pShKey->_isCtrl = true;
             funcItem[CMD_NEXT]._pShKey->_isShift = false;
             funcItem[CMD_NEXT]._pShKey->_key = VK_NEXT;
+            funcItem[CMD_NEXT]._init2Check = false;
 
             funcItem[CMD_FIRST]._pFunc = First;
             lstrcpy(funcItem[CMD_FIRST]._itemName, TEXT("First"));
@@ -266,6 +276,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_FIRST]._pShKey->_isCtrl = true;
             funcItem[CMD_FIRST]._pShKey->_isShift = true;
             funcItem[CMD_FIRST]._pShKey->_key = VK_PRIOR;
+            funcItem[CMD_FIRST]._init2Check = false;
 
             funcItem[CMD_LAST]._pFunc = Last;
             lstrcpy(funcItem[CMD_LAST]._itemName, TEXT("Last"));
@@ -274,6 +285,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_LAST]._pShKey->_isCtrl = true;
             funcItem[CMD_LAST]._pShKey->_isShift = true;
             funcItem[CMD_LAST]._pShKey->_key = VK_NEXT;
+            funcItem[CMD_LAST]._init2Check = false;
 
             funcItem[CMD_SEPARATOR_4]._pFunc = NULL;
             lstrcpy(funcItem[CMD_SEPARATOR_4]._itemName, TEXT("-----------"));
@@ -282,10 +294,12 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_OPTION]._pFunc = openOptionDlg;
             lstrcpy(funcItem[CMD_OPTION]._itemName, TEXT("Option"));
             funcItem[CMD_OPTION]._pShKey = NULL;
+            funcItem[CMD_OPTION]._init2Check = false;
 
             funcItem[CMD_ABOUT]._pFunc = openAboutDlg;
             lstrcpy(funcItem[CMD_ABOUT]._itemName, TEXT("About"));
             funcItem[CMD_ABOUT]._pShKey = NULL;
+            funcItem[CMD_ABOUT]._init2Check = false;
 
             for(int i = 0; i < MAXCOMPARE; i++)
             {
@@ -422,6 +436,7 @@ void loadSettings(void)
     Settings.IncludeSpace = ::GetPrivateProfileInt(sectionName, ignoreSpacesOption, 1, iniFilePath) == 1;
     Settings.DetectMove   = ::GetPrivateProfileInt(sectionName, detectMovesOption, 1, iniFilePath) == 1;
     Settings.OldSymbols   = ::GetPrivateProfileInt(sectionName, symbolsOption, 1, iniFilePath) == 1;
+    Settings.UseNavBar    = ::GetPrivateProfileInt(sectionName, NavBarOption, 1, iniFilePath) == 1;
 }
 
 void saveSettings(void)
@@ -453,6 +468,7 @@ void saveSettings(void)
     ::WritePrivateProfileString(sectionName, ignoreSpacesOption, Settings.IncludeSpace ? TEXT("1") : TEXT("0"), iniFilePath);
     ::WritePrivateProfileString(sectionName, detectMovesOption, Settings.DetectMove ? TEXT("1") : TEXT("0"), iniFilePath);
     ::WritePrivateProfileString(sectionName, symbolsOption, Settings.OldSymbols ? TEXT("1") : TEXT("0"), iniFilePath);
+    ::WritePrivateProfileString(sectionName, NavBarOption, Settings.UseNavBar ? TEXT("1") : TEXT("0"), iniFilePath);
 }
 
 void openOptionDlg(void)
@@ -587,7 +603,52 @@ void openAboutDlg(void)
 
 void ViewNavigationBar(void)
 {
+	/*UINT state = ::GetMenuState(::GetMenu(nppData._nppHandle), funcItem[CMD_USE_NAV_BAR]._cmdID, MF_BYCOMMAND);
+	if (state & MF_CHECKED) 
+    {
+		NavDlg.doDialog(false);
+	} 
+    else 
+    {
+		NavDlg.doDialog();
+	} 
+    */
     //NavDlg.doDialog(Settings.NavBar);
+
+    HMENU hMenu = GetMenu(nppData._nppHandle);
+    Settings.UseNavBar = !Settings.UseNavBar;
+    if (hMenu)
+    {
+        CheckMenuItem(hMenu, funcItem[CMD_USE_NAV_BAR]._cmdID, MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
+    }
+
+    if (active)
+    {
+        if (Settings.UseNavBar) 
+        {
+            // Save current N++ focus
+            HWND hwnd = GetFocus();
+
+            // Configure NavBar
+            NavDlg.SetColor(
+                Settings.ColorSettings.added, 
+                Settings.ColorSettings.deleted, 
+                Settings.ColorSettings.changed, 
+                Settings.ColorSettings.moved, 
+                Settings.ColorSettings.blank);
+
+            // Display Navbar
+            NavDlg.doDialog(true);
+            start_old = -1;
+
+            // Restore N++ focus
+            SetFocus(hwnd);
+        }
+        else
+        {
+            NavDlg.doDialog(false);            
+        }
+    }
 }
 
 HWND getCurrentHScintilla(int which)
@@ -786,6 +847,9 @@ void reset()
         ::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_GRAYED);
         ::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_GRAYED);
         ::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_GRAYED);
+
+        // Restore side bar item entry state (because tick has been removed by the docked window)
+        CheckMenuItem(hMenu, funcItem[CMD_USE_NAV_BAR]._cmdID, MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
     }
 }
 
@@ -1829,6 +1893,7 @@ bool startCompare()
     ::SendMessageA(window, SCI_GRABFOCUS, 0, (LPARAM)1);
 
     if (!result)
+        if(Settings.UseNavBar)
     {
         // Save current N++ focus
         HWND hwnd = GetFocus();
@@ -1860,7 +1925,7 @@ bool startCompare()
 
 void compare()
 {
-    if(startCompare())
+    /*if(startCompare())
     {
         HWND window = getCurrentWindow();	
         ::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
@@ -1868,7 +1933,8 @@ void compare()
         ::SendMessageA(window, SCI_EMPTYUNDOBUFFER, 0, 0);
         ::SendMessageA(window, SCI_SETREADONLY, 1, 0);
         reset();
-    }
+    }*/
+    startCompare();
     ready();
 }
 
@@ -1914,6 +1980,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID, (LPARAM)Settings.AddLine);
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACING]._cmdID, (LPARAM)Settings.IncludeSpace);
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID, (LPARAM)Settings.DetectMove);
+            ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_USE_NAV_BAR]._cmdID, (LPARAM)Settings.UseNavBar);
 
             break;
         }

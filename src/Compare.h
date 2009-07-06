@@ -128,6 +128,7 @@ struct sColorSettings
 
 struct sUserSettings
 {
+    bool           UseNavBar;
     bool           AddLine;
     bool           IncludeSpace;
     bool           DetectMove;

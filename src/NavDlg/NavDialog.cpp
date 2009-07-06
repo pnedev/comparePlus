@@ -49,7 +49,7 @@ void NavDialog::doDialog(bool willBeShown)
 		_data.uMask			= DWS_DF_CONT_RIGHT;
         _data.pszName       = TEXT("Nav Bar");
 		_data.pszModuleName	= getPluginFileName();
-        _data.dlgID			= NULL; //CMD_USE_NAV_BAR;
+        _data.dlgID			= CMD_USE_NAV_BAR;
 
 		::SendMessage(_hParent, NPPM_DMMREGASDCKDLG, 0, (LPARAM)&_data);
     }
