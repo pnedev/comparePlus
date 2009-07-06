@@ -83,8 +83,6 @@ toolbarIcons  tbNext;
 toolbarIcons  tbFirst;
 toolbarIcons  tbLast;
 
-void EmptyFunc(void) { };
-
 int getCompare(int window)
 {
     for(int i = 0; i < MAXCOMPARE; i++) if(compareDocs[i] == window) return i;
@@ -198,7 +196,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_CLEAR_RESULTS]._pShKey->_isShift = false;
             funcItem[CMD_CLEAR_RESULTS]._pShKey->_key = 'D';
 
-            funcItem[CMD_SEPARATOR_1]._pFunc = EmptyFunc;
+            funcItem[CMD_SEPARATOR_1]._pFunc = NULL; //EmptyFunc;
             lstrcpy(funcItem[CMD_SEPARATOR_1]._itemName, TEXT("-----------"));
             funcItem[CMD_SEPARATOR_1]._pShKey = NULL;
 
@@ -218,7 +216,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_COMAPRE_SVN_BASE]._pShKey->_isShift = false;
             funcItem[CMD_COMAPRE_SVN_BASE]._pShKey->_key = 'B';
 
-            funcItem[CMD_SEPARATOR_2]._pFunc = EmptyFunc;
+            funcItem[CMD_SEPARATOR_2]._pFunc = NULL;
             lstrcpy(funcItem[CMD_SEPARATOR_2]._itemName, TEXT("------------"));
             funcItem[CMD_SEPARATOR_2]._pShKey = NULL;
 
@@ -239,7 +237,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_USE_NAV_BAR]._pShKey = NULL;
             funcItem[CMD_USE_NAV_BAR]._init2Check = true;
 
-            funcItem[CMD_SEPARATOR_3]._pFunc = EmptyFunc;
+            funcItem[CMD_SEPARATOR_3]._pFunc = NULL;
             lstrcpy(funcItem[CMD_SEPARATOR_3]._itemName, TEXT("-----------"));
             funcItem[CMD_SEPARATOR_3]._pShKey = NULL;
 
@@ -275,7 +273,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_LAST]._pShKey->_isShift = true;
             funcItem[CMD_LAST]._pShKey->_key = VK_NEXT;
 
-            funcItem[CMD_SEPARATOR_4]._pFunc = EmptyFunc;
+            funcItem[CMD_SEPARATOR_4]._pFunc = NULL;
             lstrcpy(funcItem[CMD_SEPARATOR_4]._itemName, TEXT("-----------"));
             funcItem[CMD_SEPARATOR_4]._pShKey = NULL;
 
