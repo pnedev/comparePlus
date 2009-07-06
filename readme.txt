@@ -3,11 +3,14 @@ To install copy ComparePlugin.dll into the plugins directory C:\Program Files\No
 A couple of notes:
 ------------------
 
-	Using or clearing the compare plugin will cause the undo buffer to be cleared. Unfortuntely, by adding lines, the editor no longer knows where the edit was, and would put it in a random spot
+	Using or clearing the compare plugin will cause the undo buffer to be cleared. 
+	Unfortuntely, by adding lines, the editor no longer knows where the edit was, and would put it in a random spot
 
-	When you save a file during a compare, all of the extra lines are removed before the save starts and added back in after the save is done. This may cause a delay, and slight movement in the scrollbar.
+	When you save a file during a compare, all of the extra lines are removed before the save starts and added back in after the save is done. 
+	This may cause a delay, and slight movement in the scrollbar.
 	
-	In order to clear the change indicators, the entire document style is cleared, and than refreshed by unfolding all the lines. So all lines will be unfolded after a compare or clear.
+	In order to clear the change indicators, the entire document style is cleared, and than refreshed by unfolding all the lines. 
+	So all lines will be unfolded after a compare or clear.
 	
 Change Log:
 -----------
@@ -21,11 +24,11 @@ Change Log:
 
 1.5.3
 
-    1. New Option and About menu entry, thanks to Jens.
-    2. Colors used for comparison results are now configurable in Option menu (there is now no need to edit Compare.ini).
-    3. Compare to last save shortcut move to Alt+S
-    4. Compare against SVN base shortcut move to Alt+B
-    5. Bookmark and Compare marker bugs resolved, thanks to Thell
+	1. New Option and About menu entry, thanks to Jens.
+	2. Colors used for comparison results are now configurable in Option menu (there is now no need to edit Compare.ini).
+	3. Compare to last save shortcut move to Alt+S
+	4. Compare against SVN base shortcut move to Alt+B
+	5. Bookmark and Compare marker bugs resolved, thanks to Thell
 
 1.5.2
     
