@@ -65,6 +65,8 @@ const TCHAR symbolsOption[]        = TEXT("Symbols");
 
 const TCHAR localConfFile[] = TEXT("doLocalConf.xml");
 
+bool different = TRUE;
+
 TCHAR compareFilePath[MAX_PATH];
 TCHAR compareFile[] = TEXT("Compare File");
 NppData nppData;
@@ -1566,7 +1568,7 @@ bool compareNew()
 	if (result != -1)
     {
 		int textIndex;
-		bool different = (doc1Changed > 0) || (doc2Changed > 0);
+		different = (doc1Changed > 0) || (doc2Changed > 0);
 		
         for(int i = 0; i < doc1Changed; i++)
         {
@@ -1826,36 +1828,47 @@ bool startCompare()
     ::SendMessageA(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
     ::SendMessageA(window, SCI_GRABFOCUS, 0, (LPARAM)1);
 
-    // Save current N++ focus
-    HWND hwnd = GetFocus();
+    if (!result)
+    {
+        // Save current N++ focus
+        HWND hwnd = GetFocus();
 
-    // Configure NavBar
-    NavDlg.SetColor(
-        Settings.ColorSettings.added, 
-        Settings.ColorSettings.deleted, 
-        Settings.ColorSettings.changed, 
-        Settings.ColorSettings.moved, 
-        Settings.ColorSettings.blank);
+        // Configure NavBar
+        NavDlg.SetColor(
+            Settings.ColorSettings.added, 
+            Settings.ColorSettings.deleted, 
+            Settings.ColorSettings.changed, 
+            Settings.ColorSettings.moved, 
+            Settings.ColorSettings.blank);
 
-    // Display Navbar
-    NavDlg.doDialog(true);
-    start_old = -1;
+        // Display Navbar
+        NavDlg.doDialog(true);
+        start_old = -1;
 
-    // Restore N++ focus
-    SetFocus(hwnd);
+        // Restore N++ focus
+        SetFocus(hwnd);
 
-    // Enable Prev/Next menu entry
-    ::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-    ::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-    ::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-    ::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+        // Enable Prev/Next menu entry
+        ::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+    }
 
     return result;
 }
 
 void compare()
 {
-    startCompare();
+    if(startCompare())
+    {
+        HWND window = getCurrentWindow();	
+        ::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
+        ::SendMessageA(window, SCI_SETSAVEPOINT, 1, 0);
+        ::SendMessageA(window, SCI_EMPTYUNDOBUFFER, 0, 0);
+        ::SendMessageA(window, SCI_SETREADONLY, 1, 0);
+        reset();
+    }
     ready();
 }
 
