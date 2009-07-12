@@ -195,12 +195,22 @@ IDB_COMPARE             ICON                    "..\\res\\icon1.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
+// Bitmap
+//
+
+IDB_FIRST               BITMAP                  "..\\res\\first.bmp"
+IDB_LAST                BITMAP                  "..\\res\\last.bmp"
+IDB_NEXT                BITMAP                  "..\\res\\next.bmp"
+IDB_PREV                BITMAP                  "..\\res\\prev.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
 // Version
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,5,3,1
- PRODUCTVERSION 1,5,3,1
+ FILEVERSION 1,5,5,0
+ PRODUCTVERSION 1,5,5,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -213,33 +223,23 @@ VS_VERSION_INFO VERSIONINFO
 BEGIN
     BLOCK "StringFileInfo"
     BEGIN
-        BLOCK "000004b0"
+        BLOCK "040c04b0"
         BEGIN
             VALUE "FileDescription", "Compare"
-            VALUE "FileVersion", "1, 5, 3, 2"
+            VALUE "FileVersion", "1, 5, 5, 0"
             VALUE "InternalName", "Compare"
             VALUE "LegalCopyright", "Copyright (C) 2009"
-            VALUE "OriginalFilename", "Compare.rc"
+            VALUE "OriginalFilename", "Compare"
             VALUE "ProductName", "Compare"
-            VALUE "ProductVersion", "1, 5, 3, 2"
+            VALUE "ProductVersion", "1, 5, 5, 0"
         END
     END
     BLOCK "VarFileInfo"
     BEGIN
-        VALUE "Translation", 0x0, 1200
+        VALUE "Translation", 0x40c, 1200
     END
 END
 
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Bitmap
-//
-
-IDB_FIRST               BITMAP                  "D:\\work\\notepad++\\Compare-plugin\\res\\first.bmp"
-IDB_LAST                BITMAP                  "D:\\work\\notepad++\\Compare-plugin\\res\\last.bmp"
-IDB_NEXT                BITMAP                  "D:\\work\\notepad++\\Compare-plugin\\res\\next.bmp"
-IDB_PREV                BITMAP                  "D:\\work\\notepad++\\Compare-plugin\\res\\prev.bmp"
 #endif    // French (France) resources
 /////////////////////////////////////////////////////////////////////////////
 
