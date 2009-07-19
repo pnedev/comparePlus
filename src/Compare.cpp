@@ -1233,70 +1233,90 @@ bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2)
 
 int setDiffLines(diff_edit *e, diff_edit changes[], int *i, short op, int altLocation)
 {
-    int index=*i;
-    int addedLines=0;
-    //int startLocation = altLocation;
-    for(int j=0;j<(e->len);j++){
-
-        changes[index].set=e->set;
-        changes[index].len=1;
-        changes[index].op=e->op;
-        changes[index].off=e->off+j;
-        changes[index].changes=NULL;
-        changes[index].changeCount=0;
-        changes[index].moves=NULL;
+    int index = *i;
+    int addedLines = 0;
+    
+    for(int j = 0; j < (e->len); j++)
+    {
+        changes[index].set = e->set;
+        changes[index].len = 1;
+        changes[index].op = e->op;
+        changes[index].off = e->off+j;
+        changes[index].changes = NULL;
+        changes[index].changeCount = 0;
+        changes[index].moves = NULL;
 
         //see if line is already marked as move
-        if(e->moves!=NULL && e->moves[j]!=-1){
-            changes[index].op=DIFF_MOVE;
-            changes[index].matchedLine=e->moves[j];
-            changes[index].altLocation=altLocation;
+        if(e->moves != NULL && e->moves[j] != -1)
+        {
+            changes[index].op = DIFF_MOVE;
+            changes[index].matchedLine = e->moves[j];
+            changes[index].altLocation = altLocation;
             addedLines++;
-        }else{
-            for(int k=0;k<e->changeCount;k++){
+        }
+        else
+        {
+            for(int k = 0; k < e->changeCount; k++)
+            {
                 struct diff_change *change =(diff_change*) varray_get(e->changes, k);
-                if(change->line==j){
-                    changes[index].matchedLine=change->matchedLine;
-                    changes[index].altLocation=altLocation;
-                    if(altLocation!=change->matchedLine ){
+                
+                if(change->line == j)
+                {
+                    changes[index].matchedLine = change->matchedLine;
+                    changes[index].altLocation = altLocation;
 
-                        int diff=altLocation-change->matchedLine;
-                        altLocation=change->matchedLine;
-                        for(int i=1;i<=j;i++){
-                            if(changes[index-i].changes!=NULL){
+                    if(altLocation != change->matchedLine)
+                    {
+                        int diff = altLocation-change->matchedLine;
+                        altLocation = change->matchedLine;
+
+                        for(int i = 1; i <= j; i++)
+                        {
+                            if(changes[index-i].changes != NULL)
+                            {
                                 break;
                             }
-                            if(op==DIFF_DELETE){
-                                changes[index-i].altLocation=change->matchedLine+diff;
-                            }else{
-                                changes[index-i].altLocation=change->matchedLine;
+                            if(op == DIFF_DELETE)
+                            {
+                                changes[index-i].altLocation = change->matchedLine+diff;
+                            }
+                            else
+                            {
+                                changes[index-i].altLocation = change->matchedLine;
                             }
                         }
-                        if(op==DIFF_INSERT){
-                            altLocation+=diff;
+                        if(op == DIFF_INSERT)
+                        {
+                            altLocation += diff;
                         }
-
-
                     }
 
-
-                    //assert(altLocation==changes[index].matchedLine);
-                    if(changes[index].changes==NULL){
-                        changes[index].changes=varray_new(sizeof(struct diff_change), NULL);
+                    if(changes[index].changes == NULL)
+                    {
+                        changes[index].changes = varray_new(sizeof(struct diff_change), NULL);
                     }
+                    
                     struct diff_change *newChange =(diff_change*) varray_get(changes[index].changes, changes[index].changeCount++);
-                    newChange->len=change->len;
-                    newChange->off=change->off;							
+
+                    newChange->len = change->len;
+                    newChange->off = change->off;							
                 }
             }
-            if(changes[index].changes==NULL){
-                changes[index].op=op;
-                changes[index].altLocation=altLocation;
+
+            if(changes[index].changes == NULL)
+            {
+                changes[index].op = op;
+                changes[index].altLocation = altLocation;
                 addedLines++;
-            }else{
-                if(op==DIFF_DELETE){
+            }
+            else
+            {
+                if(op == DIFF_DELETE)
+                {
                     altLocation++;
-                }else{
+                }
+                else
+                {
                     altLocation++;
                 }
             }
@@ -1304,51 +1324,62 @@ int setDiffLines(diff_edit *e, diff_edit changes[], int *i, short op, int altLoc
 
         index++;
     }
-    *i=index;
+    *i = index;
     return addedLines;
-
 }
 
 //Move algorithm:
 //scan for lines that are only in the other document once
 //use one-to-one match as an anchor
 //scan to see if the lines above and below anchor also match
-diff_edit *find_anchor(int line,varray *ses,int sn,unsigned int *doc1,unsigned int *doc2, int *line2){
-    diff_edit *insert=NULL;
-    int matches=0;
-    for(int i=0;i<sn;i++){
-        diff_edit *e=(diff_edit*)varray_get(ses,i);
-        if(e->op==DIFF_INSERT){
-            for(int j=0;j<e->len;j++){
-                //if(e->moves[j]==-1){
-                if(compareLines(doc1[line],doc2[e->off+j],NULL)==0){
-                    *line2=j;
-                    insert=e;
+diff_edit *find_anchor(int line, varray *ses, int sn, unsigned int *doc1, unsigned int *doc2, int *line2)
+{
+    diff_edit *insert = NULL;
+    int matches = 0;
+
+    for(int i = 0; i < sn; i++)
+    {
+        diff_edit *e = (diff_edit*)varray_get(ses,i);
+        
+        if(e->op == DIFF_INSERT)
+        {
+            for(int j = 0; j < e->len; j++)
+            {
+                if(compareLines(doc1[line], doc2[e->off+j], NULL) == 0)
+                {
+                    *line2 = j;
+                    insert = e;
                     matches++;
                 }
-                //}
             }
         }
     }
-    if(matches!=1 || insert->moves[*line2]!=-1){
+
+    if(matches != 1 || insert->moves[*line2] != -1)
+    {
         return NULL;
     }
-    matches=0;
-    for(int i=0;i<sn;i++){
-        diff_edit *e=(diff_edit*)varray_get(ses,i);
-        if(e->op==DIFF_DELETE){
-            for(int j=0;j<e->len;j++){
-                //if(e->moves[j]==-1){
-                if(compareLines(doc1[line],doc1[e->off+j],NULL)==0){
-                    //line2=j;
-                    //insert=e;
+
+    matches = 0;
+
+    for(int i = 0; i < sn; i++)
+    {
+        diff_edit *e = (diff_edit*)varray_get(ses, i);
+
+        if(e->op == DIFF_DELETE)
+        {
+            for(int j = 0; j < e->len; j++)
+            {
+                if(compareLines(doc1[line], doc1[e->off+j], NULL) == 0)
+                {
                     matches++;
                 }
-                //}
             }
         }
     }
-    if(matches!=1){
+
+    if(matches != 1)
+    {
         return NULL;
     }
     return insert;
