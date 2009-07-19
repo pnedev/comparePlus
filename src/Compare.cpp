@@ -955,77 +955,86 @@ int checkWords(diff_edit* e,chunk_info* chunk,chunk_info* otherChunk)
     return chunk->changeCount;
 }
 
-wordType getWordType(char letter){
-    switch(letter){
-            case ' ':
-            case '\t':
-                return SPACECHAR;
-            default:
-                if((letter>='a' && letter<='z')|| (letter>='A' && letter<='Z') || (letter>='0' && letter<='9')){
-                    return ALPHANUMCHAR;
-                }
-                return OTHERCHAR;
-
-                break;
+wordType getWordType(char letter)
+{
+    switch(letter)
+    {
+        case ' ':
+        case '\t':
+            return SPACECHAR;
+        default:
+            if((letter >= 'a' && letter <= 'z') || 
+               (letter >= 'A' && letter <= 'Z') || 
+               (letter >= '0' && letter <= '9'))
+            {
+                return ALPHANUMCHAR;
+            }
+            return OTHERCHAR;
+            break;
     }
-
 }
 
-int getWords(diff_edit* e, char** doc,chunk_info *chunk  ){
+int getWords(diff_edit* e, char** doc, chunk_info *chunk)
+{
+    varray *words = chunk->words;
+    int wordIndex = 0;
+    chunk->lineEndPos = new int[chunk->lineCount];
+    chunk->linePos = new int[chunk->lineCount];
 
-    varray *words=chunk->words;
-    int wordIndex=0;
-    chunk->lineEndPos=new int[chunk->lineCount];
-    chunk->linePos=new int[chunk->lineCount];
-    for(int line=0;line<(e->len);line++){
-        string text=string("");
-        wordType type=SPACECHAR;
-        int len=0;
-        chunk->linePos[line]=wordIndex;
-        int i=0;
-        unsigned int hash=0;
-        for(i=0;doc[line+e->off][i]!=0;i++){
+    for(int line = 0; line < (e->len); line++)
+    {
+        string text = string("");
+        wordType type = SPACECHAR;
+        int len = 0;
+        chunk->linePos[line] = wordIndex;
+        int i = 0;
+        unsigned int hash = 0;
 
-            char l=doc[line+e->off][i];
-            wordType newType=getWordType(l);
-            if(newType==type){
-                text+=l;
+        for(i = 0; doc[line+e->off][i] != 0; i++)
+        {
+            char l = doc[line+e->off][i];
+            wordType newType = getWordType(l);
+
+            if(newType == type)
+            {
+                text += l;
                 len++;
-                hash=HASH(hash,l);
-            }else{
-                if(len>0){
-                    //if(Settings.IncludeSpace || type!=SPACECHAR){
-                    if(!Settings.IncludeSpace || type!=SPACECHAR){
-                        Word *word=(Word*)varray_get(words,wordIndex++);
-                        //word->text=text;
-                        word->length=len;
-                        word->line=line;
-                        word->pos=i-len;
-                        word->type=type;
-                        word->hash=hash;
+                hash = HASH(hash, l);
+            }
+            else
+            {
+                if(len > 0)
+                {
+                    if(!Settings.IncludeSpace || type!=SPACECHAR)
+                    {
+                        Word *word = (Word*)varray_get(words,wordIndex++);
+                        word->length = len;
+                        word->line = line;
+                        word->pos = i-len;
+                        word->type = type;
+                        word->hash = hash;
                     }
                 }
-                type=newType;
-                text=l;
-                len=1;
-                hash=HASH(0,l);
-
-            }
-
-        }
-        if(len>0){
-            //if(Settings.IncludeSpace || type!=SPACECHAR){
-            if(!Settings.IncludeSpace || type!=SPACECHAR){
-                Word *word=(Word*)varray_get(words,wordIndex++);
-                //word->text=text;
-                word->length=len;
-                word->line=line;
-                word->pos=i-len;
-                word->type=type;
-                word->hash=hash;
+                type = newType;
+                text = l;
+                len = 1;
+                hash = HASH(0,l);
             }
         }
-        chunk->lineEndPos[line]=wordIndex;
+
+        if(len > 0)
+        {
+            if(!Settings.IncludeSpace || type != SPACECHAR)
+            {
+                Word *word = (Word*)varray_get(words, wordIndex++);
+                word->length = len;
+                word->line = line;
+                word->pos = i-len;
+                word->type = type;
+                word->hash = hash;
+            }
+        }
+        chunk->lineEndPos[line] = wordIndex;
     }
     return wordIndex;
 }
