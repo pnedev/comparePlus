@@ -28,7 +28,6 @@
 /* Given a hash value and a new character, return a new hash value. */
 #define HASH(h, c) ((c) + ROL (h, 7))
 
-
 #include "Compare.h"
 #include "NPPHelpers.h"
 
@@ -36,11 +35,11 @@ TCHAR emptyLinesDoc[MAX_PATH];
 #define MAXCOMPARE 50
 int compareDocs[MAXCOMPARE];
 
-int tempWindow = -1;
+int  tempWindow = -1;
 bool notepadVersionOk = false;
 bool active = false;
 blankLineList *lastEmptyLines=NULL;
-int topLine = 0;
+int  topLine = 0;
 long start_old = -1;
 bool panelsOpened = false;
 
@@ -201,7 +200,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_CLEAR_RESULTS]._pShKey->_key = 'D';
             funcItem[CMD_CLEAR_RESULTS]._init2Check = false;
 
-            funcItem[CMD_SEPARATOR_1]._pFunc = NULL; //EmptyFunc;
+            funcItem[CMD_SEPARATOR_1]._pFunc = NULL;
             lstrcpy(funcItem[CMD_SEPARATOR_1]._itemName, TEXT("-----------"));
             funcItem[CMD_SEPARATOR_1]._pShKey = NULL;
 
@@ -329,7 +328,6 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
                 lstrcpy(compareFilePath, nppPath);
 
                 PathAppend(iniFilePath, TEXT("plugins\\config\\Compare.ini"));
-                //PathAppend(compareFilePath, compareFile);
             }
             else 
             {
@@ -339,8 +337,6 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
                 SHGetPathFromIDList(pidl, compareFilePath);
 
                 PathAppend(iniFilePath, TEXT("Notepad++\\Compare.ini"));
-                //PathAppend(compareFilePath, "Notepad++\\");
-                //PathAppend(compareFilePath,compareFile);
             }
 
             loadSettings();
@@ -492,10 +488,11 @@ void openOptionDlg(void)
     }
 }
 
-void jumpChangedLines( bool direction )
+void jumpChangedLines(bool direction)
 {
     HWND CurView = NULL;
     int currentEdit;
+
     ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
 
     if (currentEdit != -1) 
@@ -507,35 +504,35 @@ void jumpChangedLines( bool direction )
                           (1 << MARKER_ADDED_LINE) | (1 << MARKER_REMOVED_LINE) |
                           (1 << MARKER_BLANK_LINE);
 
-	int posStart = ::SendMessage(CurView, SCI_GETCURRENTPOS, 0, 0 );
-	int lineStart = ::SendMessage(CurView, SCI_LINEFROMPOSITION, posStart, 0 );
-	int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0 );
+	int posStart = ::SendMessage(CurView, SCI_GETCURRENTPOS, 0, 0);
+	int lineStart = ::SendMessage(CurView, SCI_LINEFROMPOSITION, posStart, 0);
+	int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0);
 
 	int currLine;
 	int nextLine;
 	int sci_marker_direction;
 
-	if ( direction ) 
+	if (direction) 
     {
-		currLine = ( lineStart < lineMax ) ? ( lineStart + 1 ) : ( 0 );
+		currLine = (lineStart < lineMax) ? (lineStart + 1) : (0);
 		sci_marker_direction = SCI_MARKERNEXT;
 	}
 	else 
     {
-		currLine = ( lineStart > 0 ) ? ( lineStart - 1 ) : ( lineMax );
+		currLine = (lineStart > 0) ? (lineStart - 1) : (lineMax);
 		sci_marker_direction = SCI_MARKERPREVIOUS;
 	}
 
-	nextLine = ::SendMessage(CurView, sci_marker_direction, currLine, sci_search_mask );
+	nextLine = ::SendMessage(CurView, sci_marker_direction, currLine, sci_search_mask);
 
-	if ( nextLine < 0 ) 
+	if (nextLine < 0) 
     {
-		currLine = ( direction ) ? ( 0 ) : ( lineMax );
-		nextLine = ::SendMessage(CurView, sci_marker_direction, currLine, sci_search_mask );
+		currLine = (direction) ? (0) : (lineMax);
+		nextLine = ::SendMessage(CurView, sci_marker_direction, currLine, sci_search_mask);
 	}
 
-	::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0 );
-	::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0 );
+	::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
+	::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0);
 }
 
 void Prev(void)
@@ -567,8 +564,8 @@ void First(void)
 
 	    int currLine = 0;
 	    int nextLine = ::SendMessage(CurView, SCI_MARKERNEXT, currLine, sci_search_mask );
-	    ::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0 );
-	    ::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0 );
+	    ::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
+	    ::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0);
     }
 }
 
@@ -589,10 +586,10 @@ void Last(void)
                               (1 << MARKER_ADDED_LINE) | (1 << MARKER_REMOVED_LINE) |
                               (1 << MARKER_BLANK_LINE);
 
-	    int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0 );
-	    int nextLine = ::SendMessage(CurView, SCI_MARKERPREVIOUS, lineMax, sci_search_mask );
-	    ::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0 );
-	    ::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0 );
+	    int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0);
+	    int nextLine = ::SendMessage(CurView, SCI_MARKERPREVIOUS, lineMax, sci_search_mask);
+	    ::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
+	    ::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0);
     }
 }
 
@@ -603,20 +600,9 @@ void openAboutDlg(void)
 
 void ViewNavigationBar(void)
 {
-	/*UINT state = ::GetMenuState(::GetMenu(nppData._nppHandle), funcItem[CMD_USE_NAV_BAR]._cmdID, MF_BYCOMMAND);
-	if (state & MF_CHECKED) 
-    {
-		NavDlg.doDialog(false);
-	} 
-    else 
-    {
-		NavDlg.doDialog();
-	} 
-    */
-    //NavDlg.doDialog(Settings.NavBar);
-
     HMENU hMenu = GetMenu(nppData._nppHandle);
     Settings.UseNavBar = !Settings.UseNavBar;
+
     if (hMenu)
     {
         CheckMenuItem(hMenu, funcItem[CMD_USE_NAV_BAR]._cmdID, MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
@@ -657,11 +643,7 @@ HWND getCurrentHScintilla(int which)
 };
 
 
-// Here you can process the Npp Messages 
-// I will make the messages accessible little by little, according to the need of plugin development.
-// Please let me know if you need to access to some messages :
-// http://sourceforge.net/forum/forum.php?forum_id=482781
-//
+// NP++ messages processing
 extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM /*wParam*/, LPARAM /*lParam*/)
 {
     if (Message == WM_CREATE)
@@ -683,13 +665,8 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM /*wPar
 
 HWND openTempFile(void)
     {
-    /*if(PathFileExists(compareFilePath)==false){
-    ofstream myfile;
-    myfile.open (compareFilePath);
-    myfile << "Blank File for compare use";
-    myfile.close();
-    }*/
     char original[MAX_PATH];
+
     ::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, 0, (LPARAM)original);
     HWND originalwindow = getCurrentWindow();	
 
@@ -741,15 +718,14 @@ void openFile(TCHAR *file)
 
     HWND window = openTempFile();
 
-    //ifstream::pos_type size;
     ifstream myfile(file,ios::in|ios::ate| ios::binary);
 
     if(myfile.is_open())
     {		
         long size = myfile.tellg();
         char *memblock = new char [size+1];
-        myfile.seekg (0);
-        myfile.read (memblock, size);
+        myfile.seekg(0);
+        myfile.read(memblock, size);
         myfile.close();	
 
         memblock[size] = 0;
@@ -773,9 +749,12 @@ void openFile(TCHAR *file)
             ::SendMessageA(window, SCI_SETREADONLY, 1, 0);            
         }
     }
-    //return;
 }
 
+// Exit compare session
+// - Clear results
+// - Delete objects
+// - Restore previous NP++ appearance (markers, highlight, ...)
 void reset()
 {
     if (active == true)
@@ -867,109 +846,112 @@ int compareLines(unsigned int line1, unsigned int line2, void * /*context*/)
 
 int checkWords(diff_edit* e,chunk_info* chunk,chunk_info* otherChunk)
 {
-    Word *word=(Word*)varray_get(chunk->words,e->off);
-    int start=word->line;
-    word=(Word*)varray_get(chunk->words,e->off+e->len-1);
-    int end=word->line;
-    assert(start<=end);
-    int line2=chunk->lineMappings[start];
-    int len=e->len;
-    int off=e->off;
+    Word *word = (Word*)varray_get(chunk->words,e->off);
+    int start = word->line;
+    word = (Word*)varray_get(chunk->words,e->off+e->len-1);
+    int end = word->line;
+    assert(start <= end);
+    int line2 = chunk->lineMappings[start];
+    int len = e->len;
+    int off = e->off;
 
     //if the beginning is not at the start of the line, than its definetely a change;
-    if(line2==-1){
+    if(line2 == -1)
+    {
         //if this line is not matched to another line, don't bother checking it
-        if(start==end){
+        if(start == end)
+        {
             return chunk->changeCount;
-        }else{
-            //len=;
-            e->len-=chunk->lineEndPos[start]-e->off;
-            e->off=chunk->lineEndPos[start];
+        }
+        else
+        {
+            e->len -= chunk->lineEndPos[start] - e->off;
+            e->off = chunk->lineEndPos[start];
             start++;
         }
-    }else if(e->off!=chunk->linePos[start]){
-        struct diff_change *change=(diff_change*) varray_get(chunk->changes, chunk->changeCount++);
-        struct diff_change *change2=(diff_change*) varray_get(otherChunk->changes, otherChunk->changeCount++);
+    }
+    else if(e->off!=chunk->linePos[start])
+    {
+        struct diff_change *change = (diff_change*) varray_get(chunk->changes, chunk->changeCount++);
+        struct diff_change *change2 = (diff_change*) varray_get(otherChunk->changes, otherChunk->changeCount++);
 
-        change2->line=line2;
+        change2->line = line2;
+        change2->len = 0;
+        change2->off = 0;
+        change2->matchedLine = chunk->lineStart+start;
 
-        change2->len=0;
-        change2->off=0;
-        change2->matchedLine=chunk->lineStart+start;
-
-        word=(Word*)varray_get(chunk->words,e->off);
-        assert(word->line==start);
-        change->off=word->pos;
-        change->line=start;
-        change->matchedLine=otherChunk->lineStart+line2;
-
-
-
+        word = (Word*)varray_get(chunk->words,e->off);
+        assert(word->line == start);
+        change->off = word->pos;
+        change->line = start;
+        change->matchedLine = otherChunk->lineStart+line2;
 
         //multiline change or single line change
-        if(start!=end){
-            int len=chunk->lineEndPos[start]-e->off;
-            assert(len>0);
+        if(start != end)
+        {
+            int len = chunk->lineEndPos[start] - e->off;
+            assert(len > 0);
 
-
-            word=(Word*)varray_get(chunk->words,e->off+len-1);
-            e->off=chunk->lineEndPos[start];
-            e->len-=len;
-            assert(word->length>0);
-            assert(word->line==start);
-            change->len=(word->pos+word->length)-change->off;
-            assert(change->len>=0);
+            word = (Word*)varray_get(chunk->words,e->off+len-1);
+            e->off = chunk->lineEndPos[start];
+            e->len -= len;
+            assert(word->length > 0);
+            assert(word->line == start);
+            change->len = (word->pos + word->length) - change->off;
+            assert(change->len >= 0);
 
             start++;
-        }else{
-            int len=e->len;
-            word=(Word*)varray_get(chunk->words,e->off+len-1);
-            assert(word->length>0);
-            assert(word->line==change->line);
-            change->len=(word->pos+word->length)-change->off;
-            assert(change->len>=0);
+        }
+        else
+        {
+            int len = e->len;
+            word = (Word*)varray_get(chunk->words,e->off+len-1);
+            assert(word->length > 0);
+            assert(word->line == change->line);
+            change->len = (word->pos + word->length) - change->off;
+            assert(change->len >= 0);
             return chunk->changeCount;
         }				
     }
 
     //if a change spans more than one line, all the middle lines are just inserts or deletes
-    while(start!=end){
+    while(start != end)
+    {
         //potentially a inserted line					
-        e->off=chunk->lineEndPos[start];
-        e->len-=(chunk->lineEndPos[start]-chunk->linePos[start]);
+        e->off = chunk->lineEndPos[start];
+        e->len -= (chunk->lineEndPos[start]-chunk->linePos[start]);
         start++;
-
-
     }
-    line2=chunk->lineMappings[start];
-    //if the change does not go to the end of the line than its definetely a change
-    if(line2!=-1 && (e->off+e->len)<chunk->lineEndPos[start]){
 
+    line2 = chunk->lineMappings[start];
+
+    //if the change does not go to the end of the line than its definetely a change
+    if(line2!=-1 && (e->off+e->len)<chunk->lineEndPos[start])
+    {
         //todo recheck change because some of the diffs will be previous lines
-        struct diff_change *change=(diff_change*) varray_get(chunk->changes, chunk->changeCount++);
-        struct diff_change *change2=(diff_change*) varray_get(otherChunk->changes, otherChunk->changeCount++);
+        struct diff_change *change = (diff_change*) varray_get(chunk->changes, chunk->changeCount++);
+        struct diff_change *change2 = (diff_change*) varray_get(otherChunk->changes, otherChunk->changeCount++);
         //offset+=(direction*e->len);
 
-        change2->line=line2;//getLineFromPos(chunk->mappings[e->off],otherChunk->lineEndPos,otherChunk->lineCount,false);				
-        change2->matchedLine=chunk->lineStart+start;
-        change2->len=0;
-        change2->off=0;
+        change2->line = line2;//getLineFromPos(chunk->mappings[e->off],otherChunk->lineEndPos,otherChunk->lineCount,false);				
+        change2->matchedLine = chunk->lineStart+start;
+        change2->len = 0;
+        change2->off = 0;
 
-        word=(Word*)varray_get(chunk->words,e->off);
-        assert(word->line==start);
-        change->off=word->pos;
-        int len=e->len;
-        word=(Word*)varray_get(chunk->words,e->off+len-1);
-        assert(word->length>0);
-        change->len=(word->pos+word->length)-change->off;
-
-        change->line=start;	
-        assert(word->line==change->line);
-        assert(change->len>=0);
-        change->matchedLine=otherChunk->lineStart+line2;
+        word = (Word*)varray_get(chunk->words,e->off);
+        assert(word->line == start);
+        change->off = word->pos;
+        int len = e->len;
+        word = (Word*)varray_get(chunk->words,e->off+len-1);
+        assert(word->length > 0);
+        change->len = (word->pos + word->length) - change->off;
+        change->line = start;	
+        assert(word->line == change->line);
+        assert(change->len >= 0);
+        change->matchedLine = otherChunk->lineStart+line2;
     }
-    e->off=off;
-    e->len=len;
+    e->off = off;
+    e->len = len;
     return chunk->changeCount;
 }
 
