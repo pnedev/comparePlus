@@ -1385,44 +1385,68 @@ diff_edit *find_anchor(int line, varray *ses, int sn, unsigned int *doc1, unsign
     return insert;
 }
 
-void find_moves(varray *ses,int sn,unsigned int *doc1, unsigned int *doc2){
+void find_moves(varray *ses,int sn,unsigned int *doc1, unsigned int *doc2)
+{
+    // Exit immediately if user don't want to find moves
+    if(Settings.DetectMove == false) return;
+
     //init moves arrays
-    for(int i=0;i<sn;i++){
-        diff_edit *e=(diff_edit*)varray_get(ses,i);
-        if(e->op!=DIFF_MATCH){
-            e->moves=new int[e->len];
-            for(int j=0;j<e->len;j++){
-                e->moves[j]=-1;
+    for(int i = 0; i < sn; i++)
+    {
+        diff_edit *e = (diff_edit*)varray_get(ses, i);
+        
+        if(e->op != DIFF_MATCH)
+        {
+            e->moves = new int[e->len];
+
+            for(int j = 0; j < e->len; j++)
+            {
+                e->moves[j] = -1;
             }
-        }else{
-            e->moves=NULL;
+        }
+        else
+        {
+            e->moves = NULL;
         }
     }
 
-    if(Settings.DetectMove==false){return;}
-    for(int i=0;i<sn;i++){
-        diff_edit *e=(diff_edit*)varray_get(ses,i);
-        if(e->op==DIFF_DELETE){
-            for(int j=0;j<e->len;j++){
-                if(e->moves[j]==-1){
+    for(int i = 0; i < sn; i++)
+    {
+        diff_edit *e = (diff_edit*)varray_get(ses, i);
+
+        if(e->op == DIFF_DELETE)
+        {
+            for(int j = 0; j < e->len; j++)
+            {
+                if(e->moves[j] == -1)
+                {
                     int line2;
-                    diff_edit *match=find_anchor(e->off+j,ses,sn,doc1,doc2,&line2);
-                    if(match!=NULL){
-                        e->moves[j]=match->off+line2;
-                        match->moves[line2]=e->off+j;
-                        int d1=j-1;
-                        int d2=line2-1;
-                        while(d1>=0 && d2>=0 && e->moves[d1]==-1 && match->moves[d2]==-1 && compareLines(doc1[e->off+d1],doc2[match->off+d2],NULL)==0){
-                            e->moves[d1]=match->off+d2;
-                            match->moves[d2]=e->off+d1;
+                    diff_edit *match = find_anchor(e->off+j, ses, sn, doc1, doc2, &line2);
+                    
+                    if(match != NULL)
+                    {
+                        e->moves[j] = match->off+line2;
+                        match->moves[line2] = e->off+j;
+                        int d1 = j-1;
+                        int d2 = line2-1;
+
+                        while(d1 >= 0 && d2 >= 0 && e->moves[d1] == -1 && match->moves[d2] == -1 && 
+                            compareLines(doc1[e->off+d1], doc2[match->off+d2], NULL) == 0)
+                        {
+                            e->moves[d1] = match->off + d2;
+                            match->moves[d2] = e->off + d1;
                             d1--;
                             d2--;
                         }
-                        d1=j+1;
-                        d2=line2+1;
-                        while(d1<e->len && d2<match->len && e->moves[d1]==-1 && match->moves[d2]==-1 && compareLines(doc1[e->off+d1],doc2[match->off+d2],NULL)==0){
-                            e->moves[d1]=match->off+d2;
-                            match->moves[d2]=e->off+d1;
+
+                        d1 = j + 1;
+                        d2 = line2 + 1;
+                        
+                        while(d1 < e->len && d2 < match->len && e->moves[d1] == -1 && match->moves[d2] == -1 && 
+                            compareLines(doc1[e->off+d1], doc2[match->off+d2], NULL) == 0)
+                        {
+                            e->moves[d1] = match->off + d2;
+                            match->moves[d2] = e->off + d1;
                             d1++;
                             d2++;
                         }
@@ -1433,13 +1457,11 @@ void find_moves(varray *ses,int sn,unsigned int *doc1, unsigned int *doc2){
     }
 }
 
-
 //algorithm borrowed from WinMerge
 //if the line after the delete is the same as the first line of the delete, shift down
 //basically cabbat -abb is the same as -bba
 //since most languages start with unique lines and end with repetative lines(end,</node>, }, etc)
 //we shift the differences down where its possible so the results will be cleaner
-
 void shift_boundries(varray *ses,int sn,unsigned int *doc1,unsigned int *doc2,int doc1Length,int doc2Length){
     for (int i = 0; i < sn; i++) {
         struct diff_edit *e =(diff_edit*) varray_get(ses, i);
