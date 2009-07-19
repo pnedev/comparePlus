@@ -1047,168 +1047,192 @@ Word *getWord(varray *words, int index, void * /*context*/)
 
 int compareWord(Word *word1, Word *word2, void * /*context*/)
 {
-    //return word1->text.compare(word2->text);
     if(word1->hash == word2->hash) return 0;
     return 1;
 }
 
-bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2){
-    //return false;
+bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2)
+{
     chunk_info chunk1;
-    chunk1.lineCount=e1->len;
-    chunk1.words=varray_new(sizeof(struct Word), NULL);
-    chunk1.lineStart=e1->off;
-    chunk1.count=getWords(e1,doc1,&chunk1);
+    chunk1.lineCount = e1->len;
+    chunk1.words = varray_new(sizeof(struct Word), NULL);
+    chunk1.lineStart = e1->off;
+    chunk1.count = getWords(e1, doc1, &chunk1);
+    chunk1.lineMappings = new int[e1->len];
 
-    chunk1.lineMappings=new int[e1->len];
-    for(int i=0;i<e1->len;i++){
-        chunk1.lineMappings[i]=-1;
+    for(int i = 0; i < e1->len; i++)
+    {
+        chunk1.lineMappings[i] = -1;
     }
 
     chunk_info chunk2;
-    chunk2.lineCount=e2->len;
-    chunk2.words=varray_new(sizeof(struct Word), NULL);
-    chunk2.count=getWords(e2,doc2,&chunk2);
-    chunk2.lineStart=e2->off;
-    chunk2.lineMappings=new int[e2->len];
-    for(int i=0;i<e2->len;i++){
-        chunk2.lineMappings[i]=-1;
+    chunk2.lineCount = e2->len;
+    chunk2.words = varray_new(sizeof(struct Word), NULL);
+    chunk2.count = getWords(e2, doc2, &chunk2);
+    chunk2.lineStart = e2->off;
+    chunk2.lineMappings = new int[e2->len];
+
+    for(int i = 0; i < e2->len; i++)
+    {
+        chunk2.lineMappings[i] = -1;
     }
 
     //Compare the two chunks
     int sn;
     struct varray *ses = varray_new(sizeof(struct diff_edit), NULL);
 
-    //int result=(diff(chunk1.words, 0, chunk1.count, chunk2.words, 0, chunk2.count, (idx_fn)(getWord), (cmp_fn)(compareWord), NULL, 0, ses, &sn, NULL));
-
     diff(chunk1.words, 0, chunk1.count, chunk2.words, 0, chunk2.count, (idx_fn)(getWord), (cmp_fn)(compareWord), NULL, 0, ses, &sn, NULL);
 
     chunk1.changes = varray_new(sizeof(struct diff_change), NULL);
     chunk2.changes = varray_new(sizeof(struct diff_change), NULL);
 
-    int offset=0;
-    int **lineMappings1=new int*[chunk1.lineCount];
-    for(int i=0;i<chunk1.lineCount;i++){
-        lineMappings1[i]=new int[chunk2.lineCount];
-        for(int j=0;j<chunk2.lineCount;j++){
-            lineMappings1[i][j]=0;
+    int offset = 0;
+    int **lineMappings1 = new int*[chunk1.lineCount];
+
+    for(int i = 0; i < chunk1.lineCount; i++)
+    {
+        lineMappings1[i] = new int[chunk2.lineCount];
+
+        for(int j = 0; j < chunk2.lineCount; j++)
+        {
+            lineMappings1[i][j] = 0;
         }
     }
 
     /// Use the MATCH results to syncronise line numbers
     /// count how many are on each line, than select the line with the most matches
-    for (int i = 0; i < sn; i++) {
+    for (int i = 0; i < sn; i++) 
+    {
         struct diff_edit *e =(diff_edit*) varray_get(ses, i);
-        //results[i].len=e->len;
-        //results[i].off=e->off;
-        //results[i].op=e->op;
-        if(e->op==DIFF_DELETE){			
-            offset-=e->len;	
-        }else if(e->op==DIFF_INSERT){			
-            offset+=e->len;	
-        }else{
 
-            for(int index=e->off;index<(e->off+e->len);index++){
-                Word *word1=(Word*)varray_get(chunk1.words,index);
-                Word *word2=(Word*)varray_get(chunk2.words,index+offset);
-                if(word1->type!=SPACECHAR){
-                    int line1a=word1->line;
-                    int line2a=word2->line;
-
-                    lineMappings1[line1a][line2a]+=word1->length;
+        if(e->op == DIFF_DELETE)
+        {			
+            offset -= e->len;	
+        }
+        else if(e->op == DIFF_INSERT)
+        {			
+            offset += e->len;	
+        }
+        else
+        {
+            for(int index = e->off; index < (e->off+e->len); index++)
+            {
+                Word *word1 = (Word*)varray_get(chunk1.words, index);
+                Word *word2 = (Word*)varray_get(chunk2.words, index+offset);
+                
+                if(word1->type != SPACECHAR)
+                {
+                    int line1a = word1->line;
+                    int line2a = word2->line;
+                    lineMappings1[line1a][line2a] += word1->length;
                 }
-
-
             }
-
-
         }
     }
 
     // go through each line, and select the line with the highest strength
-    for(int i=0;i<chunk1.lineCount;i++){
-        int line=-1;
-        int max=0;
-        for(int j=0;j<chunk2.lineCount;j++){
-            if(lineMappings1[i][j]>max && (e2->moves==NULL||e2->moves[j]==-1) ){
-                line=j;
-                max=lineMappings1[i][j];
+    for(int i = 0; i < chunk1.lineCount; i++)
+    {
+        int line = -1;
+        int max = 0;
+
+        for(int j = 0; j <chunk2.lineCount; j++)
+        {
+            if(lineMappings1[i][j] > max && (e2->moves == NULL || e2->moves[j] == -1))
+            {
+                line = j;
+                max = lineMappings1[i][j];
             }			
         }
+
         //make sure that the line isnt already matched to another line, and that enough of the line is matched to be significant
-        int size=strlen(doc1[e1->off+i]);
-        if(line!=-1 && chunk2.lineMappings[line]==-1 && max>(size/3) &&(e1->moves==NULL|| e1->moves[i]==-1)){
-            chunk1.lineMappings[i]=line;
-            chunk2.lineMappings[line]=i;
+        int size = strlen(doc1[e1->off + i]);
+
+        if(line != -1 && chunk2.lineMappings[line] == -1 && max > (size/3) && (e1->moves == NULL || e1->moves[i] == -1))
+        {
+            chunk1.lineMappings[i] = line;
+            chunk2.lineMappings[line] = i;
         }
     }
+
     //find all the differences between the lines
-    chunk1.changeCount=0;
-    chunk2.changeCount=0;
+    chunk1.changeCount = 0;
+    chunk2.changeCount = 0;
 
-    for (int i = 0; i < sn; i++) {
+    for (int i = 0; i < sn; i++) 
+    {
         struct diff_edit *e =(diff_edit*) varray_get(ses, i);
-        if(e->op==DIFF_DELETE){
+        if(e->op == DIFF_DELETE)
+        {
             //Differences for Doc 1
-
-            checkWords(e,&chunk1,&chunk2);
-
-        }else if(e->op==DIFF_INSERT){			
+            checkWords(e, &chunk1, &chunk2);
+        }
+        else if(e->op==DIFF_INSERT)
+        {			
             //Differences for Doc2
-            checkWords(e,&chunk2,&chunk1);
+            checkWords(e, &chunk2, &chunk1);
         }
     }
-    e1->changeCount=chunk1.changeCount;
-    e1->changes=chunk1.changes;
-    e2->changeCount=chunk2.changeCount;
-    e2->changes=chunk2.changes;
 
+    e1->changeCount = chunk1.changeCount;
+    e1->changes = chunk1.changes;
+    e2->changeCount = chunk2.changeCount;
+    e2->changes = chunk2.changes;
 
 #if CLEANUP
-    for(int i=0;i<chunk1.lineCount;i++){
+
+    for(int i = 0; i < chunk1.lineCount; i++)
+    {
         delete[] lineMappings1[i];
     }
-    delete[] lineMappings1;
 
+    delete[] lineMappings1;
     delete[] chunk1.lineMappings;
     delete[] chunk1.lineEndPos;
     delete[] chunk1.linePos;
     delete[] chunk2.lineMappings;
     delete[] chunk2.lineEndPos;
     delete[] chunk2.linePos;
-    for(int i=chunk1.count;i>=0;i--){
+
+    for(int i = chunk1.count; i >= 0; i--)
+    {
         //Word *w=(Word*)varray_get(chunk1.words,i);
         //w->text.clear();		
         //w->text="";
         //delete w->text;
-        varray_release(chunk1.words,i);
+        varray_release(chunk1.words, i);
     }
+
     delete[] chunk1.words;
-    for(int i=chunk2.count;i>=0;i--){
+
+    for(int i = chunk2.count; i >= 0; i--)
+    {
         //Word *w=(Word*)varray_get(chunk2.words,i);
         //w->text.clear();
         //w->text="";
         //delete w->text;
-        varray_release(chunk2.words,i);
+        varray_release(chunk2.words, i);
     }
+
     //varray_deinit(chunk2.words);
     delete[] chunk2.words;
 
-    for(int i=sn;i>=0;i--){
+    for(int i=sn;i>=0;i--)
+    {
         varray_release(ses,i);
     }
+
     delete ses;
+
 #endif
 
-
-    return chunk1.changeCount+chunk2.changeCount>0;
-    //return true;
+    return chunk1.changeCount + chunk2.changeCount > 0;
 }
 
-
 //change the blocks of diffs to one diff per line. revert a "Changed" line to a insert or delete line if there are no changes
-//int setDiffLines(diff_edit *e,diff_edit changes[],int *i, int op,int altLocation){
-int setDiffLines(diff_edit *e,diff_edit changes[],int *i, short op,int altLocation){
+
+int setDiffLines(diff_edit *e, diff_edit changes[], int *i, short op, int altLocation)
+{
     int index=*i;
     int addedLines=0;
     //int startLocation = altLocation;
