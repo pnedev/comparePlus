@@ -1462,122 +1462,148 @@ void find_moves(varray *ses,int sn,unsigned int *doc1, unsigned int *doc2)
 //basically cabbat -abb is the same as -bba
 //since most languages start with unique lines and end with repetative lines(end,</node>, }, etc)
 //we shift the differences down where its possible so the results will be cleaner
-void shift_boundries(varray *ses,int sn,unsigned int *doc1,unsigned int *doc2,int doc1Length,int doc2Length){
-    for (int i = 0; i < sn; i++) {
+void shift_boundries(varray *ses, int sn, unsigned int *doc1, unsigned int *doc2, int doc1Length, int doc2Length)
+{
+    for (int i = 0; i < sn; i++) 
+    {
         struct diff_edit *e =(diff_edit*) varray_get(ses, i);
-        struct diff_edit *e2=NULL;
-        struct diff_edit *e3=NULL;
-        int max1=doc1Length;
-        int max2=doc2Length;
+        struct diff_edit *e2 = NULL;
+        struct diff_edit *e3 = NULL;
+        int max1 = doc1Length;
+        int max2 = doc2Length;
         int end2;
-        if(e->op!=1){
-            for(int j=i+1;j<sn;j++){
-                e2=(diff_edit*) varray_get(ses, j);
-                if(e2->op==e->op){
-                    max1=e2->off;
-                    max2=e2->off;
+        
+        if(e->op != 1)
+        {
+            for(int j = i+1; j < sn; j++)
+            {
+                e2 = (diff_edit*) varray_get(ses, j);
+                if(e2->op == e->op)
+                {
+                    max1 = e2->off;
+                    max2 = e2->off;
                     break;
                 }
             }
         }
-        if(e->op==DIFF_DELETE){
-            e2=(diff_edit*) varray_get(ses, i+1);
+
+        if(e->op == DIFF_DELETE)
+        {
+            e2 = (diff_edit*) varray_get(ses, i+1);
+
             //if theres an insert after a delete, theres a potential match, so both blocks
             //need to be moved at the same time
-            if(e2->op==DIFF_INSERT)
+            if(e2->op == DIFF_INSERT)
             {
-                max2=doc2Length;
-                for(int j=i+2;j<sn;j++){
-                    e3=(diff_edit*) varray_get(ses, j);
-                    if(e2->op==e3->op){
-                        //max1=e2->off;
-                        max2=e3->off;
+                max2 = doc2Length;
+                for(int j = i+2; j < sn; j++)
+                {
+                    e3 = (diff_edit*) varray_get(ses, j);
+
+                    if(e2->op == e3->op)
+                    {
+                        max2 = e3->off;
                         break;
                     }
                 }
-                end2=e2->off+e2->len;
+
+                end2 = e2->off + e2->len;
                 i++;
-                int end=e->off+e->len;
-                while(end<max1 && end2<max2&& compareLines(doc1[e->off],doc1[end],NULL)==0&& compareLines(doc2[e2->off],doc2[end2],NULL)==0  ){
+                int end = e->off + e->len;
+
+                while(end < max1 && end2 < max2 && 
+                    compareLines(doc1[e->off], doc1[end], NULL) == 0 && 
+                    compareLines(doc2[e2->off], doc2[end2], NULL) == 0)
+                {
                     end++;
                     end2++;
                     e->off++;
                     e2->off++;
                 }
-
-
-            }else{
-                int end=e->off+e->len;
-                while(end<max1&& compareLines(doc1[e->off],doc1[end],NULL)==0  ){
+            }
+            else
+            {
+                int end = e->off+e->len;
+                while(end < max1 && compareLines(doc1[e->off], doc1[end], NULL) == 0)
+                {
                     end++;
                     e->off++;
                 }
             }
+        }
+        else if(e->op == DIFF_INSERT)
+        {
+            int end = e->off+e->len;
 
-
-
-
-        }else if(e->op==DIFF_INSERT){
-            int end=e->off+e->len;
-            while(end<max2&&compareLines(doc2[e->off],doc2[end],NULL)==0 ){
+            while(end < max2 && compareLines(doc2[e->off], doc2[end], NULL) == 0)
+            {
                 end++;
                 e->off++;
             }
         }
     }
 }
-unsigned int *computeHashes(char** doc,int docLength){
-    unsigned int *hashes=new unsigned int[docLength];
-    for(int i=0;i<docLength;i++){
-        unsigned int hash=0;
-        for(int j=0;doc[i][j]!=0;j++){
-            if(doc[i][j]==' ' || doc[i][j]=='\t'){
-                //if(Settings.IncludeSpace){
-                if(!Settings.IncludeSpace){
-                    hash=HASH(hash,doc[i][j]);
+
+unsigned int *computeHashes(char** doc, int docLength)
+{
+    unsigned int *hashes = new unsigned int[docLength];
+
+    for(int i = 0; i < docLength; i++)
+    {
+        unsigned int hash = 0;
+
+        for(int j = 0; doc[i][j] != 0; j++)
+        {
+            if(doc[i][j] == ' ' || doc[i][j] == '\t')
+            {
+                if(!Settings.IncludeSpace)
+                {
+                    hash = HASH(hash, doc[i][j]);
                 }
-            }else{
-                hash=HASH(hash,doc[i][j]);
+            }
+            else
+            {
+                hash = HASH(hash, doc[i][j]);
             }
         }
-        hashes[i]=hash;
+        hashes[i] = hash;
     }
     return hashes;
 }
 
-void clearEdit(diff_edit *e){
-    if(e->moves!=NULL){
+void clearEdit(diff_edit *e)
+{
+    if(e->moves != NULL)
+    {
         delete[] e->moves;
     }
-    if(e->changes!=NULL){
-        for(int j=e->changeCount;j>=0;j--){
-            varray_release(e->changes,j);
+    if(e->changes != NULL)
+    {
+        for(int j = e->changeCount; j >= 0; j--)
+        {
+            varray_release(e->changes, j);
         }
         delete e->changes;
     }
 }
 
-
-void clearEdits(varray *ses,int sn){
-    for(int i=sn;i>=0;i--){
-        struct diff_edit *e =(diff_edit*) varray_get(ses, i);
+void clearEdits(varray *ses,int sn)
+{
+    for(int i = sn; i >= 0; i--)
+    {
+        struct diff_edit *e = (diff_edit*) varray_get(ses, i);
         clearEdit(e);
         varray_release(ses,i);
-        //delete e;
     }
     delete ses;
 }
 
-
 bool compareNew()
 {
-	//clear(true);
 	wait();
 
 	clearWindow(nppData._scintillaMainHandle, true);
 	clearWindow(nppData._scintillaSecondHandle, true);
-	
-    //return false;
 	
     active = true;
 
@@ -1613,15 +1639,14 @@ bool compareNew()
 	int sn;
 	struct varray *ses = varray_new(sizeof(struct diff_edit), NULL);
 	int result = (diff(doc1Hashes, 0, doc1Length, doc2Hashes, 0, doc2Length, (idx_fn)(getLineFromIndex), (cmp_fn)(compareLines), NULL, 0, ses, &sn, NULL));
-	//int result = (diff(doc1, 0, doc1Length, doc2, 0, doc2Length, (idx_fn)(getLineFromIndex), (cmp_fn)(compareLines), NULL, 0, ses, &sn, NULL));
 	int changeOffset = 0;
-	//ready();
-	//wait();
-	shift_boundries(ses, sn, doc1Hashes, doc2Hashes, doc1Length, doc2Length);
+
+    shift_boundries(ses, sn, doc1Hashes, doc2Hashes, doc1Length, doc2Length);
 	find_moves(ses, sn, doc1Hashes, doc2Hashes);
-	/* - insert empty lines
-	* - count changed lines
-	*/
+	/* 
+     * - insert empty lines
+	 * - count changed lines
+	 */
 	doc1Changed = 0;
 	doc2Changed = 0;
 
@@ -1644,24 +1669,13 @@ bool compareNew()
 					e2->op = DIFF_CHANGE2;
 					doc2Changed += e2->len;
 				}
-                else
-                {
-					//addEmptyLines(nppData._scintillaSecondHandle, e->off+doc2Changed-changeOffset, e->len);	
-				}
-
-			}
-            else
-            {
-				//addEmptyLines(nppData._scintillaSecondHandle, e->off+doc2Changed-changeOffset, e->len);	
 			}
 		}
         else if(e->op == DIFF_INSERT)
         {
 			e->changeCount = 0;
 			doc2Changed += e->len;
-			//addEmptyLines(nppData._scintillaMainHandle, e->off+doc1Changed, e->len);
 		}
-
 	}
 
 	int doc1CurrentChange = 0;
@@ -1709,6 +1723,7 @@ bool compareNew()
 				case DIFF_DELETE:
 					markAsRemoved(nppData._scintillaMainHandle, doc1Changes[i].off);					
 					break;
+
 				case DIFF_CHANGE1:
 					markAsChanged(nppData._scintillaMainHandle, doc1Changes[i].off);
 					textIndex = lineNum1[doc1Changes[i].off];
@@ -1719,6 +1734,7 @@ bool compareNew()
 						markTextAsChanged(nppData._scintillaMainHandle, textIndex + change->off, change->len);
 					}
 					break;
+
 				case DIFF_MOVE:					
 					markAsMoved(nppData._scintillaMainHandle, doc1Changes[i].off);
 					break;
@@ -1733,6 +1749,7 @@ bool compareNew()
 				case DIFF_INSERT:					
 					markAsAdded(nppData._scintillaSecondHandle, doc2Changes[i].off);						
 					break;
+
 				case DIFF_CHANGE2:
 					markAsChanged(nppData._scintillaSecondHandle, doc2Changes[i].off);
 					textIndex = lineNum2[doc2Changes[i].off];
@@ -1742,11 +1759,11 @@ bool compareNew()
 						markTextAsChanged(nppData._scintillaSecondHandle, textIndex+change->off, change->len);
 					}
 					break;
+
 				case DIFF_MOVE:					
 					markAsMoved(nppData._scintillaSecondHandle,doc2Changes[i].off);										
 					break;
 			}
-
 		}
 
 		doc1Offset = 0;
@@ -1773,7 +1790,6 @@ bool compareNew()
 							off = doc1Changes[i].altLocation;
 							length = 1;						
 						}
-						//doc1Offset+=1;
 						break;
 				}
 			}
@@ -1788,7 +1804,6 @@ bool compareNew()
 			length = 0;
 			off = 0;
 			doc1Offset = 0;
-			//doc2Offset=0;
 
 			for(int i = 0; i < doc2Changed; i++)
             {
@@ -1807,7 +1822,6 @@ bool compareNew()
 							off = doc2Changes[i].altLocation;
 							length = 1;						
 						}
-						//doc1Offset+=1;
 						break;
 				}
 			}
@@ -1818,10 +1832,9 @@ bool compareNew()
             {
 				clearUndoBuffer(nppData._scintillaMainHandle);
 			}
-
 		}
 
-		//clean up resources
+//clean up resources
 #if CLEANUP
 
 		for(int i = 0; i < doc1Length; i++)
@@ -1830,11 +1843,8 @@ bool compareNew()
             {
 				delete[] doc1[i];
 			}
-            else
-            {
-				//delete doc1[i];
-			}
 		}
+
 		delete[] doc1;
 		delete[] lineNum1;
 		
@@ -1844,11 +1854,8 @@ bool compareNew()
             {
 				delete[] doc2[i];
 			}
-            else
-            {
-				//delete doc2[i];
-			}
 		}
+
 		delete[] doc2;
 		delete lineNum2;
 
@@ -1861,12 +1868,14 @@ bool compareNew()
         {
 			clearEdit(doc1Changes + (i));
 		}
+
 		delete[] doc1Changes;
 
 		for(int i = 0; i < doc2Changed; i++)
         {
 			clearEdit(doc2Changes+(i));
 		}
+
 		delete[] doc2Changes;
 
 #endif // CLEANUP
@@ -1880,7 +1889,8 @@ bool compareNew()
 		}
 
 		::SendMessageA(nppData._scintillaMainHandle, SCI_SHOWLINES, 0, (LPARAM)1);
-		::SendMessageA(nppData._scintillaSecondHandle, SCI_SHOWLINES, 0, (LPARAM)1);	
+		::SendMessageA(nppData._scintillaSecondHandle, SCI_SHOWLINES, 0, (LPARAM)1);
+
 		return false;
 	}
     return false;
@@ -1918,7 +1928,6 @@ bool startCompare()
     if(Settings.AddLine && !notepadVersionOk)
     {
         ::MessageBox(nppData._nppHandle, TEXT("Notepad v4.5 or higher is required to line up matches. This feature will be turned off"), TEXT("Incorrect Version"), MB_OK);
-        //return;
         Settings.AddLine = false;
         ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID, (LPARAM)Settings.AddLine);
     }
@@ -1955,7 +1964,7 @@ bool startCompare()
     ::SendMessageA(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
 
     bool result = compareNew();
-    //return;
+
     ::SendMessageA(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
     ::SendMessageA(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
     ::SendMessageA(window, SCI_GRABFOCUS, 0, (LPARAM)1);
@@ -1993,15 +2002,6 @@ bool startCompare()
 
 void compare()
 {
-    /*if(startCompare())
-    {
-        HWND window = getCurrentWindow();	
-        ::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
-        ::SendMessageA(window, SCI_SETSAVEPOINT, 1, 0);
-        ::SendMessageA(window, SCI_EMPTYUNDOBUFFER, 0, 0);
-        ::SendMessageA(window, SCI_SETREADONLY, 1, 0);
-        reset();
-    }*/
     startCompare();
     ready();
 }
@@ -2026,6 +2026,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
         {            
             start = SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
             end   = SendMessage(nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0) + start;
+
             if((start_old != start) && (NavDlg.ReadyToDraw == TRUE))
             {
                 NavDlg.DrawView(start, end);
@@ -2033,6 +2034,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
             }
         }
         break;
+
     case NPPN_TBMODIFICATION:
         {         
             tbNext.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_NEXT), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
@@ -2052,63 +2054,59 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 
             break;
         }
+
     case NPPN_FILEBEFORECLOSE:
     case NPPN_FILECLOSED:
     case NPPN_FILEBEFOREOPEN:
     case NPPN_FILEOPENED:
-
+        {
         notepadVersionOk = true;
         break;
+        }
 
     case NPPN_FILEBEFORESAVE:
         {
-            notepadVersionOk=true;
-            //char name[MAX_PATH];
+            notepadVersionOk = true;
+
             SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, 0, (LPARAM)emptyLinesDoc);
-            //int win=3;
-            //SendMessage(nppData._nppHandle,NPPM_GETCURRENTSCINTILLA,0,(LPARAM)&win);
-            HWND window=getCurrentWindow();						
-            int win=SendMessageA(window, SCI_GETDOCPOINTER, 0,0);
+
+            HWND window = getCurrentWindow();						
+            int win = SendMessageA(window, SCI_GETDOCPOINTER, 0,0);
 
             if(getCompare(win)!=-1)
             {				
-                topLine=SendMessageA(window,SCI_GETFIRSTVISIBLELINE,0,0);
-                lastEmptyLines=removeEmptyLines(window,true);
+                topLine = SendMessageA(window,SCI_GETFIRSTVISIBLELINE,0,0);
+                lastEmptyLines = removeEmptyLines(window,true);
             }
             else
             {
                 lastEmptyLines=NULL;
             }
 
-            //int k=1;
             break;
-            //setCursor(SC_CURSORWAIT);
         }
 
     case NPPN_FILESAVED:
         {
-            notepadVersionOk=true;
+            notepadVersionOk = true;
             TCHAR name[MAX_PATH];
             SendMessage(nppData._nppHandle,NPPM_GETFULLCURRENTPATH,0,(LPARAM)name);
-            if(lastEmptyLines!=NULL&& lstrcmp(name,emptyLinesDoc)==0){
-                HWND window=getCurrentWindow();
-                ::addBlankLines(window,lastEmptyLines);
-                int linesOnScreen=SendMessageA(window,SCI_LINESONSCREEN,0,0);
 
+            if(lastEmptyLines != NULL && lstrcmp(name, emptyLinesDoc) == 0)
+            {
+                HWND window = getCurrentWindow();
+                ::addBlankLines(window,lastEmptyLines);
+                int linesOnScreen = SendMessageA(window,SCI_LINESONSCREEN,0,0);
                 int curPosBeg = ::SendMessageA(window, SCI_GETSELECTIONSTART, 0, 0);
                 int curPosEnd = ::SendMessageA(window, SCI_GETSELECTIONEND, 0, 0);
                 SendMessageA(window,SCI_GOTOLINE,topLine,0);
                 SendMessageA(window,SCI_GOTOLINE,topLine+linesOnScreen-1,0);
-
-                ::SendMessageA(window, SCI_SETSEL, curPosBeg, curPosEnd);
+                SendMessageA(window, SCI_SETSEL, curPosBeg, curPosEnd);
                 cleanEmptyLines(lastEmptyLines);
                 delete lastEmptyLines;
-                lastEmptyLines=NULL;
-                emptyLinesDoc[0]=0;
-
+                lastEmptyLines = NULL;
+                emptyLinesDoc[0] = 0;
             }
-            break;
-            //setCursor(SC_CURSORNORMAL);
         }
         break;
     }
