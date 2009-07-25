@@ -66,7 +66,8 @@ void NavDialog::Do(void)
     // Get max file length
     int doc1 = SendMessage(_nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0);
     int doc2 = SendMessage(_nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0);
-    (doc1 > doc2) ? (m_TextLength = doc1) : (m_TextLength = doc2);
+    //(doc1 > doc2) ? (m_TextLength = doc1) : (m_TextLength = doc2);
+    m_TextLength = max(doc1, doc2);
 
     // Create BMP used to store graphical representation
     m_hMemDC1    = ::CreateCompatibleDC(m_hdc);
@@ -125,6 +126,9 @@ void NavDialog::Do(void)
 
 BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
+    long line;
+    long yPos;
+
 	switch (Message) 
 	{
 		case WM_INITDIALOG:
@@ -161,6 +165,38 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
             PostQuitMessage(0); 
 			break;
 		}
+
+        case WM_LBUTTONDOWN:
+            POINT pt;
+            int LineStart;
+            int LineVisible;
+            int Delta;
+            SetCapture(hWnd);
+            yPos = HIWORD(lParam);
+            line = yPos * m_ScaleFactor;
+            LineVisible = SendMessageA(_nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0);
+            LineStart = SendMessageA(_nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
+            Delta = line - LineVisible/2 - LineStart;
+            SendMessageA(_nppData._scintillaMainHandle, SCI_LINESCROLL, 0, (LPARAM)Delta);
+            SendMessageA(_nppData._scintillaMainHandle, SCI_GOTOLINE, (WPARAM)line, 0);
+            break;
+
+        case WM_LBUTTONUP:
+            ReleaseCapture();
+            break;
+
+        case WM_MOUSEMOVE:
+            long start;
+            if (GetCapture() == hWnd) 
+            { 
+                //yPos = HIWORD(lParam);
+                //line = yPos * m_ScaleFactor;
+                //start = SendMessage(_nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
+                //line -= start / 2;
+                //if (line < 0) line = 0;
+                //::SendMessageA(_nppData._scintillaMainHandle, SCI_GOTOLINE, 0, (LPARAM)line);
+            }
+            break;
 
 		default:
 			return DockingDlgInterface::run_dlgProc(hWnd, Message, wParam, lParam);
@@ -243,6 +279,9 @@ LRESULT NavDialog::OnPaint(HWND hWnd)
 
     long SzX = ((r.right - r.left) - 3 * SPACE) / 2;
     long SzY = (r.bottom - r.top) - 2 * SPACE;
+
+    // Scaling factor
+    m_ScaleFactor = (double)(m_TextLength) / (double)(SzY);
 
     // If side bar is too small, don't draw anything
     if ((SzX < 5) || (SzX < 5)) return false;

@@ -21,6 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define NAV_DLG_H
 
 #include "Compare.h"
+#include "Windows.h"
 #include "DockingDlgInterface.h"
 
 #define SPACE   2
@@ -56,6 +57,8 @@ private:
     int m_ChangedColor;
     int m_MovedColor;
     int m_BlankColor;
+
+    double m_ScaleFactor;
 
     HDC     m_hdc;
     HDC     m_hMemDC1;
