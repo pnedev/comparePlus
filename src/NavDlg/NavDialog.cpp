@@ -284,7 +284,7 @@ LRESULT NavDialog::OnPaint(HWND hWnd)
     m_ScaleFactor = (double)(m_TextLength) / (double)(SzY);
 
     // If side bar is too small, don't draw anything
-    if ((SzX < 5) || (SzX < 5)) return false;
+    if ((SzX < 5) || (SzY < 5)) return false;
 
     // Define left rectangle coordinates
     m_rLeft.top    = SPACE;    

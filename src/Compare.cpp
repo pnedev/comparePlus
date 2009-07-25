@@ -889,7 +889,7 @@ int checkWords(diff_edit* e,chunk_info* chunk,chunk_info* otherChunk)
         //multiline change or single line change
         if(start != end)
         {
-            int len = chunk->lineEndPos[start] - e->off;
+            len = chunk->lineEndPos[start] - e->off;
             assert(len > 0);
 
             word = (Word*)varray_get(chunk->words,e->off+len-1);
@@ -904,7 +904,7 @@ int checkWords(diff_edit* e,chunk_info* chunk,chunk_info* otherChunk)
         }
         else
         {
-            int len = e->len;
+            len = e->len;
             word = (Word*)varray_get(chunk->words,e->off+len-1);
             assert(word->length > 0);
             assert(word->line == change->line);
@@ -941,7 +941,7 @@ int checkWords(diff_edit* e,chunk_info* chunk,chunk_info* otherChunk)
         word = (Word*)varray_get(chunk->words,e->off);
         assert(word->line == start);
         change->off = word->pos;
-        int len = e->len;
+        len = e->len;
         word = (Word*)varray_get(chunk->words,e->off+len-1);
         assert(word->length > 0);
         change->len = (word->pos + word->length) - change->off;
