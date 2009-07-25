@@ -29,8 +29,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <string>
 #include <stdio.h>
 #include <assert.h>
-//#include "msgno.h"
 #include "diff.h"
+#include "Engine.h"
 #include "PluginInterface.h"
 #include "Scintilla.h"
 #include "Notepad_plus_rc.h"
@@ -93,28 +93,6 @@ enum MENU_COMMANDS
 	NB_MENU_COMMANDS
 };
 
-struct blankLineList
-{
-	int line;
-	int length;
-	struct blankLineList *next;
-};
-
-struct chunk_info
-{
-	int *linePos;
-	int *lineEndPos;
-	int lineCount;
-	int lineStart;
-	struct varray *changes;
-	struct varray *words;
-	int changeCount;
-	char *text;
-	int count;
-	//int *mappings;
-	int *lineMappings;
-};
-
 struct sColorSettings
 {
     int added;
@@ -142,20 +120,6 @@ enum eEOL
 	EOF_LINUX,
 	EOF_MAC
 };
-enum wordType 
-{
-	SPACECHAR,ALPHANUMCHAR,OTHERCHAR
-};
-
-struct Word
-{
-	int line;
-	int pos;
-	int length;
-	wordType type;
-	string text;
-	unsigned int hash;
-};
 
 const CHAR strEOL[3][3] = 
 {
@@ -167,6 +131,14 @@ const CHAR strEOL[3][3] =
 const UINT lenEOL[3] = {2,1,1};
 
 void compare();
+void compareLocal();
+void compareBase();
+int getCompare(int window);
+void removeCompare(int window);
+int setCompare(int window);
+void alignMatches();
+void includeSpacing();
+void detectMoves();
 void compareWithoutLines();
 void reset();
 void openAboutDlg(void);

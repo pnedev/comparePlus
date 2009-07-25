@@ -221,7 +221,7 @@
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
-				EnablePREfast="true"
+				EnablePREfast="false"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -379,6 +379,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\Engine.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\NavDlg\NavDialog.cpp"
 				>
 			</File>
@@ -465,6 +469,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\CompareResource.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\Engine.h"
 				>
 			</File>
 			<File
