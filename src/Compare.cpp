@@ -21,13 +21,6 @@
 
 //#define UNICODE
 
-/* Rotate a value n bits to the left. */
-#define UINT_BIT (sizeof (unsigned) * CHAR_BIT)
-#define ROL(v, n) ((v) << (n) | (v) >> (UINT_BIT - (n)))
-
-/* Given a hash value and a new character, return a new hash value. */
-#define HASH(h, c) ((c) + ROL (h, 7))
-
 #include "Compare.h"
 #include "NPPHelpers.h"
 
@@ -267,10 +260,15 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
         NavDlg.destroy();
 
         // Don't forget to deallocate your shortcut here
-        delete funcItem[0]._pShKey;
-        delete funcItem[1]._pShKey;
-        delete funcItem[3]._pShKey;
-        delete funcItem[4]._pShKey;
+		delete funcItem[CMD_COMPARE]._pShKey;
+		delete funcItem[CMD_CLEAR_RESULTS]._pShKey;
+		delete funcItem[CMD_COMPARE_LAST_SAVE]._pShKey;
+		delete funcItem[CMD_COMAPRE_SVN_BASE]._pShKey;
+		delete funcItem[CMD_PREV]._pShKey;
+		delete funcItem[CMD_NEXT]._pShKey;
+		delete funcItem[CMD_FIRST]._pShKey;
+		delete funcItem[CMD_LAST]._pShKey;
+
         break;
 
     case DLL_THREAD_ATTACH:
@@ -302,13 +300,6 @@ extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF)
     *nbF = NB_MENU_COMMANDS;
     return funcItem;
 }
-
-#ifdef UNICODE
-extern "C" __declspec(dllexport) BOOL isUnicode()
-{
-    return TRUE;
-}
-#endif
 
 void loadSettings(void)
 {
