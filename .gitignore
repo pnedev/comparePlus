@@ -27,5 +27,6 @@ Thumbs.db
 obj/
 scm/
 [Rr]elease*/
+[Rr]elease Unicode*/
 _ReSharper*/
 [Tt]est[Rr]esult*

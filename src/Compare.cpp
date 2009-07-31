@@ -19,8 +19,6 @@
 // Compare plugin by Ty Landercasper & Jean-sébastien Leroy
 //--------------------------------------------------------------------------
 
-//#define UNICODE
-
 #include "Compare.h"
 #include "NPPHelpers.h"
 
@@ -280,6 +278,13 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
 
     return TRUE;
 }
+
+#ifdef UNICODE
+extern "C" __declspec(dllexport) BOOL isUnicode()
+{
+    return TRUE;
+}
+#endif
 
 extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 {
