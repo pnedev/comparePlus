@@ -661,7 +661,7 @@ HWND openTempFile(void)
         pointer = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
     }
 
-    assert(tempWindow == pointer);
+    //assert(tempWindow == pointer);
 
     //move focus to new document, or the other document will be marked as dirty
     ::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
@@ -722,6 +722,16 @@ void reset()
 {
     if (active == true)
     {
+		LRESULT RODoc1;
+		LRESULT RODoc2;
+
+		// Remove read-only attribute
+		if ((RODoc1 = SendMessage(nppData._scintillaMainHandle, SCI_GETREADONLY, 0, 0)) == 1)
+			SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, false, 0);
+
+		if ((RODoc2 = SendMessage(nppData._scintillaSecondHandle, SCI_GETREADONLY, 0, 0)) == 1)
+			SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, false, 0);
+
         int doc1 = SendMessageA(nppData._scintillaMainHandle, SCI_GETDOCPOINTER, 0, 0);
         int doc2 = SendMessageA(nppData._scintillaSecondHandle, SCI_GETDOCPOINTER, 0, 0);
 
@@ -792,6 +802,10 @@ void reset()
 
         // Restore side bar item entry state (because tick has been removed by the docked window)
         CheckMenuItem(hMenu, funcItem[CMD_USE_NAV_BAR]._cmdID, MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
+
+		// Restore previous read-only attribute
+		if (RODoc1 == 1) SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, true, 0);
+		if (RODoc2 == 1) SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
     }
 }
 
@@ -832,8 +846,6 @@ void compareBase()
 
 bool compareNew()
 {
-	wait();
-
 	clearWindow(nppData._scintillaMainHandle, true);
 	clearWindow(nppData._scintillaSecondHandle, true);
 	
@@ -1112,8 +1124,6 @@ bool compareNew()
 
 #endif // CLEANUP
 
-        ready();
-
 		if(!different)
         {
 			::MessageBox(nppData._nppHandle, TEXT("Files Match"), TEXT("Results :"), MB_OK);
@@ -1202,40 +1212,55 @@ bool startCompare()
     ::SendMessageA(window, SCI_GRABFOCUS, 0, (LPARAM)1);
 
     if (!result)
+	{
         if(Settings.UseNavBar)
-    {
-        // Save current N++ focus
-        HWND hwnd = GetFocus();
+		{
+			// Save current N++ focus
+			HWND hwnd = GetFocus();
 
-        // Configure NavBar
-        NavDlg.SetColor(
-            Settings.ColorSettings.added, 
-            Settings.ColorSettings.deleted, 
-            Settings.ColorSettings.changed, 
-            Settings.ColorSettings.moved, 
-            Settings.ColorSettings.blank);
+			// Configure NavBar
+			NavDlg.SetColor(
+				Settings.ColorSettings.added, 
+				Settings.ColorSettings.deleted, 
+				Settings.ColorSettings.changed, 
+				Settings.ColorSettings.moved, 
+				Settings.ColorSettings.blank);
 
-        // Display Navbar
-        NavDlg.doDialog(true);
-        start_old = -1;
+			// Display Navbar
+			NavDlg.doDialog(true);
+			start_old = -1;
 
-        // Restore N++ focus
-        SetFocus(hwnd);
+			// Restore N++ focus
+			SetFocus(hwnd);
 
-        // Enable Prev/Next menu entry
-        ::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-        ::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-        ::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-        ::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-    }
+			// Enable Prev/Next menu entry
+			::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+			::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+			::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+			::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+		}
+	}
 
     return result;
 }
 
 void compare()
 {
+	LRESULT RODoc1;
+	LRESULT RODoc2;
+
+	// Remove read-only attribute
+	if ((RODoc1 = SendMessage(nppData._scintillaMainHandle, SCI_GETREADONLY, 0, 0)) == 1)
+		SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, false, 0);
+
+	if ((RODoc2 = SendMessage(nppData._scintillaSecondHandle, SCI_GETREADONLY, 0, 0)) == 1)
+		SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, false, 0);
+
     startCompare();
-    ready();
+
+	// Restore previous read-only attribute
+	if (RODoc1 == 1) SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, true, 0);
+	if (RODoc2 == 1) SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
 }
 
 extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
