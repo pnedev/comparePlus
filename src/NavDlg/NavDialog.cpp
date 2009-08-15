@@ -126,8 +126,10 @@ void NavDialog::Do(void)
 
 BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
-    long line;
-    long yPos;
+	long yPos;
+    int LineStart;
+    int LineVisible;
+    int Delta;
 
 	switch (Message) 
 	{
@@ -148,7 +150,7 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 
 		case WM_NOTIFY:
 		{
-			return DockingDlgInterface::run_dlgProc(hWnd, Message, wParam, lParam);
+			//return DockingDlgInterface::run_dlgProc(hWnd, Message, wParam, lParam);
 			break;
 		}
 
@@ -168,17 +170,14 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 
         case WM_LBUTTONDOWN:
             POINT pt;
-            int LineStart;
-            int LineVisible;
-            int Delta;
             SetCapture(hWnd);
             yPos = HIWORD(lParam);
-            line = yPos * m_ScaleFactor;
+            current_line = yPos * m_ScaleFactor;
             LineVisible = SendMessageA(_nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0);
             LineStart = SendMessageA(_nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
-            Delta = line - LineVisible/2 - LineStart;
+            Delta = current_line - LineVisible/2 - LineStart;
             SendMessageA(_nppData._scintillaMainHandle, SCI_LINESCROLL, 0, (LPARAM)Delta);
-            SendMessageA(_nppData._scintillaMainHandle, SCI_GOTOLINE, (WPARAM)line, 0);
+            SendMessageA(_nppData._scintillaMainHandle, SCI_GOTOLINE, (WPARAM)current_line, 0);
             break;
 
         case WM_LBUTTONUP:
@@ -187,14 +186,17 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 
         case WM_MOUSEMOVE:
             long start;
+			long next_line;
+            int LineStart;
+            int LineVisible;
             if (GetCapture() == hWnd) 
             { 
-                //yPos = HIWORD(lParam);
-                //line = yPos * m_ScaleFactor;
-                //start = SendMessage(_nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
-                //line -= start / 2;
-                //if (line < 0) line = 0;
-                //::SendMessageA(_nppData._scintillaMainHandle, SCI_GOTOLINE, 0, (LPARAM)line);
+                yPos = HIWORD(lParam);
+                next_line = yPos * m_ScaleFactor;
+				Delta = next_line - current_line;
+				SendMessageA(_nppData._scintillaMainHandle, SCI_LINESCROLL, 0, (LPARAM)Delta);
+				SendMessageA(_nppData._scintillaMainHandle, SCI_GOTOLINE, (WPARAM)next_line, 0);
+				current_line = next_line;
             }
             break;
 

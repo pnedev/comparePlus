@@ -48,6 +48,8 @@ protected:
 
 private:
 
+	long current_line;
+
     HWND m_hWnd;
 
     LRESULT OnPaint(HWND hWnd);
