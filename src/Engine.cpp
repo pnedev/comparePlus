@@ -17,7 +17,7 @@ int checkWords(diff_edit* e,chunk_info* chunk,chunk_info* otherChunk)
     int start = word->line;
     word = (Word*)varray_get(chunk->words,e->off+e->len-1);
     int end = word->line;
-    assert(start <= end);
+    //assert(start <= end);
     int line2 = chunk->lineMappings[start];
     int len = e->len;
     int off = e->off;
@@ -48,7 +48,7 @@ int checkWords(diff_edit* e,chunk_info* chunk,chunk_info* otherChunk)
         change2->matchedLine = chunk->lineStart+start;
 
         word = (Word*)varray_get(chunk->words,e->off);
-        assert(word->line == start);
+        //assert(word->line == start);
         change->off = word->pos;
         change->line = start;
         change->matchedLine = otherChunk->lineStart+line2;
@@ -57,15 +57,15 @@ int checkWords(diff_edit* e,chunk_info* chunk,chunk_info* otherChunk)
         if(start != end)
         {
             len = chunk->lineEndPos[start] - e->off;
-            assert(len > 0);
+            //assert(len > 0);
 
             word = (Word*)varray_get(chunk->words,e->off+len-1);
             e->off = chunk->lineEndPos[start];
             e->len -= len;
-            assert(word->length > 0);
-            assert(word->line == start);
+            //assert(word->length > 0);
+            //assert(word->line == start);
             change->len = (word->pos + word->length) - change->off;
-            assert(change->len >= 0);
+            //assert(change->len >= 0);
 
             start++;
         }
@@ -73,10 +73,10 @@ int checkWords(diff_edit* e,chunk_info* chunk,chunk_info* otherChunk)
         {
             len = e->len;
             word = (Word*)varray_get(chunk->words,e->off+len-1);
-            assert(word->length > 0);
-            assert(word->line == change->line);
+            //assert(word->length > 0);
+            //assert(word->line == change->line);
             change->len = (word->pos + word->length) - change->off;
-            assert(change->len >= 0);
+            //assert(change->len >= 0);
             return chunk->changeCount;
         }				
     }
@@ -106,15 +106,15 @@ int checkWords(diff_edit* e,chunk_info* chunk,chunk_info* otherChunk)
         change2->off = 0;
 
         word = (Word*)varray_get(chunk->words,e->off);
-        assert(word->line == start);
+        //assert(word->line == start);
         change->off = word->pos;
         len = e->len;
         word = (Word*)varray_get(chunk->words,e->off+len-1);
-        assert(word->length > 0);
+        //assert(word->length > 0);
         change->len = (word->pos + word->length) - change->off;
         change->line = start;	
-        assert(word->line == change->line);
-        assert(change->len >= 0);
+        //assert(word->line == change->line);
+        //assert(change->len >= 0);
         change->matchedLine = otherChunk->lineStart+line2;
     }
     e->off = off;
