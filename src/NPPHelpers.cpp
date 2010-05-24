@@ -3,6 +3,7 @@
 #include "icon_add_16.h"
 #include "icon_sub_16.h"
 #include "icon_warning_16.h"
+#include "icon_moved_16.h"
 
 extern NppData nppData;
 extern UINT	EOLtype;
@@ -102,7 +103,8 @@ void setStyles(sUserSettings Settings)
 {
     int MarginMask = (1 << MARKER_CHANGED_SYMBOL) |
                      (1 << MARKER_ADDED_SYMBOL) | 
-                     (1 << MARKER_REMOVED_SYMBOL);
+                     (1 << MARKER_REMOVED_SYMBOL) | 
+                     (1 << MARKER_MOVED_SYMBOL);
 
     ::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINMASKN, (WPARAM)4, (LPARAM)MarginMask);
     ::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINMASKN, (WPARAM)4, (LPARAM)MarginMask);
@@ -123,12 +125,14 @@ void setStyles(sUserSettings Settings)
 	    defineSymbol(MARKER_ADDED_SYMBOL,   SC_MARK_PLUS);  
 	    defineSymbol(MARKER_REMOVED_SYMBOL, SC_MARK_MINUS);
         defineSymbol(MARKER_CHANGED_SYMBOL, SC_MARK_ARROWS);
+        defineSymbol(MARKER_MOVED_SYMBOL,   SC_MARK_ARROWDOWN);
     }
     else
     {
         DefineXpmSymbol(MARKER_ADDED_SYMBOL,   &icon_add_16_xpm[0]);
         DefineXpmSymbol(MARKER_REMOVED_SYMBOL, &icon_sub_16_xpm[0]);
         DefineXpmSymbol(MARKER_CHANGED_SYMBOL, &icon_warning_16_xpm[0]);
+        DefineXpmSymbol(MARKER_MOVED_SYMBOL,   &icon_moved_16_xpm[0]);
     }   
 
     setTextStyles(Settings.ColorSettings);
@@ -157,6 +161,7 @@ void markAsRemoved(HWND window,int line)
 
 void markAsMoved(HWND window,int line)
 {
+    ::SendMessageA(window, SCI_MARKERADD, line, (LPARAM)MARKER_MOVED_SYMBOL);
 	::SendMessageA(window, SCI_MARKERADD, line, (LPARAM)MARKER_MOVED_LINE);
 }
 
@@ -319,6 +324,7 @@ void clearWindow(HWND window,bool clearUndo)
 	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_CHANGED_SYMBOL, (LPARAM)MARKER_CHANGED_SYMBOL);		
 	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_ADDED_SYMBOL,   (LPARAM)MARKER_ADDED_SYMBOL);
 	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_REMOVED_SYMBOL, (LPARAM)MARKER_REMOVED_SYMBOL);	
+	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_MOVED_SYMBOL,   (LPARAM)MARKER_MOVED_SYMBOL);	
 
 	//very aggressive approach to removing the indicators
 	//clear style, than tell Notepad++ to unfold all lines, which forces it to redo the page style

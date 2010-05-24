@@ -242,7 +242,7 @@ void NavDialog::CreateBitmap(void)
         case MARKER_CHANGED_LINE: color = m_ChangedColor;   break;
         case MARKER_MOVED_LINE:   color = m_MovedColor;     break;
         case MARKER_REMOVED_LINE: color = m_DeletedColor;   break;
-        default:                  color = RGB(255,255,255); break;
+        default:                  color = GetSysColor(COLOR_ACTIVECAPTION); break;
         }
 
         // Draw line for the first document
@@ -256,7 +256,7 @@ void NavDialog::CreateBitmap(void)
         case MARKER_CHANGED_LINE: color = m_ChangedColor;   break;
         case MARKER_MOVED_LINE:   color = m_MovedColor;     break;
         case MARKER_REMOVED_LINE: color = m_DeletedColor;   break;
-        default:                  color = RGB(255,255,255); break;
+        default:                  color = GetSysColor(COLOR_ACTIVECAPTION); break;
         }
 
         // Draw line for the first document
@@ -352,7 +352,7 @@ void NavDialog::DrawView(long start, long end)
 
     FillRect(m_hMemDCView, &bmpRect, hBrush);
 
-    for(long i = start; i <= end; i++) SetPixel(m_hMemDCView, 0, i, RGB(0,0,0));
+    for(long i = start; i <= end; i++) SetPixel(m_hMemDCView, 0, i, RGB(200,0,0));
 
     InvalidateRect(m_hWnd, NULL, TRUE);
 

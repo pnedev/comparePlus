@@ -336,9 +336,9 @@ void loadSettings(void)
 
     // Try loading behavior settings, else load default value
     Settings.AddLine      = ::GetPrivateProfileInt(sectionName, addLinesOption, 1, iniFilePath) == 1;
-    Settings.IncludeSpace = ::GetPrivateProfileInt(sectionName, ignoreSpacesOption, 1, iniFilePath) == 1;
+    Settings.IncludeSpace = ::GetPrivateProfileInt(sectionName, ignoreSpacesOption, 0, iniFilePath) == 1;
     Settings.DetectMove   = ::GetPrivateProfileInt(sectionName, detectMovesOption, 1, iniFilePath) == 1;
-    Settings.OldSymbols   = ::GetPrivateProfileInt(sectionName, symbolsOption, 1, iniFilePath) == 1;
+    Settings.OldSymbols   = ::GetPrivateProfileInt(sectionName, symbolsOption, 0, iniFilePath) == 1;
     Settings.UseNavBar    = ::GetPrivateProfileInt(sectionName, NavBarOption, 1, iniFilePath) == 1;
 }
 
@@ -476,23 +476,31 @@ void jumpChangedLines(bool direction)
 	int nextLine;
 	int sci_marker_direction;
 
-	if (direction) 
-    {
-		currLine = (lineStart < lineMax) ? (lineStart + 1) : (0);
-		sci_marker_direction = SCI_MARKERNEXT;
-	}
-	else 
-    {
-		currLine = (lineStart > 0) ? (lineStart - 1) : (lineMax);
-		sci_marker_direction = SCI_MARKERPREVIOUS;
-	}
+	while (true)
+	{
+		if (direction) 
+		{
+			currLine = (lineStart < lineMax) ? (lineStart + 1) : (0);
+			sci_marker_direction = SCI_MARKERNEXT;
+		}
+		else 
+		{
+			currLine = (lineStart > 0) ? (lineStart - 1) : (lineMax);
+			sci_marker_direction = SCI_MARKERPREVIOUS;
+		}
 
-	nextLine = ::SendMessage(CurView, sci_marker_direction, currLine, sci_search_mask);
-
-	if (nextLine < 0) 
-    {
-		currLine = (direction) ? (0) : (lineMax);
 		nextLine = ::SendMessage(CurView, sci_marker_direction, currLine, sci_search_mask);
+
+		if (nextLine < 0) 
+		{
+			currLine = (direction) ? (0) : (lineMax);
+			nextLine = ::SendMessage(CurView, sci_marker_direction, currLine, sci_search_mask);
+			break;
+		}
+
+		if (nextLine != currLine) break;
+		else if (direction) lineStart++;
+		else lineStart--;
 	}
 
 	::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
@@ -633,6 +641,9 @@ HWND openTempFile(void)
     ::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, 0, (LPARAM)original);
     HWND originalwindow = getCurrentWindow();	
 
+	LRESULT curBuffer = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+	LangType curLang = (LangType)::SendMessage(nppData._nppHandle, NPPM_GETBUFFERLANGTYPE, curBuffer, 0);
+
     int result = ::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)compareFilePath);
     HWND window = getCurrentWindow();		
     int win = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
@@ -642,11 +653,16 @@ HWND openTempFile(void)
         ::SendMessage(nppData._nppHandle, WM_COMMAND, IDM_FILE_NEW, (LPARAM)0);
         ::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)compareFilePath);
         tempWindow = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
-    }	
+
+		curBuffer = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+		::SendMessage(nppData._nppHandle, NPPM_SETBUFFERLANGTYPE, curBuffer, curLang);
+	}	
 
     if(originalwindow == window)
     {
+        ::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)original);
         SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_GOTO_ANOTHER_VIEW, 0);
+		//::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)compareFilePath);
         panelsOpened = true;
     }
 
@@ -710,6 +726,7 @@ void openFile(TCHAR *file)
             ::SendMessageA(window, SCI_SETSAVEPOINT, 1, 0);
             ::SendMessageA(window, SCI_EMPTYUNDOBUFFER, 0, 0);
             ::SendMessageA(window, SCI_SETREADONLY, 1, 0);            
+ 			::SendMessageA(nppData._scintillaSecondHandle, SCI_GRABFOCUS, 0, 1);
         }
     }
 }
@@ -774,6 +791,7 @@ void reset()
                 SendMessage(nppData._nppHandle, WM_COMMAND, IDM_FILE_CLOSE, 0);
             }
             tempWindow = -1;
+			LRESULT ROTemp = RODoc1; RODoc1 = RODoc2; RODoc2 = ROTemp;
         }
 
         // Remove margin mask
@@ -1140,6 +1158,8 @@ bool compareNew()
 
 bool startCompare()
 {
+	LRESULT RODoc1;
+	LRESULT RODoc2;
     int win = 3;
 
     ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&win);
@@ -1174,6 +1194,13 @@ bool startCompare()
         ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID, (LPARAM)Settings.AddLine);
     }
 
+	// Remove read-only attribute
+	if ((RODoc1 = SendMessage(nppData._scintillaMainHandle, SCI_GETREADONLY, 0, 0)) == 1)
+		SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, false, 0);
+
+	if ((RODoc2 = SendMessage(nppData._scintillaSecondHandle, SCI_GETREADONLY, 0, 0)) == 1)
+		SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, false, 0);
+
     SendMessageA(nppData._scintillaMainHandle, SCI_SETWRAPMODE, SC_WRAP_NONE, 0);
     SendMessageA(nppData._scintillaSecondHandle, SCI_SETWRAPMODE, SC_WRAP_NONE, 0);
 
@@ -1193,7 +1220,7 @@ bool startCompare()
         ::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLV, 0), 0);
     }
 
-    if ((::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0)
+    if ((::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0)
     {
         ::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
     }
@@ -1209,7 +1236,11 @@ bool startCompare()
 
     ::SendMessageA(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
     ::SendMessageA(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
-    ::SendMessageA(window, SCI_GRABFOCUS, 0, (LPARAM)1);
+    ::SendMessageA(nppData._scintillaSecondHandle/*window*/, SCI_GRABFOCUS, 0, (LPARAM)1);
+
+	// Restore previous read-only attribute
+	if (RODoc1 == 1) SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, true, 0);
+	if (RODoc2 == 1) SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
 
     if (!result)
 	{
@@ -1241,26 +1272,12 @@ bool startCompare()
 		}
 	}
 
-    return result;
+	return result;
 }
 
 void compare()
 {
-	LRESULT RODoc1;
-	LRESULT RODoc2;
-
-	// Remove read-only attribute
-	if ((RODoc1 = SendMessage(nppData._scintillaMainHandle, SCI_GETREADONLY, 0, 0)) == 1)
-		SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, false, 0);
-
-	if ((RODoc2 = SendMessage(nppData._scintillaSecondHandle, SCI_GETREADONLY, 0, 0)) == 1)
-		SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, false, 0);
-
     startCompare();
-
-	// Restore previous read-only attribute
-	if (RODoc1 == 1) SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, true, 0);
-	if (RODoc2 == 1) SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
 }
 
 extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
@@ -1357,5 +1374,12 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
             }
         }
         break;
+	case NPPN_SHUTDOWN:
+		{
+			// Always close it, else N++'s plugin manager would call 'ViewNavigationBar'
+			// on startup, when N++ has been shut down before with opened navigation bar
+			NavDlg.doDialog(false);
+			break;
+		}
     }
 }

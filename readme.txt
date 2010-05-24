@@ -18,6 +18,22 @@ A couple of notes:
 Change Log:
 -----------
 
+1.5.6
+
+    1. NEW: "Previous" and "Next" commands now jumping blockwise instead of linewise.
+    2. NEW: When comparing to last save or SVN base: Temp files now inherit the language highlighting from the original file.
+    3. NEW: Marker icons for moved state.
+    4. FIXED: Restoring of "Synchronize Horizontal Scrolling" check state after "Clear results".
+    5. FIXED: Swapping of "Navigation bar" check state when N++ starts after it was closed with opened navigation bar.
+    6. CHANGED: When comparing to last save or SVN base: Show temp files in first view (left side) instead of second view.
+    7. CHANGED: More intuitive default highlighting colors (green=new, red=deleted, yellow=changed, blue=moved).
+    8. CHANGED: Navigation bar background color now system's active caption color.
+
+1.5.5
+
+	1. Side bar can now be used to scroll.
+	2. Fixed an issue causing N++ to crash when comparing R/O files.
+
 1.5.4
 
 	1. New side bar showing a graphical view of comparison results.
