@@ -1264,12 +1264,12 @@ bool startCompare()
 			// Restore N++ focus
 			SetFocus(hwnd);
 
-			// Enable Prev/Next menu entry
-			::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-			::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-			::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-			::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
 		}
+		// Enable Prev/Next menu entry
+		::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+		::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+		::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+		::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
 	}
 
 	return result;
