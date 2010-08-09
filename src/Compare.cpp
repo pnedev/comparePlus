@@ -1378,7 +1378,8 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		{
 			// Always close it, else N++'s plugin manager would call 'ViewNavigationBar'
 			// on startup, when N++ has been shut down before with opened navigation bar
-			NavDlg.doDialog(false);
+			if (NavDlg.isVisible())
+				NavDlg.doDialog(false);
 			break;
 		}
     }
