@@ -18,6 +18,10 @@ A couple of notes:
 Change Log:
 -----------
 
+1.5.6.1
+
+    1. FIXED: Weird focus clipping while shutting down (no application gets focus again, when N++ is gone).
+
 1.5.6
 
     1. NEW: "Previous" and "Next" commands now jumping blockwise instead of linewise.
