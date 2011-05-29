@@ -71,7 +71,7 @@ void defineSymbol(int type, int symbol)
 
 void setChangedStyle(HWND window, sColorSettings Settings)
 {
-	::SendMessageA(window, SCI_INDICSETSTYLE, 1, (LPARAM)7);
+    ::SendMessageA(window, SCI_INDICSETSTYLE, 1, (LPARAM)INDIC_ROUNDBOX);
     ::SendMessageA(window, SCI_INDICSETFORE, 1, (LPARAM)Settings.highlight);
     ::SendMessageA(window, SCI_INDICSETALPHA, 1, (LPARAM)Settings.alpha);
 }
