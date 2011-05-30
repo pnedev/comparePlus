@@ -6,6 +6,7 @@ Change Log:
 1.5.7
 
     1. FIXED: Differences highlighting
+    2. FIXED: Differences line width in Navigation pane is at least 1 pixel.
 
 1.5.6.1
 
