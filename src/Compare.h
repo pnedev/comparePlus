@@ -66,20 +66,20 @@ enum MARKER_ID
     MARKER_CHANGED_SYMBOL,
     MARKER_ADDED_SYMBOL,
     MARKER_REMOVED_SYMBOL,
-	MARKER_MOVED_SYMBOL
+    MARKER_MOVED_SYMBOL
 };
 
-enum MENU_COMMANDS 
+enum MENU_COMMANDS
 {
-	CMD_COMPARE = 0,
-	CMD_CLEAR_RESULTS,
+    CMD_COMPARE = 0,
+    CMD_CLEAR_RESULTS,
     CMD_SEPARATOR_1,
-	CMD_COMPARE_LAST_SAVE,
-	CMD_COMAPRE_SVN_BASE,
+    CMD_COMPARE_LAST_SAVE,
+    CMD_COMAPRE_SVN_BASE,
     CMD_SEPARATOR_2,
-	CMD_ALIGN_MATCHES,
-	CMD_IGNORE_SPACING,
-	CMD_DETECT_MOVES,
+    CMD_ALIGN_MATCHES,
+    CMD_IGNORE_SPACING,
+    CMD_DETECT_MOVES,
     CMD_USE_NAV_BAR,
     CMD_SEPARATOR_3,
     CMD_PREV,
@@ -87,9 +87,9 @@ enum MENU_COMMANDS
     CMD_FIRST,
     CMD_LAST,
     CMD_SEPARATOR_4,
-	CMD_OPTION,
-	CMD_ABOUT,
-	NB_MENU_COMMANDS
+    CMD_OPTION,
+    CMD_ABOUT,
+    NB_MENU_COMMANDS
 };
 
 struct sColorSettings
@@ -110,21 +110,21 @@ struct sUserSettings
     bool           IncludeSpace;
     bool           DetectMove;
     bool           OldSymbols;
-    sColorSettings ColorSettings; 
+    sColorSettings ColorSettings;
 };
 
-enum eEOL 
+enum eEOL
 {
-	EOF_WIN,
-	EOF_LINUX,
-	EOF_MAC
+    EOF_WIN,
+    EOF_LINUX,
+    EOF_MAC
 };
 
-const CHAR strEOL[3][3] = 
+const CHAR strEOL[3][3] =
 {
-	"\r\n",
-	"\r",
-	"\n"
+    "\r\n",
+    "\r",
+    "\n"
 };
 
 const UINT lenEOL[3] = {2,1,1};

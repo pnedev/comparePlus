@@ -169,7 +169,6 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 		}
 
         case WM_LBUTTONDOWN:
-            POINT pt;
             SetCapture(hWnd);
             yPos = HIWORD(lParam);
             current_line = yPos * m_ScaleFactor;
@@ -185,18 +184,14 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
             break;
 
         case WM_MOUSEMOVE:
-            long start;
-			long next_line;
-            int LineStart;
-            int LineVisible;
             if (GetCapture() == hWnd) 
             { 
                 yPos = HIWORD(lParam);
-                next_line = yPos * m_ScaleFactor;
-				Delta = next_line - current_line;
-				SendMessageA(_nppData._scintillaMainHandle, SCI_LINESCROLL, 0, (LPARAM)Delta);
-				SendMessageA(_nppData._scintillaMainHandle, SCI_GOTOLINE, (WPARAM)next_line, 0);
-				current_line = next_line;
+                const long next_line = yPos * m_ScaleFactor;
+		Delta = next_line - current_line;
+		SendMessageA(_nppData._scintillaMainHandle, SCI_LINESCROLL, 0, (LPARAM)Delta);
+		SendMessageA(_nppData._scintillaMainHandle, SCI_GOTOLINE, (WPARAM)next_line, 0);
+		current_line = next_line;
             }
             break;
 

@@ -74,13 +74,12 @@ toolbarIcons  tbFirst;
 toolbarIcons  tbLast;
 
 BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*/)
- {
+{
     g_hModule = hModule;
 
     switch (reasonForCall)
     {
-    case DLL_PROCESS_ATTACH:
-        {
+        case DLL_PROCESS_ATTACH:
             funcItem[CMD_COMPARE]._pFunc = compare;
             lstrcpy(funcItem[CMD_COMPARE]._itemName, TEXT("Compare"));
             funcItem[CMD_COMPARE]._pShKey = new ShortcutKey;
@@ -200,9 +199,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_ABOUT]._init2Check = false;
 
             for(int i = 0; i < MAXCOMPARE; i++)
-            {
                 compareDocs[i]=-1;
-            }
 
             TCHAR nppPath[MAX_PATH];
             GetModuleFileName((HMODULE)hModule, nppPath, sizeof(nppPath));
@@ -221,14 +218,14 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             // Test if localConf.xml exist
             bool isLocal = (PathFileExists(localConfPath) == TRUE);
 
-            if (isLocal) 
+            if (isLocal)
             {
                 lstrcpy(iniFilePath, nppPath);
                 lstrcpy(compareFilePath, nppPath);
 
                 PathAppend(iniFilePath, TEXT("plugins\\config\\Compare.ini"));
             }
-            else 
+            else
             {
                 ITEMIDLIST *pidl;
                 SHGetSpecialFolderLocation(NULL, CSIDL_APPDATA, &pidl);
@@ -239,38 +236,44 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             }
 
             loadSettings();
-        }
-        break;
+            break;
 
-    case DLL_PROCESS_DETACH:
+        case DLL_PROCESS_DETACH:
 
-        if (tbNext.hToolbarBmp)  ::DeleteObject(tbNext.hToolbarBmp);
-        if (tbPrev.hToolbarBmp)  ::DeleteObject(tbPrev.hToolbarBmp);
-        if (tbFirst.hToolbarBmp) ::DeleteObject(tbFirst.hToolbarBmp);
-        if (tbLast.hToolbarBmp)  ::DeleteObject(tbLast.hToolbarBmp);
+            if (tbNext.hToolbarBmp)
+                ::DeleteObject(tbNext.hToolbarBmp);
 
-        saveSettings();
-        OptionDlg.destroy();
-        AboutDlg.destroy();
-        NavDlg.destroy();
+            if (tbPrev.hToolbarBmp)
+                ::DeleteObject(tbPrev.hToolbarBmp);
 
-        // Don't forget to deallocate your shortcut here
-		delete funcItem[CMD_COMPARE]._pShKey;
-		delete funcItem[CMD_CLEAR_RESULTS]._pShKey;
-		delete funcItem[CMD_COMPARE_LAST_SAVE]._pShKey;
-		delete funcItem[CMD_COMAPRE_SVN_BASE]._pShKey;
-		delete funcItem[CMD_PREV]._pShKey;
-		delete funcItem[CMD_NEXT]._pShKey;
-		delete funcItem[CMD_FIRST]._pShKey;
-		delete funcItem[CMD_LAST]._pShKey;
+            if (tbFirst.hToolbarBmp)
+                ::DeleteObject(tbFirst.hToolbarBmp);
 
-        break;
+            if (tbLast.hToolbarBmp)
+                ::DeleteObject(tbLast.hToolbarBmp);
 
-    case DLL_THREAD_ATTACH:
-        break;
+            saveSettings();
+            OptionDlg.destroy();
+            AboutDlg.destroy();
+            NavDlg.destroy();
 
-    case DLL_THREAD_DETACH:
-        break;
+            // Don't forget to deallocate your shortcut here
+            delete funcItem[CMD_COMPARE]._pShKey;
+            delete funcItem[CMD_CLEAR_RESULTS]._pShKey;
+            delete funcItem[CMD_COMPARE_LAST_SAVE]._pShKey;
+            delete funcItem[CMD_COMAPRE_SVN_BASE]._pShKey;
+            delete funcItem[CMD_PREV]._pShKey;
+            delete funcItem[CMD_NEXT]._pShKey;
+            delete funcItem[CMD_FIRST]._pShKey;
+            delete funcItem[CMD_LAST]._pShKey;
+
+            break;
+
+        case DLL_THREAD_ATTACH:
+            break;
+
+        case DLL_THREAD_DETACH:
+            break;
     }
 
     return TRUE;
@@ -373,20 +376,27 @@ void saveSettings(void)
 
 int getCompare(int window)
 {
-    for(int i = 0; i < MAXCOMPARE; i++) if(compareDocs[i] == window) return i;
+    for(int i = 0; i < MAXCOMPARE; i++)
+        if(compareDocs[i] == window)
+            return i;
+
     return -1;
 }
 
 void removeCompare(int window)
 {
     int val = getCompare(window);
-    if(val != -1) compareDocs[val] = -1;
+    if(val != -1)
+        compareDocs[val] = -1;
 }
 
 int setCompare(int window)
 {
     int val = getCompare(window);
-    if(val != -1) return val;
+
+    if(val != -1)
+        return val;
+
     for(int i = 0; i < MAXCOMPARE; i++)
     {
         if(compareDocs[i] == -1)
@@ -395,6 +405,7 @@ int setCompare(int window)
             return i;
         }
     }
+
     return -1;
 }
 
@@ -403,9 +414,9 @@ void alignMatches()
     HMENU hMenu = GetMenu(nppData._nppHandle);
     Settings.AddLine = !Settings.AddLine;
     if (hMenu)
-    {
-        CheckMenuItem(hMenu, funcItem[CMD_ALIGN_MATCHES]._cmdID, MF_BYCOMMAND | (Settings.AddLine ? MF_CHECKED : MF_UNCHECKED));
-    }      
+        CheckMenuItem(hMenu,
+                      funcItem[CMD_ALIGN_MATCHES]._cmdID,
+                      MF_BYCOMMAND | (Settings.AddLine ? MF_CHECKED : MF_UNCHECKED));
 }
 
 void includeSpacing()
@@ -413,9 +424,9 @@ void includeSpacing()
     HMENU hMenu = GetMenu(nppData._nppHandle);
     Settings.IncludeSpace = !Settings.IncludeSpace;
     if (hMenu)
-    {
-        CheckMenuItem(hMenu, funcItem[CMD_IGNORE_SPACING]._cmdID, MF_BYCOMMAND | (Settings.IncludeSpace ? MF_CHECKED : MF_UNCHECKED));
-    }  
+        CheckMenuItem(hMenu,
+                      funcItem[CMD_IGNORE_SPACING]._cmdID,
+                      MF_BYCOMMAND | (Settings.IncludeSpace ? MF_CHECKED : MF_UNCHECKED));
 }
 
 void detectMoves()
@@ -423,9 +434,9 @@ void detectMoves()
     HMENU hMenu = GetMenu(nppData._nppHandle);
     Settings.DetectMove = !Settings.DetectMove;
     if (hMenu)
-    {
-        CheckMenuItem(hMenu, funcItem[CMD_DETECT_MOVES]._cmdID, MF_BYCOMMAND | (Settings.DetectMove ? MF_CHECKED : MF_UNCHECKED));
-    }  
+        CheckMenuItem(hMenu,
+                      funcItem[CMD_DETECT_MOVES]._cmdID,
+                      MF_BYCOMMAND | (Settings.DetectMove ? MF_CHECKED : MF_UNCHECKED));
 }
 
 void openOptionDlg(void)
@@ -436,12 +447,12 @@ void openOptionDlg(void)
         if (active)
         {
             setStyles(Settings);
-            
+
             NavDlg.SetColor(
-                Settings.ColorSettings.added, 
-                Settings.ColorSettings.deleted, 
-                Settings.ColorSettings.changed, 
-                Settings.ColorSettings.moved, 
+                Settings.ColorSettings.added,
+                Settings.ColorSettings.deleted,
+                Settings.ColorSettings.changed,
+                Settings.ColorSettings.moved,
                 Settings.ColorSettings.blank);
 
             NavDlg.CreateBitmap();
@@ -456,62 +467,67 @@ void jumpChangedLines(bool direction)
 
     ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
 
-    if (currentEdit != -1) 
-    {
+    if (currentEdit != -1)
         CurView = (currentEdit == 0) ? (nppData._scintillaMainHandle) : (nppData._scintillaSecondHandle);
+
+    int sci_search_mask = (1 << MARKER_MOVED_LINE)
+                        | (1 << MARKER_CHANGED_LINE)
+                        | (1 << MARKER_ADDED_LINE)
+                        | (1 << MARKER_REMOVED_LINE)
+                        | (1 << MARKER_BLANK_LINE);
+
+    int posStart = ::SendMessage(CurView, SCI_GETCURRENTPOS, 0, 0);
+    int lineStart = ::SendMessage(CurView, SCI_LINEFROMPOSITION, posStart, 0);
+    int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0);
+
+    int currLine;
+    int nextLine;
+    int sci_marker_direction;
+
+    while (true)
+    {
+        if (direction)
+        {
+            currLine = (lineStart < lineMax) ? (lineStart + 1) : (0);
+            sci_marker_direction = SCI_MARKERNEXT;
+        }
+        else
+        {
+            currLine = (lineStart > 0) ? (lineStart - 1) : (lineMax);
+            sci_marker_direction = SCI_MARKERPREVIOUS;
+        }
+
+        nextLine = ::SendMessage(CurView, sci_marker_direction, currLine, sci_search_mask);
+
+        if (nextLine < 0)
+        {
+            currLine = (direction) ? (0) : (lineMax);
+            nextLine = ::SendMessage(CurView, sci_marker_direction, currLine, sci_search_mask);
+            break;
+        }
+
+        if (nextLine != currLine)
+            break;
+        else if (direction)
+            lineStart++;
+        else
+            lineStart--;
     }
 
-    int sci_search_mask = (1 << MARKER_MOVED_LINE) | (1 << MARKER_CHANGED_LINE) | 
-                          (1 << MARKER_ADDED_LINE) | (1 << MARKER_REMOVED_LINE) |
-                          (1 << MARKER_BLANK_LINE);
-
-	int posStart = ::SendMessage(CurView, SCI_GETCURRENTPOS, 0, 0);
-	int lineStart = ::SendMessage(CurView, SCI_LINEFROMPOSITION, posStart, 0);
-	int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0);
-
-	int currLine;
-	int nextLine;
-	int sci_marker_direction;
-
-	while (true)
-	{
-		if (direction) 
-		{
-			currLine = (lineStart < lineMax) ? (lineStart + 1) : (0);
-			sci_marker_direction = SCI_MARKERNEXT;
-		}
-		else 
-		{
-			currLine = (lineStart > 0) ? (lineStart - 1) : (lineMax);
-			sci_marker_direction = SCI_MARKERPREVIOUS;
-		}
-
-		nextLine = ::SendMessage(CurView, sci_marker_direction, currLine, sci_search_mask);
-
-		if (nextLine < 0) 
-		{
-			currLine = (direction) ? (0) : (lineMax);
-			nextLine = ::SendMessage(CurView, sci_marker_direction, currLine, sci_search_mask);
-			break;
-		}
-
-		if (nextLine != currLine) break;
-		else if (direction) lineStart++;
-		else lineStart--;
-	}
-
-	::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
-	::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0);
+    ::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
+    ::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0);
 }
 
 void Prev(void)
 {
-    if (active) jumpChangedLines(false);
+    if (active)
+        jumpChangedLines(false);
 }
 
 void Next(void)
 {
-    if (active) jumpChangedLines(true);
+    if (active)
+        jumpChangedLines(true);
 }
 
 void First(void)
@@ -522,19 +538,19 @@ void First(void)
         int currentEdit;
         ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
 
-        if (currentEdit != -1) 
-        {
+        if (currentEdit != -1)
             CurView = (currentEdit == 0) ? (nppData._scintillaMainHandle) : (nppData._scintillaSecondHandle);
-        }
 
-        int sci_search_mask = (1 << MARKER_MOVED_LINE) | (1 << MARKER_CHANGED_LINE) | 
-                              (1 << MARKER_ADDED_LINE) | (1 << MARKER_REMOVED_LINE) |
-                              (1 << MARKER_BLANK_LINE);
+        int sci_search_mask = (1 << MARKER_MOVED_LINE)
+                            | (1 << MARKER_CHANGED_LINE)
+                            | (1 << MARKER_ADDED_LINE)
+                            | (1 << MARKER_REMOVED_LINE)
+                            | (1 << MARKER_BLANK_LINE);
 
-	    int currLine = 0;
-	    int nextLine = ::SendMessage(CurView, SCI_MARKERNEXT, currLine, sci_search_mask );
-	    ::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
-	    ::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0);
+        int currLine = 0;
+        int nextLine = ::SendMessage(CurView, SCI_MARKERNEXT, currLine, sci_search_mask );
+        ::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
+        ::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0);
     }
 }
 
@@ -546,19 +562,19 @@ void Last(void)
         int currentEdit;
         ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
 
-        if (currentEdit != -1) 
-        {
+        if (currentEdit != -1)
             CurView = (currentEdit == 0) ? (nppData._scintillaMainHandle) : (nppData._scintillaSecondHandle);
-        }
 
-        int sci_search_mask = (1 << MARKER_MOVED_LINE) | (1 << MARKER_CHANGED_LINE) | 
-                              (1 << MARKER_ADDED_LINE) | (1 << MARKER_REMOVED_LINE) |
-                              (1 << MARKER_BLANK_LINE);
+        int sci_search_mask = (1 << MARKER_MOVED_LINE)
+                            | (1 << MARKER_CHANGED_LINE)
+                            | (1 << MARKER_ADDED_LINE)
+                            | (1 << MARKER_REMOVED_LINE)
+                            | (1 << MARKER_BLANK_LINE);
 
-	    int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0);
-	    int nextLine = ::SendMessage(CurView, SCI_MARKERPREVIOUS, lineMax, sci_search_mask);
-	    ::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
-	    ::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0);
+        int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0);
+        int nextLine = ::SendMessage(CurView, SCI_MARKERPREVIOUS, lineMax, sci_search_mask);
+        ::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
+        ::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0);
     }
 }
 
@@ -573,23 +589,23 @@ void ViewNavigationBar(void)
     Settings.UseNavBar = !Settings.UseNavBar;
 
     if (hMenu)
-    {
-        CheckMenuItem(hMenu, funcItem[CMD_USE_NAV_BAR]._cmdID, MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
-    }
+        CheckMenuItem(hMenu,
+                      funcItem[CMD_USE_NAV_BAR]._cmdID,
+                      MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
 
     if (active)
     {
-        if (Settings.UseNavBar) 
+        if (Settings.UseNavBar)
         {
             // Save current N++ focus
             HWND hwnd = GetFocus();
 
             // Configure NavBar
             NavDlg.SetColor(
-                Settings.ColorSettings.added, 
-                Settings.ColorSettings.deleted, 
-                Settings.ColorSettings.changed, 
-                Settings.ColorSettings.moved, 
+                Settings.ColorSettings.added,
+                Settings.ColorSettings.deleted,
+                Settings.ColorSettings.changed,
+                Settings.ColorSettings.moved,
                 Settings.ColorSettings.blank);
 
             // Display Navbar
@@ -601,7 +617,7 @@ void ViewNavigationBar(void)
         }
         else
         {
-            NavDlg.doDialog(false);            
+            NavDlg.doDialog(false);
         }
     }
 }
@@ -632,34 +648,34 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM /*wPar
 }
 
 HWND openTempFile(void)
-    {
+{
     char original[MAX_PATH];
 
     ::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, 0, (LPARAM)original);
-    HWND originalwindow = getCurrentWindow();	
+    HWND originalwindow = getCurrentWindow();
 
-	LRESULT curBuffer = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
-	LangType curLang = (LangType)::SendMessage(nppData._nppHandle, NPPM_GETBUFFERLANGTYPE, curBuffer, 0);
+    LRESULT curBuffer = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+    LangType curLang = (LangType)::SendMessage(nppData._nppHandle, NPPM_GETBUFFERLANGTYPE, curBuffer, 0);
 
     int result = ::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)compareFilePath);
-    HWND window = getCurrentWindow();		
+    HWND window = getCurrentWindow();
     int win = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
-    
+
     if(result == 0 || win != tempWindow)
     {
         ::SendMessage(nppData._nppHandle, WM_COMMAND, IDM_FILE_NEW, (LPARAM)0);
         ::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)compareFilePath);
         tempWindow = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
 
-		curBuffer = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
-		::SendMessage(nppData._nppHandle, NPPM_SETBUFFERLANGTYPE, curBuffer, curLang);
-	}	
+        curBuffer = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+        ::SendMessage(nppData._nppHandle, NPPM_SETBUFFERLANGTYPE, curBuffer, curLang);
+    }
 
     if(originalwindow == window)
     {
         ::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)original);
         SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_GOTO_ANOTHER_VIEW, 0);
-		//::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)compareFilePath);
+        //::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)compareFilePath);
         panelsOpened = true;
     }
 
@@ -697,7 +713,7 @@ void openFile(TCHAR *file)
     ifstream myfile(file,ios::in|ios::ate| ios::binary);
 
     if(myfile.is_open())
-    {		
+    {
         long size = myfile.tellg();
         char *memblock = new char [size+1];
         myfile.seekg(0);
@@ -722,8 +738,8 @@ void openFile(TCHAR *file)
             ::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
             ::SendMessageA(window, SCI_SETSAVEPOINT, 1, 0);
             ::SendMessageA(window, SCI_EMPTYUNDOBUFFER, 0, 0);
-            ::SendMessageA(window, SCI_SETREADONLY, 1, 0);            
- 			::SendMessageA(nppData._scintillaSecondHandle, SCI_GRABFOCUS, 0, 1);
+            ::SendMessageA(window, SCI_SETREADONLY, 1, 0);
+            ::SendMessageA(nppData._scintillaSecondHandle, SCI_GRABFOCUS, 0, 1);
         }
     }
 }
@@ -736,15 +752,15 @@ void reset()
 {
     if (active == true)
     {
-		LRESULT RODoc1;
-		LRESULT RODoc2;
+        LRESULT RODoc1;
+        LRESULT RODoc2;
 
-		// Remove read-only attribute
-		if ((RODoc1 = SendMessage(nppData._scintillaMainHandle, SCI_GETREADONLY, 0, 0)) == 1)
-			SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, false, 0);
+        // Remove read-only attribute
+        if ((RODoc1 = SendMessage(nppData._scintillaMainHandle, SCI_GETREADONLY, 0, 0)) == 1)
+            SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, false, 0);
 
-		if ((RODoc2 = SendMessage(nppData._scintillaSecondHandle, SCI_GETREADONLY, 0, 0)) == 1)
-			SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, false, 0);
+        if ((RODoc2 = SendMessage(nppData._scintillaSecondHandle, SCI_GETREADONLY, 0, 0)) == 1)
+            SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, false, 0);
 
         int doc1 = SendMessageA(nppData._scintillaMainHandle, SCI_GETDOCPOINTER, 0, 0);
         int doc2 = SendMessageA(nppData._scintillaSecondHandle, SCI_GETDOCPOINTER, 0, 0);
@@ -757,13 +773,10 @@ void reset()
         HWND window = getCurrentHScintilla(win);
 
         if(doc1Index != -1)
-        {
             clearWindow(nppData._scintillaMainHandle, true);
-        }
+
         if(doc2Index != -1)
-        {
             clearWindow(nppData._scintillaSecondHandle, true);
-        }
 
         ::SendMessageA(window, SCI_GRABFOCUS, 0, (LPARAM)1);
 
@@ -779,16 +792,16 @@ void reset()
         if(tempWindow!=-1)
         {
             ::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)compareFilePath);
-            window = getCurrentWindow();	
+            window = getCurrentWindow();
             int tempPointer = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
-            
+
             if(tempPointer == tempWindow)
             {
                 SendMessageA(window,SCI_EMPTYUNDOBUFFER,0,0);
                 SendMessage(nppData._nppHandle, WM_COMMAND, IDM_FILE_CLOSE, 0);
             }
             tempWindow = -1;
-			LRESULT ROTemp = RODoc1; RODoc1 = RODoc2; RODoc2 = ROTemp;
+            LRESULT ROTemp = RODoc1; RODoc1 = RODoc2; RODoc2 = ROTemp;
         }
 
         // Remove margin mask
@@ -818,9 +831,12 @@ void reset()
         // Restore side bar item entry state (because tick has been removed by the docked window)
         CheckMenuItem(hMenu, funcItem[CMD_USE_NAV_BAR]._cmdID, MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
 
-		// Restore previous read-only attribute
-		if (RODoc1 == 1) SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, true, 0);
-		if (RODoc2 == 1) SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
+        // Restore previous read-only attribute
+        if (RODoc1 == 1)
+            SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, true, 0);
+
+        if (RODoc2 == 1)
+            SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
     }
 }
 
@@ -829,9 +845,7 @@ void compareLocal()
     TCHAR file[MAX_PATH];
     ::SendMessage(nppData._nppHandle,NPPM_GETCURRENTDIRECTORY,0,(LPARAM)file);
     if(file[0] != 0)
-    {
         ::SendMessage(nppData._nppHandle,NPPM_GETFULLCURRENTPATH,0,(LPARAM)file);
-    }
     openFile(file);
 }
 
@@ -861,295 +875,292 @@ void compareBase()
 
 bool compareNew()
 {
-	clearWindow(nppData._scintillaMainHandle, true);
-	clearWindow(nppData._scintillaSecondHandle, true);
-	
+    clearWindow(nppData._scintillaMainHandle, true);
+    clearWindow(nppData._scintillaSecondHandle, true);
+
     active = true;
 
-	int doc1Length;
-	int *lineNum1;
+    int doc1Length;
+    int *lineNum1;
 
-	char **doc1 = getAllLines(nppData._scintillaMainHandle, &doc1Length, &lineNum1);
+    char **doc1 = getAllLines(nppData._scintillaMainHandle, &doc1Length, &lineNum1);
 
-	if(doc1Length < 1)
-    {
+    if(doc1Length < 1)
         return true;
-    }
 
-	int doc2Length;
-	int *lineNum2;
+    int doc2Length;
+    int *lineNum2;
 
-	char **doc2 = getAllLines(nppData._scintillaSecondHandle, &doc2Length, &lineNum2);
-	
+    char **doc2 = getAllLines(nppData._scintillaSecondHandle, &doc2Length, &lineNum2);
+
     if(doc2Length < 1)
-    {
         return true;
-    }
 
-	int	doc1Changed = 0;
-	int	doc2Changed = 0;
-	diff_edit *doc1Changes = NULL;
-	diff_edit *doc2Changes = NULL;
+    int doc1Changed = 0;
+    int doc2Changed = 0;
+    diff_edit *doc1Changes = NULL;
+    diff_edit *doc2Changes = NULL;
 
-	unsigned int *doc1Hashes = computeHashes(doc1, doc1Length, Settings.IncludeSpace);
-	unsigned int *doc2Hashes = computeHashes(doc2, doc2Length, Settings.IncludeSpace);
+    unsigned int *doc1Hashes = computeHashes(doc1, doc1Length, Settings.IncludeSpace);
+    unsigned int *doc2Hashes = computeHashes(doc2, doc2Length, Settings.IncludeSpace);
 
-	/* make diff */
-	int sn;
-	struct varray *ses = varray_new(sizeof(struct diff_edit), NULL);
-	int result = (diff(doc1Hashes, 0, doc1Length, doc2Hashes, 0, doc2Length, (idx_fn)(getLineFromIndex), (cmp_fn)(compareLines), NULL, 0, ses, &sn, NULL));
-	int changeOffset = 0;
+    /* make diff */
+    int sn;
+    struct varray *ses = varray_new(sizeof(struct diff_edit), NULL);
+    int result = (diff(doc1Hashes, 0, doc1Length, doc2Hashes, 0, doc2Length, (idx_fn)(getLineFromIndex), (cmp_fn)(compareLines), NULL, 0, ses, &sn, NULL));
+    int changeOffset = 0;
 
     shift_boundries(ses, sn, doc1Hashes, doc2Hashes, doc1Length, doc2Length);
-	find_moves(ses, sn, doc1Hashes, doc2Hashes, Settings.DetectMove);
-	/* 
+    find_moves(ses, sn, doc1Hashes, doc2Hashes, Settings.DetectMove);
+    /* 
      * - insert empty lines
-	 * - count changed lines
-	 */
-	doc1Changed = 0;
-	doc2Changed = 0;
+     * - count changed lines
+     */
+    doc1Changed = 0;
+    doc2Changed = 0;
 
-	for (int i = 0; i < sn; i++) 
+    for (int i = 0; i < sn; i++) 
     {
-		struct diff_edit *e =(diff_edit*) varray_get(ses, i);
-		if(e->op == DIFF_DELETE)
+        struct diff_edit *e =(diff_edit*) varray_get(ses, i);
+        if(e->op == DIFF_DELETE)
         {
-			e->changeCount = 0;
-			doc1Changed += e->len;
-			struct diff_edit *e2 =(diff_edit*) varray_get(ses, i+1);
-			e2->changeCount = 0;
-			
+            e->changeCount = 0;
+            doc1Changed += e->len;
+            struct diff_edit *e2 =(diff_edit*) varray_get(ses, i+1);
+            e2->changeCount = 0;
+
             if(e2->op == DIFF_INSERT)
             {
-				//see if the DELETE/INSERT COMBO includes changed lines or if its a completely new block
-				if(compareWords(e, e2, doc1, doc2, Settings.IncludeSpace))
-				{
-					e->op = DIFF_CHANGE1;
-					e2->op = DIFF_CHANGE2;
-					doc2Changed += e2->len;
-				}
-			}
-		}
+                //see if the DELETE/INSERT COMBO includes changed lines or if its a completely new block
+                if(compareWords(e, e2, doc1, doc2, Settings.IncludeSpace))
+                {
+                    e->op = DIFF_CHANGE1;
+                    e2->op = DIFF_CHANGE2;
+                    doc2Changed += e2->len;
+                }
+            }
+        }
         else if(e->op == DIFF_INSERT)
         {
-			e->changeCount = 0;
-			doc2Changed += e->len;
-		}
-	}
+            e->changeCount = 0;
+            doc2Changed += e->len;
+        }
+    }
 
-	int doc1CurrentChange = 0;
-	int doc2CurrentChange = 0;
-	changeOffset = 0;
-	doc1Changes = new diff_edit[doc1Changed];
-	doc2Changes = new diff_edit[doc2Changed];
-	int doc1Offset = 0;
-	int doc2Offset = 0;
+    int doc1CurrentChange = 0;
+    int doc2CurrentChange = 0;
+    changeOffset = 0;
+    doc1Changes = new diff_edit[doc1Changed];
+    doc2Changes = new diff_edit[doc2Changed];
+    int doc1Offset = 0;
+    int doc2Offset = 0;
 
-	//switch from blocks of lines to one change per line. Change CHANGE to DELETE or INSERT if there are no changes on that line
-	int added;
+    // Switch from blocks of lines to one change per line.
+    // Change CHANGE to DELETE or INSERT if there are no changes on that line
+    int added;
 
-	for (int i = 0; i < sn; i++) 
+    for (int i = 0; i < sn; i++) 
     {
-		struct diff_edit *e =(diff_edit*) varray_get(ses, i);
-		e->set = i;
+        struct diff_edit *e =(diff_edit*) varray_get(ses, i);
+        e->set = i;
 
-		switch(e->op)
+        switch(e->op)
         {
-			case DIFF_CHANGE1:
-			case DIFF_DELETE:
-				added = setDiffLines(e, doc1Changes, &doc1CurrentChange, DIFF_DELETE, e->off + doc2Offset);
-				doc2Offset -= added;
-				doc1Offset += added;
-				break;
-			case DIFF_INSERT:
-			case DIFF_CHANGE2:
-				added = setDiffLines(e, doc2Changes, &doc2CurrentChange, DIFF_INSERT, e->off + doc1Offset);	
-				doc1Offset -= added;
-				doc2Offset += added;
-				break;
-		}
-	}
+            case DIFF_CHANGE1:
+            case DIFF_DELETE:
+                added = setDiffLines(e, doc1Changes, &doc1CurrentChange, DIFF_DELETE, e->off + doc2Offset);
+                doc2Offset -= added;
+                doc1Offset += added;
+                break;
+            case DIFF_INSERT:
+            case DIFF_CHANGE2:
+                added = setDiffLines(e, doc2Changes, &doc2CurrentChange, DIFF_INSERT, e->off + doc1Offset);	
+                doc1Offset -= added;
+                doc2Offset += added;
+                break;
+        }
+    }
 
-	if (result != -1)
+    if (result != -1)
     {
-		int textIndex;
-		different = (doc1Changed > 0) || (doc2Changed > 0);
-		
+        int textIndex;
+        different = (doc1Changed > 0) || (doc2Changed > 0);
+
         for(int i = 0; i < doc1Changed; i++)
         {
-			switch(doc1Changes[i].op)
+            switch(doc1Changes[i].op)
             {
-				case DIFF_DELETE:
-					markAsRemoved(nppData._scintillaMainHandle, doc1Changes[i].off);					
-					break;
+                case DIFF_DELETE:
+                    markAsRemoved(nppData._scintillaMainHandle, doc1Changes[i].off);					
+                    break;
 
-				case DIFF_CHANGE1:
-					markAsChanged(nppData._scintillaMainHandle, doc1Changes[i].off);
-					textIndex = lineNum1[doc1Changes[i].off];
+                case DIFF_CHANGE1:
+                    markAsChanged(nppData._scintillaMainHandle, doc1Changes[i].off);
+                    textIndex = lineNum1[doc1Changes[i].off];
 
-					for(int k = 0; k < doc1Changes[i].changeCount; k++)
+                    for(int k = 0; k < doc1Changes[i].changeCount; k++)
                     {
-						struct diff_change *change = (diff_change*)varray_get(doc1Changes[i].changes, k);
-						markTextAsChanged(nppData._scintillaMainHandle, textIndex + change->off, change->len);
-					}
-					break;
+                        struct diff_change *change = (diff_change*)varray_get(doc1Changes[i].changes, k);
+                        markTextAsChanged(nppData._scintillaMainHandle, textIndex + change->off, change->len);
+                    }
+                    break;
 
-				case DIFF_MOVE:					
-					markAsMoved(nppData._scintillaMainHandle, doc1Changes[i].off);
-					break;
+                case DIFF_MOVE:
+                    markAsMoved(nppData._scintillaMainHandle, doc1Changes[i].off);
+                    break;
 
-			}
-		}
+            }
+        }
 
-		for(int i = 0; i < doc2Changed; i++)
+        for(int i = 0; i < doc2Changed; i++)
         {
-			switch(doc2Changes[i].op)
+            switch(doc2Changes[i].op)
             {
-				case DIFF_INSERT:					
-					markAsAdded(nppData._scintillaSecondHandle, doc2Changes[i].off);						
-					break;
+                case DIFF_INSERT:
+                    markAsAdded(nppData._scintillaSecondHandle, doc2Changes[i].off);
+                    break;
 
-				case DIFF_CHANGE2:
-					markAsChanged(nppData._scintillaSecondHandle, doc2Changes[i].off);
-					textIndex = lineNum2[doc2Changes[i].off];
-					for(int k = 0; k < doc2Changes[i].changeCount; k++)
+                case DIFF_CHANGE2:
+                    markAsChanged(nppData._scintillaSecondHandle, doc2Changes[i].off);
+                    textIndex = lineNum2[doc2Changes[i].off];
+                    for(int k = 0; k < doc2Changes[i].changeCount; k++)
                     {
-						struct diff_change *change=(diff_change*)varray_get(doc2Changes[i].changes, k);
-						markTextAsChanged(nppData._scintillaSecondHandle, textIndex+change->off, change->len);
-					}
-					break;
+                        struct diff_change *change=(diff_change*)varray_get(doc2Changes[i].changes, k);
+                        markTextAsChanged(nppData._scintillaSecondHandle, textIndex+change->off, change->len);
+                    }
+                    break;
 
-				case DIFF_MOVE:					
-					markAsMoved(nppData._scintillaSecondHandle,doc2Changes[i].off);										
-					break;
-			}
-		}
+                case DIFF_MOVE:
+                    markAsMoved(nppData._scintillaSecondHandle,doc2Changes[i].off);
+                    break;
+            }
+        }
 
-		doc1Offset = 0;
-		doc2Offset = 0;
+        doc1Offset = 0;
+        doc2Offset = 0;
 
-		if(Settings.AddLine)
+        if(Settings.AddLine)
         {
-			int length = 0;
-			int off = -1;
-			for(int i = 0; i < doc1Changed; i++)
+            int length = 0;
+            int off = -1;
+            for(int i = 0; i < doc1Changed; i++)
             {
-				switch(doc1Changes[i].op)
+                switch(doc1Changes[i].op)
                 {
-					case DIFF_DELETE:
-					case DIFF_MOVE:							
-						if(doc1Changes[i].altLocation == off)
+                    case DIFF_DELETE:
+                    case DIFF_MOVE:
+                        if(doc1Changes[i].altLocation == off)
                         {
-							length++;
-						}
+                            length++;
+                        }
                         else
                         {
-							addEmptyLines(nppData._scintillaSecondHandle, off + doc2Offset, length);
-							doc2Offset += length;
-							off = doc1Changes[i].altLocation;
-							length = 1;						
-						}
-						break;
-				}
-			}
+                            addEmptyLines(nppData._scintillaSecondHandle, off + doc2Offset, length);
+                            doc2Offset += length;
+                            off = doc1Changes[i].altLocation;
+                            length = 1;
+                        }
+                        break;
+                }
+            }
 
-			addEmptyLines(nppData._scintillaSecondHandle, off + doc2Offset, length);
+            addEmptyLines(nppData._scintillaSecondHandle, off + doc2Offset, length);
 
-			if(doc2Offset > 0)
+            if(doc2Offset > 0)
             {
-				clearUndoBuffer(nppData._scintillaSecondHandle);
-			}
+                clearUndoBuffer(nppData._scintillaSecondHandle);
+            }
 
-			length = 0;
-			off = 0;
-			doc1Offset = 0;
+            length = 0;
+            off = 0;
+            doc1Offset = 0;
 
-			for(int i = 0; i < doc2Changed; i++)
+            for(int i = 0; i < doc2Changed; i++)
             {
-				switch(doc2Changes[i].op)
+                switch(doc2Changes[i].op)
                 {
-					case DIFF_INSERT:
-					case DIFF_MOVE:							
-						if(doc2Changes[i].altLocation == off)
+                    case DIFF_INSERT:
+                    case DIFF_MOVE:
+                        if(doc2Changes[i].altLocation == off)
                         {
-							length++;
-						}
+                            length++;
+                        }
                         else
                         {
-							addEmptyLines(nppData._scintillaMainHandle, off + doc1Offset, length);
-							doc1Offset += length;
-							off = doc2Changes[i].altLocation;
-							length = 1;						
-						}
-						break;
-				}
-			}
+                            addEmptyLines(nppData._scintillaMainHandle, off + doc1Offset, length);
+                            doc1Offset += length;
+                            off = doc2Changes[i].altLocation;
+                            length = 1;
+                        }
+                        break;
+                }
+            }
 
-			addEmptyLines(nppData._scintillaMainHandle, off + doc1Offset, length);
+            addEmptyLines(nppData._scintillaMainHandle, off + doc1Offset, length);
 
-			if(doc1Offset > 0)
+            if(doc1Offset > 0)
             {
-				clearUndoBuffer(nppData._scintillaMainHandle);
-			}
-		}
+                clearUndoBuffer(nppData._scintillaMainHandle);
+            }
+        }
 
-//clean up resources
+        //clean up resources
 #if CLEANUP
 
-		for(int i = 0; i < doc1Length; i++)
+        for(int i = 0; i < doc1Length; i++)
         {
-			if(*doc1[i] != 0)
+            if(*doc1[i] != 0)
             {
-				delete[] doc1[i];
-			}
-		}
+                delete[] doc1[i];
+            }
+        }
 
-		delete[] doc1;
-		delete[] lineNum1;
-		
+        delete[] doc1;
+        delete[] lineNum1;
+
         for(int i = 0; i < doc2Length; i++)
         {
-			if(*doc2[i] != 0)
+            if(*doc2[i] != 0)
             {
-				delete[] doc2[i];
-			}
-		}
+                delete[] doc2[i];
+            }
+        }
 
-		delete[] doc2;
-		delete lineNum2;
+        delete[] doc2;
+        delete lineNum2;
 
-		delete[] doc1Hashes;
-		delete[] doc2Hashes;
+        delete[] doc1Hashes;
+        delete[] doc2Hashes;
 
-		clearEdits(ses, sn);
+        clearEdits(ses, sn);
 
-		for(int i = 0; i < doc1Changed; i++)
+        for(int i = 0; i < doc1Changed; i++)
         {
-			clearEdit(doc1Changes + (i));
-		}
+            clearEdit(doc1Changes + (i));
+        }
 
-		delete[] doc1Changes;
+        delete[] doc1Changes;
 
-		for(int i = 0; i < doc2Changed; i++)
+        for(int i = 0; i < doc2Changed; i++)
         {
-			clearEdit(doc2Changes+(i));
-		}
+            clearEdit(doc2Changes+(i));
+        }
 
-		delete[] doc2Changes;
+        delete[] doc2Changes;
 
 #endif // CLEANUP
 
-		if(!different)
+        if(!different)
         {
-			::MessageBox(nppData._nppHandle, TEXT("Files Match"), TEXT("Results :"), MB_OK);
-			return true;
-		}
+            ::MessageBox(nppData._nppHandle, TEXT("Files Match"), TEXT("Results :"), MB_OK);
+            return true;
+        }
 
-		::SendMessageA(nppData._scintillaMainHandle, SCI_SHOWLINES, 0, (LPARAM)1);
-		::SendMessageA(nppData._scintillaSecondHandle, SCI_SHOWLINES, 0, (LPARAM)1);
+        ::SendMessageA(nppData._scintillaMainHandle, SCI_SHOWLINES, 0, (LPARAM)1);
+        ::SendMessageA(nppData._scintillaSecondHandle, SCI_SHOWLINES, 0, (LPARAM)1);
 
-		return false;
-	}
+        return false;
+    }
     return false;
 }
 
@@ -1160,7 +1171,6 @@ bool startCompare()
     int win = 3;
 
     ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&win);
-    HWND window = getCurrentHScintilla(win);
 
     if(!IsWindowVisible(nppData._scintillaMainHandle) || !IsWindowVisible(nppData._scintillaSecondHandle))
     {	
