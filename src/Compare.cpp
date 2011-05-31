@@ -1166,20 +1166,20 @@ bool compareNew()
 
 bool startCompare()
 {
-	LRESULT RODoc1;
-	LRESULT RODoc2;
+    LRESULT RODoc1;
+    LRESULT RODoc2;
     int win = 3;
 
     ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&win);
 
     if(!IsWindowVisible(nppData._scintillaMainHandle) || !IsWindowVisible(nppData._scintillaSecondHandle))
-    {	
+    {
         SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_GOTO_ANOTHER_VIEW, 0);
         panelsOpened = true;
     }
 
     if(!IsWindowVisible(nppData._scintillaMainHandle) || !IsWindowVisible(nppData._scintillaSecondHandle))
-    {	
+    {
         panelsOpened = false;
         ::MessageBox(nppData._nppHandle, TEXT("Nothing to compare!"), TEXT("Error"), MB_OK);
         return true;
@@ -1201,12 +1201,12 @@ bool startCompare()
         ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID, (LPARAM)Settings.AddLine);
     }
 
-	// Remove read-only attribute
-	if ((RODoc1 = SendMessage(nppData._scintillaMainHandle, SCI_GETREADONLY, 0, 0)) == 1)
-		SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, false, 0);
+    // Remove read-only attribute
+    if ((RODoc1 = SendMessage(nppData._scintillaMainHandle, SCI_GETREADONLY, 0, 0)) == 1)
+        SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, false, 0);
 
-	if ((RODoc2 = SendMessage(nppData._scintillaSecondHandle, SCI_GETREADONLY, 0, 0)) == 1)
-		SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, false, 0);
+    if ((RODoc2 = SendMessage(nppData._scintillaSecondHandle, SCI_GETREADONLY, 0, 0)) == 1)
+        SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, false, 0);
 
     SendMessageA(nppData._scintillaMainHandle, SCI_SETWRAPMODE, SC_WRAP_NONE, 0);
     SendMessageA(nppData._scintillaSecondHandle, SCI_SETWRAPMODE, SC_WRAP_NONE, 0);
@@ -1223,14 +1223,10 @@ bool startCompare()
     HMENU hMenu = ::GetMenu(nppData._nppHandle);
 
     if ((::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0)
-    {
         ::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLV, 0), 0);
-    }
 
     if ((::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0)
-    {
         ::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
-    }
 
     ::SendMessageA(nppData._scintillaMainHandle, SCI_GOTOPOS, 1, 0);
     ::SendMessageA(nppData._scintillaSecondHandle, SCI_GOTOPOS, 1, 0);
@@ -1245,41 +1241,41 @@ bool startCompare()
     ::SendMessageA(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
     ::SendMessageA(nppData._scintillaSecondHandle/*window*/, SCI_GRABFOCUS, 0, (LPARAM)1);
 
-	// Restore previous read-only attribute
-	if (RODoc1 == 1) SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, true, 0);
-	if (RODoc2 == 1) SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
+    // Restore previous read-only attribute
+    if (RODoc1 == 1) SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, true, 0);
+    if (RODoc2 == 1) SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
 
     if (!result)
-	{
+    {
         if(Settings.UseNavBar)
-		{
-			// Save current N++ focus
-			HWND hwnd = GetFocus();
+        {
+            // Save current N++ focus
+            HWND hwnd = GetFocus();
 
-			// Configure NavBar
-			NavDlg.SetColor(
-				Settings.ColorSettings.added, 
-				Settings.ColorSettings.deleted, 
-				Settings.ColorSettings.changed, 
-				Settings.ColorSettings.moved, 
-				Settings.ColorSettings.blank);
+            // Configure NavBar
+            NavDlg.SetColor(
+                    Settings.ColorSettings.added, 
+                    Settings.ColorSettings.deleted, 
+                    Settings.ColorSettings.changed, 
+                    Settings.ColorSettings.moved, 
+                    Settings.ColorSettings.blank);
 
-			// Display Navbar
-			NavDlg.doDialog(true);
-			start_old = -1;
+            // Display Navbar
+            NavDlg.doDialog(true);
+            start_old = -1;
 
-			// Restore N++ focus
-			SetFocus(hwnd);
+            // Restore N++ focus
+            SetFocus(hwnd);
 
-		}
-		// Enable Prev/Next menu entry
-		::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-		::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-		::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-		::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-	}
+        }
+        // Enable Prev/Next menu entry
+        ::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+    }
 
-	return result;
+    return result;
 }
 
 void compare()
@@ -1291,30 +1287,29 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 {
     long start, end;
 
-    switch (notifyCode->nmhdr.code) 
+    switch (notifyCode->nmhdr.code)
     {
-    case SCN_PAINTED:
-        if(active) 
-        {            
-            start = SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
-            end   = SendMessage(nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0) + start;
-
-            if((start_old != start) && (NavDlg.ReadyToDraw == TRUE))
+        case SCN_PAINTED:
+            if(active)
             {
-                NavDlg.DrawView(start, end);
-                start_old = start;
-            }
-        }
-        break;
+                start = SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
+                end   = SendMessage(nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0) + start;
 
-    case NPPN_TBMODIFICATION:
-        {         
+                if((start_old != start) && (NavDlg.ReadyToDraw == TRUE))
+                {
+                    NavDlg.DrawView(start, end);
+                    start_old = start;
+                }
+            }
+            break;
+
+        case NPPN_TBMODIFICATION:
             tbNext.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_NEXT), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
             tbPrev.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_PREV), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
             tbFirst.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_FIRST), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
             tbLast.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_LAST), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
 
-			::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_FIRST]._cmdID, (LPARAM)&tbFirst);
+            ::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_FIRST]._cmdID, (LPARAM)&tbFirst);
             ::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_PREV]._cmdID, (LPARAM)&tbPrev);
             ::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_NEXT]._cmdID, (LPARAM)&tbNext);
             ::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_LAST]._cmdID, (LPARAM)&tbLast);
@@ -1325,28 +1320,24 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_USE_NAV_BAR]._cmdID, (LPARAM)Settings.UseNavBar);
 
             break;
-        }
 
-    case NPPN_FILEBEFORECLOSE:
-    case NPPN_FILECLOSED:
-    case NPPN_FILEBEFOREOPEN:
-    case NPPN_FILEOPENED:
-        {
-        notepadVersionOk = true;
-        break;
-        }
+        case NPPN_FILEBEFORECLOSE:
+        case NPPN_FILECLOSED:
+        case NPPN_FILEBEFOREOPEN:
+        case NPPN_FILEOPENED:
+            notepadVersionOk = true;
+            break;
 
-    case NPPN_FILEBEFORESAVE:
-        {
+        case NPPN_FILEBEFORESAVE:
             notepadVersionOk = true;
 
             SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, 0, (LPARAM)emptyLinesDoc);
 
-            HWND window = getCurrentWindow();						
+            HWND window = getCurrentWindow();
             int win = SendMessageA(window, SCI_GETDOCPOINTER, 0,0);
 
             if(getCompare(win)!=-1)
-            {				
+            {
                 topLine = SendMessageA(window,SCI_GETFIRSTVISIBLELINE,0,0);
                 lastEmptyLines = removeEmptyLines(window,true);
             }
@@ -1356,10 +1347,8 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
             }
 
             break;
-        }
 
-    case NPPN_FILESAVED:
-        {
+        case NPPN_FILESAVED:
             notepadVersionOk = true;
             TCHAR name[MAX_PATH];
             SendMessage(nppData._nppHandle,NPPM_GETFULLCURRENTPATH,0,(LPARAM)name);
@@ -1379,15 +1368,12 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
                 lastEmptyLines = NULL;
                 emptyLinesDoc[0] = 0;
             }
-        }
-        break;
-	case NPPN_SHUTDOWN:
-		{
-			// Always close it, else N++'s plugin manager would call 'ViewNavigationBar'
-			// on startup, when N++ has been shut down before with opened navigation bar
-			if (NavDlg.isVisible())
-				NavDlg.doDialog(false);
-			break;
-		}
+            break;
+        case NPPN_SHUTDOWN:
+            // Always close it, else N++'s plugin manager would call 'ViewNavigationBar'
+            // on startup, when N++ has been shut down before with opened navigation bar
+            if (NavDlg.isVisible())
+                NavDlg.doDialog(false);
+            break;
     }
 }
