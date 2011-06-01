@@ -80,6 +80,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
     switch (reasonForCall)
     {
         case DLL_PROCESS_ATTACH:
+        {
             funcItem[CMD_COMPARE]._pFunc = compare;
             lstrcpy(funcItem[CMD_COMPARE]._itemName, TEXT("Compare"));
             funcItem[CMD_COMPARE]._pShKey = new ShortcutKey;
@@ -216,7 +217,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             PathAppend(localConfPath, localConfFile);
 
             // Test if localConf.xml exist
-            bool isLocal = (PathFileExists(localConfPath) == TRUE);
+            const bool isLocal = (PathFileExists(localConfPath) == TRUE);
 
             if (isLocal)
             {
@@ -237,9 +238,10 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
 
             loadSettings();
             break;
+        }
 
         case DLL_PROCESS_DETACH:
-
+        {
             if (tbNext.hToolbarBmp)
                 ::DeleteObject(tbNext.hToolbarBmp);
 
@@ -268,6 +270,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             delete funcItem[CMD_LAST]._pShKey;
 
             break;
+        }
 
         case DLL_THREAD_ATTACH:
             break;
@@ -385,14 +388,14 @@ int getCompare(int window)
 
 void removeCompare(int window)
 {
-    int val = getCompare(window);
+    const int val = getCompare(window);
     if(val != -1)
         compareDocs[val] = -1;
 }
 
 int setCompare(int window)
 {
-    int val = getCompare(window);
+    const int val = getCompare(window);
 
     if(val != -1)
         return val;
@@ -470,15 +473,15 @@ void jumpChangedLines(bool direction)
     if (currentEdit != -1)
         CurView = (currentEdit == 0) ? (nppData._scintillaMainHandle) : (nppData._scintillaSecondHandle);
 
-    int sci_search_mask = (1 << MARKER_MOVED_LINE)
-                        | (1 << MARKER_CHANGED_LINE)
-                        | (1 << MARKER_ADDED_LINE)
-                        | (1 << MARKER_REMOVED_LINE)
-                        | (1 << MARKER_BLANK_LINE);
+    const int sci_search_mask = (1 << MARKER_MOVED_LINE)
+                              | (1 << MARKER_CHANGED_LINE)
+                              | (1 << MARKER_ADDED_LINE)
+                              | (1 << MARKER_REMOVED_LINE)
+                              | (1 << MARKER_BLANK_LINE);
 
-    int posStart = ::SendMessage(CurView, SCI_GETCURRENTPOS, 0, 0);
+    const int posStart = ::SendMessage(CurView, SCI_GETCURRENTPOS, 0, 0);
+    const int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0);
     int lineStart = ::SendMessage(CurView, SCI_LINEFROMPOSITION, posStart, 0);
-    int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0);
 
     int currLine;
     int nextLine;
@@ -541,14 +544,13 @@ void First(void)
         if (currentEdit != -1)
             CurView = (currentEdit == 0) ? (nppData._scintillaMainHandle) : (nppData._scintillaSecondHandle);
 
-        int sci_search_mask = (1 << MARKER_MOVED_LINE)
-                            | (1 << MARKER_CHANGED_LINE)
-                            | (1 << MARKER_ADDED_LINE)
-                            | (1 << MARKER_REMOVED_LINE)
-                            | (1 << MARKER_BLANK_LINE);
+        const int sci_search_mask = (1 << MARKER_MOVED_LINE)
+                                  | (1 << MARKER_CHANGED_LINE)
+                                  | (1 << MARKER_ADDED_LINE)
+                                  | (1 << MARKER_REMOVED_LINE)
+                                  | (1 << MARKER_BLANK_LINE);
 
-        int currLine = 0;
-        int nextLine = ::SendMessage(CurView, SCI_MARKERNEXT, currLine, sci_search_mask );
+        const int nextLine = ::SendMessage(CurView, SCI_MARKERNEXT, 0, sci_search_mask );
         ::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
         ::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0);
     }
@@ -565,14 +567,14 @@ void Last(void)
         if (currentEdit != -1)
             CurView = (currentEdit == 0) ? (nppData._scintillaMainHandle) : (nppData._scintillaSecondHandle);
 
-        int sci_search_mask = (1 << MARKER_MOVED_LINE)
-                            | (1 << MARKER_CHANGED_LINE)
-                            | (1 << MARKER_ADDED_LINE)
-                            | (1 << MARKER_REMOVED_LINE)
-                            | (1 << MARKER_BLANK_LINE);
+        const int sci_search_mask = (1 << MARKER_MOVED_LINE)
+                                  | (1 << MARKER_CHANGED_LINE)
+                                  | (1 << MARKER_ADDED_LINE)
+                                  | (1 << MARKER_REMOVED_LINE)
+                                  | (1 << MARKER_BLANK_LINE);
 
-        int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0);
-        int nextLine = ::SendMessage(CurView, SCI_MARKERPREVIOUS, lineMax, sci_search_mask);
+        const int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0);
+        const int nextLine = ::SendMessage(CurView, SCI_MARKERPREVIOUS, lineMax, sci_search_mask);
         ::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
         ::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0);
     }
@@ -1290,6 +1292,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
     switch (notifyCode->nmhdr.code)
     {
         case SCN_PAINTED:
+        {
             if(active)
             {
                 start = SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
@@ -1302,8 +1305,10 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
                 }
             }
             break;
+        }
 
         case NPPN_TBMODIFICATION:
+        {
             tbNext.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_NEXT), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
             tbPrev.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_PREV), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
             tbFirst.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_FIRST), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
@@ -1320,15 +1325,19 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_USE_NAV_BAR]._cmdID, (LPARAM)Settings.UseNavBar);
 
             break;
+        }
 
         case NPPN_FILEBEFORECLOSE:
         case NPPN_FILECLOSED:
         case NPPN_FILEBEFOREOPEN:
         case NPPN_FILEOPENED:
+        {
             notepadVersionOk = true;
             break;
+        }
 
         case NPPN_FILEBEFORESAVE:
+        {
             notepadVersionOk = true;
 
             SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, 0, (LPARAM)emptyLinesDoc);
@@ -1345,10 +1354,11 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
             {
                 lastEmptyLines=NULL;
             }
-
             break;
+        }
 
         case NPPN_FILESAVED:
+        {
             notepadVersionOk = true;
             TCHAR name[MAX_PATH];
             SendMessage(nppData._nppHandle,NPPM_GETFULLCURRENTPATH,0,(LPARAM)name);
@@ -1369,11 +1379,15 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
                 emptyLinesDoc[0] = 0;
             }
             break;
+        }
+
         case NPPN_SHUTDOWN:
+        {
             // Always close it, else N++'s plugin manager would call 'ViewNavigationBar'
             // on startup, when N++ has been shut down before with opened navigation bar
             if (NavDlg.isVisible())
                 NavDlg.doDialog(false);
             break;
+        }
     }
 }
