@@ -5,8 +5,10 @@ Change Log:
 
 1.5.7
 
-    1. FIXED: Differences highlighting
-    2. FIXED: Differences line width in Navigation pane is at least 1 pixel.
+    0. Compare released under GPLv3:w
+    1. NEW: Change behavior when files match (immediately exit compare)
+    2. FIXED: Differences highlighting
+    3. FIXED: Differences line width in Navigation pane is at least 1 pixel.
 
 1.5.6.1
 
