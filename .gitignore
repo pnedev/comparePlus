@@ -19,14 +19,9 @@ Thumbs.db
 *.cache
 *.ilk
 *.log
-[Bb]in
-[Db]ebug*/
 *.lib
 *.sbr
-obj/
-scm/
-[Rr]elease*/
-[Rr]elease Unicode*/
-_ReSharper*/
-[Tt]est[Rr]esult*
-Notepad++/plugins/
+[rR]elease/
+[dD]ebug/
+*~
+*.swp
