@@ -260,14 +260,9 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             NavDlg.destroy();
 
             // Don't forget to deallocate your shortcut here
-            delete funcItem[CMD_COMPARE]._pShKey;
-            delete funcItem[CMD_CLEAR_RESULTS]._pShKey;
-            delete funcItem[CMD_COMPARE_LAST_SAVE]._pShKey;
-            delete funcItem[CMD_COMAPRE_SVN_BASE]._pShKey;
-            delete funcItem[CMD_PREV]._pShKey;
-            delete funcItem[CMD_NEXT]._pShKey;
-            delete funcItem[CMD_FIRST]._pShKey;
-            delete funcItem[CMD_LAST]._pShKey;
+            for (int i = 0; i < NB_MENU_COMMANDS; i++)
+                if (funcItem[i]._pShKey != NULL)
+                    delete funcItem[i]._pShKey;
 
             break;
         }
@@ -639,11 +634,6 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM /*wPar
         ::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_2]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
         ::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_3]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
         ::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_4]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
-        ::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYCOMMAND | MF_GRAYED);
-        ::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_GRAYED);
-        ::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_GRAYED);
-        ::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_GRAYED);
-        SendMessage(nppData._nppHandle, TB_ENABLEBUTTON, CMD_PREV, MAKELONG(FALSE, 0));
     }
 
     return TRUE;
@@ -825,10 +815,10 @@ void reset()
 
         // Disable Prev/Next menu entry
         HMENU hMenu = ::GetMenu(nppData._nppHandle);
-        ::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYCOMMAND | MF_GRAYED);
-        ::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_GRAYED);
-        ::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_GRAYED);
-        ::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_GRAYED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
 
         // Restore side bar item entry state (because tick has been removed by the docked window)
         CheckMenuItem(hMenu, funcItem[CMD_USE_NAV_BAR]._cmdID, MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
@@ -1237,6 +1227,7 @@ bool startCompare()
     ::SendMessageA(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
     ::SendMessageA(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
 
+    // Compare files (return False if files differs)
     bool result = compareNew();
 
     ::SendMessageA(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
@@ -1244,8 +1235,11 @@ bool startCompare()
     ::SendMessageA(nppData._scintillaSecondHandle/*window*/, SCI_GRABFOCUS, 0, (LPARAM)1);
 
     // Restore previous read-only attribute
-    if (RODoc1 == 1) SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, true, 0);
-    if (RODoc2 == 1) SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
+    if (RODoc1 == 1)
+        SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, true, 0);
+
+    if (RODoc2 == 1)
+        SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
 
     if (!result)
     {
@@ -1271,10 +1265,10 @@ bool startCompare()
 
         }
         // Enable Prev/Next menu entry
-        ::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-        ::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID,  MF_BYCOMMAND | MF_ENABLED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID,  MF_BYCOMMAND | MF_ENABLED);
         ::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-        ::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID,  MF_BYCOMMAND | MF_ENABLED);
     }
 
     return result;
@@ -1282,19 +1276,23 @@ bool startCompare()
 
 void compare()
 {
-    startCompare();
+    bool ret = startCompare();
+
+    // Files match - exit comparison
+    if (ret)
+        reset();
 }
 
 extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 {
-    long start, end;
-
     switch (notifyCode->nmhdr.code)
     {
         case SCN_PAINTED:
         {
             if(active)
             {
+                long start, end;
+
                 start = SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
                 end   = SendMessage(nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0) + start;
 
@@ -1309,15 +1307,40 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 
         case NPPN_TBMODIFICATION:
         {
-            tbNext.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_NEXT), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
-            tbPrev.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_PREV), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
-            tbFirst.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_FIRST), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
-            tbLast.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_LAST), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
+            tbNext.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule,
+                                                      MAKEINTRESOURCE(IDB_NEXT),
+                                                      IMAGE_BITMAP,
+                                                      0, 0,
+                                                      (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
+
+            tbPrev.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule,
+                                                      MAKEINTRESOURCE(IDB_PREV),
+                                                      IMAGE_BITMAP,
+                                                      0, 0,
+                                                      (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
+
+            tbFirst.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule,
+                                                       MAKEINTRESOURCE(IDB_FIRST),
+                                                       IMAGE_BITMAP,
+                                                       0, 0,
+                                                       (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
+
+            tbLast.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule,
+                                                      MAKEINTRESOURCE(IDB_LAST),
+                                                      IMAGE_BITMAP,
+                                                      0, 0,
+                                                      (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
 
             ::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_FIRST]._cmdID, (LPARAM)&tbFirst);
             ::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_PREV]._cmdID, (LPARAM)&tbPrev);
             ::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_NEXT]._cmdID, (LPARAM)&tbNext);
             ::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_LAST]._cmdID, (LPARAM)&tbLast);
+
+            HMENU hMenu = ::GetMenu(nppData._nppHandle);
+            ::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+            ::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+            ::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+            ::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
 
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID, (LPARAM)Settings.AddLine);
             ::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACING]._cmdID, (LPARAM)Settings.IncludeSpace);
