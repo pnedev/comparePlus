@@ -18,6 +18,12 @@ A couple of notes:
 Change Log:
 -----------
 
+1.5.6.2
+
+    1. FIXED: Small changes not visible in navigation bar (in bigger files) (thx to Rolf P.)
+    2. FIXED: Syntax highlighting broken after 'Compare' and 'Clear Results' (since N++ 6.2.1)
+    3. FIXED: Change highlight not visible (since N++ 6.2.1)
+
 1.5.6.1
 
     1. FIXED: Weird focus clipping while shutting down (no application gets focus again, when N++ is gone).

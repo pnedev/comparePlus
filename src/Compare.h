@@ -57,6 +57,7 @@ using namespace std;
 #define DEFAULT_BLANK_COLOR     0xe4e4e4
 #define DEFAULT_HIGHLIGHT_COLOR 0x010101
 #define DEFAULT_HIGHLIGHT_ALPHA 100
+#define INDIC_HIGHLIGHT         INDIC_CONTAINER + 1
 
 enum MARKER_ID
 {

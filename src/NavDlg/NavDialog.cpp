@@ -300,7 +300,7 @@ LRESULT NavDialog::OnPaint(HWND hWnd)
     m_rRight.right  = m_rRight.left + SzX;
     m_rRight.bottom = m_rRight.top + SzY;
 
-    SetStretchBltMode(m_hdc, COLORONCOLOR);
+    SetStretchBltMode(m_hdc, WHITEONBLACK);
 
     int x, y, cx, cy;
 

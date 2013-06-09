@@ -64,7 +64,7 @@ BEGIN
     CTEXT           "http://sourceforge.net/projects/npp-plugins/",IDC_NPP_PLUGINS_URL,7,91,176,8
     CTEXT           "Jean-Sébastien Leroy",IDC_EMAIL_LINK_JSL,7,56,176,8
     CTEXT           "Ty Landercasper",IDC_EMAIL_LINK_TYL,7,42,176,8
-    CTEXT           "Compare Plugin 1.5.6.1",IDC_EMAIL_LINK5,7,7,176,13,0,WS_EX_DLGMODALFRAME
+    CTEXT           "Compare Plugin 1.5.6.2",IDC_EMAIL_LINK5,7,7,176,13,0,WS_EX_DLGMODALFRAME
     CTEXT           "Website:",IDC_NPP_PLUGINS_URL2,7,77,176,8
     CTEXT           "Authors:",IDC_NPP_PLUGINS_URL3,7,28,176,8
 END
@@ -209,8 +209,8 @@ IDB_PREV                BITMAP                  "..\\res\\prev.bmp"
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,5,6,1
- PRODUCTVERSION 1,5,6,1
+ FILEVERSION 1,5,6,2
+ PRODUCTVERSION 1,5,6,2
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -226,12 +226,12 @@ BEGIN
         BLOCK "040c04b0"
         BEGIN
             VALUE "FileDescription", "Compare"
-            VALUE "FileVersion", "1, 5, 6, 1"
+            VALUE "FileVersion", "1, 5, 6, 2"
             VALUE "InternalName", "Compare"
-            VALUE "LegalCopyright", "Copyright (C) 2010"
+            VALUE "LegalCopyright", "Copyright (C) 2013"
             VALUE "OriginalFilename", "Compare"
             VALUE "ProductName", "Compare"
-            VALUE "ProductVersion", "1, 5, 6, 1"
+            VALUE "ProductVersion", "1, 5, 6, 2"
         END
     END
     BLOCK "VarFileInfo"

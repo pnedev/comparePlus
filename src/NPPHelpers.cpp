@@ -53,9 +53,9 @@ void defineSymbol(int type, int symbol)
 
 void setChangedStyle(HWND window, sColorSettings Settings)
 {
-	::SendMessageA(window, SCI_INDICSETSTYLE, 1, (LPARAM)7);
-    ::SendMessageA(window, SCI_INDICSETFORE, 1, (LPARAM)Settings.highlight);
-    ::SendMessageA(window, SCI_INDICSETALPHA, 1, (LPARAM)Settings.alpha);
+	::SendMessageA(window, SCI_INDICSETSTYLE, INDIC_HIGHLIGHT, (LPARAM)INDIC_ROUNDBOX);
+    ::SendMessageA(window, SCI_INDICSETFORE, INDIC_HIGHLIGHT, (LPARAM)Settings.highlight);
+    ::SendMessageA(window, SCI_INDICSETALPHA, INDIC_HIGHLIGHT, (LPARAM)Settings.alpha);
 }
 
 
@@ -169,8 +169,10 @@ void markTextAsChanged(HWND window,int start,int length)
 {
 	if(length!=0)
     {
-		::SendMessageA(window, SCI_STARTSTYLING, start, (LPARAM)INDICS_MASK);
-		::SendMessageA(window, SCI_SETSTYLING, length , (LPARAM)INDIC1_MASK);
+		int curIndic = ::SendMessageA(window, SCI_GETINDICATORCURRENT, 0, 0);
+		::SendMessageA(window, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
+		::SendMessageA(window, SCI_INDICATORFILLRANGE, start, length);
+		::SendMessageA(window, SCI_SETINDICATORCURRENT, curIndic, 0);
 	}
 }
 
@@ -326,11 +328,15 @@ void clearWindow(HWND window,bool clearUndo)
 	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_REMOVED_SYMBOL, (LPARAM)MARKER_REMOVED_SYMBOL);	
 	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_MOVED_SYMBOL,   (LPARAM)MARKER_MOVED_SYMBOL);	
 
-	//very aggressive approach to removing the indicators
-	//clear style, than tell Notepad++ to unfold all lines, which forces it to redo the page style
-	::SendMessageA(window, SCI_CLEARDOCUMENTSTYLE, 0, (LPARAM)0);	
-	::SendMessageA(window, SCI_GRABFOCUS, 0, (LPARAM)0);
-	::SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_TOGGLE_UNFOLDALL,0); 
+	// remove everything marked in markTextAsChanged():
+    int curIndic = ::SendMessageA(window, SCI_GETINDICATORCURRENT, 0, 0);
+	int length = ::SendMessageA(window, SCI_GETLENGTH, 0, 0);
+    ::SendMessageA(window, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
+	::SendMessageA(window, SCI_INDICATORCLEARRANGE, 0, length);
+    ::SendMessageA(window, SCI_SETINDICATORCURRENT, curIndic, 0);
+
+	// reset syntax highlighting:
+	::SendMessage(window, SCI_COLOURISE, 0, -1);
 
 	//int topLine=SendMessageA(window,SCI_GETFIRSTVISIBLELINE,0,0);
 	//int linesOnScreen=SendMessageA(window,SCI_LINESONSCREEN,0,0);
