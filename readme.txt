@@ -18,6 +18,10 @@ A couple of notes:
 Change Log:
 -----------
 
+1.5.6.3
+
+    1. FIXED: 'Compare against SVN base' doesn't work with newer SVN versions (1.7 and above)
+
 1.5.6.2
 
     1. FIXED: Small changes not visible in navigation bar (in bigger files) (thx to Rolf P.)
