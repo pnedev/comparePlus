@@ -21,6 +21,7 @@
 
 #include "Compare.h"
 #include "NPPHelpers.h"
+#include "ScmHelper.h"
 
 TCHAR emptyLinesDoc[MAX_PATH];
 #define MAXCOMPARE 50
@@ -34,8 +35,6 @@ int  topLine = 0;
 long start_old = -1;
 bool panelsOpened = false;
 
-const TCHAR SVN_BASE[] = TEXT(".svn\\text-base");
-const TCHAR SVN_END[] = TEXT(".svn-base");
 const TCHAR PLUGIN_NAME[] = TEXT("Compare");
 TCHAR iniFilePath[MAX_PATH];
 const TCHAR sectionName[] = TEXT("Compare Settings");
@@ -115,7 +114,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_COMPARE_LAST_SAVE]._pShKey->_key = 'S';
             funcItem[CMD_COMPARE_LAST_SAVE]._init2Check = false;
 
-            funcItem[CMD_COMAPRE_SVN_BASE]._pFunc = compareBase;
+            funcItem[CMD_COMAPRE_SVN_BASE]._pFunc = compareSvnBase;
             lstrcpy(funcItem[CMD_COMAPRE_SVN_BASE]._itemName, TEXT("Compare against SVN base"));
             funcItem[CMD_COMAPRE_SVN_BASE]._pShKey = new ShortcutKey;
             funcItem[CMD_COMAPRE_SVN_BASE]._pShKey->_isAlt = true;
@@ -838,28 +837,37 @@ void compareLocal()
     openFile(file);
 }
 
-void compareBase()
+void compareSvnBase()
 {
-    TCHAR directory[MAX_PATH];
-    TCHAR filename[MAX_PATH];
-    TCHAR file[MAX_PATH];
-    ::SendMessage(nppData._nppHandle,NPPM_GETCURRENTDIRECTORY,0,(LPARAM)directory);
-    ::SendMessage(nppData._nppHandle,NPPM_GETFILENAME,0,(LPARAM)filename);
-    if(directory[0] != 0)
+    TCHAR curDir[MAX_PATH];
+
+    SendMessage(nppData._nppHandle, NPPM_GETCURRENTDIRECTORY, 0, (LPARAM)curDir);
+    
+	if (curDir[0] != 0)
     {
-        //svn
-        lstrcpy(file,directory);
-        PathAppend(file,SVN_BASE);
-        PathAppend(file,filename);
-        int length=lstrlen(file);
-        lstrcpy(file+length,SVN_END);
-        if(PathFileExists(file) == TRUE)
-        {
-            openFile(file);
-            return;
-        }
-        ::MessageBox(nppData._nppHandle,TEXT("Can't locate SVN information"),TEXT("File Not Found"),MB_OK);
-    }
+		TCHAR curDirCanon[MAX_PATH];
+		TCHAR svnDir[MAX_PATH];
+
+		PathCanonicalize(curDirCanon, curDir);
+
+		if (GetSvnFolder(curDirCanon, svnDir))
+		{
+		    TCHAR curFile[MAX_PATH];
+		    TCHAR svnBaseFile[MAX_PATH];
+
+			SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)curFile);
+
+			if (curFile[0] != 0)
+			{
+				if (GetSvnBaseFile(curDirCanon, svnDir, curFile, svnBaseFile))
+				{
+					openFile(svnBaseFile);
+					return;
+				}
+			}
+		}
+	}
+	MessageBox(nppData._nppHandle, L"Can't locate SVN information", L"ComparePlugin", MB_OK);
 }
 
 bool compareNew()

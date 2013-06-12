@@ -113,6 +113,10 @@
       <ImportLibrary>$(OutDir)Compare.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
+    <PostBuildEvent>
+      <Command>mkdir "$(ProjectDir)..\..\Notepad++\plugins\ComparePlugin"
+copy "$(ProjectDir)..\..\src\sqlite\sqlite3.dll" "$(ProjectDir)..\..\Notepad++\plugins\ComparePlugin\"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -218,6 +222,8 @@
     <ClCompile Include="..\..\src\mba\msgno.c" />
     <ClCompile Include="..\..\src\mba\suba.c" />
     <ClCompile Include="..\..\src\mba\varray.c" />
+    <ClCompile Include="..\..\src\ScmHelper.cpp" />
+    <ClCompile Include="..\..\src\sqlite\SqliteHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\HelpDlg\AboutDialog.h" />
@@ -256,6 +262,8 @@
     <ClInclude Include="..\..\src\mba\msgno.h" />
     <ClInclude Include="..\..\src\mba\suba.h" />
     <ClInclude Include="..\..\src\mba\varray.h" />
+    <ClInclude Include="..\..\src\ScmHelper.h" />
+    <ClInclude Include="..\..\src\sqlite\SqliteHelper.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\src\Compare.rc" />

@@ -135,7 +135,7 @@ const UINT lenEOL[3] = {2,1,1};
 
 void compare();
 void compareLocal();
-void compareBase();
+void compareSvnBase();
 int getCompare(int window);
 void removeCompare(int window);
 int setCompare(int window);
