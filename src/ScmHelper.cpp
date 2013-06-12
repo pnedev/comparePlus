@@ -52,7 +52,14 @@ bool GetSvnBaseFile(TCHAR* curDir, TCHAR* svnDir, TCHAR* filename, TCHAR* svnBas
 
 				// get the local svn path
 				int len = lstrlen(svnDir) - 4;
-				lstrcpy(buffDir1, curDir + len);
+				if (lstrlen(curDir) > len)
+				{
+					lstrcpy(buffDir1, curDir + len);
+				}
+				else
+				{
+					buffDir1[0] = 0;
+				}
 				PathCombine(svnFilePath, buffDir1, filename);
 				for (int i = 0; i < lstrlen(svnFilePath); i++)
 				{
