@@ -171,7 +171,7 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 		case WM_LBUTTONDOWN:
 			SetCapture(hWnd);
 			yPos = HIWORD(lParam);
-			current_line = yPos * m_ScaleFactor;
+			current_line = (long)(yPos * m_ScaleFactor);
 			LineVisible = SendMessageA(_nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0);
 			LineStart = SendMessageA(_nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
 			Delta = current_line - LineVisible/2 - LineStart;
@@ -187,7 +187,7 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 			if (GetCapture() == hWnd) 
 			{ 
 				yPos = HIWORD(lParam);
-                const long next_line = yPos * m_ScaleFactor;
+				const long next_line = (const long)(yPos * m_ScaleFactor);
 				Delta = next_line - current_line;
 				SendMessageA(_nppData._scintillaMainHandle, SCI_LINESCROLL, 0, (LPARAM)Delta);
 				SendMessageA(_nppData._scintillaMainHandle, SCI_GOTOLINE, (WPARAM)next_line, 0);

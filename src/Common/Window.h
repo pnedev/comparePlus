@@ -55,7 +55,7 @@ public:
 		::UpdateWindow(_hSelf);
 	};
 	
-    virtual void getClientRect(RECT & rc) const {
+	virtual void getClientRect(RECT & rc) const {
 		::GetClientRect(_hSelf, &rc);
 	};
 
@@ -78,7 +78,7 @@ public:
 	};
 
 	virtual bool isVisible() const {
-    	return (::IsWindowVisible(_hSelf)?true:false);
+		return (::IsWindowVisible(_hSelf)?true:false);
 	};
 
 	HWND getHSelf() const {
@@ -100,7 +100,7 @@ public:
 		::SetFocus(_hSelf);
 	};
 
-    HINSTANCE getHinst() const {
+	HINSTANCE getHinst() const {
 		if (!_hInst)
 		{
 			::MessageBox(NULL, TEXT("_hInst == NULL"), TEXT("class Window"), MB_OK);

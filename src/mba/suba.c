@@ -91,7 +91,7 @@ suba_init(void *mem, size_t size, int rst, size_t mincell)
 		memset(suba, 0, hdrsiz);
 		memcpy(suba->magic, SUBA_MAGIC, 8);
 		suba->tail = hdrsiz;
-        /* cell data must be large enough for next ref_t */
+		/* cell data must be large enough for next ref_t */
 		suba->mincell = ALIGN(sizeof(size_t));
 		if (mincell > suba->mincell) {
 			suba->mincell = ALIGN(mincell);
@@ -161,7 +161,7 @@ again:
 			suba->tail = SREF(suba, c3);
 		}
 	} else if (c1->next == suba->tail) {
-                          /* never use the last cell! */
+						  /* never use the last cell! */
 		reclaim++;
 		goto again;
 	} else {                   /* use the entire cell */
@@ -193,7 +193,7 @@ suba_free(void *suba0, void *ptr)
 		PMNO(errno = EFAULT);
 		return -1;
 	}
-                /* splice the cell back into the list */
+				/* splice the cell back into the list */
 	c1 = SADR(suba, suba->tail);
 	c2 = P2C(ptr);
 	if (c2->size > suba->max_free || (ref = suba_ref(suba, c2)) == 0) {
@@ -335,14 +335,14 @@ suba_print_free_list(struct allocator *suba)
 		}
 		c = suba_addr(suba, c->next);
 		//sprintf(buf, "%d", count++);
-        sprintf_s(buf, _countof(buf), "%d", count++);
+		sprintf_s(buf, _countof(buf), "%d", count++);
 		if (!suba_print_cell(suba, buf, c)) {
 			ret = 0;
 		}
 	}
 	c = suba_addr(suba, c->next);
 	//sprintf(buf, "%d", count++);
-    sprintf_s(buf, _countof(buf), "%d", count++);
+	sprintf_s(buf, _countof(buf), "%d", count++);
 	if (!suba_print_cell(suba, buf, c)) {
 		ret = 0;
 	}

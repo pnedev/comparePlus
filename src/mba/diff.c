@@ -62,8 +62,8 @@ _setv(struct _ctx *ctx, int k, int r, int val)
 {
 	int j;
 	int *i;
-                /* Pack -N to N into 0 to N * 2
-                 */
+				/* Pack -N to N into 0 to N * 2
+				 */
 	j = k <= 0 ? -k * 4 + r : k * 4 + (r - 2);
 
 	i = (int *)varray_get(ctx->buf, j);
@@ -184,8 +184,8 @@ _edit(struct _ctx *ctx, short op, int off, int len)
 	if (len == 0 || ctx->ses == NULL) {
 		return;
 	}               /* Add an edit to the SES (or
-                     * coalesce if the op is the same)
-                     */
+					 * coalesce if the op is the same)
+					 */
 	e = varray_get(ctx->ses, ctx->si);
 	if (e->op != op) {
 		if (e->op) {
@@ -215,9 +215,9 @@ _ses(const void *a, int aoff, int n,
 		_edit(ctx, DIFF_DELETE, aoff, n);
 		d = n;
 	} else {
-                    /* Find the middle "snake" around which we
-                     * recursively solve the sub-problems.
-                     */
+					/* Find the middle "snake" around which we
+					 * recursively solve the sub-problems.
+					 */
 		d = _find_middle_snake(a, aoff, n, b, boff, m, ctx, &ms);
 		if (d == -1) {
 			return -1;
@@ -243,19 +243,19 @@ _ses(const void *a, int aoff, int n,
 			int x = ms.x;
 			int u = ms.u;
 
-                 /* There are only 4 base cases when the
-                  * edit distance is 1.
-                  *
-                  * n > m   m > n
-                  *
-                  *   -       |
-                  *    \       \    x != u
-                  *     \       \
-                  *
-                  *   \       \
-                  *    \       \    x == u
-                  *     -       |
-                  */
+				 /* There are only 4 base cases when the
+				  * edit distance is 1.
+				  *
+				  * n > m   m > n
+				  *
+				  *   -       |
+				  *    \       \    x != u
+				  *     \       \
+				  *
+				  *   \       \
+				  *    \       \    x == u
+				  *     -       |
+				  */
 
 			if (m > n) {
 				if (x == u) {
@@ -321,11 +321,11 @@ diff(const void *a, int aoff, int n,
 		e->op = 0;
 	}
 
-         /* The _ses function assumes the SES will begin or end with a delete
-          * or insert. The following will insure this is true by eating any
-          * beginning matches. This is also a quick to process sequences
-          * that match entirely.
-          */
+		 /* The _ses function assumes the SES will begin or end with a delete
+		  * or insert. The following will insure this is true by eating any
+		  * beginning matches. This is also a quick to process sequences
+		  * that match entirely.
+		  */
 	x = y = 0;
 	if (cmp) {
 		while (x < n && y < m && cmp(idx(a, aoff + x, context),

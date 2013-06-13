@@ -107,17 +107,17 @@ msgno_msg(int msgno)
 {
 	struct tbl_entry *te;
 	unsigned int i;
-    static char str[256];
+	static char str[256];
 
 	i = msgno >> 16;
 	if (i == 0) 
-    {
+	{
 		//return strerror(msgno);
-        strerror_s(str, 256, msgno);
-        return str;
+		strerror_s(str, 256, msgno);
+		return str;
 	} 
-    else if (i >= MSGNO_NUM_LISTS || (te = list_tbl + (i - 1)) == NULL) 
-    {
+	else if (i >= MSGNO_NUM_LISTS || (te = list_tbl + (i - 1)) == NULL) 
+	{
 		return "No such msgno list";
 	}
 

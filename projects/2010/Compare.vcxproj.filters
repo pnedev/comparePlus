@@ -69,9 +69,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\HelpDlg\AboutDialog.h">
-      <Filter>src\AboutDlg</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\AboutDlg\URLCtrl.h">
       <Filter>src\AboutDlg</Filter>
     </ClInclude>
@@ -182,6 +179,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\Common\ToolBar.h">
       <Filter>src\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\AboutDlg\AboutDialog.h">
+      <Filter>src\AboutDlg</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

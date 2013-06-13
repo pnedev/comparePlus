@@ -71,7 +71,7 @@ typedef struct {
 	//nmhdr.idFrom = ctrlIdNpp;
 
 	#define DMN_DOCK		            (DMN_FIRST + 2)
-    #define DMN_FLOAT					(DMN_FIRST + 3)
+	#define DMN_FLOAT					(DMN_FIRST + 3)
 	//nmhdr.code = DWORD(DMN_XXX, int newContainer);
 	//nmhdr.hwndFrom = hwndNpp;
 	//nmhdr.idFrom = ctrlIdNpp;

@@ -280,7 +280,7 @@
 	#define	IDM_VIEW_FOLDERMAGIN            (IDM_VIEW + 14)
 	#define	IDM_VIEW_FOLDERMAGIN_SIMPLE     (IDM_VIEW + 15)
 	#define	IDM_VIEW_FOLDERMAGIN_ARROW      (IDM_VIEW + 16)
-    #define	IDM_VIEW_FOLDERMAGIN_CIRCLE     (IDM_VIEW + 17)
+	#define	IDM_VIEW_FOLDERMAGIN_CIRCLE     (IDM_VIEW + 17)
 	#define	IDM_VIEW_FOLDERMAGIN_BOX        (IDM_VIEW + 18)
 	#define	IDM_VIEW_ALL_CHARACTERS		 	(IDM_VIEW + 19)
 	#define	IDM_VIEW_INDENT_GUIDE		 	(IDM_VIEW + 20)
@@ -338,7 +338,7 @@
 
 	#define IDM_VIEW_SWITCHTO_OTHER_VIEW	(IDM_VIEW + 72)
 	
-                                                                        
+																		
 #define	IDM_FORMAT  (IDM + 5000)                          
 	#define	 IDM_FORMAT_TODOS			(IDM_FORMAT + 1)
 	#define	 IDM_FORMAT_TOUNIX		(IDM_FORMAT + 2)
@@ -377,22 +377,22 @@
 	#define	IDM_LANG_SQL		(IDM_LANG + 20)
 	#define	IDM_LANG_VB   		(IDM_LANG + 21)
 	#define	IDM_LANG_BATCH  	(IDM_LANG + 22)
-    #define	IDM_LANG_CS         (IDM_LANG + 23)
-    #define	IDM_LANG_LUA        (IDM_LANG + 24)
-    #define	IDM_LANG_TEX        (IDM_LANG + 25)
-    #define	IDM_LANG_FORTRAN    (IDM_LANG + 26)
-    #define	IDM_LANG_SH         (IDM_LANG + 27)
-    #define	IDM_LANG_FLASH      (IDM_LANG + 28)
-    #define	IDM_LANG_NSIS       (IDM_LANG + 29)
-    #define	IDM_LANG_TCL        (IDM_LANG + 30)
-    #define	IDM_LANG_LISP       (IDM_LANG + 31)
-    #define	IDM_LANG_SCHEME     (IDM_LANG + 32)
-    #define	IDM_LANG_ASM        (IDM_LANG + 33)
-    #define	IDM_LANG_DIFF       (IDM_LANG + 34)
-    #define	IDM_LANG_PROPS      (IDM_LANG + 35)
-    #define	IDM_LANG_PS         (IDM_LANG + 36)
-    #define	IDM_LANG_RUBY       (IDM_LANG + 37)
-    #define	IDM_LANG_SMALLTALK  (IDM_LANG + 38)
+	#define	IDM_LANG_CS         (IDM_LANG + 23)
+	#define	IDM_LANG_LUA        (IDM_LANG + 24)
+	#define	IDM_LANG_TEX        (IDM_LANG + 25)
+	#define	IDM_LANG_FORTRAN    (IDM_LANG + 26)
+	#define	IDM_LANG_SH         (IDM_LANG + 27)
+	#define	IDM_LANG_FLASH      (IDM_LANG + 28)
+	#define	IDM_LANG_NSIS       (IDM_LANG + 29)
+	#define	IDM_LANG_TCL        (IDM_LANG + 30)
+	#define	IDM_LANG_LISP       (IDM_LANG + 31)
+	#define	IDM_LANG_SCHEME     (IDM_LANG + 32)
+	#define	IDM_LANG_ASM        (IDM_LANG + 33)
+	#define	IDM_LANG_DIFF       (IDM_LANG + 34)
+	#define	IDM_LANG_PROPS      (IDM_LANG + 35)
+	#define	IDM_LANG_PS         (IDM_LANG + 36)
+	#define	IDM_LANG_RUBY       (IDM_LANG + 37)
+	#define	IDM_LANG_SMALLTALK  (IDM_LANG + 38)
 	#define	IDM_LANG_VHDL       (IDM_LANG + 39)
 	#define	IDM_LANG_CAML       (IDM_LANG + 40)
 	#define	IDM_LANG_KIX        (IDM_LANG + 41)
@@ -409,9 +409,9 @@
 	#define IDM_LANG_EXTERNAL_LIMIT	(IDM_LANG + 79)
 
 	#define	IDM_LANG_USER		(IDM_LANG + 80)     //46080
-    #define	IDM_LANG_USER_LIMIT		(IDM_LANG + 110)  //46110
+	#define	IDM_LANG_USER_LIMIT		(IDM_LANG + 110)  //46110
 	
-    
+	
 #define	IDM_ABOUT 	(IDM  + 7000)
 	#define	IDM_HOMESWEETHOME	(IDM_ABOUT  + 1)
 	#define	IDM_PROJECTPAGE		(IDM_ABOUT  + 2)
@@ -425,7 +425,7 @@
 #define	IDM_SETTING    (IDM + 8000)
 	#define	IDM_SETTING_TAB_SIZE   	       (IDM_SETTING + 1)
 	#define	IDM_SETTING_TAB_REPLCESPACE  (IDM_SETTING + 2)
-    #define	IDM_SETTING_HISTORY_SIZE  (IDM_SETTING + 3)
+	#define	IDM_SETTING_HISTORY_SIZE  (IDM_SETTING + 3)
 	#define	IDM_SETTING_EDGE_SIZE  (IDM_SETTING + 4)
 	#define	IDM_SETTING_FILEASSOCIATION_DLG  (IDM_SETTING + 5)
 	//#define	IDM_SETTING_FILE_AUTODETECTION  (IDM_SETTING + 6)

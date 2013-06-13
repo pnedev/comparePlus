@@ -27,20 +27,20 @@ class AboutDialog : public StaticDialog
 
 public:
 	AboutDialog() : StaticDialog() {};
-    
-    void init(HINSTANCE hInst, NppData nppData)
+	
+	void init(HINSTANCE hInst, NppData nppData)
 	{
 		_nppData = nppData;
 		Window::init(hInst, nppData._nppHandle);
 	};
 
-   	void doDialog();
+	void doDialog();
 
-    virtual void destroy() {
-        _emailLinkJSL.destroy();
-        _emailLinkTY.destroy();
+	virtual void destroy() {
+		_emailLinkJSL.destroy();
+		_emailLinkTY.destroy();
 		_urlNppPlugins.destroy();
-    };
+	};
 
 
 protected :
@@ -49,11 +49,11 @@ protected :
 private:
 	/* Handles */
 	NppData			_nppData;
-    HWND			_HSource;
+	HWND			_HSource;
 	
 	/* for eMail */
-    URLCtrl			_emailLinkJSL;
-    URLCtrl			_emailLinkTY;
+	URLCtrl			_emailLinkJSL;
+	URLCtrl			_emailLinkTY;
 	URLCtrl			_urlNppPlugins;
 };
 

@@ -30,17 +30,17 @@ typedef HRESULT (WINAPI * ETDTProc) (HWND, DWORD);
 enum PosAlign{ALIGNPOS_LEFT, ALIGNPOS_RIGHT, ALIGNPOS_TOP, ALIGNPOS_BOTTOM};
 
 struct DLGTEMPLATEEX {
-      WORD   dlgVer;
-      WORD   signature;
-      DWORD  helpID;
-      DWORD  exStyle;
-      DWORD  style; 
-      WORD   cDlgItems;
-      short  x;
-      short  y;    
-      short  cx;
-      short  cy;
-      // The structure has more fields but are variable length
+	  WORD   dlgVer;
+	  WORD   signature;
+	  DWORD  helpID;
+	  DWORD  exStyle;
+	  DWORD  style; 
+	  WORD   cDlgItems;
+	  short  x;
+	  short  y;    
+	  short  cx;
+	  short  cy;
+	  // The structure has more fields but are variable length
 } ;
 
 class StaticDialog : public Window
@@ -53,7 +53,7 @@ public :
 	};
 	virtual void create(int dialogID, bool isRTL = false, bool isModeles = true);
 
-    virtual bool isCreated() const {
+	virtual bool isCreated() const {
 		return (_hSelf != NULL);
 	};
 
@@ -71,7 +71,7 @@ public :
 		return p;
 	};
 
-    void destroy() {
+	void destroy() {
 		if (_isModeles) {
 			::SendMessage(_hParent, NPPM_MODELESSDIALOG, MODELESSDIALOGREMOVE, (WPARAM)_hSelf);
 		}
@@ -83,7 +83,7 @@ protected :
 	static BOOL CALLBACK dlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 	virtual BOOL CALLBACK run_dlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) = 0;
 
-    void alignWith(HWND handle, HWND handle2Align, PosAlign pos, POINT & point);
+	void alignWith(HWND handle, HWND handle2Align, PosAlign pos, POINT & point);
 	HGLOBAL makeRTLResource(int dialogID, DLGTEMPLATE **ppMyDlgTemplate);
 
 	bool		_isModeles;

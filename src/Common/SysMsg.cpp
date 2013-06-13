@@ -25,12 +25,12 @@ void systemMessage(const TCHAR *title)
 {
   LPVOID lpMsgBuf;
   FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                 NULL,
+				 NULL,
 				 ::GetLastError(),
-                 MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
-                 (LPTSTR) &lpMsgBuf,
-                 0,
-                 NULL );// Process any inserts in lpMsgBuf.
+				 MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+				 (LPTSTR) &lpMsgBuf,
+				 0,
+				 NULL );// Process any inserts in lpMsgBuf.
   MessageBox( NULL, (LPTSTR)lpMsgBuf, title, MB_OK | MB_ICONSTOP);
   ::LocalFree(lpMsgBuf);
 }
@@ -49,9 +49,9 @@ void printStr(const TCHAR *str2print)
 
 void writeLog(const TCHAR *logFileName, const TCHAR *log2write)
 {	
-	FILE *f;
-    //errno_t err = 
-    //generic_fopen(&f, logFileName, TEXT("a+"));
+	//FILE *f;
+	//errno_t err = 
+	//generic_fopen(&f, logFileName, TEXT("a+"));
 	//const TCHAR * ptr = log2write;
 	//fwrite(log2write, sizeof(log2write[0]), lstrlen(log2write), f);
 	//fputc('\n', f);
@@ -62,7 +62,7 @@ void writeLog(const TCHAR *logFileName, const TCHAR *log2write)
 int filter(unsigned int code, struct _EXCEPTION_POINTERS * /*ep*/) 
 {
    if (code == EXCEPTION_ACCESS_VIOLATION)
-      return EXCEPTION_EXECUTE_HANDLER;
+	  return EXCEPTION_EXECUTE_HANDLER;
 
    return EXCEPTION_CONTINUE_SEARCH;
 }

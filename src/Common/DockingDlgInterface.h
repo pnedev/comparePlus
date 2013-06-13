@@ -41,14 +41,14 @@ public:
 	{
 		StaticDialog::init(hInst, parent);
 		::GetModuleFileName((HMODULE)hInst, _moduleName, MAX_PATH);
-		_tcscpy(_moduleName, PathFindFileName(_moduleName));
+		_tcscpy_s(_moduleName, PathFindFileName(_moduleName));
 	}
 
-    void create(tTbData * data, bool isRTL = false){
+	void create(tTbData * data, bool isRTL = false){
 		StaticDialog::create(_dlgID, isRTL);
 		::GetWindowText(_hSelf, _pluginName, sizeof(_pluginName));
 
-        /* user information */
+		/* user information */
 		data->hClient		= _hSelf;
 		data->pszName		= _pluginName;
 
@@ -69,8 +69,8 @@ public:
 		::SendMessage(_hParent, NPPM_DMMUPDATEDISPINFO, 0, (LPARAM)_hSelf);
 	}
 
-    virtual void destroy() {
-    };
+	virtual void destroy() {
+	};
 
 	virtual void display(bool toShow = true) const {
 		extern FuncItem funcItem[];
@@ -127,7 +127,7 @@ protected :
 	};
 	
 	/* Handles */
-    HWND			_HSource;
+	HWND			_HSource;
 	tTbData*		_data;
 	INT				_dlgID;
 	BOOL            _isFloating;

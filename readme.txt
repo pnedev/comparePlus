@@ -1,4 +1,5 @@
-To install manually, copy ComparePlugin.dll into the plugins directory C:\Program Files\Notepad++\Plugins
+To install manually, copy ComparePlugin.dll and ComparePlugin subfolder
+into the plugins directory C:\Program Files\Notepad++\Plugins.
 	
 Change Log:
 -----------
@@ -7,16 +8,15 @@ Change Log:
 
     1. NEW: *** Compare released under GPLv3 ***
     2. NEW: Change behavior when files match (immediately exit compare)
-    3. FIXED: Differences highlighting
-    4. FIXED: Differences line width in Navigation pane is at least 1 pixel.
-    5. FIXED: Weird focus clipping while shutting down (no application gets focus again, when N++ is gone).
-    6. FIXED: Some menu items where not disabled aymore when compare is not running
+    3. FIXED: Some menu items where not disabled anymore when compare is not running
 
 1.5.6.3
 
     1. NEW: Automatically jump to first difference after comparison
     1. NEW: 'Compare against GIT base'
+            (therefor using libgit2: http://libgit2.github.com/)
     1. FIXED: 'Compare against SVN base' doesn't work with newer SVN versions (1.7 and above)
+              (therefor using SQLite: http://www.sqlite.org/)
 
 1.5.6.2
 
