@@ -180,6 +180,10 @@ HGLOBAL GetContentFromGitRepo(TCHAR *gitDir, TCHAR *gitFilePath, long *size)
 			git_repository_free(repo);
 		}
 	}
+	else
+	{
+		MessageBox(NULL, L"Can't init libgit2", L"ComparePlugin", MB_OK);
+	}
 
 	return hMem;
 }
