@@ -262,17 +262,17 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
 			if (tbLast.hToolbarBmp)
 				::DeleteObject(tbLast.hToolbarBmp);
 
-		saveSettings();
-		OptionDlg.destroy();
-		AboutDlg.destroy();
-		NavDlg.destroy();
+			saveSettings();
+			OptionDlg.destroy();
+			AboutDlg.destroy();
+			NavDlg.destroy();
 
-		// Don't forget to deallocate your shortcut here
+			// Don't forget to deallocate your shortcut here
 			for (int i = 0; i < NB_MENU_COMMANDS; i++)
 				if (funcItem[i]._pShKey != NULL)
 					delete funcItem[i]._pShKey;
 
-		break;
+			break;
 		}
 
 	case DLL_THREAD_ATTACH:
@@ -1212,8 +1212,11 @@ bool compareNew()
 		}
 
 		int nextLine = ::SendMessage(nppData._scintillaMainHandle, SCI_MARKERNEXT, 0,
-			(1 << MARKER_MOVED_LINE) | (1 << MARKER_CHANGED_LINE) | (1 << MARKER_ADDED_LINE) |
-			(1 << MARKER_REMOVED_LINE) | (1 << MARKER_BLANK_LINE));
+									 (1 << MARKER_MOVED_LINE)
+								   | (1 << MARKER_CHANGED_LINE)
+								   | (1 << MARKER_ADDED_LINE)
+								   | (1 << MARKER_REMOVED_LINE)
+								   | (1 << MARKER_BLANK_LINE));
 		::SendMessage(nppData._scintillaMainHandle, SCI_DOCUMENTEND, 0, 0);
 		::SendMessage(nppData._scintillaMainHandle, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
 		::SendMessage(nppData._scintillaMainHandle, SCI_GOTOLINE, nextLine, 0);
@@ -1300,7 +1303,7 @@ bool startCompare()
 
 	::SendMessageA(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
 	::SendMessageA(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
-	::SendMessageA(nppData._scintillaSecondHandle/*window*/, SCI_GRABFOCUS, 0, (LPARAM)1);
+	::SendMessageA(nppData._scintillaSecondHandle, SCI_GRABFOCUS, 0, (LPARAM)1);
 
 	// Restore previous read-only attribute
 	if (RODoc1 == 1)
@@ -1357,20 +1360,20 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 	{
 	case SCN_PAINTED:
 		{
-		if(active) 
-		{            
+			if(active) 
+			{            
 				long start, end;
 
-			start = SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
-			end   = SendMessage(nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0) + start;
+				start = SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
+				end   = SendMessage(nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0) + start;
 
-			if((start_old != start) && (NavDlg.ReadyToDraw == TRUE))
-			{
-				NavDlg.DrawView(start, end);
-				start_old = start;
+				if((start_old != start) && (NavDlg.ReadyToDraw == TRUE))
+				{
+					NavDlg.DrawView(start, end);
+					start_old = start;
+				}
 			}
-		}
-		break;
+			break;
 		}
 
 	case NPPN_TBMODIFICATION:
@@ -1423,8 +1426,8 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 	case NPPN_FILEBEFOREOPEN:
 	case NPPN_FILEOPENED:
 		{
-		notepadVersionOk = true;
-		break;
+			notepadVersionOk = true;
+			break;
 		}
 
 	case NPPN_FILEBEFORESAVE:

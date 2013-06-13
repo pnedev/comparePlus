@@ -117,6 +117,7 @@
     </Link>
     <PostBuildEvent>
       <Command>mkdir "$(ProjectDir)..\..\Notepad++\plugins\ComparePlugin"
+copy "$(ProjectDir)..\..\src\libgit2\git2.dll" "$(ProjectDir)..\..\Notepad++\plugins\ComparePlugin\"
 copy "$(ProjectDir)..\..\src\sqlite\sqlite3.dll" "$(ProjectDir)..\..\Notepad++\plugins\ComparePlugin\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -150,6 +151,7 @@ copy "$(ProjectDir)..\..\src\sqlite\sqlite3.dll" "$(ProjectDir)..\..\Notepad++\p
     </Link>
     <PostBuildEvent>
       <Command>mkdir "$(ProjectDir)..\..\Notepad++\plugins\ComparePlugin"
+copy "$(ProjectDir)..\..\src\libgit2\git2.dll" "$(ProjectDir)..\..\Notepad++\plugins\ComparePlugin\"
 copy "$(ProjectDir)..\..\src\sqlite\sqlite3.dll" "$(ProjectDir)..\..\Notepad++\plugins\ComparePlugin\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
