@@ -1,6 +1,6 @@
 #include "ScmHelper.h"
 
-bool GetSvnFolder(TCHAR* currentDir, TCHAR* svnDir)
+bool GetScmBaseFolder(TCHAR* baseDirName, TCHAR* currentDir, TCHAR* svnDir)
 {
 	// search recursively upwards for a ".svn" folder
 
@@ -12,7 +12,7 @@ bool GetSvnFolder(TCHAR* currentDir, TCHAR* svnDir)
 
 	while (true)
 	{
-		PathCombine(buffDir2, buffDir1, L".svn");
+		PathCombine(buffDir2, buffDir1, baseDirName);
 		if (PathFileExists(buffDir2))
 		{
 			lstrcpy(svnDir, buffDir2);
@@ -27,6 +27,29 @@ bool GetSvnFolder(TCHAR* currentDir, TCHAR* svnDir)
 		}
 
 		lstrcpy(buffDir1, buffDir2);
+	}
+}
+
+void GetLocalScmPath(TCHAR* curDir, TCHAR* scmDir, TCHAR* filename, TCHAR* scmFilePath)
+{
+	TCHAR buffDir[MAX_PATH] = {0};
+
+	int len = lstrlen(scmDir) - 4;
+	if (lstrlen(curDir) > len)
+	{
+		lstrcpy(buffDir, curDir + len);
+	}
+	else
+	{
+		buffDir[0] = 0;
+	}
+	PathCombine(scmFilePath, buffDir, filename);
+	for (int i = 0; i < lstrlen(scmFilePath); i++)
+	{
+		if (scmFilePath[i] == '\\')
+		{
+			scmFilePath[i] = '/';
+		}
 	}
 }
 
@@ -50,24 +73,7 @@ bool GetSvnBaseFile(TCHAR* curDir, TCHAR* svnDir, TCHAR* filename, TCHAR* svnBas
 				TCHAR svnFilePath[MAX_PATH];
 				TCHAR statement[128];
 
-				// get the local svn path
-				int len = lstrlen(svnDir) - 4;
-				if (lstrlen(curDir) > len)
-				{
-					lstrcpy(buffDir1, curDir + len);
-				}
-				else
-				{
-					buffDir1[0] = 0;
-				}
-				PathCombine(svnFilePath, buffDir1, filename);
-				for (int i = 0; i < lstrlen(svnFilePath); i++)
-				{
-					if (svnFilePath[i] == '\\')
-					{
-						svnFilePath[i] = '/';
-					}
-				}
+				GetLocalScmPath(curDir, svnDir, filename, svnFilePath);
 		
 				wsprintf(statement, L"SELECT checksum FROM nodes_current WHERE local_relpath='%s';", svnFilePath);
 
@@ -118,4 +124,62 @@ bool GetSvnBaseFile(TCHAR* curDir, TCHAR* svnDir, TCHAR* filename, TCHAR* svnBas
 	}
 
 	return ret;
+}
+
+void TCharToChar(const wchar_t* src, char* dest, int size) 
+{ 
+	WideCharToMultiByte(CP_ACP, 0, src, wcslen(src) + 1, dest , size, NULL, NULL); 
+}
+
+HGLOBAL GetContentFromGitRepo(TCHAR *gitDir, TCHAR *gitFilePath, long *size)
+{
+	HGLOBAL hMem = NULL;
+
+	char ansiGitDir[MAX_PATH];
+	char ansiGitFilePath[MAX_PATH];
+	TCharToChar(gitDir, ansiGitDir, sizeof(ansiGitDir));
+	TCharToChar(gitFilePath, ansiGitFilePath, sizeof(ansiGitFilePath));
+
+	if (InitLibGit2())
+	{
+		git_repository *repo;
+		if (!git_repository_open(&repo, ansiGitDir))
+		{
+			git_index *index;
+			if (!git_repository_index(&index, repo))
+			{
+				size_t at_pos;
+				if (git_index_find(&at_pos, index, ansiGitFilePath) != GIT_ENOTFOUND)
+				{
+					const git_index_entry *e = git_index_get_byindex(index, at_pos);
+					if (e)
+					{
+						git_blob *blob;
+						if (!git_blob_lookup(&blob, repo, &e->oid))
+						{
+							long sizeBlob = (long)git_blob_rawsize(blob);
+							if (sizeBlob)
+							{
+								const void * content = git_blob_rawcontent(blob);
+								if (content)
+								{
+									hMem = GlobalAlloc(GMEM_FIXED, (SIZE_T)sizeBlob);
+									if (hMem)
+									{
+										*size = sizeBlob;
+										CopyMemory(hMem, content, (SIZE_T)*size);
+									}
+								}
+							}
+							git_blob_free(blob);
+						}
+					}
+				}
+				git_index_free(index);
+			}
+			git_repository_free(repo);
+		}
+	}
+
+	return hMem;
 }

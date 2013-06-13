@@ -79,7 +79,8 @@ enum MENU_COMMANDS
 	CMD_CLEAR_RESULTS,
     CMD_SEPARATOR_1,
 	CMD_COMPARE_LAST_SAVE,
-	CMD_COMAPRE_SVN_BASE,
+	CMD_COMPARE_SVN_BASE,
+	CMD_COMPARE_GIT_BASE,
     CMD_SEPARATOR_2,
 	CMD_ALIGN_MATCHES,
 	CMD_IGNORE_SPACING,
@@ -136,6 +137,7 @@ const UINT lenEOL[3] = {2,1,1};
 void compare();
 void compareLocal();
 void compareSvnBase();
+void compareGitBase();
 int getCompare(int window);
 void removeCompare(int window);
 int setCompare(int window);
@@ -147,6 +149,7 @@ void reset();
 void openAboutDlg(void);
 void openOptionDlg(void);
 void openFile(TCHAR *file);
+void openMemBlock(void *memblock, long size);
 HWND openTempFile();
 void addEmptyLines(HWND hSci, int offset, int length);
 bool startCompare();

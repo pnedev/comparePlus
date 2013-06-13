@@ -212,6 +212,7 @@ copy "$(ProjectDir)..\..\src\sqlite\sqlite3.dll" "$(ProjectDir)..\..\Notepad++\p
     <ClCompile Include="..\..\src\ColorPopup.cpp" />
     <ClCompile Include="..\..\src\Compare.cpp" />
     <ClCompile Include="..\..\src\Engine.cpp" />
+    <ClCompile Include="..\..\src\libgit2\LibGit2Helper.cpp" />
     <ClCompile Include="..\..\src\NavDlg\NavDialog.cpp" />
     <ClCompile Include="..\..\src\NPPHelpers.cpp" />
     <ClCompile Include="..\..\src\OptionDlg\OptionDialog.cpp" />
@@ -230,6 +231,7 @@ copy "$(ProjectDir)..\..\src\sqlite\sqlite3.dll" "$(ProjectDir)..\..\Notepad++\p
     <ClCompile Include="..\..\src\sqlite\SqliteHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\libgit2\LibGit2Helper.h" />
     <ClInclude Include="..\..\src\HelpDlg\AboutDialog.h" />
     <ClInclude Include="..\..\src\ColorCombo.h" />
     <ClInclude Include="..\..\src\ColorPopup.h" />

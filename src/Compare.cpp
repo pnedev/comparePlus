@@ -114,14 +114,23 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
             funcItem[CMD_COMPARE_LAST_SAVE]._pShKey->_key = 'S';
             funcItem[CMD_COMPARE_LAST_SAVE]._init2Check = false;
 
-            funcItem[CMD_COMAPRE_SVN_BASE]._pFunc = compareSvnBase;
-            lstrcpy(funcItem[CMD_COMAPRE_SVN_BASE]._itemName, TEXT("Compare against SVN base"));
-            funcItem[CMD_COMAPRE_SVN_BASE]._pShKey = new ShortcutKey;
-            funcItem[CMD_COMAPRE_SVN_BASE]._pShKey->_isAlt = true;
-            funcItem[CMD_COMAPRE_SVN_BASE]._pShKey->_isCtrl = false;
-            funcItem[CMD_COMAPRE_SVN_BASE]._pShKey->_isShift = false;
-            funcItem[CMD_COMAPRE_SVN_BASE]._pShKey->_key = 'B';
-            funcItem[CMD_COMAPRE_SVN_BASE]._init2Check = false;
+            funcItem[CMD_COMPARE_SVN_BASE]._pFunc = compareSvnBase;
+            lstrcpy(funcItem[CMD_COMPARE_SVN_BASE]._itemName, TEXT("Compare against SVN base"));
+            funcItem[CMD_COMPARE_SVN_BASE]._pShKey = new ShortcutKey;
+            funcItem[CMD_COMPARE_SVN_BASE]._pShKey->_isAlt = true;
+            funcItem[CMD_COMPARE_SVN_BASE]._pShKey->_isCtrl = false;
+            funcItem[CMD_COMPARE_SVN_BASE]._pShKey->_isShift = false;
+            funcItem[CMD_COMPARE_SVN_BASE]._pShKey->_key = 'B';
+            funcItem[CMD_COMPARE_SVN_BASE]._init2Check = false;
+
+            funcItem[CMD_COMPARE_GIT_BASE]._pFunc = compareGitBase;
+            lstrcpy(funcItem[CMD_COMPARE_GIT_BASE]._itemName, TEXT("Compare against GIT base"));
+            funcItem[CMD_COMPARE_GIT_BASE]._pShKey = new ShortcutKey;
+            funcItem[CMD_COMPARE_GIT_BASE]._pShKey->_isAlt = true;
+            funcItem[CMD_COMPARE_GIT_BASE]._pShKey->_isCtrl = true;
+            funcItem[CMD_COMPARE_GIT_BASE]._pShKey->_isShift = false;
+            funcItem[CMD_COMPARE_GIT_BASE]._pShKey->_key = 'B';
+            funcItem[CMD_COMPARE_GIT_BASE]._init2Check = false;
 
             funcItem[CMD_SEPARATOR_2]._pFunc = NULL;
             lstrcpy(funcItem[CMD_SEPARATOR_2]._itemName, TEXT("------------"));
@@ -260,7 +269,8 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
 		delete funcItem[CMD_COMPARE]._pShKey;
 		delete funcItem[CMD_CLEAR_RESULTS]._pShKey;
 		delete funcItem[CMD_COMPARE_LAST_SAVE]._pShKey;
-		delete funcItem[CMD_COMAPRE_SVN_BASE]._pShKey;
+		delete funcItem[CMD_COMPARE_SVN_BASE]._pShKey;
+		delete funcItem[CMD_COMPARE_GIT_BASE]._pShKey;
 		delete funcItem[CMD_PREV]._pShKey;
 		delete funcItem[CMD_NEXT]._pShKey;
 		delete funcItem[CMD_FIRST]._pShKey;
@@ -694,8 +704,6 @@ void openFile(TCHAR *file)
         return;
     }
 
-    HWND window = openTempFile();
-
     ifstream myfile(file,ios::in|ios::ate| ios::binary);
 
     if(myfile.is_open())
@@ -707,26 +715,35 @@ void openFile(TCHAR *file)
         myfile.close();	
 
         memblock[size] = 0;
-        ::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
-        ::SendMessageA(window, SCI_APPENDTEXT, size, (LPARAM)memblock);	
-        delete[] memblock;
 
-        if(startCompare())
-        {
-            ::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
-            ::SendMessageA(window, SCI_SETSAVEPOINT, 1, 0);
-            ::SendMessageA(window, SCI_EMPTYUNDOBUFFER, 0, 0);
-            ::SendMessageA(window, SCI_SETREADONLY, 1, 0);
-            reset();
-        }
-        else
-        {
-            ::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
-            ::SendMessageA(window, SCI_SETSAVEPOINT, 1, 0);
-            ::SendMessageA(window, SCI_EMPTYUNDOBUFFER, 0, 0);
-            ::SendMessageA(window, SCI_SETREADONLY, 1, 0);            
- 			::SendMessageA(nppData._scintillaSecondHandle, SCI_GRABFOCUS, 0, 1);
-        }
+		openMemBlock(memblock, size);
+
+        delete[] memblock;
+    }
+}
+
+void openMemBlock(void *memblock, long size)
+{
+    HWND window = openTempFile();
+
+	::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
+    ::SendMessageA(window, SCI_APPENDTEXT, size, (LPARAM)memblock);	
+
+    if(startCompare())
+    {
+        ::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
+        ::SendMessageA(window, SCI_SETSAVEPOINT, 1, 0);
+        ::SendMessageA(window, SCI_EMPTYUNDOBUFFER, 0, 0);
+        ::SendMessageA(window, SCI_SETREADONLY, 1, 0);
+        reset();
+    }
+    else
+    {
+        ::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
+        ::SendMessageA(window, SCI_SETSAVEPOINT, 1, 0);
+        ::SendMessageA(window, SCI_EMPTYUNDOBUFFER, 0, 0);
+        ::SendMessageA(window, SCI_SETREADONLY, 1, 0);            
+ 		::SendMessageA(nppData._scintillaSecondHandle, SCI_GRABFOCUS, 0, 1);
     }
 }
 
@@ -850,7 +867,7 @@ void compareSvnBase()
 
 		PathCanonicalize(curDirCanon, curDir);
 
-		if (GetSvnFolder(curDirCanon, svnDir))
+		if (GetScmBaseFolder(L".svn", curDirCanon, svnDir))
 		{
 		    TCHAR curFile[MAX_PATH];
 		    TCHAR svnBaseFile[MAX_PATH];
@@ -868,6 +885,45 @@ void compareSvnBase()
 		}
 	}
 	MessageBox(nppData._nppHandle, L"Can't locate SVN information", L"ComparePlugin", MB_OK);
+}
+
+void compareGitBase()
+{
+    TCHAR curDir[MAX_PATH];
+
+    SendMessage(nppData._nppHandle, NPPM_GETCURRENTDIRECTORY, 0, (LPARAM)curDir);
+
+	if (curDir[0] != 0)
+    {
+		TCHAR curDirCanon[MAX_PATH];
+		TCHAR gitDir[MAX_PATH];
+
+		PathCanonicalize(curDirCanon, curDir);
+
+		if (GetScmBaseFolder(L".git", curDirCanon, gitDir))
+		{
+		    TCHAR curFile[MAX_PATH];
+
+			SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)curFile);
+
+			if (curFile[0] != 0)
+			{
+			    TCHAR gitBaseFile[MAX_PATH];
+
+				GetLocalScmPath(curDir, gitDir, curFile, gitBaseFile);
+	
+				long size = 0;
+				HGLOBAL hMem = GetContentFromGitRepo(gitDir, gitBaseFile, &size);
+				if (size)
+				{
+					openMemBlock(hMem, size);
+					GlobalFree(hMem);
+					return;
+				}
+			}
+		}
+	}
+	MessageBox(nppData._nppHandle, L"Can't locate GIT information", L"ComparePlugin", MB_OK);
 }
 
 bool compareNew()
