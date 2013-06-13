@@ -13,9 +13,9 @@ Change Log:
 1.5.6.3
 
     1. NEW: Automatically jump to first difference after comparison
-    1. NEW: 'Compare against GIT base'
+    2. NEW: 'Compare against GIT base'
             (therefor using libgit2: http://libgit2.github.com/)
-    1. FIXED: 'Compare against SVN base' doesn't work with newer SVN versions (1.7 and above)
+    3. FIXED: 'Compare against SVN base' doesn't work with newer SVN versions (1.7 and above)
               (therefor using SQLite: http://www.sqlite.org/)
 
 1.5.6.2
