@@ -21,6 +21,8 @@
 #define IDC_EMAIL_LINK_TYL              1012
 #define IDC_EMAIL_LINK5                 1013
 #define IDC_NPP_PLUGINS_URL3            1014
+#define IDC_EMAIL_LINK_JSL2             1015
+#define IDC_EMAIL_LINK_UFO              1015
 #define IDC_COMBO_ADDED_COLOR           1016
 #define IDC_COMBO_REMOVED_COLOR         1017
 #define IDC_COMBO_MOVED_COLOR           1018

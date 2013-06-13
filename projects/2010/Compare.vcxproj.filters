@@ -16,9 +16,6 @@
     <ClCompile Include="..\..\src\Common\stdafx.cpp">
       <Filter>src\Common</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\Common\URLCtrl.cpp">
-      <Filter>src\Common</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\sqlite\SqliteHelper.cpp">
       <Filter>src\sqlite</Filter>
     </ClCompile>
@@ -77,12 +74,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\AboutDlg\URLCtrl.h">
       <Filter>src\AboutDlg</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\Common\SciSubClassWrp.h">
-      <Filter>src\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\Common\URLCtrl.h">
-      <Filter>src\Common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Common\stdafx.h">
       <Filter>src\Common</Filter>
@@ -206,7 +197,6 @@
     <None Include="..\..\res\prev.bmp">
       <Filter>res</Filter>
     </None>
-    <None Include="..\..\change.log" />
     <None Include="..\..\license.txt" />
     <None Include="..\..\readme.txt" />
   </ItemGroup>

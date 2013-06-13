@@ -210,7 +210,6 @@ copy "$(ProjectDir)..\..\src\sqlite\sqlite3.dll" "$(ProjectDir)..\..\Notepad++\p
     <ClCompile Include="..\..\src\AboutDlg\AboutDialog.cpp" />
     <ClCompile Include="..\..\src\ColorCombo.cpp" />
     <ClCompile Include="..\..\src\ColorPopup.cpp" />
-    <ClCompile Include="..\..\src\Common\URLCtrl.cpp" />
     <ClCompile Include="..\..\src\Compare.cpp" />
     <ClCompile Include="..\..\src\Engine.cpp" />
     <ClCompile Include="..\..\src\libgit2\LibGit2Helper.cpp" />
@@ -232,8 +231,6 @@ copy "$(ProjectDir)..\..\src\sqlite\sqlite3.dll" "$(ProjectDir)..\..\Notepad++\p
     <ClCompile Include="..\..\src\sqlite\SqliteHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\Common\SciSubClassWrp.h" />
-    <ClInclude Include="..\..\src\Common\URLCtrl.h" />
     <ClInclude Include="..\..\src\libgit2\LibGit2Helper.h" />
     <ClInclude Include="..\..\src\HelpDlg\AboutDialog.h" />
     <ClInclude Include="..\..\src\ColorCombo.h" />
@@ -277,7 +274,6 @@ copy "$(ProjectDir)..\..\src\sqlite\sqlite3.dll" "$(ProjectDir)..\..\Notepad++\p
     <ResourceCompile Include="..\..\src\Compare.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\change.log" />
     <None Include="..\..\license.txt" />
     <None Include="..\..\readme.txt" />
     <None Include="..\..\res\first.bmp" />
