@@ -62,14 +62,14 @@ using namespace std;
 
 enum MARKER_ID
 {
-    MARKER_BLANK_LINE = 0,
-    MARKER_MOVED_LINE,
-    MARKER_CHANGED_LINE,
-    MARKER_ADDED_LINE,
-    MARKER_REMOVED_LINE,
-    MARKER_CHANGED_SYMBOL,
-    MARKER_ADDED_SYMBOL,
-    MARKER_REMOVED_SYMBOL,
+	MARKER_BLANK_LINE = 0,
+	MARKER_MOVED_LINE,
+	MARKER_CHANGED_LINE,
+	MARKER_ADDED_LINE,
+	MARKER_REMOVED_LINE,
+	MARKER_CHANGED_SYMBOL,
+	MARKER_ADDED_SYMBOL,
+	MARKER_REMOVED_SYMBOL,
 	MARKER_MOVED_SYMBOL
 };
 
@@ -77,21 +77,21 @@ enum MENU_COMMANDS
 {
 	CMD_COMPARE = 0,
 	CMD_CLEAR_RESULTS,
-    CMD_SEPARATOR_1,
+	CMD_SEPARATOR_1,
 	CMD_COMPARE_LAST_SAVE,
 	CMD_COMPARE_SVN_BASE,
 	CMD_COMPARE_GIT_BASE,
-    CMD_SEPARATOR_2,
+	CMD_SEPARATOR_2,
 	CMD_ALIGN_MATCHES,
 	CMD_IGNORE_SPACING,
 	CMD_DETECT_MOVES,
-    CMD_USE_NAV_BAR,
-    CMD_SEPARATOR_3,
-    CMD_PREV,
-    CMD_NEXT,
-    CMD_FIRST,
-    CMD_LAST,
-    CMD_SEPARATOR_4,
+	CMD_USE_NAV_BAR,
+	CMD_SEPARATOR_3,
+	CMD_PREV,
+	CMD_NEXT,
+	CMD_FIRST,
+	CMD_LAST,
+	CMD_SEPARATOR_4,
 	CMD_OPTION,
 	CMD_ABOUT,
 	NB_MENU_COMMANDS
@@ -99,23 +99,23 @@ enum MENU_COMMANDS
 
 struct sColorSettings
 {
-    int added;
-    int deleted;
-    int changed;
-    int moved;
-    int blank;
-    int highlight;
-    int alpha;
+	int added;
+	int deleted;
+	int changed;
+	int moved;
+	int blank;
+	int highlight;
+	int alpha;
 };
 
 struct sUserSettings
 {
-    bool           UseNavBar;
-    bool           AddLine;
-    bool           IncludeSpace;
-    bool           DetectMove;
-    bool           OldSymbols;
-    sColorSettings ColorSettings; 
+	bool           UseNavBar;
+	bool           AddLine;
+	bool           IncludeSpace;
+	bool           DetectMove;
+	bool           OldSymbols;
+	sColorSettings ColorSettings; 
 };
 
 enum eEOL 

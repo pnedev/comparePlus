@@ -28,35 +28,35 @@
 class URLCtrl : public Window 
 {
 public:
-    URLCtrl():_hfUnderlined(0),_hCursor(0), _oldproc(NULL), \
-        _linkColor(), _visitedColor(), _clicking(false) {_URL[0] = '\0';};
+	URLCtrl():_hfUnderlined(0),_hCursor(0), _oldproc(NULL), \
+		_linkColor(), _visitedColor(), _clicking(false) {_URL[0] = '\0';};
 
-    void create(HWND itemHandle, LPTSTR link, COLORREF linkColor = RGB(0,0,255));
-    void destroy(){
-        	if(_hfUnderlined)
-                ::DeleteObject(_hfUnderlined);
-	        if(_hCursor)
-                ::DestroyCursor(_hCursor);
-    };
+	void create(HWND itemHandle, LPTSTR link, COLORREF linkColor = RGB(0,0,255));
+	void destroy(){
+			if(_hfUnderlined)
+				::DeleteObject(_hfUnderlined);
+			if(_hCursor)
+				::DestroyCursor(_hCursor);
+	};
 
 private :
-    TCHAR	 _URL[_MAX_PATH];
-    HFONT	_hfUnderlined;
-    HCURSOR	_hCursor;
+	TCHAR	 _URL[_MAX_PATH];
+	HFONT	_hfUnderlined;
+	HCURSOR	_hCursor;
 
-    WNDPROC  _oldproc;
-    COLORREF _linkColor;			
-    COLORREF _visitedColor;
+	WNDPROC  _oldproc;
+	COLORREF _linkColor;			
+	COLORREF _visitedColor;
 
-    bool  _clicking;
+	bool  _clicking;
 
-    
+	
 
 
-    static LRESULT CALLBACK URLCtrlProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
-        return ((URLCtrl *)(::GetWindowLong(hwnd, GWL_USERDATA)))->runProc(hwnd, Message, wParam, lParam);
-    };
-    LRESULT runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
+	static LRESULT CALLBACK URLCtrlProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
+		return ((URLCtrl *)(::GetWindowLong(hwnd, GWL_USERDATA)))->runProc(hwnd, Message, wParam, lParam);
+	};
+	LRESULT runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
 };
 
 #endif //URLCTRL_INCLUDED

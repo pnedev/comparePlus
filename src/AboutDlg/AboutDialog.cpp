@@ -22,7 +22,7 @@
 
 void AboutDialog::doDialog()
 {
-    if (!isCreated()) create(IDD_ABOUT_DIALOG);
+	if (!isCreated()) create(IDD_ABOUT_DIALOG);
 	goToCenter();
 }
 
@@ -30,29 +30,29 @@ BOOL CALLBACK AboutDialog::run_dlgProc(HWND /*hwnd*/, UINT Message, WPARAM wPara
 {
 	switch (Message) 
 	{
-        case WM_INITDIALOG :
+		case WM_INITDIALOG :
 		{
-            _emailLinkJSL.init(_hInst, _hSelf);
-            _emailLinkJSL.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK_JSL), _T("mailto:jean.sebastien.leroy@club-internet.fr"));
-            _urlNppPlugins.init(_hInst, _hSelf);
-            _urlNppPlugins.create(::GetDlgItem(_hSelf, IDC_NPP_PLUGINS_URL), _T("http://sourceforge.net/projects/npp-plugins/"));
+			_emailLinkJSL.init(_hInst, _hSelf);
+			_emailLinkJSL.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK_JSL), _T("mailto:jean.sebastien.leroy@club-internet.fr"));
+			_urlNppPlugins.init(_hInst, _hSelf);
+			_urlNppPlugins.create(::GetDlgItem(_hSelf, IDC_NPP_PLUGINS_URL), _T("http://sourceforge.net/projects/npp-plugins/"));
 
 			return TRUE;
 		}
 		case WM_COMMAND : 
-	    {
-		    switch (wParam)
-		    {
-			    case IDC_ABOUT_CLOSE_BUTTON :
-			    case IDCANCEL :
-				    display(FALSE);
-				    return TRUE;
+		{
+			switch (wParam)
+			{
+				case IDC_ABOUT_CLOSE_BUTTON :
+				case IDCANCEL :
+					display(FALSE);
+					return TRUE;
 
-			    default :
-				    break;
-		    }
-		    break;
-	    }
+				default :
+					break;
+			}
+			break;
+		}
 	}
 	return FALSE;
 }

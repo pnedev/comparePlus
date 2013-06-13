@@ -210,6 +210,7 @@ copy "$(ProjectDir)..\..\src\sqlite\sqlite3.dll" "$(ProjectDir)..\..\Notepad++\p
     <ClCompile Include="..\..\src\AboutDlg\AboutDialog.cpp" />
     <ClCompile Include="..\..\src\ColorCombo.cpp" />
     <ClCompile Include="..\..\src\ColorPopup.cpp" />
+    <ClCompile Include="..\..\src\Common\URLCtrl.cpp" />
     <ClCompile Include="..\..\src\Compare.cpp" />
     <ClCompile Include="..\..\src\Engine.cpp" />
     <ClCompile Include="..\..\src\libgit2\LibGit2Helper.cpp" />
@@ -231,6 +232,8 @@ copy "$(ProjectDir)..\..\src\sqlite\sqlite3.dll" "$(ProjectDir)..\..\Notepad++\p
     <ClCompile Include="..\..\src\sqlite\SqliteHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\Common\SciSubClassWrp.h" />
+    <ClInclude Include="..\..\src\Common\URLCtrl.h" />
     <ClInclude Include="..\..\src\libgit2\LibGit2Helper.h" />
     <ClInclude Include="..\..\src\HelpDlg\AboutDialog.h" />
     <ClInclude Include="..\..\src\ColorCombo.h" />
@@ -247,19 +250,18 @@ copy "$(ProjectDir)..\..\src\sqlite\sqlite3.dll" "$(ProjectDir)..\..\Notepad++\p
     <ClInclude Include="..\..\src\OptionDlg\OptionDialog.h" />
     <ClInclude Include="..\..\src\Resource.h" />
     <ClInclude Include="..\..\src\AboutDlg\URLCtrl.h" />
-    <ClInclude Include="..\..\..\Common\Ccpp\Docking.h" />
-    <ClInclude Include="..\..\..\Common\Ccpp\DockingDlgInterface.h" />
-    <ClInclude Include="..\..\..\Common\Ccpp\ImageListSet.h" />
-    <ClInclude Include="..\..\..\Common\Ccpp\menuCmdID.h" />
-    <ClInclude Include="..\..\..\Common\Ccpp\Notepad_plus_msgs.h" />
-    <ClInclude Include="..\..\..\Common\Ccpp\Notepad_plus_rc.h" />
-    <ClInclude Include="..\..\..\Common\Ccpp\PluginInterface.h" />
-    <ClInclude Include="..\..\..\Common\Ccpp\Scintilla.h" />
-    <ClInclude Include="..\..\..\Common\Ccpp\StaticDialog.h" />
-    <ClInclude Include="..\..\..\Common\Ccpp\stdafx.h" />
-    <ClInclude Include="..\..\..\Common\Ccpp\SysMsg.h" />
-    <ClInclude Include="..\..\..\Common\Ccpp\ToolBar.h" />
-    <ClInclude Include="..\..\..\Common\Ccpp\Window.h" />
+    <ClInclude Include="..\..\src\Common\Docking.h" />
+    <ClInclude Include="..\..\src\Common\DockingDlgInterface.h" />
+    <ClInclude Include="..\..\src\Common\ImageListSet.h" />
+    <ClInclude Include="..\..\src\Common\Notepad_plus_msgs.h" />
+    <ClInclude Include="..\..\src\Common\Notepad_plus_rc.h" />
+    <ClInclude Include="..\..\src\Common\PluginInterface.h" />
+    <ClInclude Include="..\..\src\Common\Scintilla.h" />
+    <ClInclude Include="..\..\src\Common\StaticDialog.h" />
+    <ClInclude Include="..\..\src\Common\stdafx.h" />
+    <ClInclude Include="..\..\src\Common\SysMsg.h" />
+    <ClInclude Include="..\..\src\Common\ToolBar.h" />
+    <ClInclude Include="..\..\src\Common\Window.h" />
     <ClInclude Include="..\..\src\mba\allocator.h" />
     <ClInclude Include="..\..\src\mba\dbug.h" />
     <ClInclude Include="..\..\src\mba\diff.h" />
@@ -275,6 +277,9 @@ copy "$(ProjectDir)..\..\src\sqlite\sqlite3.dll" "$(ProjectDir)..\..\Notepad++\p
     <ResourceCompile Include="..\..\src\Compare.rc" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\change.log" />
+    <None Include="..\..\license.txt" />
+    <None Include="..\..\readme.txt" />
     <None Include="..\..\res\first.bmp" />
     <None Include="..\..\res\last.bmp" />
     <None Include="..\..\res\next.bmp" />

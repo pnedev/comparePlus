@@ -44,9 +44,9 @@ LRESULT ColorCombo::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 			setColor((COLORREF)wParam);
 
 			_pColorPopup->destroy();
-            delete _pColorPopup;
+			delete _pColorPopup;
 			_pColorPopup = NULL;
-            return TRUE;
+			return TRUE;
 		}
 		case WM_LBUTTONDOWN:
 		case WM_LBUTTONDBLCLK:
@@ -64,7 +64,7 @@ LRESULT ColorCombo::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 			}
 			return TRUE;
 		}
-        case COLOR_POPUP_CANCEL:
+		case COLOR_POPUP_CANCEL:
 		case WM_DESTROY:
 		{
 			if (_pColorPopup != NULL) {
@@ -74,12 +74,12 @@ LRESULT ColorCombo::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 			}
 			break;
 		}
-        case WM_PAINT:
-        {
+		case WM_PAINT:
+		{
 			LRESULT lpRet = ::CallWindowProc(_hDefaultComboProc, hwnd, Message, wParam, lParam);
 			DrawColor((HDC)wParam);
 			return lpRet;
-        }
+		}
 		default :
 			break;
 	}
@@ -101,7 +101,7 @@ void ColorCombo::DrawColor(HDC hDcExt)
 	/* draw item */
 	::FillRect(hDc, &_comboBoxInfo.rcItem, hBrush);
 
-    /* draw selection on focus */
+	/* draw selection on focus */
 	if (_comboBoxInfo.hwndCombo == ::GetFocus())
 	{
 		RECT	rc	= _comboBoxInfo.rcItem;

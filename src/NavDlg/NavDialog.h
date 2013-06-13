@@ -32,15 +32,15 @@ public:
 	NavDialog(void);
 	~NavDialog(void);
 
-    void init(HINSTANCE hInst, NppData nppData);
+	void init(HINSTANCE hInst, NppData nppData);
 	void destroy(void) {};
-   	void doDialog(bool willBeShown = true);
-    void NavDialog::DrawView(long start, long end);
-    void Do(void);
-    void SetColor(int added, int deleted, int changed, int moved, int blank);  
-    void CreateBitmap(void);
+	void doDialog(bool willBeShown = true);
+	void NavDialog::DrawView(long start, long end);
+	void Do(void);
+	void SetColor(int added, int deleted, int changed, int moved, int blank);  
+	void CreateBitmap(void);
 
-    bool ReadyToDraw;
+	bool ReadyToDraw;
 
 protected:
 
@@ -50,41 +50,41 @@ private:
 
 	long current_line;
 
-    HWND m_hWnd;
+	HWND m_hWnd;
 
-    LRESULT OnPaint(HWND hWnd);
+	LRESULT OnPaint(HWND hWnd);
 
-    int m_AddedColor;
-    int m_DeletedColor;
-    int m_ChangedColor;
-    int m_MovedColor;
-    int m_BlankColor;
+	int m_AddedColor;
+	int m_DeletedColor;
+	int m_ChangedColor;
+	int m_MovedColor;
+	int m_BlankColor;
 
-    double m_ScaleFactor;
+	double m_ScaleFactor;
 
-    HDC     m_hdc;
-    HDC     m_hMemDC1;
-    HDC     m_hMemDC2;
-    HDC     m_hMemDCView;
+	HDC     m_hdc;
+	HDC     m_hMemDC1;
+	HDC     m_hMemDC2;
+	HDC     m_hMemDCView;
 
-    HBITMAP m_hMemBMP1;
-    HBITMAP m_hMemBMP2;
-    HBITMAP m_hMemBMPView;
+	HBITMAP m_hMemBMP1;
+	HBITMAP m_hMemBMP2;
+	HBITMAP m_hMemBMPView;
 
-    BITMAP  m_hMemBMPInfo;
-    SIZE    m_hMemBMPSize;
+	BITMAP  m_hMemBMPInfo;
+	SIZE    m_hMemBMPSize;
 
 	NppData	_nppData;
 	tTbData	_data;
 
-    /* Internal use */
+	/* Internal use */
 	RECT    m_rLeft;
-    RECT    m_rRight;	
+	RECT    m_rRight;	
 
-    int     m_TextLength;
+	int     m_TextLength;
 
-    long  *m_ResultsDoc1;
-    long  *m_ResultsDoc2;
+	long  *m_ResultsDoc1;
+	long  *m_ResultsDoc2;
 };
 
 #endif // NAV_DLG_H

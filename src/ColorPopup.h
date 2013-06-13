@@ -27,7 +27,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 class ColorPopup : public Window
 {
 public :
-    ColorPopup() : Window(), isColorChooserLaunched(false) {};
+	ColorPopup() : Window(), isColorChooserLaunched(false) {};
 	ColorPopup(COLORREF defaultColor) : Window(), isColorChooserLaunched(false), _color(defaultColor) {};
 	~ColorPopup(){};
 
@@ -42,21 +42,21 @@ public :
 	
 	void create(int dialogID);
 
-        void doDialog(POINT p) {
-            if (!isCreated())
-                create(IDD_COLOR_POPUP);
-            ::SetWindowPos(_hSelf, HWND_TOP, p.x, p.y, _rc.right - _rc.left, _rc.bottom - _rc.top, SWP_SHOWWINDOW);
+		void doDialog(POINT p) {
+			if (!isCreated())
+				create(IDD_COLOR_POPUP);
+			::SetWindowPos(_hSelf, HWND_TOP, p.x, p.y, _rc.right - _rc.left, _rc.bottom - _rc.top, SWP_SHOWWINDOW);
 	};
 
-    virtual void destroy() {
-	    ::DestroyWindow(_hSelf);
+	virtual void destroy() {
+		::DestroyWindow(_hSelf);
 	};
-    COLORREF getSelColor(){return _color;};
+	COLORREF getSelColor(){return _color;};
 
 private :
 	HWND		_hNpp;
 	RECT		_rc;
-    COLORREF	_color;
+	COLORREF	_color;
 	bool		isColorChooserLaunched;
 
 	static BOOL CALLBACK dlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);

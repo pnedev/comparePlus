@@ -90,7 +90,7 @@ BOOL CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam
 				::SendDlgItemMessage(_hSelf, IDC_COLOR_LIST, LB_ADDSTRING, nColor, (LPARAM) "");
 				::SendDlgItemMessage(_hSelf, IDC_COLOR_LIST, LB_SETITEMDATA , nColor, (LPARAM) colorItems[nColor]);
 			}
-    		return TRUE;
+			return TRUE;
 		}
 		
 		case WM_CTLCOLORLISTBOX:
@@ -170,9 +170,9 @@ BOOL CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam
 
 		case WM_COMMAND:
 			switch (LOWORD(wParam))
-            {
-                case IDOK :
-			    {
+			{
+				case IDOK :
+				{
 					isColorChooserLaunched = true;
 					CHOOSECOLOR cc;                 // common dialog box structure 
 					static COLORREF acrCustClr[16] = {
@@ -202,27 +202,27 @@ BOOL CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam
 						::SendMessage(_hParent, COLOR_POPUP_CANCEL, 0, 0);
 					}
 
-				    return TRUE;
-			    }
+					return TRUE;
+				}
 
-                case IDC_COLOR_LIST :
-                {
-			        if (HIWORD(wParam) == LBN_SELCHANGE)
-		            {
-                        int i = ::SendMessage((HWND)lParam, LB_GETCURSEL, 0L, 0L);
-                        _color = ::SendMessage((HWND)lParam, LB_GETITEMDATA, i, 0L);
+				case IDC_COLOR_LIST :
+				{
+					if (HIWORD(wParam) == LBN_SELCHANGE)
+					{
+						int i = ::SendMessage((HWND)lParam, LB_GETCURSEL, 0L, 0L);
+						_color = ::SendMessage((HWND)lParam, LB_GETITEMDATA, i, 0L);
 
-                        ::SendMessage(_hParent, COLOR_POPUP_OK, _color, 0);
-					    return TRUE;
-		            }
-                }
-			    
-                default :
-                    return FALSE;
-            }
+						::SendMessage(_hParent, COLOR_POPUP_OK, _color, 0);
+						return TRUE;
+					}
+				}
+				
+				default :
+					return FALSE;
+			}
 		
 		case WM_ACTIVATE :
-        {
+		{
 			if (LOWORD(wParam) == WA_INACTIVE)
 				if (!isColorChooserLaunched)
 					::SendMessage(_hParent, COLOR_POPUP_CANCEL, 0, 0);

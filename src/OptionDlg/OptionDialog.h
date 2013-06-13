@@ -32,16 +32,16 @@ class OptionDialog : public StaticDialog
 
 public:
 	OptionDialog() : StaticDialog() {};
-    
-    void init(HINSTANCE hInst, NppData nppData)
+	
+	void init(HINSTANCE hInst, NppData nppData)
 	{
 		_nppData = nppData;
 		Window::init(hInst, nppData._nppHandle);
 	};
 
-    UINT doDialog(struct sUserSettings * Settings);
+	UINT doDialog(struct sUserSettings * Settings);
 
-    virtual void destroy() {};
+	virtual void destroy() {};
 
 protected :
 	BOOL CALLBACK run_dlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
@@ -52,17 +52,17 @@ protected :
 private:
 	/* Handles */
 	NppData			_nppData;
-    HWND			_HSource;
+	HWND			_HSource;
 
-    // Combo color picker
+	// Combo color picker
 	ColorCombo _ColorComboAdded;
 	ColorCombo _ColorComboMoved;
 	ColorCombo _ColorComboRemoved;
 	ColorCombo _ColorComboChanged;
 	ColorCombo _ColorComboBlank;
-    ColorCombo _ColorComboHighlight;
+	ColorCombo _ColorComboHighlight;
 
-    struct sUserSettings* _Settings;
+	struct sUserSettings* _Settings;
 };
 
 #endif // OPTION_DEFINE_H

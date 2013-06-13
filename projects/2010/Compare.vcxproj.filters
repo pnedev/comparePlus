@@ -1,0 +1,247 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\src\AboutDlg\AboutDialog.cpp">
+      <Filter>src\AboutDlg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\AboutDlg\URLCtrl.cpp">
+      <Filter>src\AboutDlg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Common\StaticDialog.cpp">
+      <Filter>src\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Common\SysMsg.cpp">
+      <Filter>src\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Common\stdafx.cpp">
+      <Filter>src\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Common\URLCtrl.cpp">
+      <Filter>src\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sqlite\SqliteHelper.cpp">
+      <Filter>src\sqlite</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libgit2\LibGit2Helper.cpp">
+      <Filter>src\libgit2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\NavDlg\NavDialog.cpp">
+      <Filter>src\NavDlg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\OptionDlg\OptionDialog.cpp">
+      <Filter>src\OptionDlg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\mba\allocator.c">
+      <Filter>src\mba</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\mba\dbug.c">
+      <Filter>src\mba</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\mba\diff.c">
+      <Filter>src\mba</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\mba\hashmap.c">
+      <Filter>src\mba</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\mba\msgno.c">
+      <Filter>src\mba</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\mba\suba.c">
+      <Filter>src\mba</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\mba\varray.c">
+      <Filter>src\mba</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ColorCombo.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ColorPopup.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Compare.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Engine.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\NPPHelpers.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ScmHelper.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\HelpDlg\AboutDialog.h">
+      <Filter>src\AboutDlg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\AboutDlg\URLCtrl.h">
+      <Filter>src\AboutDlg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Common\SciSubClassWrp.h">
+      <Filter>src\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Common\URLCtrl.h">
+      <Filter>src\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Common\stdafx.h">
+      <Filter>src\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\sqlite\SqliteHelper.h">
+      <Filter>src\sqlite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libgit2\LibGit2Helper.h">
+      <Filter>src\libgit2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\NavDlg\NavDialog.h">
+      <Filter>src\NavDlg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\OptionDlg\OptionDialog.h">
+      <Filter>src\OptionDlg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\mba\allocator.h">
+      <Filter>src\mba</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\mba\dbug.h">
+      <Filter>src\mba</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\mba\diff.h">
+      <Filter>src\mba</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\mba\hashmap.h">
+      <Filter>src\mba</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\mba\iterator.h">
+      <Filter>src\mba</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\mba\msgno.h">
+      <Filter>src\mba</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\mba\suba.h">
+      <Filter>src\mba</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\mba\varray.h">
+      <Filter>src\mba</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ColorCombo.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ColorPopup.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Compare.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\CompareResource.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Engine.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\icon_add_16.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\icon_moved_16.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\icon_sub_16.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\icon_warning_16.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\NPPHelpers.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Resource.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ScmHelper.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Common\Window.h">
+      <Filter>src\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Common\Docking.h">
+      <Filter>src\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Common\DockingDlgInterface.h">
+      <Filter>src\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Common\ImageListSet.h">
+      <Filter>src\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Common\Notepad_plus_msgs.h">
+      <Filter>src\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Common\Notepad_plus_rc.h">
+      <Filter>src\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Common\PluginInterface.h">
+      <Filter>src\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Common\Scintilla.h">
+      <Filter>src\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Common\StaticDialog.h">
+      <Filter>src\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Common\SysMsg.h">
+      <Filter>src\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Common\ToolBar.h">
+      <Filter>src\Common</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\res\first.bmp">
+      <Filter>res</Filter>
+    </None>
+    <None Include="..\..\res\last.bmp">
+      <Filter>res</Filter>
+    </None>
+    <None Include="..\..\res\next.bmp">
+      <Filter>res</Filter>
+    </None>
+    <None Include="..\..\res\prev.bmp">
+      <Filter>res</Filter>
+    </None>
+    <None Include="..\..\change.log" />
+    <None Include="..\..\license.txt" />
+    <None Include="..\..\readme.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{d5f31a5f-0ced-423b-8e55-1675379ab148}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="res">
+      <UniqueIdentifier>{052d0315-0399-40e1-8d28-f2411c43502a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\AboutDlg">
+      <UniqueIdentifier>{e57f90f9-c55c-448f-8452-be9ec4ea70e2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\Common">
+      <UniqueIdentifier>{fbf206c1-f4dd-4249-82cc-6fc6c9aeb5d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\libgit2">
+      <UniqueIdentifier>{0416a425-f8f4-479a-8424-9a0ca85bf447}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\mba">
+      <UniqueIdentifier>{81b86379-fae2-4f7e-ade3-bea5c04730fd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\OptionDlg">
+      <UniqueIdentifier>{cc4ae5a0-caf0-4bca-ab24-6285b6ae4312}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\NavDlg">
+      <UniqueIdentifier>{0722d389-e994-46f1-8f46-89e6aba64d8e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\sqlite">
+      <UniqueIdentifier>{1da4d896-dc9e-465e-93e9-586d52a7fd21}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\..\src\Compare.rc">
+      <Filter>src</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
