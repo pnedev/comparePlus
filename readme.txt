@@ -1,22 +1,16 @@
-To install copy ComparePlugin.dll into the plugins directory C:\Program Files\Notepad++\Plugins
-
-A couple of notes:
-------------------
-
-	Using or clearing the compare plugin will cause the undo buffer to be cleared. 
-	Unfortuntely, by adding lines, the editor no longer knows where the edit was, 
-	and would put it in a random spot
-
-	When you save a file during a compare, all of the extra lines are removed before the save 
-	starts and added back in after the save is done. 
-	This may cause a delay, and slight movement in the scrollbar.
-	
-	In order to clear the change indicators, the entire document style is cleared, and than 
-	refreshed by unfolding all the lines. 
-	So all lines will be unfolded after a compare or clear.
+To install manually, copy ComparePlugin.dll into the plugins directory C:\Program Files\Notepad++\Plugins
 	
 Change Log:
 -----------
+
+1.5.7
+
+    1. NEW: *** Compare released under GPLv3 ***
+    2. NEW: Change behavior when files match (immediately exit compare)
+    3. FIXED: Differences highlighting
+    4. FIXED: Differences line width in Navigation pane is at least 1 pixel.
+    5. FIXED: Weird focus clipping while shutting down (no application gets focus again, when N++ is gone).
+    6. FIXED: Some menu items where not disabled aymore when compare is not running
 
 1.5.6.3
 

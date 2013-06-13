@@ -84,8 +84,9 @@
         <GUIConfig name="ScintillaGlobalSettings" enableMultiSelection="no" />
         <GUIConfig name="openSaveDir" value="0" defaultDirPath="" />
         <GUIConfig name="titleBar" short="no" />
-        <GUIConfig name="stylerTheme" path="C:\Users\Admin\Desktop\Compare-plugin\Notepad++\stylers.xml" />
+        <GUIConfig name="stylerTheme" path="C:\Users\kbu\Desktop\TEMP\Compare-plugin\Notepad++\stylers.xml" />
         <GUIConfig name="DockingManager" leftWidth="200" rightWidth="38" topHeight="200" bottomHeight="200">
+            <PluginDlg pluginName="ComparePlugin.dll" id="10" curr="1" prev="-1" isVisible="no" />
             <PluginDlg pluginName="ComparePlugin.dll" id="9" curr="1" prev="-1" isVisible="no" />
             <ActiveTabs cont="0" activeTab="-1" />
             <ActiveTabs cont="1" activeTab="-1" />
@@ -98,9 +99,6 @@
     <History nbMaxFile="15" inSubMenu="no" customLength="-1">
         <File filename="C:\Users\Admin\Desktop\vs2.py" />
         <File filename="C:\Users\Admin\Desktop\decimal - Copy.py" />
-        <File filename="C:\Users\Admin\Desktop\decimal.py" />
-        <File filename="C:\Users\Admin\Desktop\npp bugs\decimal - Copy.py" />
-        <File filename="C:\Users\Admin\Desktop\npp bugs\decimal.py" />
     </History>
     <ProjectPanels>
         <ProjectPanel id="0" workSpaceFile="" />

@@ -1,23 +1,20 @@
-//this file is part of notepad++
-//Copyright (C)2003 Don HO ( donho@altern.org )
-//
-//This program is free software; you can redistribute it and/or
-//modify it under the terms of the GNU General Public License
-//as published by the Free Software Foundation; either
-//version 2 of the License, or (at your option) any later version.
-//
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU General Public License for more details.
-//
-//You should have received a copy of the GNU General Public License
-//along with this program; if not, write to the Free Software
-//Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+/*
+This file is part of Compare plugin for Notepad++
+Copyright (C)2011 Jean-Sébastien Leroy (jean.sebastien.leroy@gmail.com)
 
-//--------------------------------------------------------------------------
-// Compare plugin by Ty Landercasper & Jean-sébastien Leroy
-//--------------------------------------------------------------------------
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include "Compare.h"
 #include "NPPHelpers.h"
@@ -211,9 +208,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
 			funcItem[CMD_ABOUT]._init2Check = false;
 
 			for(int i = 0; i < MAXCOMPARE; i++)
-			{
 				compareDocs[i]=-1;
-			}
 
 			TCHAR nppPath[MAX_PATH];
 			GetModuleFileName((HMODULE)hModule, nppPath, sizeof(nppPath));
@@ -230,7 +225,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
 			PathAppend(localConfPath, localConfFile);
 
 			// Test if localConf.xml exist
-			bool isLocal = (PathFileExists(localConfPath) == TRUE);
+            const bool isLocal = (PathFileExists(localConfPath) == TRUE);
 
 			if (isLocal) 
 			{
@@ -250,15 +245,22 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
 			}
 
 			loadSettings();
+            break;
 		}
-		break;
 
 	case DLL_PROCESS_DETACH:
+        {
+            if (tbNext.hToolbarBmp)
+                ::DeleteObject(tbNext.hToolbarBmp);
 
-		if (tbNext.hToolbarBmp)  ::DeleteObject(tbNext.hToolbarBmp);
-		if (tbPrev.hToolbarBmp)  ::DeleteObject(tbPrev.hToolbarBmp);
-		if (tbFirst.hToolbarBmp) ::DeleteObject(tbFirst.hToolbarBmp);
-		if (tbLast.hToolbarBmp)  ::DeleteObject(tbLast.hToolbarBmp);
+            if (tbPrev.hToolbarBmp)
+                ::DeleteObject(tbPrev.hToolbarBmp);
+
+            if (tbFirst.hToolbarBmp)
+                ::DeleteObject(tbFirst.hToolbarBmp);
+
+            if (tbLast.hToolbarBmp)
+                ::DeleteObject(tbLast.hToolbarBmp);
 
 		saveSettings();
 		OptionDlg.destroy();
@@ -266,17 +268,12 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
 		NavDlg.destroy();
 
 		// Don't forget to deallocate your shortcut here
-		delete funcItem[CMD_COMPARE]._pShKey;
-		delete funcItem[CMD_CLEAR_RESULTS]._pShKey;
-		delete funcItem[CMD_COMPARE_LAST_SAVE]._pShKey;
-		delete funcItem[CMD_COMPARE_SVN_BASE]._pShKey;
-		delete funcItem[CMD_COMPARE_GIT_BASE]._pShKey;
-		delete funcItem[CMD_PREV]._pShKey;
-		delete funcItem[CMD_NEXT]._pShKey;
-		delete funcItem[CMD_FIRST]._pShKey;
-		delete funcItem[CMD_LAST]._pShKey;
+            for (int i = 0; i < NB_MENU_COMMANDS; i++)
+                if (funcItem[i]._pShKey != NULL)
+                    delete funcItem[i]._pShKey;
 
 		break;
+        }
 
 	case DLL_THREAD_ATTACH:
 		break;
@@ -385,20 +382,27 @@ void saveSettings(void)
 
 int getCompare(int window)
 {
-	for(int i = 0; i < MAXCOMPARE; i++) if(compareDocs[i] == window) return i;
+    for(int i = 0; i < MAXCOMPARE; i++)
+        if(compareDocs[i] == window)
+            return i;
+
 	return -1;
 }
 
 void removeCompare(int window)
 {
-	int val = getCompare(window);
-	if(val != -1) compareDocs[val] = -1;
+    const int val = getCompare(window);
+    if(val != -1)
+        compareDocs[val] = -1;
 }
 
 int setCompare(int window)
 {
-	int val = getCompare(window);
-	if(val != -1) return val;
+    const int val = getCompare(window);
+
+    if(val != -1)
+        return val;
+
 	for(int i = 0; i < MAXCOMPARE; i++)
 	{
 		if(compareDocs[i] == -1)
@@ -407,6 +411,7 @@ int setCompare(int window)
 			return i;
 		}
 	}
+
 	return -1;
 }
 
@@ -415,9 +420,9 @@ void alignMatches()
 	HMENU hMenu = GetMenu(nppData._nppHandle);
 	Settings.AddLine = !Settings.AddLine;
 	if (hMenu)
-	{
-		CheckMenuItem(hMenu, funcItem[CMD_ALIGN_MATCHES]._cmdID, MF_BYCOMMAND | (Settings.AddLine ? MF_CHECKED : MF_UNCHECKED));
-	}      
+        CheckMenuItem(hMenu,
+                      funcItem[CMD_ALIGN_MATCHES]._cmdID,
+                      MF_BYCOMMAND | (Settings.AddLine ? MF_CHECKED : MF_UNCHECKED));
 }
 
 void includeSpacing()
@@ -425,9 +430,9 @@ void includeSpacing()
 	HMENU hMenu = GetMenu(nppData._nppHandle);
 	Settings.IncludeSpace = !Settings.IncludeSpace;
 	if (hMenu)
-	{
-		CheckMenuItem(hMenu, funcItem[CMD_IGNORE_SPACING]._cmdID, MF_BYCOMMAND | (Settings.IncludeSpace ? MF_CHECKED : MF_UNCHECKED));
-	}  
+        CheckMenuItem(hMenu,
+                      funcItem[CMD_IGNORE_SPACING]._cmdID,
+                      MF_BYCOMMAND | (Settings.IncludeSpace ? MF_CHECKED : MF_UNCHECKED));
 }
 
 void detectMoves()
@@ -435,9 +440,9 @@ void detectMoves()
 	HMENU hMenu = GetMenu(nppData._nppHandle);
 	Settings.DetectMove = !Settings.DetectMove;
 	if (hMenu)
-	{
-		CheckMenuItem(hMenu, funcItem[CMD_DETECT_MOVES]._cmdID, MF_BYCOMMAND | (Settings.DetectMove ? MF_CHECKED : MF_UNCHECKED));
-	}  
+        CheckMenuItem(hMenu,
+                      funcItem[CMD_DETECT_MOVES]._cmdID,
+                      MF_BYCOMMAND | (Settings.DetectMove ? MF_CHECKED : MF_UNCHECKED));
 }
 
 void openOptionDlg(void)
@@ -469,17 +474,17 @@ void jumpChangedLines(bool direction)
 	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
 
 	if (currentEdit != -1) 
-	{
 		CurView = (currentEdit == 0) ? (nppData._scintillaMainHandle) : (nppData._scintillaSecondHandle);
-	}
 
-	int sci_search_mask = (1 << MARKER_MOVED_LINE) | (1 << MARKER_CHANGED_LINE) | 
-						  (1 << MARKER_ADDED_LINE) | (1 << MARKER_REMOVED_LINE) |
-						  (1 << MARKER_BLANK_LINE);
+    const int sci_search_mask = (1 << MARKER_MOVED_LINE)
+                              | (1 << MARKER_CHANGED_LINE)
+                              | (1 << MARKER_ADDED_LINE)
+                              | (1 << MARKER_REMOVED_LINE)
+                              | (1 << MARKER_BLANK_LINE);
 
-	int posStart = ::SendMessage(CurView, SCI_GETCURRENTPOS, 0, 0);
+    const int posStart = ::SendMessage(CurView, SCI_GETCURRENTPOS, 0, 0);
+    const int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0);
 	int lineStart = ::SendMessage(CurView, SCI_LINEFROMPOSITION, posStart, 0);
-	int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0);
 
 	int currLine;
 	int nextLine;
@@ -507,9 +512,12 @@ void jumpChangedLines(bool direction)
 			break;
 		}
 
-		if (nextLine != currLine) break;
-		else if (direction) lineStart++;
-		else lineStart--;
+        if (nextLine != currLine)
+            break;
+        else if (direction)
+            lineStart++;
+        else
+            lineStart--;
 	}
 
 	::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
@@ -518,12 +526,14 @@ void jumpChangedLines(bool direction)
 
 void Prev(void)
 {
-	if (active) jumpChangedLines(false);
+    if (active)
+        jumpChangedLines(false);
 }
 
 void Next(void)
 {
-	if (active) jumpChangedLines(true);
+    if (active)
+        jumpChangedLines(true);
 }
 
 void First(void)
@@ -535,16 +545,15 @@ void First(void)
 		::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
 
 		if (currentEdit != -1) 
-		{
 			CurView = (currentEdit == 0) ? (nppData._scintillaMainHandle) : (nppData._scintillaSecondHandle);
-		}
 
-		int sci_search_mask = (1 << MARKER_MOVED_LINE) | (1 << MARKER_CHANGED_LINE) | 
-							  (1 << MARKER_ADDED_LINE) | (1 << MARKER_REMOVED_LINE) |
-							  (1 << MARKER_BLANK_LINE);
+        const int sci_search_mask = (1 << MARKER_MOVED_LINE)
+                                  | (1 << MARKER_CHANGED_LINE)
+                                  | (1 << MARKER_ADDED_LINE)
+                                  | (1 << MARKER_REMOVED_LINE)
+                                  | (1 << MARKER_BLANK_LINE);
 
-		int currLine = 0;
-		int nextLine = ::SendMessage(CurView, SCI_MARKERNEXT, currLine, sci_search_mask );
+        const int nextLine = ::SendMessage(CurView, SCI_MARKERNEXT, 0, sci_search_mask );
 		::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
 		::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0);
 	}
@@ -559,16 +568,16 @@ void Last(void)
 		::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
 
 		if (currentEdit != -1) 
-		{
 			CurView = (currentEdit == 0) ? (nppData._scintillaMainHandle) : (nppData._scintillaSecondHandle);
-		}
 
-		int sci_search_mask = (1 << MARKER_MOVED_LINE) | (1 << MARKER_CHANGED_LINE) | 
-							  (1 << MARKER_ADDED_LINE) | (1 << MARKER_REMOVED_LINE) |
-							  (1 << MARKER_BLANK_LINE);
+        const int sci_search_mask = (1 << MARKER_MOVED_LINE)
+                                  | (1 << MARKER_CHANGED_LINE)
+                                  | (1 << MARKER_ADDED_LINE)
+                                  | (1 << MARKER_REMOVED_LINE)
+                                  | (1 << MARKER_BLANK_LINE);
 
-		int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0);
-		int nextLine = ::SendMessage(CurView, SCI_MARKERPREVIOUS, lineMax, sci_search_mask);
+        const int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0);
+        const int nextLine = ::SendMessage(CurView, SCI_MARKERPREVIOUS, lineMax, sci_search_mask);
 		::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
 		::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0);
 	}
@@ -585,9 +594,9 @@ void ViewNavigationBar(void)
 	Settings.UseNavBar = !Settings.UseNavBar;
 
 	if (hMenu)
-	{
-		CheckMenuItem(hMenu, funcItem[CMD_USE_NAV_BAR]._cmdID, MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
-	}
+        CheckMenuItem(hMenu,
+                      funcItem[CMD_USE_NAV_BAR]._cmdID,
+                      MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
 
 	if (active)
 	{
@@ -633,11 +642,6 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM /*wPar
 		::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_2]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
 		::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_3]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
 		::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_4]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
-		::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYCOMMAND | MF_GRAYED);
-		::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_GRAYED);
-		::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_GRAYED);
-		::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_GRAYED);
-		SendMessage(nppData._nppHandle, TB_ENABLEBUTTON, CMD_PREV, MAKELONG(FALSE, 0));
 	}
 
 	return TRUE;
@@ -776,13 +780,10 @@ void reset()
 		HWND window = getCurrentHScintilla(win);
 
 		if(doc1Index != -1)
-		{
 			clearWindow(nppData._scintillaMainHandle, true);
-		}
+
 		if(doc2Index != -1)
-		{
 			clearWindow(nppData._scintillaSecondHandle, true);
-		}
 
 		::SendMessageA(window, SCI_GRABFOCUS, 0, (LPARAM)1);
 
@@ -829,17 +830,20 @@ void reset()
 
 		// Disable Prev/Next menu entry
 		HMENU hMenu = ::GetMenu(nppData._nppHandle);
-		::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYCOMMAND | MF_GRAYED);
-		::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_GRAYED);
-		::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_GRAYED);
-		::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_GRAYED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+        ::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
 
 		// Restore side bar item entry state (because tick has been removed by the docked window)
 		CheckMenuItem(hMenu, funcItem[CMD_USE_NAV_BAR]._cmdID, MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
 
 		// Restore previous read-only attribute
-		if (RODoc1 == 1) SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, true, 0);
-		if (RODoc2 == 1) SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
+        if (RODoc1 == 1)
+            SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, true, 0);
+
+        if (RODoc2 == 1)
+            SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
 	}
 }
 
@@ -848,9 +852,7 @@ void compareLocal()
 	TCHAR file[MAX_PATH];
 	::SendMessage(nppData._nppHandle,NPPM_GETCURRENTDIRECTORY,0,(LPARAM)file);
 	if(file[0] != 0)
-	{
 		::SendMessage(nppData._nppHandle,NPPM_GETFULLCURRENTPATH,0,(LPARAM)file);
-	}
 	openFile(file);
 }
 
@@ -939,9 +941,7 @@ bool compareNew()
 	char **doc1 = getAllLines(nppData._scintillaMainHandle, &doc1Length, &lineNum1);
 
 	if(doc1Length < 1)
-	{
 		return true;
-	}
 
 	int doc2Length;
 	int *lineNum2;
@@ -949,9 +949,7 @@ bool compareNew()
 	char **doc2 = getAllLines(nppData._scintillaSecondHandle, &doc2Length, &lineNum2);
 	
 	if(doc2Length < 1)
-	{
 		return true;
-	}
 
 	int	doc1Changed = 0;
 	int	doc2Changed = 0;
@@ -1012,7 +1010,8 @@ bool compareNew()
 	int doc1Offset = 0;
 	int doc2Offset = 0;
 
-	//switch from blocks of lines to one change per line. Change CHANGE to DELETE or INSERT if there are no changes on that line
+    // Switch from blocks of lines to one change per line.
+    // Change CHANGE to DELETE or INSERT if there are no changes on that line
 	int added;
 
 	for (int i = 0; i < sn; i++) 
@@ -1232,7 +1231,6 @@ bool startCompare()
 	int win = 3;
 
 	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&win);
-	HWND window = getCurrentHScintilla(win);
 
 	if(!IsWindowVisible(nppData._scintillaMainHandle) || !IsWindowVisible(nppData._scintillaSecondHandle))
 	{	
@@ -1285,14 +1283,10 @@ bool startCompare()
 	HMENU hMenu = ::GetMenu(nppData._nppHandle);
 
 	if ((::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0)
-	{
 		::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLV, 0), 0);
-	}
 
 	if ((::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0)
-	{
 		::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
-	}
 
 	::SendMessageA(nppData._scintillaMainHandle, SCI_GOTOPOS, 1, 0);
 	::SendMessageA(nppData._scintillaSecondHandle, SCI_GOTOPOS, 1, 0);
@@ -1301,6 +1295,7 @@ bool startCompare()
 	::SendMessageA(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
 	::SendMessageA(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
 
+    // Compare files (return False if files differs)
 	bool result = compareNew();
 
 	::SendMessageA(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
@@ -1308,8 +1303,11 @@ bool startCompare()
 	::SendMessageA(nppData._scintillaSecondHandle/*window*/, SCI_GRABFOCUS, 0, (LPARAM)1);
 
 	// Restore previous read-only attribute
-	if (RODoc1 == 1) SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, true, 0);
-	if (RODoc2 == 1) SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
+    if (RODoc1 == 1)
+        SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, true, 0);
+
+    if (RODoc2 == 1)
+        SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
 
 	if (!result)
 	{
@@ -1335,8 +1333,8 @@ bool startCompare()
 
 		}
 		// Enable Prev/Next menu entry
+        ::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID,  MF_BYCOMMAND | MF_ENABLED);
 		::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-		::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, MF_BYCOMMAND | MF_ENABLED);
 		::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
 		::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
 	}
@@ -1346,18 +1344,23 @@ bool startCompare()
 
 void compare()
 {
-	startCompare();
+    bool ret = startCompare();
+
+    // Files match - exit comparison
+    if (ret)
+        reset();
 }
 
 extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 {
-	long start, end;
-
 	switch (notifyCode->nmhdr.code) 
 	{
 	case SCN_PAINTED:
+        {
 		if(active) 
 		{            
+                long start, end;
+
 			start = SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
 			end   = SendMessage(nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0) + start;
 
@@ -1368,18 +1371,44 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 			}
 		}
 		break;
+        }
 
 	case NPPN_TBMODIFICATION:
 		{         
-			tbNext.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_NEXT), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
-			tbPrev.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_PREV), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
-			tbFirst.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_FIRST), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
-			tbLast.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_LAST), IMAGE_BITMAP, 0, 0, (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
+            tbNext.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule,
+                                                      MAKEINTRESOURCE(IDB_NEXT),
+                                                      IMAGE_BITMAP,
+                                                      0, 0,
+                                                      (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
+
+            tbPrev.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule,
+                                                      MAKEINTRESOURCE(IDB_PREV),
+                                                      IMAGE_BITMAP,
+                                                      0, 0,
+                                                      (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
+
+            tbFirst.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule,
+                                                       MAKEINTRESOURCE(IDB_FIRST),
+                                                       IMAGE_BITMAP,
+                                                       0, 0,
+                                                       (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
+
+            tbLast.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule,
+                                                      MAKEINTRESOURCE(IDB_LAST),
+                                                      IMAGE_BITMAP,
+                                                      0, 0,
+                                                      (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
 
 			::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_FIRST]._cmdID, (LPARAM)&tbFirst);
 			::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_PREV]._cmdID, (LPARAM)&tbPrev);
 			::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_NEXT]._cmdID, (LPARAM)&tbNext);
 			::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_LAST]._cmdID, (LPARAM)&tbLast);
+
+            HMENU hMenu = ::GetMenu(nppData._nppHandle);
+            ::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+            ::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+            ::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+            ::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
 
 			::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID, (LPARAM)Settings.AddLine);
 			::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACING]._cmdID, (LPARAM)Settings.IncludeSpace);
@@ -1416,7 +1445,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 			{
 				lastEmptyLines=NULL;
 			}
-
 			break;
 		}
 
@@ -1441,8 +1469,9 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 				lastEmptyLines = NULL;
 				emptyLinesDoc[0] = 0;
 			}
+            break;
 		}
-		break;
+
 	case NPPN_SHUTDOWN:
 		{
 			// Always close it, else N++'s plugin manager would call 'ViewNavigationBar'
