@@ -62,7 +62,7 @@ BEGIN
     CTEXT           "http://sourceforge.net/projects/npp-plugins/",IDC_NPP_PLUGINS_URL,7,106,176,8
     CTEXT           "Jean-Sébastien Leroy",IDC_EMAIL_LINK_JSL,7,56,176,8
     CTEXT           "Ty Landercasper",IDC_EMAIL_LINK_TYL,7,42,176,8
-    CTEXT           "Compare Plugin 1.5.6.3",IDC_EMAIL_LINK5,7,7,176,13,0,WS_EX_DLGMODALFRAME
+    CTEXT           "Compare Plugin 1.5.6.4",IDC_EMAIL_LINK5,7,7,176,13,0,WS_EX_DLGMODALFRAME
     CTEXT           "Website:",IDC_NPP_PLUGINS_URL2,7,92,176,8
     CTEXT           "Authors:",IDC_NPP_PLUGINS_URL3,7,28,176,8
     CTEXT           "ufo",IDC_EMAIL_LINK_UFO,7,71,176,8

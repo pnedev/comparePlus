@@ -10,6 +10,10 @@ Change Log:
     2. NEW: Change behavior when files match (immediately exit compare)
     3. FIXED: Some menu items where not disabled anymore when compare is not running
 
+1.5.6.4
+
+    1. FIXED: Restore wrap mode after comparison
+
 1.5.6.3
 
     1. NEW: Automatically jump to first difference after comparison

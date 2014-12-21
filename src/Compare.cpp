@@ -1271,6 +1271,7 @@ bool startCompare()
 	if ((RODoc2 = SendMessage(nppData._scintillaSecondHandle, SCI_GETREADONLY, 0, 0)) == 1)
 		SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, false, 0);
 
+	int wrapMode = SendMessageA(nppData._scintillaMainHandle, SCI_GETWRAPMODE, 0, 0);
 	SendMessageA(nppData._scintillaMainHandle, SCI_SETWRAPMODE, SC_WRAP_NONE, 0);
 	SendMessageA(nppData._scintillaSecondHandle, SCI_SETWRAPMODE, SC_WRAP_NONE, 0);
 
@@ -1311,6 +1312,9 @@ bool startCompare()
 
 	if (RODoc2 == 1)
 		SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
+
+	SendMessageA(nppData._scintillaMainHandle, SCI_SETWRAPMODE, wrapMode, 0);
+	SendMessageA(nppData._scintillaSecondHandle, SCI_SETWRAPMODE, wrapMode, 0);
 
 	if (!result)
 	{
