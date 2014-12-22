@@ -196,8 +196,8 @@ IDB_PREV                BITMAP                  "..\\res\\prev.bmp"
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,5,6,3
- PRODUCTVERSION 1,5,6,3
+ FILEVERSION 1,5,6,4
+ PRODUCTVERSION 1,5,6,4
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -213,12 +213,12 @@ BEGIN
         BLOCK "040c04b0"
         BEGIN
             VALUE "FileDescription", "Compare"
-            VALUE "FileVersion", "1, 5, 6, 3"
+            VALUE "FileVersion", "1, 5, 6, 4"
             VALUE "InternalName", "Compare"
-            VALUE "LegalCopyright", "Copyright (C) 2013"
+            VALUE "LegalCopyright", "Copyright (C) 2014"
             VALUE "OriginalFilename", "Compare"
             VALUE "ProductName", "Compare"
-            VALUE "ProductVersion", "1, 5, 6, 3"
+            VALUE "ProductVersion", "1, 5, 6, 4"
         END
     END
     BLOCK "VarFileInfo"
