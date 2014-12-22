@@ -12,7 +12,8 @@ Change Log:
 
 1.5.6.4
 
-    1. FIXED: Restore wrap mode after comparison
+    1. NEW: Support viewing differences in "Word wrap" mode
+    2. FIXED: Restore "Synchronize Vertical Scrolling" and "Synchronize Horizontal Scrolling" after "Clear Results"
 
 1.5.6.3
 

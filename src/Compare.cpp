@@ -31,6 +31,8 @@ blankLineList *lastEmptyLines=NULL;
 int  topLine = 0;
 long start_old = -1;
 bool panelsOpened = false;
+bool syncScrollVwasChecked = false;
+bool syncScrollHwasChecked = false;
 
 const TCHAR PLUGIN_NAME[] = TEXT("Compare");
 TCHAR iniFilePath[MAX_PATH];
@@ -787,8 +789,10 @@ void reset()
 
 		::SendMessageA(window, SCI_GRABFOCUS, 0, (LPARAM)1);
 
-		::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLV, 0), 0);
-		::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);	
+        if (syncScrollVwasChecked)
+            ::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLV, 0), 0);
+        if (!syncScrollHwasChecked)
+            ::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
 
 		if(panelsOpened)
 		{
@@ -1271,10 +1275,6 @@ bool startCompare()
 	if ((RODoc2 = SendMessage(nppData._scintillaSecondHandle, SCI_GETREADONLY, 0, 0)) == 1)
 		SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, false, 0);
 
-	int wrapMode = SendMessageA(nppData._scintillaMainHandle, SCI_GETWRAPMODE, 0, 0);
-	SendMessageA(nppData._scintillaMainHandle, SCI_SETWRAPMODE, SC_WRAP_NONE, 0);
-	SendMessageA(nppData._scintillaSecondHandle, SCI_SETWRAPMODE, SC_WRAP_NONE, 0);
-
 	setStyles(Settings);
 
 	int doc1 = SendMessageA(nppData._scintillaMainHandle, SCI_GETDOCPOINTER, 0, 0);
@@ -1286,15 +1286,15 @@ bool startCompare()
 	/* sync pannels */
 	HMENU hMenu = ::GetMenu(nppData._nppHandle);
 
-	if ((::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0)
-		::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLV, 0), 0);
-
-	if ((::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0)
-		::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
+    syncScrollVwasChecked = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
+    syncScrollHwasChecked = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
+    if (syncScrollVwasChecked)
+        ::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLV, 0), 0);
+    if (syncScrollHwasChecked)
+        ::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
 
 	::SendMessageA(nppData._scintillaMainHandle, SCI_GOTOPOS, 1, 0);
 	::SendMessageA(nppData._scintillaSecondHandle, SCI_GOTOPOS, 1, 0);
-	::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLV, 0), 0);
 	::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
 	::SendMessageA(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
 	::SendMessageA(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
@@ -1312,9 +1312,6 @@ bool startCompare()
 
 	if (RODoc2 == 1)
 		SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
-
-	SendMessageA(nppData._scintillaMainHandle, SCI_SETWRAPMODE, wrapMode, 0);
-	SendMessageA(nppData._scintillaSecondHandle, SCI_SETWRAPMODE, wrapMode, 0);
 
 	if (!result)
 	{
@@ -1422,6 +1419,29 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 			::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID, (LPARAM)Settings.DetectMove);
 			::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_USE_NAV_BAR]._cmdID, (LPARAM)Settings.UseNavBar);
 
+			break;
+		}
+
+	case SCN_UPDATEUI:
+		{
+			if (active)
+			{
+				if (notifyCode->updated & (SC_UPDATE_SELECTION | SC_UPDATE_V_SCROLL))
+				{
+					HWND CurView = NULL;
+					int currentEdit;
+					::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
+					if (currentEdit != -1)
+					{
+						CurView = (currentEdit == 0) ? (nppData._scintillaMainHandle) : (nppData._scintillaSecondHandle);
+                        int activeViewTopLine = ::SendMessage(CurView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+                        activeViewTopLine = ::SendMessage(CurView, SCI_DOCLINEFROMVISIBLE, activeViewTopLine, 0);
+                        CurView = (currentEdit == 0) ? (nppData._scintillaSecondHandle) : (nppData._scintillaMainHandle);
+                        int otherViewTopLine = ::SendMessage(CurView, SCI_VISIBLEFROMDOCLINE, activeViewTopLine, 0);
+                        ::SendMessage(CurView, SCI_SETFIRSTVISIBLELINE, otherViewTopLine, 0);
+					}
+				}
+			}
 			break;
 		}
 
