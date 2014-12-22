@@ -1215,16 +1215,9 @@ bool compareNew()
 			return true;
 		}
 
-		int nextLine = ::SendMessage(nppData._scintillaMainHandle, SCI_MARKERNEXT, 0,
-									 (1 << MARKER_MOVED_LINE)
-								   | (1 << MARKER_CHANGED_LINE)
-								   | (1 << MARKER_ADDED_LINE)
-								   | (1 << MARKER_REMOVED_LINE)
-								   | (1 << MARKER_BLANK_LINE));
-		::SendMessage(nppData._scintillaMainHandle, SCI_DOCUMENTEND, 0, 0);
-		::SendMessage(nppData._scintillaMainHandle, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
-		::SendMessage(nppData._scintillaMainHandle, SCI_GOTOLINE, nextLine, 0);
-		::SendMessage(nppData._scintillaSecondHandle, SCI_GOTOLINE, nextLine, 0);
+        ::SendMessageA(nppData._scintillaMainHandle, SCI_SHOWLINES, 0, (LPARAM)1);
+        ::SendMessageA(nppData._scintillaSecondHandle, SCI_SHOWLINES, 0, (LPARAM)1);
+        First();
 
 		return false;
 	}
