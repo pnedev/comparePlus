@@ -4,11 +4,13 @@ into the plugins directory C:\Program Files\Notepad++\Plugins.
 Change Log:
 -----------
 
-1.5.7
-
-    1. NEW: *** Compare released under GPLv3 ***
-    2. NEW: Change behavior when files match (immediately exit compare)
-    3. FIXED: Some menu items where not disabled anymore when compare is not running
+[1.5.7]
+[    1. NEW: *** Compare released under GPLv3 ***]
+[    2. NEW: Change behavior when files match (immediately exit compare)]
+[    3. FIXED: Some menu items where not disabled anymore when compare is not running]
+[* This version was never released by J. Leroy, but its changes are downmerged since *]
+[* version 1.5.6.3. Also I (ufo) will never make any version number higher than 1.5.6.x, *]
+[* since I don't know if 1.5.7 will ever get released. *]
 
 1.5.6.4
 
