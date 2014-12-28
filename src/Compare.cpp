@@ -27,6 +27,8 @@ int compareDocs[MAXCOMPARE];
 int  tempWindow = -1;
 bool notepadVersionOk = false;
 bool active = false;
+bool skipAutoReset = false;
+int closingWin = -1;
 blankLineList *lastEmptyLines=NULL;
 int  topLine = 0;
 long start_old = -1;
@@ -470,13 +472,7 @@ void openOptionDlg(void)
 
 void jumpChangedLines(bool direction)
 {
-	HWND CurView = NULL;
-	int currentEdit;
-
-	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
-
-	if (currentEdit != -1) 
-		CurView = (currentEdit == 0) ? (nppData._scintillaMainHandle) : (nppData._scintillaSecondHandle);
+	HWND CurView = getCurrentWindow();
 
 	const int sci_search_mask = (1 << MARKER_MOVED_LINE)
 							  | (1 << MARKER_CHANGED_LINE)
@@ -555,16 +551,8 @@ void First(void)
 {
 	if (active)
 	{
-		HWND CurView = NULL;
-		HWND OtherView = NULL;
-		int currentEdit;
-		::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
-
-		if (currentEdit != -1)
-		{
-			CurView = (currentEdit == 0) ? (nppData._scintillaMainHandle) : (nppData._scintillaSecondHandle);
-			OtherView = (currentEdit == 0) ? (nppData._scintillaSecondHandle) : (nppData._scintillaMainHandle);
-		}
+		HWND CurView = getCurrentWindow();
+		HWND OtherView = getOtherWindow();
 
 		const int sci_search_mask = (1 << MARKER_MOVED_LINE)
 								  | (1 << MARKER_CHANGED_LINE)
@@ -584,12 +572,7 @@ void Last(void)
 {
 	if (active)
 	{
-		HWND CurView = NULL;
-		int currentEdit;
-		::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
-
-		if (currentEdit != -1) 
-			CurView = (currentEdit == 0) ? (nppData._scintillaMainHandle) : (nppData._scintillaSecondHandle);
+		HWND CurView = getCurrentWindow();
 
 		const int sci_search_mask = (1 << MARKER_MOVED_LINE)
 								  | (1 << MARKER_CHANGED_LINE)
@@ -695,7 +678,9 @@ HWND openTempFile(void)
 	if(originalwindow == window)
 	{
 		::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)original);
+		skipAutoReset = true;
 		SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_GOTO_ANOTHER_VIEW, 0);
+		skipAutoReset = false;
 		//::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)compareFilePath);
 		panelsOpened = true;
 	}
@@ -795,10 +780,8 @@ void reset()
 
 		int doc1Index = getCompare(doc1);
 		int doc2Index = getCompare(doc2);
-		int win = 3;
 
-		::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&win);
-		HWND window = getCurrentHScintilla(win);
+		HWND window = getCurrentWindow();
 
 		if(doc1Index != -1)
 			clearWindow(nppData._scintillaMainHandle, true);
@@ -813,22 +796,26 @@ void reset()
         if (!syncScrollHwasChecked)
             ::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
 
-		if(panelsOpened)
+		if(panelsOpened && (doc2 != closingWin))
 		{
 			::SendMessageA(nppData._scintillaSecondHandle, SCI_GRABFOCUS, 0, (LPARAM)0);
+			skipAutoReset = true;
 			SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_GOTO_ANOTHER_VIEW, 0);
+			skipAutoReset = false;
 		}
 
 		if(tempWindow!=-1)
 		{
 			::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)compareFilePath);
-			window = getCurrentWindow();	
+			window = getCurrentWindow();
 			int tempPointer = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
-			
-			if(tempPointer == tempWindow)
+
+			if ((tempPointer == tempWindow) && (getCompare(tempPointer) != -1))
 			{
-				SendMessageA(window,SCI_EMPTYUNDOBUFFER,0,0);
+				SendMessageA(window, SCI_EMPTYUNDOBUFFER, 0, 0);
+				skipAutoReset = true;
 				SendMessage(nppData._nppHandle, WM_COMMAND, IDM_FILE_CLOSE, 0);
+				skipAutoReset = false;
 			}
 			tempWindow = -1;
 			LRESULT ROTemp = RODoc1; RODoc1 = RODoc2; RODoc2 = ROTemp;
@@ -1247,13 +1234,12 @@ bool startCompare()
 {
 	LRESULT RODoc1;
 	LRESULT RODoc2;
-	int win = 3;
-
-	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&win);
 
 	if(!IsWindowVisible(nppData._scintillaMainHandle) || !IsWindowVisible(nppData._scintillaSecondHandle))
 	{	
+		skipAutoReset = true;
 		SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_GOTO_ANOTHER_VIEW, 0);
+		skipAutoReset = false;
 		panelsOpened = true;
 	}
 
@@ -1475,6 +1461,24 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		}
 
 	case NPPN_FILEBEFORECLOSE:
+		{
+			if (!skipAutoReset)
+			{
+				notepadVersionOk = true;
+				HWND window = getCurrentWindow();
+				int win = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
+				if (getCompare(win) != -1)
+				{
+					closingWin = win;
+					if (closingWin == tempWindow)
+						removeCompare(closingWin);
+					reset();
+					closingWin = -1;
+				}
+				break;
+			}
+		}
+
 	case NPPN_FILECLOSED:
 	case NPPN_FILEBEFOREOPEN:
 	case NPPN_FILEOPENED:
