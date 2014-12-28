@@ -1419,20 +1419,38 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		{
 			if (active)
 			{
+				HWND activeView = NULL;
+				HWND otherView = NULL;
 				if (notifyCode->updated & (SC_UPDATE_SELECTION | SC_UPDATE_V_SCROLL))
 				{
-					HWND CurView = NULL;
-					int currentEdit;
-					::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
+					int currentEdit = -1;
+					if (notifyCode->updated & SC_UPDATE_SELECTION)
+					{
+						::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
+					}
+					else if (notifyCode->updated & SC_UPDATE_V_SCROLL)
+					{
+						if (notifyCode->nmhdr.hwndFrom == nppData._scintillaMainHandle)
+						{
+							currentEdit = 0;
+						}
+						else if (notifyCode->nmhdr.hwndFrom == nppData._scintillaSecondHandle)
+						{
+							currentEdit = 1;
+						}
+					}
 					if (currentEdit != -1)
 					{
-						CurView = (currentEdit == 0) ? (nppData._scintillaMainHandle) : (nppData._scintillaSecondHandle);
-                        int activeViewTopLine = ::SendMessage(CurView, SCI_GETFIRSTVISIBLELINE, 0, 0);
-                        activeViewTopLine = ::SendMessage(CurView, SCI_DOCLINEFROMVISIBLE, activeViewTopLine, 0);
-                        CurView = (currentEdit == 0) ? (nppData._scintillaSecondHandle) : (nppData._scintillaMainHandle);
-                        int otherViewTopLine = ::SendMessage(CurView, SCI_VISIBLEFROMDOCLINE, activeViewTopLine, 0);
-                        ::SendMessage(CurView, SCI_SETFIRSTVISIBLELINE, otherViewTopLine, 0);
+						activeView = (currentEdit == 0) ? (nppData._scintillaMainHandle) : (nppData._scintillaSecondHandle);
+						otherView = (currentEdit == 0) ? (nppData._scintillaSecondHandle) : (nppData._scintillaMainHandle);
 					}
+				}
+				if ((activeView != NULL) && (otherView != NULL))
+				{
+					int activeViewTopLine = ::SendMessage(activeView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+					activeViewTopLine = ::SendMessage(activeView, SCI_DOCLINEFROMVISIBLE, activeViewTopLine, 0);
+					int otherViewTopLine = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, activeViewTopLine, 0);
+					::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, otherViewTopLine, 0);
 				}
 			}
 			break;

@@ -12,6 +12,10 @@ Change Log:
 [* version 1.5.6.3. Also I (ufo) will never make any version number higher than 1.5.6.x, *]
 [* since I don't know if 1.5.7 will ever get released. *]
 
+1.5.6.5
+
+    1. FIXED: Mouse scrolling in inactive view (regression in 1.5.6.4)
+
 1.5.6.4
 
     1. NEW: Support viewing differences in "Word wrap" mode
