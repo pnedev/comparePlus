@@ -940,6 +940,8 @@ void compareGitBase()
 
 bool compareNew()
 {
+	bool compareCanceled = false;
+
 	clearWindow(nppData._scintillaMainHandle, true);
 	clearWindow(nppData._scintillaSecondHandle, true);
 	
@@ -973,48 +975,64 @@ bool compareNew()
 	int sn;
 	struct varray *ses = varray_new(sizeof(struct diff_edit), NULL);
 	int result = (diff(doc1Hashes, 0, doc1Length, doc2Hashes, 0, doc2Length, (idx_fn)(getLineFromIndex), (cmp_fn)(compareLines), NULL, 0, ses, &sn, NULL));
-	int changeOffset = 0;
-
-	shift_boundries(ses, sn, doc1Hashes, doc2Hashes, doc1Length, doc2Length);
-	find_moves(ses, sn, doc1Hashes, doc2Hashes, Settings.DetectMove);
-	/* 
-	 * - insert empty lines
-	 * - count changed lines
-	 */
-	doc1Changed = 0;
-	doc2Changed = 0;
-
-	for (int i = 0; i < sn; i++) 
+	
+	TCHAR buffer[256];
+	if (result > 1000)
 	{
-		struct diff_edit *e =(diff_edit*) varray_get(ses, i);
-		if(e->op == DIFF_DELETE)
+		wsprintf(buffer,
+			TEXT("There are more than 1000 differing lines of code (%d),\n")
+			TEXT("thus displaying the result could take quite a while.\n")
+			TEXT("Do you really want to continue?"),
+			result);
+		if (MessageBox(nppData._nppHandle, buffer, TEXT("Warning"),
+			MB_YESNO | MB_ICONWARNING) != IDYES)
 		{
-			e->changeCount = 0;
-			doc1Changed += e->len;
-			struct diff_edit *e2 =(diff_edit*) varray_get(ses, i+1);
-			e2->changeCount = 0;
-			
-			if(e2->op == DIFF_INSERT)
+			compareCanceled = true;
+		}
+	}
+
+	if (!compareCanceled)
+	{
+		shift_boundries(ses, sn, doc1Hashes, doc2Hashes, doc1Length, doc2Length);
+		find_moves(ses, sn, doc1Hashes, doc2Hashes, Settings.DetectMove);
+		/*
+		 * - insert empty lines
+		 * - count changed lines
+		 */
+		doc1Changed = 0;
+		doc2Changed = 0;
+
+		for (int i = 0; i < sn; i++)
+		{
+			struct diff_edit *e = (diff_edit*)varray_get(ses, i);
+			if (e->op == DIFF_DELETE)
 			{
-				//see if the DELETE/INSERT COMBO includes changed lines or if its a completely new block
-				if(compareWords(e, e2, doc1, doc2, Settings.IncludeSpace))
+				e->changeCount = 0;
+				doc1Changed += e->len;
+				struct diff_edit *e2 = (diff_edit*)varray_get(ses, i + 1);
+				e2->changeCount = 0;
+
+				if (e2->op == DIFF_INSERT)
 				{
-					e->op = DIFF_CHANGE1;
-					e2->op = DIFF_CHANGE2;
-					doc2Changed += e2->len;
+					//see if the DELETE/INSERT COMBO includes changed lines or if its a completely new block
+					if (compareWords(e, e2, doc1, doc2, Settings.IncludeSpace))
+					{
+						e->op = DIFF_CHANGE1;
+						e2->op = DIFF_CHANGE2;
+						doc2Changed += e2->len;
+					}
 				}
 			}
-		}
-		else if(e->op == DIFF_INSERT)
-		{
-			e->changeCount = 0;
-			doc2Changed += e->len;
+			else if (e->op == DIFF_INSERT)
+			{
+				e->changeCount = 0;
+				doc2Changed += e->len;
+			}
 		}
 	}
 
 	int doc1CurrentChange = 0;
 	int doc2CurrentChange = 0;
-	changeOffset = 0;
 	doc1Changes = new diff_edit[doc1Changed];
 	doc2Changes = new diff_edit[doc2Changed];
 	int doc1Offset = 0;
@@ -1024,13 +1042,15 @@ bool compareNew()
 	// Change CHANGE to DELETE or INSERT if there are no changes on that line
 	int added;
 
-	for (int i = 0; i < sn; i++) 
+	if (!compareCanceled)
 	{
-		struct diff_edit *e =(diff_edit*) varray_get(ses, i);
-		e->set = i;
-
-		switch(e->op)
+		for (int i = 0; i < sn; i++)
 		{
+			struct diff_edit *e = (diff_edit*)varray_get(ses, i);
+			e->set = i;
+
+			switch (e->op)
+			{
 			case DIFF_CHANGE1:
 			case DIFF_DELETE:
 				added = setDiffLines(e, doc1Changes, &doc1CurrentChange, DIFF_DELETE, e->off + doc2Offset);
@@ -1039,99 +1059,100 @@ bool compareNew()
 				break;
 			case DIFF_INSERT:
 			case DIFF_CHANGE2:
-				added = setDiffLines(e, doc2Changes, &doc2CurrentChange, DIFF_INSERT, e->off + doc1Offset);	
+				added = setDiffLines(e, doc2Changes, &doc2CurrentChange, DIFF_INSERT, e->off + doc1Offset);
 				doc1Offset -= added;
 				doc2Offset += added;
 				break;
+			}
 		}
 	}
 
-	if (result != -1)
+	if ((result != -1) && !compareCanceled)
 	{
 		int textIndex;
 		different = (doc1Changed > 0) || (doc2Changed > 0);
-		
-		for(int i = 0; i < doc1Changed; i++)
+
+		for (int i = 0; i < doc1Changed; i++)
 		{
-			switch(doc1Changes[i].op)
+			switch (doc1Changes[i].op)
 			{
-				case DIFF_DELETE:
-					markAsRemoved(nppData._scintillaMainHandle, doc1Changes[i].off);					
-					break;
+			case DIFF_DELETE:
+				markAsRemoved(nppData._scintillaMainHandle, doc1Changes[i].off);
+				break;
 
-				case DIFF_CHANGE1:
-					markAsChanged(nppData._scintillaMainHandle, doc1Changes[i].off);
-					textIndex = lineNum1[doc1Changes[i].off];
+			case DIFF_CHANGE1:
+				markAsChanged(nppData._scintillaMainHandle, doc1Changes[i].off);
+				textIndex = lineNum1[doc1Changes[i].off];
 
-					for(int k = 0; k < doc1Changes[i].changeCount; k++)
-					{
-						struct diff_change *change = (diff_change*)varray_get(doc1Changes[i].changes, k);
-						markTextAsChanged(nppData._scintillaMainHandle, textIndex + change->off, change->len);
-					}
-					break;
+				for (int k = 0; k < doc1Changes[i].changeCount; k++)
+				{
+					struct diff_change *change = (diff_change*)varray_get(doc1Changes[i].changes, k);
+					markTextAsChanged(nppData._scintillaMainHandle, textIndex + change->off, change->len);
+				}
+				break;
 
-				case DIFF_MOVE:					
-					markAsMoved(nppData._scintillaMainHandle, doc1Changes[i].off);
-					break;
+			case DIFF_MOVE:
+				markAsMoved(nppData._scintillaMainHandle, doc1Changes[i].off);
+				break;
 
 			}
 		}
 
-		for(int i = 0; i < doc2Changed; i++)
+		for (int i = 0; i < doc2Changed; i++)
 		{
-			switch(doc2Changes[i].op)
+			switch (doc2Changes[i].op)
 			{
-				case DIFF_INSERT:					
-					markAsAdded(nppData._scintillaSecondHandle, doc2Changes[i].off);						
-					break;
+			case DIFF_INSERT:
+				markAsAdded(nppData._scintillaSecondHandle, doc2Changes[i].off);
+				break;
 
-				case DIFF_CHANGE2:
-					markAsChanged(nppData._scintillaSecondHandle, doc2Changes[i].off);
-					textIndex = lineNum2[doc2Changes[i].off];
-					for(int k = 0; k < doc2Changes[i].changeCount; k++)
-					{
-						struct diff_change *change=(diff_change*)varray_get(doc2Changes[i].changes, k);
-						markTextAsChanged(nppData._scintillaSecondHandle, textIndex+change->off, change->len);
-					}
-					break;
+			case DIFF_CHANGE2:
+				markAsChanged(nppData._scintillaSecondHandle, doc2Changes[i].off);
+				textIndex = lineNum2[doc2Changes[i].off];
+				for (int k = 0; k < doc2Changes[i].changeCount; k++)
+				{
+					struct diff_change *change = (diff_change*)varray_get(doc2Changes[i].changes, k);
+					markTextAsChanged(nppData._scintillaSecondHandle, textIndex + change->off, change->len);
+				}
+				break;
 
-				case DIFF_MOVE:					
-					markAsMoved(nppData._scintillaSecondHandle,doc2Changes[i].off);										
-					break;
+			case DIFF_MOVE:
+				markAsMoved(nppData._scintillaSecondHandle, doc2Changes[i].off);
+				break;
 			}
 		}
 
 		doc1Offset = 0;
 		doc2Offset = 0;
 
-		if(Settings.AddLine)
+		if (Settings.AddLine)
 		{
 			int length = 0;
 			int off = -1;
-			for(int i = 0; i < doc1Changed; i++)
+			for (int i = 0; i < doc1Changed; i++)
 			{
-				switch(doc1Changes[i].op)
+				switch (doc1Changes[i].op)
 				{
-					case DIFF_DELETE:
-					case DIFF_MOVE:							
-						if(doc1Changes[i].altLocation == off)
-						{
-							length++;
-						}
-						else
-						{
-							addEmptyLines(nppData._scintillaSecondHandle, off + doc2Offset, length);
-							doc2Offset += length;
-							off = doc1Changes[i].altLocation;
-							length = 1;						
-						}
-						break;
+				case DIFF_DELETE:
+				case DIFF_MOVE:
+					if (doc1Changes[i].altLocation == off)
+					{
+						length++;
+					}
+					else
+					{
+						addEmptyLines(nppData._scintillaSecondHandle, off + doc2Offset, length);
+						doc2Offset += length;
+						off = doc1Changes[i].altLocation;
+						length = 1;
+					}
+					break;
 				}
 			}
 
 			addEmptyLines(nppData._scintillaSecondHandle, off + doc2Offset, length);
 
-			if(doc2Offset > 0)
+			if (doc2Offset > 0)
 			{
 				clearUndoBuffer(nppData._scintillaSecondHandle);
 			}
@@ -1140,41 +1161,44 @@ bool compareNew()
 			off = 0;
 			doc1Offset = 0;
 
-			for(int i = 0; i < doc2Changed; i++)
+			for (int i = 0; i < doc2Changed; i++)
 			{
-				switch(doc2Changes[i].op)
+				switch (doc2Changes[i].op)
 				{
-					case DIFF_INSERT:
-					case DIFF_MOVE:							
-						if(doc2Changes[i].altLocation == off)
-						{
-							length++;
-						}
-						else
-						{
-							addEmptyLines(nppData._scintillaMainHandle, off + doc1Offset, length);
-							doc1Offset += length;
-							off = doc2Changes[i].altLocation;
-							length = 1;						
-						}
-						break;
+				case DIFF_INSERT:
+				case DIFF_MOVE:
+					if (doc2Changes[i].altLocation == off)
+					{
+						length++;
+					}
+					else
+					{
+						addEmptyLines(nppData._scintillaMainHandle, off + doc1Offset, length);
+						doc1Offset += length;
+						off = doc2Changes[i].altLocation;
+						length = 1;
+					}
+					break;
 				}
 			}
 
 			addEmptyLines(nppData._scintillaMainHandle, off + doc1Offset, length);
 
-			if(doc1Offset > 0)
+			if (doc1Offset > 0)
 			{
 				clearUndoBuffer(nppData._scintillaMainHandle);
 			}
 		}
+	}
 
 //clean up resources
 #if CLEANUP
 
-		for(int i = 0; i < doc1Length; i++)
+	if (result != -1)
+	{
+		for (int i = 0; i < doc1Length; i++)
 		{
-			if(*doc1[i] != 0)
+			if (*doc1[i] != 0)
 			{
 				delete[] doc1[i];
 			}
@@ -1182,10 +1206,10 @@ bool compareNew()
 
 		delete[] doc1;
 		delete[] lineNum1;
-		
-		for(int i = 0; i < doc2Length; i++)
+
+		for (int i = 0; i < doc2Length; i++)
 		{
-			if(*doc2[i] != 0)
+			if (*doc2[i] != 0)
 			{
 				delete[] doc2[i];
 			}
@@ -1199,22 +1223,29 @@ bool compareNew()
 
 		clearEdits(ses, sn);
 
-		for(int i = 0; i < doc1Changed; i++)
+		for (int i = 0; i < doc1Changed; i++)
 		{
 			clearEdit(doc1Changes + (i));
 		}
 
 		delete[] doc1Changes;
 
-		for(int i = 0; i < doc2Changed; i++)
+		for (int i = 0; i < doc2Changed; i++)
 		{
-			clearEdit(doc2Changes+(i));
+			clearEdit(doc2Changes + (i));
 		}
 
 		delete[] doc2Changes;
-
+	}
 #endif // CLEANUP
 
+	if (compareCanceled)
+	{
+		return true;
+	}
+
+	if (result != -1)
+	{
 		if(!different)
 		{
 			::MessageBox(nppData._nppHandle, TEXT("Files Match"), TEXT("Results :"), MB_OK);

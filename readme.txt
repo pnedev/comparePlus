@@ -17,10 +17,11 @@ Changelog:
     1. NEW: Flash window when restarting "Previous" or "Next" diff search from top or
             bottom (a la N++'s "Wrap around" search mode)
     2. NEW: Auto "Clear Results" when closing one of both compared files
-    2. FIX: Mouse scrolling in inactive view (regression in 1.5.6.4)
-    3. FIX: Scrolling by clicking navigation bar (regression in 1.5.6.4)
-    4. FIX: Automatically jump to first difference after comparison (regression in 1.5.6.4)
-    5. FIX: Don't always force focusing second view after comparing
+    3. NEW: Warning message box before displaying high amount of differing lines (more than 1000)
+    4. FIX: Mouse scrolling in inactive view (regression in 1.5.6.4)
+    5. FIX: Scrolling by clicking navigation bar (regression in 1.5.6.4)
+    6. FIX: Automatically jump to first difference after comparison (regression in 1.5.6.4)
+    7. FIX: Don't always force focusing second view after comparing
 
 1.5.6.4
 
