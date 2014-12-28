@@ -15,6 +15,7 @@ Change Log:
 1.5.6.5
 
     1. FIXED: Mouse scrolling in inactive view (regression in 1.5.6.4)
+    1. FIXED: Scrolling by clicking navigation bar (regression in 1.5.6.4)
 
 1.5.6.4
 

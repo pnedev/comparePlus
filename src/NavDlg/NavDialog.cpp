@@ -130,6 +130,8 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 	int LineStart;
 	int LineVisible;
 	int Delta;
+	HWND curView = NULL;
+	int currentEdit = -1;
 
 	switch (Message) 
 	{
@@ -172,11 +174,16 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 			SetCapture(hWnd);
 			yPos = HIWORD(lParam);
 			current_line = (long)(yPos * m_ScaleFactor);
-			LineVisible = SendMessageA(_nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0);
-			LineStart = SendMessageA(_nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
-			Delta = current_line - LineVisible/2 - LineStart;
-			SendMessageA(_nppData._scintillaMainHandle, SCI_LINESCROLL, 0, (LPARAM)Delta);
-			SendMessageA(_nppData._scintillaMainHandle, SCI_GOTOLINE, (WPARAM)current_line, 0);
+			::SendMessage(_nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
+			if (currentEdit != -1)
+			{
+				curView = (currentEdit == 0) ? (_nppData._scintillaMainHandle) : (_nppData._scintillaSecondHandle);
+				LineVisible = SendMessageA(curView, SCI_LINESONSCREEN, 0, 0);
+				LineStart = SendMessageA(curView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+				Delta = current_line - LineVisible / 2 - LineStart;
+				SendMessageA(_nppData._scintillaMainHandle, SCI_LINESCROLL, 0, (LPARAM)Delta);
+				SendMessageA(_nppData._scintillaMainHandle, SCI_GOTOLINE, (WPARAM)current_line, 0);
+			}
 			break;
 
 		case WM_LBUTTONUP:
@@ -189,9 +196,14 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 				yPos = HIWORD(lParam);
 				const long next_line = (const long)(yPos * m_ScaleFactor);
 				Delta = next_line - current_line;
-				SendMessageA(_nppData._scintillaMainHandle, SCI_LINESCROLL, 0, (LPARAM)Delta);
-				SendMessageA(_nppData._scintillaMainHandle, SCI_GOTOLINE, (WPARAM)next_line, 0);
-				current_line = next_line;
+				::SendMessage(_nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
+				if (currentEdit != -1)
+				{
+					curView = (currentEdit == 0) ? (_nppData._scintillaMainHandle) : (_nppData._scintillaSecondHandle);
+					SendMessageA(curView, SCI_LINESCROLL, 0, (LPARAM)Delta);
+					SendMessageA(curView, SCI_GOTOLINE, (WPARAM)next_line, 0);
+					current_line = next_line;
+				}
 			}
 			break;
 
