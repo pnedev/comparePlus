@@ -487,6 +487,7 @@ void jumpChangedLines(bool direction)
 	const int posStart = ::SendMessage(CurView, SCI_GETCURRENTPOS, 0, 0);
 	const int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0);
 	int lineStart = ::SendMessage(CurView, SCI_LINEFROMPOSITION, posStart, 0);
+	int prevLine = lineStart;
 
 	int currLine;
 	int nextLine;
@@ -520,6 +521,18 @@ void jumpChangedLines(bool direction)
 			lineStart++;
 		else
 			lineStart--;
+	}
+
+	if ((direction && (nextLine < prevLine)) ||
+		(!direction && (nextLine > prevLine)))
+	{
+		FLASHWINFO flashInfo;
+		flashInfo.cbSize = sizeof(FLASHWINFO);
+		flashInfo.hwnd = nppData._nppHandle;
+		flashInfo.uCount = 2;
+		flashInfo.dwTimeout = 100;
+		flashInfo.dwFlags = FLASHW_ALL;
+		FlashWindowEx(&flashInfo);
 	}
 
 	::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);

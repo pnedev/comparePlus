@@ -14,10 +14,12 @@ Change Log:
 
 1.5.6.5
 
-    1. FIX: Mouse scrolling in inactive view (regression in 1.5.6.4)
-    2. FIX: Scrolling by clicking navigation bar (regression in 1.5.6.4)
-    3. FIX: Automatically jump to first difference after comparison (regression in 1.5.6.4)
-    4. FIX: Don't always force focusing second view after comparing
+    1. NEW: Flash window when restarting "Previous" or "Next" diff search from top or
+            bottom (a la N++'s "Wrap around" search mode)
+    2. FIX: Mouse scrolling in inactive view (regression in 1.5.6.4)
+    3. FIX: Scrolling by clicking navigation bar (regression in 1.5.6.4)
+    4. FIX: Automatically jump to first difference after comparison (regression in 1.5.6.4)
+    5. FIX: Don't always force focusing second view after comparing
 
 1.5.6.4
 
