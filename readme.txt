@@ -22,6 +22,7 @@ Changelog:
     5. FIX: Scrolling by clicking navigation bar (regression in 1.5.6.4)
     6. FIX: Automatically jump to first difference after comparison (regression in 1.5.6.4)
     7. FIX: Don't always force focusing second view after comparing
+    8. FIX: Focus not returned to N++ after first comparison
 
 1.5.6.4
 

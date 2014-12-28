@@ -854,6 +854,8 @@ void reset()
 
 		if (RODoc2 == 1)
 			SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
+
+		::SendMessageA(getCurrentWindow(), SCI_GRABFOCUS, 0, 0);
 	}
 }
 
