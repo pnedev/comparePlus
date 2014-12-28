@@ -7,46 +7,48 @@ Change Log:
 [1.5.7]
 [    1. NEW: *** Compare released under GPLv3 ***]
 [    2. NEW: Change behavior when files match (immediately exit compare)]
-[    3. FIXED: Some menu items where not disabled anymore when compare is not running]
+[    3. FIX: Some menu items where not disabled anymore when compare is not running]
 [* This version was never released by J. Leroy, but its changes are downmerged since *]
 [* version 1.5.6.3. Also I (ufo) will never make any version number higher than 1.5.6.x, *]
 [* since I don't know if 1.5.7 will ever get released. *]
 
 1.5.6.5
 
-    1. FIXED: Mouse scrolling in inactive view (regression in 1.5.6.4)
-    1. FIXED: Scrolling by clicking navigation bar (regression in 1.5.6.4)
+    1. FIX: Mouse scrolling in inactive view (regression in 1.5.6.4)
+    2. FIX: Scrolling by clicking navigation bar (regression in 1.5.6.4)
+    3. FIX: Automatically jump to first difference after comparison (regression in 1.5.6.4)
+    4. FIX: Don't always force focusing second view after comparing
 
 1.5.6.4
 
     1. NEW: Support viewing differences in "Word wrap" mode
-    2. FIXED: Restore "Synchronize Vertical Scrolling" and "Synchronize Horizontal Scrolling" after "Clear Results"
+    2. FIX: Restore "Synchronize Vertical Scrolling" and "Synchronize Horizontal Scrolling" after "Clear Results"
 
 1.5.6.3
 
     1. NEW: Automatically jump to first difference after comparison
     2. NEW: 'Compare against GIT base'
             (therefor using libgit2: http://libgit2.github.com/)
-    3. FIXED: 'Compare against SVN base' doesn't work with newer SVN versions (1.7 and above)
+    3. FIX: 'Compare against SVN base' doesn't work with newer SVN versions (1.7 and above)
               (therefor using SQLite: http://www.sqlite.org/)
 
 1.5.6.2
 
-    1. FIXED: Small changes not visible in navigation bar (in bigger files) (thx to Rolf P.)
-    2. FIXED: Syntax highlighting broken after 'Compare' and 'Clear Results' (since N++ 6.2.1)
-    3. FIXED: Change highlight not visible (since N++ 6.2.1)
+    1. FIX: Small changes not visible in navigation bar (in bigger files) (thx to Rolf P.)
+    2. FIX: Syntax highlighting broken after 'Compare' and 'Clear Results' (since N++ 6.2.1)
+    3. FIX: Change highlight not visible (since N++ 6.2.1)
 
 1.5.6.1
 
-    1. FIXED: Weird focus clipping while shutting down (no application gets focus again, when N++ is gone).
+    1. FIX: Weird focus clipping while shutting down (no application gets focus again, when N++ is gone).
 
 1.5.6
 
     1. NEW: "Previous" and "Next" commands now jumping blockwise instead of linewise.
     2. NEW: When comparing to last save or SVN base: Temp files now inherit the language highlighting from the original file.
     3. NEW: Marker icons for moved state.
-    4. FIXED: Restoring of "Synchronize Horizontal Scrolling" check state after "Clear results".
-    5. FIXED: Swapping of "Navigation bar" check state when N++ starts after it was closed with opened navigation bar.
+    4. FIX: Restoring of "Synchronize Horizontal Scrolling" check state after "Clear results".
+    5. FIX: Swapping of "Navigation bar" check state when N++ starts after it was closed with opened navigation bar.
     6. CHANGED: When comparing to last save or SVN base: Show temp files in first view (left side) instead of second view.
     7. CHANGED: More intuitive default highlighting colors (green=new, red=deleted, yellow=changed, blue=moved).
     8. CHANGED: Navigation bar background color now system's active caption color.

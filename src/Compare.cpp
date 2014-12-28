@@ -543,11 +543,15 @@ void First(void)
 	if (active)
 	{
 		HWND CurView = NULL;
+		HWND OtherView = NULL;
 		int currentEdit;
 		::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
 
-		if (currentEdit != -1) 
+		if (currentEdit != -1)
+		{
 			CurView = (currentEdit == 0) ? (nppData._scintillaMainHandle) : (nppData._scintillaSecondHandle);
+			OtherView = (currentEdit == 0) ? (nppData._scintillaSecondHandle) : (nppData._scintillaMainHandle);
+		}
 
 		const int sci_search_mask = (1 << MARKER_MOVED_LINE)
 								  | (1 << MARKER_CHANGED_LINE)
@@ -557,7 +561,9 @@ void First(void)
 
 		const int nextLine = ::SendMessage(CurView, SCI_MARKERNEXT, 0, sci_search_mask );
 		::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
+		::SendMessage(OtherView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
 		::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0);
+		::SendMessage(OtherView, SCI_GOTOLINE, nextLine, 0);
 	}
 }
 
@@ -1297,7 +1303,6 @@ bool startCompare()
 
 	::SendMessageA(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
 	::SendMessageA(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
-	::SendMessageA(nppData._scintillaSecondHandle, SCI_GRABFOCUS, 0, (LPARAM)1);
 
 	// Restore previous read-only attribute
 	if (RODoc1 == 1)
