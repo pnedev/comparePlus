@@ -1,8 +1,8 @@
 To install manually, copy ComparePlugin.dll and ComparePlugin subfolder
 into the plugins directory C:\Program Files\Notepad++\Plugins.
 	
-Change Log:
------------
+Changelog:
+----------
 
 [1.5.7]
 [    1. NEW: *** Compare released under GPLv3 ***]

@@ -21,4 +21,10 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <ShowAllFiles>false</ShowAllFiles>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|Win32'">
+    <LocalDebuggerCommand>$(OutDir)..\notepad++.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments>-multiInst</LocalDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>C:\</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
 </Project>
