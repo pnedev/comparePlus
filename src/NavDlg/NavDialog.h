@@ -25,6 +25,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "DockingDlgInterface.h"
 
 #define SPACE   2
+#define MIN_DIFF_HEIGHT 25 // pixels
 
 class NavDialog : public DockingDlgInterface
 {
@@ -38,6 +39,8 @@ public:
 	void NavDialog::DrawView(long start, long end);
 	void Do(void);
 	void SetColor(int added, int deleted, int changed, int moved, int blank);  
+	void SetLinePixel(long resultsDoc, int i, HDC hMemDC, int* m_lastDiffColor);
+	void SetScalingFactor(HWND hWnd);
 	void CreateBitmap(void);
 
 	bool ReadyToDraw;
@@ -59,7 +62,16 @@ private:
 	int m_ChangedColor;
 	int m_MovedColor;
 	int m_BlankColor;
+	int m_DefaultColor;
 
+	int m_lastDiffCounter;
+	int m_lastDiffCounterInit;
+	int m_lastDiffColorLeft;
+	int m_lastDiffColorRight;
+
+	RECT m_scaleRect;
+	long m_SzX;
+	long m_SzY;
 	double m_ScaleFactor;
 
 	HDC     m_hdc;

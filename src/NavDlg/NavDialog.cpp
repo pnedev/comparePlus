@@ -126,7 +126,7 @@ void NavDialog::Do(void)
 
 BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
-	long yPos;
+	signed short yPos;
 	int LineStart;
 	int LineVisible;
 	int Delta;
@@ -173,7 +173,8 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 		case WM_LBUTTONDOWN:
 			SetCapture(hWnd);
 			yPos = HIWORD(lParam);
-			current_line = (long)(yPos * m_ScaleFactor);
+			if (yPos < 0) yPos = 0;
+			current_line = (long)((double)yPos * m_ScaleFactor);
 			::SendMessage(_nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
 			if (currentEdit != -1)
 			{
@@ -181,8 +182,8 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 				LineVisible = SendMessageA(curView, SCI_LINESONSCREEN, 0, 0);
 				LineStart = SendMessageA(curView, SCI_GETFIRSTVISIBLELINE, 0, 0);
 				Delta = current_line - LineVisible / 2 - LineStart;
-				SendMessageA(_nppData._scintillaMainHandle, SCI_LINESCROLL, 0, (LPARAM)Delta);
-				SendMessageA(_nppData._scintillaMainHandle, SCI_GOTOLINE, (WPARAM)current_line, 0);
+				SendMessageA(curView, SCI_LINESCROLL, 0, (LPARAM)Delta);
+				SendMessageA(curView, SCI_GOTOLINE, (WPARAM)current_line, 0);
 			}
 			break;
 
@@ -194,7 +195,8 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 			if (GetCapture() == hWnd) 
 			{ 
 				yPos = HIWORD(lParam);
-				const long next_line = (const long)(yPos * m_ScaleFactor);
+				if (yPos < 0) yPos = 0;
+				const long next_line = (const long)((double)yPos * m_ScaleFactor);
 				Delta = next_line - current_line;
 				::SendMessage(_nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
 				if (currentEdit != -1)
@@ -221,11 +223,48 @@ void NavDialog::SetColor(int added, int deleted, int changed, int moved, int bla
 	m_ChangedColor = changed;
 	m_MovedColor   = moved;
 	m_BlankColor   = blank;
+	m_DefaultColor = GetSysColor(COLOR_ACTIVECAPTION);
+}
+
+void NavDialog::SetLinePixel(long resultsDoc, int i, HDC hMemDC, int* m_lastDiffColor)
+{
+	long color = 0;
+	// Choose a pencil to draw with
+	switch (resultsDoc)
+	{
+	case MARKER_BLANK_LINE:   color = *m_lastDiffColor = m_BlankColor;   m_lastDiffCounter = m_lastDiffCounterInit; break;
+	case MARKER_ADDED_LINE:   color = *m_lastDiffColor = m_AddedColor;   m_lastDiffCounter = m_lastDiffCounterInit; break;
+	case MARKER_CHANGED_LINE: color = *m_lastDiffColor = m_ChangedColor; m_lastDiffCounter = m_lastDiffCounterInit; break;
+	case MARKER_MOVED_LINE:   color = *m_lastDiffColor = m_MovedColor;   m_lastDiffCounter = m_lastDiffCounterInit; break;
+	case MARKER_REMOVED_LINE: color = *m_lastDiffColor = m_DeletedColor; m_lastDiffCounter = m_lastDiffCounterInit; break;
+	default:
+		if (m_lastDiffCounter)
+		{
+			m_lastDiffCounter--;
+			color = *m_lastDiffColor;
+		}
+		else
+		{
+			color = m_DefaultColor;
+		}
+		break;
+	}
+	// Draw line for the first document
+	SetPixel(hMemDC, 0, i, color);
+}
+
+void NavDialog::SetScalingFactor(HWND hWnd)
+{
+	GetClientRect(hWnd, &m_scaleRect);
+	m_SzX = ((m_scaleRect.right - m_scaleRect.left) - 3 * SPACE) / 2;
+	m_SzY = (m_scaleRect.bottom - m_scaleRect.top) - 2 * SPACE;
+	m_ScaleFactor = (double)(m_TextLength) / (double)(m_SzY);
+	m_lastDiffCounterInit = min(MIN_DIFF_HEIGHT, int((double)MIN_DIFF_HEIGHT * m_ScaleFactor));
 }
 
 void NavDialog::CreateBitmap(void)
 {
-	long color = 0;
+	SetScalingFactor(m_hWnd);
 
 	// Fill BMP background
 	HBRUSH hBrush = CreateSolidBrush(RGB(255,255,255));
@@ -239,35 +278,18 @@ void NavDialog::CreateBitmap(void)
 
 	// Draw BMPs - For all lines in document 
 	// Note: doc1 nb lines == doc2 nb lines when compared
-	for (int i = 0; i < m_TextLength; i++)
+	m_lastDiffCounter = 0;
+	m_lastDiffColorLeft = m_DefaultColor;
+	m_lastDiffColorRight = m_DefaultColor;
+	for (int i = 0; i < max(m_TextLength - MIN_DIFF_HEIGHT, 1); i++)
 	{
-		// Choose a pencil to draw with
-		switch(m_ResultsDoc1[i])
-		{
-		case MARKER_BLANK_LINE:   color = m_BlankColor;     break;
-		case MARKER_ADDED_LINE:   color = m_AddedColor;     break;
-		case MARKER_CHANGED_LINE: color = m_ChangedColor;   break;
-		case MARKER_MOVED_LINE:   color = m_MovedColor;     break;
-		case MARKER_REMOVED_LINE: color = m_DeletedColor;   break;
-		default:                  color = GetSysColor(COLOR_ACTIVECAPTION); break;
-		}
-
-		// Draw line for the first document
-		SetPixel(m_hMemDC1, 0, i, color);
-
-		// Choose a pencil to draw with
-		switch(m_ResultsDoc2[i])
-		{
-		case MARKER_BLANK_LINE:   color = m_BlankColor;     break;
-		case MARKER_ADDED_LINE:   color = m_AddedColor;     break;
-		case MARKER_CHANGED_LINE: color = m_ChangedColor;   break;
-		case MARKER_MOVED_LINE:   color = m_MovedColor;     break;
-		case MARKER_REMOVED_LINE: color = m_DeletedColor;   break;
-		default:                  color = GetSysColor(COLOR_ACTIVECAPTION); break;
-		}
-
-		// Draw line for the first document
-		SetPixel(m_hMemDC2, 0, i, color);
+		SetLinePixel(m_ResultsDoc1[i], i, m_hMemDC1, &m_lastDiffColorLeft);
+		SetLinePixel(m_ResultsDoc2[i], i, m_hMemDC2, &m_lastDiffColorRight);
+	}
+	for (int i = m_TextLength - 1; i >= max(m_TextLength - MIN_DIFF_HEIGHT, 1); i--)
+	{
+		SetLinePixel(m_ResultsDoc1[i], i, m_hMemDC1, &m_lastDiffColorLeft);
+		SetLinePixel(m_ResultsDoc2[i], i, m_hMemDC2, &m_lastDiffColorRight);
 	}
 
 	InvalidateRect(m_hWnd, NULL, TRUE);
@@ -278,34 +300,27 @@ void NavDialog::CreateBitmap(void)
 LRESULT NavDialog::OnPaint(HWND hWnd)
 {
 	PAINTSTRUCT ps;
-	RECT        r;
 
 	// Get current DC
 	m_hdc = ::BeginPaint(hWnd, &ps);
 
 	// Draw bars
-	GetClientRect(hWnd, &r);
-
-	long SzX = ((r.right - r.left) - 3 * SPACE) / 2;
-	long SzY = (r.bottom - r.top) - 2 * SPACE;
-
-	// Scaling factor
-	m_ScaleFactor = (double)(m_TextLength) / (double)(SzY);
+	SetScalingFactor(hWnd);
 
 	// If side bar is too small, don't draw anything
-	if ((SzX < 5) || (SzY < 5)) return false;
+	if ((m_SzX < 5) || (m_SzY < 5)) return false;
 
 	// Define left rectangle coordinates
 	m_rLeft.top    = SPACE;    
 	m_rLeft.left   = SPACE;
-	m_rLeft.right  = m_rLeft.left + SzX;
-	m_rLeft.bottom = m_rLeft.top + SzY;
+	m_rLeft.right = m_rLeft.left + m_SzX;
+	m_rLeft.bottom = m_rLeft.top + m_SzY;
 
 	// Define right rectangle coordinates
 	m_rRight.top    = SPACE;
 	m_rRight.left   = m_rLeft.right + SPACE;
-	m_rRight.right  = m_rRight.left + SzX;
-	m_rRight.bottom = m_rRight.top + SzY;
+	m_rRight.right = m_rRight.left + m_SzX;
+	m_rRight.bottom = m_rRight.top + m_SzY;
 
 	SetStretchBltMode(m_hdc, WHITEONBLACK);
 
@@ -313,10 +328,10 @@ LRESULT NavDialog::OnPaint(HWND hWnd)
 
 	// Current doc view
 
-	x  = r.left;
-	y  = r.top + SPACE;
-	cx = r.right - x;
-	cy = r.bottom - y - SPACE;
+	x  = m_scaleRect.left;
+	y  = m_scaleRect.top + SPACE;
+	cx = m_scaleRect.right - x;
+	cy = m_scaleRect.bottom - y - SPACE;
 
 	StretchBlt(m_hdc, x, y, cx, cy, m_hMemDCView, 0, 0, m_hMemBMPSize.cx, m_hMemBMPSize.cy, SRCCOPY);
 
@@ -359,7 +374,8 @@ void NavDialog::DrawView(long start, long end)
 
 	FillRect(m_hMemDCView, &bmpRect, hBrush);
 
-	for(long i = start; i <= end; i++) SetPixel(m_hMemDCView, 0, i, RGB(200,0,0));
+	for(long i = start; i <= max(end, start + MIN_DIFF_HEIGHT); i++)
+		SetPixel(m_hMemDCView, 0, i, RGB(255,0,0));
 
 	InvalidateRect(m_hWnd, NULL, TRUE);
 

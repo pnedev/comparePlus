@@ -18,11 +18,15 @@ Changelog:
             bottom (a la N++'s "Wrap around" search mode)
     2. NEW: Auto "Clear Results" when closing one of both compared files
     3. NEW: Warning message box before displaying high amount of differing lines (more than 1000)
-    4. FIX: Mouse scrolling in inactive view (regression in 1.5.6.4)
-    5. FIX: Scrolling by clicking navigation bar (regression in 1.5.6.4)
-    6. FIX: Automatically jump to first difference after comparison (regression in 1.5.6.4)
-    7. FIX: Don't always force focusing second view after comparing
-    8. FIX: Focus not returned to N++ after first comparison
+    4. NEW: Navigation bar: Better visibility of small diff places in large documents (minimum height of 25 pixels)
+    5. FIX: Navigation bar: Wrong display in wrapped mode
+    6. FIX: Navigation bar: Dragged selection jumping to bottom when dragging above top
+    7. FIX: Navigation bar: Selection not changing after first click (only after second click)
+    8. FIX: Navigation bar: Scrolling by clicking (regression in 1.5.6.4)
+    9. FIX: Mouse scrolling in inactive view (regression in 1.5.6.4)
+   10. FIX: Automatically jump to first difference after comparison (regression in 1.5.6.4)
+   11. FIX: Don't always force focusing second view after comparing
+   12. FIX: Focus not returned to N++ after first comparison
 
 1.5.6.4
 

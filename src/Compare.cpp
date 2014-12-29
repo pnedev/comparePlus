@@ -1396,6 +1396,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 				long start, end;
 
 				start = SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
+				start = SendMessage(nppData._scintillaMainHandle, SCI_DOCLINEFROMVISIBLE, start, 0);
 				end   = SendMessage(nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0) + start;
 
 				if((start_old != start) && (NavDlg.ReadyToDraw == TRUE))
