@@ -29,6 +29,7 @@ bool notepadVersionOk = false;
 bool active = false;
 bool skipAutoReset = false;
 int closingWin = -1;
+HWND closingView = NULL;
 blankLineList *lastEmptyLines=NULL;
 int  topLine = 0;
 long start_old = -1;
@@ -765,75 +766,82 @@ void reset()
 {
 	if (active == true)
 	{
+		active = false;
+
 		LRESULT RODoc1;
 		LRESULT RODoc2;
+		int doc1 = 0;
+		int doc2 = 0;
+		int doc1Index = -1;
+		int doc2Index = -1;
 
-		// Remove read-only attribute
-		if ((RODoc1 = SendMessage(nppData._scintillaMainHandle, SCI_GETREADONLY, 0, 0)) == 1)
-			SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, false, 0);
+		if (closingView != nppData._scintillaMainHandle)
+		{
+			// Remove read-only attribute
+			if ((RODoc1 = SendMessage(nppData._scintillaMainHandle, SCI_GETREADONLY, 0, 0)) == 1)
+				SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, false, 0);
+			doc1 = SendMessageA(nppData._scintillaMainHandle, SCI_GETDOCPOINTER, 0, 0);
+			doc1Index = getCompare(doc1);
+			if (doc1Index != -1)
+				clearWindow(nppData._scintillaMainHandle, true);
+			// Remove margin mask
+			::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINMASKN, (WPARAM)4, (LPARAM)0);
+			// Remove margin
+			::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINWIDTHN, (WPARAM)4, (LPARAM)0);
+			// Restore previous read-only attribute
+			if (RODoc1 == 1)
+				SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, true, 0);
+		}
+		removeCompare(doc1);
 
-		if ((RODoc2 = SendMessage(nppData._scintillaSecondHandle, SCI_GETREADONLY, 0, 0)) == 1)
-			SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, false, 0);
+		if (closingView != nppData._scintillaSecondHandle)
+		{
+			if ((RODoc2 = SendMessage(nppData._scintillaSecondHandle, SCI_GETREADONLY, 0, 0)) == 1)
+				SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, false, 0);
+			doc2 = SendMessageA(nppData._scintillaSecondHandle, SCI_GETDOCPOINTER, 0, 0);
+			doc2Index = getCompare(doc2);
+			if (doc2Index != -1)
+				clearWindow(nppData._scintillaSecondHandle, true);
+			::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINMASKN, (WPARAM)4, (LPARAM)0);
+			::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINWIDTHN, (WPARAM)4, (LPARAM)0);
+			if (RODoc2 == 1)
+				SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
+		}
+		removeCompare(doc2);
 
-		int doc1 = SendMessageA(nppData._scintillaMainHandle, SCI_GETDOCPOINTER, 0, 0);
-		int doc2 = SendMessageA(nppData._scintillaSecondHandle, SCI_GETDOCPOINTER, 0, 0);
-
-		int doc1Index = getCompare(doc1);
-		int doc2Index = getCompare(doc2);
-
-		HWND window = getCurrentWindow();
-
-		if(doc1Index != -1)
-			clearWindow(nppData._scintillaMainHandle, true);
-
-		if(doc2Index != -1)
-			clearWindow(nppData._scintillaSecondHandle, true);
-
-		::SendMessageA(window, SCI_GRABFOCUS, 0, (LPARAM)1);
-
-        if (syncScrollVwasChecked)
-            ::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLV, 0), 0);
-        if (!syncScrollHwasChecked)
-            ::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
-
-		if(panelsOpened && (doc2 != closingWin))
+		if (panelsOpened && (closingWin == -1))
 		{
 			::SendMessageA(nppData._scintillaSecondHandle, SCI_GRABFOCUS, 0, (LPARAM)0);
 			skipAutoReset = true;
 			SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_GOTO_ANOTHER_VIEW, 0);
 			skipAutoReset = false;
 		}
+		panelsOpened = false;
 
-		if(tempWindow!=-1)
+		if (tempWindow != -1)
 		{
-			::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)compareFilePath);
-			window = getCurrentWindow();
-			int tempPointer = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
-
-			if ((tempPointer == tempWindow) && (getCompare(tempPointer) != -1))
+			if (doc1 != closingWin)
 			{
-				SendMessageA(window, SCI_EMPTYUNDOBUFFER, 0, 0);
-				skipAutoReset = true;
-				SendMessage(nppData._nppHandle, WM_COMMAND, IDM_FILE_CLOSE, 0);
-				skipAutoReset = false;
+				::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)compareFilePath);
+				HWND window = getCurrentWindow();
+				int tempPointer = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
+				if (tempPointer == tempWindow)
+				{
+					SendMessageA(window, SCI_EMPTYUNDOBUFFER, 0, 0);
+					skipAutoReset = true;
+					SendMessage(nppData._nppHandle, WM_COMMAND, IDM_FILE_CLOSE, 0);
+					skipAutoReset = false;
+				}
 			}
 			tempWindow = -1;
 			LRESULT ROTemp = RODoc1; RODoc1 = RODoc2; RODoc2 = ROTemp;
 		}
 
-		// Remove margin mask
-		::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINMASKN, (WPARAM)4, (LPARAM)0);
-		::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINMASKN, (WPARAM)4, (LPARAM)0);
-
-		// Remove margin
-		::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINWIDTHN, (WPARAM)4, (LPARAM)0);
-		::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINWIDTHN, (WPARAM)4, (LPARAM)0);
-
-		removeCompare(doc1);
-		removeCompare(doc2);
-
-		panelsOpened = false;
-		active = false;
+		// Restore sync scroll buttons
+		if (syncScrollVwasChecked)
+			::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLV, 0), 0);
+		if (!syncScrollHwasChecked)
+			::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
 
 		// Close NavBar
 		NavDlg.doDialog(false);
@@ -848,14 +856,10 @@ void reset()
 		// Restore side bar item entry state (because tick has been removed by the docked window)
 		CheckMenuItem(hMenu, funcItem[CMD_USE_NAV_BAR]._cmdID, MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
 
-		// Restore previous read-only attribute
-		if (RODoc1 == 1)
-			SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, true, 0);
-
-		if (RODoc2 == 1)
-			SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
-
 		::SendMessageA(getCurrentWindow(), SCI_GRABFOCUS, 0, 0);
+
+		closingWin = -1;
+		closingView = NULL;
 	}
 }
 
@@ -1504,13 +1508,11 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 				if (getCompare(win) != -1)
 				{
 					closingWin = win;
-					if (closingWin == tempWindow)
-						removeCompare(closingWin);
+					closingView = (HWND)notifyCode->nmhdr.hwndFrom;
 					reset();
-					closingWin = -1;
 				}
-				break;
 			}
+			break;
 		}
 
 	case NPPN_FILECLOSED:
