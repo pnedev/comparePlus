@@ -459,14 +459,17 @@ void openOptionDlg(void)
 		{
 			setStyles(Settings);
 			
-			NavDlg.SetColor(
-				Settings.ColorSettings.added, 
-				Settings.ColorSettings.deleted, 
-				Settings.ColorSettings.changed, 
-				Settings.ColorSettings.moved, 
-				Settings.ColorSettings.blank);
+			if (NavDlg.isVisible())
+			{
+				NavDlg.SetColor(
+					Settings.ColorSettings.added,
+					Settings.ColorSettings.deleted,
+					Settings.ColorSettings.changed,
+					Settings.ColorSettings.moved,
+					Settings.ColorSettings.blank);
 
-			NavDlg.CreateBitmap();
+				NavDlg.CreateBitmap();
+			}
 		}
 	}
 }

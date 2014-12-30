@@ -12,6 +12,10 @@ Changelog:
 [* version 1.5.6.3. Also I (ufo) will never make any version number higher than 1.5.6.x, *]
 [* since I don't know if 1.5.7 will ever get released. *]
 
+1.5.6.6
+
+    1. FIX: Exception after confirming options dialog when navigation bar isn't used
+
 1.5.6.5
 
     1. NEW: Flash window when restarting "Previous" or "Next" diff search from top or
