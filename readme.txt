@@ -15,6 +15,7 @@ Changelog:
 1.5.6.6
 
     1. FIX: Exception after confirming options dialog when navigation bar isn't used
+    2. FIX: Miscellaneous minor fixes and improvements for the nav bar
 
 1.5.6.5
 

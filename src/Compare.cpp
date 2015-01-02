@@ -33,6 +33,7 @@ HWND closingView = NULL;
 blankLineList *lastEmptyLines=NULL;
 int  topLine = 0;
 long start_old = -1;
+long visible_line_count_old = -1;
 bool panelsOpened = false;
 bool syncScrollVwasChecked = false;
 bool syncScrollHwasChecked = false;
@@ -624,6 +625,7 @@ void ViewNavigationBar(void)
 			// Display Navbar
 			NavDlg.doDialog(true);
 			start_old = -1;
+            visible_line_count_old = -1;
 
 			// Restore N++ focus
 			SetFocus(hwnd);
@@ -1368,6 +1370,7 @@ bool startCompare()
 			// Display Navbar
 			NavDlg.doDialog(true);
 			start_old = -1;
+            visible_line_count_old = -1;
 
 			// Restore N++ focus
 			SetFocus(hwnd);
@@ -1399,17 +1402,21 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 	case SCN_PAINTED:
 		{
 			if(active) 
-			{            
-				long start, end;
+			{   
+                // update nav bar if npp views got scrolled, resized, etc..
+                long start, visible_line_count;
 
 				start = SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
-				start = SendMessage(nppData._scintillaMainHandle, SCI_DOCLINEFROMVISIBLE, start, 0);
-				end   = SendMessage(nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0) + start;
+                visible_line_count = max(
+                    SendMessage(nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0),
+                    SendMessage(nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0));
+                visible_line_count = SendMessage(nppData._scintillaMainHandle, SCI_VISIBLEFROMDOCLINE, visible_line_count, 0);
 
-				if((start_old != start) && (NavDlg.ReadyToDraw == TRUE))
+                if ((NavDlg.ReadyToDraw == TRUE) && ((start != start_old) || (visible_line_count != visible_line_count_old)))
 				{
-					NavDlg.DrawView(start, end);
+                    NavDlg.DrawView();
 					start_old = start;
+                    visible_line_count_old = visible_line_count;
 				}
 			}
 			break;

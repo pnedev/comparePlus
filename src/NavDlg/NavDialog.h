@@ -25,7 +25,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "DockingDlgInterface.h"
 
 #define SPACE   2
-#define MIN_DIFF_HEIGHT 25 // pixels
+#define MIN_SELECTOR_HEIGHT 5 // pixels
+#define MIN_DIFF_HEIGHT 5 // pixels
 
 class NavDialog : public DockingDlgInterface
 {
@@ -36,7 +37,7 @@ public:
 	void init(HINSTANCE hInst, NppData nppData);
 	void destroy(void) {};
 	void doDialog(bool willBeShown = true);
-	void NavDialog::DrawView(long start, long end);
+    void NavDialog::DrawView();
 	void Do(void);
 	void SetColor(int added, int deleted, int changed, int moved, int blank);  
 	void SetLinePixel(long resultsDoc, int i, HDC hMemDC, int* m_lastDiffColor);
@@ -65,23 +66,23 @@ private:
 	int m_DefaultColor;
 
 	int m_lastDiffCounter;
-	int m_lastDiffCounterInit;
+	int m_minimumDiffHeight;
 	int m_lastDiffColorLeft;
 	int m_lastDiffColorRight;
 
-	RECT m_scaleRect;
-	long m_SzX;
-	long m_SzY;
-	double m_ScaleFactor;
+	RECT m_SideBarRect;
+    long m_SideBarPartWidth;
+    long m_SideBarPartHeight;
+
+    double m_ScaleFactorDocLines;
+    double m_ScaleFactorVisibleLines;
 
 	HDC     m_hdc;
 	HDC     m_hMemDC1;
 	HDC     m_hMemDC2;
-	HDC     m_hMemDCView;
 
 	HBITMAP m_hMemBMP1;
 	HBITMAP m_hMemBMP2;
-	HBITMAP m_hMemBMPView;
 
 	BITMAP  m_hMemBMPInfo;
 	SIZE    m_hMemBMPSize;
@@ -93,7 +94,11 @@ private:
 	RECT    m_rLeft;
 	RECT    m_rRight;	
 
-	int     m_TextLength;
+    int     m_DocLineCount;
+    int     m_VisibleLineCount;
+
+    int     m_LineCount1;
+    int     m_LineCount2;
 
 	long  *m_ResultsDoc1;
 	long  *m_ResultsDoc2;
