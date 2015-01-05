@@ -215,7 +215,7 @@ BEGIN
             VALUE "FileDescription", "Compare"
             VALUE "FileVersion", "1, 5, 6, 6"
             VALUE "InternalName", "Compare"
-            VALUE "LegalCopyright", "Copyright (C) 2014"
+            VALUE "LegalCopyright", "Copyright (C) 2015"
             VALUE "OriginalFilename", "Compare"
             VALUE "ProductName", "Compare"
             VALUE "ProductVersion", "1, 5, 6, 6"
