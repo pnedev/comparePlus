@@ -1,5 +1,6 @@
 #include <tchar.h>
 #include <Shlwapi.h>
+#include "Notepad_plus_msgs.h"
 
 void showError(_TCHAR* errMsg, ...)
 {
@@ -20,9 +21,15 @@ void showError(_TCHAR* errMsg, ...)
 
 BOOL CALLBACK EnumThreadWndProc(HWND hwnd, LPARAM lParam)
 {
-	if (false)
+	_TCHAR buffer[256];
+	GetClassName(hwnd, buffer, sizeof(buffer));
+	if (!lstrcmp(buffer, L"Notepad++"))
 	{
-		return FALSE;
+		int ver = SendMessage(hwnd, NPPM_GETNPPVERSION, 0, 0);
+		if (HIWORD(ver) >= 4)
+		{
+			return FALSE;
+		}
 	}
 	return TRUE;
 }
