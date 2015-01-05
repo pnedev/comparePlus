@@ -5,6 +5,8 @@ VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Compare", "Compare.vcxproj", "{73C0A930-C2F5-45D2-9795-8EFE62E2F4C6}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Loader", "..\..\loader\Loader.vcxproj", "{15F69682-9D4B-485D-87E8-D4D00851FB93}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -15,6 +17,10 @@ Global
 		{73C0A930-C2F5-45D2-9795-8EFE62E2F4C6}.Debug|Win32.Build.0 = Debug Unicode|Win32
 		{73C0A930-C2F5-45D2-9795-8EFE62E2F4C6}.Release|Win32.ActiveCfg = Release Unicode|Win32
 		{73C0A930-C2F5-45D2-9795-8EFE62E2F4C6}.Release|Win32.Build.0 = Release Unicode|Win32
+		{15F69682-9D4B-485D-87E8-D4D00851FB93}.Debug|Win32.ActiveCfg = Debug|Win32
+		{15F69682-9D4B-485D-87E8-D4D00851FB93}.Debug|Win32.Build.0 = Debug|Win32
+		{15F69682-9D4B-485D-87E8-D4D00851FB93}.Release|Win32.ActiveCfg = Release|Win32
+		{15F69682-9D4B-485D-87E8-D4D00851FB93}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
