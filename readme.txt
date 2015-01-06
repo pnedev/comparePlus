@@ -16,8 +16,9 @@ Changelog:
 
     1. NEW: Loader for using N++ as an external diff viewer (e.g. in TortoiseSVN, TortoiseGit, ..)
             Syntax: .../Notepad++/plugins/ComparePlugin/compare.exe <file_path_1> <file_path_2>
-    2. FIX: Exception after confirming options dialog when navigation bar isn't used
-    3. FIX: Miscellaneous minor fixes and improvements for the nav bar
+    2. NEW: Use default background color of current theme as background color for nav bar
+    3. FIX: Exception after confirming options dialog when navigation bar isn't used
+    4. FIX: Miscellaneous minor fixes and improvements for the nav bar
 
 1.5.6.5
 

@@ -214,7 +214,9 @@ void NavDialog::SetColor(int added, int deleted, int changed, int moved, int bla
 	m_ChangedColor = changed;
 	m_MovedColor   = moved;
 	m_BlankColor   = blank;
-	m_DefaultColor = GetSysColor(COLOR_ACTIVECAPTION);
+    // TODO: maybe read following setting from the config dialog, too?
+	//m_DefaultColor = GetSysColor(COLOR_ACTIVECAPTION);
+    m_DefaultColor = SendMessage(_nppData._nppHandle, NPPM_GETEDITORDEFAULTBACKGROUNDCOLOR, 0, 0);
 }
 
 void NavDialog::SetLinePixel(long resultsDoc, int i, HDC hMemDC, int* m_lastDiffColor)
