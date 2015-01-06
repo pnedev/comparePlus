@@ -26,9 +26,56 @@ BOOL CALLBACK EnumThreadWndProc(HWND hwnd, LPARAM lParam)
 	if (!lstrcmp(buffer, L"Notepad++"))
 	{
 		int ver = SendMessage(hwnd, NPPM_GETNPPVERSION, 0, 0);
-		if (HIWORD(ver) >= 4)
+		if (HIWORD(ver) >= 6)
 		{
-			return FALSE;
+            BOOL ret = TRUE; // TRUE = Fail
+
+            HMENU hPluginMenu = (HMENU)SendMessage(hwnd, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
+            int iMenuItems = GetMenuItemCount(hPluginMenu);
+            for (int i = 0; i < iMenuItems; i++)
+            {
+                MENUITEMINFO mii;
+                mii.cbSize = sizeof(MENUITEMINFO);
+                mii.fMask = MIIM_ID | MIIM_STRING | MIIM_SUBMENU;
+                mii.dwTypeData = buffer;
+                mii.cch = sizeof(buffer) - 1;
+                GetMenuItemInfo(hPluginMenu, i, TRUE, &mii);
+                if (!lstrcmp(buffer, L"Compare"))
+                {
+                    int iSubMenuItems = GetMenuItemCount(mii.hSubMenu);
+                    for (int j = 0; j < iSubMenuItems; j++)
+                    {
+                        MENUITEMINFO smii;
+                        smii.cbSize = sizeof(MENUITEMINFO);
+                        smii.fMask = MIIM_ID | MIIM_STRING | MIIM_SUBMENU;
+                        smii.dwTypeData = buffer;
+                        smii.cch = sizeof(buffer) - 1;
+                        GetMenuItemInfo(mii.hSubMenu, i, TRUE, &smii);
+
+                        // remove optional shortcuts
+                        int k = 0;
+                        while (buffer[k])
+                        {
+                            if (buffer[k] == '\t')
+                            {
+                                buffer[k] = 0;
+                                break;
+                            }
+                            k++;
+                        }
+                        
+                        if (!lstrcmp(buffer, L"Compare"))
+                        {
+                            SendMessage(hwnd, WM_COMMAND, smii.wID, 0);
+                            ret = FALSE; // FALSE = OK
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+
+            return ret;
 		}
 	}
 	return TRUE;
@@ -65,7 +112,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	{
 		lstrcpy(nppPath, argv[0]);
 		PathRemoveFileSpec(nppPath);
-		PathAppend(nppPath, L"..\\..\\notepad.exe");
+		PathAppend(nppPath, L"..\\..\\notepad++.exe");
 		if (!PathFileExists(nppPath))
 		{
 			HKEY hKey;
