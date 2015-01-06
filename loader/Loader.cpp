@@ -4,13 +4,20 @@
 
 void showError(_TCHAR* errMsg, ...)
 {
-	_TCHAR buffer[512];
+    _TCHAR msg[512];
+    _TCHAR appName[MAX_PATH];
+
 	va_list argptr;
 	va_start(argptr, errMsg);
 	#pragma warning(disable: 4996)
-	vswprintf(buffer, errMsg, argptr);
+    vswprintf(msg, errMsg, argptr);
 	#pragma warning(default: 4996)
-	MessageBox(NULL, buffer, L"compare.exe", MB_OK | MB_ICONERROR);
+    va_end(argptr);
+
+    GetModuleFileName(NULL, appName, sizeof(appName));
+    PathStripPath(appName);
+	
+    MessageBox(NULL, msg, appName, MB_OK | MB_ICONERROR);
 }
 
 #define quitWithError(errMsg, ...) \
