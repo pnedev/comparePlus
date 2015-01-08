@@ -687,7 +687,7 @@ HWND openTempFile(void)
 		skipAutoReset = true;
 		SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_GOTO_ANOTHER_VIEW, 0);
 		skipAutoReset = false;
-		//::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)compareFilePath);
+		::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)compareFilePath);
 		panelsOpened = true;
 	}
 

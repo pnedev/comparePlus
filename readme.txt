@@ -12,6 +12,10 @@ Changelog:
 [* version 1.5.6.3. Also I (ufo) will never make any version number higher than 1.5.6.x, *]
 [* since I don't know if 1.5.7 will ever get released. *]
 
+1.5.6.7
+
+    1. FIX: Not comparing with temp file, when original file is not the last one the document tab bar
+
 1.5.6.6
 
     1. NEW: Loader for using N++ as an external diff viewer (e.g. in TortoiseSVN, TortoiseGit, ..)
