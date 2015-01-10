@@ -67,6 +67,9 @@
     <ClCompile Include="..\..\src\ScmHelper.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ProgressDlg\CProgress.cpp">
+      <Filter>src\ProgressDlg</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\AboutDlg\URLCtrl.h">
@@ -183,6 +186,9 @@
     <ClInclude Include="..\..\src\AboutDlg\AboutDialog.h">
       <Filter>src\AboutDlg</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ProgressDlg\CProgress.h">
+      <Filter>src\ProgressDlg</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\res\first.bmp">
@@ -227,6 +233,9 @@
     </Filter>
     <Filter Include="src\sqlite">
       <UniqueIdentifier>{1da4d896-dc9e-465e-93e9-586d52a7fd21}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\ProgressDlg">
+      <UniqueIdentifier>{5e43c310-53c0-4d62-b631-9a59e44601a0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

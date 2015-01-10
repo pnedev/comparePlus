@@ -60,7 +60,7 @@
       <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>../../src;../../src/MBA;../../src/AboutDlg;../../src/NavDlg;../../src/Common;../../src/OptionDlg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/MBA;../../src/AboutDlg;../../src/NavDlg;../../src/Common;../../src/OptionDlg;../../src/ProgressDlg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
@@ -88,7 +88,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
-      <AdditionalIncludeDirectories>../../src;../../src/MBA;../../src/AboutDlg;../../src/NavDlg;../../src/Common;../../src/OptionDlg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/MBA;../../src/AboutDlg;../../src/NavDlg;../../src/Common;../../src/OptionDlg;../../src/ProgressDlg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -131,6 +131,7 @@
     <ClCompile Include="..\..\src\mba\msgno.c" />
     <ClCompile Include="..\..\src\mba\suba.c" />
     <ClCompile Include="..\..\src\mba\varray.c" />
+    <ClCompile Include="..\..\src\ProgressDlg\CProgress.cpp" />
     <ClCompile Include="..\..\src\ScmHelper.cpp" />
     <ClCompile Include="..\..\src\sqlite\SqliteHelper.cpp" />
   </ItemGroup>
@@ -149,6 +150,7 @@
     <ClInclude Include="..\..\src\NavDlg\NavDialog.h" />
     <ClInclude Include="..\..\src\NPPHelpers.h" />
     <ClInclude Include="..\..\src\OptionDlg\OptionDialog.h" />
+    <ClInclude Include="..\..\src\ProgressDlg\CProgress.h" />
     <ClInclude Include="..\..\src\Resource.h" />
     <ClInclude Include="..\..\src\AboutDlg\URLCtrl.h" />
     <ClInclude Include="..\..\src\Common\Docking.h" />
