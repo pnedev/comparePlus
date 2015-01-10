@@ -44,6 +44,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "NavDialog.h"
 #include <window.h>
 #include <Commdlg.h>
+#include <CProgress.h>
 
 #define CLEANUP 1
 

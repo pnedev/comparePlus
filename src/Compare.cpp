@@ -38,6 +38,10 @@ bool panelsOpened = false;
 bool syncScrollVwasChecked = false;
 bool syncScrollHwasChecked = false;
 
+CProgress* progDlg = NULL;
+CProgress_IsCanceled_fn CProgress_IsCanceled = NULL;
+CProgress_SetPercent_fn CProgress_SetPercent = NULL;
+
 const TCHAR PLUGIN_NAME[] = TEXT("Compare");
 TCHAR iniFilePath[MAX_PATH];
 const TCHAR sectionName[] = TEXT("Compare Settings");
@@ -949,9 +953,22 @@ void compareGitBase()
 	MessageBox(nppData._nppHandle, L"Can't locate GIT information", L"ComparePlugin", MB_OK);
 }
 
+int CProgress_IsCanceled_Callback()
+{
+	return (int)progDlg->IsCancelled();
+}
+
+void CProgress_SetPercent_Callback(unsigned int percent)
+{
+	progDlg->SetPercent(percent);
+}
+
 bool compareNew()
 {
 	bool compareCanceled = false;
+	TCHAR fileName1[MAX_PATH];
+	TCHAR fileName2[MAX_PATH];
+	TCHAR buffer[1024];
 
 	clearWindow(nppData._scintillaMainHandle, true);
 	clearWindow(nppData._scintillaSecondHandle, true);
@@ -961,6 +978,7 @@ bool compareNew()
 	int doc1Length;
 	int *lineNum1;
 
+	//SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)fileName1);
 	char **doc1 = getAllLines(nppData._scintillaMainHandle, &doc1Length, &lineNum1);
 
 	if(doc1Length < 1)
@@ -969,6 +987,7 @@ bool compareNew()
 	int doc2Length;
 	int *lineNum2;
 
+	//SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)fileName2);
 	char **doc2 = getAllLines(nppData._scintillaSecondHandle, &doc2Length, &lineNum2);
 	
 	if(doc2Length < 1)
@@ -982,27 +1001,19 @@ bool compareNew()
 	unsigned int *doc1Hashes = computeHashes(doc1, doc1Length, Settings.IncludeSpace);
 	unsigned int *doc2Hashes = computeHashes(doc2, doc2Length, Settings.IncludeSpace);
 
+	//wsprintf(buffer, L"%s vs. %s", fileName1, fileName2);
+	CProgress_IsCanceled = CProgress_IsCanceled_Callback;
+	CProgress_SetPercent = CProgress_SetPercent_Callback;
+	progDlg = new CProgress((HINSTANCE)g_hModule, /*nppData._nppHandle*/NULL, L"Comparing..."/*buffer*/);
+	progDlg->Open();
+
 	/* make diff */
 	int sn;
 	struct varray *ses = varray_new(sizeof(struct diff_edit), NULL);
-	int result = (diff(doc1Hashes, 0, doc1Length, doc2Hashes, 0, doc2Length, (idx_fn)(getLineFromIndex), (cmp_fn)(compareLines), NULL, 0, ses, &sn, NULL));
-	
-	TCHAR buffer[256];
-	if (result > 1000)
-	{
-		wsprintf(buffer,
-			TEXT("There are more than 1000 differing lines of code (%d),\n")
-			TEXT("thus displaying the result could take quite a while.\n")
-			TEXT("Do you really want to continue?"),
-			result);
-		if (MessageBox(nppData._nppHandle, buffer, TEXT("Warning"),
-			MB_YESNO | MB_ICONWARNING) != IDYES)
-		{
-			compareCanceled = true;
-		}
-	}
+	int result = (diff(doc1Hashes, 0, doc1Length, doc2Hashes, 0, doc2Length,
+		(idx_fn)(getLineFromIndex), (cmp_fn)(compareLines), NULL, 0, ses, &sn, NULL));
 
-	if (!compareCanceled)
+	if (result != -1)
 	{
 		shift_boundries(ses, sn, doc1Hashes, doc2Hashes, doc1Length, doc2Length);
 		find_moves(ses, sn, doc1Hashes, doc2Hashes, Settings.DetectMove);
@@ -1204,6 +1215,9 @@ bool compareNew()
 
 //clean up resources
 #if CLEANUP
+
+	progDlg->Close();
+	delete progDlg;
 
 	if (result != -1)
 	{

@@ -23,6 +23,12 @@ extern "C" {
 #include <varray.h>
 #include <hashmap.h> /* cmp_fn */
 
+// CProgess callbacks
+typedef int(*CProgress_IsCanceled_fn)();
+typedef void(*CProgress_SetPercent_fn)(unsigned int percent);
+extern CProgress_IsCanceled_fn CProgress_IsCanceled;
+extern CProgress_SetPercent_fn CProgress_SetPercent;
+
 typedef const void *(*idx_fn)(const void *s, int idx, void *context);
 
 typedef enum {
