@@ -965,9 +965,8 @@ void CProgress_SetPercent_Callback(unsigned int percent)
 
 bool compareNew()
 {
-	bool compareCanceled = false;
-	TCHAR fileName1[MAX_PATH];
-	TCHAR fileName2[MAX_PATH];
+	TCHAR filenameMain[MAX_PATH];
+	TCHAR filenameSecond[MAX_PATH];
 	TCHAR buffer[1024];
 
 	clearWindow(nppData._scintillaMainHandle, true);
@@ -978,7 +977,6 @@ bool compareNew()
 	int doc1Length;
 	int *lineNum1;
 
-	//SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)fileName1);
 	char **doc1 = getAllLines(nppData._scintillaMainHandle, &doc1Length, &lineNum1);
 
 	if(doc1Length < 1)
@@ -987,7 +985,6 @@ bool compareNew()
 	int doc2Length;
 	int *lineNum2;
 
-	//SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)fileName2);
 	char **doc2 = getAllLines(nppData._scintillaSecondHandle, &doc2Length, &lineNum2);
 	
 	if(doc2Length < 1)
@@ -1001,10 +998,17 @@ bool compareNew()
 	unsigned int *doc1Hashes = computeHashes(doc1, doc1Length, Settings.IncludeSpace);
 	unsigned int *doc2Hashes = computeHashes(doc2, doc2Length, Settings.IncludeSpace);
 
-	//wsprintf(buffer, L"%s vs. %s", fileName1, fileName2);
+	/* show progress dialog */
+	HWND hwnd = GetFocus();
+	SetFocus(nppData._scintillaMainHandle);
+	SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)filenameMain);
+	SetFocus(nppData._scintillaSecondHandle);
+	SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)filenameSecond);
+	SetFocus(hwnd);
+	wsprintf(buffer, L"Compare: '%s' vs. '%s'", filenameMain, filenameSecond);
 	CProgress_IsCanceled = CProgress_IsCanceled_Callback;
 	CProgress_SetPercent = CProgress_SetPercent_Callback;
-	progDlg = new CProgress((HINSTANCE)g_hModule, /*nppData._nppHandle*/NULL, L"Comparing..."/*buffer*/);
+	progDlg = new CProgress((HINSTANCE)g_hModule, NULL, buffer);
 	progDlg->Open();
 
 	/* make diff */
@@ -1064,7 +1068,7 @@ bool compareNew()
 	// Change CHANGE to DELETE or INSERT if there are no changes on that line
 	int added;
 
-	if (!compareCanceled)
+	if (!progDlg->IsCancelled())
 	{
 		for (int i = 0; i < sn; i++)
 		{
@@ -1089,7 +1093,7 @@ bool compareNew()
 		}
 	}
 
-	if ((result != -1) && !compareCanceled)
+	if ((result != -1) && !progDlg->IsCancelled())
 	{
 		int textIndex;
 		different = (doc1Changed > 0) || (doc2Changed > 0);
@@ -1216,6 +1220,7 @@ bool compareNew()
 //clean up resources
 #if CLEANUP
 
+	bool compareCanceled = progDlg->IsCancelled();
 	progDlg->Close();
 	delete progDlg;
 

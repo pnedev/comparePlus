@@ -102,6 +102,10 @@ _find_middle_snake(const void *a, int aoff, int n,
 			return ctx->dmax;
 		}
 
+		if (CProgress_IsCanceled && CProgress_IsCanceled())
+		{
+			break;
+		}
 		if (CProgress_SetPercent)
 		{
 			perc = (100 * max(d, -d) * 2) / max(n, m);

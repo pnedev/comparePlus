@@ -53,7 +53,7 @@ static struct tbl_entry {
 static unsigned int next_tbl_idx = 1;
 
 int msgno_buf_idx = 0;
-char msgno_buf[MSGNO_BUFSIZ] = { 0 };
+char msgno_buf[MSGNO_BUFSIZ * 2] = { 0 };
 
 int
 msgno_add_codes(struct msgno_entry *list)
@@ -175,7 +175,7 @@ msgno_vsprintf(const char *fmt, va_list ap)
 #if (__STDC_VERSION__ >= 199901L)
 	if ((n = vsnprintf(msgno_buf + msgno_buf_idx, size, fmt, ap)) < 0 ||
 #else
-	if ((n = vsprintf_s(msgno_buf + msgno_buf_idx, _countof(msgno_buf), fmt, ap)) < 0 ||
+	if ((n = vsprintf_s(msgno_buf + msgno_buf_idx, /*_countof(msgno_buf)*/MSGNO_BUFSIZ - msgno_buf_idx, fmt, ap)) < 0 ||
 #endif
 				(size_t)n >= size || msgno_buf_idx > MSGNO_BUFSIZ) {
 		*msgno_buf = '\0';
