@@ -1352,6 +1352,10 @@ bool startCompare()
     if (syncScrollHwasChecked)
         ::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
 
+	// let the second view inherit the zoom level of the main view
+	int mainZoomLevel = SendMessage(nppData._scintillaMainHandle, SCI_GETZOOM, 0, 0);
+	SendMessage(nppData._scintillaSecondHandle, SCI_SETZOOM, mainZoomLevel, 0);
+
 	::SendMessageA(nppData._scintillaMainHandle, SCI_GOTOPOS, 1, 0);
 	::SendMessageA(nppData._scintillaSecondHandle, SCI_GOTOPOS, 1, 0);
 	::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);

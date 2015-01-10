@@ -17,7 +17,8 @@ Changelog:
     1. NEW: Show progress bar dialog while comparing (thanks to Pavel N.!)
             (due to the sophisticated nonlinear diff algorithm a truly estimated "one-pass" progress
             is not doable, instead the progress bar passes through N times and with different speeds)
-    2. FIX: Not comparing with temp file, when original file is not the last one the document tab bar
+    2. FIX: Sync zoom levels of both views when comparing
+    3. FIX: Not comparing with temp file, when original file is not the last one the document tab bar
 
 1.5.6.6
 
