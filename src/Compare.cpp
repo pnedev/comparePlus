@@ -1004,6 +1004,14 @@ bool compareNew()
 	SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)filenameMain);
 	SetFocus(nppData._scintillaSecondHandle);
 	SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)filenameSecond);
+	if (lstrlen(filenameMain) > 20)
+	{
+		lstrcpy(filenameMain + 17, L"...");
+	}
+	if (lstrlen(filenameSecond) > 20)
+	{
+		lstrcpy(filenameSecond + 17, L"...");
+	}
 	SetFocus(hwnd);
 	wsprintf(buffer, L"Compare: '%s' vs. '%s'", filenameMain, filenameSecond);
 	CProgress_IsCanceled = CProgress_IsCanceled_Callback;
