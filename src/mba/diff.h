@@ -25,9 +25,9 @@ extern "C" {
 
 // CProgess callbacks
 typedef int(*CProgress_IsCanceled_fn)();
-typedef void(*CProgress_SetPercent_fn)(unsigned int percent);
+typedef void(*CProgress_Increment_fn)(int mid);
 extern CProgress_IsCanceled_fn CProgress_IsCanceled;
-extern CProgress_SetPercent_fn CProgress_SetPercent;
+extern CProgress_Increment_fn CProgress_Increment;
 
 typedef const void *(*idx_fn)(const void *s, int idx, void *context);
 

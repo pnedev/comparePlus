@@ -85,7 +85,7 @@ _find_middle_snake(const void *a, int aoff, int n,
 		struct _ctx *ctx,
 		struct middle_snake *ms)
 {
-	int delta, odd, mid, d, perc;
+	int delta, odd, mid, d;
 
 	delta = n - m;
 	odd = delta & 1;
@@ -98,18 +98,16 @@ _find_middle_snake(const void *a, int aoff, int n,
 	for (d = 0; d <= mid; d++) {
 		int k, x, y;
 
-		if ((2 * d - 1) >= ctx->dmax) {
-			return ctx->dmax;
+		if (CProgress_IsCanceled && CProgress_Increment)
+		{
+			if (CProgress_IsCanceled())
+				break;
+			else
+				CProgress_Increment(mid);
 		}
 
-		if (CProgress_IsCanceled && CProgress_IsCanceled())
-		{
-			break;
-		}
-		if (CProgress_SetPercent)
-		{
-			perc = (100 * max(d, -d) * 2) / max(n, m);
-			CProgress_SetPercent(perc);
+		if ((2 * d - 1) >= ctx->dmax) {
+			return ctx->dmax;
 		}
 
 		for (k = d; k >= -d; k -= 2) {

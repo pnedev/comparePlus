@@ -40,7 +40,10 @@ bool syncScrollHwasChecked = false;
 
 CProgress* progDlg = NULL;
 CProgress_IsCanceled_fn CProgress_IsCanceled = NULL;
-CProgress_SetPercent_fn CProgress_SetPercent = NULL;
+CProgress_Increment_fn CProgress_Increment = NULL;
+int lastProgMid = -1;
+int progMax = 0;
+int progCounter = 0;
 
 const TCHAR PLUGIN_NAME[] = TEXT("Compare");
 TCHAR iniFilePath[MAX_PATH];
@@ -954,9 +957,18 @@ int CProgress_IsCanceled_Callback()
 	return (int)progDlg->IsCancelled();
 }
 
-void CProgress_SetPercent_Callback(unsigned int percent)
+void CProgress_Increment_Callback(int mid)
 {
-	progDlg->SetPercent(percent);
+	if (lastProgMid < mid)
+	{
+		lastProgMid = mid;
+		if (lastProgMid = progMax)
+		{
+			progMax = lastProgMid;
+		}
+	}
+	int perc = (++progCounter * 100) / (progMax * 4);
+	progDlg->SetPercent(perc);
 }
 
 bool compareNew()
@@ -1011,7 +1023,10 @@ bool compareNew()
 	SetFocus(hwnd);
 	wsprintf(buffer, L"Compare: '%s' vs. '%s'", filenameMain, filenameSecond);
 	CProgress_IsCanceled = CProgress_IsCanceled_Callback;
-	CProgress_SetPercent = CProgress_SetPercent_Callback;
+	CProgress_Increment = CProgress_Increment_Callback;
+	lastProgMid = -1;
+	progMax = 0;
+	progCounter = 0;
 	progDlg = new CProgress((HINSTANCE)g_hModule, NULL, buffer);
 	progDlg->Open();
 
