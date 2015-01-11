@@ -1064,7 +1064,15 @@ bool compareNew()
 	int doc1CurrentChange = 0;
 	int doc2CurrentChange = 0;
 	doc1Changes = new diff_edit[doc1Changed];
+	for (int i = 0; i < doc1Changed; i++)
+	{
+		doc1Changes[i] = {};
+	}
 	doc2Changes = new diff_edit[doc2Changed];
+	for (int i = 0; i < doc2Changed; i++)
+	{
+		doc2Changes[i] = {};
+	}
 	int doc1Offset = 0;
 	int doc2Offset = 0;
 
