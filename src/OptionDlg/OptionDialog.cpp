@@ -30,7 +30,6 @@ BOOL CALLBACK OptionDialog::run_dlgProc(HWND /*hwnd*/, UINT Message, WPARAM wPar
 
 			_ColorComboAdded.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_ADDED_COLOR));
 			_ColorComboChanged.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_CHANGED_COLOR));
-			_ColorComboBlank.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_BLANK_COLOR));
 			_ColorComboMoved.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_MOVED_COLOR));
 			_ColorComboRemoved.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_REMOVED_COLOR));
 			_ColorComboHighlight.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_HIGHLIGHT_COLOR));
@@ -55,7 +54,6 @@ BOOL CALLBACK OptionDialog::run_dlgProc(HWND /*hwnd*/, UINT Message, WPARAM wPar
 					return TRUE;
 				case IDDEFAULT:
 					_Settings->ColorSettings.added     = DEFAULT_ADDED_COLOR;
-					_Settings->ColorSettings.blank     = DEFAULT_BLANK_COLOR;
 					_Settings->ColorSettings.changed   = DEFAULT_CHANGED_COLOR;
 					_Settings->ColorSettings.deleted   = DEFAULT_DELETED_COLOR;
 					_Settings->ColorSettings.moved     = DEFAULT_MOVED_COLOR;
@@ -68,9 +66,6 @@ BOOL CALLBACK OptionDialog::run_dlgProc(HWND /*hwnd*/, UINT Message, WPARAM wPar
 					break;
 				case IDC_COMBO_CHANGED_COLOR :
 					_ColorComboChanged.onSelect();
-					break;
-				case IDC_COMBO_BLANK_COLOR :
-					_ColorComboBlank.onSelect();
 					break;
 				case IDC_COMBO_MOVED_COLOR :
 					_ColorComboMoved.onSelect();
@@ -97,7 +92,6 @@ void OptionDialog::SetParams(void)
 	_ColorComboMoved.setColor(_Settings->ColorSettings.moved);
 	_ColorComboRemoved.setColor(_Settings->ColorSettings.deleted);
 	_ColorComboChanged.setColor(_Settings->ColorSettings.changed);
-	_ColorComboBlank.setColor(_Settings->ColorSettings.blank);
 	_ColorComboHighlight.setColor(_Settings->ColorSettings.highlight);
 
 	// Set transparency
@@ -122,7 +116,6 @@ BOOL OptionDialog::GetParams(void)
 	_ColorComboMoved.getColor((LPCOLORREF)&_Settings->ColorSettings.moved);
 	_ColorComboRemoved.getColor((LPCOLORREF)&_Settings->ColorSettings.deleted);
 	_ColorComboChanged.getColor((LPCOLORREF)&_Settings->ColorSettings.changed);
-	_ColorComboBlank.getColor((LPCOLORREF)&_Settings->ColorSettings.blank);
 	_ColorComboHighlight.getColor((LPCOLORREF)&_Settings->ColorSettings.highlight);
 
 	// Get transparency

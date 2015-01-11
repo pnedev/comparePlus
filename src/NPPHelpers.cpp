@@ -117,9 +117,28 @@ void DefineXpmSymbol(int type, char ** xpm)
 	SendMessage(nppData._scintillaSecondHandle, SCI_MARKERDEFINEPIXMAP, type, (LPARAM)xpm);
 }
 
-void setStyles(sUserSettings Settings)
+void setStyles(sUserSettings* Settings)
 {
-	int MarginMask = (1 << MARKER_CHANGED_SYMBOL) |
+    int bg = SendMessage(nppData._nppHandle, NPPM_GETEDITORDEFAULTBACKGROUNDCOLOR, 0, 0);
+    Settings->ColorSettings._default = bg;
+    unsigned int r = bg & 0xFF;
+    unsigned int g = bg >> 8 & 0xFF;
+    unsigned int b = bg >> 16 & 0xFF;
+    int colorShift = 0;
+    if (((r + g + b) / 3) >= 128)
+    {
+        colorShift = -30;
+    }
+    else
+    {
+        colorShift = 30;
+    }
+    r = (r + colorShift) & 0xFF;
+    g = (g + colorShift) & 0xFF;
+    b = (b + colorShift) & 0xFF;
+    Settings->ColorSettings.blank = r | (g << 8) | (b << 16);
+    
+    int MarginMask = (1 << MARKER_CHANGED_SYMBOL) |
 					 (1 << MARKER_ADDED_SYMBOL) | 
 					 (1 << MARKER_REMOVED_SYMBOL) | 
 					 (1 << MARKER_MOVED_SYMBOL);
@@ -130,15 +149,15 @@ void setStyles(sUserSettings Settings)
 	::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINWIDTHN, (WPARAM)4, (LPARAM)16);
 	::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINWIDTHN, (WPARAM)4, (LPARAM)16);
 		
-	setBlank(nppData._scintillaMainHandle, Settings.ColorSettings.blank);
-	setBlank(nppData._scintillaSecondHandle, Settings.ColorSettings.blank);
+	setBlank(nppData._scintillaMainHandle,   Settings->ColorSettings.blank);
+    setBlank(nppData._scintillaSecondHandle, Settings->ColorSettings.blank);
 
-	defineColor(MARKER_ADDED_LINE,   Settings.ColorSettings.added);
-	defineColor(MARKER_CHANGED_LINE, Settings.ColorSettings.changed);
-	defineColor(MARKER_MOVED_LINE,   Settings.ColorSettings.moved);
-	defineColor(MARKER_REMOVED_LINE, Settings.ColorSettings.deleted);
+    defineColor(MARKER_ADDED_LINE,   Settings->ColorSettings.added);
+    defineColor(MARKER_CHANGED_LINE, Settings->ColorSettings.changed);
+    defineColor(MARKER_MOVED_LINE,   Settings->ColorSettings.moved);
+    defineColor(MARKER_REMOVED_LINE, Settings->ColorSettings.deleted);
 
-	if (Settings.OldSymbols == TRUE)
+    if (Settings->OldSymbols == TRUE)
 	{
 		defineSymbol(MARKER_ADDED_SYMBOL,   SC_MARK_PLUS);  
 		defineSymbol(MARKER_REMOVED_SYMBOL, SC_MARK_MINUS);
@@ -153,7 +172,7 @@ void setStyles(sUserSettings Settings)
 		DefineXpmSymbol(MARKER_MOVED_SYMBOL,   &icon_moved_16_xpm[0]);
 	}   
 
-	setTextStyles(Settings.ColorSettings);
+    setTextStyles(Settings->ColorSettings);
 }
 
 void markAsBlank(HWND window,int line)

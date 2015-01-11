@@ -39,7 +39,7 @@ public:
 	void doDialog(bool willBeShown = true);
     void NavDialog::DrawView();
 	void Do(void);
-	void SetColor(int added, int deleted, int changed, int moved, int blank);  
+    void SetColor(int added, int deleted, int changed, int moved, int blank, int _default);
 	void SetLinePixel(long resultsDoc, int i, HDC hMemDC, int* m_lastDiffColor);
 	void SetScalingFactor(HWND hWnd);
 	void CreateBitmap(void);

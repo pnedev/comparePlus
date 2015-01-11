@@ -54,7 +54,6 @@ const TCHAR addedColorOption[]     = TEXT("Added");
 const TCHAR removedColorOption[]   = TEXT("Removed");
 const TCHAR changedColorOption[]   = TEXT("Changed");
 const TCHAR movedColorOption[]     = TEXT("Moved");
-const TCHAR blankColorOption[]     = TEXT("Blank");
 const TCHAR highlightColorOption[] = TEXT("Highlight");
 const TCHAR highlightAlphaOption[] = TEXT("Alpha");
 const TCHAR symbolsOption[]        = TEXT("Symbols");
@@ -334,7 +333,6 @@ void loadSettings(void)
 		Settings.ColorSettings.deleted   = ::GetPrivateProfileInt(colorsSection, removedColorOption, DEFAULT_DELETED_COLOR, iniFilePath);
 		Settings.ColorSettings.changed   = ::GetPrivateProfileInt(colorsSection, changedColorOption, DEFAULT_CHANGED_COLOR, iniFilePath);
 		Settings.ColorSettings.moved     = ::GetPrivateProfileInt(colorsSection, movedColorOption, DEFAULT_MOVED_COLOR, iniFilePath);
-		Settings.ColorSettings.blank     = ::GetPrivateProfileInt(colorsSection, blankColorOption, DEFAULT_BLANK_COLOR, iniFilePath);
 		Settings.ColorSettings.highlight = ::GetPrivateProfileInt(colorsSection, highlightColorOption, DEFAULT_HIGHLIGHT_COLOR, iniFilePath);
 		Settings.ColorSettings.alpha     = ::GetPrivateProfileInt(colorsSection, highlightAlphaOption, DEFAULT_HIGHLIGHT_ALPHA, iniFilePath);
 	}
@@ -345,7 +343,6 @@ void loadSettings(void)
 		Settings.ColorSettings.deleted   = ::GetPrivateProfileInt(colorsSection, removedColorOption, DEFAULT_DELETED_COLOR, iniFilePath);
 		Settings.ColorSettings.changed   = ::GetPrivateProfileInt(colorsSection, changedColorOption, DEFAULT_CHANGED_COLOR, iniFilePath);
 		Settings.ColorSettings.moved     = ::GetPrivateProfileInt(colorsSection, movedColorOption, DEFAULT_MOVED_COLOR, iniFilePath);
-		Settings.ColorSettings.blank     = ::GetPrivateProfileInt(colorsSection, blankColorOption, DEFAULT_BLANK_COLOR, iniFilePath); 
 		Settings.ColorSettings.highlight = ::GetPrivateProfileInt(colorsSection, highlightColorOption, DEFAULT_HIGHLIGHT_COLOR, iniFilePath);
 		Settings.ColorSettings.alpha     = ::GetPrivateProfileInt(colorsSection, highlightAlphaOption, DEFAULT_HIGHLIGHT_ALPHA, iniFilePath);
 	}
@@ -373,9 +370,6 @@ void saveSettings(void)
 
 	_itot_s(Settings.ColorSettings.moved, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, movedColorOption, buffer, iniFilePath);
-
-	_itot_s(Settings.ColorSettings.blank, buffer, 64, 10);
-	::WritePrivateProfileString(colorsSection, blankColorOption, buffer, iniFilePath);
 
 	_itot_s(Settings.ColorSettings.highlight, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, highlightColorOption, buffer, iniFilePath);
@@ -462,7 +456,7 @@ void openOptionDlg(void)
 		saveSettings();
 		if (active)
 		{
-			setStyles(Settings);
+			setStyles(&Settings);
 			
 			if (NavDlg.isVisible())
 			{
@@ -471,7 +465,8 @@ void openOptionDlg(void)
 					Settings.ColorSettings.deleted,
 					Settings.ColorSettings.changed,
 					Settings.ColorSettings.moved,
-					Settings.ColorSettings.blank);
+                    Settings.ColorSettings.blank,
+                    Settings.ColorSettings._default);
 
 				NavDlg.CreateBitmap();
 			}
@@ -623,8 +618,9 @@ void ViewNavigationBar(void)
 				Settings.ColorSettings.added, 
 				Settings.ColorSettings.deleted, 
 				Settings.ColorSettings.changed, 
-				Settings.ColorSettings.moved, 
-				Settings.ColorSettings.blank);
+				Settings.ColorSettings.moved,
+                Settings.ColorSettings.blank,
+                Settings.ColorSettings._default);
 
 			// Display Navbar
 			NavDlg.doDialog(true);
@@ -1342,7 +1338,7 @@ bool startCompare()
 	if ((RODoc2 = SendMessage(nppData._scintillaSecondHandle, SCI_GETREADONLY, 0, 0)) == 1)
 		SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, false, 0);
 
-	setStyles(Settings);
+	setStyles(&Settings);
 
 	int doc1 = SendMessageA(nppData._scintillaMainHandle, SCI_GETDOCPOINTER, 0, 0);
 	int doc2 = SendMessageA(nppData._scintillaSecondHandle, SCI_GETDOCPOINTER, 0, 0);
@@ -1395,8 +1391,9 @@ bool startCompare()
 				Settings.ColorSettings.added, 
 				Settings.ColorSettings.deleted, 
 				Settings.ColorSettings.changed, 
-				Settings.ColorSettings.moved, 
-				Settings.ColorSettings.blank);
+				Settings.ColorSettings.moved,
+                Settings.ColorSettings.blank,
+                Settings.ColorSettings._default);
 
 			// Display Navbar
 			NavDlg.doDialog(true);

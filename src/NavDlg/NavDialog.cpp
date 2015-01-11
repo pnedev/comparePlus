@@ -207,16 +207,14 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 	return FALSE;
 }
 
-void NavDialog::SetColor(int added, int deleted, int changed, int moved, int blank)
+void NavDialog::SetColor(int added, int deleted, int changed, int moved, int blank, int _default)
 {
 	m_AddedColor   = added;
 	m_DeletedColor = deleted;
 	m_ChangedColor = changed;
 	m_MovedColor   = moved;
-	m_BlankColor   = blank;
-    // TODO: maybe read following setting from the config dialog, too?
-	//m_DefaultColor = GetSysColor(COLOR_ACTIVECAPTION);
-    m_DefaultColor = SendMessage(_nppData._nppHandle, NPPM_GETEDITORDEFAULTBACKGROUNDCOLOR, 0, 0);
+    m_BlankColor   = blank;
+    m_DefaultColor = _default;
 }
 
 void NavDialog::SetLinePixel(long resultsDoc, int i, HDC hMemDC, int* m_lastDiffColor)
@@ -327,7 +325,7 @@ LRESULT NavDialog::OnPaint(HWND hWnd)
     m_rRight.right = m_rRight.left + m_SideBarPartWidth;
     m_rRight.bottom = m_rRight.top + m_SideBarPartHeight;
 
-	SetStretchBltMode(m_hdc, WHITEONBLACK);
+	//SetStretchBltMode(m_hdc, HALFTONE);
 
 	int x, y, cx, cy;
 

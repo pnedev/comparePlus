@@ -45,7 +45,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define IDC_COMBO_REMOVED_COLOR         1017
 #define IDC_COMBO_MOVED_COLOR           1018
 #define IDC_COMBO_CHANGED_COLOR         1019
-#define IDC_COMBO_BLANK_COLOR           1020
 #define IDC_COMBO_HIGHLIGHT_COLOR       1021
 #define IDC_SPIN_BOX                    1035
 #define IDC_SPIN_CTL                    1036

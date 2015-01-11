@@ -51,11 +51,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 using namespace std;
 /* store name for ini file */
 
-#define DEFAULT_ADDED_COLOR     0xE0FFE0
-#define DEFAULT_DELETED_COLOR   0xE0E0FF
-#define DEFAULT_CHANGED_COLOR   0x98E7E7
-#define DEFAULT_MOVED_COLOR     0xB1A88D
-#define DEFAULT_BLANK_COLOR     0xe4e4e4
+#define DEFAULT_ADDED_COLOR     0xAAFFAA
+#define DEFAULT_DELETED_COLOR   0xC4C4FF
+#define DEFAULT_CHANGED_COLOR   0x82E1E1
+#define DEFAULT_MOVED_COLOR     0xCBBF89
 #define DEFAULT_HIGHLIGHT_COLOR 0x010101
 #define DEFAULT_HIGHLIGHT_ALPHA 100
 // dont use "INDIC_CONTAINER + 1" since it conflicts with DSpellCheck plugin
@@ -105,6 +104,7 @@ struct sColorSettings
 	int changed;
 	int moved;
 	int blank;
+    int _default;
 	int highlight;
 	int alpha;
 };
