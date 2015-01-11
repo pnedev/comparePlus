@@ -44,9 +44,9 @@ CProgress::CProgress(HINSTANCE hInst, HWND hParent, const TCHAR* header) :
         ::InitCommonControlsEx(&icex);
     }
     if (header)
-		_tcscpy_s(_header, _tcslen(_header), header);
+        lstrcpy(_header, header);
     else
-		_tcscpy_s(_header, _tcslen(_header), TEXT("Compare in progress..."));
+		lstrcpy(_header, TEXT("Compare in progress..."));
 }
 
 
