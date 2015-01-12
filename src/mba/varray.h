@@ -52,7 +52,7 @@ extern "C" {
 */
 
 #ifndef VARRAY_INIT_SIZE
-#define VARRAY_INIT_SIZE 5
+#define VARRAY_INIT_SIZE 16
 #endif
 
 struct varray {

@@ -22,7 +22,8 @@ Changelog:
             NOTE: Requires N++ version 6.6.8 or higher!
     3. NEW: Sync zoom levels of both views when comparing
     4. FIX: Not comparing with temp file, when original file is not the last one the document tab bar
-    5. FIX: Again some minor improvements to coloring and nav bar
+    5. FIX: Too low "diff size limit" (e.g plug-in exception when comparing a 1.5 MB file with a 1 KB file)
+    6. FIX: Again some minor improvements to coloring and nav bar
 
 1.5.6.6
 
