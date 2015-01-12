@@ -41,7 +41,6 @@ bool syncScrollHwasChecked = false;
 CProgress* progDlg = NULL;
 CProgress_IsCanceled_fn CProgress_IsCanceled = NULL;
 CProgress_Increment_fn CProgress_Increment = NULL;
-int lastProgMid = -1;
 int progMax = 0;
 int progCounter = 0;
 
@@ -959,16 +958,15 @@ int CProgress_IsCanceled_Callback()
 
 void CProgress_Increment_Callback(int mid)
 {
-	if (lastProgMid < mid)
+	if (mid > progMax)
 	{
-		lastProgMid = mid;
-		if (lastProgMid = progMax)
-		{
-			progMax = lastProgMid;
-		}
+		progMax = mid;
 	}
-	int perc = (++progCounter * 100) / (progMax * 4);
-	progDlg->SetPercent(perc);
+	if (progMax)
+	{
+		int perc = (++progCounter * 100) / (progMax * 4);
+		progDlg->SetPercent(perc);
+	}
 }
 
 bool compareNew()
@@ -1024,7 +1022,6 @@ bool compareNew()
 	wsprintf(buffer, L"Compare: '%s' vs. '%s'", filenameMain, filenameSecond);
 	CProgress_IsCanceled = CProgress_IsCanceled_Callback;
 	CProgress_Increment = CProgress_Increment_Callback;
-	lastProgMid = -1;
 	progMax = 0;
 	progCounter = 0;
 	progDlg = new CProgress((HINSTANCE)g_hModule, NULL, buffer);
