@@ -1024,7 +1024,7 @@ bool compareNew()
 	CProgress_Increment = CProgress_Increment_Callback;
 	progMax = 0;
 	progCounter = 0;
-	progDlg = new CProgress((HINSTANCE)g_hModule, NULL, buffer);
+	progDlg = new CProgress(NULL, NULL, buffer);
 	progDlg->Open();
 
 	/* make diff */
