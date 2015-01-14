@@ -9,7 +9,7 @@
 class CProgress
 {
 public:
-    CProgress(HINSTANCE hInst, HWND hParent = NULL,
+    CProgress(HINSTANCE hInst = NULL, HWND hOwner = NULL,
             const TCHAR* header = NULL);
     ~CProgress();
 
@@ -27,6 +27,7 @@ private:
     static const int cBTNheight;
 
     static volatile LONG RefCount;
+    static HINSTANCE HInst;
 
     static DWORD threadFunc(LPVOID data);
     static LRESULT APIENTRY wndProc(HWND hwnd, UINT umsg,
@@ -42,8 +43,7 @@ private:
 
     TCHAR _header[128];
 
-    HINSTANCE _hInst;
-    HWND _hParent;
+    HWND _hOwner;
     volatile bool _isInit;
     HANDLE _hThread;
     HANDLE _hActiveState;

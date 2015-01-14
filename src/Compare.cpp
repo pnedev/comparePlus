@@ -71,7 +71,7 @@ NppData nppData;
 
 FuncItem funcItem[NB_MENU_COMMANDS];
 
-HANDLE g_hModule;
+HINSTANCE hInstance;
 
 sUserSettings Settings;
 AboutDialog   AboutDlg;
@@ -83,9 +83,9 @@ toolbarIcons  tbNext;
 toolbarIcons  tbFirst;
 toolbarIcons  tbLast;
 
-BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*/)
+BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReserved*/)
  {
-	g_hModule = hModule;
+    hInstance = hinstDLL;
 
 	switch (reasonForCall)
 	{
@@ -222,7 +222,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*
 				compareDocs[i]=-1;
 
 			TCHAR nppPath[MAX_PATH];
-			GetModuleFileName((HMODULE)hModule, nppPath, sizeof(nppPath));
+            GetModuleFileName(hInstance, nppPath, sizeof(nppPath));
 
 			// remove the module name : get plugins directory path
 			PathRemoveFileSpec(nppPath);
@@ -307,9 +307,9 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 {
 	nppData = notpadPlusData;
 
-	AboutDlg.init((HINSTANCE)g_hModule, nppData);
-	OptionDlg.init((HINSTANCE)g_hModule, nppData);
-	NavDlg.init((HINSTANCE)g_hModule, nppData);
+    AboutDlg.init(hInstance, nppData);
+    OptionDlg.init(hInstance, nppData);
+    NavDlg.init(hInstance, nppData);
 }
 
 extern "C" __declspec(dllexport) const TCHAR * getName()
@@ -985,8 +985,19 @@ bool compareNew()
 
 	char **doc1 = getAllLines(nppData._scintillaMainHandle, &doc1Length, &lineNum1);
 
-	if(doc1Length < 1)
-		return true;
+    if (doc1Length < 1)
+    {
+        return true;
+    }
+    else if (doc1Length == 1)
+    {
+        if (SendMessage(nppData._scintillaMainHandle, SCI_LINELENGTH, 0, (LPARAM)0) == 0)
+        {
+            char *memblock[1] = { 0 };
+            SendMessage(nppData._scintillaMainHandle, SCI_APPENDTEXT, 1, (LPARAM)memblock);
+            SendMessage(nppData._scintillaMainHandle, SCI_SETSAVEPOINT, 0, (LPARAM)0);
+        }
+    }
 
 	int doc2Length;
 	int *lineNum2;
@@ -1024,7 +1035,7 @@ bool compareNew()
 	CProgress_Increment = CProgress_Increment_Callback;
 	progMax = 0;
 	progCounter = 0;
-	progDlg = new CProgress(NULL, NULL, buffer);
+    progDlg = new CProgress(hInstance, NULL, buffer);
 	progDlg->Open();
 
 	/* make diff */
@@ -1232,7 +1243,7 @@ bool compareNew()
 				}
 			}
 
-			addEmptyLines(nppData._scintillaMainHandle, off + doc1Offset, length);
+    		addEmptyLines(nppData._scintillaMainHandle, off + doc1Offset, length);
 
 			if (doc1Offset > 0)
 			{
@@ -1472,25 +1483,25 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 
 	case NPPN_TBMODIFICATION:
 		{         
-			tbNext.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule,
+            tbNext.hToolbarBmp = (HBITMAP)::LoadImage(hInstance,
 													  MAKEINTRESOURCE(IDB_NEXT),
 													  IMAGE_BITMAP,
 													  0, 0,
 													  (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
 
-			tbPrev.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule,
+            tbPrev.hToolbarBmp = (HBITMAP)::LoadImage(hInstance,
 													  MAKEINTRESOURCE(IDB_PREV),
 													  IMAGE_BITMAP,
 													  0, 0,
 													  (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
 
-			tbFirst.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule,
+            tbFirst.hToolbarBmp = (HBITMAP)::LoadImage(hInstance,
 													   MAKEINTRESOURCE(IDB_FIRST),
 													   IMAGE_BITMAP,
 													   0, 0,
 													   (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
 
-			tbLast.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule,
+            tbLast.hToolbarBmp = (HBITMAP)::LoadImage(hInstance,
 													  MAKEINTRESOURCE(IDB_LAST),
 													  IMAGE_BITMAP,
 													  0, 0,
