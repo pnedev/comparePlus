@@ -5,9 +5,11 @@
 #include "CProgress.h"
 #include <windowsx.h>
 #include <commctrl.h>
+#include <stdlib.h>
 
 
 const TCHAR CProgress::cClassName[]     = TEXT("OperationProgressClass");
+const TCHAR CProgress::cDefaultHeader[] = TEXT("Operation progress...");
 const int CProgress::cBackgroundColor   = COLOR_3DFACE;
 const int CProgress::cPBwidth           = 500;
 const int CProgress::cPBheight          = 15;
@@ -19,17 +21,13 @@ volatile LONG CProgress::RefCount = 0;
 HINSTANCE CProgress::HInst = NULL;
 
 
-CProgress::CProgress(HINSTANCE hInst, HWND hOwner, const TCHAR* header) :
-    _hOwner(hOwner), _isInit(false)
+CProgress::CProgress() : _isInit(false)
 {
     if (::InterlockedIncrement(&RefCount) == 1)
     {
-        if (hInst)
-            HInst = hInst;
-        else
-            ::GetModuleHandleEx(
-                GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
-                GET_MODULE_HANDLE_EX_FLAG_PIN, cClassName, &HInst);
+        ::GetModuleHandleEx(
+            GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+            GET_MODULE_HANDLE_EX_FLAG_PIN, cClassName, &HInst);
 
         WNDCLASSEX wcex;
 
@@ -37,7 +35,6 @@ CProgress::CProgress(HINSTANCE hInst, HWND hOwner, const TCHAR* header) :
         wcex.cbSize           = sizeof(wcex);
         wcex.style            = CS_HREDRAW | CS_VREDRAW;
         wcex.lpfnWndProc      = wndProc;
-        wcex.cbWndExtra       = DLGWINDOWEXTRA;
         wcex.hInstance        = HInst;
         wcex.hCursor          = ::LoadCursor(NULL, IDC_ARROW);
         wcex.hbrBackground    = ::GetSysColorBrush(cBackgroundColor);
@@ -48,16 +45,11 @@ CProgress::CProgress(HINSTANCE hInst, HWND hOwner, const TCHAR* header) :
         INITCOMMONCONTROLSEX icex;
 
         ::SecureZeroMemory(&icex, sizeof(icex));
-        icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+        icex.dwSize = sizeof(icex);
         icex.dwICC  = ICC_STANDARD_CLASSES | ICC_PROGRESS_CLASS;
 
         ::InitCommonControlsEx(&icex);
     }
-
-    if (header)
-        lstrcpy(_header, header);
-    else
-        lstrcpy(_header, TEXT("Operation progress..."));
 }
 
 
@@ -70,10 +62,17 @@ CProgress::~CProgress()
 }
 
 
-bool CProgress::Open()
+bool CProgress::Open(HWND hOwner, const TCHAR* header)
 {
     if (_isInit)
         return true;
+
+    _hOwner = hOwner;
+
+    if (header)
+        _tcscpy_s(_header, _countof(_header), header);
+    else
+        _tcscpy_s(_header, _countof(_header), cDefaultHeader);
 
     // Create manually reset non-signaled event
     _hActiveState = ::CreateEvent(NULL, TRUE, FALSE, NULL);
@@ -176,15 +175,15 @@ bool CProgress::createProgressWindow()
     _hPBar = ::CreateWindowEx(0, PROGRESS_CLASS, TEXT("Progress Bar"),
             WS_CHILD | WS_VISIBLE | PBS_SMOOTH,
             5, 5, width - 10, cPBheight,
-            _hwnd, NULL, NULL, NULL);
+            _hwnd, NULL, HInst, NULL);
     SendMessage(_hPBar, PBM_SETRANGE, 0, MAKELPARAM(0, 100));
 
     _hBtn = ::CreateWindowEx(0, TEXT("BUTTON"), TEXT("Cancel"),
             WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON | BS_TEXT,
             (width - cBTNwidth) / 2, height - cBTNheight - 5,
-            cBTNwidth, cBTNheight, _hwnd, NULL, NULL, NULL);
+            cBTNwidth, cBTNheight, _hwnd, NULL, HInst, NULL);
 
-    ::ShowWindow(_hwnd, SW_SHOW);
+    ::ShowWindow(_hwnd, SW_SHOWNORMAL);
     ::UpdateWindow(_hwnd);
 
     return true;

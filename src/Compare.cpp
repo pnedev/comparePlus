@@ -1035,8 +1035,8 @@ bool compareNew()
 	CProgress_Increment = CProgress_Increment_Callback;
 	progMax = 0;
 	progCounter = 0;
-    progDlg = new CProgress(hInstance, NULL, buffer);
-	progDlg->Open();
+    progDlg = new CProgress();
+    progDlg->Open(NULL, buffer);
 
 	/* make diff */
 	int sn;
