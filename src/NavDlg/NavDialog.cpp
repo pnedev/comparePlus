@@ -217,21 +217,21 @@ void NavDialog::SetColor(int added, int deleted, int changed, int moved, int bla
     m_DefaultColor = _default;
 }
 
-void NavDialog::SetLinePixel(long resultsDoc, int i, HDC hMemDC, int* m_lastDiffColor)
+void NavDialog::SetLinePixel(long resultsDoc, int i, HDC hMemDC, int* m_lastDiffColor, int* m_lastDiffCounter)
 {
 	long color = 0;
 	// Choose a pencil to draw with
 	switch (resultsDoc)
 	{
-    case MARKER_BLANK_LINE:   color = *m_lastDiffColor = m_BlankColor;   m_lastDiffCounter = m_minimumDiffHeight; break;
-    case MARKER_ADDED_LINE:   color = *m_lastDiffColor = m_AddedColor;   m_lastDiffCounter = m_minimumDiffHeight; break;
-    case MARKER_CHANGED_LINE: color = *m_lastDiffColor = m_ChangedColor; m_lastDiffCounter = m_minimumDiffHeight; break;
-    case MARKER_MOVED_LINE:   color = *m_lastDiffColor = m_MovedColor;   m_lastDiffCounter = m_minimumDiffHeight; break;
-    case MARKER_REMOVED_LINE: color = *m_lastDiffColor = m_DeletedColor; m_lastDiffCounter = m_minimumDiffHeight; break;
+    case MARKER_BLANK_LINE:   color = *m_lastDiffColor = m_BlankColor;   *m_lastDiffCounter = m_minimumDiffHeight; break;
+    case MARKER_ADDED_LINE:   color = *m_lastDiffColor = m_AddedColor;   *m_lastDiffCounter = m_minimumDiffHeight; break;
+    case MARKER_CHANGED_LINE: color = *m_lastDiffColor = m_ChangedColor; *m_lastDiffCounter = m_minimumDiffHeight; break;
+    case MARKER_MOVED_LINE:   color = *m_lastDiffColor = m_MovedColor;   *m_lastDiffCounter = m_minimumDiffHeight; break;
+    case MARKER_REMOVED_LINE: color = *m_lastDiffColor = m_DeletedColor; *m_lastDiffCounter = m_minimumDiffHeight; break;
 	default:
-		if (m_lastDiffCounter)
+		if (*m_lastDiffCounter)
 		{
-			m_lastDiffCounter--;
+			(*m_lastDiffCounter)--;
 			color = *m_lastDiffColor;
 		}
 		else
@@ -281,18 +281,19 @@ void NavDialog::CreateBitmap(void)
 
 	// Draw BMPs - For all lines in document 
 	// Note: doc1 nb lines == doc2 nb lines when compared
-	m_lastDiffCounter = 0;
+    m_lastDiffCounterLeft = 0;
+    m_lastDiffCounterRight = 0;
 	m_lastDiffColorLeft = m_DefaultColor;
 	m_lastDiffColorRight = m_DefaultColor;
     for (int i = 0; i < max(m_DocLineCount - m_minimumDiffHeight, 1); i++)
 	{
-		SetLinePixel(m_ResultsDoc1[i], i, m_hMemDC1, &m_lastDiffColorLeft);
-		SetLinePixel(m_ResultsDoc2[i], i, m_hMemDC2, &m_lastDiffColorRight);
+		SetLinePixel(m_ResultsDoc1[i], i, m_hMemDC1, &m_lastDiffColorLeft, &m_lastDiffCounterLeft);
+        SetLinePixel(m_ResultsDoc2[i], i, m_hMemDC2, &m_lastDiffColorRight, &m_lastDiffCounterRight);
 	}
     for (int i = m_DocLineCount - 1; i >= max(m_DocLineCount - m_minimumDiffHeight, 1); i--)
 	{
-		SetLinePixel(m_ResultsDoc1[i], i, m_hMemDC1, &m_lastDiffColorLeft);
-		SetLinePixel(m_ResultsDoc2[i], i, m_hMemDC2, &m_lastDiffColorRight);
+        SetLinePixel(m_ResultsDoc1[i], i, m_hMemDC1, &m_lastDiffColorLeft, &m_lastDiffCounterLeft);
+        SetLinePixel(m_ResultsDoc2[i], i, m_hMemDC2, &m_lastDiffColorRight, &m_lastDiffCounterRight);
 	}
 
 	InvalidateRect(m_hWnd, NULL, TRUE);

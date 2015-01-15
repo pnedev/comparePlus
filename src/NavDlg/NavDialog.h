@@ -40,7 +40,7 @@ public:
     void NavDialog::DrawView();
 	void Do(void);
     void SetColor(int added, int deleted, int changed, int moved, int blank, int _default);
-	void SetLinePixel(long resultsDoc, int i, HDC hMemDC, int* m_lastDiffColor);
+    void SetLinePixel(long resultsDoc, int i, HDC hMemDC, int* m_lastDiffColor, int* m_lastDiffCounter);
 	void SetScalingFactor(HWND hWnd);
 	void CreateBitmap(void);
 
@@ -65,10 +65,11 @@ private:
 	int m_BlankColor;
 	int m_DefaultColor;
 
-	int m_lastDiffCounter;
 	int m_minimumDiffHeight;
-	int m_lastDiffColorLeft;
-	int m_lastDiffColorRight;
+    int m_lastDiffColorLeft;
+    int m_lastDiffColorRight;
+    int m_lastDiffCounterLeft;
+    int m_lastDiffCounterRight;
 
 	RECT m_SideBarRect;
     long m_SideBarPartWidth;
