@@ -1036,6 +1036,7 @@ bool compareNew()
 	progMax = 0;
 	progCounter = 0;
     progDlg = new CProgress();
+	EnableWindow(nppData._nppHandle, FALSE);
     progDlg->Open(NULL, buffer);
 
 	/* make diff */
@@ -1258,6 +1259,9 @@ bool compareNew()
 	bool compareCanceled = progDlg->IsCancelled();
 	progDlg->Close();
 	delete progDlg;
+	EnableWindow(nppData._nppHandle, TRUE);
+	SetForegroundWindow(nppData._nppHandle);
+	SetFocus(nppData._nppHandle);
 
 	if (result != -1)
 	{
