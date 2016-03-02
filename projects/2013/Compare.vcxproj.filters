@@ -31,19 +31,10 @@
     <ClCompile Include="..\..\src\mba\allocator.c">
       <Filter>src\mba</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\mba\dbug.c">
-      <Filter>src\mba</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\mba\diff.c">
       <Filter>src\mba</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\mba\hashmap.c">
-      <Filter>src\mba</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\mba\msgno.c">
-      <Filter>src\mba</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\mba\suba.c">
       <Filter>src\mba</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\mba\varray.c">
@@ -93,22 +84,10 @@
     <ClInclude Include="..\..\src\mba\allocator.h">
       <Filter>src\mba</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\mba\dbug.h">
-      <Filter>src\mba</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\mba\diff.h">
       <Filter>src\mba</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\mba\hashmap.h">
-      <Filter>src\mba</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\mba\iterator.h">
-      <Filter>src\mba</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\mba\msgno.h">
-      <Filter>src\mba</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\mba\suba.h">
       <Filter>src\mba</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\mba\varray.h">

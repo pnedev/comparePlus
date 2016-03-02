@@ -2,17 +2,17 @@
  * Copyright (c) 2004 Michael B. Allen <mba2000 ioplex.com>
  *
  * The MIT License
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
  * to deal in the Software without restriction, including without limitation
  * the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included
  * in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
@@ -62,8 +62,9 @@ _setv(struct _ctx *ctx, int k, int r, int val)
 {
 	int j;
 	int *i;
-				/* Pack -N to N into 0 to N * 2
-				 */
+
+	/* Pack -N to N into 0 to N * 2
+	 */
 	j = k <= 0 ? -k * 4 + r : k * 4 + (r - 2);
 
 	i = (int *)varray_get(ctx->buf, j);
@@ -184,16 +185,17 @@ _find_middle_snake(const void *a, int aoff, int n,
 }
 
 static void
-//_edit(struct _ctx *ctx, int op, int off, int len)
 _edit(struct _ctx *ctx, short op, int off, int len)
 {
 	struct diff_edit *e;
 
 	if (len == 0 || ctx->ses == NULL) {
 		return;
-	}               /* Add an edit to the SES (or
-					 * coalesce if the op is the same)
-					 */
+	}
+
+	/* Add an edit to the SES (or
+	 * coalesce if the op is the same)
+	 */
 	e = varray_get(ctx->ses, ctx->si);
 	if (e->op != op) {
 		if (e->op) {
@@ -320,7 +322,7 @@ diff(const void *a, int aoff, int n,
 
 	if (ses && sn) {
 		if ((e = varray_get(ses, 0)) == NULL) {
-			AMSG("");
+			MsgA("diff, varray_get failed");
 			if (buf == NULL) {
 				varray_deinit(&tmp);
 			}
@@ -329,11 +331,11 @@ diff(const void *a, int aoff, int n,
 		e->op = 0;
 	}
 
-		 /* The _ses function assumes the SES will begin or end with a delete
-		  * or insert. The following will insure this is true by eating any
-		  * beginning matches. This is also a quick to process sequences
-		  * that match entirely.
-		  */
+	/* The _ses function assumes the SES will begin or end with a delete
+	 * or insert. The following will ensure this is true by eating any
+	 * beginning matches. This is also a quick to process sequences
+	 * that match entirely.
+	 */
 	x = y = 0;
 	if (cmp) {
 		while (x < n && y < m && cmp(idx(a, aoff + x, context),
@@ -350,7 +352,7 @@ diff(const void *a, int aoff, int n,
 	_edit(&ctx, DIFF_MATCH, aoff, x);
 
 	if ((d = _ses(a, aoff + x, n - x, b, boff + y, m - y, &ctx)) == -1) {
-		AMSG("");
+		MsgA("diff, _ses failed");
 		if (buf == NULL) {
 			varray_deinit(&tmp);
 		}

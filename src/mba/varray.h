@@ -2,7 +2,7 @@
 #define MBA_VARRAY_H
 
 /* varray - a variable sized array
- */ 
+ */
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,7 +22,6 @@ extern "C" {
 
 #include <stddef.h>
 #include <allocator.h>
-#include <iterator.h>
 
 /*
 0  1      32768
@@ -58,19 +57,15 @@ extern "C" {
 struct varray {
 	size_t size;                                          /* element size */
 	ptrdiff_t al;  /* relative offset of this object to allocator of bins */
-	ref_t bins[16];                                 /* 0 to 2^20 elements */
+	size_t bins[16];                                 /* 0 to 2^20 elements */
 };
 
 int varray_init(struct varray *va, size_t membsize, struct allocator *al);
 int varray_reinit(struct varray *va, struct allocator *al);
 int varray_deinit(struct varray *va);
 struct varray *varray_new(size_t membsize, struct allocator *al);
-int varray_del(void *va);
 int varray_release(struct varray *va, unsigned int from);
 void *varray_get(struct varray *va, unsigned int idx);
-int varray_index(struct varray *va, void *elem);
-void varray_iterate(void *va, iter_t *iter);
-void *varray_next(void *va, iter_t *iter);
 
 #ifdef __cplusplus
 }

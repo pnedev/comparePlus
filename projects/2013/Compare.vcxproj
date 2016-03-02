@@ -125,11 +125,8 @@
     <ClCompile Include="..\..\src\Common\stdafx.cpp" />
     <ClCompile Include="..\..\src\Common\SysMsg.cpp" />
     <ClCompile Include="..\..\src\mba\allocator.c" />
-    <ClCompile Include="..\..\src\mba\dbug.c" />
     <ClCompile Include="..\..\src\mba\diff.c" />
-    <ClCompile Include="..\..\src\mba\hashmap.c" />
     <ClCompile Include="..\..\src\mba\msgno.c" />
-    <ClCompile Include="..\..\src\mba\suba.c" />
     <ClCompile Include="..\..\src\mba\varray.c" />
     <ClCompile Include="..\..\src\ProgressDlg\CProgress.cpp" />
     <ClCompile Include="..\..\src\ScmHelper.cpp" />
@@ -166,12 +163,8 @@
     <ClInclude Include="..\..\src\Common\ToolBar.h" />
     <ClInclude Include="..\..\src\Common\Window.h" />
     <ClInclude Include="..\..\src\mba\allocator.h" />
-    <ClInclude Include="..\..\src\mba\dbug.h" />
     <ClInclude Include="..\..\src\mba\diff.h" />
-    <ClInclude Include="..\..\src\mba\hashmap.h" />
-    <ClInclude Include="..\..\src\mba\iterator.h" />
     <ClInclude Include="..\..\src\mba\msgno.h" />
-    <ClInclude Include="..\..\src\mba\suba.h" />
     <ClInclude Include="..\..\src\mba\varray.h" />
     <ClInclude Include="..\..\src\ScmHelper.h" />
     <ClInclude Include="..\..\src\sqlite\SqliteHelper.h" />

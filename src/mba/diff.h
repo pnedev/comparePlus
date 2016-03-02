@@ -21,7 +21,7 @@ extern "C" {
 #endif /* LIBMBA_API */
 
 #include <varray.h>
-#include <hashmap.h> /* cmp_fn */
+
 
 // CProgess callbacks
 typedef int(*CProgress_IsCanceled_fn)();
@@ -30,6 +30,7 @@ extern CProgress_IsCanceled_fn CProgress_IsCanceled;
 extern CProgress_Increment_fn CProgress_Increment;
 
 typedef const void *(*idx_fn)(const void *s, int idx, void *context);
+typedef int (*cmp_fn)(const void *object1, const void *object2, void *context);
 
 typedef enum {
 	DIFF_MATCH = 1,
@@ -40,12 +41,12 @@ typedef enum {
 	DIFF_MOVE
 } diff_op;
 
-struct diff_change{
+struct diff_change {
 	int off;
 	int len;
 	int line;
 	int matchedLine;
-	
+
 };
 
 struct diff_edit {
