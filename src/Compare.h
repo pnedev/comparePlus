@@ -33,7 +33,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "Engine.h"
 #include "PluginInterface.h"
 #include "Scintilla.h"
-#include "Notepad_plus_rc.h"
+#include "menuCmdID.h"
 #include "Notepad_plus_msgs.h"
 #include <iostream>
 #include <fstream>
@@ -73,7 +73,7 @@ enum MARKER_ID
 	MARKER_MOVED_SYMBOL
 };
 
-enum MENU_COMMANDS 
+enum MENU_COMMANDS
 {
 	CMD_COMPARE = 0,
 	CMD_CLEAR_RESULTS,
@@ -116,17 +116,17 @@ struct sUserSettings
 	bool           IncludeSpace;
 	bool           DetectMove;
 	bool           OldSymbols;
-	sColorSettings ColorSettings; 
+	sColorSettings ColorSettings;
 };
 
-enum eEOL 
+enum eEOL
 {
 	EOF_WIN,
 	EOF_LINUX,
 	EOF_MAC
 };
 
-const CHAR strEOL[3][3] = 
+const CHAR strEOL[3][3] =
 {
 	"\r\n",
 	"\r",

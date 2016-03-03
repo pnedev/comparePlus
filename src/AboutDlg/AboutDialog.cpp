@@ -26,20 +26,20 @@ void AboutDialog::doDialog()
 	goToCenter();
 }
 
-BOOL CALLBACK AboutDialog::run_dlgProc(HWND /*hwnd*/, UINT Message, WPARAM wParam, LPARAM /*lParam*/)
+BOOL CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*lParam*/)
 {
-	switch (Message) 
+	switch (Message)
 	{
 		case WM_INITDIALOG :
 		{
 			_emailLinkJSL.init(_hInst, _hSelf);
 			_emailLinkJSL.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK_JSL), _T("mailto:jean.sebastien.leroy@club-internet.fr"));
 			_urlNppPlugins.init(_hInst, _hSelf);
-			_urlNppPlugins.create(::GetDlgItem(_hSelf, IDC_NPP_PLUGINS_URL), _T("http://sourceforge.net/projects/npp-plugins/"));
+			_urlNppPlugins.create(::GetDlgItem(_hSelf, IDC_NPP_PLUGINS_URL), _T("https://github.com/jsleroy/compare-plugin"));
 
 			return TRUE;
 		}
-		case WM_COMMAND : 
+		case WM_COMMAND :
 		{
 			switch (wParam)
 			{

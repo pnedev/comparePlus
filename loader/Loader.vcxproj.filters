@@ -25,7 +25,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Notepad_plus_msgs.h">
+    <ClInclude Include="..\src\Common\Notepad_plus_msgs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 NavDialog::NavDialog(void) : DockingDlgInterface(IDD_NAV_DIALOG)
 {
-	
+
 }
 
 NavDialog::~NavDialog(void)
@@ -61,9 +61,9 @@ void NavDialog::doDialog(bool willBeShown)
 
 void NavDialog::Do(void)
 {
-	m_hdc = GetDC(m_hWnd);
+	m_hdc = GetDC(_hSelf);
 
-    SetScalingFactor(m_hWnd);
+    SetScalingFactor(_hSelf);
 
 	// Create BMP used to store graphical representation
 	m_hMemDC1    = ::CreateCompatibleDC(m_hdc);
@@ -75,14 +75,14 @@ void NavDialog::Do(void)
 	// Retrieve created BMP info (BMP1 == BMP2)
 	GetObject(m_hMemBMP1, sizeof(m_hMemBMPInfo), &m_hMemBMPInfo);
 	m_hMemBMPSize.cx = m_hMemBMPInfo.bmWidth;
-	m_hMemBMPSize.cy = m_hMemBMPInfo.bmHeight; 
+	m_hMemBMPSize.cy = m_hMemBMPInfo.bmHeight;
 
 	// Attach BMP to a DC
 	SelectObject(m_hMemDC1,    m_hMemBMP1);
 	SelectObject(m_hMemDC2,    m_hMemBMP2);
 
 	// Release DC
-	ReleaseDC(m_hWnd, m_hdc);
+	ReleaseDC(_hSelf, m_hdc);
 
 	// Create line array
 	int marker = 0;
@@ -117,7 +117,7 @@ void NavDialog::Do(void)
 	CreateBitmap();
 }
 
-BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPARAM lParam)
+BOOL CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
 {
 	signed short yPos;
 	int LineStart;
@@ -126,13 +126,12 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 	HWND curView = NULL;
 	int currentEdit = -1;
 
-	switch (Message) 
+	switch (Message)
 	{
 		case WM_INITDIALOG:
 		{
 			// Here, I modify window styles (set H and V redraw)
-			SetClassLong(hWnd, GCL_STYLE, CS_HREDRAW | CS_VREDRAW);
-			m_hWnd = hWnd;
+			SetClassLong(_hSelf, GCL_STYLE, CS_HREDRAW | CS_VREDRAW);
 			ReadyToDraw = FALSE;
 			break;
 		}
@@ -140,12 +139,12 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 		case WM_PAINT:
 		{
 			ReadyToDraw = TRUE;
-			return OnPaint(hWnd);
+			return OnPaint(_hSelf);
 		}
 
 		case WM_NOTIFY:
 		{
-			//return DockingDlgInterface::run_dlgProc(hWnd, Message, wParam, lParam);
+			//return DockingDlgInterface::run_dlgProc(Message, wParam, lParam);
 			break;
 		}
 
@@ -157,12 +156,12 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 			DeleteObject(m_hMemBMP1);
 			DeleteObject(m_hMemBMP2);
 
-			PostQuitMessage(0); 
+			PostQuitMessage(0);
 			break;
 		}
 
 		case WM_LBUTTONDOWN:
-			SetCapture(hWnd);
+			SetCapture(_hSelf);
 			yPos = HIWORD(lParam);
 			if (yPos < 0) yPos = 0;
             current_line = (long)((double)yPos * m_ScaleFactorDocLines);
@@ -183,8 +182,8 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 			break;
 
 		case WM_MOUSEMOVE:
-			if (GetCapture() == hWnd) 
-			{ 
+			if (GetCapture() == _hSelf)
+			{
 				yPos = HIWORD(lParam);
 				if (yPos < 0) yPos = 0;
                 const long next_line = (const long)((double)yPos * m_ScaleFactorDocLines);
@@ -201,7 +200,7 @@ BOOL CALLBACK NavDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPA
 			break;
 
 		default:
-			return DockingDlgInterface::run_dlgProc(hWnd, Message, wParam, lParam);
+			return DockingDlgInterface::run_dlgProc(Message, wParam, lParam);
 	}
 
 	return FALSE;
@@ -258,7 +257,7 @@ void NavDialog::SetScalingFactor(HWND hWnd)
     GetClientRect(hWnd, &m_SideBarRect);
     m_SideBarPartWidth = ((m_SideBarRect.right - m_SideBarRect.left) - 3 * SPACE) / 2;
     m_SideBarPartHeight = (m_SideBarRect.bottom - m_SideBarRect.top) - 2 * SPACE;
-	
+
     m_ScaleFactorDocLines = (double)(m_DocLineCount) / (double)(m_SideBarPartHeight);
     m_ScaleFactorVisibleLines = (double)(m_VisibleLineCount) / (double)(m_SideBarPartHeight);
 
@@ -267,7 +266,7 @@ void NavDialog::SetScalingFactor(HWND hWnd)
 
 void NavDialog::CreateBitmap(void)
 {
-	SetScalingFactor(m_hWnd);
+	SetScalingFactor(_hSelf);
 
 	// Fill BMP background
 	HBRUSH hBrush = CreateSolidBrush(RGB(255,255,255));
@@ -279,7 +278,7 @@ void NavDialog::CreateBitmap(void)
 	FillRect(m_hMemDC1, &bmpRect, hBrush);
 	FillRect(m_hMemDC2, &bmpRect, hBrush);
 
-	// Draw BMPs - For all lines in document 
+	// Draw BMPs - For all lines in document
 	// Note: doc1 nb lines == doc2 nb lines when compared
     m_lastDiffCounterLeft = 0;
     m_lastDiffCounterRight = 0;
@@ -296,7 +295,7 @@ void NavDialog::CreateBitmap(void)
         SetLinePixel(m_ResultsDoc2[i], i, m_hMemDC2, &m_lastDiffColorRight, &m_lastDiffCounterRight);
 	}
 
-	InvalidateRect(m_hWnd, NULL, TRUE);
+	InvalidateRect(_hSelf, NULL, TRUE);
 
 	DeleteObject(hBrush);
 }
@@ -315,7 +314,7 @@ LRESULT NavDialog::OnPaint(HWND hWnd)
     if ((m_SideBarPartWidth < 5) || (m_SideBarPartHeight < 5)) return false;
 
 	// Define left rectangle coordinates
-	m_rLeft.top    = SPACE;    
+	m_rLeft.top    = SPACE;
 	m_rLeft.left   = SPACE;
     m_rLeft.right = m_rLeft.left + m_SideBarPartWidth;
     m_rLeft.bottom = m_rLeft.top + m_SideBarPartHeight;
@@ -389,6 +388,6 @@ LRESULT NavDialog::OnPaint(HWND hWnd)
 }
 
 void NavDialog::DrawView()
-{    
-	InvalidateRect(m_hWnd, NULL, TRUE);
+{
+	InvalidateRect(_hSelf, NULL, TRUE);
 }

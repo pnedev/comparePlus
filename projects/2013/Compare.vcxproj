@@ -151,10 +151,11 @@
     <ClInclude Include="..\..\src\Resource.h" />
     <ClInclude Include="..\..\src\AboutDlg\URLCtrl.h" />
     <ClInclude Include="..\..\src\Common\Docking.h" />
+    <ClInclude Include="..\..\src\Common\dockingResource.h" />
     <ClInclude Include="..\..\src\Common\DockingDlgInterface.h" />
     <ClInclude Include="..\..\src\Common\ImageListSet.h" />
     <ClInclude Include="..\..\src\Common\Notepad_plus_msgs.h" />
-    <ClInclude Include="..\..\src\Common\Notepad_plus_rc.h" />
+    <ClInclude Include="..\..\src\Common\menuCmdID.h" />
     <ClInclude Include="..\..\src\Common\PluginInterface.h" />
     <ClInclude Include="..\..\src\Common\Scintilla.h" />
     <ClInclude Include="..\..\src\Common\StaticDialog.h" />

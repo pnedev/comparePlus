@@ -32,7 +32,7 @@ class OptionDialog : public StaticDialog
 
 public:
 	OptionDialog() : StaticDialog() {};
-	
+
 	void init(HINSTANCE hInst, NppData nppData)
 	{
 		_nppData = nppData;
@@ -44,7 +44,7 @@ public:
 	virtual void destroy() {};
 
 protected :
-	BOOL CALLBACK run_dlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
+	BOOL CALLBACK run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam);
 
 	void SetParams(void);
 	BOOL GetParams(void);

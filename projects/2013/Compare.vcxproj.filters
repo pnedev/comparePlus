@@ -135,6 +135,9 @@
     <ClInclude Include="..\..\src\Common\Docking.h">
       <Filter>src\Common</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\Common\dockingResource.h">
+      <Filter>src\Common</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\Common\DockingDlgInterface.h">
       <Filter>src\Common</Filter>
     </ClInclude>
@@ -144,7 +147,7 @@
     <ClInclude Include="..\..\src\Common\Notepad_plus_msgs.h">
       <Filter>src\Common</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Common\Notepad_plus_rc.h">
+    <ClInclude Include="..\..\src\Common\menuCmdID.h">
       <Filter>src\Common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Common\PluginInterface.h">

@@ -1,94 +1,120 @@
-/*
-This file is part of Notepad++ - Interface defines
-Copyright (C)2006 Jens Lorenz <jens.plugin.npp@gmx.de>
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-*/
+// this file is part of Function List Plugin for Notepad++
+// Copyright (C)2005 Jens Lorenz <jens.plugin.npp@gmx.de>
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either
+// version 2 of the License, or (at your option) any later version.
+//
+// Note that the GPL places important restrictions on "derived works", yet
+// it does not provide a detailed definition of that term.  To avoid
+// misunderstandings, we consider an application to constitute a
+// "derivative work" for the purpose of this license if it does any of the
+// following:
+// 1. Integrates source code from Notepad++.
+// 2. Integrates/includes/aggregates Notepad++ into a proprietary executable
+//    installer, such as those produced by InstallShield.
+// 3. Links to a library or executes a program that does any of the above.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
 
 
 #ifndef DOCKINGDLGINTERFACE_H
 #define DOCKINGDLGINTERFACE_H
 
-#include "StaticDialog.h"
-#include "Resource.h"
-#include "Docking.h"
-#include "PluginInterface.h"
-#include <shlwapi.h>
+#ifndef DOCKING_RESOURCE_H
+#include "dockingResource.h"
+#endif //DOCKING_RESOURCE_H
 
-#define UPDATE_CAPTION updateDockingDlg
+#ifndef DOCKING_H
+#include "Docking.h"
+#endif //DOCKING_H
+
+#include <assert.h>
+#include <shlwapi.h>
+#include "StaticDialog.h"
+
+
+typedef std::basic_string<TCHAR> generic_string;
 
 
 class DockingDlgInterface : public StaticDialog
 {
 public:
-	DockingDlgInterface(): StaticDialog() {};
-	DockingDlgInterface(int dlgID): StaticDialog(), 
-		_dlgID(dlgID), _isFloating(TRUE), _iDockedPos(0) {};
-	
+	DockingDlgInterface() = default;
+
+	explicit DockingDlgInterface(int dlgID)
+		: _dlgID(dlgID)
+	{}
+
+
 	virtual void init(HINSTANCE hInst, HWND parent)
 	{
 		StaticDialog::init(hInst, parent);
-		::GetModuleFileName((HMODULE)hInst, _moduleName, MAX_PATH);
-		_tcscpy_s(_moduleName, PathFindFileName(_moduleName));
+		TCHAR temp[MAX_PATH];
+		::GetModuleFileName((HMODULE)hInst, temp, MAX_PATH);
+		_moduleName = ::PathFindFileName(temp);
 	}
 
-	void create(tTbData * data, bool isRTL = false){
+    void create(tTbData * data, bool isRTL = false)
+	{
+		assert(data != nullptr);
 		StaticDialog::create(_dlgID, isRTL);
-		::GetWindowText(_hSelf, _pluginName, sizeof(_pluginName));
+		TCHAR temp[MAX_PATH];
+		::GetWindowText(_hSelf, temp, MAX_PATH);
+		_pluginName = temp;
 
-		/* user information */
+        // user information
 		data->hClient		= _hSelf;
-		data->pszName		= _pluginName;
+		data->pszName		= (TCHAR *)_pluginName.c_str();
 
-		/* supported features by plugin */
+		// supported features by plugin
 		data->uMask			= 0;
 
-		/* icons */
-		//data->hIconBar	= ::LoadIcon(hInst, IDB_CLOSE_DOWN);
-		//data->hIconTab	= ::LoadIcon(hInst, IDB_CLOSE_DOWN);
-
-		/* additional info */
+		// additional info
 		data->pszAddInfo	= NULL;
+	}
 
-		_data				= data;
-	};
-
-	virtual void updateDockingDlg(void) {
+	virtual void updateDockingDlg()
+	{
 		::SendMessage(_hParent, NPPM_DMMUPDATEDISPINFO, 0, (LPARAM)_hSelf);
 	}
 
-	virtual void destroy() {
-	};
+    virtual void destroy() {}
+
+	virtual void setBackgroundColor(COLORREF) {}
+
+	virtual void setForegroundColor(COLORREF) {}
 
 	virtual void display(bool toShow = true) const {
-		extern FuncItem funcItem[];
 		::SendMessage(_hParent, toShow?NPPM_DMMSHOW:NPPM_DMMHIDE, 0, (LPARAM)_hSelf);
-		if (_data != NULL)
-			::SendMessage(_hParent, NPPM_SETMENUITEMCHECK, funcItem[_data->dlgID]._cmdID, (LPARAM)toShow);
-	};
+	}
 
-	LPCTSTR getPluginFileName() const {
-		return _moduleName;
-	};
+	bool isClosed() const {
+		return _isClosed;
+	}
+
+	void setClosed(bool toClose) {
+		_isClosed = toClose;
+	}
+
+	const TCHAR * getPluginFileName() const {
+		return _moduleName.c_str();
+	}
 
 protected :
-	virtual BOOL CALLBACK run_dlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+	virtual INT_PTR CALLBACK run_dlgProc(UINT message, WPARAM, LPARAM lParam)
 	{
-		switch (message) 
+		switch (message)
 		{
-			case WM_NOTIFY: 
+
+			case WM_NOTIFY:
 			{
 				LPNMHDR	pnmh	= (LPNMHDR)lParam;
 
@@ -98,9 +124,6 @@ protected :
 					{
 						case DMN_CLOSE:
 						{
-							extern FuncItem funcItem[];
-							if (_data != NULL)
-								::SendMessage(_hParent, NPPM_SETMENUITEMCHECK, funcItem[_data->dlgID]._cmdID, (LPARAM)FALSE);
 							break;
 						}
 						case DMN_FLOAT:
@@ -110,8 +133,8 @@ protected :
 						}
 						case DMN_DOCK:
 						{
-							_isFloating = false;
 							_iDockedPos = HIWORD(pnmh->code);
+							_isFloating = false;
 							break;
 						}
 						default:
@@ -125,15 +148,15 @@ protected :
 		}
 		return FALSE;
 	};
-	
-	/* Handles */
-	HWND			_HSource;
-	tTbData*		_data;
-	INT				_dlgID;
-	BOOL            _isFloating;
-	INT				_iDockedPos;
-	TCHAR           _moduleName[MAX_PATH];
-	TCHAR			_pluginName[MAX_PATH];
+
+	// Handles
+    HWND			_HSource = NULL;
+	int				_dlgID = -1;
+	bool            _isFloating = true;
+	int				_iDockedPos = 0;
+	generic_string  _moduleName;
+	generic_string  _pluginName;
+	bool			_isClosed = false;
 };
 
 #endif // DOCKINGDLGINTERFACE_H

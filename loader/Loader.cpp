@@ -1,6 +1,6 @@
 #include <tchar.h>
 #include <Shlwapi.h>
-#include "Notepad_plus_msgs.h"
+#include "..\src\Common\Notepad_plus_msgs.h"
 
 bool debug = 0;
 
@@ -18,7 +18,7 @@ void showError(_TCHAR* errMsg, ...)
 
     GetModuleFileName(NULL, appName, sizeof(appName));
     PathStripPath(appName);
-	
+
     MessageBox(NULL, msg, appName, MB_OK | MB_ICONERROR);
 }
 
@@ -100,7 +100,7 @@ BOOL CALLBACK EnumThreadWndProc(HWND hwnd, LPARAM lParam)
                             }
                             k++;
                         }
-                        
+
                         if (!lstrcmp(buffer, L"Compare"))
                         {
                             log(L"Sending command message to N++");

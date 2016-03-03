@@ -13,16 +13,16 @@ UINT OptionDialog::doDialog(struct sUserSettings * Settings)
 	//goToCenter();
 }
 
-BOOL CALLBACK OptionDialog::run_dlgProc(HWND /*hwnd*/, UINT Message, WPARAM wParam, LPARAM /*lParam*/)
+BOOL CALLBACK OptionDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*lParam*/)
 {
-	switch (Message) 
+	switch (Message)
 	{
 		case WM_INITDIALOG :
 		{
 			goToCenter();
 
 			ETDTProc EnableDlgTheme = (ETDTProc)::SendMessage(_nppData._nppHandle, NPPM_GETENABLETHEMETEXTUREFUNC, 0, 0);
-			
+
 			if (EnableDlgTheme != NULL)
 			{
 				EnableDlgTheme(_hSelf, ETDT_ENABLETAB);
@@ -41,7 +41,7 @@ BOOL CALLBACK OptionDialog::run_dlgProc(HWND /*hwnd*/, UINT Message, WPARAM wPar
 
 			break;
 		}
-		case WM_COMMAND : 
+		case WM_COMMAND :
 		{
 			switch (wParam)
 			{

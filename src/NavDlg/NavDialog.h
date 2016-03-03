@@ -48,13 +48,11 @@ public:
 
 protected:
 
-	virtual BOOL CALLBACK run_dlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
 
 	long current_line;
-
-	HWND m_hWnd;
 
 	LRESULT OnPaint(HWND hWnd);
 
@@ -93,7 +91,7 @@ private:
 
 	/* Internal use */
 	RECT    m_rLeft;
-	RECT    m_rRight;	
+	RECT    m_rRight;
 
     int     m_DocLineCount;
     int     m_VisibleLineCount;

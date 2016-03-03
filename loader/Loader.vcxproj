@@ -90,7 +90,7 @@
     <ResourceCompile Include="Loader.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Notepad_plus_msgs.h" />
+    <ClInclude Include="..\src\Common\Notepad_plus_msgs.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
