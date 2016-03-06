@@ -124,10 +124,7 @@
     <ClCompile Include="..\..\src\Common\StaticDialog.cpp" />
     <ClCompile Include="..\..\src\Common\stdafx.cpp" />
     <ClCompile Include="..\..\src\Common\SysMsg.cpp" />
-    <ClCompile Include="..\..\src\mba\allocator.c" />
-    <ClCompile Include="..\..\src\mba\diff.c" />
-    <ClCompile Include="..\..\src\mba\msgno.c" />
-    <ClCompile Include="..\..\src\mba\varray.c" />
+    <ClCompile Include="..\..\src\mba\diff.cpp" />
     <ClCompile Include="..\..\src\ProgressDlg\CProgress.cpp" />
     <ClCompile Include="..\..\src\ScmHelper.cpp" />
     <ClCompile Include="..\..\src\sqlite\SqliteHelper.cpp" />
@@ -163,9 +160,7 @@
     <ClInclude Include="..\..\src\Common\SysMsg.h" />
     <ClInclude Include="..\..\src\Common\ToolBar.h" />
     <ClInclude Include="..\..\src\Common\Window.h" />
-    <ClInclude Include="..\..\src\mba\allocator.h" />
     <ClInclude Include="..\..\src\mba\diff.h" />
-    <ClInclude Include="..\..\src\mba\msgno.h" />
     <ClInclude Include="..\..\src\mba\varray.h" />
     <ClInclude Include="..\..\src\ScmHelper.h" />
     <ClInclude Include="..\..\src\sqlite\SqliteHelper.h" />

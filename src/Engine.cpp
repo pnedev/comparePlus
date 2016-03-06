@@ -29,11 +29,11 @@ int compareLines(unsigned int line1, unsigned int line2, void * /*context*/)
 	return -1;
 }
 
-int checkWords(diff_edit* e,chunk_info* chunk,chunk_info* otherChunk)
+int checkWords(diff_edit* e, chunk_info* chunk, chunk_info* otherChunk)
 {
-	Word *word = (Word*)varray_get(chunk->words,e->off);
+	Word *word = chunk->words->get(e->off);
 	int start = word->line;
-	word = (Word*)varray_get(chunk->words,e->off+e->len-1);
+	word = chunk->words->get(e->off+e->len-1);
 	int end = word->line;
 	//assert(start <= end);
 	int line2 = chunk->lineMappings[start];
@@ -57,15 +57,15 @@ int checkWords(diff_edit* e,chunk_info* chunk,chunk_info* otherChunk)
 	}
 	else if(e->off!=chunk->linePos[start])
 	{
-		struct diff_change *change = (diff_change*) varray_get(chunk->changes, chunk->changeCount++);
-		struct diff_change *change2 = (diff_change*) varray_get(otherChunk->changes, otherChunk->changeCount++);
+		struct diff_change *change = chunk->changes->get(chunk->changeCount++);
+		struct diff_change *change2 = otherChunk->changes->get(otherChunk->changeCount++);
 
 		change2->line = line2;
 		change2->len = 0;
 		change2->off = 0;
-		change2->matchedLine = chunk->lineStart+start;
+		change2->matchedLine = chunk->lineStart + start;
 
-		word = (Word*)varray_get(chunk->words,e->off);
+		word = chunk->words->get(e->off);
 		//assert(word->line == start);
 		change->off = word->pos;
 		change->line = start;
@@ -77,7 +77,7 @@ int checkWords(diff_edit* e,chunk_info* chunk,chunk_info* otherChunk)
 			len = chunk->lineEndPos[start] - e->off;
 			//assert(len > 0);
 
-			word = (Word*)varray_get(chunk->words,e->off+len-1);
+			word = chunk->words->get(e->off+len-1);
 			e->off = chunk->lineEndPos[start];
 			e->len -= len;
 			//assert(word->length > 0);
@@ -90,19 +90,19 @@ int checkWords(diff_edit* e,chunk_info* chunk,chunk_info* otherChunk)
 		else
 		{
 			len = e->len;
-			word = (Word*)varray_get(chunk->words,e->off+len-1);
+			word = chunk->words->get(e->off+len-1);
 			//assert(word->length > 0);
 			//assert(word->line == change->line);
 			change->len = (word->pos + word->length) - change->off;
 			//assert(change->len >= 0);
 			return chunk->changeCount;
-		}				
+		}
 	}
 
 	//if a change spans more than one line, all the middle lines are just inserts or deletes
 	while(start != end)
 	{
-		//potentially a inserted line					
+		//potentially a inserted line
 		e->off = chunk->lineEndPos[start];
 		e->len -= (chunk->lineEndPos[start]-chunk->linePos[start]);
 		start++;
@@ -114,23 +114,23 @@ int checkWords(diff_edit* e,chunk_info* chunk,chunk_info* otherChunk)
 	if(line2!=-1 && (e->off+e->len)<chunk->lineEndPos[start])
 	{
 		//todo recheck change because some of the diffs will be previous lines
-		struct diff_change *change = (diff_change*) varray_get(chunk->changes, chunk->changeCount++);
-		struct diff_change *change2 = (diff_change*) varray_get(otherChunk->changes, otherChunk->changeCount++);
+		struct diff_change *change = chunk->changes->get(chunk->changeCount++);
+		struct diff_change *change2 = otherChunk->changes->get(otherChunk->changeCount++);
 		//offset+=(direction*e->len);
 
-		change2->line = line2;//getLineFromPos(chunk->mappings[e->off],otherChunk->lineEndPos,otherChunk->lineCount,false);				
+		change2->line = line2;//getLineFromPos(chunk->mappings[e->off],otherChunk->lineEndPos,otherChunk->lineCount,false);
 		change2->matchedLine = chunk->lineStart+start;
 		change2->len = 0;
 		change2->off = 0;
 
-		word = (Word*)varray_get(chunk->words,e->off);
+		word = chunk->words->get(e->off);
 		//assert(word->line == start);
 		change->off = word->pos;
 		len = e->len;
-		word = (Word*)varray_get(chunk->words,e->off+len-1);
+		word = chunk->words->get(e->off+len-1);
 		//assert(word->length > 0);
 		change->len = (word->pos + word->length) - change->off;
-		change->line = start;	
+		change->line = start;
 		//assert(word->line == change->line);
 		//assert(change->len >= 0);
 		change->matchedLine = otherChunk->lineStart+line2;
@@ -141,9 +141,9 @@ int checkWords(diff_edit* e,chunk_info* chunk,chunk_info* otherChunk)
 }
 
 
-Word *getWord(varray *words, int index, void * /*context*/)
+Word *getWord(varray<Word> *words, int index, void * /*context*/)
 {
-	Word *word = (Word*)varray_get(words, index);
+	Word *word = words->get(index);
 	return word;
 }
 
@@ -159,7 +159,7 @@ bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2, bool Incl
 
 	chunk_info chunk1;
 	chunk1.lineCount = e1->len;
-	chunk1.words = varray_new(sizeof(struct Word), NULL);
+	chunk1.words = new varray<Word>;
 	chunk1.lineStart = e1->off;
 	chunk1.count = getWords(e1, doc1, &chunk1, IncludeSpace);
 	chunk1.lineMappings = new int[e1->len];
@@ -171,7 +171,7 @@ bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2, bool Incl
 
 	chunk_info chunk2;
 	chunk2.lineCount = e2->len;
-	chunk2.words = varray_new(sizeof(struct Word), NULL);
+	chunk2.words = new varray<Word>;
 	chunk2.count = getWords(e2, doc2, &chunk2, IncludeSpace);
 	chunk2.lineStart = e2->off;
 	chunk2.lineMappings = new int[e2->len];
@@ -183,12 +183,12 @@ bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2, bool Incl
 
 	//Compare the two chunks
 	int sn;
-	struct varray *ses = varray_new(sizeof(struct diff_edit), NULL);
+	struct varray<diff_edit> *ses = new varray<diff_edit>;
 
 	diff(chunk1.words, 0, chunk1.count, chunk2.words, 0, chunk2.count, (idx_fn)(getWord), (cmp_fn)(compareWord), NULL, 0, ses, &sn, NULL);
 
-	chunk1.changes = varray_new(sizeof(struct diff_change), NULL);
-	chunk2.changes = varray_new(sizeof(struct diff_change), NULL);
+	chunk1.changes = new varray<diff_change>;
+	chunk2.changes = new varray<diff_change>;
 
 	int offset = 0;
 	int **lineMappings1 = new int*[chunk1.lineCount];
@@ -205,25 +205,25 @@ bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2, bool Incl
 
 	/// Use the MATCH results to syncronise line numbers
 	/// count how many are on each line, than select the line with the most matches
-	for (i = 0; i < sn; i++) 
+	for (i = 0; i < sn; i++)
 	{
-		struct diff_edit *e =(diff_edit*) varray_get(ses, i);
+		struct diff_edit *e = ses->get(i);
 
 		if(e->op == DIFF_DELETE)
-		{			
-			offset -= e->len;	
+		{
+			offset -= e->len;
 		}
 		else if(e->op == DIFF_INSERT)
-		{			
-			offset += e->len;	
+		{
+			offset += e->len;
 		}
 		else
 		{
 			for(int index = e->off; index < (e->off+e->len); index++)
 			{
-				Word *word1 = (Word*)varray_get(chunk1.words, index);
-				Word *word2 = (Word*)varray_get(chunk2.words, index+offset);
-				
+				Word *word1 = chunk1.words->get(index);
+				Word *word2 = chunk2.words->get(index+offset);
+
 				if(word1->type != SPACECHAR)
 				{
 					int line1a = word1->line;
@@ -246,7 +246,7 @@ bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2, bool Incl
 			{
 				line = j;
 				max = lineMappings1[i][j];
-			}			
+			}
 		}
 
 		//make sure that the line isnt already matched to another line, and that enough of the line is matched to be significant
@@ -263,16 +263,16 @@ bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2, bool Incl
 	chunk1.changeCount = 0;
 	chunk2.changeCount = 0;
 
-	for (i = 0; i < sn; i++) 
+	for (i = 0; i < sn; i++)
 	{
-		struct diff_edit *e =(diff_edit*) varray_get(ses, i);
+		struct diff_edit *e = ses->get(i);
 		if(e->op == DIFF_DELETE)
 		{
 			//Differences for Doc 1
 			checkWords(e, &chunk1, &chunk2);
 		}
 		else if(e->op==DIFF_INSERT)
-		{			
+		{
 			//Differences for Doc2
 			checkWords(e, &chunk2, &chunk1);
 		}
@@ -298,34 +298,8 @@ bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2, bool Incl
 	delete[] chunk2.lineEndPos;
 	delete[] chunk2.linePos;
 
-	for(i = chunk1.count; i >= 0; i--)
-	{
-		//Word *w=(Word*)varray_get(chunk1.words,i);
-		//w->text.clear();		
-		//w->text="";
-		//delete w->text;
-		varray_release(chunk1.words, i);
-	}
-
-	delete[] chunk1.words;
-
-	for(i = chunk2.count; i >= 0; i--)
-	{
-		//Word *w=(Word*)varray_get(chunk2.words,i);
-		//w->text.clear();
-		//w->text="";
-		//delete w->text;
-		varray_release(chunk2.words, i);
-	}
-
-	//varray_deinit(chunk2.words);
-	delete[] chunk2.words;
-
-	for(i = sn; i >= 0; i--)
-	{
-		varray_release(ses,i);
-	}
-
+	delete chunk1.words;
+	delete chunk2.words;
 	delete ses;
 
 #endif
@@ -335,7 +309,7 @@ bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2, bool Incl
 
 int getWords(diff_edit* e, char** doc, chunk_info *chunk, bool IncludeSpace)
 {
-	varray *words = chunk->words;
+	varray<Word> *words = chunk->words;
 	int wordIndex = 0;
 	chunk->lineEndPos = new int[chunk->lineCount];
 	chunk->linePos = new int[chunk->lineCount];
@@ -366,7 +340,7 @@ int getWords(diff_edit* e, char** doc, chunk_info *chunk, bool IncludeSpace)
 				{
 					if(!IncludeSpace || type!=SPACECHAR)
 					{
-						Word *word = (Word*)varray_get(words,wordIndex++);
+						Word *word = words->get(wordIndex++);
 						word->length = len;
 						word->line = line;
 						word->pos = i-len;
@@ -385,7 +359,7 @@ int getWords(diff_edit* e, char** doc, chunk_info *chunk, bool IncludeSpace)
 		{
 			if(!IncludeSpace || type != SPACECHAR)
 			{
-				Word *word = (Word*)varray_get(words, wordIndex++);
+				Word *word = words->get(wordIndex++);
 				word->length = len;
 				word->line = line;
 				word->pos = i-len;
@@ -406,8 +380,8 @@ wordType getWordType(char letter)
 		case '\t':
 			return SPACECHAR;
 		default:
-			if((letter >= 'a' && letter <= 'z') || 
-			   (letter >= 'A' && letter <= 'Z') || 
+			if((letter >= 'a' && letter <= 'z') ||
+			   (letter >= 'A' && letter <= 'Z') ||
 			   (letter >= '0' && letter <= '9'))
 			{
 				return ALPHANUMCHAR;
@@ -417,13 +391,13 @@ wordType getWordType(char letter)
 	}
 }
 
-// change the blocks of diffs to one diff per line. 
+// change the blocks of diffs to one diff per line.
 // revert a "Changed" line to a insert or delete line if there are no changes
 int setDiffLines(diff_edit *e, diff_edit changes[], int *i, short op, int altLocation)
 {
 	int index = *i;
 	int addedLines = 0;
-	
+
 	for(int j = 0; j < (e->len); j++)
 	{
 		changes[index].set = e->set;
@@ -446,8 +420,8 @@ int setDiffLines(diff_edit *e, diff_edit changes[], int *i, short op, int altLoc
 		{
 			for(int k = 0; k < e->changeCount; k++)
 			{
-				struct diff_change *change =(diff_change*) varray_get(e->changes, k);
-				
+				struct diff_change *change = e->changes->get(k);
+
 				if(change->line == j)
 				{
 					changes[index].matchedLine = change->matchedLine;
@@ -481,13 +455,13 @@ int setDiffLines(diff_edit *e, diff_edit changes[], int *i, short op, int altLoc
 
 					if(changes[index].changes == NULL)
 					{
-						changes[index].changes = varray_new(sizeof(struct diff_change), NULL);
+						changes[index].changes = new varray<diff_change>;
 					}
-					
-					struct diff_change *newChange =(diff_change*) varray_get(changes[index].changes, changes[index].changeCount++);
+
+					struct diff_change *newChange = changes[index].changes->get(changes[index].changeCount++);
 
 					newChange->len = change->len;
-					newChange->off = change->off;							
+					newChange->off = change->off;
 				}
 			}
 
@@ -520,15 +494,15 @@ int setDiffLines(diff_edit *e, diff_edit changes[], int *i, short op, int altLoc
 //scan for lines that are only in the other document once
 //use one-to-one match as an anchor
 //scan to see if the lines above and below anchor also match
-diff_edit *find_anchor(int line, varray *ses, int sn, unsigned int *doc1, unsigned int *doc2, int *line2)
+diff_edit *find_anchor(int line, varray<diff_edit> *ses, int sn, unsigned int *doc1, unsigned int *doc2, int *line2)
 {
 	diff_edit *insert = NULL;
 	int matches = 0;
 
 	for(int i = 0; i < sn; i++)
 	{
-		diff_edit *e = (diff_edit*)varray_get(ses,i);
-		
+		diff_edit *e = ses->get(i);
+
 		if(e->op == DIFF_INSERT)
 		{
 			for(int j = 0; j < e->len; j++)
@@ -552,7 +526,7 @@ diff_edit *find_anchor(int line, varray *ses, int sn, unsigned int *doc1, unsign
 
 	for(int i = 0; i < sn; i++)
 	{
-		diff_edit *e = (diff_edit*)varray_get(ses, i);
+		diff_edit *e = ses->get(i);
 
 		if(e->op == DIFF_DELETE)
 		{
@@ -574,7 +548,7 @@ diff_edit *find_anchor(int line, varray *ses, int sn, unsigned int *doc1, unsign
 }
 
 
-void find_moves(varray *ses,int sn,unsigned int *doc1, unsigned int *doc2, bool DetectMove)
+void find_moves(varray<diff_edit> *ses,int sn,unsigned int *doc1, unsigned int *doc2, bool DetectMove)
 {
 	// Exit immediately if user don't want to find moves
 	if(DetectMove == false) return;
@@ -582,8 +556,8 @@ void find_moves(varray *ses,int sn,unsigned int *doc1, unsigned int *doc2, bool 
 	//init moves arrays
 	for(int i = 0; i < sn; i++)
 	{
-		diff_edit *e = (diff_edit*)varray_get(ses, i);
-		
+		diff_edit *e = ses->get(i);
+
 		if(e->op != DIFF_MATCH)
 		{
 			e->moves = new int[e->len];
@@ -601,7 +575,7 @@ void find_moves(varray *ses,int sn,unsigned int *doc1, unsigned int *doc2, bool 
 
 	for(int i = 0; i < sn; i++)
 	{
-		diff_edit *e = (diff_edit*)varray_get(ses, i);
+		diff_edit *e = ses->get(i);
 
 		if(e->op == DIFF_DELETE)
 		{
@@ -611,7 +585,7 @@ void find_moves(varray *ses,int sn,unsigned int *doc1, unsigned int *doc2, bool 
 				{
 					int line2;
 					diff_edit *match = find_anchor(e->off+j, ses, sn, doc1, doc2, &line2);
-					
+
 					if(match != NULL)
 					{
 						e->moves[j] = match->off+line2;
@@ -619,7 +593,7 @@ void find_moves(varray *ses,int sn,unsigned int *doc1, unsigned int *doc2, bool 
 						int d1 = j-1;
 						int d2 = line2-1;
 
-						while(d1 >= 0 && d2 >= 0 && e->moves[d1] == -1 && match->moves[d2] == -1 && 
+						while(d1 >= 0 && d2 >= 0 && e->moves[d1] == -1 && match->moves[d2] == -1 &&
 							compareLines(doc1[e->off+d1], doc2[match->off+d2], NULL) == 0)
 						{
 							e->moves[d1] = match->off + d2;
@@ -630,8 +604,8 @@ void find_moves(varray *ses,int sn,unsigned int *doc1, unsigned int *doc2, bool 
 
 						d1 = j + 1;
 						d2 = line2 + 1;
-						
-						while(d1 < e->len && d2 < match->len && e->moves[d1] == -1 && match->moves[d2] == -1 && 
+
+						while(d1 < e->len && d2 < match->len && e->moves[d1] == -1 && match->moves[d2] == -1 &&
 							compareLines(doc1[e->off+d1], doc2[match->off+d2], NULL) == 0)
 						{
 							e->moves[d1] = match->off + d2;
@@ -651,22 +625,23 @@ void find_moves(varray *ses,int sn,unsigned int *doc1, unsigned int *doc2, bool 
 //basically cabbat -abb is the same as -bba
 //since most languages start with unique lines and end with repetative lines(end,</node>, }, etc)
 //we shift the differences down where its possible so the results will be cleaner
-void shift_boundries(varray *ses, int sn, unsigned int *doc1, unsigned int *doc2, int doc1Length, int doc2Length)
+void shift_boundries(varray<diff_edit> *ses, int sn, unsigned int *doc1, unsigned int *doc2,
+		int doc1Length, int doc2Length)
 {
-	for (int i = 0; i < sn; i++) 
+	for (int i = 0; i < sn; i++)
 	{
-		struct diff_edit *e =(diff_edit*) varray_get(ses, i);
+		struct diff_edit *e = ses->get(i);
 		struct diff_edit *e2 = NULL;
 		struct diff_edit *e3 = NULL;
 		int max1 = doc1Length;
 		int max2 = doc2Length;
 		int end2;
-		
+
 		if(e->op != 1)
 		{
 			for(int j = i+1; j < sn; j++)
 			{
-				e2 = (diff_edit*) varray_get(ses, j);
+				e2 = ses->get(j);
 				if(e2->op == e->op)
 				{
 					max1 = e2->off;
@@ -678,7 +653,7 @@ void shift_boundries(varray *ses, int sn, unsigned int *doc1, unsigned int *doc2
 
 		if(e->op == DIFF_DELETE)
 		{
-			e2 = (diff_edit*) varray_get(ses, i+1);
+			e2 = ses->get(i+1);
 
 			//if theres an insert after a delete, theres a potential match, so both blocks
 			//need to be moved at the same time
@@ -687,7 +662,7 @@ void shift_boundries(varray *ses, int sn, unsigned int *doc1, unsigned int *doc2
 				max2 = doc2Length;
 				for(int j = i+2; j < sn; j++)
 				{
-					e3 = (diff_edit*) varray_get(ses, j);
+					e3 = ses->get(j);
 
 					if(e2->op == e3->op)
 					{
@@ -700,8 +675,8 @@ void shift_boundries(varray *ses, int sn, unsigned int *doc1, unsigned int *doc2
 				i++;
 				int end = e->off + e->len;
 
-				while(end < max1 && end2 < max2 && 
-					compareLines(doc1[e->off], doc1[end], NULL) == 0 && 
+				while(end < max1 && end2 < max2 &&
+					compareLines(doc1[e->off], doc1[end], NULL) == 0 &&
 					compareLines(doc2[e2->off], doc2[end2], NULL) == 0)
 				{
 					end++;
@@ -760,29 +735,26 @@ unsigned int *computeHashes(char** doc, int docLength, bool IncludeSpace)
 	return hashes;
 }
 
-void clearEdits(varray *ses,int sn)
+void clearEdits(varray<diff_edit> *ses, int sn)
 {
-	for(int i = sn; i >= 0; i--)
+	for (int i = sn; i >= 0; i--)
 	{
-		struct diff_edit *e = (diff_edit*) varray_get(ses, i);
+		struct diff_edit *e = ses->get(i);
 		clearEdit(e);
-		varray_release(ses,i);
 	}
+
 	delete ses;
 }
 
 void clearEdit(diff_edit *e)
 {
-	if(e->moves != NULL)
+	if (e->moves != NULL)
 	{
 		delete[] e->moves;
 	}
-	if(e->changes != NULL)
+
+	if (e->changes != NULL)
 	{
-		for(int j = e->changeCount; j >= 0; j--)
-		{
-			varray_release(e->changes, j);
-		}
 		delete e->changes;
 	}
 }

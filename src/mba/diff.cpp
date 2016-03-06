@@ -35,9 +35,7 @@
 
 #include <stdlib.h>
 #include <limits.h>
-#include <errno.h>
 
-#include "msgno.h"
 #include "diff.h"
 
 #define FV(k) _v(ctx, (k), 0)
@@ -47,8 +45,8 @@ struct _ctx {
 	idx_fn idx;
 	cmp_fn cmp;
 	void *context;
-	struct varray *buf;
-	struct varray *ses;
+	struct varray<int> *buf;
+	struct varray<diff_edit> *ses;
 	int si;
 	int dmax;
 };
@@ -61,15 +59,14 @@ static void
 _setv(struct _ctx *ctx, int k, int r, int val)
 {
 	int j;
-	int *i;
 
 	/* Pack -N to N into 0 to N * 2
 	 */
 	j = k <= 0 ? -k * 4 + r : k * 4 + (r - 2);
 
-	i = (int *)varray_get(ctx->buf, j);
-	*i = val;
+	*(ctx->buf->get(j)) = val;
 }
+
 static int
 _v(struct _ctx *ctx, int k, int r)
 {
@@ -77,7 +74,7 @@ _v(struct _ctx *ctx, int k, int r)
 
 	j = k <= 0 ? -k * 4 + r : k * 4 + (r - 2);
 
-	return *((int *)varray_get(ctx->buf, j));
+	return *(ctx->buf->get(j));
 }
 
 static int
@@ -179,8 +176,6 @@ _find_middle_snake(const void *a, int aoff, int n,
 		}
 	}
 
-	errno = EFAULT;
-
 	return -1;
 }
 
@@ -193,14 +188,13 @@ _edit(struct _ctx *ctx, short op, int off, int len)
 		return;
 	}
 
-	/* Add an edit to the SES (or
-	 * coalesce if the op is the same)
+	/* Add an edit to the SES (or coalesce if the op is the same)
 	 */
-	e = varray_get(ctx->ses, ctx->si);
+	e = ctx->ses->get(ctx->si);
 	if (e->op != op) {
 		if (e->op) {
 			ctx->si++;
-			e = varray_get(ctx->ses, ctx->si);
+			e = ctx->ses->get(ctx->si);
 		}
 		e->op = op;
 		e->off = off;
@@ -294,16 +288,15 @@ int
 diff(const void *a, int aoff, int n,
 		const void *b, int boff, int m,
 		idx_fn idx, cmp_fn cmp, void *context, int dmax,
-		struct varray *ses, int *sn,
-		struct varray *buf)
+		struct varray<diff_edit> *ses, int *sn,
+		struct varray<int> *buf)
 {
 	struct _ctx ctx;
 	int d, x, y;
 	struct diff_edit *e = NULL;
-	struct varray tmp;
+	struct varray<int> tmp;
 
 	if (!idx != !cmp) { /* ensure both NULL or both non-NULL */
-		errno = EINVAL;
 		return -1;
 	}
 
@@ -313,7 +306,6 @@ diff(const void *a, int aoff, int n,
 	if (buf) {
 		ctx.buf = buf;
 	} else {
-		varray_init(&tmp, sizeof(int), NULL);
 		ctx.buf = &tmp;
 	}
 	ctx.ses = ses;
@@ -321,13 +313,7 @@ diff(const void *a, int aoff, int n,
 	ctx.dmax = dmax ? dmax : INT_MAX;
 
 	if (ses && sn) {
-		if ((e = varray_get(ses, 0)) == NULL) {
-			MsgA("diff, varray_get failed");
-			if (buf == NULL) {
-				varray_deinit(&tmp);
-			}
-			return -1;
-		}
+		e = ses->get(0);
 		e->op = 0;
 	}
 
@@ -352,20 +338,11 @@ diff(const void *a, int aoff, int n,
 	_edit(&ctx, DIFF_MATCH, aoff, x);
 
 	if ((d = _ses(a, aoff + x, n - x, b, boff + y, m - y, &ctx)) == -1) {
-		MsgA("diff, _ses failed");
-		if (buf == NULL) {
-			varray_deinit(&tmp);
-		}
 		return -1;
 	}
 	if (ses && sn) {
 		*sn = e->op ? ctx.si + 1 : 0;
 	}
 
-	if (buf == NULL) {
-		varray_deinit(&tmp);
-	}
-
 	return d;
 }
-

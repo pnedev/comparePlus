@@ -28,16 +28,7 @@
     <ClCompile Include="..\..\src\OptionDlg\OptionDialog.cpp">
       <Filter>src\OptionDlg</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\mba\allocator.c">
-      <Filter>src\mba</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\mba\diff.c">
-      <Filter>src\mba</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\mba\msgno.c">
-      <Filter>src\mba</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\mba\varray.c">
+    <ClCompile Include="..\..\src\mba\diff.cpp">
       <Filter>src\mba</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ColorCombo.cpp">
@@ -81,13 +72,7 @@
     <ClInclude Include="..\..\src\OptionDlg\OptionDialog.h">
       <Filter>src\OptionDlg</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\mba\allocator.h">
-      <Filter>src\mba</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\mba\diff.h">
-      <Filter>src\mba</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\mba\msgno.h">
       <Filter>src\mba</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\mba\varray.h">

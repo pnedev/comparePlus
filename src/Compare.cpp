@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <exception>
 #include "Compare.h"
 #include "NPPHelpers.h"
 #include "ScmHelper.h"
@@ -238,14 +239,14 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 			// Test if localConf.xml exist
 			const bool isLocal = (PathFileExists(localConfPath) == TRUE);
 
-			if (isLocal) 
+			if (isLocal)
 			{
 				lstrcpy(iniFilePath, nppPath);
 				lstrcpy(compareFilePath, nppPath);
 
 				PathAppend(iniFilePath, TEXT("plugins\\config\\Compare.ini"));
 			}
-			else 
+			else
 			{
 				ITEMIDLIST *pidl;
 				SHGetSpecialFolderLocation(NULL, CSIDL_APPDATA, &pidl);
@@ -459,7 +460,7 @@ void openOptionDlg(void)
 		if (active)
 		{
 			setStyles(&Settings);
-			
+
 			if (NavDlg.isVisible())
 			{
 				NavDlg.SetColor(
@@ -497,12 +498,12 @@ void jumpChangedLines(bool direction)
 
 	while (true)
 	{
-		if (direction) 
+		if (direction)
 		{
 			currLine = (lineStart < lineMax) ? (lineStart + 1) : (0);
 			sci_marker_direction = SCI_MARKERNEXT;
 		}
-		else 
+		else
 		{
 			currLine = (lineStart > 0) ? (lineStart - 1) : (lineMax);
 			sci_marker_direction = SCI_MARKERPREVIOUS;
@@ -510,7 +511,7 @@ void jumpChangedLines(bool direction)
 
 		nextLine = ::SendMessage(CurView, sci_marker_direction, currLine, sci_search_mask);
 
-		if (nextLine < 0) 
+		if (nextLine < 0)
 		{
 			currLine = (direction) ? (0) : (lineMax);
 			nextLine = ::SendMessage(CurView, sci_marker_direction, currLine, sci_search_mask);
@@ -610,16 +611,16 @@ void ViewNavigationBar(void)
 
 	if (active)
 	{
-		if (Settings.UseNavBar) 
+		if (Settings.UseNavBar)
 		{
 			// Save current N++ focus
 			HWND hwnd = GetFocus();
 
 			// Configure NavBar
 			NavDlg.SetColor(
-				Settings.ColorSettings.added, 
-				Settings.ColorSettings.deleted, 
-				Settings.ColorSettings.changed, 
+				Settings.ColorSettings.added,
+				Settings.ColorSettings.deleted,
+				Settings.ColorSettings.changed,
 				Settings.ColorSettings.moved,
                 Settings.ColorSettings.blank,
                 Settings.ColorSettings._default);
@@ -634,7 +635,7 @@ void ViewNavigationBar(void)
 		}
 		else
 		{
-			NavDlg.doDialog(false);            
+			NavDlg.doDialog(false);
 		}
 	}
 }
@@ -664,15 +665,15 @@ HWND openTempFile(void)
 	char original[MAX_PATH];
 
 	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, 0, (LPARAM)original);
-	HWND originalwindow = getCurrentWindow();	
+	HWND originalwindow = getCurrentWindow();
 
 	LRESULT curBuffer = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
 	LangType curLang = (LangType)::SendMessage(nppData._nppHandle, NPPM_GETBUFFERLANGTYPE, curBuffer, 0);
 
 	int result = ::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)compareFilePath);
-	HWND window = getCurrentWindow();		
+	HWND window = getCurrentWindow();
 	int win = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
-	
+
 	if(result == 0 || win != tempWindow)
 	{
 		::SendMessage(nppData._nppHandle, WM_COMMAND, IDM_FILE_NEW, (LPARAM)0);
@@ -681,7 +682,7 @@ HWND openTempFile(void)
 
 		curBuffer = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
 		::SendMessage(nppData._nppHandle, NPPM_SETBUFFERLANGTYPE, curBuffer, curLang);
-	}	
+	}
 
 	if(originalwindow == window)
 	{
@@ -725,12 +726,12 @@ void openFile(TCHAR *file)
 	ifstream myfile(file,ios::in|ios::ate| ios::binary);
 
 	if(myfile.is_open())
-	{		
+	{
 		long size = (long)myfile.tellg();
 		char *memblock = new char [size+1];
 		myfile.seekg(0);
 		myfile.read(memblock, size);
-		myfile.close();	
+		myfile.close();
 
 		memblock[size] = 0;
 
@@ -745,7 +746,7 @@ void openMemBlock(void *memblock, long size)
 	HWND window = openTempFile();
 
 	::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
-	::SendMessageA(window, SCI_APPENDTEXT, size, (LPARAM)memblock);	
+	::SendMessageA(window, SCI_APPENDTEXT, size, (LPARAM)memblock);
 
 	if(startCompare())
 	{
@@ -760,7 +761,7 @@ void openMemBlock(void *memblock, long size)
 		::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
 		::SendMessageA(window, SCI_SETSAVEPOINT, 1, 0);
 		::SendMessageA(window, SCI_EMPTYUNDOBUFFER, 0, 0);
-		::SendMessageA(window, SCI_SETREADONLY, 1, 0);            
+		::SendMessageA(window, SCI_SETREADONLY, 1, 0);
 		::SendMessageA(nppData._scintillaSecondHandle, SCI_GRABFOCUS, 0, 1);
 	}
 }
@@ -884,7 +885,7 @@ void compareSvnBase()
 	TCHAR curDir[MAX_PATH];
 
 	SendMessage(nppData._nppHandle, NPPM_GETCURRENTDIRECTORY, 0, (LPARAM)curDir);
-	
+
 	if (curDir[0] != 0)
 	{
 		TCHAR curDirCanon[MAX_PATH];
@@ -936,7 +937,7 @@ void compareGitBase()
 				TCHAR gitBaseFile[MAX_PATH];
 
 				GetLocalScmPath(curDir, gitDir, curFile, gitBaseFile);
-	
+
 				long size = 0;
 				HGLOBAL hMem = GetContentFromGitRepo(gitDir, gitBaseFile, &size);
 				if (size)
@@ -977,7 +978,7 @@ bool compareNew()
 
 	clearWindow(nppData._scintillaMainHandle, true);
 	clearWindow(nppData._scintillaSecondHandle, true);
-	
+
 	active = true;
 
 	int doc1Length;
@@ -1003,7 +1004,7 @@ bool compareNew()
 	int *lineNum2;
 
 	char **doc2 = getAllLines(nppData._scintillaSecondHandle, &doc2Length, &lineNum2);
-	
+
 	if(doc2Length < 1)
 		return true;
 
@@ -1041,7 +1042,7 @@ bool compareNew()
 
 	/* make diff */
 	int sn;
-	struct varray *ses = varray_new(sizeof(struct diff_edit), NULL);
+	struct varray<diff_edit> *ses = new varray<diff_edit>;
 	int result = (diff(doc1Hashes, 0, doc1Length, doc2Hashes, 0, doc2Length,
 		(idx_fn)(getLineFromIndex), (cmp_fn)(compareLines), NULL, 0, ses, &sn, NULL));
 
@@ -1058,12 +1059,12 @@ bool compareNew()
 
 		for (int i = 0; i < sn; i++)
 		{
-			struct diff_edit *e = (diff_edit*)varray_get(ses, i);
+			struct diff_edit *e = ses->get(i);
 			if (e->op == DIFF_DELETE)
 			{
 				e->changeCount = 0;
 				doc1Changed += e->len;
-				struct diff_edit *e2 = (diff_edit*)varray_get(ses, i + 1);
+				struct diff_edit *e2 = ses->get(i + 1);
 				e2->changeCount = 0;
 
 				if (e2->op == DIFF_INSERT)
@@ -1108,7 +1109,7 @@ bool compareNew()
 	{
 		for (int i = 0; i < sn; i++)
 		{
-			struct diff_edit *e = (diff_edit*)varray_get(ses, i);
+			struct diff_edit *e = ses->get(i);
 			e->set = i;
 
 			switch (e->op)
@@ -1148,7 +1149,7 @@ bool compareNew()
 
 				for (int k = 0; k < doc1Changes[i].changeCount; k++)
 				{
-					struct diff_change *change = (diff_change*)varray_get(doc1Changes[i].changes, k);
+					struct diff_change *change = doc1Changes[i].changes->get(k);
 					markTextAsChanged(nppData._scintillaMainHandle, textIndex + change->off, change->len);
 				}
 				break;
@@ -1173,7 +1174,7 @@ bool compareNew()
 				textIndex = lineNum2[doc2Changes[i].off];
 				for (int k = 0; k < doc2Changes[i].changeCount; k++)
 				{
-					struct diff_change *change = (diff_change*)varray_get(doc2Changes[i].changes, k);
+					struct diff_change *change = doc2Changes[i].changes->get(k);
 					markTextAsChanged(nppData._scintillaSecondHandle, textIndex + change->off, change->len);
 				}
 				break;
@@ -1336,7 +1337,7 @@ bool startCompare()
 	LRESULT RODoc2;
 
 	if(!IsWindowVisible(nppData._scintillaMainHandle) || !IsWindowVisible(nppData._scintillaSecondHandle))
-	{	
+	{
 		skipAutoReset = true;
 		SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_GOTO_ANOTHER_VIEW, 0);
 		skipAutoReset = false;
@@ -1344,7 +1345,7 @@ bool startCompare()
 	}
 
 	if(!IsWindowVisible(nppData._scintillaMainHandle) || !IsWindowVisible(nppData._scintillaSecondHandle))
-	{	
+	{
 		panelsOpened = false;
 		::MessageBox(nppData._nppHandle, TEXT("Nothing to compare!"), TEXT("Error"), MB_OK);
 		return true;
@@ -1402,7 +1403,20 @@ bool startCompare()
 	::SendMessageA(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
 
 	// Compare files (return False if files differs)
-	bool result = compareNew();
+	bool result = false;
+
+	try
+	{
+		result = compareNew();
+	}
+	catch (std::exception& e)
+	{
+		MessageBoxA(NULL, e.what(), "Compare Plugin", MB_OK);
+	}
+	catch (...)
+	{
+		MessageBoxA(NULL, "Non-standard exception occurred", "Compare Plugin", MB_OK);
+	}
 
 	::SendMessageA(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
 	::SendMessageA(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
@@ -1423,9 +1437,9 @@ bool startCompare()
 
 			// Configure NavBar
 			NavDlg.SetColor(
-				Settings.ColorSettings.added, 
-				Settings.ColorSettings.deleted, 
-				Settings.ColorSettings.changed, 
+				Settings.ColorSettings.added,
+				Settings.ColorSettings.deleted,
+				Settings.ColorSettings.changed,
 				Settings.ColorSettings.moved,
                 Settings.ColorSettings.blank,
                 Settings.ColorSettings._default);
@@ -1460,12 +1474,12 @@ void compare()
 
 extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 {
-	switch (notifyCode->nmhdr.code) 
+	switch (notifyCode->nmhdr.code)
 	{
 	case SCN_PAINTED:
 		{
-			if(active) 
-			{   
+			if(active)
+			{
                 // update nav bar if npp views got scrolled, resized, etc..
                 long start, visible_line_count;
 
@@ -1486,7 +1500,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		}
 
 	case NPPN_TBMODIFICATION:
-		{         
+		{
             tbNext.hToolbarBmp = (HBITMAP)::LoadImage(hInstance,
 													  MAKEINTRESOURCE(IDB_NEXT),
 													  IMAGE_BITMAP,
@@ -1602,11 +1616,11 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 
 			SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, 0, (LPARAM)emptyLinesDoc);
 
-			HWND window = getCurrentWindow();						
+			HWND window = getCurrentWindow();
 			int win = SendMessageA(window, SCI_GETDOCPOINTER, 0,0);
 
 			if(getCompare(win)!=-1)
-			{				
+			{
 				topLine = SendMessageA(window,SCI_GETFIRSTVISIBLELINE,0,0);
 				lastEmptyLines = removeEmptyLines(window,true);
 			}
