@@ -15,11 +15,12 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-#ifndef OPTION_DEFINE_H
-#define OPTION_DEFINE_H
+
+#pragma once
+
 
 #include "StaticDialog.h"
-#include "Resource.h"
+#include "resource.h"
 #include "Compare.h"
 #include "ColorCombo.h"
 #include <vector>
@@ -64,5 +65,3 @@ private:
 
 	struct sUserSettings* _Settings;
 };
-
-#endif // OPTION_DEFINE_H

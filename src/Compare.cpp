@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdlib.h>
 #include <exception>
 #include "Compare.h"
 #include "NPPHelpers.h"
@@ -93,7 +94,7 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 	case DLL_PROCESS_ATTACH:
 		{
 			funcItem[CMD_COMPARE]._pFunc = compare;
-			lstrcpy(funcItem[CMD_COMPARE]._itemName, TEXT("Compare"));
+			_tcscpy_s(funcItem[CMD_COMPARE]._itemName, nbChar, TEXT("Compare"));
 			funcItem[CMD_COMPARE]._pShKey = new ShortcutKey;
 			funcItem[CMD_COMPARE]._pShKey->_isAlt = true;
 			funcItem[CMD_COMPARE]._pShKey->_isCtrl = false;
@@ -102,7 +103,7 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 			funcItem[CMD_COMPARE]._init2Check = false;
 
 			funcItem[CMD_CLEAR_RESULTS]._pFunc = reset;
-			lstrcpy(funcItem[CMD_CLEAR_RESULTS]._itemName, TEXT("Clear Results"));
+			_tcscpy_s(funcItem[CMD_CLEAR_RESULTS]._itemName, nbChar, TEXT("Clear Results"));
 			funcItem[CMD_CLEAR_RESULTS]._pShKey = new ShortcutKey;
 			funcItem[CMD_CLEAR_RESULTS]._pShKey->_isAlt = true;
 			funcItem[CMD_CLEAR_RESULTS]._pShKey->_isCtrl = true;
@@ -111,11 +112,11 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 			funcItem[CMD_CLEAR_RESULTS]._init2Check = false;
 
 			funcItem[CMD_SEPARATOR_1]._pFunc = NULL;
-			lstrcpy(funcItem[CMD_SEPARATOR_1]._itemName, TEXT("-----------"));
+			_tcscpy_s(funcItem[CMD_SEPARATOR_1]._itemName, nbChar, TEXT("-----------"));
 			funcItem[CMD_SEPARATOR_1]._pShKey = NULL;
 
 			funcItem[CMD_COMPARE_LAST_SAVE]._pFunc = compareLocal;
-			lstrcpy(funcItem[CMD_COMPARE_LAST_SAVE]._itemName, TEXT("Compare to last save"));
+			_tcscpy_s(funcItem[CMD_COMPARE_LAST_SAVE]._itemName, nbChar, TEXT("Compare to last save"));
 			funcItem[CMD_COMPARE_LAST_SAVE]._pShKey = new ShortcutKey;
 			funcItem[CMD_COMPARE_LAST_SAVE]._pShKey->_isAlt = true;
 			funcItem[CMD_COMPARE_LAST_SAVE]._pShKey->_isCtrl = false;
@@ -124,7 +125,7 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 			funcItem[CMD_COMPARE_LAST_SAVE]._init2Check = false;
 
 			funcItem[CMD_COMPARE_SVN_BASE]._pFunc = compareSvnBase;
-			lstrcpy(funcItem[CMD_COMPARE_SVN_BASE]._itemName, TEXT("Compare against SVN base"));
+			_tcscpy_s(funcItem[CMD_COMPARE_SVN_BASE]._itemName, nbChar, TEXT("Compare against SVN base"));
 			funcItem[CMD_COMPARE_SVN_BASE]._pShKey = new ShortcutKey;
 			funcItem[CMD_COMPARE_SVN_BASE]._pShKey->_isAlt = true;
 			funcItem[CMD_COMPARE_SVN_BASE]._pShKey->_isCtrl = false;
@@ -133,7 +134,7 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 			funcItem[CMD_COMPARE_SVN_BASE]._init2Check = false;
 
 			funcItem[CMD_COMPARE_GIT_BASE]._pFunc = compareGitBase;
-			lstrcpy(funcItem[CMD_COMPARE_GIT_BASE]._itemName, TEXT("Compare against GIT base"));
+			_tcscpy_s(funcItem[CMD_COMPARE_GIT_BASE]._itemName, nbChar, TEXT("Compare against GIT base"));
 			funcItem[CMD_COMPARE_GIT_BASE]._pShKey = new ShortcutKey;
 			funcItem[CMD_COMPARE_GIT_BASE]._pShKey->_isAlt = true;
 			funcItem[CMD_COMPARE_GIT_BASE]._pShKey->_isCtrl = true;
@@ -142,35 +143,35 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 			funcItem[CMD_COMPARE_GIT_BASE]._init2Check = false;
 
 			funcItem[CMD_SEPARATOR_2]._pFunc = NULL;
-			lstrcpy(funcItem[CMD_SEPARATOR_2]._itemName, TEXT("------------"));
+			_tcscpy_s(funcItem[CMD_SEPARATOR_2]._itemName, nbChar, TEXT("------------"));
 			funcItem[CMD_SEPARATOR_2]._pShKey = NULL;
 
 			funcItem[CMD_ALIGN_MATCHES]._pFunc = alignMatches;
-			lstrcpy(funcItem[CMD_ALIGN_MATCHES]._itemName, TEXT("Align Matches"));
+			_tcscpy_s(funcItem[CMD_ALIGN_MATCHES]._itemName, nbChar, TEXT("Align Matches"));
 			funcItem[CMD_ALIGN_MATCHES]._pShKey = NULL;
 			funcItem[CMD_ALIGN_MATCHES]._init2Check = false;
 
 			funcItem[CMD_IGNORE_SPACING]._pFunc = includeSpacing;
-			lstrcpy(funcItem[CMD_IGNORE_SPACING]._itemName, TEXT("Ignore Spacing"));
+			_tcscpy_s(funcItem[CMD_IGNORE_SPACING]._itemName, nbChar, TEXT("Ignore Spacing"));
 			funcItem[CMD_IGNORE_SPACING]._pShKey = NULL;
 			funcItem[CMD_IGNORE_SPACING]._init2Check = false;
 
 			funcItem[CMD_DETECT_MOVES]._pFunc = detectMoves;
-			lstrcpy(funcItem[CMD_DETECT_MOVES]._itemName, TEXT("Detect Moves"));
+			_tcscpy_s(funcItem[CMD_DETECT_MOVES]._itemName, nbChar, TEXT("Detect Moves"));
 			funcItem[CMD_DETECT_MOVES]._pShKey = NULL;
 			funcItem[CMD_DETECT_MOVES]._init2Check = false;
 
 			funcItem[CMD_USE_NAV_BAR]._pFunc = ViewNavigationBar;
-			lstrcpy(funcItem[CMD_USE_NAV_BAR]._itemName, TEXT("Navigation bar"));
+			_tcscpy_s(funcItem[CMD_USE_NAV_BAR]._itemName, nbChar, TEXT("Navigation bar"));
 			funcItem[CMD_USE_NAV_BAR]._pShKey = NULL;
 			funcItem[CMD_USE_NAV_BAR]._init2Check = false;
 
 			funcItem[CMD_SEPARATOR_3]._pFunc = NULL;
-			lstrcpy(funcItem[CMD_SEPARATOR_3]._itemName, TEXT("-----------"));
+			_tcscpy_s(funcItem[CMD_SEPARATOR_3]._itemName, nbChar, TEXT("-----------"));
 			funcItem[CMD_SEPARATOR_3]._pShKey = NULL;
 
 			funcItem[CMD_PREV]._pFunc = Prev;
-			lstrcpy(funcItem[CMD_PREV]._itemName, TEXT("Previous"));
+			_tcscpy_s(funcItem[CMD_PREV]._itemName, nbChar, TEXT("Previous"));
 			funcItem[CMD_PREV]._pShKey = new ShortcutKey;
 			funcItem[CMD_PREV]._pShKey->_isAlt = false;
 			funcItem[CMD_PREV]._pShKey->_isCtrl = true;
@@ -179,7 +180,7 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 			funcItem[CMD_PREV]._init2Check = false;
 
 			funcItem[CMD_NEXT]._pFunc = Next;
-			lstrcpy(funcItem[CMD_NEXT]._itemName, TEXT("Next"));
+			_tcscpy_s(funcItem[CMD_NEXT]._itemName, nbChar, TEXT("Next"));
 			funcItem[CMD_NEXT]._pShKey = new ShortcutKey;
 			funcItem[CMD_NEXT]._pShKey->_isAlt = false;
 			funcItem[CMD_NEXT]._pShKey->_isCtrl = true;
@@ -188,7 +189,7 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 			funcItem[CMD_NEXT]._init2Check = false;
 
 			funcItem[CMD_FIRST]._pFunc = First;
-			lstrcpy(funcItem[CMD_FIRST]._itemName, TEXT("First"));
+			_tcscpy_s(funcItem[CMD_FIRST]._itemName, nbChar, TEXT("First"));
 			funcItem[CMD_FIRST]._pShKey = new ShortcutKey;
 			funcItem[CMD_FIRST]._pShKey->_isAlt = false;
 			funcItem[CMD_FIRST]._pShKey->_isCtrl = true;
@@ -197,7 +198,7 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 			funcItem[CMD_FIRST]._init2Check = false;
 
 			funcItem[CMD_LAST]._pFunc = Last;
-			lstrcpy(funcItem[CMD_LAST]._itemName, TEXT("Last"));
+			_tcscpy_s(funcItem[CMD_LAST]._itemName, nbChar, TEXT("Last"));
 			funcItem[CMD_LAST]._pShKey = new ShortcutKey;
 			funcItem[CMD_LAST]._pShKey->_isAlt = false;
 			funcItem[CMD_LAST]._pShKey->_isCtrl = true;
@@ -206,16 +207,16 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 			funcItem[CMD_LAST]._init2Check = false;
 
 			funcItem[CMD_SEPARATOR_4]._pFunc = NULL;
-			lstrcpy(funcItem[CMD_SEPARATOR_4]._itemName, TEXT("-----------"));
+			_tcscpy_s(funcItem[CMD_SEPARATOR_4]._itemName, nbChar, TEXT("-----------"));
 			funcItem[CMD_SEPARATOR_4]._pShKey = NULL;
 
 			funcItem[CMD_OPTION]._pFunc = openOptionDlg;
-			lstrcpy(funcItem[CMD_OPTION]._itemName, TEXT("Option"));
+			_tcscpy_s(funcItem[CMD_OPTION]._itemName, nbChar, TEXT("Options"));
 			funcItem[CMD_OPTION]._pShKey = NULL;
 			funcItem[CMD_OPTION]._init2Check = false;
 
 			funcItem[CMD_ABOUT]._pFunc = openAboutDlg;
-			lstrcpy(funcItem[CMD_ABOUT]._itemName, TEXT("About"));
+			_tcscpy_s(funcItem[CMD_ABOUT]._itemName, nbChar, TEXT("About"));
 			funcItem[CMD_ABOUT]._pShKey = NULL;
 			funcItem[CMD_ABOUT]._init2Check = false;
 
@@ -223,7 +224,7 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 				compareDocs[i]=-1;
 
 			TCHAR nppPath[MAX_PATH];
-            GetModuleFileName(hInstance, nppPath, sizeof(nppPath));
+            GetModuleFileName(hInstance, nppPath, _countof(nppPath));
 
 			// remove the module name : get plugins directory path
 			PathRemoveFileSpec(nppPath);
@@ -233,7 +234,7 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 
 			// Make localConf.xml path
 			TCHAR localConfPath[MAX_PATH];
-			lstrcpy(localConfPath, nppPath);
+			_tcscpy_s(localConfPath, _countof(localConfPath), nppPath);
 			PathAppend(localConfPath, localConfFile);
 
 			// Test if localConf.xml exist
@@ -241,8 +242,8 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 
 			if (isLocal)
 			{
-				lstrcpy(iniFilePath, nppPath);
-				lstrcpy(compareFilePath, nppPath);
+				_tcscpy_s(iniFilePath, _countof(iniFilePath), nppPath);
+				_tcscpy_s(compareFilePath, _countof(compareFilePath), nppPath);
 
 				PathAppend(iniFilePath, TEXT("plugins\\config\\Compare.ini"));
 			}
@@ -530,7 +531,7 @@ void jumpChangedLines(bool direction)
 		(!direction && (nextLine > prevLine)))
 	{
 		FLASHWINFO flashInfo;
-		flashInfo.cbSize = sizeof(FLASHWINFO);
+		flashInfo.cbSize = sizeof(flashInfo);
 		flashInfo.hwnd = nppData._nppHandle;
 		flashInfo.uCount = 2;
 		flashInfo.dwTimeout = 100;
@@ -660,8 +661,8 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM /*wPar
 	return TRUE;
 }
 
-HWND openTempFile(void)
-	{
+HWND openTempFile()
+{
 	char original[MAX_PATH];
 
 	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, 0, (LPARAM)original);
@@ -715,7 +716,7 @@ HWND openTempFile(void)
 	return window;
 }
 
-void openFile(TCHAR *file)
+void openFile(const TCHAR *file)
 {
 	if(file == NULL || PathFileExists(file) == FALSE)
 	{
@@ -723,15 +724,17 @@ void openFile(TCHAR *file)
 		return;
 	}
 
-	ifstream myfile(file,ios::in|ios::ate| ios::binary);
+	FILE* myfile(_tfopen(file, _T("rb")));
 
-	if(myfile.is_open())
+	if (myfile)
 	{
-		long size = (long)myfile.tellg();
-		char *memblock = new char [size+1];
-		myfile.seekg(0);
-		myfile.read(memblock, size);
-		myfile.close();
+		fseek(myfile, 0, SEEK_END);
+		long size = ftell(myfile);
+		char *memblock = new char[size + 1];
+
+		fseek(myfile, 0, SEEK_SET);
+		fread(memblock, 1, size, myfile);
+		fclose(myfile);
 
 		memblock[size] = 0;
 
@@ -893,7 +896,7 @@ void compareSvnBase()
 
 		PathCanonicalize(curDirCanon, curDir);
 
-		if (GetScmBaseFolder(L".svn", curDirCanon, svnDir))
+		if (GetScmBaseFolder(TEXT(".svn"), curDirCanon, svnDir, _countof(svnDir)))
 		{
 			TCHAR curFile[MAX_PATH];
 			TCHAR svnBaseFile[MAX_PATH];
@@ -902,7 +905,7 @@ void compareSvnBase()
 
 			if (curFile[0] != 0)
 			{
-				if (GetSvnBaseFile(curDirCanon, svnDir, curFile, svnBaseFile))
+				if (GetSvnBaseFile(curDirCanon, svnDir, curFile, svnBaseFile, _countof(svnBaseFile)))
 				{
 					openFile(svnBaseFile);
 					return;
@@ -910,7 +913,7 @@ void compareSvnBase()
 			}
 		}
 	}
-	MessageBox(nppData._nppHandle, L"Can't locate SVN information", L"ComparePlugin", MB_OK);
+	MessageBox(nppData._nppHandle, TEXT("Can't locate SVN information"), TEXT("ComparePlugin"), MB_OK);
 }
 
 void compareGitBase()
@@ -926,7 +929,7 @@ void compareGitBase()
 
 		PathCanonicalize(curDirCanon, curDir);
 
-		if (GetScmBaseFolder(L".git", curDirCanon, gitDir))
+		if (GetScmBaseFolder(TEXT(".git"), curDirCanon, gitDir, _countof(gitDir)))
 		{
 			TCHAR curFile[MAX_PATH];
 
@@ -949,7 +952,7 @@ void compareGitBase()
 			}
 		}
 	}
-	MessageBox(nppData._nppHandle, L"Can't locate GIT information", L"ComparePlugin", MB_OK);
+	MessageBox(nppData._nppHandle, TEXT("Can't locate GIT information"), TEXT("ComparePlugin"), MB_OK);
 }
 
 int CProgress_IsCanceled_Callback()
@@ -1022,16 +1025,16 @@ bool compareNew()
 	SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)filenameMain);
 	SetFocus(nppData._scintillaSecondHandle);
 	SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)filenameSecond);
-	if (lstrlen(filenameMain) > 20)
+	if (_tcslen(filenameMain) > 20)
 	{
-		lstrcpy(filenameMain + 17, L"...");
+		_tcscpy_s(filenameMain + 17, 4, TEXT("..."));
 	}
-	if (lstrlen(filenameSecond) > 20)
+	if (_tcslen(filenameSecond) > 20)
 	{
-		lstrcpy(filenameSecond + 17, L"...");
+		_tcscpy_s(filenameSecond + 17, 4, TEXT("..."));
 	}
 	SetFocus(hwnd);
-	wsprintf(buffer, L"Compare: '%s' vs. '%s'", filenameMain, filenameSecond);
+	_sntprintf_s(buffer, _countof(buffer), _TRUNCATE, TEXT("Compare: '%s' vs. '%s'"), filenameMain, filenameSecond);
 	CProgress_IsCanceled = CProgress_IsCanceled_Callback;
 	CProgress_Increment = CProgress_Increment_Callback;
 	progMax = 0;
@@ -1286,7 +1289,7 @@ bool compareNew()
 		}
 
 		delete[] doc2;
-		delete lineNum2;
+		delete[] lineNum2;
 
 		delete[] doc1Hashes;
 		delete[] doc2Hashes;
@@ -1318,7 +1321,8 @@ bool compareNew()
 	{
 		if(!different)
 		{
-			::MessageBox(nppData._nppHandle, TEXT("Files Match"), TEXT("Results :"), MB_OK);
+			_tcscat_s(buffer, _countof(buffer), TEXT(":\n\nFiles Match.\n"));
+			::MessageBox(nppData._nppHandle, buffer, TEXT("Files Match"), MB_OK);
 			return true;
 		}
 
@@ -1328,6 +1332,7 @@ bool compareNew()
 
 		return false;
 	}
+
 	return false;
 }
 
@@ -1362,9 +1367,12 @@ bool startCompare()
 
 	if(Settings.AddLine && !notepadVersionOk)
 	{
-		::MessageBox(nppData._nppHandle, TEXT("Notepad v4.5 or higher is required to line up matches. This feature will be turned off"), TEXT("Incorrect Version"), MB_OK);
+		::MessageBox(nppData._nppHandle,
+				TEXT("Notepad v4.5 or higher is required to line up matches. This feature will be turned off"),
+				TEXT("Incorrect Version"), MB_OK);
 		Settings.AddLine = false;
-		::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID, (LPARAM)Settings.AddLine);
+		::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID,
+				(LPARAM)Settings.AddLine);
 	}
 
 	// Remove read-only attribute
@@ -1402,7 +1410,7 @@ bool startCompare()
 	::SendMessageA(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
 	::SendMessageA(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
 
-	// Compare files (return False if files differs)
+	// Compare files (return False if files differ)
 	bool result = false;
 
 	try
@@ -1637,7 +1645,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 			TCHAR name[MAX_PATH];
 			SendMessage(nppData._nppHandle,NPPM_GETFULLCURRENTPATH,0,(LPARAM)name);
 
-			if(lastEmptyLines != NULL && lstrcmp(name, emptyLinesDoc) == 0)
+			if(lastEmptyLines != NULL && _tcscmp(name, emptyLinesDoc) == 0)
 			{
 				HWND window = getCurrentWindow();
 				::addBlankLines(window,lastEmptyLines);

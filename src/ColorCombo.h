@@ -17,14 +17,15 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef COLORCOMBO_H
-#define COLORCOMBO_H
+
+#pragma once
+
 
 #include "Window.h"
 #include "ColorPopup.h"
 
 #if(WINVER <= 0x0400)
-struct COMBOBOXINFO 
+struct COMBOBOXINFO
 {
 	int cbSize;
 	RECT rcItem;
@@ -32,9 +33,9 @@ struct COMBOBOXINFO
 	DWORD stateButton;
 	HWND hwndCombo;
 	HWND hwndItem;
-	HWND hwndList; 
+	HWND hwndList;
 };
-#endif 
+#endif
 
 
 #define	CB_GETCOMBOBOXINFO	0x0164
@@ -42,24 +43,31 @@ struct COMBOBOXINFO
 class ColorCombo : public Window
 {
 public :
-	ColorCombo() : Window(), _rgbCol(0), _pColorPopup(NULL) {
+	ColorCombo() : Window(), _rgbCol(0), _pColorPopup(NULL)
+	{
 		::ZeroMemory(&_comboBoxInfo, sizeof(_comboBoxInfo));
 	};
+
 	~ColorCombo () {};
 	virtual void init(HINSTANCE hInst, HWND hNpp, HWND hCombo);
-	virtual void destroy() {
+	virtual void destroy()
+	{
 		DestroyWindow(_hSelf);
 	};
 
-	void onSelect(void) {
+	void onSelect(void)
+	{
 		DrawColor();
 	};
 
-	void setColor(COLORREF rgbCol) {
+	void setColor(COLORREF rgbCol)
+	{
 		_rgbCol = rgbCol;
 		::RedrawWindow(_comboBoxInfo.hwndItem, &_comboBoxInfo.rcItem, NULL, TRUE);
 	};
-	void getColor(LPCOLORREF p_rgbCol) {
+
+	void getColor(LPCOLORREF p_rgbCol)
+	{
 		if (p_rgbCol != NULL) {
 			*p_rgbCol = _rgbCol;
 		}
@@ -72,15 +80,15 @@ private :
 	HWND					_hNpp;
 	COMBOBOXINFO			_comboBoxInfo;
 	WNDPROC					_hDefaultComboProc;
-	
+
 	COLORREF                _rgbCol;
 	ColorPopup*				_pColorPopup;
 
 	/* Subclassing combo boxes */
 	LRESULT runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
-	static LRESULT CALLBACK wndDefaultProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) {
+
+	static LRESULT CALLBACK wndDefaultProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
+	{
 		return (((ColorCombo *)(::GetWindowLong(hwnd, GWL_USERDATA)))->runProc(hwnd, Message, wParam, lParam));
 	};
 };
-
-#endif // COLORCOMBO_H

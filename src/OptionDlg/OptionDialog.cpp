@@ -1,6 +1,6 @@
 #include "OptionDialog.h"
 #include "PluginInterface.h"
-#include <Commctrl.h>
+#include <commctrl.h>
 #include <shlobj.h>
 #include <uxtheme.h>
 

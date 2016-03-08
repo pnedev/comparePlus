@@ -7,10 +7,10 @@
 // version 2 of the License, or (at your option) any later version.
 //
 // Note that the GPL places important restrictions on "derived works", yet
-// it does not provide a detailed definition of that term.  To avoid      
-// misunderstandings, we consider an application to constitute a          
+// it does not provide a detailed definition of that term.  To avoid
+// misunderstandings, we consider an application to constitute a
 // "derivative work" for the purpose of this license if it does any of the
-// following:                                                             
+// following:
 // 1. Integrates source code from Notepad++.
 // 2. Integrates/includes/aggregates Notepad++ into a proprietary executable
 //    installer, such as those produced by InstallShield.
@@ -56,7 +56,7 @@ struct iconLocator {
 	int iconIndex;
 	generic_string iconLocation;
 
-	iconLocator(int iList, int iIcon, const generic_string iconLoc) 
+	iconLocator(int iList, int iIcon, const generic_string iconLoc)
 		: listIndex(iList), iconIndex(iIcon), iconLocation(iconLoc){};
 };
 
@@ -71,7 +71,7 @@ public :
 	virtual ~ToolBar(){};
 
     void initTheme(TiXmlDocument *toolIconsDocRoot);
-	virtual bool init(HINSTANCE hInst, HWND hPere, toolBarStatusType type, 
+	virtual bool init(HINSTANCE hInst, HWND hPere, toolBarStatusType type,
 		ToolBarButtonUnit *buttonUnitArray, int arraySize);
 
 	virtual void destroy();
@@ -98,7 +98,7 @@ public :
 		return _state;
 	};
 
-    bool changeIcons() {    
+    bool changeIcons() {
 	    if (!_toolIcons)
 		    return false;
 	    for (size_t i = 0, len = _customIconVect.size(); i < len; ++i)
@@ -145,7 +145,7 @@ private :
 	void setState(toolBarStatusType state) {
 		_state = state;
 	}
-	
+
 };
 
 class ReBar : public Window

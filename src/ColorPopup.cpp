@@ -17,8 +17,14 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+
+#pragma comment (lib, "comdlg32")
+
+#include <windows.h>
+#include <commdlg.h>
+#include <stdlib.h>
 #include "ColorPopup.h"
-#include "SysMsg.h"
+
 
 DWORD colorItems[] = {
 	RGB(  0,   0,   0),	RGB( 64,   0,   0),	RGB(128,   0,   0),	RGB(128,  64,  64),	RGB(255,   0,   0),	RGB(255, 128, 128),
@@ -31,29 +37,27 @@ DWORD colorItems[] = {
 	RGB(255, 128, 255),	RGB(255,   0, 255), RGB(255,   0, 128),	RGB(128,   0, 255), RGB( 64,   0, 128),	RGB(255, 255, 255),
 };
 
-void ColorPopup::create(int dialogID) 
+void ColorPopup::create(int dialogID)
 {
 	_hSelf = ::CreateDialogParam(_hInst, MAKEINTRESOURCE(dialogID), _hParent,  (DLGPROC)dlgProc, (LPARAM)this);
-	
+
 	if (!_hSelf)
 	{
-		//systemMessage(_T("ColorPopup"));
-		//throw int(696);
 	}
 	Window::getClientRect(_rc);
 	display();
 }
 
-BOOL CALLBACK ColorPopup::dlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
+BOOL CALLBACK ColorPopup::dlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	switch (message) 
+	switch (message)
 	{
 		case WM_MEASUREITEM:
 		{
 			RECT rc;
-			LPMEASUREITEMSTRUCT lpmis =  (LPMEASUREITEMSTRUCT) lParam; 
+			LPMEASUREITEMSTRUCT lpmis =  (LPMEASUREITEMSTRUCT) lParam;
 			::GetWindowRect(::GetDlgItem(hwnd, lpmis->CtlID), &rc);
-			lpmis->itemHeight = (rc.bottom-rc.top)/6; 
+			lpmis->itemHeight = (rc.bottom-rc.top)/6;
 			lpmis->itemWidth = (rc.right-rc.left)/8;
 			return TRUE;
 		}
@@ -84,15 +88,15 @@ BOOL CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam
 	{
 		case WM_INITDIALOG:
 		{
-			int nColor;
-			for (nColor = 0 ; nColor < int(sizeof(colorItems)/sizeof(DWORD)) ; nColor++)
+			unsigned nColor;
+			for (nColor = 0 ; nColor < _countof(colorItems); nColor++)
 			{
 				::SendDlgItemMessage(_hSelf, IDC_COLOR_LIST, LB_ADDSTRING, nColor, (LPARAM) "");
 				::SendDlgItemMessage(_hSelf, IDC_COLOR_LIST, LB_SETITEMDATA , nColor, (LPARAM) colorItems[nColor]);
 			}
 			return TRUE;
 		}
-		
+
 		case WM_CTLCOLORLISTBOX:
 			return (LRESULT) CreateSolidBrush(GetSysColor(COLOR_3DFACE));
 
@@ -101,16 +105,16 @@ BOOL CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam
 			HDC hdc;
 			COLORREF	cr;
 			HBRUSH		hbrush;
-	
+
 			DRAWITEMSTRUCT *pdis = (DRAWITEMSTRUCT *)lParam;
 			hdc = pdis->hDC;
 			RECT rc = pdis->rcItem;
-	
+
 			// Transparent.
 			SetBkMode(hdc,TRANSPARENT);
-	
+
 			// NULL object
-			if (pdis->itemID == UINT(-1)) return 0; 
+			if (pdis->itemID == UINT(-1)) return 0;
 
 			switch (pdis->itemAction)
 			{
@@ -150,7 +154,7 @@ BOOL CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam
 						SelectObject(hdc, holdPen);
 						DeleteObject(hpen);
 					}
-					else 
+					else
 					{
 						hbrush = CreateSolidBrush(GetSysColor(COLOR_3DFACE));
 						FrameRect(hdc, &rc, hbrush);
@@ -173,16 +177,16 @@ BOOL CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam
 			{
 				case IDOK :
 				{
-					isColorChooserLaunched = true;
-					CHOOSECOLOR cc;                 // common dialog box structure 
+					_isColorChooserLaunched = true;
+					CHOOSECOLOR cc;                 // common dialog box structure
 					static COLORREF acrCustClr[16] = {
 						RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),\
 						RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),\
 						RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),\
 						RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),\
-					}; // array of custom colors 
+					}; // array of custom colors
 
-					// Initialize CHOOSECOLOR 
+					// Initialize CHOOSECOLOR
 					::ZeroMemory(&cc, sizeof(cc));
 					cc.lStructSize = sizeof(cc);
 					cc.hwndOwner = _hParent;
@@ -192,8 +196,8 @@ BOOL CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam
 					cc.Flags = CC_FULLOPEN | CC_RGBINIT;
 
 					display(false);
-					 
-					if (ChooseColor(&cc)==TRUE) 
+
+					if (ChooseColor(&cc)==TRUE)
 					{
 						::SendMessage(_hParent, COLOR_POPUP_OK, cc.rgbResult, 0);
 					}
@@ -216,19 +220,19 @@ BOOL CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam
 						return TRUE;
 					}
 				}
-				
+
 				default :
 					return FALSE;
 			}
-		
+
 		case WM_ACTIVATE :
 		{
 			if (LOWORD(wParam) == WA_INACTIVE)
-				if (!isColorChooserLaunched)
+				if (!_isColorChooserLaunched)
 					::SendMessage(_hParent, COLOR_POPUP_CANCEL, 0, 0);
 			return TRUE;
 		}
-		
+
 	}
 	return FALSE;
 }

@@ -18,7 +18,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
 #include "NavDialog.h"
-#include "Resource.h"
+#include "resource.h"
 
 NavDialog::NavDialog(void) : DockingDlgInterface(IDD_NAV_DIALOG)
 {

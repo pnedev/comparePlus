@@ -17,11 +17,12 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#ifndef NAV_DLG_H
-#define NAV_DLG_H
+
+#pragma once
+
 
 #include "Compare.h"
-#include "Windows.h"
+#include "Window.h"
 #include "DockingDlgInterface.h"
 
 #define SPACE   2
@@ -37,7 +38,7 @@ public:
 	void init(HINSTANCE hInst, NppData nppData);
 	void destroy(void) {};
 	void doDialog(bool willBeShown = true);
-    void NavDialog::DrawView();
+    void DrawView();
 	void Do(void);
     void SetColor(int added, int deleted, int changed, int moved, int blank, int _default);
     void SetLinePixel(long resultsDoc, int i, HDC hMemDC, int* m_lastDiffColor, int* m_lastDiffCounter);
@@ -102,5 +103,3 @@ private:
 	long  *m_ResultsDoc1;
 	long  *m_ResultsDoc2;
 };
-
-#endif // NAV_DLG_H

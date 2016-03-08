@@ -1,13 +1,14 @@
 #include <tchar.h>
-#include <Shlwapi.h>
-#include "..\src\Common\Notepad_plus_msgs.h"
+#include <shlwapi.h>
+#include <stdlib.h>
+#include "../src/Common/Notepad_plus_msgs.h"
 
 bool debug = 0;
 
-void showError(_TCHAR* errMsg, ...)
+void showError(TCHAR* errMsg, ...)
 {
-    _TCHAR msg[512];
-    _TCHAR appName[MAX_PATH];
+    TCHAR msg[512];
+    TCHAR appName[MAX_PATH];
 
 	va_list argptr;
 	va_start(argptr, errMsg);
@@ -16,7 +17,7 @@ void showError(_TCHAR* errMsg, ...)
 	#pragma warning(default: 4996)
     va_end(argptr);
 
-    GetModuleFileName(NULL, appName, sizeof(appName));
+    GetModuleFileName(NULL, appName, _countof(appName));
     PathStripPath(appName);
 
     MessageBox(NULL, msg, appName, MB_OK | MB_ICONERROR);
@@ -28,12 +29,12 @@ void showError(_TCHAR* errMsg, ...)
 	return 1; \
 }
 
-void log(_TCHAR* errMsg, ...)
+void log(TCHAR* errMsg, ...)
 {
     if (debug)
     {
-        _TCHAR buffer[512];
-        _TCHAR msg[512];
+        TCHAR buffer[512];
+        TCHAR msg[512];
 
         va_list argptr;
         va_start(argptr, errMsg);
@@ -42,7 +43,7 @@ void log(_TCHAR* errMsg, ...)
         #pragma warning(default: 4996)
         va_end(argptr);
 
-        wsprintf(msg, L"Compare loader: %s", buffer);
+        _sntprintf_s(msg, _countof(msg), _TRUNCATE, TEXT("Compare loader: %s"), buffer);
 
         OutputDebugString(msg);
     }
@@ -51,42 +52,42 @@ void log(_TCHAR* errMsg, ...)
 
 BOOL CALLBACK EnumThreadWndProc(HWND hwnd, LPARAM lParam)
 {
-	_TCHAR buffer[256];
-	GetClassName(hwnd, buffer, sizeof(buffer));
-    log(L"Checking window: %s", buffer);
-	if (!lstrcmp(buffer, L"Notepad++"))
+	TCHAR buffer[256];
+	GetClassName(hwnd, buffer, _countof(buffer));
+    log(TEXT("Checking window: %s"), buffer);
+	if (!_tcscmp(buffer, TEXT("Notepad++")))
 	{
 		int ver = SendMessage(hwnd, NPPM_GETNPPVERSION, 0, 0);
-        log(L"Checking N++ version: %d.%d", HIWORD(ver), LOWORD(ver));
+        log(TEXT("Checking N++ version: %d.%d"), HIWORD(ver), LOWORD(ver));
 		if (HIWORD(ver) >= 6)
 		{
             BOOL ret = TRUE; // TRUE = Fail
 
-            log(L"Searching for Compare plug-in menu");
+            log(TEXT("Searching for Compare plug-in menu"));
             HMENU hPluginMenu = (HMENU)SendMessage(hwnd, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
             int iMenuItems = GetMenuItemCount(hPluginMenu);
             for (int i = 0; i < iMenuItems; i++)
             {
                 MENUITEMINFO mii;
-                mii.cbSize = sizeof(MENUITEMINFO);
+                mii.cbSize = sizeof(mii);
                 mii.fMask = MIIM_ID | MIIM_STRING | MIIM_SUBMENU;
                 mii.dwTypeData = buffer;
-                mii.cch = sizeof(buffer) - 1;
+                mii.cch = _countof(buffer) - 1;
                 GetMenuItemInfo(hPluginMenu, i, TRUE, &mii);
-                log(L"Checking menu: %s", buffer);
-                if (!lstrcmp(buffer, L"Compare"))
+                log(TEXT("Checking menu: %s"), buffer);
+                if (!_tcscmp(buffer, TEXT("Compare")))
                 {
-                    log(L"Searching for Compare plug-in sub menu item");
+                    log(TEXT("Searching for Compare plug-in sub menu item"));
                     int iSubMenuItems = GetMenuItemCount(mii.hSubMenu);
                     for (int j = 0; j < iSubMenuItems; j++)
                     {
                         MENUITEMINFO smii;
-                        smii.cbSize = sizeof(MENUITEMINFO);
+                        smii.cbSize = sizeof(smii);
                         smii.fMask = MIIM_ID | MIIM_STRING;
                         smii.dwTypeData = buffer;
-                        smii.cch = sizeof(buffer) - 1;
+                        smii.cch = _countof(buffer) - 1;
                         GetMenuItemInfo(mii.hSubMenu, i, TRUE, &smii);
-                        log(L"Checking sub menu item: %s", buffer);
+                        log(TEXT("Checking sub menu item: %s"), buffer);
 
                         // remove optional shortcuts
                         int k = 0;
@@ -95,15 +96,15 @@ BOOL CALLBACK EnumThreadWndProc(HWND hwnd, LPARAM lParam)
                             if (buffer[k] == '\t')
                             {
                                 buffer[k] = 0;
-                                log(L"Stripped sub menu item name: %s", buffer);
+                                log(TEXT("Stripped sub menu item name: %s"), buffer);
                                 break;
                             }
                             k++;
                         }
 
-                        if (!lstrcmp(buffer, L"Compare"))
+                        if (!_tcscmp(buffer, TEXT("Compare")))
                         {
-                            log(L"Sending command message to N++");
+                            log(TEXT("Sending command message to N++"));
                             SendMessage(hwnd, WM_COMMAND, smii.wID, 0);
                             ret = FALSE; // FALSE = OK
                             break;
@@ -119,61 +120,62 @@ BOOL CALLBACK EnumThreadWndProc(HWND hwnd, LPARAM lParam)
 	return TRUE;
 }
 
-int _tmain(int argc, _TCHAR* argv[])
+int _tmain(int argc, TCHAR* argv[])
 {
 	// read .ini config
-	_TCHAR iniPath[MAX_PATH];
-	_TCHAR nppPath[MAX_PATH];
-	_TCHAR buffer[2048];
-	lstrcpy(iniPath, argv[0]);
+	TCHAR iniPath[MAX_PATH];
+	TCHAR nppPath[MAX_PATH];
+	TCHAR buffer[2048];
+	_tcscpy_s(iniPath, _countof(iniPath), argv[0]);
 	PathRemoveFileSpec(iniPath);
-	PathAppend(iniPath, L"compare.ini");
-	debug = (GetPrivateProfileInt(L"debug", L"output-debug-string", 0, iniPath) == 1);
+	PathAppend(iniPath, TEXT("compare.ini"));
+	debug = (GetPrivateProfileInt(TEXT("debug"), TEXT("output-debug-string"), 0, iniPath) == 1);
 
     // some checks
     if (argc < 3)
-        quitWithError(L"Missing commandline arguments:\ncompare.exe <file_path_1> <file_path_2>");
-    log(L"%s %s %s", argv[0], argv[1], argv[2]);
+        quitWithError(TEXT("Missing commandline arguments:\ncompare.exe <file_path_1> <file_path_2>"));
+    log(TEXT("%s %s %s", argv[0], argv[1], argv[2]));
     if (!PathFileExists(argv[1]))
-        quitWithError(L"Input file not found:\n'%s'", argv[1]);
+        quitWithError(TEXT("Input file not found:\n'%s'"), argv[1]);
     if (!PathFileExists(argv[2]))
-        quitWithError(L"Input file not found:\n'%s'", argv[2]);
+        quitWithError(TEXT("Input file not found:\n'%s'"), argv[2]);
 
 	// get notepad++:
 	// as configured in the .ini file
 	// else as found via relative path
 	// else as found via registry
-	if (GetPrivateProfileString(L"notepad", L"path", NULL, buffer, sizeof(buffer), iniPath)) {
-		ExpandEnvironmentStrings(buffer, nppPath, sizeof(nppPath));
-        log(L"Using configured npp path: %s", nppPath);
+	if (GetPrivateProfileString(TEXT("notepad"), TEXT("path"), NULL, buffer, _countof(buffer), iniPath))
+	{
+		ExpandEnvironmentStrings(buffer, nppPath, _countof(nppPath));
+        log(TEXT("Using configured npp path: %s"), nppPath);
 		if (!PathFileExists(nppPath))
-			quitWithError(L"Configured Notepad++ path not found:\n'%s'", nppPath);
+			quitWithError(TEXT("Configured Notepad++ path not found:\n'%s'"), nppPath);
 	}
 	else
 	{
-		lstrcpy(nppPath, argv[0]);
+		_tcscpy_s(nppPath, _countof(nppPath), argv[0]);
 		PathRemoveFileSpec(nppPath);
-		PathAppend(nppPath, L"..\\..\\notepad++.exe");
-        log(L"Trying relative npp path: %s", nppPath);
+		PathAppend(nppPath, TEXT("..\\..\\notepad++.exe"));
+        log(TEXT("Trying relative npp path: %s"), nppPath);
 		if (!PathFileExists(nppPath))
 		{
 			HKEY hKey;
 			DWORD lpcbData = sizeof(nppPath);
-            log(L"Looking for npp path in registry (HKLM/SOFTWARE/Notepad++)");
-			if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Notepad++", 0, KEY_QUERY_VALUE, &hKey) == ERROR_SUCCESS)
+            log(TEXT("Looking for npp path in registry (HKLM/SOFTWARE/Notepad++)"));
+			if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Notepad++"), 0, KEY_QUERY_VALUE, &hKey) == ERROR_SUCCESS)
 			{
 				if (RegQueryValueEx(hKey, NULL, NULL, NULL, (LPBYTE)nppPath, &lpcbData) == ERROR_SUCCESS)
 				{
-					PathAppend(nppPath, L"notepad++.exe");
-                    log(L"Trying npp path from registry: %s", nppPath);
+					PathAppend(nppPath, TEXT("notepad++.exe"));
+                    log(TEXT("Trying npp path from registry: %s"), nppPath);
 				}
 				RegCloseKey(hKey);
 			}
 			if (!PathFileExists(nppPath))
 			{
-				quitWithError(L"Notepad++.exe couldn't be found\n"
-					L"neither by relative path (..\\..\\notepad++.exe)\n"
-					L"nor via registry (HKEY_LOCAL_MACHINE\\SOFTWARE\\Notepad++)");
+				quitWithError(TEXT("Notepad++.exe couldn't be found\n")
+					TEXT("neither by relative path (..\\..\\notepad++.exe)\n")
+					TEXT("nor via registry (HKEY_LOCAL_MACHINE\\SOFTWARE\\Notepad++)"));
 			}
 		}
 	}
@@ -185,13 +187,14 @@ int _tmain(int argc, _TCHAR* argv[])
 	ZeroMemory(&procInfo, sizeof(procInfo));
 	int exitCode = 1;
 
-	wsprintf(buffer, L"\"%s\" -nosession -multiInst \"%s\" \"%s\"", nppPath, argv[1], argv[2]);
-    log(L"Creating process: %s", buffer);
+	_sntprintf_s(buffer, _countof(buffer), _TRUNCATE, TEXT("\"%s\" -nosession -multiInst \"%s\" \"%s\""),
+			nppPath, argv[1], argv[2]);
+    log(TEXT("Creating process: %s"), buffer);
 
 	if (CreateProcess(NULL, buffer, NULL, NULL, FALSE, NULL, NULL, NULL, &suInfo, &procInfo)) {
 		WaitForInputIdle(procInfo.hProcess, 7000);
 
-        log(L"Searching for N++ main window");
+        log(TEXT("Searching for N++ main window"));
 		EnumThreadWindows(procInfo.dwThreadId, EnumThreadWndProc, NULL);
 
 		CloseHandle(procInfo.hProcess);

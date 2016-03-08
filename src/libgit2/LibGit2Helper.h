@@ -16,8 +16,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef LIBGIT2HELPER_H
-#define LIBGIT2HELPER_H
+
+#pragma once
+
 
 #include "Compare.h"
 
@@ -75,5 +76,3 @@ extern PGITINDEXFREE git_index_free;
 extern PGITREPOSITORYFREE git_repository_free;
 
 bool InitLibGit2();
-
-#endif

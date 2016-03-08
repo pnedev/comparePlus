@@ -17,8 +17,8 @@
 
 #include "AboutDialog.h"
 #include "PluginInterface.h"
-#include "Resource.h"
-#include "Windows.h"
+#include "resource.h"
+#include "Window.h"
 
 void AboutDialog::doDialog()
 {
@@ -33,9 +33,9 @@ BOOL CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*lPa
 		case WM_INITDIALOG :
 		{
 			_emailLinkJSL.init(_hInst, _hSelf);
-			_emailLinkJSL.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK_JSL), _T("mailto:jean.sebastien.leroy@club-internet.fr"));
+			_emailLinkJSL.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK_JSL), TEXT("mailto:jean.sebastien.leroy@club-internet.fr"));
 			_urlNppPlugins.init(_hInst, _hSelf);
-			_urlNppPlugins.create(::GetDlgItem(_hSelf, IDC_NPP_PLUGINS_URL), _T("https://github.com/jsleroy/compare-plugin"));
+			_urlNppPlugins.create(::GetDlgItem(_hSelf, IDC_NPP_PLUGINS_URL), NULL);
 
 			return TRUE;
 		}

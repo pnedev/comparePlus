@@ -16,8 +16,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ENGINE_H
-#define ENGINE_H
+
+#pragma once
+
 
 #include "diff.h"
 #include <string>
@@ -88,5 +89,3 @@ unsigned int *computeHashes(char** doc, int docLength, bool IncludeSpace);
 void clearEdits(varray<diff_edit> *ses, int sn);
 void clearEdit(diff_edit *e);
 void cleanEmptyLines(blankLineList *line);
-
-#endif // ENGINE_H

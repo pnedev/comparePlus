@@ -17,29 +17,30 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef COLOR_POPUP_H
-#define COLOR_POPUP_H
+
+#pragma once
+
 
 #include "Window.h"
-#include "Resource.h"
+#include "resource.h"
 #include "CompareResource.h"
 
 class ColorPopup : public Window
 {
 public :
-	ColorPopup() : Window(), isColorChooserLaunched(false) {};
-	ColorPopup(COLORREF defaultColor) : Window(), isColorChooserLaunched(false), _color(defaultColor) {};
+	ColorPopup() : Window(), _isColorChooserLaunched(false) {};
+	ColorPopup(COLORREF defaultColor) : Window(), _isColorChooserLaunched(false), _color(defaultColor) {};
 	~ColorPopup(){};
 
 	void init(HINSTANCE hInst, HWND hParent, HWND hNpp) {
 		_hNpp = hNpp;
 		Window::init(hInst, hParent);
 	}
-	
+
 	bool isCreated() const {
 		return (_hSelf != NULL);
 	};
-	
+
 	void create(int dialogID);
 
 		void doDialog(POINT p) {
@@ -56,12 +57,9 @@ public :
 private :
 	HWND		_hNpp;
 	RECT		_rc;
+	bool		_isColorChooserLaunched;
 	COLORREF	_color;
-	bool		isColorChooserLaunched;
 
 	static BOOL CALLBACK dlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 	BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 };
-
-#endif //COLOR_POPUP_H
-

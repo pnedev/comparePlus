@@ -7,10 +7,10 @@
 // version 2 of the License, or (at your option) any later version.
 //
 // Note that the GPL places important restrictions on "derived works", yet
-// it does not provide a detailed definition of that term.  To avoid      
-// misunderstandings, we consider an application to constitute a          
+// it does not provide a detailed definition of that term.  To avoid
+// misunderstandings, we consider an application to constitute a
 // "derivative work" for the purpose of this license if it does any of the
-// following:                                                             
+// following:
 // 1. Integrates source code from Notepad++.
 // 2. Integrates/includes/aggregates Notepad++ into a proprietary executable
 //    installer, such as those produced by InstallShield.
@@ -64,7 +64,7 @@ void ToolBar::initTheme(TiXmlDocument *toolIconsDocRoot)
 							if (valueNode)
 							{
 								generic_string locator = themeDir?themeDir:TEXT("");
-								
+
 								locator += valueNode->Value();
 								_customIconVect.push_back(iconLocator(0, iIcon, locator));
 							}
@@ -78,7 +78,7 @@ void ToolBar::initTheme(TiXmlDocument *toolIconsDocRoot)
 							if (valueNode)
 							{
 								generic_string locator = themeDir?themeDir:TEXT("");
-								
+
 								locator += valueNode->Value();
 								_customIconVect.push_back(iconLocator(1, iIcon, locator));
 							}
@@ -92,7 +92,7 @@ void ToolBar::initTheme(TiXmlDocument *toolIconsDocRoot)
 							if (valueNode)
 							{
 								generic_string locator = themeDir?themeDir:TEXT("");
-								
+
 								locator += valueNode->Value();
 								_customIconVect.push_back(iconLocator(2, iIcon, locator));
 							}
@@ -104,7 +104,7 @@ void ToolBar::initTheme(TiXmlDocument *toolIconsDocRoot)
 	}
 }
 
-bool ToolBar::init( HINSTANCE hInst, HWND hPere, toolBarStatusType type, 
+bool ToolBar::init( HINSTANCE hInst, HWND hPere, toolBarStatusType type,
 					ToolBarButtonUnit *buttonUnitArray, int arraySize)
 {
 	Window::init(hInst, hPere);
@@ -113,9 +113,9 @@ bool ToolBar::init( HINSTANCE hInst, HWND hPere, toolBarStatusType type,
 
 	_toolBarIcons.init(buttonUnitArray, arraySize);
 	_toolBarIcons.create(_hInst, iconSize);
-	
+
 	INITCOMMONCONTROLSEX icex;
-	icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+	icex.dwSize = sizeof(icex);
 	icex.dwICC  = ICC_WIN95_CLASSES|ICC_COOL_CLASSES|ICC_BAR_CLASSES|ICC_USEREX_CLASSES;
 	InitCommonControlsEx(&icex);
 
@@ -144,8 +144,8 @@ bool ToolBar::init( HINSTANCE hInst, HWND hPere, toolBarStatusType type,
 		_pTBB[i].iBitmap = (cmd != 0?bmpIndex:0);
 		_pTBB[i].idCommand = cmd;
 		_pTBB[i].fsState = TBSTATE_ENABLED;
-		_pTBB[i].fsStyle = (BYTE)style; 
-		_pTBB[i].dwData = 0; 
+		_pTBB[i].fsStyle = (BYTE)style;
+		_pTBB[i].dwData = 0;
 		_pTBB[i].iString = 0;
 	}
 
@@ -155,7 +155,7 @@ bool ToolBar::init( HINSTANCE hInst, HWND hPere, toolBarStatusType type,
 		_pTBB[i].idCommand = 0;
 		_pTBB[i].fsState = TBSTATE_ENABLED;
 		_pTBB[i].fsStyle = BTNS_SEP;
-		_pTBB[i].dwData = 0; 
+		_pTBB[i].dwData = 0;
 		_pTBB[i].iString = 0;
 		++i;
 		//add plugin buttons
@@ -167,8 +167,8 @@ bool ToolBar::init( HINSTANCE hInst, HWND hPere, toolBarStatusType type,
 			_pTBB[i].iBitmap = bmpIndex;
 			_pTBB[i].idCommand = cmd;
 			_pTBB[i].fsState = TBSTATE_ENABLED;
-			_pTBB[i].fsStyle = BTNS_BUTTON; 
-			_pTBB[i].dwData = 0; 
+			_pTBB[i].fsStyle = BTNS_BUTTON;
+			_pTBB[i].dwData = 0;
 			_pTBB[i].iString = 0;
 		}
 	}
@@ -206,7 +206,7 @@ int ToolBar::getHeight() const {
 	return totalHeight;
 }
 
-void ToolBar::reduce() 
+void ToolBar::reduce()
 {
 	if (_state == TB_SMALL)
 		return;
@@ -234,7 +234,7 @@ void ToolBar::enlarge()
 
 void ToolBar::setToUglyIcons()
 {
-	if (_state == TB_STANDARD) 
+	if (_state == TB_STANDARD)
 		return;
 	bool recreate = true;
 	setState(TB_STANDARD);
@@ -243,7 +243,7 @@ void ToolBar::setToUglyIcons()
 }
 
 
-void ToolBar::reset(bool create) 
+void ToolBar::reset(bool create)
 {
 
 	if(create && _hSelf) {
@@ -269,7 +269,7 @@ void ToolBar::reset(bool create)
 					NULL,
 					_hInst,
 					0);
-		// Send the TB_BUTTONSTRUCTSIZE message, which is required for 
+		// Send the TB_BUTTONSTRUCTSIZE message, which is required for
 		// backward compatibility.
 		::SendMessage(_hSelf, TB_BUTTONSTRUCTSIZE, (WPARAM)sizeof(TBBUTTON), 0);
 		::SendMessage(_hSelf, TB_SETEXTENDEDSTYLE, 0, (LPARAM)TBSTYLE_EX_HIDECLIPPEDBUTTONS);
@@ -382,7 +382,7 @@ void ToolBar::doPopop(POINT chevPoint) {
 	}
 }
 
-void ToolBar::addToRebar(ReBar * rebar) 
+void ToolBar::addToRebar(ReBar * rebar)
 {
 	if (_pRebar)
 		return;
@@ -410,7 +410,7 @@ void ToolBar::addToRebar(ReBar * rebar)
 void ReBar::init(HINSTANCE hInst, HWND hPere)
 {
 	Window::init(hInst, hPere);
-	
+
 	_hSelf = CreateWindowEx(WS_EX_TOOLWINDOW,
 							REBARCLASSNAME,
 							NULL,
@@ -419,14 +419,14 @@ void ReBar::init(HINSTANCE hInst, HWND hPere)
 							0,0,0,0, _hParent, NULL, _hInst, NULL);
 
 	REBARINFO rbi;
-	ZeroMemory(&rbi, sizeof(REBARINFO));
-	rbi.cbSize = sizeof(REBARINFO);
+	ZeroMemory(&rbi, sizeof(rbi));
+	rbi.cbSize = sizeof(rbi);
 	rbi.fMask  = 0;
 	rbi.himl   = (HIMAGELIST)NULL;
 	::SendMessage(_hSelf, RB_SETBARINFO, 0, (LPARAM)&rbi);
 }
 
-bool ReBar::addBand(REBARBANDINFO * rBand, bool useID) 
+bool ReBar::addBand(REBARBANDINFO * rBand, bool useID)
 {
 	if (rBand->fMask & RBBIM_STYLE)
 	{
@@ -447,13 +447,13 @@ bool ReBar::addBand(REBARBANDINFO * rBand, bool useID)
 	return true;
 }
 
-void ReBar::reNew(int id, REBARBANDINFO * rBand) 
+void ReBar::reNew(int id, REBARBANDINFO * rBand)
 {
 	int index = (int)SendMessage(_hSelf, RB_IDTOINDEX, (WPARAM)id, 0);
 	::SendMessage(_hSelf, RB_SETBANDINFO, (WPARAM)index, (LPARAM)rBand);
 };
 
-void ReBar::removeBand(int id) 
+void ReBar::removeBand(int id)
 {
 	int index = (int)SendMessage(_hSelf, RB_IDTOINDEX, (WPARAM)id, 0);
 	if (id >= REBAR_BAR_EXTERNAL)
@@ -461,7 +461,7 @@ void ReBar::removeBand(int id)
 	::SendMessage(_hSelf, RB_DELETEBAND, (WPARAM)index, (LPARAM)0);
 }
 
-void ReBar::setIDVisible(int id, bool show) 
+void ReBar::setIDVisible(int id, bool show)
 {
 	int index = (int)SendMessage(_hSelf, RB_IDTOINDEX, (WPARAM)id, 0);
 	if (index == -1 )
@@ -496,7 +496,7 @@ bool ReBar::getIDVisible(int id)
 }
 
 
-void ReBar::setGrayBackground(int id) 
+void ReBar::setGrayBackground(int id)
 {
 	int index = (int)SendMessage(_hSelf, RB_IDTOINDEX, (WPARAM)id, 0);
 	if (index == -1 )

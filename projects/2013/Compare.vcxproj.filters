@@ -10,12 +10,6 @@
     <ClCompile Include="..\..\src\Common\StaticDialog.cpp">
       <Filter>src\Common</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\Common\SysMsg.cpp">
-      <Filter>src\Common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\Common\stdafx.cpp">
-      <Filter>src\Common</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\sqlite\SqliteHelper.cpp">
       <Filter>src\sqlite</Filter>
     </ClCompile>
@@ -56,9 +50,6 @@
   <ItemGroup>
     <ClInclude Include="..\..\src\AboutDlg\URLCtrl.h">
       <Filter>src\AboutDlg</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\Common\stdafx.h">
-      <Filter>src\Common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\sqlite\SqliteHelper.h">
       <Filter>src\sqlite</Filter>
@@ -142,9 +133,6 @@
       <Filter>src\Common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Common\StaticDialog.h">
-      <Filter>src\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\Common\SysMsg.h">
       <Filter>src\Common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Common\ToolBar.h">

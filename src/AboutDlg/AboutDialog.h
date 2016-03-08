@@ -15,8 +15,9 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-#ifndef ABOUT_DEFINE_H
-#define ABOUT_DEFINE_H
+
+#pragma once
+
 
 #include "PluginInterface.h"
 #include "StaticDialog.h"
@@ -56,7 +57,3 @@ private:
 	URLCtrl			_emailLinkTY;
 	URLCtrl			_urlNppPlugins;
 };
-
-
-
-#endif // ABOUT_DEFINE_H

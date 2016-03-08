@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /* XPM */
-static char * icon_add_16_xpm[] = {
+static const char * icon_add_16_xpm[] = {
 "16 16 33 1",
 " 	c None",
 ".	c #35852C",
@@ -67,4 +67,5 @@ static char * icon_add_16_xpm[] = {
 "   #-[(''([%.   ",
 "    #@~::~+.    ",
 "      ++..      ",
-"                "};
+"                "
+};

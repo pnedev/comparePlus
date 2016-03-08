@@ -17,10 +17,8 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "SysMsg.h"
 #include "ColorCombo.h"
 #include "CompareResource.h"
-//#include "tables.h"
 
 void ColorCombo::init(HINSTANCE hInst, HWND hNpp, HWND hCombo)
 {
@@ -28,7 +26,7 @@ void ColorCombo::init(HINSTANCE hInst, HWND hNpp, HWND hCombo)
 	Window::init(hInst, hNpp);
 
 	/* subclass combo to get edit messages */
-	_comboBoxInfo.cbSize = sizeof(COMBOBOXINFO);
+	_comboBoxInfo.cbSize = sizeof(_comboBoxInfo);
 	::SendMessage(hCombo, CB_GETCOMBOBOXINFO, 0, (LPARAM)&_comboBoxInfo);
 	::SetWindowLongPtr(_comboBoxInfo.hwndItem, GWL_USERDATA, reinterpret_cast<LONG>(this));
 	_hDefaultComboProc = reinterpret_cast<WNDPROC>(::SetWindowLongPtrW(_comboBoxInfo.hwndItem, GWL_WNDPROC, reinterpret_cast<LONG>(wndDefaultProc)));

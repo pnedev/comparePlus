@@ -16,10 +16,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef COMPARE_RESOURCE_H
-#define COMPARE_RESOURCE_H
+
+#pragma once
+
 
 #define COLOR_POPUP_OK      10000
 #define COLOR_POPUP_CANCEL  10001
-
-#endif // COMPARE_RESOURCE_H

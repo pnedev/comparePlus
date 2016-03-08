@@ -16,8 +16,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef NPPHELPERS_H
-#define NPPHELPERS_H
+
+#pragma once
+
 
 HWND getCurrentWindow();
 HWND getOtherWindow();
@@ -44,5 +45,3 @@ int deleteLine(HWND window,int line);
 char **getAllLines(HWND window,int *length, int **lineNum);
 void addBlankLines(HWND window,blankLineList *list);
 void addEmptyLines(HWND hSci, int offset, int length);
-
-#endif

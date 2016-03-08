@@ -33,11 +33,11 @@ bool InitSqlite()
 		TCHAR buffer[MAX_PATH];
 
 		// get sqlite3.dll path from plugin subfolder
-		HMODULE mPlugin = GetModuleHandle(L"ComparePlugin.dll");
+		HMODULE mPlugin = GetModuleHandle(TEXT("ComparePlugin.dll"));
 		if (!mPlugin) return false;
-		int len = GetModuleFileName(mPlugin, (LPWSTR)buffer, MAX_PATH);
+		int len = GetModuleFileName(mPlugin, (LPWSTR)buffer, _countof(buffer));
 		buffer[len - 4] = 0;
-		lstrcat(buffer, L"\\sqlite3.dll");
+		_tcscat_s(buffer, _countof(buffer), TEXT("\\sqlite3.dll"));
 
 		HMODULE mSqlite = LoadLibrary(buffer);
 		if (!mSqlite) return false;

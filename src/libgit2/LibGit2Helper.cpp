@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdlib.h>
 #include "LibGit2Helper.h"
 
 bool bLibGit2Initialized;
@@ -37,11 +38,11 @@ bool InitLibGit2()
 		TCHAR buffer[MAX_PATH];
 
 		// get git2.dll path from plugin subfolder
-		HMODULE mPlugin = GetModuleHandle(L"ComparePlugin.dll");
+		HMODULE mPlugin = GetModuleHandle(TEXT("ComparePlugin.dll"));
 		if (!mPlugin) return false;
-		int len = GetModuleFileName(mPlugin, (LPWSTR)buffer, MAX_PATH);
+		int len = GetModuleFileName(mPlugin, (LPWSTR)buffer, _countof(buffer));
 		buffer[len - 4] = 0;
-		lstrcat(buffer, L"\\git2.dll");
+		_tcscat_s(buffer, _countof(buffer), TEXT("\\git2.dll"));
 
 		HMODULE mLibGit2 = LoadLibrary(buffer);
 		if (!mLibGit2) return false;

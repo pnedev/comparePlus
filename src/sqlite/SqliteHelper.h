@@ -16,8 +16,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SQLITEHELPER_H
-#define SQLITEHELPER_H
+
+#pragma once
+
 
 #include "Compare.h"
 
@@ -41,5 +42,3 @@ extern PSQLFINALZE sqlite3_finalize;
 extern PSQLCLOSE sqlite3_close;
 
 bool InitSqlite();
-
-#endif

@@ -122,8 +122,6 @@
     <ClCompile Include="..\..\src\OptionDlg\OptionDialog.cpp" />
     <ClCompile Include="..\..\src\AboutDlg\URLCtrl.cpp" />
     <ClCompile Include="..\..\src\Common\StaticDialog.cpp" />
-    <ClCompile Include="..\..\src\Common\stdafx.cpp" />
-    <ClCompile Include="..\..\src\Common\SysMsg.cpp" />
     <ClCompile Include="..\..\src\mba\diff.cpp" />
     <ClCompile Include="..\..\src\ProgressDlg\CProgress.cpp" />
     <ClCompile Include="..\..\src\ScmHelper.cpp" />
@@ -156,8 +154,6 @@
     <ClInclude Include="..\..\src\Common\PluginInterface.h" />
     <ClInclude Include="..\..\src\Common\Scintilla.h" />
     <ClInclude Include="..\..\src\Common\StaticDialog.h" />
-    <ClInclude Include="..\..\src\Common\stdafx.h" />
-    <ClInclude Include="..\..\src\Common\SysMsg.h" />
     <ClInclude Include="..\..\src\Common\ToolBar.h" />
     <ClInclude Include="..\..\src\Common\Window.h" />
     <ClInclude Include="..\..\src\mba\diff.h" />

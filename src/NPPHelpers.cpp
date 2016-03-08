@@ -55,10 +55,10 @@ HWND getOtherWindow()
 
 void defineColor(int type, int color)
 {
-	::SendMessageA(nppData._scintillaMainHandle, SCI_MARKERDEFINE,type, (LPARAM)SC_MARK_BACKGROUND);	
+	::SendMessageA(nppData._scintillaMainHandle, SCI_MARKERDEFINE,type, (LPARAM)SC_MARK_BACKGROUND);
 	::SendMessageA(nppData._scintillaMainHandle, SCI_MARKERSETBACK,type, (LPARAM)color);
 	::SendMessageA(nppData._scintillaMainHandle, SCI_MARKERSETFORE,type, (LPARAM)0);
-	::SendMessageA(nppData._scintillaSecondHandle, SCI_MARKERDEFINE,type, (LPARAM)SC_MARK_BACKGROUND);	
+	::SendMessageA(nppData._scintillaSecondHandle, SCI_MARKERDEFINE,type, (LPARAM)SC_MARK_BACKGROUND);
 	::SendMessageA(nppData._scintillaSecondHandle, SCI_MARKERSETBACK,type, (LPARAM)color);
 	::SendMessageA(nppData._scintillaSecondHandle, SCI_MARKERSETFORE,type, (LPARAM)0);
 }
@@ -106,12 +106,12 @@ void ready()
 
 void setBlank(HWND window, int color)
 {
-	SendMessage(window, SCI_MARKERDEFINE, MARKER_BLANK_LINE, (LPARAM)SC_MARK_BACKGROUND);	
+	SendMessage(window, SCI_MARKERDEFINE, MARKER_BLANK_LINE, (LPARAM)SC_MARK_BACKGROUND);
 	SendMessage(window, SCI_MARKERSETBACK, MARKER_BLANK_LINE, (LPARAM)color);
 	SendMessage(window, SCI_MARKERSETFORE, MARKER_BLANK_LINE, (LPARAM)color);
 }
 
-void DefineXpmSymbol(int type, char ** xpm)
+void DefineXpmSymbol(int type, const char **xpm)
 {
 	SendMessage(nppData._scintillaMainHandle, SCI_MARKERDEFINEPIXMAP, type, (LPARAM)xpm);
 	SendMessage(nppData._scintillaSecondHandle, SCI_MARKERDEFINEPIXMAP, type, (LPARAM)xpm);
@@ -137,10 +137,10 @@ void setStyles(sUserSettings* Settings)
     g = (g + colorShift) & 0xFF;
     b = (b + colorShift) & 0xFF;
     Settings->ColorSettings.blank = r | (g << 8) | (b << 16);
-    
+
     int MarginMask = (1 << MARKER_CHANGED_SYMBOL) |
-					 (1 << MARKER_ADDED_SYMBOL) | 
-					 (1 << MARKER_REMOVED_SYMBOL) | 
+					 (1 << MARKER_ADDED_SYMBOL) |
+					 (1 << MARKER_REMOVED_SYMBOL) |
 					 (1 << MARKER_MOVED_SYMBOL);
 
 	::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINMASKN, (WPARAM)4, (LPARAM)MarginMask);
@@ -148,7 +148,7 @@ void setStyles(sUserSettings* Settings)
 
 	::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINWIDTHN, (WPARAM)4, (LPARAM)16);
 	::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINWIDTHN, (WPARAM)4, (LPARAM)16);
-		
+
 	setBlank(nppData._scintillaMainHandle,   Settings->ColorSettings.blank);
     setBlank(nppData._scintillaSecondHandle, Settings->ColorSettings.blank);
 
@@ -159,18 +159,18 @@ void setStyles(sUserSettings* Settings)
 
     if (Settings->OldSymbols == TRUE)
 	{
-		defineSymbol(MARKER_ADDED_SYMBOL,   SC_MARK_PLUS);  
+		defineSymbol(MARKER_ADDED_SYMBOL,   SC_MARK_PLUS);
 		defineSymbol(MARKER_REMOVED_SYMBOL, SC_MARK_MINUS);
 		defineSymbol(MARKER_CHANGED_SYMBOL, SC_MARK_ARROWS);
 		defineSymbol(MARKER_MOVED_SYMBOL,   SC_MARK_ARROWDOWN);
 	}
 	else
 	{
-		DefineXpmSymbol(MARKER_ADDED_SYMBOL,   &icon_add_16_xpm[0]);
-		DefineXpmSymbol(MARKER_REMOVED_SYMBOL, &icon_sub_16_xpm[0]);
-		DefineXpmSymbol(MARKER_CHANGED_SYMBOL, &icon_warning_16_xpm[0]);
-		DefineXpmSymbol(MARKER_MOVED_SYMBOL,   &icon_moved_16_xpm[0]);
-	}   
+		DefineXpmSymbol(MARKER_ADDED_SYMBOL,   icon_add_16_xpm);
+		DefineXpmSymbol(MARKER_REMOVED_SYMBOL, icon_sub_16_xpm);
+		DefineXpmSymbol(MARKER_CHANGED_SYMBOL, icon_warning_16_xpm);
+		DefineXpmSymbol(MARKER_MOVED_SYMBOL,   icon_moved_16_xpm);
+	}
 
     setTextStyles(Settings->ColorSettings);
 }
@@ -213,37 +213,36 @@ void markTextAsChanged(HWND window,int start,int length)
 	}
 }
 
-char **getAllLines(HWND window,int *length, int **lineNum){
-	int docLines=SendMessageA(window, SCI_GETLINECOUNT, 0, (LPARAM)0);
-	char **lines=new char*[docLines];
-	*lineNum=new int[docLines];
-	int textCount=0;
-	for(int line=0;line<docLines;line++)
+char **getAllLines(HWND window, int *length, int **lineNum)
+{
+	int docLines = SendMessageA(window, SCI_GETLINECOUNT, 0, (LPARAM)0);
+	char **lines = new char*[docLines];
+	*lineNum = new int[docLines];
+	int textCount = 0;
+
+	for (int line = 0; line < docLines; line++)
 	{
-		
-		//clearLine(window,line);
-		int lineLength=SendMessageA(window, SCI_LINELENGTH,line,  (LPARAM)0);
-		(*lineNum)[line]=textCount;
-		textCount+=lineLength;
+		int lineLength = SendMessageA(window, SCI_LINELENGTH,line,  (LPARAM)0);
+		(*lineNum)[line] = textCount;
+		textCount += lineLength;
 
-		if(lineLength>0){
-			lines[line] = new char[lineLength+1];
-			::SendMessageA(window, SCI_GETLINE, line, (LPARAM)lines[line]);				
-			int i=0;
-			for(i=0;i<lineLength&& lines[line][i]!='\n' && lines[line][i]!='\r';i++);
+		int i = 0;
+		lines[line] = new char[lineLength+1];
 
-			
-			lines[line][i]=0;
-			
-					
-		}else{
-			lines[line]="";
+		if (lineLength > 0)
+		{
+			::SendMessageA(window, SCI_GETLINE, line, (LPARAM)lines[line]);
+			for(i = 0; i < lineLength && lines[line][i] != '\n' && lines[line][i] != '\r'; i++);
 		}
 
+		lines[line][i] = 0;
 	}
-	*length=docLines;
+
+	*length = docLines;
+
 	return lines;
 }
+
 int deleteLine(HWND window,int line)
 {
 	int posAdd = ::SendMessageA(window, SCI_POSITIONFROMLINE, line, 0);
@@ -261,8 +260,8 @@ int deleteLine(HWND window,int line)
 
 	while((marker & blankMask) != 0)
 	{
-		unsigned int lineLength = ::SendMessageA(window, SCI_LINELENGTH, line, 0);		
-		
+		unsigned int lineLength = ::SendMessageA(window, SCI_LINELENGTH, line, 0);
+
 		//don't delete lines that actually have text in them
 		if(line < docLength && lineLength > lenEOL[EOLtype])
 		{
@@ -270,7 +269,7 @@ int deleteLine(HWND window,int line)
 			break;
 		}
 		else if(line == docLength && lineLength > 0)
-		{			
+		{
 			break;
 		}
 		lines++;
@@ -278,7 +277,7 @@ int deleteLine(HWND window,int line)
 		line++;
 		marker = SendMessageA(window, SCI_MARKERGET, line, 0);
 	}
-	
+
 
 	//select the end of the lines, and unmark them so they aren't called for delete again
 	::SendMessageA(window, SCI_SETTARGETEND, posAdd+length, 0);
@@ -293,28 +292,28 @@ int deleteLine(HWND window,int line)
 		length+=lenEOL[EOLtype];
 	}
 	if(length>0){
-		::SendMessageA(window, SCI_MARKERDELETE, line, MARKER_BLANK_LINE);	
+		::SendMessageA(window, SCI_MARKERDELETE, line, MARKER_BLANK_LINE);
 		::SendMessageA(window, SCI_REPLACETARGET, 0, (LPARAM)"");
 		return lines;
 	}else{
-		::SendMessageA(window, SCI_MARKERDELETE, line, MARKER_BLANK_LINE);	
+		::SendMessageA(window, SCI_MARKERDELETE, line, MARKER_BLANK_LINE);
 		return 0;
 	}
 
 	//::SendMessage(window,SCI_TARGETFROMSELECTION,0,0);
-	//::SendMessage(window, SCI_REPLACETARGET, 0, (LPARAM)"");	
+	//::SendMessage(window, SCI_REPLACETARGET, 0, (LPARAM)"");
 }
 
 blankLineList *removeEmptyLines(HWND window,bool saveList)
 {
 	::SendMessageA(window, SCI_SETUNDOCOLLECTION, FALSE, 0);
-	blankLineList *list=NULL;	
+	blankLineList *list=NULL;
 	//int curPosBeg = ::SendMessage(window, SCI_GETSELECTIONSTART, 0, 0);
 	//int curPosEnd = ::SendMessage(window, SCI_GETSELECTIONEND, 0, 0);
 	//double marker=pow(2.0,blank);
-	//int line=SendMessageA(window, SCI_MARKERNEXT, 0, (LPARAM)marker);	
+	//int line=SendMessageA(window, SCI_MARKERNEXT, 0, (LPARAM)marker);
 	int marker = 1 << MARKER_BLANK_LINE;
-	int line=SendMessageA(window, SCI_MARKERNEXT, 0, marker);	
+	int line=SendMessageA(window, SCI_MARKERNEXT, 0, marker);
 	while(line!=-1){
 		int lines=deleteLine(window,line);
 		if(lines>0&&saveList){
@@ -325,8 +324,8 @@ blankLineList *removeEmptyLines(HWND window,bool saveList)
 			newLine->length=lines;
 			list=newLine;
 		}
-		//line=SendMessageA(window, SCI_MARKERNEXT, 0, marker);	
-		line=SendMessageA(window, SCI_MARKERNEXT, 0, (LPARAM)marker);	
+		//line=SendMessageA(window, SCI_MARKERNEXT, 0, marker);
+		line=SendMessageA(window, SCI_MARKERNEXT, 0, (LPARAM)marker);
 	}
 
 	//::SendMessage(window, SCI_SETSEL, curPosBeg, curPosEnd);
@@ -335,14 +334,14 @@ blankLineList *removeEmptyLines(HWND window,bool saveList)
 }
 
 void clearUndoBuffer(HWND window){
-	int modified=::SendMessageA(window, SCI_GETMODIFY, 0, (LPARAM)0);	
+	int modified=::SendMessageA(window, SCI_GETMODIFY, 0, (LPARAM)0);
 		::SendMessageA(window, SCI_EMPTYUNDOBUFFER, 0, (LPARAM)0);
 		if(modified){
 			::SendMessageA(window, SCI_BEGINUNDOACTION, 0, (LPARAM)0);
 			char fake[2];
 			fake[1]=0;
 			fake[0]=(char)::SendMessageA(window, SCI_GETCHARAT, 0, (LPARAM)0);
-			::SendMessageA(window, SCI_SETTARGETSTART, 0, 0);	
+			::SendMessageA(window, SCI_SETTARGETSTART, 0, 0);
 			::SendMessageA(window, SCI_SETTARGETEND, 1, 0);
 			::SendMessageA(window, SCI_REPLACETARGET, 1, (LPARAM)fake);
 			::SendMessageA(window, SCI_ENDUNDOACTION, 0, (LPARAM)0);
@@ -351,19 +350,19 @@ void clearUndoBuffer(HWND window){
 
 void clearWindow(HWND window,bool clearUndo)
 	{
-	//int pos=SendMessageA(window, SCI_MARKERDELETEALL, changed, (LPARAM)changed);	
-	
+	//int pos=SendMessageA(window, SCI_MARKERDELETEALL, changed, (LPARAM)changed);
+
 	clearUndo=(removeEmptyLines(window,false)!=NULL);
 
-	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_CHANGED_LINE,   (LPARAM)MARKER_CHANGED_LINE);	
+	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_CHANGED_LINE,   (LPARAM)MARKER_CHANGED_LINE);
 	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_ADDED_LINE,     (LPARAM)MARKER_ADDED_LINE);
 	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_REMOVED_LINE,   (LPARAM)MARKER_REMOVED_LINE);
 	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_MOVED_LINE,     (LPARAM)MARKER_MOVED_LINE);
 	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_BLANK_LINE,     (LPARAM)MARKER_BLANK_LINE);
-	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_CHANGED_SYMBOL, (LPARAM)MARKER_CHANGED_SYMBOL);		
+	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_CHANGED_SYMBOL, (LPARAM)MARKER_CHANGED_SYMBOL);
 	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_ADDED_SYMBOL,   (LPARAM)MARKER_ADDED_SYMBOL);
-	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_REMOVED_SYMBOL, (LPARAM)MARKER_REMOVED_SYMBOL);	
-	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_MOVED_SYMBOL,   (LPARAM)MARKER_MOVED_SYMBOL);	
+	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_REMOVED_SYMBOL, (LPARAM)MARKER_REMOVED_SYMBOL);
+	::SendMessageA(window, SCI_MARKERDELETEALL, MARKER_MOVED_SYMBOL,   (LPARAM)MARKER_MOVED_SYMBOL);
 
 	// remove everything marked in markTextAsChanged():
 	int curIndic = ::SendMessageA(window, SCI_GETINDICATORCURRENT, 0, 0);
@@ -377,7 +376,7 @@ void clearWindow(HWND window,bool clearUndo)
 
 	//int topLine=SendMessageA(window,SCI_GETFIRSTVISIBLELINE,0,0);
 	//int linesOnScreen=SendMessageA(window,SCI_LINESONSCREEN,0,0);
-	
+
 	//int curPosBeg = ::SendMessageA(window, SCI_GETSELECTIONSTART, 0, 0);
 	//int curPosEnd = ::SendMessageA(window, SCI_GETSELECTIONEND, 0, 0);
 	::SendMessageA(window, SCN_UPDATEUI, 0, (LPARAM)0);
@@ -387,14 +386,14 @@ void clearWindow(HWND window,bool clearUndo)
 	{
 		clearUndoBuffer(window);
 	}
-	
+
 	/*if(returnToPos){
 		SendMessageA(window,SCI_GOTOLINE,topLine,0);
 		SendMessageA(window,SCI_GOTOLINE,topLine+linesOnScreen-1,0);
-		
+
 		::SendMessageA(window, SCI_SETSEL, curPosBeg, curPosEnd);
 	}*/
-	
+
 }
 
 void addBlankLines(HWND window,blankLineList *list){
@@ -426,8 +425,8 @@ void addEmptyLines(HWND hSci, int offset, int length){
 	if(offset!=0){
 		int docLines=SendMessageA(hSci, SCI_GETLINECOUNT, 0, (LPARAM)0);
 		posAdd= ::SendMessageA(hSci, SCI_POSITIONFROMLINE, offset-1, 0);
-		
-		
+
+
 		posAdd+=::SendMessageA(hSci, SCI_LINELENGTH,offset-1,  (LPARAM)0)-lenEOL[EOLtype];
 		if(offset==docLines){
 			posAdd=SendMessageA(hSci, SCI_GETLENGTH, 0, (LPARAM)0);
@@ -439,7 +438,7 @@ void addEmptyLines(HWND hSci, int offset, int length){
 		}
 	}
 
-	::SendMessageA(hSci, SCI_SETTARGETSTART, posAdd, 0);	
+	::SendMessageA(hSci, SCI_SETTARGETSTART, posAdd, 0);
 	::SendMessageA(hSci, SCI_SETTARGETEND, posAdd+1, 0);
 
 	int blankLinesLength = lenEOL[EOLtype] * length + 1;
@@ -474,10 +473,10 @@ void addEmptyLines(HWND hSci, int offset, int length){
 	{
 		markAsBlank(hSci, offset + i);
 	}
-	
+
 	if(offset == 0)
 	{
-		SendMessageA(hSci, SCI_MARKERADDSET, length, marker);		
+		SendMessageA(hSci, SCI_MARKERADDSET, length, marker);
 	}
 
 #if CLEANUP
@@ -505,7 +504,7 @@ void addEmptyLines(HWND hSci, int offset, int length){
 //			posAdd=SendMessage(hSci, SCI_GETLENGTH, 0, (LPARAM)0);
 //		}
 //	}
-//	//::SendMessage(hSci, SCI_SETTARGETSTART, posAdd, 0);	
+//	//::SendMessage(hSci, SCI_SETTARGETSTART, posAdd, 0);
 //	//::SendMessage(hSci, SCI_SETTARGETEND, posAdd, 0);
 //	::SendMessage(hSci, SCI_SETSEL, posAdd, posAdd);
 //
@@ -518,7 +517,7 @@ void addEmptyLines(HWND hSci, int offset, int length){
 //
 //	for (int i = 0; i < length; i++){
 //		::SendMessage(hSci, SCI_ADDTEXT, lenEOL[EOLtype], (LPARAM)strEOL[EOLtype]);
-//		
+//
 //		if(curPosBeg>posAdd){
 //			curPosBeg+=lenEOL[EOLtype];
 //		}
@@ -531,7 +530,7 @@ void addEmptyLines(HWND hSci, int offset, int length){
 //	}
 //	if(offset==0){
 //		SendMessage(hSci, SCI_MARKERADDSET, length, marker);
-//		
+//
 //	}
 //	//	::SendMessage(hSci, SCI_SETTARGETSTART, posAdd, 0);
 //	//int docLength=::SendMessage(window, SCI_GETLINECOUNT, 0, 0);
@@ -540,7 +539,7 @@ void addEmptyLines(HWND hSci, int offset, int length){
 //	//::SendMessage(hSci, SCI_LINESSPLIT, 1, 0);
 //	//::SendMessage(hSci, SCI_STARTSTYLING, posAdd, 255);
 //	//::SendMessage(hSci, SCI_SETSTYLING,lenEOL[EOLtype]*length+lenEOL[EOLtype] , blank);
-//	
+//
 //	::SendMessage(hSci, SCI_SETSEL, curPosBeg, curPosEnd);
 //	::SendMessage(hSci, SCI_SETUNDOCOLLECTION, TRUE, 0);
 //}

@@ -1,5 +1,6 @@
-#ifndef VARRAY_H
-#define VARRAY_H
+
+#pragma once
+
 
 /* varray - a variable size array implemented with std::vector */
 
@@ -22,5 +23,3 @@ struct varray {
 private:
 	std::vector<Elem> buf;
 };
-
-#endif /* VARRAY_H */

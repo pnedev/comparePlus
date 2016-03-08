@@ -16,53 +16,53 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdlib.h>
 #include "ScmHelper.h"
 
-bool GetScmBaseFolder(TCHAR* baseDirName, TCHAR* currentDir, TCHAR* svnDir)
+bool GetScmBaseFolder(const TCHAR* baseDirName, const TCHAR* currentDir, TCHAR* svnDir, unsigned svnDirSize)
 {
 	// search recursively upwards for a ".svn" folder
 
 	TCHAR buffDir1[MAX_PATH] = {0};
 	TCHAR buffDir2[MAX_PATH] = {0};
-	TCHAR buffDir3[MAX_PATH] = {0};
 
-	lstrcpy(buffDir1, currentDir);
+	_tcscpy_s(buffDir1, _countof(buffDir1), currentDir);
 
 	while (true)
 	{
 		PathCombine(buffDir2, buffDir1, baseDirName);
 		if (PathFileExists(buffDir2))
 		{
-			lstrcpy(svnDir, buffDir2);
+			_tcscpy_s(svnDir, svnDirSize, buffDir2);
 			return true;
 		}
-	
-		PathCombine(buffDir2, buffDir1, L"..");
-		if ((lstrlen(buffDir2) == 1) || !lstrcmp(buffDir2, buffDir1))
+
+		PathCombine(buffDir2, buffDir1, TEXT(".."));
+		if ((_tcslen(buffDir2) == 1) || !_tcscmp(buffDir2, buffDir1))
 		{
 			// we've searched until root, thus no more searching
 			return false;
 		}
 
-		lstrcpy(buffDir1, buffDir2);
+		_tcscpy_s(buffDir1, _countof(buffDir1), buffDir2);
 	}
 }
 
-void GetLocalScmPath(TCHAR* curDir, TCHAR* scmDir, TCHAR* filename, TCHAR* scmFilePath)
+void GetLocalScmPath(const TCHAR* curDir, const TCHAR* scmDir, const TCHAR* filename, TCHAR* scmFilePath)
 {
 	TCHAR buffDir[MAX_PATH] = {0};
 
-	int len = lstrlen(scmDir) - 4;
-	if (lstrlen(curDir) > len)
+	unsigned len = _tcslen(scmDir) - 4;
+	if (_tcslen(curDir) > len)
 	{
-		lstrcpy(buffDir, curDir + len);
+		_tcscpy_s(buffDir, _countof(buffDir), curDir + len);
 	}
 	else
 	{
 		buffDir[0] = 0;
 	}
 	PathCombine(scmFilePath, buffDir, filename);
-	for (int i = 0; i < lstrlen(scmFilePath); i++)
+	for (unsigned i = 0; i < _tcslen(scmFilePath); ++i)
 	{
 		if (scmFilePath[i] == '\\')
 		{
@@ -71,15 +71,16 @@ void GetLocalScmPath(TCHAR* curDir, TCHAR* scmDir, TCHAR* filename, TCHAR* scmFi
 	}
 }
 
-bool GetSvnBaseFile(TCHAR* curDir, TCHAR* svnDir, TCHAR* filename, TCHAR* svnBaseFile)
+bool GetSvnBaseFile(const TCHAR* curDir, const TCHAR* svnDir, const TCHAR* filename,
+		TCHAR* svnBaseFile, unsigned svnBaseFileSize)
 {
 	bool ret = false;
 	TCHAR buffDir1[MAX_PATH] = {0};
 	TCHAR buffDir2[MAX_PATH] = {0};
 
 	// is it svn 1.7 or above?
-	lstrcpy(buffDir1, svnDir);
-	PathCombine(buffDir2, buffDir1, L"wc.db");
+	_tcscpy_s(buffDir1, _countof(buffDir1), svnDir);
+	PathCombine(buffDir2, buffDir1, TEXT("wc.db"));
 	if (PathFileExists(buffDir2))
 	{
 		if (InitSqlite())
@@ -92,8 +93,9 @@ bool GetSvnBaseFile(TCHAR* curDir, TCHAR* svnDir, TCHAR* filename, TCHAR* svnBas
 				TCHAR statement[128];
 
 				GetLocalScmPath(curDir, svnDir, filename, svnFilePath);
-		
-				wsprintf(statement, L"SELECT checksum FROM nodes_current WHERE local_relpath='%s';", svnFilePath);
+
+				_sntprintf_s(statement, _countof(statement), _TRUNCATE,
+						TEXT("SELECT checksum FROM nodes_current WHERE local_relpath='%s';"), svnFilePath);
 
 				if (sqlite3_prepare16_v2(ppDb, statement, -1, &pStmt, NULL) == SQLITE_OK)
 				{
@@ -103,16 +105,16 @@ bool GetSvnBaseFile(TCHAR* curDir, TCHAR* svnDir, TCHAR* filename, TCHAR* svnBas
 						if (checksum[0] != 0)
 						{
 							TCHAR buffer[128];
-							lstrcpyn(buffer, checksum + 6, 3);
-							lstrcpy(buffDir1, svnDir);
-							PathCombine(buffDir2, buffDir1, L"pristine");
+							_tcsncpy_s(buffer, _countof(buffer), checksum + 6, 3);
+							_tcscpy_s(buffDir1, _countof(buffDir1), svnDir);
+							PathCombine(buffDir2, buffDir1, TEXT("pristine"));
 							PathCombine(buffDir1, buffDir2, buffer);
-							lstrcpy(buffer, checksum + 6);
+							_tcscpy_s(buffer, _countof(buffer), checksum + 6);
 							PathCombine(buffDir2, buffDir1, buffer);
-							lstrcat(buffDir2, L".svn-base");
+							_tcscat_s(buffDir2, _countof(buffDir2), TEXT(".svn-base"));
 							if (PathFileExists(buffDir2))
 							{
-								lstrcpy(svnBaseFile, buffDir2);
+								_tcscpy_s(svnBaseFile, svnBaseFileSize, buffDir2);
 								ret = true;
 							}
 						}
@@ -125,18 +127,18 @@ bool GetSvnBaseFile(TCHAR* curDir, TCHAR* svnDir, TCHAR* filename, TCHAR* svnBas
 		}
 		else
 		{
-			MessageBox(NULL, L"Can't init sqlite", L"ComparePlugin", MB_OK);
+			MessageBox(NULL, TEXT("Can't init sqlite"), TEXT("ComparePlugin"), MB_OK);
 		}
 	}
 	else
 	{
 		// is it an old svn version?
-		PathCombine(buffDir2, buffDir1, L"text-base");
+		PathCombine(buffDir2, buffDir1, TEXT("text-base"));
 		PathCombine(buffDir1, buffDir2, filename);
-		lstrcat(buffDir1, L".svn-base");
+		_tcscat_s(buffDir1, _countof(buffDir1), TEXT(".svn-base"));
 		if(PathFileExists(buffDir1))
 		{
-			lstrcpy(svnBaseFile, buffDir1);
+			_tcscpy_s(svnBaseFile, svnBaseFileSize, buffDir1);
 			ret = true;
 		}
 	}
@@ -144,12 +146,12 @@ bool GetSvnBaseFile(TCHAR* curDir, TCHAR* svnDir, TCHAR* filename, TCHAR* svnBas
 	return ret;
 }
 
-void TCharToChar(const wchar_t* src, char* dest, int size) 
-{ 
-	WideCharToMultiByte(CP_ACP, 0, src, wcslen(src) + 1, dest , size, NULL, NULL); 
+void TCharToChar(const wchar_t* src, char* dest, int size)
+{
+	WideCharToMultiByte(CP_ACP, 0, src, wcslen(src) + 1, dest , size, NULL, NULL);
 }
 
-HGLOBAL GetContentFromGitRepo(TCHAR *gitDir, TCHAR *gitFilePath, long *size)
+HGLOBAL GetContentFromGitRepo(const TCHAR *gitDir, const TCHAR *gitFilePath, long *size)
 {
 	HGLOBAL hMem = NULL;
 
@@ -200,7 +202,7 @@ HGLOBAL GetContentFromGitRepo(TCHAR *gitDir, TCHAR *gitFilePath, long *size)
 	}
 	else
 	{
-		MessageBox(NULL, L"Can't init libgit2", L"ComparePlugin", MB_OK);
+		MessageBox(NULL, TEXT("Can't init libgit2"), TEXT("ComparePlugin"), MB_OK);
 	}
 
 	return hMem;

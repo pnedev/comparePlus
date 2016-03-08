@@ -18,10 +18,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
 
-#ifndef COMPARE_H
-#define COMPARE_H
+#pragma once
 
-#define WIN32_LEAN_AND_MEAN
 
 #include <math.h>
 #include <shlobj.h>
@@ -37,13 +35,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "Notepad_plus_msgs.h"
 #include <iostream>
 #include <fstream>
-#include "Resource.h"
+#include "resource.h"
 #include "CompareResource.h"
 #include "AboutDialog.h"
 #include "OptionDialog.h"
 #include "NavDialog.h"
-#include <window.h>
-#include <Commdlg.h>
+#include <windows.h>
+#include <commdlg.h>
 #include <CProgress.h>
 
 #define CLEANUP 1
@@ -149,7 +147,7 @@ void compareWithoutLines();
 void reset();
 void openAboutDlg(void);
 void openOptionDlg(void);
-void openFile(TCHAR *file);
+void openFile(const TCHAR *file);
 void openMemBlock(void *memblock, long size);
 HWND openTempFile();
 void addEmptyLines(HWND hSci, int offset, int length);
@@ -170,6 +168,3 @@ void Last(void);
 void ClientToScreen(HWND hWnd, RECT* rect);
 void ScreenToClient(HWND hWnd, RECT* rect);
 #endif
-
-#endif //COMPARE_H
-

@@ -1,5 +1,6 @@
-#ifndef MBA_DIFF_H
-#define MBA_DIFF_H
+
+#pragma once
+
 
 /* diff - compute a shortest edit script (SES) given two sequences
  */
@@ -54,5 +55,3 @@ int diff(const void *a, int aoff, int n,
 		idx_fn idx, cmp_fn cmp, void *context, int dmax,
 		struct varray<diff_edit> *ses, int *sn,
 		struct varray<int> *buf);
-
-#endif /* MBA_DIFF_H */

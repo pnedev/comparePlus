@@ -16,17 +16,17 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SCMHELPER_H
-#define SCMHELPER_H
+
+#pragma once
+
 
 #include "Compare.h"
-#include "Shlwapi.h"
-#include "sqlite\SqliteHelper.h"
-#include "libgit2\LibGit2Helper.h"
+#include <shlwapi.h>
+#include "sqlite/SqliteHelper.h"
+#include "libgit2/LibGit2Helper.h"
 
-bool GetScmBaseFolder(TCHAR* baseDirName, TCHAR* currentDir, TCHAR* svnDir);
-void GetLocalScmPath(TCHAR* curDir, TCHAR* scmDir, TCHAR* filename, TCHAR* scmFilePath);
-bool GetSvnBaseFile(TCHAR* curDir, TCHAR* svnDir, TCHAR* filename, TCHAR* svnBaseFile);
-HGLOBAL GetContentFromGitRepo(TCHAR *gitDir, TCHAR *gitFilePath, long *size);
-
-#endif
+bool GetScmBaseFolder(const TCHAR* baseDirName, const TCHAR* currentDir, TCHAR* svnDir, unsigned svnDirSize);
+void GetLocalScmPath(const TCHAR* curDir, const TCHAR* scmDir, const TCHAR* filename, TCHAR* scmFilePath);
+bool GetSvnBaseFile(const TCHAR* curDir, const TCHAR* svnDir, const TCHAR* filename,
+		TCHAR* svnBaseFile, unsigned svnBaseFileSize);
+HGLOBAL GetContentFromGitRepo(const TCHAR *gitDir, const TCHAR *gitFilePath, long *size);
