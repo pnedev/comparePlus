@@ -341,6 +341,8 @@ diff(const void *a, int aoff, int n,
 		return -1;
 	}
 	if (ses && sn) {
+		// Re-get e as ses most probably has been reallocated
+		e = ses->get(0);
 		*sn = e->op ? ctx.si + 1 : 0;
 	}
 

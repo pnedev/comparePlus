@@ -144,8 +144,7 @@ int checkWords(diff_edit* e, chunk_info* chunk, chunk_info* otherChunk)
 
 Word *getWord(varray<Word> *words, int index, void * /*context*/)
 {
-	Word *word = words->get(index);
-	return word;
+	return words->get(index);
 }
 
 int compareWord(Word *word1, Word *word2, void * /*context*/)
@@ -186,7 +185,8 @@ bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2, bool Incl
 	int sn;
 	struct varray<diff_edit> *ses = new varray<diff_edit>;
 
-	diff(chunk1.words, 0, chunk1.count, chunk2.words, 0, chunk2.count, (idx_fn)(getWord), (cmp_fn)(compareWord), NULL, 0, ses, &sn, NULL);
+	diff(chunk1.words, 0, chunk1.count, chunk2.words, 0, chunk2.count, (idx_fn)(getWord), (cmp_fn)(compareWord),
+			NULL, 0, ses, &sn, NULL);
 
 	chunk1.changes = new varray<diff_change>;
 	chunk2.changes = new varray<diff_change>;
