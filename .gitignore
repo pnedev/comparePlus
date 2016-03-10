@@ -21,7 +21,9 @@ Thumbs.db
 *.log
 *.lib
 *.sbr
-[rR]elease/
-[dD]ebug/
+*.sdf
+[rR]elease*/
+[dD]ebug*/
+Notepad++/
 *~
 *.swp
