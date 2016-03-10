@@ -47,7 +47,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define CLEANUP 1
 
 using namespace std;
-/* store name for ini file */
 
 #define DEFAULT_ADDED_COLOR     0xAAFFAA
 #define DEFAULT_DELETED_COLOR   0xC4C4FF
@@ -55,6 +54,7 @@ using namespace std;
 #define DEFAULT_MOVED_COLOR     0xCBBF89
 #define DEFAULT_HIGHLIGHT_COLOR 0x010101
 #define DEFAULT_HIGHLIGHT_ALPHA 100
+
 // dont use "INDIC_CONTAINER + 1" since it conflicts with DSpellCheck plugin
 #define INDIC_HIGHLIGHT         INDIC_CONTAINER + 7
 
@@ -160,11 +160,3 @@ void Prev(void);
 void Next(void);
 void First(void);
 void Last(void);
-
-//BOOL CALLBACK AboutDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-
-#if 0
-/* Extended Window Funcions */
-void ClientToScreen(HWND hWnd, RECT* rect);
-void ScreenToClient(HWND hWnd, RECT* rect);
-#endif

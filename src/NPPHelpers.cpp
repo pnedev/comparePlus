@@ -348,8 +348,8 @@ void clearUndoBuffer(HWND window){
 		}
 }
 
-void clearWindow(HWND window,bool clearUndo)
-	{
+void clearWindow(HWND window, bool clearUndo)
+{
 	//int pos=SendMessageA(window, SCI_MARKERDELETEALL, changed, (LPARAM)changed);
 
 	clearUndo=(removeEmptyLines(window,false)!=NULL);

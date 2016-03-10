@@ -3,6 +3,7 @@
 
 #include <windows.h>
 #include <tchar.h>
+#include <commctrl.h>
 
 
 class CProgress
@@ -11,9 +12,27 @@ public:
     CProgress();
     ~CProgress();
 
-    bool Open(HWND hOwner = NULL, const TCHAR* header = NULL);
-    bool IsCancelled() const;
-    void SetPercent(unsigned percent) const;
+    HWND Open(HWND hCallerWnd = NULL, const TCHAR* header = NULL);
+
+    bool IsCancelled() const
+	{
+		if (_hwnd)
+			return (::WaitForSingleObject(_hActiveState, 0) != WAIT_OBJECT_0);
+		return false;
+	}
+
+	void SetInfo(const TCHAR *info) const
+	{
+		if (_hwnd)
+			::SendMessage(_hPText, WM_SETTEXT, 0, (LPARAM)info);
+	}
+
+    void SetPercent(unsigned percent) const
+	{
+		if (_hwnd)
+			::PostMessage(_hPBar, PBM_SETPOS, (WPARAM)percent, 0);
+	}
+
     void Close();
 
 private:
@@ -28,7 +47,7 @@ private:
     static volatile LONG RefCount;
     static HINSTANCE HInst;
 
-    static DWORD threadFunc(LPVOID data);
+    static DWORD WINAPI threadFunc(LPVOID data);
     static LRESULT APIENTRY wndProc(HWND hwnd, UINT umsg,
             WPARAM wparam, LPARAM lparam);
 
@@ -36,16 +55,16 @@ private:
     CProgress(const CProgress&);
     const CProgress& operator=(const CProgress&);
 
-    int thread();
-    bool createProgressWindow();
+    BOOL thread();
+    BOOL createProgressWindow();
     RECT adjustSizeAndPos(int width, int height);
 
-    volatile bool _isInit;
-    HWND _hOwner;
+	volatile HWND _hwnd;
+    HWND _hCallerWnd;
     TCHAR _header[128];
     HANDLE _hThread;
     HANDLE _hActiveState;
-    HWND _hwnd;
+	HWND _hPText;
     HWND _hPBar;
     HWND _hBtn;
 };

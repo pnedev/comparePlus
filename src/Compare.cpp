@@ -1011,8 +1011,6 @@ bool compareNew()
 	if(doc2Length < 1)
 		return true;
 
-	int	doc1Changed = 0;
-	int	doc2Changed = 0;
 	diff_edit *doc1Changes = NULL;
 	diff_edit *doc2Changes = NULL;
 
@@ -1020,28 +1018,29 @@ bool compareNew()
 	unsigned int *doc2Hashes = computeHashes(doc2, doc2Length, Settings.IncludeSpace);
 
 	/* show progress dialog */
-	HWND hwnd = GetFocus();
 	SetFocus(nppData._scintillaMainHandle);
 	SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)filenameMain);
 	SetFocus(nppData._scintillaSecondHandle);
 	SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)filenameSecond);
-	if (_tcslen(filenameMain) > 20)
-	{
-		_tcscpy_s(filenameMain + 17, 4, TEXT("..."));
-	}
-	if (_tcslen(filenameSecond) > 20)
-	{
-		_tcscpy_s(filenameSecond + 17, 4, TEXT("..."));
-	}
-	SetFocus(hwnd);
+
+	if (_tcslen(filenameMain) > 28)
+		_tcscpy_s(filenameMain + 25, 4, TEXT("..."));
+
+	if (_tcslen(filenameSecond) > 28)
+		_tcscpy_s(filenameSecond + 25, 4, TEXT("..."));
+
 	_sntprintf_s(buffer, _countof(buffer), _TRUNCATE, TEXT("Compare: '%s' vs. '%s'"), filenameMain, filenameSecond);
 	CProgress_IsCanceled = CProgress_IsCanceled_Callback;
 	CProgress_Increment = CProgress_Increment_Callback;
 	progMax = 0;
 	progCounter = 0;
     progDlg = new CProgress();
+    progDlg->Open(nppData._nppHandle, TEXT("Compare Progress"));
+    progDlg->SetInfo(buffer);
+
+	UpdateWindow(nppData._scintillaMainHandle);
+	UpdateWindow(nppData._scintillaSecondHandle);
 	EnableWindow(nppData._nppHandle, FALSE);
-    progDlg->Open(NULL, buffer);
 
 	/* make diff */
 	int sn;
@@ -1049,20 +1048,22 @@ bool compareNew()
 	int result = (diff(doc1Hashes, 0, doc1Length, doc2Hashes, 0, doc2Length,
 		(idx_fn)(getLineFromIndex), (cmp_fn)(compareLines), NULL, 0, ses, &sn, NULL));
 
+	int	doc1Changed = 0;
+	int	doc2Changed = 0;
+
 	if (result != -1)
 	{
 		shift_boundries(ses, sn, doc1Hashes, doc2Hashes, doc1Length, doc2Length);
 		find_moves(ses, sn, doc1Hashes, doc2Hashes, Settings.DetectMove);
+
 		/*
 		 * - insert empty lines
 		 * - count changed lines
 		 */
-		doc1Changed = 0;
-		doc2Changed = 0;
-
 		for (int i = 0; i < sn; i++)
 		{
 			struct diff_edit *e = ses->get(i);
+
 			if (e->op == DIFF_DELETE)
 			{
 				e->changeCount = 0;
@@ -1263,9 +1264,12 @@ bool compareNew()
 	bool compareCanceled = progDlg->IsCancelled();
 	progDlg->Close();
 	delete progDlg;
+
 	EnableWindow(nppData._nppHandle, TRUE);
-	SetForegroundWindow(nppData._nppHandle);
-	SetFocus(nppData._nppHandle);
+	UpdateWindow(nppData._nppHandle);
+
+	// SetForegroundWindow(nppData._nppHandle);
+	// SetFocus(nppData._nppHandle);
 
 	if (result != -1)
 	{
