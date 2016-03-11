@@ -87,7 +87,7 @@ toolbarIcons  tbLast;
 
 BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReserved*/)
  {
-    hInstance = hinstDLL;
+	hInstance = hinstDLL;
 
 	switch (reasonForCall)
 	{
@@ -224,7 +224,7 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 				compareDocs[i]=-1;
 
 			TCHAR nppPath[MAX_PATH];
-            GetModuleFileName(hInstance, nppPath, _countof(nppPath));
+			GetModuleFileName(hInstance, nppPath, _countof(nppPath));
 
 			// remove the module name : get plugins directory path
 			PathRemoveFileSpec(nppPath);
@@ -309,9 +309,9 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 {
 	nppData = notpadPlusData;
 
-    AboutDlg.init(hInstance, nppData);
-    OptionDlg.init(hInstance, nppData);
-    NavDlg.init(hInstance, nppData);
+	AboutDlg.init(hInstance, nppData);
+	OptionDlg.init(hInstance, nppData);
+	NavDlg.init(hInstance, nppData);
 }
 
 extern "C" __declspec(dllexport) const TCHAR * getName()
@@ -469,8 +469,8 @@ void openOptionDlg(void)
 					Settings.ColorSettings.deleted,
 					Settings.ColorSettings.changed,
 					Settings.ColorSettings.moved,
-                    Settings.ColorSettings.blank,
-                    Settings.ColorSettings._default);
+					Settings.ColorSettings.blank,
+					Settings.ColorSettings._default);
 
 				NavDlg.CreateBitmap();
 			}
@@ -623,13 +623,13 @@ void ViewNavigationBar(void)
 				Settings.ColorSettings.deleted,
 				Settings.ColorSettings.changed,
 				Settings.ColorSettings.moved,
-                Settings.ColorSettings.blank,
-                Settings.ColorSettings._default);
+				Settings.ColorSettings.blank,
+				Settings.ColorSettings._default);
 
 			// Display Navbar
 			NavDlg.doDialog(true);
 			start_old = -1;
-            visible_line_count_old = -1;
+			visible_line_count_old = -1;
 
 			// Restore N++ focus
 			SetFocus(hwnd);
@@ -989,19 +989,19 @@ bool compareNew()
 
 	char **doc1 = getAllLines(nppData._scintillaMainHandle, &doc1Length, &lineNum1);
 
-    if (doc1Length < 1)
-    {
-        return true;
-    }
-    else if (doc1Length == 1)
-    {
-        if (SendMessage(nppData._scintillaMainHandle, SCI_LINELENGTH, 0, (LPARAM)0) == 0)
-        {
-            char *memblock[1] = { 0 };
-            SendMessage(nppData._scintillaMainHandle, SCI_APPENDTEXT, 1, (LPARAM)memblock);
-            SendMessage(nppData._scintillaMainHandle, SCI_SETSAVEPOINT, 0, (LPARAM)0);
-        }
-    }
+	if (doc1Length < 1)
+	{
+		return true;
+	}
+	else if (doc1Length == 1)
+	{
+		if (SendMessage(nppData._scintillaMainHandle, SCI_LINELENGTH, 0, (LPARAM)0) == 0)
+		{
+			char *memblock[1] = { 0 };
+			SendMessage(nppData._scintillaMainHandle, SCI_APPENDTEXT, 1, (LPARAM)memblock);
+			SendMessage(nppData._scintillaMainHandle, SCI_SETSAVEPOINT, 0, (LPARAM)0);
+		}
+	}
 
 	int doc2Length;
 	int *lineNum2;
@@ -1034,9 +1034,9 @@ bool compareNew()
 	CProgress_Increment = CProgress_Increment_Callback;
 	progMax = 0;
 	progCounter = 0;
-    progDlg = new CProgress();
-    progDlg->Open(nppData._nppHandle, TEXT("Compare Progress"));
-    progDlg->SetInfo(buffer);
+	progDlg = new CProgress();
+	progDlg->Open(nppData._nppHandle, TEXT("Compare Progress"));
+	progDlg->SetInfo(buffer);
 
 	UpdateWindow(nppData._scintillaMainHandle);
 	UpdateWindow(nppData._scintillaSecondHandle);
@@ -1249,7 +1249,7 @@ bool compareNew()
 				}
 			}
 
-    		addEmptyLines(nppData._scintillaMainHandle, off + doc1Offset, length);
+			addEmptyLines(nppData._scintillaMainHandle, off + doc1Offset, length);
 
 			if (doc1Offset > 0)
 			{
@@ -1336,9 +1336,9 @@ bool compareNew()
 			return true;
 		}
 
-        ::SendMessageA(nppData._scintillaMainHandle, SCI_SHOWLINES, 0, (LPARAM)1);
-        ::SendMessageA(nppData._scintillaSecondHandle, SCI_SHOWLINES, 0, (LPARAM)1);
-        First();
+		::SendMessageA(nppData._scintillaMainHandle, SCI_SHOWLINES, 0, (LPARAM)1);
+		::SendMessageA(nppData._scintillaSecondHandle, SCI_SHOWLINES, 0, (LPARAM)1);
+		First();
 
 		return false;
 	}
@@ -1403,12 +1403,12 @@ bool startCompare()
 	/* sync pannels */
 	HMENU hMenu = ::GetMenu(nppData._nppHandle);
 
-    syncScrollVwasChecked = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
-    syncScrollHwasChecked = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
-    if (syncScrollVwasChecked)
-        ::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLV, 0), 0);
-    if (syncScrollHwasChecked)
-        ::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
+	syncScrollVwasChecked = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
+	syncScrollHwasChecked = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
+	if (syncScrollVwasChecked)
+		::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLV, 0), 0);
+	if (syncScrollHwasChecked)
+		::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
 
 	// let the second view inherit the zoom level of the main view
 	int mainZoomLevel = SendMessage(nppData._scintillaMainHandle, SCI_GETZOOM, 0, 0);
@@ -1459,13 +1459,13 @@ bool startCompare()
 				Settings.ColorSettings.deleted,
 				Settings.ColorSettings.changed,
 				Settings.ColorSettings.moved,
-                Settings.ColorSettings.blank,
-                Settings.ColorSettings._default);
+				Settings.ColorSettings.blank,
+				Settings.ColorSettings._default);
 
 			// Display Navbar
 			NavDlg.doDialog(true);
 			start_old = -1;
-            visible_line_count_old = -1;
+			visible_line_count_old = -1;
 
 			// Restore N++ focus
 			SetFocus(hwnd);
@@ -1498,20 +1498,20 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		{
 			if(active)
 			{
-                // update nav bar if npp views got scrolled, resized, etc..
-                long start, visible_line_count;
+				// update nav bar if npp views got scrolled, resized, etc..
+				long start, visible_line_count;
 
 				start = SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
-                visible_line_count = max(
-                    SendMessage(nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0),
-                    SendMessage(nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0));
-                visible_line_count = SendMessage(nppData._scintillaMainHandle, SCI_VISIBLEFROMDOCLINE, visible_line_count, 0);
+				visible_line_count = max(
+					SendMessage(nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0),
+					SendMessage(nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0));
+				visible_line_count = SendMessage(nppData._scintillaMainHandle, SCI_VISIBLEFROMDOCLINE, visible_line_count, 0);
 
-                if ((NavDlg.ReadyToDraw == TRUE) && ((start != start_old) || (visible_line_count != visible_line_count_old)))
+				if ((NavDlg.ReadyToDraw == TRUE) && ((start != start_old) || (visible_line_count != visible_line_count_old)))
 				{
-                    NavDlg.DrawView();
+					NavDlg.DrawView();
 					start_old = start;
-                    visible_line_count_old = visible_line_count;
+					visible_line_count_old = visible_line_count;
 				}
 			}
 			break;
@@ -1519,25 +1519,25 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 
 	case NPPN_TBMODIFICATION:
 		{
-            tbNext.hToolbarBmp = (HBITMAP)::LoadImage(hInstance,
+			tbNext.hToolbarBmp = (HBITMAP)::LoadImage(hInstance,
 													  MAKEINTRESOURCE(IDB_NEXT),
 													  IMAGE_BITMAP,
 													  0, 0,
 													  (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
 
-            tbPrev.hToolbarBmp = (HBITMAP)::LoadImage(hInstance,
+			tbPrev.hToolbarBmp = (HBITMAP)::LoadImage(hInstance,
 													  MAKEINTRESOURCE(IDB_PREV),
 													  IMAGE_BITMAP,
 													  0, 0,
 													  (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
 
-            tbFirst.hToolbarBmp = (HBITMAP)::LoadImage(hInstance,
+			tbFirst.hToolbarBmp = (HBITMAP)::LoadImage(hInstance,
 													   MAKEINTRESOURCE(IDB_FIRST),
 													   IMAGE_BITMAP,
 													   0, 0,
 													   (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
 
-            tbLast.hToolbarBmp = (HBITMAP)::LoadImage(hInstance,
+			tbLast.hToolbarBmp = (HBITMAP)::LoadImage(hInstance,
 													  MAKEINTRESOURCE(IDB_LAST),
 													  IMAGE_BITMAP,
 													  0, 0,
