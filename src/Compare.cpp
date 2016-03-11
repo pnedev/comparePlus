@@ -720,7 +720,7 @@ void openFile(const TCHAR *file)
 {
 	if(file == NULL || PathFileExists(file) == FALSE)
 	{
-		::MessageBox(nppData._nppHandle, TEXT("No file to open"), TEXT("error"), MB_OK);
+		::MessageBox(nppData._nppHandle, TEXT("No file to open."), TEXT("Compare Plugin"), MB_OK);
 		return;
 	}
 
@@ -913,7 +913,7 @@ void compareSvnBase()
 			}
 		}
 	}
-	MessageBox(nppData._nppHandle, TEXT("Can't locate SVN information"), TEXT("ComparePlugin"), MB_OK);
+	MessageBox(nppData._nppHandle, TEXT("Can not locate SVN information."), TEXT("Compare Plugin"), MB_OK);
 }
 
 void compareGitBase()
@@ -952,7 +952,7 @@ void compareGitBase()
 			}
 		}
 	}
-	MessageBox(nppData._nppHandle, TEXT("Can't locate GIT information"), TEXT("ComparePlugin"), MB_OK);
+	MessageBox(nppData._nppHandle, TEXT("Can not locate GIT information."), TEXT("Compare Plugin"), MB_OK);
 }
 
 int CProgress_IsCanceled_Callback()
@@ -1362,7 +1362,7 @@ bool startCompare()
 	if(!IsWindowVisible(nppData._scintillaMainHandle) || !IsWindowVisible(nppData._scintillaSecondHandle))
 	{
 		panelsOpened = false;
-		::MessageBox(nppData._nppHandle, TEXT("Nothing to compare!"), TEXT("Error"), MB_OK);
+		::MessageBox(nppData._nppHandle, TEXT("No files to compare."), TEXT("Compare Plugin"), MB_OK);
 		return true;
 	}
 
@@ -1378,8 +1378,8 @@ bool startCompare()
 	if(Settings.AddLine && !notepadVersionOk)
 	{
 		::MessageBox(nppData._nppHandle,
-				TEXT("Notepad v4.5 or higher is required to line up matches. This feature will be turned off"),
-				TEXT("Incorrect Version"), MB_OK);
+				TEXT("Notepad v4.5 or higher is required to line up matches. This feature will be turned off."),
+				TEXT("Compare Plugin"), MB_OK);
 		Settings.AddLine = false;
 		::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID,
 				(LPARAM)Settings.AddLine);
@@ -1429,11 +1429,11 @@ bool startCompare()
 	}
 	catch (std::exception& e)
 	{
-		MessageBoxA(NULL, e.what(), "Compare Plugin", MB_OK);
+		MessageBoxA(NULL, e.what(), "Compare Plugin", MB_OK | MB_ICONWARNING);
 	}
 	catch (...)
 	{
-		MessageBoxA(NULL, "Non-standard exception occurred", "Compare Plugin", MB_OK);
+		MessageBoxA(NULL, "Non-standard exception occurred.", "Compare Plugin", MB_OK | MB_ICONWARNING);
 	}
 
 	::SendMessageA(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
