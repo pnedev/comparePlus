@@ -1323,10 +1323,16 @@ bool compareNew()
 
 	if (result != -1)
 	{
-		if(!different)
+		if (!different)
 		{
-			_tcscat_s(buffer, _countof(buffer), TEXT(":\n\nFiles Match.\n"));
-			::MessageBox(nppData._nppHandle, buffer, TEXT("Files Match"), MB_OK);
+			_tcscat_s(buffer, _countof(buffer), TEXT(":\n\nFiles Match. Close compared files?\n"));
+			if (::MessageBox(nppData._nppHandle, buffer, TEXT("Compare Plugin"), MB_YESNO | MB_ICONQUESTION) == IDYES)
+			{
+				SendMessage(nppData._nppHandle, WM_COMMAND, IDM_FILE_CLOSE, 0);
+				SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_SWITCHTO_OTHER_VIEW, 0);
+				SendMessage(nppData._nppHandle, WM_COMMAND, IDM_FILE_CLOSE, 0);
+				SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_SWITCHTO_OTHER_VIEW, 0);
+			}
 			return true;
 		}
 
