@@ -1266,10 +1266,9 @@ bool compareNew()
 	delete progDlg;
 
 	EnableWindow(nppData._nppHandle, TRUE);
+	SetForegroundWindow(nppData._nppHandle);
+	SetFocus(nppData._nppHandle);
 	UpdateWindow(nppData._nppHandle);
-
-	// SetForegroundWindow(nppData._nppHandle);
-	// SetFocus(nppData._nppHandle);
 
 	if (result != -1)
 	{
