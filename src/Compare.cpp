@@ -60,7 +60,6 @@ const TCHAR changedColorOption[]   = TEXT("Changed");
 const TCHAR movedColorOption[]     = TEXT("Moved");
 const TCHAR highlightColorOption[] = TEXT("Highlight");
 const TCHAR highlightAlphaOption[] = TEXT("Alpha");
-const TCHAR symbolsOption[]        = TEXT("Symbols");
 const TCHAR NavBarOption[]         = TEXT("Navigation bar");
 
 const TCHAR localConfFile[] = TEXT("doLocalConf.xml");
@@ -355,7 +354,6 @@ void loadSettings(void)
 	Settings.AddLine      = ::GetPrivateProfileInt(sectionName, addLinesOption, 1, iniFilePath) == 1;
 	Settings.IncludeSpace = ::GetPrivateProfileInt(sectionName, ignoreSpacesOption, 0, iniFilePath) == 1;
 	Settings.DetectMove   = ::GetPrivateProfileInt(sectionName, detectMovesOption, 1, iniFilePath) == 1;
-	Settings.OldSymbols   = ::GetPrivateProfileInt(sectionName, symbolsOption, 0, iniFilePath) == 1;
 	Settings.UseNavBar    = ::GetPrivateProfileInt(sectionName, NavBarOption, 1, iniFilePath) == 1;
 }
 
@@ -384,7 +382,6 @@ void saveSettings(void)
 	::WritePrivateProfileString(sectionName, addLinesOption, Settings.AddLine ? TEXT("1") : TEXT("0"), iniFilePath);
 	::WritePrivateProfileString(sectionName, ignoreSpacesOption, Settings.IncludeSpace ? TEXT("1") : TEXT("0"), iniFilePath);
 	::WritePrivateProfileString(sectionName, detectMovesOption, Settings.DetectMove ? TEXT("1") : TEXT("0"), iniFilePath);
-	::WritePrivateProfileString(sectionName, symbolsOption, Settings.OldSymbols ? TEXT("1") : TEXT("0"), iniFilePath);
 	::WritePrivateProfileString(sectionName, NavBarOption, Settings.UseNavBar ? TEXT("1") : TEXT("0"), iniFilePath);
 }
 

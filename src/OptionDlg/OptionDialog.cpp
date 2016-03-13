@@ -96,17 +96,6 @@ void OptionDialog::SetParams(void)
 
 	// Set transparency
 	SetDlgItemInt(_hSelf, IDC_SPIN_BOX, _Settings->ColorSettings.alpha, FALSE);
-
-	// Set symbols cfg
-	HWND hSymbols = GetDlgItem(_hSelf, IDC_CHECK_SYMBOLS);
-	if (_Settings->OldSymbols == TRUE)
-	{
-		SendMessage(hSymbols, BM_SETCHECK, BST_CHECKED, (LPARAM)0);
-	}
-	else
-	{
-		SendMessage(hSymbols, BM_SETCHECK, BST_UNCHECKED, (LPARAM)0);
-	}
 }
 
 BOOL OptionDialog::GetParams(void)
@@ -120,17 +109,6 @@ BOOL OptionDialog::GetParams(void)
 
 	// Get transparency
 	_Settings->ColorSettings.alpha = GetDlgItemInt(_hSelf, IDC_SPIN_BOX, NULL, FALSE);
-
-	// Get symbols
-	HWND hSymbols = GetDlgItem(_hSelf, IDC_CHECK_SYMBOLS);
-	if (SendMessage(hSymbols, BM_GETCHECK, (WPARAM)0, (LPARAM)0) == BST_CHECKED)
-	{
-		_Settings->OldSymbols = TRUE;
-	}
-	else
-	{
-		_Settings->OldSymbols = FALSE;
-	}
 
 	return TRUE;
 }

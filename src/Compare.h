@@ -113,7 +113,6 @@ struct sUserSettings
 	bool           AddLine;
 	bool           IncludeSpace;
 	bool           DetectMove;
-	bool           OldSymbols;
 	sColorSettings ColorSettings;
 };
 

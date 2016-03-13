@@ -48,7 +48,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define IDC_COMBO_HIGHLIGHT_COLOR       1021
 #define IDC_SPIN_BOX                    1035
 #define IDC_SPIN_CTL                    1036
-#define IDC_CHECK_SYMBOLS               1039
 #define IDC_STATIC                      -1
 
 // Next default values for new objects

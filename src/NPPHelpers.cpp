@@ -157,20 +157,10 @@ void setStyles(sUserSettings* Settings)
     defineColor(MARKER_MOVED_LINE,   Settings->ColorSettings.moved);
     defineColor(MARKER_REMOVED_LINE, Settings->ColorSettings.deleted);
 
-    if (Settings->OldSymbols == TRUE)
-	{
-		defineSymbol(MARKER_ADDED_SYMBOL,   SC_MARK_PLUS);
-		defineSymbol(MARKER_REMOVED_SYMBOL, SC_MARK_MINUS);
-		defineSymbol(MARKER_CHANGED_SYMBOL, SC_MARK_ARROWS);
-		defineSymbol(MARKER_MOVED_SYMBOL,   SC_MARK_ARROWDOWN);
-	}
-	else
-	{
-		DefineXpmSymbol(MARKER_ADDED_SYMBOL,   icon_add_16_xpm);
-		DefineXpmSymbol(MARKER_REMOVED_SYMBOL, icon_sub_16_xpm);
-		DefineXpmSymbol(MARKER_CHANGED_SYMBOL, icon_warning_16_xpm);
-		DefineXpmSymbol(MARKER_MOVED_SYMBOL,   icon_moved_16_xpm);
-	}
+	DefineXpmSymbol(MARKER_ADDED_SYMBOL,   icon_add_16_xpm);
+	DefineXpmSymbol(MARKER_REMOVED_SYMBOL, icon_sub_16_xpm);
+	DefineXpmSymbol(MARKER_CHANGED_SYMBOL, icon_warning_16_xpm);
+	DefineXpmSymbol(MARKER_MOVED_SYMBOL,   icon_moved_16_xpm);
 
     setTextStyles(Settings->ColorSettings);
 }
