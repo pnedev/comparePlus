@@ -14,20 +14,20 @@ public:
 
     HWND Open(HWND hCallerWnd = NULL, const TCHAR* header = NULL);
 
-    bool IsCancelled() const
+    inline bool IsCancelled() const
 	{
 		if (_hwnd)
 			return (::WaitForSingleObject(_hActiveState, 0) != WAIT_OBJECT_0);
 		return false;
 	}
 
-	void SetInfo(const TCHAR *info) const
+	inline void SetInfo(const TCHAR *info) const
 	{
 		if (_hwnd)
 			::SendMessage(_hPText, WM_SETTEXT, 0, (LPARAM)info);
 	}
 
-    void SetPercent(unsigned percent) const
+    inline void SetPercent(unsigned percent) const
 	{
 		if (_hwnd)
 			::PostMessage(_hPBar, PBM_SETPOS, (WPARAM)percent, 0);

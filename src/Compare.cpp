@@ -724,7 +724,8 @@ void openFile(const TCHAR *file)
 		return;
 	}
 
-	FILE* myfile(_tfopen(file, _T("rb")));
+	FILE* myfile;
+	_tfopen_s(&myfile, file, _T("rb"));
 
 	if (myfile)
 	{
