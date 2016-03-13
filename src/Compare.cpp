@@ -1343,20 +1343,54 @@ bool compareNew()
 	return false;
 }
 
+static void activateBufferID(LRESULT bufferID, int view)
+{
+	LRESULT index = SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, bufferID, view);
+	index = index & 0x3FFFFFFF;
+
+	SendMessage(nppData._nppHandle, NPPM_ACTIVATEDOC, view, index);
+}
+
 bool startCompare()
 {
 	LRESULT RODoc1;
 	LRESULT RODoc2;
 
-	if(!IsWindowVisible(nppData._scintillaMainHandle) || !IsWindowVisible(nppData._scintillaSecondHandle))
+	if (!IsWindowVisible(nppData._scintillaMainHandle) || !IsWindowVisible(nppData._scintillaSecondHandle))
 	{
 		skipAutoReset = true;
+
+		// Yaron - In One-View mode, the current view can be 0 or 1.
+		// In Two-Views mode, the top (or left) view is ALWAYS 0, and the bottom view is ALWAYS 1.
+		int currentView = SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0);
+		LRESULT bufferID = SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+
+		// Yaron - If the current view is 0, we want the prev file to be moved to the bottom;
+		// if the current view is 1, we still need to activate it and make sure it's compared to the current file.
+		SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_TAB_PREV, 0);
+
+		if (currentView == 1)
+		{
+			bufferID = SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+			SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_TAB_NEXT, 0); // Yaron - Switch back to current file.
+		}
+
+		// Yaron - Current file is ALWAYS at top, and prev file is ALWAYS at bottom.
 		SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_GOTO_ANOTHER_VIEW, 0);
+
+		// Yaron - If the current view is 0, activate current file at top;
+		// if the current view is 1, activate prev file at bottom (possibly multiple files there).
+		activateBufferID(bufferID, currentView);
+
+		// Yaron - Activate current file at top.
+		if (currentView == 1)
+			SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_SWITCHTO_OTHER_VIEW, 0);
+
 		skipAutoReset = false;
 		panelsOpened = true;
 	}
 
-	if(!IsWindowVisible(nppData._scintillaMainHandle) || !IsWindowVisible(nppData._scintillaSecondHandle))
+	if (!IsWindowVisible(nppData._scintillaMainHandle) || !IsWindowVisible(nppData._scintillaSecondHandle))
 	{
 		panelsOpened = false;
 		::MessageBox(nppData._nppHandle, TEXT("No files to compare."), TEXT("Compare Plugin"), MB_OK);
