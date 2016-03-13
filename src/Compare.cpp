@@ -1029,13 +1029,13 @@ bool compareNew()
 	if (_tcslen(filenameSecond) > 28)
 		_tcscpy_s(filenameSecond + 25, 4, TEXT("..."));
 
-	_sntprintf_s(buffer, _countof(buffer), _TRUNCATE, TEXT("Compare: '%s' vs. '%s'"), filenameMain, filenameSecond);
+	_sntprintf_s(buffer, _countof(buffer), _TRUNCATE, TEXT("Comparing '%s' vs. '%s'"), filenameMain, filenameSecond);
 	CProgress_IsCanceled = CProgress_IsCanceled_Callback;
 	CProgress_Increment = CProgress_Increment_Callback;
 	progMax = 0;
 	progCounter = 0;
 	progDlg = new CProgress();
-	progDlg->Open(nppData._nppHandle, TEXT("Compare Progress"));
+	progDlg->Open(nppData._nppHandle, TEXT("Compare Plugin"));
 	progDlg->SetInfo(buffer);
 
 	UpdateWindow(nppData._scintillaMainHandle);

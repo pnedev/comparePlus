@@ -127,7 +127,7 @@ bool GetSvnBaseFile(const TCHAR* curDir, const TCHAR* svnDir, const TCHAR* filen
 		}
 		else
 		{
-			MessageBox(NULL, TEXT("Can't init sqlite"), TEXT("ComparePlugin"), MB_OK);
+			MessageBox(NULL, TEXT("Can't init sqlite"), TEXT("Compare Plugin"), MB_OK);
 		}
 	}
 	else
@@ -202,7 +202,7 @@ HGLOBAL GetContentFromGitRepo(const TCHAR *gitDir, const TCHAR *gitFilePath, lon
 	}
 	else
 	{
-		MessageBox(NULL, TEXT("Can't init libgit2"), TEXT("ComparePlugin"), MB_OK);
+		MessageBox(NULL, TEXT("Can't init libgit2"), TEXT("Compare Plugin"), MB_OK);
 	}
 
 	return hMem;
