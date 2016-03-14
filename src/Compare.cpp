@@ -115,7 +115,7 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 			funcItem[CMD_SEPARATOR_1]._pShKey = NULL;
 
 			funcItem[CMD_COMPARE_LAST_SAVE]._pFunc = compareLocal;
-			_tcscpy_s(funcItem[CMD_COMPARE_LAST_SAVE]._itemName, nbChar, TEXT("Compare to last save"));
+			_tcscpy_s(funcItem[CMD_COMPARE_LAST_SAVE]._itemName, nbChar, TEXT("Compare to last Save"));
 			funcItem[CMD_COMPARE_LAST_SAVE]._pShKey = new ShortcutKey;
 			funcItem[CMD_COMPARE_LAST_SAVE]._pShKey->_isAlt = true;
 			funcItem[CMD_COMPARE_LAST_SAVE]._pShKey->_isCtrl = false;
@@ -124,7 +124,7 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 			funcItem[CMD_COMPARE_LAST_SAVE]._init2Check = false;
 
 			funcItem[CMD_COMPARE_SVN_BASE]._pFunc = compareSvnBase;
-			_tcscpy_s(funcItem[CMD_COMPARE_SVN_BASE]._itemName, nbChar, TEXT("Compare against SVN base"));
+			_tcscpy_s(funcItem[CMD_COMPARE_SVN_BASE]._itemName, nbChar, TEXT("Compare to SVN base"));
 			funcItem[CMD_COMPARE_SVN_BASE]._pShKey = new ShortcutKey;
 			funcItem[CMD_COMPARE_SVN_BASE]._pShKey->_isAlt = true;
 			funcItem[CMD_COMPARE_SVN_BASE]._pShKey->_isCtrl = false;
@@ -133,12 +133,12 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 			funcItem[CMD_COMPARE_SVN_BASE]._init2Check = false;
 
 			funcItem[CMD_COMPARE_GIT_BASE]._pFunc = compareGitBase;
-			_tcscpy_s(funcItem[CMD_COMPARE_GIT_BASE]._itemName, nbChar, TEXT("Compare against GIT base"));
+			_tcscpy_s(funcItem[CMD_COMPARE_GIT_BASE]._itemName, nbChar, TEXT("Compare to GIT base"));
 			funcItem[CMD_COMPARE_GIT_BASE]._pShKey = new ShortcutKey;
 			funcItem[CMD_COMPARE_GIT_BASE]._pShKey->_isAlt = true;
 			funcItem[CMD_COMPARE_GIT_BASE]._pShKey->_isCtrl = true;
 			funcItem[CMD_COMPARE_GIT_BASE]._pShKey->_isShift = false;
-			funcItem[CMD_COMPARE_GIT_BASE]._pShKey->_key = 'B';
+			funcItem[CMD_COMPARE_GIT_BASE]._pShKey->_key = 'G';
 			funcItem[CMD_COMPARE_GIT_BASE]._init2Check = false;
 
 			funcItem[CMD_SEPARATOR_2]._pFunc = NULL;
@@ -161,7 +161,7 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 			funcItem[CMD_DETECT_MOVES]._init2Check = false;
 
 			funcItem[CMD_USE_NAV_BAR]._pFunc = ViewNavigationBar;
-			_tcscpy_s(funcItem[CMD_USE_NAV_BAR]._itemName, nbChar, TEXT("Navigation bar"));
+			_tcscpy_s(funcItem[CMD_USE_NAV_BAR]._itemName, nbChar, TEXT("Navigation Bar"));
 			funcItem[CMD_USE_NAV_BAR]._pShKey = NULL;
 			funcItem[CMD_USE_NAV_BAR]._init2Check = false;
 
@@ -172,8 +172,8 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 			funcItem[CMD_PREV]._pFunc = Prev;
 			_tcscpy_s(funcItem[CMD_PREV]._itemName, nbChar, TEXT("Previous"));
 			funcItem[CMD_PREV]._pShKey = new ShortcutKey;
-			funcItem[CMD_PREV]._pShKey->_isAlt = false;
-			funcItem[CMD_PREV]._pShKey->_isCtrl = true;
+			funcItem[CMD_PREV]._pShKey->_isAlt = true;
+			funcItem[CMD_PREV]._pShKey->_isCtrl = false;
 			funcItem[CMD_PREV]._pShKey->_isShift = false;
 			funcItem[CMD_PREV]._pShKey->_key = VK_PRIOR;
 			funcItem[CMD_PREV]._init2Check = false;
@@ -181,8 +181,8 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 			funcItem[CMD_NEXT]._pFunc = Next;
 			_tcscpy_s(funcItem[CMD_NEXT]._itemName, nbChar, TEXT("Next"));
 			funcItem[CMD_NEXT]._pShKey = new ShortcutKey;
-			funcItem[CMD_NEXT]._pShKey->_isAlt = false;
-			funcItem[CMD_NEXT]._pShKey->_isCtrl = true;
+			funcItem[CMD_NEXT]._pShKey->_isAlt = true;
+			funcItem[CMD_NEXT]._pShKey->_isCtrl = false;
 			funcItem[CMD_NEXT]._pShKey->_isShift = false;
 			funcItem[CMD_NEXT]._pShKey->_key = VK_NEXT;
 			funcItem[CMD_NEXT]._init2Check = false;
@@ -190,18 +190,18 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 			funcItem[CMD_FIRST]._pFunc = First;
 			_tcscpy_s(funcItem[CMD_FIRST]._itemName, nbChar, TEXT("First"));
 			funcItem[CMD_FIRST]._pShKey = new ShortcutKey;
-			funcItem[CMD_FIRST]._pShKey->_isAlt = false;
+			funcItem[CMD_FIRST]._pShKey->_isAlt = true;
 			funcItem[CMD_FIRST]._pShKey->_isCtrl = true;
-			funcItem[CMD_FIRST]._pShKey->_isShift = true;
+			funcItem[CMD_FIRST]._pShKey->_isShift = false;
 			funcItem[CMD_FIRST]._pShKey->_key = VK_PRIOR;
 			funcItem[CMD_FIRST]._init2Check = false;
 
 			funcItem[CMD_LAST]._pFunc = Last;
 			_tcscpy_s(funcItem[CMD_LAST]._itemName, nbChar, TEXT("Last"));
 			funcItem[CMD_LAST]._pShKey = new ShortcutKey;
-			funcItem[CMD_LAST]._pShKey->_isAlt = false;
+			funcItem[CMD_LAST]._pShKey->_isAlt = true;
 			funcItem[CMD_LAST]._pShKey->_isCtrl = true;
-			funcItem[CMD_LAST]._pShKey->_isShift = true;
+			funcItem[CMD_LAST]._pShKey->_isShift = false;
 			funcItem[CMD_LAST]._pShKey->_key = VK_NEXT;
 			funcItem[CMD_LAST]._init2Check = false;
 
