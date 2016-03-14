@@ -1027,7 +1027,8 @@ bool compareNew()
 	if (_tcslen(filenameSecond) > 28)
 		_tcscpy_s(filenameSecond + 25, 4, TEXT("..."));
 
-	_sntprintf_s(buffer, _countof(buffer), _TRUNCATE, TEXT("Comparing '%s' vs. '%s'"), filenameMain, filenameSecond);
+	_sntprintf_s(buffer, _countof(buffer), _TRUNCATE, TEXT("Comparing \"%s\" vs. \"%s\"..."),
+			filenameMain, filenameSecond);
 	CProgress_IsCanceled = CProgress_IsCanceled_Callback;
 	CProgress_Increment = CProgress_Increment_Callback;
 	progMax = 0;
@@ -1265,7 +1266,7 @@ bool compareNew()
 
 	EnableWindow(nppData._nppHandle, TRUE);
 	SetForegroundWindow(nppData._nppHandle);
-	SetFocus(nppData._nppHandle);
+	SetFocus(nppData._scintillaMainHandle);
 	UpdateWindow(nppData._nppHandle);
 
 	if (result != -1)
@@ -1322,7 +1323,9 @@ bool compareNew()
 	{
 		if (!different)
 		{
-			_tcscat_s(buffer, _countof(buffer), TEXT(":\n\nFiles Match. Close compared files?\n"));
+			_sntprintf_s(buffer, _countof(buffer), _TRUNCATE,
+					TEXT("The files \"%s\" and \"%s\" match.\nClose compared files?\n"),
+					filenameMain, filenameSecond);
 			if (::MessageBox(nppData._nppHandle, buffer, TEXT("Compare Plugin"), MB_YESNO | MB_ICONQUESTION) == IDYES)
 			{
 				SendMessage(nppData._nppHandle, WM_COMMAND, IDM_FILE_CLOSE, 0);
