@@ -1434,25 +1434,25 @@ bool startCompare()
 	setCompare(doc1);
 	setCompare(doc2);
 
+	::SendMessageA(nppData._scintillaMainHandle, SCI_GOTOPOS, 0, 0);
+	::SendMessageA(nppData._scintillaSecondHandle, SCI_GOTOPOS, 0, 0);
+	::SendMessageA(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
+	::SendMessageA(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
+
 	/* sync pannels */
 	HMENU hMenu = ::GetMenu(nppData._nppHandle);
 
 	syncScrollVwasChecked = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
 	syncScrollHwasChecked = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
+
 	if (syncScrollVwasChecked)
 		::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLV, 0), 0);
-	if (syncScrollHwasChecked)
+	if (!syncScrollHwasChecked)	// Yaron - Enable horizontal scroll sync.
 		::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
 
 	// let the second view inherit the zoom level of the main view
 	int mainZoomLevel = SendMessage(nppData._scintillaMainHandle, SCI_GETZOOM, 0, 0);
 	SendMessage(nppData._scintillaSecondHandle, SCI_SETZOOM, mainZoomLevel, 0);
-
-	::SendMessageA(nppData._scintillaMainHandle, SCI_GOTOPOS, 1, 0);
-	::SendMessageA(nppData._scintillaSecondHandle, SCI_GOTOPOS, 1, 0);
-	::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
-	::SendMessageA(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
-	::SendMessageA(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
 
 	// Compare files (return False if files differ)
 	bool result = false;
