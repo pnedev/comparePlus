@@ -1016,10 +1016,10 @@ bool compareNew()
 	unsigned int *doc2Hashes = computeHashes(doc2, doc2Length, Settings.IncludeSpace);
 
 	/* show progress dialog */
-	SetFocus(nppData._scintillaMainHandle);
-	SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)filenameMain);
 	SetFocus(nppData._scintillaSecondHandle);
 	SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)filenameSecond);
+	SetFocus(nppData._scintillaMainHandle);
+	SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)filenameMain);
 
 	if (_tcslen(filenameMain) > 28)
 		_tcscpy_s(filenameMain + 25, 4, TEXT("..."));
@@ -1260,13 +1260,12 @@ bool compareNew()
 //clean up resources
 #if CLEANUP
 
+	EnableWindow(nppData._nppHandle, TRUE);
+
 	bool compareCanceled = progDlg->IsCancelled();
 	progDlg->Close();
 	delete progDlg;
 
-	EnableWindow(nppData._nppHandle, TRUE);
-	SetForegroundWindow(nppData._nppHandle);
-	SetFocus(nppData._scintillaMainHandle);
 	UpdateWindow(nppData._nppHandle);
 
 	if (result != -1)
