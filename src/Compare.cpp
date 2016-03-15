@@ -1015,11 +1015,16 @@ bool compareNew()
 	unsigned int *doc1Hashes = computeHashes(doc1, doc1Length, Settings.IncludeSpace);
 	unsigned int *doc2Hashes = computeHashes(doc2, doc2Length, Settings.IncludeSpace);
 
-	/* show progress dialog */
-	SetFocus(nppData._scintillaSecondHandle);
-	SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)filenameSecond);
+	// Save current N++ focus
+	HWND hwnd = GetFocus();
+
 	SetFocus(nppData._scintillaMainHandle);
 	SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)filenameMain);
+	SetFocus(nppData._scintillaSecondHandle);
+	SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)filenameSecond);
+
+	// Restore N++ focus
+	SetFocus(hwnd);
 
 	if (_tcslen(filenameMain) > 28)
 		_tcscpy_s(filenameMain + 25, 4, TEXT("..."));
@@ -1037,8 +1042,6 @@ bool compareNew()
 	progDlg->Open(nppData._nppHandle, TEXT("Compare Plugin"));
 	progDlg->SetInfo(buffer);
 
-	UpdateWindow(nppData._scintillaMainHandle);
-	UpdateWindow(nppData._scintillaSecondHandle);
 	EnableWindow(nppData._nppHandle, FALSE);
 
 	/* make diff */
@@ -1266,8 +1269,6 @@ bool compareNew()
 	progDlg->Close();
 	delete progDlg;
 
-	UpdateWindow(nppData._nppHandle);
-
 	if (result != -1)
 	{
 		for (int i = 0; i < doc1Length; i++)
@@ -1323,9 +1324,10 @@ bool compareNew()
 		if (!different)
 		{
 			_sntprintf_s(buffer, _countof(buffer), _TRUNCATE,
-					TEXT("The files \"%s\" and \"%s\" match.\nClose compared files?\n"),
+					TEXT("The files \"%s\" and \"%s\" match.\n\nClose compared files?\n"),
 					filenameMain, filenameSecond);
-			if (::MessageBox(nppData._nppHandle, buffer, TEXT("Compare Plugin"), MB_YESNO | MB_ICONQUESTION) == IDYES)
+			if (::MessageBox(nppData._nppHandle, buffer, TEXT("Compare Plugin: Files Match"),
+					MB_YESNO | MB_ICONQUESTION) == IDYES)
 			{
 				SendMessage(nppData._nppHandle, WM_COMMAND, IDM_FILE_CLOSE, 0);
 				SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_SWITCHTO_OTHER_VIEW, 0);
