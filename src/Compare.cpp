@@ -27,7 +27,6 @@ TCHAR emptyLinesDoc[MAX_PATH];
 int compareDocs[MAXCOMPARE];
 
 int  tempWindow = -1;
-bool notepadVersionOk = false;
 bool active = false;
 bool skipAutoReset = false;
 int closingWin = -1;
@@ -1357,9 +1356,6 @@ static void activateBufferID(LRESULT bufferID, int view)
 
 bool startCompare()
 {
-	LRESULT RODoc1;
-	LRESULT RODoc2;
-
 	if (!IsWindowVisible(nppData._scintillaMainHandle) || !IsWindowVisible(nppData._scintillaSecondHandle))
 	{
 		skipAutoReset = true;
@@ -1401,30 +1397,14 @@ bool startCompare()
 		return true;
 	}
 
-	if(!notepadVersionOk)
-	{
-		int version = ::SendMessage(nppData._nppHandle,NPPM_GETNPPVERSION, 0, 0);
-		if(version > 0)
-		{
-			notepadVersionOk = true;
-		}
-	}
-
-	if(Settings.AddLine && !notepadVersionOk)
-	{
-		::MessageBox(nppData._nppHandle,
-				TEXT("Notepad v4.5 or higher is required to line up matches. This feature will be turned off."),
-				TEXT("Compare Plugin"), MB_OK);
-		Settings.AddLine = false;
-		::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID,
-				(LPARAM)Settings.AddLine);
-	}
-
+	LRESULT RODoc1 = SendMessage(nppData._scintillaMainHandle, SCI_GETREADONLY, 0, 0);
 	// Remove read-only attribute
-	if ((RODoc1 = SendMessage(nppData._scintillaMainHandle, SCI_GETREADONLY, 0, 0)) == 1)
+	if (RODoc1)
 		SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, false, 0);
 
-	if ((RODoc2 = SendMessage(nppData._scintillaSecondHandle, SCI_GETREADONLY, 0, 0)) == 1)
+	LRESULT RODoc2 = SendMessage(nppData._scintillaSecondHandle, SCI_GETREADONLY, 0, 0);
+	// Remove read-only attribute
+	if (RODoc2)
 		SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, false, 0);
 
 	setStyles(&Settings);
@@ -1642,7 +1622,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		{
 			if (!skipAutoReset)
 			{
-				notepadVersionOk = true;
 				HWND window = getCurrentWindow();
 				int win = SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
 				if (getCompare(win) != -1)
@@ -1659,14 +1638,11 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 	case NPPN_FILEBEFOREOPEN:
 	case NPPN_FILEOPENED:
 		{
-			notepadVersionOk = true;
 			break;
 		}
 
 	case NPPN_FILEBEFORESAVE:
 		{
-			notepadVersionOk = true;
-
 			SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, 0, (LPARAM)emptyLinesDoc);
 
 			HWND window = getCurrentWindow();
@@ -1686,7 +1662,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 
 	case NPPN_FILESAVED:
 		{
-			notepadVersionOk = true;
 			TCHAR name[MAX_PATH];
 			SendMessage(nppData._nppHandle,NPPM_GETFULLCURRENTPATH,0,(LPARAM)name);
 
