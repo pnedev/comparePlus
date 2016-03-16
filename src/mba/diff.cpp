@@ -96,13 +96,8 @@ _find_middle_snake(const void *a, int aoff, int n,
 	for (d = 0; d <= mid; d++) {
 		int k, x, y;
 
-		if (CProgress_IsCanceled && CProgress_Increment)
-		{
-			if (CProgress_IsCanceled())
-				break;
-			else
-				CProgress_Increment(mid);
-		}
+		if (!CProgressUpdate(mid))
+			return -1;
 
 		if ((2 * d - 1) >= ctx->dmax) {
 			return ctx->dmax;

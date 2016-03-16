@@ -1,18 +1,13 @@
-
-#pragma once
-
-
 /* diff - compute a shortest edit script (SES) given two sequences
  */
+
+#pragma once
 
 #include <varray.h>
 
 
-// CProgess callbacks
-typedef int(*CProgress_IsCanceled_fn)();
-typedef void(*CProgress_Increment_fn)(int mid);
-extern CProgress_IsCanceled_fn CProgress_IsCanceled;
-extern CProgress_Increment_fn CProgress_Increment;
+// CProgess callback declaration
+bool CProgressUpdate(int mid);
 
 typedef const void *(*idx_fn)(const void *s, int idx, void *context);
 typedef int (*cmp_fn)(const void *object1, const void *object2, void *context);
@@ -49,7 +44,6 @@ struct diff_edit {
 
 /* consider alternate behavior for each NULL parameter
  */
-
 int diff(const void *a, int aoff, int n,
 		const void *b, int boff, int m,
 		idx_fn idx, cmp_fn cmp, void *context, int dmax,

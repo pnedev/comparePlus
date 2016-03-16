@@ -22,16 +22,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "NPPHelpers.h"
 #include "ScmHelper.h"
 
-TCHAR emptyLinesDoc[MAX_PATH];
 #define MAXCOMPARE 50
+
 int compareDocs[MAXCOMPARE];
+TCHAR emptyLinesDoc[MAX_PATH];
 
 int  tempWindow = -1;
 bool active = false;
 bool skipAutoReset = false;
 int closingWin = -1;
 HWND closingView = NULL;
-blankLineList *lastEmptyLines=NULL;
+blankLineList *lastEmptyLines = NULL;
 int  topLine = 0;
 long start_old = -1;
 long visible_line_count_old = -1;
@@ -40,33 +41,30 @@ bool syncScrollVwasChecked = false;
 bool syncScrollHwasChecked = false;
 
 CProgress* progDlg = NULL;
-CProgress_IsCanceled_fn CProgress_IsCanceled = NULL;
-CProgress_Increment_fn CProgress_Increment = NULL;
 int progMax = 0;
 int progCounter = 0;
 
-const TCHAR PLUGIN_NAME[] = TEXT("Compare");
+const TCHAR PLUGIN_NAME[]			= TEXT("Compare");
+
+const TCHAR sectionName[]			= TEXT("Compare Settings");
+const TCHAR addLinesOption[]		= TEXT("Align Matches");
+const TCHAR ignoreSpacesOption[]	= TEXT("Include Spaces");
+const TCHAR detectMovesOption[]		= TEXT("Detect Move Blocks");
+
+const TCHAR colorsSection[]        	= TEXT("Colors");
+const TCHAR addedColorOption[]     	= TEXT("Added");
+const TCHAR removedColorOption[]   	= TEXT("Removed");
+const TCHAR changedColorOption[]   	= TEXT("Changed");
+const TCHAR movedColorOption[]     	= TEXT("Moved");
+const TCHAR highlightColorOption[] 	= TEXT("Highlight");
+const TCHAR highlightAlphaOption[] 	= TEXT("Alpha");
+const TCHAR NavBarOption[]         	= TEXT("Navigation bar");
+
+const TCHAR localConfFile[]			= TEXT("doLocalConf.xml");
+
 TCHAR iniFilePath[MAX_PATH];
-const TCHAR sectionName[] = TEXT("Compare Settings");
-const TCHAR addLinesOption[] = TEXT("Align Matches");
-const TCHAR ignoreSpacesOption[] = TEXT("Include Spaces");
-const TCHAR detectMovesOption[] = TEXT("Detect Move Blocks");
-
-const TCHAR colorsSection[]        = TEXT("Colors");
-const TCHAR addedColorOption[]     = TEXT("Added");
-const TCHAR removedColorOption[]   = TEXT("Removed");
-const TCHAR changedColorOption[]   = TEXT("Changed");
-const TCHAR movedColorOption[]     = TEXT("Moved");
-const TCHAR highlightColorOption[] = TEXT("Highlight");
-const TCHAR highlightAlphaOption[] = TEXT("Alpha");
-const TCHAR NavBarOption[]         = TEXT("Navigation bar");
-
-const TCHAR localConfFile[] = TEXT("doLocalConf.xml");
-
-bool different = TRUE;
-
 TCHAR compareFilePath[MAX_PATH];
-TCHAR compareFile[] = TEXT("Compare File");
+
 NppData nppData;
 
 FuncItem funcItem[NB_MENU_COMMANDS];
@@ -952,22 +950,24 @@ void compareGitBase()
 	MessageBox(nppData._nppHandle, TEXT("Can not locate GIT information."), TEXT("Compare Plugin"), MB_OK);
 }
 
-int CProgress_IsCanceled_Callback()
+bool CProgressUpdate(int mid)
 {
-	return (int)progDlg->IsCancelled();
-}
+	if (!progDlg)
+		return false;
 
-void CProgress_Increment_Callback(int mid)
-{
+	if (progDlg->IsCancelled())
+		return false;
+
 	if (mid > progMax)
-	{
 		progMax = mid;
-	}
+
 	if (progMax)
 	{
 		int perc = (++progCounter * 100) / (progMax * 4);
 		progDlg->SetPercent(perc);
 	}
+
+	return true;
 }
 
 bool compareNew()
@@ -975,6 +975,8 @@ bool compareNew()
 	TCHAR filenameMain[MAX_PATH];
 	TCHAR filenameSecond[MAX_PATH];
 	TCHAR buffer[1024];
+
+	bool different = true;
 
 	clearWindow(nppData._scintillaMainHandle, true);
 	clearWindow(nppData._scintillaSecondHandle, true);
@@ -1033,8 +1035,6 @@ bool compareNew()
 
 	_sntprintf_s(buffer, _countof(buffer), _TRUNCATE, TEXT("Comparing \"%s\" vs. \"%s\"..."),
 			filenameMain, filenameSecond);
-	CProgress_IsCanceled = CProgress_IsCanceled_Callback;
-	CProgress_Increment = CProgress_Increment_Callback;
 	progMax = 0;
 	progCounter = 0;
 	progDlg = new CProgress();
@@ -1346,6 +1346,7 @@ bool compareNew()
 	return false;
 }
 
+
 static void activateBufferID(LRESULT bufferID, int view)
 {
 	LRESULT index = SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, bufferID, view);
@@ -1353,6 +1354,7 @@ static void activateBufferID(LRESULT bufferID, int view)
 
 	SendMessage(nppData._nppHandle, NPPM_ACTIVATEDOC, view, index);
 }
+
 
 bool startCompare()
 {
@@ -1455,15 +1457,21 @@ bool startCompare()
 	::SendMessage(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
 
 	// Restore previous read-only attribute
-	if (RODoc1 == 1)
+	if (RODoc1)
 		SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, true, 0);
 
-	if (RODoc2 == 1)
+	if (RODoc2)
 		SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
 
 	if (!result)
 	{
-		if(Settings.UseNavBar)
+		// Enable Prev/Next menu entry
+		::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID,  MF_BYCOMMAND | MF_ENABLED);
+		::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+		::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+		::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+
+		if (Settings.UseNavBar)
 		{
 			// Save current N++ focus
 			HWND hwnd = GetFocus();
@@ -1477,33 +1485,28 @@ bool startCompare()
 				Settings.ColorSettings.blank,
 				Settings.ColorSettings._default);
 
-			// Display Navbar
+			// Display NavBar
 			NavDlg.doDialog(true);
 			start_old = -1;
 			visible_line_count_old = -1;
 
 			// Restore N++ focus
 			SetFocus(hwnd);
-
 		}
-		// Enable Prev/Next menu entry
-		::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID,  MF_BYCOMMAND | MF_ENABLED);
-		::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-		::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-		::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
 	}
 
 	return result;
 }
 
+
 void compare()
 {
-	bool ret = startCompare();
+	bool filesMatch = startCompare();
 
-	// Files match - exit comparison
-	if (ret)
+	if (filesMatch)
 		reset();
 }
+
 
 extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 {
