@@ -133,8 +133,8 @@ int _tmain(int argc, TCHAR* argv[])
 
     // some checks
     if (argc < 3)
-        quitWithError(TEXT("Missing commandline arguments:\ncompare.exe <file_path_1> <file_path_2>"));
-    log(TEXT("%s %s %s", argv[0], argv[1], argv[2]));
+        quitWithError(TEXT("Missing command line arguments:\ncompare.exe <file_path_1> <file_path_2>"));
+    log(TEXT("%s %s %s"), argv[0], argv[1], argv[2]);
     if (!PathFileExists(argv[1]))
         quitWithError(TEXT("Input file not found:\n'%s'"), argv[1]);
     if (!PathFileExists(argv[2]))
