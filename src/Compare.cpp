@@ -670,13 +670,13 @@ HWND openTempFile()
 
 	int result = ::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)compareFilePath);
 	HWND window = getCurrentWindow();
-	int win = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
+	int win = SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
 
 	if(result == 0 || win != tempWindow)
 	{
 		::SendMessage(nppData._nppHandle, WM_COMMAND, IDM_FILE_NEW, (LPARAM)0);
 		::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)compareFilePath);
-		tempWindow = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
+		tempWindow = SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
 
 		curBuffer = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
 		::SendMessage(nppData._nppHandle, NPPM_SETBUFFERLANGTYPE, curBuffer, curLang);
@@ -696,19 +696,19 @@ HWND openTempFile()
 
 	window = getOtherWindow();
 
-	int pointer = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
+	int pointer = SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
 	if(tempWindow != pointer)
 	{
 		window = getCurrentWindow();
-		pointer = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
+		pointer = SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
 	}
 
 	//assert(tempWindow == pointer);
 
 	//move focus to new document, or the other document will be marked as dirty
-	::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
-	::SendMessageA(window, SCI_SETREADONLY, 0, 0);
-	::SendMessageA(window, SCI_CLEARALL, 0, 0);
+	::SendMessage(window, SCI_GRABFOCUS, 0, 0);
+	::SendMessage(window, SCI_SETREADONLY, 0, 0);
+	::SendMessage(window, SCI_CLEARALL, 0, 0);
 
 	return window;
 }
@@ -746,24 +746,24 @@ void openMemBlock(void *memblock, long size)
 {
 	HWND window = openTempFile();
 
-	::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
-	::SendMessageA(window, SCI_APPENDTEXT, size, (LPARAM)memblock);
+	::SendMessage(window, SCI_GRABFOCUS, 0, 0);
+	::SendMessage(window, SCI_APPENDTEXT, size, (LPARAM)memblock);
 
 	if(startCompare())
 	{
-		::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
-		::SendMessageA(window, SCI_SETSAVEPOINT, 1, 0);
-		::SendMessageA(window, SCI_EMPTYUNDOBUFFER, 0, 0);
-		::SendMessageA(window, SCI_SETREADONLY, 1, 0);
+		::SendMessage(window, SCI_GRABFOCUS, 0, 0);
+		::SendMessage(window, SCI_SETSAVEPOINT, 1, 0);
+		::SendMessage(window, SCI_EMPTYUNDOBUFFER, 0, 0);
+		::SendMessage(window, SCI_SETREADONLY, 1, 0);
 		reset();
 	}
 	else
 	{
-		::SendMessageA(window, SCI_GRABFOCUS, 0, 0);
-		::SendMessageA(window, SCI_SETSAVEPOINT, 1, 0);
-		::SendMessageA(window, SCI_EMPTYUNDOBUFFER, 0, 0);
-		::SendMessageA(window, SCI_SETREADONLY, 1, 0);
-		::SendMessageA(nppData._scintillaSecondHandle, SCI_GRABFOCUS, 0, 1);
+		::SendMessage(window, SCI_GRABFOCUS, 0, 0);
+		::SendMessage(window, SCI_SETSAVEPOINT, 1, 0);
+		::SendMessage(window, SCI_EMPTYUNDOBUFFER, 0, 0);
+		::SendMessage(window, SCI_SETREADONLY, 1, 0);
+		::SendMessage(nppData._scintillaSecondHandle, SCI_GRABFOCUS, 0, 1);
 	}
 }
 
@@ -789,7 +789,7 @@ void reset()
 			// Remove read-only attribute
 			if ((RODoc1 = SendMessage(nppData._scintillaMainHandle, SCI_GETREADONLY, 0, 0)) == 1)
 				SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, false, 0);
-			doc1 = SendMessageA(nppData._scintillaMainHandle, SCI_GETDOCPOINTER, 0, 0);
+			doc1 = SendMessage(nppData._scintillaMainHandle, SCI_GETDOCPOINTER, 0, 0);
 			doc1Index = getCompare(doc1);
 			if (doc1Index != -1)
 				clearWindow(nppData._scintillaMainHandle, true);
@@ -807,7 +807,7 @@ void reset()
 		{
 			if ((RODoc2 = SendMessage(nppData._scintillaSecondHandle, SCI_GETREADONLY, 0, 0)) == 1)
 				SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, false, 0);
-			doc2 = SendMessageA(nppData._scintillaSecondHandle, SCI_GETDOCPOINTER, 0, 0);
+			doc2 = SendMessage(nppData._scintillaSecondHandle, SCI_GETDOCPOINTER, 0, 0);
 			doc2Index = getCompare(doc2);
 			if (doc2Index != -1)
 				clearWindow(nppData._scintillaSecondHandle, true);
@@ -820,7 +820,7 @@ void reset()
 
 		if (panelsOpened && (closingWin == -1))
 		{
-			::SendMessageA(nppData._scintillaSecondHandle, SCI_GRABFOCUS, 0, (LPARAM)0);
+			::SendMessage(nppData._scintillaSecondHandle, SCI_GRABFOCUS, 0, (LPARAM)0);
 			skipAutoReset = true;
 			SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_GOTO_ANOTHER_VIEW, 0);
 			skipAutoReset = false;
@@ -833,10 +833,10 @@ void reset()
 			{
 				::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)compareFilePath);
 				HWND window = getCurrentWindow();
-				int tempPointer = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
+				int tempPointer = SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
 				if (tempPointer == tempWindow)
 				{
-					SendMessageA(window, SCI_EMPTYUNDOBUFFER, 0, 0);
+					SendMessage(window, SCI_EMPTYUNDOBUFFER, 0, 0);
 					skipAutoReset = true;
 					SendMessage(nppData._nppHandle, WM_COMMAND, IDM_FILE_CLOSE, 0);
 					skipAutoReset = false;
@@ -865,7 +865,7 @@ void reset()
 		// Restore side bar item entry state (because tick has been removed by the docked window)
 		CheckMenuItem(hMenu, funcItem[CMD_USE_NAV_BAR]._cmdID, MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
 
-		::SendMessageA(getCurrentWindow(), SCI_GRABFOCUS, 0, 0);
+		::SendMessage(getCurrentWindow(), SCI_GRABFOCUS, 0, 0);
 
 		closingWin = -1;
 		closingView = NULL;
@@ -1337,8 +1337,8 @@ bool compareNew()
 			return true;
 		}
 
-		::SendMessageA(nppData._scintillaMainHandle, SCI_SHOWLINES, 0, (LPARAM)1);
-		::SendMessageA(nppData._scintillaSecondHandle, SCI_SHOWLINES, 0, (LPARAM)1);
+		::SendMessage(nppData._scintillaMainHandle, SCI_SHOWLINES, 0, (LPARAM)1);
+		::SendMessage(nppData._scintillaSecondHandle, SCI_SHOWLINES, 0, (LPARAM)1);
 		First();
 
 		return false;
@@ -1429,16 +1429,16 @@ bool startCompare()
 
 	setStyles(&Settings);
 
-	int doc1 = SendMessageA(nppData._scintillaMainHandle, SCI_GETDOCPOINTER, 0, 0);
-	int doc2 = SendMessageA(nppData._scintillaSecondHandle, SCI_GETDOCPOINTER, 0, 0);
+	int doc1 = SendMessage(nppData._scintillaMainHandle, SCI_GETDOCPOINTER, 0, 0);
+	int doc2 = SendMessage(nppData._scintillaSecondHandle, SCI_GETDOCPOINTER, 0, 0);
 
 	setCompare(doc1);
 	setCompare(doc2);
 
-	::SendMessageA(nppData._scintillaMainHandle, SCI_GOTOPOS, 0, 0);
-	::SendMessageA(nppData._scintillaSecondHandle, SCI_GOTOPOS, 0, 0);
-	::SendMessageA(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
-	::SendMessageA(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
+	::SendMessage(nppData._scintillaMainHandle, SCI_GOTOPOS, 0, 0);
+	::SendMessage(nppData._scintillaSecondHandle, SCI_GOTOPOS, 0, 0);
+	::SendMessage(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
+	::SendMessage(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
 
 	/* sync pannels */
 	HMENU hMenu = ::GetMenu(nppData._nppHandle);
@@ -1471,8 +1471,8 @@ bool startCompare()
 		MessageBoxA(NULL, "Non-standard exception occurred.", "Compare Plugin", MB_OK | MB_ICONWARNING);
 	}
 
-	::SendMessageA(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
-	::SendMessageA(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
+	::SendMessage(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
+	::SendMessage(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
 
 	// Restore previous read-only attribute
 	if (RODoc1 == 1)
@@ -1644,7 +1644,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 			{
 				notepadVersionOk = true;
 				HWND window = getCurrentWindow();
-				int win = SendMessageA(window, SCI_GETDOCPOINTER, 0, 0);
+				int win = SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
 				if (getCompare(win) != -1)
 				{
 					closingWin = win;
@@ -1670,11 +1670,11 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 			SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, 0, (LPARAM)emptyLinesDoc);
 
 			HWND window = getCurrentWindow();
-			int win = SendMessageA(window, SCI_GETDOCPOINTER, 0,0);
+			int win = SendMessage(window, SCI_GETDOCPOINTER, 0,0);
 
 			if(getCompare(win)!=-1)
 			{
-				topLine = SendMessageA(window,SCI_GETFIRSTVISIBLELINE,0,0);
+				topLine = SendMessage(window,SCI_GETFIRSTVISIBLELINE,0,0);
 				lastEmptyLines = removeEmptyLines(window,true);
 			}
 			else
@@ -1694,12 +1694,12 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 			{
 				HWND window = getCurrentWindow();
 				::addBlankLines(window,lastEmptyLines);
-				int linesOnScreen = SendMessageA(window,SCI_LINESONSCREEN,0,0);
-				int curPosBeg = ::SendMessageA(window, SCI_GETSELECTIONSTART, 0, 0);
-				int curPosEnd = ::SendMessageA(window, SCI_GETSELECTIONEND, 0, 0);
-				SendMessageA(window,SCI_GOTOLINE,topLine,0);
-				SendMessageA(window,SCI_GOTOLINE,topLine+linesOnScreen-1,0);
-				SendMessageA(window, SCI_SETSEL, curPosBeg, curPosEnd);
+				int linesOnScreen = SendMessage(window,SCI_LINESONSCREEN,0,0);
+				int curPosBeg = ::SendMessage(window, SCI_GETSELECTIONSTART, 0, 0);
+				int curPosEnd = ::SendMessage(window, SCI_GETSELECTIONEND, 0, 0);
+				SendMessage(window,SCI_GOTOLINE,topLine,0);
+				SendMessage(window,SCI_GOTOLINE,topLine+linesOnScreen-1,0);
+				SendMessage(window, SCI_SETSEL, curPosBeg, curPosEnd);
 				cleanEmptyLines(lastEmptyLines);
 				delete lastEmptyLines;
 				lastEmptyLines = NULL;

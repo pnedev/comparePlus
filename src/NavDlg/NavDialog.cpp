@@ -169,11 +169,11 @@ BOOL CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
 			if (currentEdit != -1)
 			{
 				curView = (currentEdit == 0) ? (_nppData._scintillaMainHandle) : (_nppData._scintillaSecondHandle);
-				LineVisible = SendMessageA(curView, SCI_LINESONSCREEN, 0, 0);
-				LineStart = SendMessageA(curView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+				LineVisible = SendMessage(curView, SCI_LINESONSCREEN, 0, 0);
+				LineStart = SendMessage(curView, SCI_GETFIRSTVISIBLELINE, 0, 0);
 				Delta = current_line - LineVisible / 2 - LineStart;
-				SendMessageA(curView, SCI_LINESCROLL, 0, (LPARAM)Delta);
-				SendMessageA(curView, SCI_GOTOLINE, (WPARAM)current_line, 0);
+				SendMessage(curView, SCI_LINESCROLL, 0, (LPARAM)Delta);
+				SendMessage(curView, SCI_GOTOLINE, (WPARAM)current_line, 0);
 			}
 			break;
 
@@ -192,8 +192,8 @@ BOOL CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
 				if (currentEdit != -1)
 				{
 					curView = (currentEdit == 0) ? (_nppData._scintillaMainHandle) : (_nppData._scintillaSecondHandle);
-					SendMessageA(curView, SCI_LINESCROLL, 0, (LPARAM)Delta);
-					SendMessageA(curView, SCI_GOTOLINE, (WPARAM)next_line, 0);
+					SendMessage(curView, SCI_LINESCROLL, 0, (LPARAM)Delta);
+					SendMessage(curView, SCI_GOTOLINE, (WPARAM)next_line, 0);
 					current_line = next_line;
 				}
 			}
@@ -353,10 +353,10 @@ LRESULT NavDialog::OnPaint(HWND hWnd)
 
     // Current doc view
 
-    int firstVisibleLine = SendMessageA(_nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
-    int firstDocLine = SendMessageA(_nppData._scintillaMainHandle, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0);
+    int firstVisibleLine = SendMessage(_nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
+    int firstDocLine = SendMessage(_nppData._scintillaMainHandle, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0);
     int firstDocLineScaled = (int)((double)firstDocLine / m_ScaleFactorDocLines);
-    int linesOnScreen = SendMessageA(_nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0);
+    int linesOnScreen = SendMessage(_nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0);
     int linesOnScreenScaled = (int)((double)linesOnScreen / m_ScaleFactorVisibleLines);
 
     x = m_rLeft.left - 1;
