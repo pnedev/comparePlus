@@ -61,9 +61,6 @@ const TCHAR highlightColorOption[] 	= TEXT("Highlight");
 const TCHAR highlightAlphaOption[] 	= TEXT("Alpha");
 const TCHAR NavBarOption[]         	= TEXT("Navigation bar");
 
-const TCHAR localConfFile[]			= TEXT("doLocalConf.xml");
-
-TCHAR iniFilePath[MAX_PATH];
 TCHAR compareFilePath[MAX_PATH];
 
 NppData nppData;
@@ -220,41 +217,6 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 			for(int i = 0; i < MAXCOMPARE; i++)
 				compareDocs[i]=-1;
 
-			TCHAR nppPath[MAX_PATH];
-			GetModuleFileName(hInstance, nppPath, _countof(nppPath));
-
-			// remove the module name : get plugins directory path
-			PathRemoveFileSpec(nppPath);
-
-			// cd .. : get npp executable path
-			PathRemoveFileSpec(nppPath);
-
-			// Make localConf.xml path
-			TCHAR localConfPath[MAX_PATH];
-			_tcscpy_s(localConfPath, _countof(localConfPath), nppPath);
-			PathAppend(localConfPath, localConfFile);
-
-			// Test if localConf.xml exist
-			const bool isLocal = (PathFileExists(localConfPath) == TRUE);
-
-			if (isLocal)
-			{
-				_tcscpy_s(iniFilePath, _countof(iniFilePath), nppPath);
-				_tcscpy_s(compareFilePath, _countof(compareFilePath), nppPath);
-
-				PathAppend(iniFilePath, TEXT("plugins\\config\\Compare.ini"));
-			}
-			else
-			{
-				ITEMIDLIST *pidl;
-				SHGetSpecialFolderLocation(NULL, CSIDL_APPDATA, &pidl);
-				SHGetPathFromIDList(pidl, iniFilePath);
-				SHGetPathFromIDList(pidl, compareFilePath);
-
-				PathAppend(iniFilePath, TEXT("Notepad++\\Compare.ini"));
-			}
-
-			loadSettings();
 			break;
 		}
 
@@ -272,7 +234,6 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID /*lpReser
 			if (tbLast.hToolbarBmp)
 				::DeleteObject(tbLast.hToolbarBmp);
 
-			saveSettings();
 			OptionDlg.destroy();
 			AboutDlg.destroy();
 			NavDlg.destroy();
@@ -306,6 +267,8 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 {
 	nppData = notpadPlusData;
 
+	loadSettings();
+
 	AboutDlg.init(hInstance, nppData);
 	OptionDlg.init(hInstance, nppData);
 	NavDlg.init(hInstance, nppData);
@@ -324,6 +287,14 @@ extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF)
 
 void loadSettings(void)
 {
+	TCHAR iniFilePath[MAX_PATH];
+
+	SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, (WPARAM)_countof(iniFilePath), (LPARAM)iniFilePath);
+
+	_tcscpy_s(compareFilePath, _countof(compareFilePath), iniFilePath);
+
+	PathAppend(iniFilePath, TEXT("Compare.ini"));
+
 	// Try loading previous color settings
 	int colors = GetPrivateProfileInt(colorsSection, addedColorOption, -1, iniFilePath);
 
@@ -357,6 +328,11 @@ void loadSettings(void)
 
 void saveSettings(void)
 {
+	TCHAR iniFilePath[MAX_PATH];
+
+	SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, (WPARAM)_countof(iniFilePath), (LPARAM)iniFilePath);
+	PathAppend(iniFilePath, TEXT("Compare.ini"));
+
 	TCHAR buffer[64];
 
 	_itot_s(Settings.ColorSettings.added, buffer, 64, 10);
@@ -453,6 +429,7 @@ void openOptionDlg(void)
 	if (OptionDlg.doDialog(&Settings) == IDOK)
 	{
 		saveSettings();
+
 		if (active)
 		{
 			setStyles(&Settings);
@@ -1682,6 +1659,8 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 
 	case NPPN_SHUTDOWN:
 		{
+			saveSettings();
+
 			// Always close it, else N++'s plugin manager would call 'ViewNavigationBar'
 			// on startup, when N++ has been shut down before with opened navigation bar
 			if (NavDlg.isVisible())
