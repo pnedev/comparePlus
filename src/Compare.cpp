@@ -37,6 +37,7 @@ int  topLine = 0;
 long start_old = -1;
 long visible_line_count_old = -1;
 bool panelsOpened = false;
+
 bool syncScrollVwasChecked = false;
 bool syncScrollHwasChecked = false;
 
@@ -746,7 +747,7 @@ void openMemBlock(void *memblock, long size)
 	::SendMessage(window, SCI_GRABFOCUS, 0, 0);
 	::SendMessage(window, SCI_APPENDTEXT, size, (LPARAM)memblock);
 
-	if(startCompare())
+	if (startCompare())
 	{
 		::SendMessage(window, SCI_GRABFOCUS, 0, 0);
 		::SendMessage(window, SCI_SETSAVEPOINT, 1, 0);
@@ -770,7 +771,7 @@ void openMemBlock(void *memblock, long size)
 // - Restore previous NP++ appearance (markers, highlight, ...)
 void reset()
 {
-	if (active == true)
+	if (active)
 	{
 		active = false;
 
@@ -780,6 +781,26 @@ void reset()
 		int doc2 = 0;
 		int doc1Index = -1;
 		int doc2Index = -1;
+
+		// Restore sync scroll buttons state
+		if (syncScrollVwasChecked)
+			::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLV, 0), 0);
+		if (!syncScrollHwasChecked)
+			::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
+
+		// Close NavBar
+		NavDlg.doDialog(false);
+
+		// Disable Prev/Next menu entry
+		HMENU hMenu = ::GetMenu(nppData._nppHandle);
+		::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+		::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+		::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+		::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+
+		// Restore side bar item entry state (because tick has been removed by the docked window)
+		CheckMenuItem(hMenu, funcItem[CMD_USE_NAV_BAR]._cmdID,
+				MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
 
 		if (closingView != nppData._scintillaMainHandle)
 		{
@@ -840,27 +861,10 @@ void reset()
 				}
 			}
 			tempWindow = -1;
-			LRESULT ROTemp = RODoc1; RODoc1 = RODoc2; RODoc2 = ROTemp;
+			LRESULT ROTemp = RODoc1;
+			RODoc1 = RODoc2;
+			RODoc2 = ROTemp;
 		}
-
-		// Restore sync scroll buttons
-		if (syncScrollVwasChecked)
-			::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLV, 0), 0);
-		if (!syncScrollHwasChecked)
-			::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
-
-		// Close NavBar
-		NavDlg.doDialog(false);
-
-		// Disable Prev/Next menu entry
-		HMENU hMenu = ::GetMenu(nppData._nppHandle);
-		::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
-		::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
-		::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
-		::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
-
-		// Restore side bar item entry state (because tick has been removed by the docked window)
-		CheckMenuItem(hMenu, funcItem[CMD_USE_NAV_BAR]._cmdID, MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
 
 		::SendMessage(getCurrentWindow(), SCI_GRABFOCUS, 0, 0);
 
@@ -1007,7 +1011,7 @@ bool compareNew()
 
 	char **doc2 = getAllLines(nppData._scintillaSecondHandle, &doc2Length, &lineNum2);
 
-	if(doc2Length < 1)
+	if (doc2Length < 1)
 		return true;
 
 	diff_edit *doc1Changes = NULL;
@@ -1339,8 +1343,6 @@ bool compareNew()
 		::SendMessage(nppData._scintillaMainHandle, SCI_SHOWLINES, 0, (LPARAM)1);
 		::SendMessage(nppData._scintillaSecondHandle, SCI_SHOWLINES, 0, (LPARAM)1);
 		First();
-
-		return false;
 	}
 
 	return false;
@@ -1428,16 +1430,19 @@ bool startCompare()
 	syncScrollVwasChecked = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
 	syncScrollHwasChecked = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
 
+	// Disable N++ vertical scroll - we handle it manually because of the Word Wrap
 	if (syncScrollVwasChecked)
 		::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLV, 0), 0);
-	if (!syncScrollHwasChecked)	// Yaron - Enable horizontal scroll sync.
+
+	// Yaron - Enable N++ horizontal scroll sync
+	if (!syncScrollHwasChecked)
 		::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
 
 	// let the second view inherit the zoom level of the main view
 	int mainZoomLevel = SendMessage(nppData._scintillaMainHandle, SCI_GETZOOM, 0, 0);
 	SendMessage(nppData._scintillaSecondHandle, SCI_SETZOOM, mainZoomLevel, 0);
 
-	// Compare files (return False if files differ)
+	// Compare files (return false if files differ)
 	bool result = false;
 
 	try
@@ -1634,13 +1639,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 					reset();
 				}
 			}
-			break;
-		}
-
-	case NPPN_FILECLOSED:
-	case NPPN_FILEBEFOREOPEN:
-	case NPPN_FILEOPENED:
-		{
 			break;
 		}
 
