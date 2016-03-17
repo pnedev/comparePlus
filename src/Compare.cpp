@@ -798,10 +798,6 @@ void reset()
 		::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
 		::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
 
-		// Restore side bar item entry state (because tick has been removed by the docked window)
-		CheckMenuItem(hMenu, funcItem[CMD_USE_NAV_BAR]._cmdID,
-				MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
-
 		if (closingView != nppData._scintillaMainHandle)
 		{
 			// Remove read-only attribute
