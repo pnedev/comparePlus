@@ -975,18 +975,7 @@ bool compareNew()
 	char **doc1 = getAllLines(nppData._scintillaMainHandle, &doc1Length, &lineNum1);
 
 	if (doc1Length < 1)
-	{
 		return true;
-	}
-	else if (doc1Length == 1)
-	{
-		if (SendMessage(nppData._scintillaMainHandle, SCI_LINELENGTH, 0, (LPARAM)0) == 0)
-		{
-			char *memblock[1] = { 0 };
-			SendMessage(nppData._scintillaMainHandle, SCI_APPENDTEXT, 1, (LPARAM)memblock);
-			SendMessage(nppData._scintillaMainHandle, SCI_SETSAVEPOINT, 0, (LPARAM)0);
-		}
-	}
 
 	int doc2Length;
 	int *lineNum2;
