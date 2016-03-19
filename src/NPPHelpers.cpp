@@ -469,9 +469,8 @@ void addEmptyLines(HWND hSci, int offset, int length){
 		SendMessage(hSci, SCI_MARKERADDSET, length, marker);
 	}
 
-#if CLEANUP
 	delete[] buff;
-#endif
+
 	::SendMessage(hSci, SCI_SETUNDOCOLLECTION, TRUE, 0);
 }
 //

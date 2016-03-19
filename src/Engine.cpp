@@ -284,8 +284,6 @@ bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2, bool Incl
 	e2->changeCount = chunk2.changeCount;
 	e2->changes = chunk2.changes;
 
-#if CLEANUP
-
 	for(i = 0; i < chunk1.lineCount; i++)
 	{
 		delete[] lineMappings1[i];
@@ -302,8 +300,6 @@ bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2, bool Incl
 	delete chunk1.words;
 	delete chunk2.words;
 	delete ses;
-
-#endif
 
 	return chunk1.changeCount + chunk2.changeCount > 0;
 }

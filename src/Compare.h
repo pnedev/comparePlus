@@ -44,8 +44,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <commdlg.h>
 #include <CProgress.h>
 
-#define CLEANUP 1
-
 using namespace std;
 
 #define DEFAULT_ADDED_COLOR     0xAAFFAA

@@ -26,8 +26,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace std;
 
-#define CLEANUP	1
-
 /* Given a hash value and a new character, return a new hash value. */
 #define HASH(h, c) ((c) + ROL (h, 7))
 

@@ -1245,9 +1245,6 @@ bool compareNew()
 		}
 	}
 
-//clean up resources
-#if CLEANUP
-
 	EnableWindow(nppData._nppHandle, TRUE);
 
 	bool compareCanceled = progDlg->IsCancelled();
@@ -1297,7 +1294,6 @@ bool compareNew()
 
 		delete[] doc2Changes;
 	}
-#endif // CLEANUP
 
 	if (compareCanceled)
 	{
