@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "NPPHelpers.h"
 #include "ScmHelper.h"
 
-#define MAXCOMPARE 50
+#define MAXCOMPARE 2
 
 int compareDocs[MAXCOMPARE];
 TCHAR emptyLinesDoc[MAX_PATH];
@@ -848,6 +848,9 @@ void reset()
 
 void compareLocal()
 {
+	if (active)
+		return;
+
 	TCHAR file[MAX_PATH];
 	::SendMessage(nppData._nppHandle,NPPM_GETCURRENTDIRECTORY,0,(LPARAM)file);
 	if(file[0] != 0)
@@ -857,6 +860,9 @@ void compareLocal()
 
 void compareSvnBase()
 {
+	if (active)
+		return;
+
 	TCHAR curDir[MAX_PATH];
 
 	SendMessage(nppData._nppHandle, NPPM_GETCURRENTDIRECTORY, 0, (LPARAM)curDir);
@@ -890,6 +896,9 @@ void compareSvnBase()
 
 void compareGitBase()
 {
+	if (active)
+		return;
+
 	TCHAR curDir[MAX_PATH];
 
 	SendMessage(nppData._nppHandle, NPPM_GETCURRENTDIRECTORY, 0, (LPARAM)curDir);
@@ -1479,6 +1488,9 @@ bool startCompare()
 
 void compare()
 {
+	if (active)
+		return;
+
 	bool filesMatch = startCompare();
 
 	if (filesMatch)
