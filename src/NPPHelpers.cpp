@@ -205,27 +205,26 @@ void markTextAsChanged(HWND window,int start,int length)
 
 char **getAllLines(HWND window, int *length, int **lineNum)
 {
-	int docLines = SendMessage(window, SCI_GETLINECOUNT, 0, (LPARAM)0);
+	int docLines = SendMessage(window, SCI_GETLINECOUNT, 0, 0);
 	char **lines = new char*[docLines];
+
 	*lineNum = new int[docLines];
-	int textCount = 0;
 
 	for (int line = 0; line < docLines; line++)
 	{
-		int lineLength = SendMessage(window, SCI_LINELENGTH,line,  (LPARAM)0);
-		(*lineNum)[line] = textCount;
-		textCount += lineLength;
+		Sci_TextRange tr;
+		tr.chrg.cpMin = SendMessage(window, SCI_POSITIONFROMLINE, line, 0);
+		tr.chrg.cpMax = SendMessage(window, SCI_GETLINEENDPOSITION, line, 0);
+		(*lineNum)[line] = tr.chrg.cpMin;
 
-		int i = 0;
+		int lineLength = tr.chrg.cpMax - tr.chrg.cpMin;
 		lines[line] = new char[lineLength+1];
+		tr.lpstrText = lines[line];
 
 		if (lineLength > 0)
-		{
-			::SendMessage(window, SCI_GETLINE, line, (LPARAM)lines[line]);
-			for(i = 0; i < lineLength && lines[line][i] != '\n' && lines[line][i] != '\r'; i++);
-		}
-
-		lines[line][i] = 0;
+			::SendMessage(window, SCI_GETTEXTRANGE, 0, (LPARAM)&tr);
+		else
+			lines[line][0] = 0;
 	}
 
 	*length = docLines;

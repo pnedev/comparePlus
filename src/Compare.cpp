@@ -974,16 +974,22 @@ bool compareNew()
 
 	char **doc1 = getAllLines(nppData._scintillaMainHandle, &doc1Length, &lineNum1);
 
-	if (doc1Length < 1)
+	if (doc1Length == 1 && doc1[0][0] == 0)
+	{
+		::MessageBox(nppData._nppHandle, TEXT("File empty, nothing to compare."), TEXT("Compare Plugin"), MB_OK);
 		return true;
+	}
 
 	int doc2Length;
 	int *lineNum2;
 
 	char **doc2 = getAllLines(nppData._scintillaSecondHandle, &doc2Length, &lineNum2);
 
-	if (doc2Length < 1)
+	if (doc2Length == 1 && doc2[0][0] == 0)
+	{
+		::MessageBox(nppData._nppHandle, TEXT("File empty, nothing to compare."), TEXT("Compare Plugin"), MB_OK);
 		return true;
+	}
 
 	diff_edit *doc1Changes = NULL;
 	diff_edit *doc2Changes = NULL;
