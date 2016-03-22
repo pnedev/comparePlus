@@ -22,9 +22,6 @@
     <ClCompile Include="..\..\src\OptionDlg\OptionDialog.cpp">
       <Filter>src\OptionDlg</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\mba\diff.cpp">
-      <Filter>src\mba</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ColorCombo.cpp">
       <Filter>src</Filter>
     </ClCompile>

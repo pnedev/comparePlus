@@ -1,27 +1,40 @@
+/* varray - a variable size array implemented with std::vector */
 
 #pragma once
 
-
-/* varray - a variable size array implemented with std::vector */
-
 #include <cstddef>
 #include <vector>
+#include <memory>
+
 
 template <typename Elem>
-struct varray {
+struct varray
+{
+public:
 	varray() {}
 	~varray() {}
 
-	// Be very careful when using the returned Elem pointer! It may become invalid on consecutive calls to get()
+	// Be very careful when using the returned Elem reference! It may become invalid on consecutive calls to get()
 	// because the vector memory might be reallocated!
-	inline Elem* get(std::size_t i)
+	inline Elem& get(std::size_t i)
 	{
-		if (buf.size() <= i)
-			buf.resize(i + 1, { 0 });
+		if (_buf.size() <= i)
+			_buf.resize(i + 1, { 0 });
 
-		return &buf[i];
+		return _buf[i];
+	}
+
+	inline std::vector<Elem>& get()
+	{
+		return _buf;
 	}
 
 private:
-	std::vector<Elem> buf;
+	std::vector<Elem> _buf;
 };
+
+template <typename Elem>
+using varray_ptr = std::unique_ptr<varray<Elem>>;
+
+template <typename Elem>
+using varray_sh_ptr = std::shared_ptr<varray<Elem>>;

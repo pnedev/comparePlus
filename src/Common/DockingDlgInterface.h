@@ -36,6 +36,7 @@
 #include "Docking.h"
 #endif //DOCKING_H
 
+#include <string>
 #include <assert.h>
 #include <shlwapi.h>
 #include "StaticDialog.h"

@@ -17,9 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-
 #pragma once
-
 
 #include "Compare.h"
 #include "Window.h"
@@ -28,6 +26,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define SPACE   2
 #define MIN_SELECTOR_HEIGHT 5 // pixels
 #define MIN_DIFF_HEIGHT 5 // pixels
+
 
 class NavDialog : public DockingDlgInterface
 {

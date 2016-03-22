@@ -1,29 +1,30 @@
 /*
-This file is part of Plugin Template Plugin for Notepad++
-Copyright (C)2009
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-*/
+ * This file is part of Compare Plugin for Notepad++
+ * Copyright (C) 2009
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
 
 #include "NavDialog.h"
 #include "resource.h"
 
+
 NavDialog::NavDialog(void) : DockingDlgInterface(IDD_NAV_DIALOG)
 {
-
 }
+
 
 NavDialog::~NavDialog(void)
 {
@@ -206,6 +207,7 @@ BOOL CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
 	return FALSE;
 }
 
+
 void NavDialog::SetColor(int added, int deleted, int changed, int moved, int blank, int _default)
 {
 	m_AddedColor   = added;
@@ -215,6 +217,7 @@ void NavDialog::SetColor(int added, int deleted, int changed, int moved, int bla
     m_BlankColor   = blank;
     m_DefaultColor = _default;
 }
+
 
 void NavDialog::SetLinePixel(long resultsDoc, int i, HDC hMemDC, int* m_lastDiffColor, int* m_lastDiffCounter)
 {
@@ -243,6 +246,7 @@ void NavDialog::SetLinePixel(long resultsDoc, int i, HDC hMemDC, int* m_lastDiff
 	SetPixel(hMemDC, 0, i, color);
 }
 
+
 void NavDialog::SetScalingFactor(HWND hWnd)
 {
     // Get max file length
@@ -263,6 +267,7 @@ void NavDialog::SetScalingFactor(HWND hWnd)
 
     m_minimumDiffHeight = int((double)MIN_DIFF_HEIGHT / ((double)(m_SideBarPartHeight) / (double)(m_DocLineCount)));
 }
+
 
 void NavDialog::CreateBitmap(void)
 {
@@ -299,6 +304,7 @@ void NavDialog::CreateBitmap(void)
 
 	DeleteObject(hBrush);
 }
+
 
 LRESULT NavDialog::OnPaint(HWND hWnd)
 {
@@ -363,12 +369,14 @@ LRESULT NavDialog::OnPaint(HWND hWnd)
     y = max(firstDocLineScaled, SPACE); // don't exceed the top border
     cx = m_rRight.right + 1;
     cy = y + linesOnScreenScaled;
+
     if (cy > m_rLeft.bottom)
     {
         // preserve the minimum height without exceeding the bottom border
         cy = m_rLeft.bottom;
         y = cy - linesOnScreenScaled;
     }
+
     cy = max(cy, y + MIN_SELECTOR_HEIGHT); // not too small or even invisible
 
     HPEN hPenView = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
@@ -386,6 +394,7 @@ LRESULT NavDialog::OnPaint(HWND hWnd)
 
 	return 0;
 }
+
 
 void NavDialog::DrawView()
 {

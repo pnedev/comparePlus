@@ -16,216 +16,264 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <cstring>
+#include <windows.h>
 #include "Engine.h"
+#include "diff.h"
 
-unsigned int getLineFromIndex(unsigned int *arr, int index, void * /*context*/)
+
+struct chunk_info
 {
-	return arr[index];
-}
+	chunk_info(int line_offset, int line_count) :
+		lineStart(line_offset), lineCount(line_count),
+		linePos(line_count), lineEndPos(line_count), lineMappings(line_count, -1)
+	{}
 
-int compareLines(unsigned int line1, unsigned int line2, void * /*context*/)
+	unsigned int lineStart;
+	unsigned int lineCount;
+
+	std::vector<int> linePos;
+	std::vector<int> lineEndPos;
+	std::vector<int> lineMappings;
+
+	varray_sh_ptr<diff_change> changes;
+	unsigned int changeCount;
+
+	std::vector<Word> words;
+
+	char *text;
+};
+
+
+static wordType getWordType(char letter)
 {
-	if(line1 == line2) return 0;
-	return -1;
-}
-
-int checkWords(diff_edit* e, chunk_info* chunk, chunk_info* otherChunk)
-{
-	Word *word = chunk->words->get(e->off);
-	int start = word->line;
-	word = chunk->words->get(e->off+e->len-1);
-	int end = word->line;
-	//assert(start <= end);
-	int line2 = chunk->lineMappings[start];
-	int len = e->len;
-	int off = e->off;
-
-	//if the beginning is not at the start of the line, than its definetely a change;
-	if(line2 == -1)
+	switch (letter)
 	{
-		//if this line is not matched to another line, don't bother checking it
-		if(start == end)
+		case ' ':
+		case '\t':
+		return SPACECHAR;
+
+		default:
+			if (::IsCharAlphaNumericA(letter))
+				return ALPHANUMCHAR;
+		break;
+	}
+
+	return OTHERCHAR;
+}
+
+
+static int getWords(const DocLines_t& doc, chunk_info& chunk, bool IncludeSpace)
+{
+	unsigned int wordIndex = 0;
+
+	for (unsigned int line = 0; line < chunk.lineCount; ++line)
+	{
+		std::string text("");
+		wordType type = SPACECHAR;
+		int len = 0;
+		chunk.linePos[line] = wordIndex;
+		int i = 0;
+		unsigned int hash = 0;
+
+		for (i = 0; doc[line + chunk.lineStart][i] != 0; ++i)
 		{
-			return chunk->changeCount;
+			char l = doc[line + chunk.lineStart][i];
+			wordType newType = getWordType(l);
+
+			if (newType == type)
+			{
+				text += l;
+				++len;
+				hash = HASH(hash, l);
+			}
+			else
+			{
+				if (len > 0)
+				{
+					if (!IncludeSpace || type != SPACECHAR)
+					{
+						Word word;
+						word.length = len;
+						word.line = line;
+						word.pos = i-len;
+						word.type = type;
+						word.hash = hash;
+						chunk.words.push_back(word);
+						++wordIndex;
+					}
+				}
+
+				type = newType;
+				text = l;
+				len = 1;
+				hash = HASH(0, l);
+			}
+		}
+
+		if (len > 0)
+		{
+			if (!IncludeSpace || type != SPACECHAR)
+			{
+				Word word;
+				word.length = len;
+				word.line = line;
+				word.pos = i-len;
+				word.type = type;
+				word.hash = hash;
+				chunk.words.push_back(word);
+				++wordIndex;
+			}
+		}
+
+		chunk.lineEndPos[line] = wordIndex;
+	}
+
+	return wordIndex;
+}
+
+
+static int checkWords(diff_edit& e, chunk_info& chunk, chunk_info& otherChunk)
+{
+	int start = chunk.words[e.off].line;
+	int end = chunk.words[e.off + e.len - 1].line;
+	int line2 = chunk.lineMappings[start];
+	int len = e.len;
+	int off = e.off;
+
+	// if the beginning is not at the start of the line, than its definitely a change;
+	if (line2 == -1)
+	{
+		// if this line is not matched to another line, don't bother checking it
+		if (start == end)
+		{
+			return chunk.changeCount;
 		}
 		else
 		{
-			e->len -= chunk->lineEndPos[start] - e->off;
-			e->off = chunk->lineEndPos[start];
-			start++;
+			e.len -= chunk.lineEndPos[start] - e.off;
+			e.off = chunk.lineEndPos[start];
+			++start;
 		}
 	}
-	else if(e->off!=chunk->linePos[start])
+	else if (e.off != (int)chunk.linePos[start])
 	{
-		struct diff_change *change = chunk->changes->get(chunk->changeCount++);
-		struct diff_change *change2 = otherChunk->changes->get(otherChunk->changeCount++);
+		diff_change& change = chunk.changes->get(chunk.changeCount++);
+		diff_change& change2 = otherChunk.changes->get(otherChunk.changeCount++);
 
-		change2->line = line2;
-		change2->len = 0;
-		change2->off = 0;
-		change2->matchedLine = chunk->lineStart + start;
+		change2.line = line2;
+		change2.len = 0;
+		change2.off = 0;
+		change2.matchedLine = chunk.lineStart + start;
 
-		word = chunk->words->get(e->off);
-		//assert(word->line == start);
-		change->off = word->pos;
-		change->line = start;
-		change->matchedLine = otherChunk->lineStart+line2;
+		change.off = chunk.words[e.off].pos;
+		change.line = start;
+		change.matchedLine = otherChunk.lineStart + line2;
 
-		//multiline change or single line change
-		if(start != end)
+		// multi-line change or single line change
+		if (start != end)
 		{
-			len = chunk->lineEndPos[start] - e->off;
-			//assert(len > 0);
+			len = chunk.lineEndPos[start] - e.off;
+			e.off = chunk.lineEndPos[start];
+			e.len -= len;
+			Word& word = chunk.words[e.off + len - 1];
+			change.len = (word.pos + word.length) - change.off;
 
-			word = chunk->words->get(e->off+len-1);
-			e->off = chunk->lineEndPos[start];
-			e->len -= len;
-			//assert(word->length > 0);
-			//assert(word->line == start);
-			change->len = (word->pos + word->length) - change->off;
-			//assert(change->len >= 0);
-
-			start++;
+			++start;
 		}
 		else
 		{
-			len = e->len;
-			word = chunk->words->get(e->off+len-1);
-			//assert(word->length > 0);
-			//assert(word->line == change->line);
-			change->len = (word->pos + word->length) - change->off;
-			//assert(change->len >= 0);
-			return chunk->changeCount;
+			len = e.len;
+			Word& word = chunk.words[e.off + len - 1];
+			change.len = (word.pos + word.length) - change.off;
+
+			return chunk.changeCount;
 		}
 	}
 
-	//if a change spans more than one line, all the middle lines are just inserts or deletes
-	while(start != end)
+	// if a change spans more than one line, all the middle lines are just inserts or deletes
+	while (start != end)
 	{
-		//potentially a inserted line
-		e->off = chunk->lineEndPos[start];
-		e->len -= (chunk->lineEndPos[start]-chunk->linePos[start]);
-		start++;
+		// potentially a inserted line
+		e.off = chunk.lineEndPos[start];
+		e.len -= (chunk.lineEndPos[start] - chunk.linePos[start]);
+		++start;
 	}
 
-	line2 = chunk->lineMappings[start];
+	line2 = chunk.lineMappings[start];
 
-	//if the change does not go to the end of the line than its definetely a change
-	if(line2!=-1 && (e->off+e->len)<chunk->lineEndPos[start])
+	// if the change does not go to the end of the line than its definitely a change
+	if (line2 != -1 && (int)(e.off + e.len) < chunk.lineEndPos[start])
 	{
-		//todo recheck change because some of the diffs will be previous lines
-		struct diff_change *change = chunk->changes->get(chunk->changeCount++);
-		struct diff_change *change2 = otherChunk->changes->get(otherChunk->changeCount++);
-		//offset+=(direction*e->len);
+		// TODO: recheck change because some of the diffs will be previous lines
+		diff_change& change = chunk.changes->get(chunk.changeCount++);
+		diff_change& change2 = otherChunk.changes->get(otherChunk.changeCount++);
 
-		change2->line = line2;//getLineFromPos(chunk->mappings[e->off],otherChunk->lineEndPos,otherChunk->lineCount,false);
-		change2->matchedLine = chunk->lineStart+start;
-		change2->len = 0;
-		change2->off = 0;
+		change2.line = line2;
+		change2.matchedLine = chunk.lineStart + start;
+		change2.len = 0;
+		change2.off = 0;
 
-		word = chunk->words->get(e->off);
-		//assert(word->line == start);
-		change->off = word->pos;
-		len = e->len;
-		word = chunk->words->get(e->off+len-1);
-		//assert(word->length > 0);
-		change->len = (word->pos + word->length) - change->off;
-		change->line = start;
-		//assert(word->line == change->line);
-		//assert(change->len >= 0);
-		change->matchedLine = otherChunk->lineStart+line2;
+		change.off = chunk.words[e.off].pos;
+		len = e.len;
+		Word& word = chunk.words[e.off + len - 1];
+		change.len = (word.pos + word.length) - change.off;
+		change.line = start;
+		change.matchedLine = otherChunk.lineStart + line2;
 	}
-	e->off = off;
-	e->len = len;
-	return chunk->changeCount;
+
+	e.off = off;
+	e.len = len;
+
+	return chunk.changeCount;
 }
 
 
-Word *getWord(varray<Word> *words, int index, void * /*context*/)
+bool compareWords(diff_edit& e1, diff_edit& e2, const DocLines_t& doc1, const DocLines_t& doc2, bool IncludeSpace)
 {
-	return words->get(index);
-}
+	unsigned int i, j;
 
-int compareWord(Word *word1, Word *word2, void * /*context*/)
-{
-	if(word1->hash == word2->hash) return 0;
-	return 1;
-}
+	chunk_info chunk1(e1.off, e1.len);
+	chunk_info chunk2(e2.off, e2.len);
 
-bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2, bool IncludeSpace)
-{
-	int i, j;
+	getWords(doc1, chunk1, IncludeSpace);
+	getWords(doc2, chunk2, IncludeSpace);
 
-	chunk_info chunk1;
-	chunk1.lineCount = e1->len;
-	chunk1.words = new varray<Word>;
-	chunk1.lineStart = e1->off;
-	chunk1.count = getWords(e1, doc1, &chunk1, IncludeSpace);
-	chunk1.lineMappings = new int[e1->len];
+	// Compare the two chunks
+	std::vector<diff_edit> diff = DiffCalc<Word>(chunk1.words, chunk2.words)();
 
-	for(i = 0; i < e1->len; i++)
-	{
-		chunk1.lineMappings[i] = -1;
-	}
+	chunk1.changes.reset(new varray<diff_change>);
+	chunk2.changes.reset(new varray<diff_change>);
 
-	chunk_info chunk2;
-	chunk2.lineCount = e2->len;
-	chunk2.words = new varray<Word>;
-	chunk2.count = getWords(e2, doc2, &chunk2, IncludeSpace);
-	chunk2.lineStart = e2->off;
-	chunk2.lineMappings = new int[e2->len];
+	std::vector<std::vector<int>> lineMappings1(chunk1.lineCount);
 
-	for(i = 0; i < e2->len; i++)
-	{
-		chunk2.lineMappings[i] = -1;
-	}
+	for (i = 0; i < chunk1.lineCount; ++i)
+		lineMappings1[i].resize(chunk2.lineCount, 0);
 
-	//Compare the two chunks
-	int sn;
-	struct varray<diff_edit> *ses = new varray<diff_edit>;
-
-	diff(chunk1.words, 0, chunk1.count, chunk2.words, 0, chunk2.count, (idx_fn)(getWord), (cmp_fn)(compareWord),
-			NULL, 0, ses, &sn, NULL);
-
-	chunk1.changes = new varray<diff_change>;
-	chunk2.changes = new varray<diff_change>;
+	// Use the MATCH results to synchronize line numbers
+	// count how many are on each line, than select the line with the most matches
+	std::size_t diffSize = diff.size();
 
 	int offset = 0;
-	int **lineMappings1 = new int*[chunk1.lineCount];
-
-	for(i = 0; i < chunk1.lineCount; i++)
+	for (i = 0; i < diffSize; ++i)
 	{
-		lineMappings1[i] = new int[chunk2.lineCount];
+		diff_edit& e = diff[i];
 
-		for(j = 0; j < chunk2.lineCount; j++)
+		if (e.op == DIFF_DELETE)
 		{
-			lineMappings1[i][j] = 0;
+			offset -= e.len;
 		}
-	}
-
-	/// Use the MATCH results to syncronise line numbers
-	/// count how many are on each line, than select the line with the most matches
-	for (i = 0; i < sn; i++)
-	{
-		struct diff_edit *e = ses->get(i);
-
-		if(e->op == DIFF_DELETE)
+		else if (e.op == DIFF_INSERT)
 		{
-			offset -= e->len;
-		}
-		else if(e->op == DIFF_INSERT)
-		{
-			offset += e->len;
+			offset += e.len;
 		}
 		else
 		{
-			for(int index = e->off; index < (e->off+e->len); index++)
+			for (unsigned int index = e.off; index < (e.off + e.len); ++index)
 			{
-				Word *word1 = chunk1.words->get(index);
-				Word *word2 = chunk2.words->get(index+offset);
+				Word *word1 = &chunk1.words[index];
+				Word *word2 = &chunk2.words[index + offset];
 
-				if(word1->type != SPACECHAR)
+				if (word1->type != SPACECHAR)
 				{
 					int line1a = word1->line;
 					int line2a = word2->line;
@@ -236,529 +284,396 @@ bool compareWords(diff_edit* e1,diff_edit *e2,char** doc1,char** doc2, bool Incl
 	}
 
 	// go through each line, and select the line with the highest strength
-	for(i = 0; i < chunk1.lineCount; i++)
+	for (i = 0; i < chunk1.lineCount; ++i)
 	{
 		int line = -1;
 		int max = 0;
 
-		for(j = 0; j <chunk2.lineCount; j++)
+		for (j = 0; j <chunk2.lineCount; ++j)
 		{
-			if(lineMappings1[i][j] > max && (e2->moves == NULL || e2->moves[j] == -1))
+			if (lineMappings1[i][j] > max && (e2.moves.empty() || e2.moves[j] == -1))
 			{
 				line = j;
 				max = lineMappings1[i][j];
 			}
 		}
 
-		//make sure that the line isnt already matched to another line, and that enough of the line is matched to be significant
-		int size = strlen(doc1[e1->off + i]);
+		// make sure that the line isn't already matched to another line,
+		// and that enough of the line is matched to be significant
+		const int size = doc1[e1.off + i].size();
 
-		if(line != -1 && chunk2.lineMappings[line] == -1 && max > (size/3) && (e1->moves == NULL || e1->moves[i] == -1))
+		if (line != -1 && chunk2.lineMappings[line] == -1 && max > (size / 3) &&
+				(e1.moves.empty() || e1.moves[i] == -1))
 		{
 			chunk1.lineMappings[i] = line;
 			chunk2.lineMappings[line] = i;
 		}
 	}
 
-	//find all the differences between the lines
+	// find all the differences between the lines
 	chunk1.changeCount = 0;
 	chunk2.changeCount = 0;
 
-	for (i = 0; i < sn; i++)
+	for (i = 0; i < diffSize; ++i)
 	{
-		struct diff_edit *e = ses->get(i);
-		if(e->op == DIFF_DELETE)
+		diff_edit& e = diff[i];
+
+		if (e.op == DIFF_DELETE)
 		{
-			//Differences for Doc 1
-			checkWords(e, &chunk1, &chunk2);
+			// Differences for Doc 1
+			checkWords(e, chunk1, chunk2);
 		}
-		else if(e->op==DIFF_INSERT)
+		else if (e.op == DIFF_INSERT)
 		{
-			//Differences for Doc2
-			checkWords(e, &chunk2, &chunk1);
+			// Differences for Doc2
+			checkWords(e, chunk2, chunk1);
 		}
 	}
 
-	e1->changeCount = chunk1.changeCount;
-	e1->changes = chunk1.changes;
-	e2->changeCount = chunk2.changeCount;
-	e2->changes = chunk2.changes;
+	e1.changeCount = chunk1.changeCount;
+	e1.changes = chunk1.changes;
+	e2.changeCount = chunk2.changeCount;
+	e2.changes = chunk2.changes;
 
-	for(i = 0; i < chunk1.lineCount; i++)
-	{
-		delete[] lineMappings1[i];
-	}
-
-	delete[] lineMappings1;
-	delete[] chunk1.lineMappings;
-	delete[] chunk1.lineEndPos;
-	delete[] chunk1.linePos;
-	delete[] chunk2.lineMappings;
-	delete[] chunk2.lineEndPos;
-	delete[] chunk2.linePos;
-
-	delete chunk1.words;
-	delete chunk2.words;
-	delete ses;
-
-	return chunk1.changeCount + chunk2.changeCount > 0;
+	return (chunk1.changeCount + chunk2.changeCount > 0);
 }
 
-int getWords(diff_edit* e, char** doc, chunk_info *chunk, bool IncludeSpace)
-{
-	varray<Word> *words = chunk->words;
-	int wordIndex = 0;
-	chunk->lineEndPos = new int[chunk->lineCount];
-	chunk->linePos = new int[chunk->lineCount];
-
-	for(int line = 0; line < (e->len); line++)
-	{
-		string text = string("");
-		wordType type = SPACECHAR;
-		int len = 0;
-		chunk->linePos[line] = wordIndex;
-		int i = 0;
-		unsigned int hash = 0;
-
-		for(i = 0; doc[line+e->off][i] != 0; i++)
-		{
-			char l = doc[line+e->off][i];
-			wordType newType = getWordType(l);
-
-			if(newType == type)
-			{
-				text += l;
-				len++;
-				hash = HASH(hash, l);
-			}
-			else
-			{
-				if(len > 0)
-				{
-					if(!IncludeSpace || type!=SPACECHAR)
-					{
-						Word *word = words->get(wordIndex++);
-						word->length = len;
-						word->line = line;
-						word->pos = i-len;
-						word->type = type;
-						word->hash = hash;
-					}
-				}
-				type = newType;
-				text = l;
-				len = 1;
-				hash = HASH(0,l);
-			}
-		}
-
-		if(len > 0)
-		{
-			if(!IncludeSpace || type != SPACECHAR)
-			{
-				Word *word = words->get(wordIndex++);
-				word->length = len;
-				word->line = line;
-				word->pos = i-len;
-				word->type = type;
-				word->hash = hash;
-			}
-		}
-		chunk->lineEndPos[line] = wordIndex;
-	}
-	return wordIndex;
-}
-
-wordType getWordType(char letter)
-{
-	switch(letter)
-	{
-		case ' ':
-		case '\t':
-			return SPACECHAR;
-		default:
-			if((letter >= 'a' && letter <= 'z') ||
-			   (letter >= 'A' && letter <= 'Z') ||
-			   (letter >= '0' && letter <= '9'))
-			{
-				return ALPHANUMCHAR;
-			}
-			return OTHERCHAR;
-			break;
-	}
-}
 
 // change the blocks of diffs to one diff per line.
 // revert a "Changed" line to a insert or delete line if there are no changes
-int setDiffLines(diff_edit *e, diff_edit changes[], int *i, short op, int altLocation)
+int setDiffLines(const diff_edit& e, std::vector<diff_edit>& changes, int* idx, short op, int altLocation)
 {
-	int index = *i;
+	int index = *idx;
 	int addedLines = 0;
 
-	for(int j = 0; j < (e->len); j++)
+	for (unsigned int j = 0; j < e.len; ++j)
 	{
-		changes[index].set = e->set;
+		changes[index].set = e.set;
 		changes[index].len = 1;
-		changes[index].op = e->op;
-		changes[index].off = e->off+j;
-		changes[index].changes = NULL;
+		changes[index].op = e.op;
+		changes[index].off = e.off + j;
 		changes[index].changeCount = 0;
-		changes[index].moves = NULL;
 
-		//see if line is already marked as move
-		if(e->moves != NULL && e->moves[j] != -1)
+		// see if line is already marked as move
+		if (!e.moves.empty() && e.moves[j] != -1)
 		{
 			changes[index].op = DIFF_MOVE;
-			changes[index].matchedLine = e->moves[j];
+			changes[index].matchedLine = e.moves[j];
 			changes[index].altLocation = altLocation;
-			addedLines++;
+			++addedLines;
 		}
 		else
 		{
-			for(int k = 0; k < e->changeCount; k++)
+			for (unsigned int k = 0; k < e.changeCount; ++k)
 			{
-				struct diff_change *change = e->changes->get(k);
+				diff_change& change = e.changes->get(k);
 
-				if(change->line == j)
+				if (change.line == j)
 				{
-					changes[index].matchedLine = change->matchedLine;
+					changes[index].matchedLine = change.matchedLine;
 					changes[index].altLocation = altLocation;
 
-					if(altLocation != change->matchedLine)
+					if (altLocation != (int) change.matchedLine)
 					{
-						int diff = altLocation-change->matchedLine;
-						altLocation = change->matchedLine;
+						int diff = altLocation - change.matchedLine;
+						altLocation = change.matchedLine;
 
-						for(int i = 1; i <= j; i++)
+						for (unsigned int i = 1; i <= j; i++)
 						{
-							if(changes[index-i].changes != NULL)
-							{
+							if (changes[index - i].changes)
 								break;
-							}
-							if(op == DIFF_DELETE)
-							{
-								changes[index-i].altLocation = change->matchedLine+diff;
-							}
+
+							if (op == DIFF_DELETE)
+								changes[index - i].altLocation = change.matchedLine + diff;
 							else
-							{
-								changes[index-i].altLocation = change->matchedLine;
-							}
+								changes[index - i].altLocation = change.matchedLine;
 						}
-						if(op == DIFF_INSERT)
-						{
+
+						if (op == DIFF_INSERT)
 							altLocation += diff;
-						}
 					}
 
-					if(changes[index].changes == NULL)
-					{
-						changes[index].changes = new varray<diff_change>;
-					}
+					if (!changes[index].changes)
+						changes[index].changes.reset(new varray<diff_change>);
 
-					struct diff_change *newChange = changes[index].changes->get(changes[index].changeCount++);
+					diff_change& newChange = changes[index].changes->get(changes[index].changeCount++);
 
-					newChange->len = change->len;
-					newChange->off = change->off;
+					newChange.len = change.len;
+					newChange.off = change.off;
 				}
 			}
 
-			if(changes[index].changes == NULL)
+			if (!changes[index].changes)
 			{
 				changes[index].op = op;
 				changes[index].altLocation = altLocation;
-				addedLines++;
+				++addedLines;
 			}
 			else
 			{
-				if(op == DIFF_DELETE)
-				{
-					altLocation++;
-				}
+				// TODO: Possible issue here? (no need for if as it does the same thing)
+				if (op == DIFF_DELETE)
+					++altLocation;
 				else
-				{
-					altLocation++;
-				}
+					++altLocation;
 			}
 		}
 
-		index++;
+		++index;
 	}
-	*i = index;
+
+	*idx = index;
+
 	return addedLines;
 }
 
-//Move algorithm:
-//scan for lines that are only in the other document once
-//use one-to-one match as an anchor
-//scan to see if the lines above and below anchor also match
-diff_edit *find_anchor(int line, varray<diff_edit> *ses, int sn, unsigned int *doc1, unsigned int *doc2, int *line2)
+
+// Move algorithm:
+// scan for lines that are only in the other document once
+// use one-to-one match as an anchor
+// scan to see if the lines above and below anchor also match
+static diff_edit* find_anchor(int line, std::vector<diff_edit>& diff,
+		unsigned int *doc1, unsigned int *doc2, int *line2)
 {
-	diff_edit *insert = NULL;
-	int matches = 0;
+	diff_edit* insert = NULL;
+	std::size_t diffSize = diff.size();
+	bool match = false;
 
-	for(int i = 0; i < sn; i++)
+	for (unsigned int i = 0; i < diffSize; ++i)
 	{
-		diff_edit *e = ses->get(i);
+		diff_edit& e = diff[i];
 
-		if(e->op == DIFF_INSERT)
+		if (e.op == DIFF_INSERT)
 		{
-			for(int j = 0; j < e->len; j++)
+			for (unsigned int j = 0; j < e.len; ++j)
 			{
-				if(compareLines(doc1[line], doc2[e->off+j], NULL) == 0)
+				if (doc1[line] == doc2[e.off + j])
 				{
+					if (match)
+						return NULL;
+
+					match = true;
 					*line2 = j;
-					insert = e;
-					matches++;
+					insert = &e;
 				}
 			}
 		}
 	}
 
-	if(matches != 1 || insert->moves[*line2] != -1)
-	{
+	if (!match || insert->moves[*line2] != -1)
 		return NULL;
-	}
 
-	matches = 0;
+	match = false;
 
-	for(int i = 0; i < sn; i++)
+	for (unsigned int i = 0; i < diffSize; ++i)
 	{
-		diff_edit *e = ses->get(i);
+		const diff_edit& e = diff[i];
 
-		if(e->op == DIFF_DELETE)
+		if (e.op == DIFF_DELETE)
 		{
-			for(int j = 0; j < e->len; j++)
+			for (unsigned int j = 0; j < e.len; ++j)
 			{
-				if(compareLines(doc1[line], doc1[e->off+j], NULL) == 0)
+				if (doc1[line] == doc1[e.off + j])
 				{
-					matches++;
+					if (match)
+						return NULL;
+
+					match = true;
 				}
 			}
 		}
 	}
 
-	if(matches != 1)
-	{
-		return NULL;
-	}
 	return insert;
 }
 
 
-void find_moves(varray<diff_edit> *ses,int sn,unsigned int *doc1, unsigned int *doc2, bool DetectMove)
+void findMoves(std::vector<diff_edit>& diff, unsigned int *doc1, unsigned int *doc2)
 {
-	// Exit immediately if user don't want to find moves
-	if(DetectMove == false) return;
+	std::size_t diffSize = diff.size();
 
-	//init moves arrays
-	for(int i = 0; i < sn; i++)
+	// initialize moves arrays
+	for (unsigned int i = 0; i < diffSize; ++i)
 	{
-		diff_edit *e = ses->get(i);
+		diff_edit& e = diff[i];
 
-		if(e->op != DIFF_MATCH)
-		{
-			e->moves = new int[e->len];
-
-			for(int j = 0; j < e->len; j++)
-			{
-				e->moves[j] = -1;
-			}
-		}
-		else
-		{
-			e->moves = NULL;
-		}
+		if (e.op != DIFF_MATCH)
+			e.moves.resize(e.len, -1);
 	}
 
-	for(int i = 0; i < sn; i++)
+	for (unsigned int i = 0; i < diffSize; ++i)
 	{
-		diff_edit *e = ses->get(i);
+		diff_edit& e = diff[i];
 
-		if(e->op == DIFF_DELETE)
+		if (e.op != DIFF_DELETE)
+			continue;
+
+		for (unsigned int j = 0; j < e.len; ++j)
 		{
-			for(int j = 0; j < e->len; j++)
+			if (e.moves[j] != -1)
+				continue;
+
+			int line2;
+			diff_edit* match = find_anchor(e.off + j, diff, doc1, doc2, &line2);
+
+			if (!match)
+				continue;
+
+			e.moves[j] = match->off + line2;
+			match->moves[line2] = e.off + j;
+
+			int d1 = j - 1;
+			int d2 = line2 - 1;
+
+			while (d1 >= 0 && d2 >= 0 && e.moves[d1] == -1 && match->moves[d2] == -1 &&
+					doc1[e.off + d1] == doc2[match->off + d2])
 			{
-				if(e->moves[j] == -1)
-				{
-					int line2;
-					diff_edit *match = find_anchor(e->off+j, ses, sn, doc1, doc2, &line2);
+				e.moves[d1] = match->off + d2;
+				match->moves[d2] = e.off + d1;
+				--d1;
+				--d2;
+			}
 
-					if(match != NULL)
-					{
-						e->moves[j] = match->off+line2;
-						match->moves[line2] = e->off+j;
-						int d1 = j-1;
-						int d2 = line2-1;
+			d1 = j + 1;
+			d2 = line2 + 1;
 
-						while(d1 >= 0 && d2 >= 0 && e->moves[d1] == -1 && match->moves[d2] == -1 &&
-							compareLines(doc1[e->off+d1], doc2[match->off+d2], NULL) == 0)
-						{
-							e->moves[d1] = match->off + d2;
-							match->moves[d2] = e->off + d1;
-							d1--;
-							d2--;
-						}
-
-						d1 = j + 1;
-						d2 = line2 + 1;
-
-						while(d1 < e->len && d2 < match->len && e->moves[d1] == -1 && match->moves[d2] == -1 &&
-							compareLines(doc1[e->off+d1], doc2[match->off+d2], NULL) == 0)
-						{
-							e->moves[d1] = match->off + d2;
-							match->moves[d2] = e->off + d1;
-							d1++;
-							d2++;
-						}
-					}
-				}
+			while (d1 < (int)e.len && d2 < (int)match->len && e.moves[d1] == -1 && match->moves[d2] == -1 &&
+					doc1[e.off + d1] == doc2[match->off + d2])
+			{
+				e.moves[d1] = match->off + d2;
+				match->moves[d2] = e.off + d1;
+				++d1;
+				++d2;
 			}
 		}
 	}
 }
 
-//algorithm borrowed from WinMerge
-//if the line after the delete is the same as the first line of the delete, shift down
-//basically cabbat -abb is the same as -bba
-//since most languages start with unique lines and end with repetative lines(end,</node>, }, etc)
-//we shift the differences down where its possible so the results will be cleaner
-void shift_boundries(varray<diff_edit> *ses, int sn, unsigned int *doc1, unsigned int *doc2,
-		int doc1Length, int doc2Length)
+
+// algorithm borrowed from WinMerge
+// if the line after the delete is the same as the first line of the delete, shift down
+// basically -abb is the same as -bba
+// since most languages start with unique lines and end with repetitive lines (end, </node>, }, etc)
+// we shift the differences down where its possible so the results will be cleaner
+void shiftBoundries(std::vector<diff_edit>& diff,
+		unsigned int *doc1, unsigned int *doc2, int doc1Length, int doc2Length)
 {
-	for (int i = 0; i < sn; i++)
+	std::size_t diffSize = diff.size();
+
+	for (unsigned int i = 0; i < diffSize; ++i)
 	{
-		struct diff_edit *e = ses->get(i);
-		struct diff_edit *e2 = NULL;
-		struct diff_edit *e3 = NULL;
+		diff_edit& e = diff[i];
+
 		int max1 = doc1Length;
 		int max2 = doc2Length;
 		int end2;
 
-		if(e->op != 1)
+		if (e.op != DIFF_MATCH)
 		{
-			for(int j = i+1; j < sn; j++)
+			for (unsigned int j = i + 1; j < diffSize; ++j)
 			{
-				e2 = ses->get(j);
-				if(e2->op == e->op)
+				diff_edit& e2 = diff[j];
+
+				if (e2.op == e.op)
 				{
-					max1 = e2->off;
-					max2 = e2->off;
+					max1 = e2.off;
+					max2 = e2.off;
 					break;
 				}
 			}
 		}
 
-		if(e->op == DIFF_DELETE)
+		if (e.op == DIFF_DELETE)
 		{
-			e2 = ses->get(i+1);
+			diff_edit& e2 = diff[i + 1];
 
-			//if theres an insert after a delete, theres a potential match, so both blocks
-			//need to be moved at the same time
-			if(e2->op == DIFF_INSERT)
+			// if theres an insert after a delete, theres a potential match, so both blocks
+			// need to be moved at the same time
+			if (e2.op == DIFF_INSERT)
 			{
 				max2 = doc2Length;
-				for(int j = i+2; j < sn; j++)
-				{
-					e3 = ses->get(j);
 
-					if(e2->op == e3->op)
+				for (unsigned int j = i + 2; j < diffSize; ++j)
+				{
+					const diff_edit& e3 = diff[j];
+
+					if (e2.op == e3.op)
 					{
-						max2 = e3->off;
+						max2 = e3.off;
 						break;
 					}
 				}
 
-				end2 = e2->off + e2->len;
-				i++;
-				int end = e->off + e->len;
+				end2 = e2.off + e2.len;
+				++i;
 
-				while(end < max1 && end2 < max2 &&
-					compareLines(doc1[e->off], doc1[end], NULL) == 0 &&
-					compareLines(doc2[e2->off], doc2[end2], NULL) == 0)
+				int end = e.off + e.len;
+
+				while (end < max1 && end2 < max2 && doc1[e.off] == doc1[end] && doc2[e2.off] == doc2[end2])
 				{
-					end++;
-					end2++;
-					e->off++;
-					e2->off++;
+					++end;
+					++end2;
+					++(e.off);
+					++(e2.off);
 				}
 			}
 			else
 			{
-				int end = e->off+e->len;
-				while(end < max1 && compareLines(doc1[e->off], doc1[end], NULL) == 0)
+				int end = e.off + e.len;
+
+				while (end < max1 && doc1[e.off] == doc1[end])
 				{
-					end++;
-					e->off++;
+					++end;
+					++(e.off);
 				}
 			}
 		}
-		else if(e->op == DIFF_INSERT)
+		else if (e.op == DIFF_INSERT)
 		{
-			int end = e->off+e->len;
+			int end = e.off + e.len;
 
-			while(end < max2 && compareLines(doc2[e->off], doc2[end], NULL) == 0)
+			while (end < max2 && doc2[e.off] == doc2[end])
 			{
-				end++;
-				e->off++;
+				++end;
+				++(e.off);
 			}
 		}
 	}
 }
 
-unsigned int *computeHashes(char** doc, int docLength, bool IncludeSpace)
-{
-	unsigned int *hashes = new unsigned int[docLength];
 
-	for(int i = 0; i < docLength; i++)
+std::vector<unsigned int> computeHashes(const DocLines_t& doc, bool IncludeSpace)
+{
+	int docLength = doc.size();
+	std::vector<unsigned int> hashes(docLength);
+
+	for (int i = 0; i < docLength; ++i)
 	{
 		unsigned int hash = 0;
 
-		for(int j = 0; doc[i][j] != 0; j++)
+		for (int j = 0; doc[i][j] != 0; ++j)
 		{
-			if(doc[i][j] == ' ' || doc[i][j] == '\t')
+			if (doc[i][j] == ' ' || doc[i][j] == '\t')
 			{
-				if(!IncludeSpace)
-				{
+				if (!IncludeSpace)
 					hash = HASH(hash, doc[i][j]);
-				}
 			}
 			else
 			{
 				hash = HASH(hash, doc[i][j]);
 			}
 		}
+
 		hashes[i] = hash;
 	}
+
 	return hashes;
 }
 
-void clearEdits(varray<diff_edit> *ses, int sn)
-{
-	for (int i = sn; i >= 0; i--)
-	{
-		struct diff_edit *e = ses->get(i);
-		clearEdit(e);
-	}
-
-	delete ses;
-}
-
-void clearEdit(diff_edit *e)
-{
-	if (e->moves != NULL)
-	{
-		delete[] e->moves;
-	}
-
-	if (e->changes != NULL)
-	{
-		delete e->changes;
-	}
-}
 
 void cleanEmptyLines(blankLineList *line)
 {
-	if(line->next != NULL)
+	if (line->next != NULL)
 	{
 		cleanEmptyLines(line->next);
 		delete line->next;

@@ -48,7 +48,6 @@ set (project_sources
     src/OptionDlg/OptionDialog.cpp
     src/AboutDlg/URLCtrl.cpp
     src/Common/StaticDialog.cpp
-    src/mba/diff.cpp
     src/ProgressDlg/CProgress.cpp
     src/ScmHelper.cpp
     src/sqlite/SqliteHelper.cpp

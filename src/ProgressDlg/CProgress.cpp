@@ -166,7 +166,7 @@ BOOL CProgress::createProgressWindow()
             WS_CHILD | WS_VISIBLE | PBS_SMOOTH,
             5, 25, width - 10, cPBheight,
             _hwnd, NULL, HInst, NULL);
-    SendMessage(_hPBar, PBM_SETRANGE, 0, MAKELPARAM(0, 100));
+    ::SendMessage(_hPBar, PBM_SETRANGE, 0, MAKELPARAM(0, 100));
 
     _hBtn = ::CreateWindowEx(0, TEXT("BUTTON"), TEXT("Cancel"),
             WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON | BS_TEXT,

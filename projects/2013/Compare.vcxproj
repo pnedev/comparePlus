@@ -55,6 +55,9 @@
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ComparePlugin</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ComparePlugin</TargetName>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|Win32'">
+    <TargetName>ComparePlugin</TargetName>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Unicode|Win32'">
     <TargetName>ComparePlugin</TargetName>
   </PropertyGroup>
@@ -64,7 +67,7 @@
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <AdditionalIncludeDirectories>../../src;../../src/MBA;../../src/AboutDlg;../../src/NavDlg;../../src/Common;../../src/OptionDlg;../../src/ProgressDlg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;NOCOMM;_DEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -91,7 +94,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
       <AdditionalIncludeDirectories>../../src;../../src/MBA;../../src/AboutDlg;../../src/NavDlg;../../src/Common;../../src/OptionDlg;../../src/ProgressDlg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0501;WIN32_LEAN_AND_MEAN;NOCOMM;NDEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -100,6 +103,9 @@
       <DebugInformationFormat>
       </DebugInformationFormat>
       <PrecompiledHeaderFile />
+      <CompileAs>Default</CompileAs>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
     </ClCompile>
     <Link>
       <AdditionalDependencies>shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -124,7 +130,6 @@
     <ClCompile Include="..\..\src\OptionDlg\OptionDialog.cpp" />
     <ClCompile Include="..\..\src\AboutDlg\URLCtrl.cpp" />
     <ClCompile Include="..\..\src\Common\StaticDialog.cpp" />
-    <ClCompile Include="..\..\src\mba\diff.cpp" />
     <ClCompile Include="..\..\src\ProgressDlg\CProgress.cpp" />
     <ClCompile Include="..\..\src\ScmHelper.cpp" />
     <ClCompile Include="..\..\src\sqlite\SqliteHelper.cpp" />

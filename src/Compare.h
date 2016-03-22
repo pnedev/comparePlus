@@ -1,60 +1,42 @@
 /*
-This file is part of Explorer Plugin for Notepad++
-Copyright (C)2006 Jens Lorenz <jens.plugin.npp@gmx.de>
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-*/
-
+ * This file is part of Compare Plugin for Notepad++
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
 
 #pragma once
 
-
-#include <math.h>
-#include <shlobj.h>
-#include <shlwapi.h>
-#include <string>
-#include <stdio.h>
-#include <assert.h>
-#include "diff.h"
-#include "Engine.h"
-#include "PluginInterface.h"
-#include "Scintilla.h"
-#include "menuCmdID.h"
-#include "Notepad_plus_msgs.h"
-#include <iostream>
-#include <fstream>
-#include "resource.h"
-#include "CompareResource.h"
-#include "AboutDialog.h"
-#include "OptionDialog.h"
-#include "NavDialog.h"
 #include <windows.h>
 #include <commdlg.h>
-#include <CProgress.h>
 
-using namespace std;
+#include "Notepad_plus_msgs.h"
+#include "Scintilla.h"
+#include "menuCmdID.h"
+#include "PluginInterface.h"
 
-#define DEFAULT_ADDED_COLOR     0xAAFFAA
-#define DEFAULT_DELETED_COLOR   0xC4C4FF
-#define DEFAULT_CHANGED_COLOR   0x82E1E1
-#define DEFAULT_MOVED_COLOR     0xCBBF89
-#define DEFAULT_HIGHLIGHT_COLOR 0x010101
-#define DEFAULT_HIGHLIGHT_ALPHA 100
+#include "resource.h"
+#include "CompareResource.h"
 
-// dont use "INDIC_CONTAINER + 1" since it conflicts with DSpellCheck plugin
-#define INDIC_HIGHLIGHT         INDIC_CONTAINER + 7
+
+#define DEFAULT_ADDED_COLOR     	0xAAFFAA
+#define DEFAULT_DELETED_COLOR   	0xC4C4FF
+#define DEFAULT_CHANGED_COLOR   	0x82E1E1
+#define DEFAULT_MOVED_COLOR     	0xCBBF89
+#define DEFAULT_HIGHLIGHT_COLOR 	0x010101
+#define DEFAULT_HIGHLIGHT_ALPHA		100
+
 
 enum MARKER_ID
 {
@@ -68,6 +50,7 @@ enum MARKER_ID
 	MARKER_REMOVED_SYMBOL,
 	MARKER_MOVED_SYMBOL
 };
+
 
 enum MENU_COMMANDS
 {
@@ -93,6 +76,7 @@ enum MENU_COMMANDS
 	NB_MENU_COMMANDS
 };
 
+
 struct sColorSettings
 {
 	int added;
@@ -105,55 +89,12 @@ struct sColorSettings
 	int alpha;
 };
 
+
 struct sUserSettings
 {
-	bool           UseNavBar;
-	bool           AddLine;
-	bool           IncludeSpace;
-	bool           DetectMove;
-	sColorSettings ColorSettings;
+	bool           	UseNavBar;
+	bool           	AddLine;
+	bool           	IncludeSpace;
+	bool           	DetectMove;
+	sColorSettings	ColorSettings;
 };
-
-enum eEOL
-{
-	EOF_WIN,
-	EOF_LINUX,
-	EOF_MAC
-};
-
-const CHAR strEOL[3][3] =
-{
-	"\r\n",
-	"\r",
-	"\n"
-};
-
-const UINT lenEOL[3] = {2,1,1};
-
-void compare();
-void compareLocal();
-void compareSvnBase();
-void compareGitBase();
-int getCompare(int window);
-void removeCompare(int window);
-int setCompare(int window);
-void alignMatches();
-void includeSpacing();
-void detectMoves();
-void compareWithoutLines();
-void reset();
-void openAboutDlg(void);
-void openOptionDlg(void);
-void openFile(const TCHAR *file);
-void openMemBlock(void *memblock, long size);
-HWND openTempFile();
-void addEmptyLines(HWND hSci, int offset, int length);
-bool startCompare();
-void saveSettings(void);
-void loadSettings(void);
-void ViewNavigationBar(void);
-
-void Prev(void);
-void Next(void);
-void First(void);
-void Last(void);
