@@ -784,6 +784,19 @@ static bool startCompare()
 		return true;
 	}
 
+	if (SendMessage(nppData._scintillaMainHandle, SCI_GETCODEPAGE, 0, 0) !=
+		SendMessage(nppData._scintillaSecondHandle, SCI_GETCODEPAGE, 0, 0))
+	{
+		if (::MessageBox(nppData._nppHandle,
+			TEXT("Trying to compare files with different encoding - \nthe result might be inaccurate and misleading.")
+			TEXT("\n\nCompare anyway?"), TEXT("Compare Plugin"), MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2) != IDYES)
+		{
+			// TODO: Return back to single view
+			panelsOpened = false;
+			return true;
+		}
+	}
+
 	LRESULT RODoc1 = ::SendMessage(nppData._scintillaMainHandle, SCI_GETREADONLY, 0, 0);
 	// Remove read-only attribute
 	if (RODoc1)
