@@ -1,7 +1,7 @@
 #include <tchar.h>
 #include <shlwapi.h>
 #include <stdlib.h>
-#include "../src/Common/Notepad_plus_msgs.h"
+#include "../src/NppAPI/Notepad_plus_msgs.h"
 
 bool debug = 0;
 

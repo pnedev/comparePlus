@@ -7,14 +7,14 @@
     <ClCompile Include="..\..\src\AboutDlg\URLCtrl.cpp">
       <Filter>src\AboutDlg</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\Common\StaticDialog.cpp">
-      <Filter>src\Common</Filter>
+    <ClCompile Include="..\..\src\NppAPI\StaticDialog.cpp">
+      <Filter>src\NppAPI</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\sqlite\SqliteHelper.cpp">
-      <Filter>src\sqlite</Filter>
+    <ClCompile Include="..\..\src\SQLite\SqliteHelper.cpp">
+      <Filter>src\SQLite</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\libgit2\LibGit2Helper.cpp">
-      <Filter>src\libgit2</Filter>
+    <ClCompile Include="..\..\src\LibGit2\LibGit2Helper.cpp">
+      <Filter>src\LibGit2</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\NavDlg\NavDialog.cpp">
       <Filter>src\NavDlg</Filter>
@@ -22,16 +22,13 @@
     <ClCompile Include="..\..\src\OptionDlg\OptionDialog.cpp">
       <Filter>src\OptionDlg</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ColorCombo.cpp">
+    <ClCompile Include="..\..\src\OptionDlg\ColorCombo.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ColorPopup.cpp">
+    <ClCompile Include="..\..\src\OptionDlg\ColorPopup.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Compare.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\Engine.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\NPPHelpers.cpp">
@@ -43,54 +40,42 @@
     <ClCompile Include="..\..\src\ProgressDlg\CProgress.cpp">
       <Filter>src\ProgressDlg</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Engine\Engine.cpp">
+      <Filter>src\Engine</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\AboutDlg\URLCtrl.h">
       <Filter>src\AboutDlg</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\sqlite\SqliteHelper.h">
-      <Filter>src\sqlite</Filter>
+    <ClInclude Include="..\..\src\SQLite\SqliteHelper.h">
+      <Filter>src\SQLite</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\libgit2\LibGit2Helper.h">
-      <Filter>src\libgit2</Filter>
+    <ClInclude Include="..\..\src\LibGit2\LibGit2Helper.h">
+      <Filter>src\LibGit2</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\NavDlg\NavDialog.h">
       <Filter>src\NavDlg</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\OptionDlg\ColorCombo.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\OptionDlg\ColorPopup.h">
+      <Filter>src</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\OptionDlg\OptionDialog.h">
       <Filter>src\OptionDlg</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\mba\diff.h">
-      <Filter>src\mba</Filter>
+    <ClInclude Include="..\..\src\Engine\diff.h">
+      <Filter>src\Engine</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\mba\varray.h">
-      <Filter>src\mba</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ColorCombo.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ColorPopup.h">
-      <Filter>src</Filter>
+    <ClInclude Include="..\..\src\Engine\varray.h">
+      <Filter>src\Engine</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Compare.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\CompareResource.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\Engine.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\icon_add_16.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\icon_moved_16.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\icon_sub_16.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\icon_warning_16.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\NPPHelpers.h">
@@ -102,44 +87,59 @@
     <ClInclude Include="..\..\src\ScmHelper.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Common\Window.h">
-      <Filter>src\Common</Filter>
+    <ClInclude Include="..\..\src\NppAPI\Window.h">
+      <Filter>src\NppAPI</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Common\Docking.h">
-      <Filter>src\Common</Filter>
+    <ClInclude Include="..\..\src\NppAPI\Docking.h">
+      <Filter>src\NppAPI</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Common\dockingResource.h">
-      <Filter>src\Common</Filter>
+    <ClInclude Include="..\..\src\NppAPI\dockingResource.h">
+      <Filter>src\NppAPI</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Common\DockingDlgInterface.h">
-      <Filter>src\Common</Filter>
+    <ClInclude Include="..\..\src\NppAPI\DockingDlgInterface.h">
+      <Filter>src\NppAPI</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Common\ImageListSet.h">
-      <Filter>src\Common</Filter>
+    <ClInclude Include="..\..\src\NppAPI\ImageListSet.h">
+      <Filter>src\NppAPI</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Common\Notepad_plus_msgs.h">
-      <Filter>src\Common</Filter>
+    <ClInclude Include="..\..\src\NppAPI\Notepad_plus_msgs.h">
+      <Filter>src\NppAPI</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Common\menuCmdID.h">
-      <Filter>src\Common</Filter>
+    <ClInclude Include="..\..\src\NppAPI\menuCmdID.h">
+      <Filter>src\NppAPI</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Common\PluginInterface.h">
-      <Filter>src\Common</Filter>
+    <ClInclude Include="..\..\src\NppAPI\PluginInterface.h">
+      <Filter>src\NppAPI</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Common\Scintilla.h">
-      <Filter>src\Common</Filter>
+    <ClInclude Include="..\..\src\NppAPI\Scintilla.h">
+      <Filter>src\NppAPI</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Common\StaticDialog.h">
-      <Filter>src\Common</Filter>
+    <ClInclude Include="..\..\src\NppAPI\StaticDialog.h">
+      <Filter>src\NppAPI</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Common\ToolBar.h">
-      <Filter>src\Common</Filter>
+    <ClInclude Include="..\..\src\NppAPI\ToolBar.h">
+      <Filter>src\NppAPI</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\AboutDlg\AboutDialog.h">
       <Filter>src\AboutDlg</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ProgressDlg\CProgress.h">
       <Filter>src\ProgressDlg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\XpmIcons\icon_add_16.h">
+      <Filter>src\XpmIcons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\XpmIcons\icon_moved_16.h">
+      <Filter>src\XpmIcons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\XpmIcons\icon_sub_16.h">
+      <Filter>src\XpmIcons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\XpmIcons\icon_warning_16.h">
+      <Filter>src\XpmIcons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Engine\Engine.h">
+      <Filter>src\Engine</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -168,13 +168,13 @@
     <Filter Include="src\AboutDlg">
       <UniqueIdentifier>{e57f90f9-c55c-448f-8452-be9ec4ea70e2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\Common">
+    <Filter Include="src\NppAPI">
       <UniqueIdentifier>{fbf206c1-f4dd-4249-82cc-6fc6c9aeb5d2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\libgit2">
+    <Filter Include="src\LibGit2">
       <UniqueIdentifier>{0416a425-f8f4-479a-8424-9a0ca85bf447}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\mba">
+    <Filter Include="src\Engine">
       <UniqueIdentifier>{81b86379-fae2-4f7e-ade3-bea5c04730fd}</UniqueIdentifier>
     </Filter>
     <Filter Include="src\OptionDlg">
@@ -183,11 +183,14 @@
     <Filter Include="src\NavDlg">
       <UniqueIdentifier>{0722d389-e994-46f1-8f46-89e6aba64d8e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\sqlite">
+    <Filter Include="src\SQLite">
       <UniqueIdentifier>{1da4d896-dc9e-465e-93e9-586d52a7fd21}</UniqueIdentifier>
     </Filter>
     <Filter Include="src\ProgressDlg">
       <UniqueIdentifier>{5e43c310-53c0-4d62-b631-9a59e44601a0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\XpmIcons">
+      <UniqueIdentifier>{bf99986e-d174-4d7b-ab9d-719272ac8db5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

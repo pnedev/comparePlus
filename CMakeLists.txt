@@ -37,33 +37,34 @@ set (project_rc_files
 )
 
 set (project_sources
-    src/AboutDlg/AboutDialog.cpp
-    src/ColorCombo.cpp
-    src/ColorPopup.cpp
-    src/Compare.cpp
-    src/Engine.cpp
-    src/libgit2/LibGit2Helper.cpp
-    src/NavDlg/NavDialog.cpp
-    src/NPPHelpers.cpp
-    src/OptionDlg/OptionDialog.cpp
+    src/NppAPI/StaticDialog.cpp
     src/AboutDlg/URLCtrl.cpp
-    src/Common/StaticDialog.cpp
+    src/AboutDlg/AboutDialog.cpp
+    src/OptionDlg/ColorCombo.cpp
+    src/OptionDlg/ColorPopup.cpp
+    src/OptionDlg/OptionDialog.cpp
+    src/NavDlg/NavDialog.cpp
     src/ProgressDlg/CProgress.cpp
+    src/Engine/Engine.cpp
+    src/Compare.cpp
+    src/LibGit2/LibGit2Helper.cpp
+    src/NPPHelpers.cpp
     src/ScmHelper.cpp
-    src/sqlite/SqliteHelper.cpp
+    src/SQLite/SqliteHelper.cpp
 )
 
 include_directories (
 	${win32_inc_dir}
 	src/
-	src/Common
-	src/mba
-	src/AboutDlg
-	src/OptionDlg
-	src/NavDlg
-	src/ProgressDlg
-	src/sqlite
-	src/libgit2
+	src/NppAPI/
+	src/XpmIcons/
+	src/Engine/
+	src/AboutDlg/
+	src/OptionDlg/
+	src/NavDlg/
+	src/ProgressDlg/
+	src/SQLite/
+	src/LibGit2/
 )
 
 add_definitions (${defs})
