@@ -61,7 +61,7 @@ static int closingWin = -1;
 static HWND closingView = NULL;
 static blankLineList* lastEmptyLines = NULL;
 static int  topLine = 0;
-static long start_old = -1;
+static long start_line_old = -1;
 static long visible_line_count_old = -1;
 static bool panelsOpened = false;
 
@@ -880,22 +880,15 @@ static bool startCompare()
 
 		if (Settings.UseNavBar)
 		{
+			start_line_old = -1;
+			visible_line_count_old = -1;
+
 			// Save current N++ focus
 			HWND hwnd = GetFocus();
 
-			// Configure NavBar
-			NavDlg.SetColor(
-				Settings.ColorSettings.added,
-				Settings.ColorSettings.deleted,
-				Settings.ColorSettings.changed,
-				Settings.ColorSettings.moved,
-				Settings.ColorSettings.blank,
-				Settings.ColorSettings._default);
-
 			// Display NavBar
+			NavDlg.SetColor(Settings.ColorSettings);
 			NavDlg.doDialog(true);
-			start_old = -1;
-			visible_line_count_old = -1;
 
 			// Restore N++ focus
 			SetFocus(hwnd);
@@ -935,14 +928,14 @@ static void ClearCompare()
 		int doc1Index = -1;
 		int doc2Index = -1;
 
+		// Close NavBar
+		NavDlg.doDialog(false);
+
 		// Restore sync scroll buttons state
 		if (syncScrollVwasChecked)
 			::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLV, 0), 0);
 		if (!syncScrollHwasChecked)
 			::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
-
-		// Close NavBar
-		NavDlg.doDialog(false);
 
 		// Disable Prev/Next menu entry
 		HMENU hMenu = ::GetMenu(nppData._nppHandle);
@@ -1164,29 +1157,22 @@ static void ViewNavigationBar()
 
 	if (hMenu)
 		CheckMenuItem(hMenu,
-					  funcItem[CMD_USE_NAV_BAR]._cmdID,
-					  MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
+					funcItem[CMD_USE_NAV_BAR]._cmdID,
+					MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
 
 	if (active)
 	{
 		if (Settings.UseNavBar)
 		{
+			start_line_old = -1;
+			visible_line_count_old = -1;
+
 			// Save current N++ focus
 			HWND hwnd = GetFocus();
 
-			// Configure NavBar
-			NavDlg.SetColor(
-				Settings.ColorSettings.added,
-				Settings.ColorSettings.deleted,
-				Settings.ColorSettings.changed,
-				Settings.ColorSettings.moved,
-				Settings.ColorSettings.blank,
-				Settings.ColorSettings._default);
-
-			// Display Navbar
+			// Display NavBar
+			NavDlg.SetColor(Settings.ColorSettings);
 			NavDlg.doDialog(true);
-			start_old = -1;
-			visible_line_count_old = -1;
 
 			// Restore N++ focus
 			SetFocus(hwnd);
@@ -1267,14 +1253,7 @@ static void OpenOptionDlg(void)
 
 			if (NavDlg.isVisible())
 			{
-				NavDlg.SetColor(
-					Settings.ColorSettings.added,
-					Settings.ColorSettings.deleted,
-					Settings.ColorSettings.changed,
-					Settings.ColorSettings.moved,
-					Settings.ColorSettings.blank,
-					Settings.ColorSettings._default);
-
+				NavDlg.SetColor(Settings.ColorSettings);
 				NavDlg.CreateBitmap();
 			}
 		}
@@ -1468,23 +1447,22 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 	{
 		case SCN_PAINTED:
 		{
-			if(active)
+			if (active && NavDlg.isVisible())
 			{
-				// update nav bar if Npp views got scrolled, resized, etc..
-				long start, visible_line_count;
+				// update NavBar if Npp views got scrolled, resized, etc..
+				long start_line, visible_line_count;
 
-				start = ::SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
-				visible_line_count = max(
+				start_line = ::SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
+				visible_line_count = _MAX(
 						::SendMessage(nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0),
 						::SendMessage(nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0));
 				visible_line_count =
 						::SendMessage(nppData._scintillaMainHandle, SCI_VISIBLEFROMDOCLINE, visible_line_count, 0);
 
-				if ((NavDlg.ReadyToDraw == TRUE) && ((start != start_old) ||
-					(visible_line_count != visible_line_count_old)))
+				if ((start_line != start_line_old) || (visible_line_count != visible_line_count_old))
 				{
 					NavDlg.DrawView();
-					start_old = start;
+					start_line_old = start_line;
 					visible_line_count_old = visible_line_count;
 				}
 			}
@@ -1603,11 +1581,11 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 			{
 				HWND window = getCurrentWindow();
 				::addBlankLines(window,lastEmptyLines);
-				int linesOnScreen = ::SendMessage(window,SCI_LINESONSCREEN,0,0);
+				int linesOnScreen = ::SendMessage(window, SCI_LINESONSCREEN, 0, 0);
 				int curPosBeg = ::SendMessage(window, SCI_GETSELECTIONSTART, 0, 0);
 				int curPosEnd = ::SendMessage(window, SCI_GETSELECTIONEND, 0, 0);
-				::SendMessage(window,SCI_GOTOLINE,topLine,0);
-				::SendMessage(window,SCI_GOTOLINE,topLine+linesOnScreen-1,0);
+				::SendMessage(window, SCI_GOTOLINE, topLine, 0);
+				::SendMessage(window, SCI_GOTOLINE, topLine + linesOnScreen - 1, 0);
 				::SendMessage(window, SCI_SETSEL, curPosBeg, curPosEnd);
 				cleanEmptyLines(lastEmptyLines);
 				delete lastEmptyLines;

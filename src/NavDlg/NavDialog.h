@@ -23,71 +23,59 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "Window.h"
 #include "DockingDlgInterface.h"
 
-#define SPACE   2
-#define MIN_SELECTOR_HEIGHT 5 // pixels
-#define MIN_DIFF_HEIGHT 5 // pixels
-
 
 class NavDialog : public DockingDlgInterface
 {
 public:
-	NavDialog(void);
-	~NavDialog(void);
+	NavDialog();
+	~NavDialog();
 
 	void init(HINSTANCE hInst, NppData nppData);
-	void destroy(void) {};
-	void doDialog(bool willBeShown = true);
-    void DrawView();
-	void Do(void);
-    void SetColor(int added, int deleted, int changed, int moved, int blank, int _default);
-    void SetLinePixel(long resultsDoc, int i, HDC hMemDC, int* m_lastDiffColor, int* m_lastDiffCounter);
-	void SetScalingFactor(HWND hWnd);
-	void CreateBitmap(void);
+	void destroy() {};
 
-	bool ReadyToDraw;
+    void SetColor(const sColorSettings& colorSettings);
+	void CreateBitmap();
+    void DrawView();
+
+	void doDialog(bool willBeShown = true);
 
 protected:
-
 	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
+	static const int cSpace;
+	static const int cMinSelectorHeight;
 
-	long current_line;
+	void Show();
+	void Hide();
 
-	LRESULT OnPaint(HWND hWnd);
+    void SetLinePixel(long resultsDoc, int i, HDC hMemDC, int* lastDiffColor, int* lastDiffCounter);
+	void SetScalingFactor();
 
-	int m_AddedColor;
-	int m_DeletedColor;
-	int m_ChangedColor;
-	int m_MovedColor;
-	int m_BlankColor;
-	int m_DefaultColor;
+	void scrollView(short yPos);
+
+	void OnPaint();
+
+	NppData	_nppData;
+	tTbData	_data;
+
+	sColorSettings _clr;
 
 	int m_minimumDiffHeight;
-    int m_lastDiffColorLeft;
-    int m_lastDiffColorRight;
-    int m_lastDiffCounterLeft;
-    int m_lastDiffCounterRight;
 
-	RECT m_SideBarRect;
     long m_SideBarPartWidth;
     long m_SideBarPartHeight;
 
     double m_ScaleFactorDocLines;
     double m_ScaleFactorVisibleLines;
 
-	HDC     m_hdc;
 	HDC     m_hMemDC1;
 	HDC     m_hMemDC2;
 
 	HBITMAP m_hMemBMP1;
 	HBITMAP m_hMemBMP2;
 
-	BITMAP  m_hMemBMPInfo;
 	SIZE    m_hMemBMPSize;
-
-	NppData	_nppData;
-	tTbData	_data;
 
 	/* Internal use */
 	RECT    m_rLeft;
@@ -98,7 +86,4 @@ private:
 
     int     m_LineCount1;
     int     m_LineCount2;
-
-	long  *m_ResultsDoc1;
-	long  *m_ResultsDoc2;
 };

@@ -37,6 +37,8 @@
 #define DEFAULT_HIGHLIGHT_COLOR 	0x010101
 #define DEFAULT_HIGHLIGHT_ALPHA		100
 
+#define _MAX(a, b)	((a) > (b) ? (a) : (b))
+
 
 enum MARKER_ID
 {
