@@ -14,8 +14,8 @@ set (CMAKE_C_COMPILER   ${CMAKE_SYSROOT}/bin/${toolchain_prefix}-gcc)
 set (CMAKE_CXX_COMPILER ${CMAKE_SYSROOT}/bin/${toolchain_prefix}-g++)
 set (CMAKE_RC_COMPILER  ${CMAKE_SYSROOT}/bin/${toolchain_prefix}-windres)
 
-set (win32_inc_dir /${toolchain_prefix}/include)
-set (win32_lib_dir /${toolchain_prefix}/lib)
+set (win32_inc_dir ${CMAKE_SYSROOT}/${toolchain_prefix}/include)
+set (win32_lib_dir ${CMAKE_SYSROOT}/${toolchain_prefix}/lib)
 
 project (Compare)
 

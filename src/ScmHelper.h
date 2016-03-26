@@ -22,8 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "Compare.h"
 #include <shlwapi.h>
-#include "sqlite/SqliteHelper.h"
-#include "libgit2/LibGit2Helper.h"
+#include "SQLite/SqliteHelper.h"
+#include "LibGit2/LibGit2Helper.h"
 
 bool GetScmBaseFolder(const TCHAR* baseDirName, const TCHAR* currentDir, TCHAR* svnDir, unsigned svnDirSize);
 void GetLocalScmPath(const TCHAR* curDir, const TCHAR* scmDir, const TCHAR* filename, TCHAR* scmFilePath);
