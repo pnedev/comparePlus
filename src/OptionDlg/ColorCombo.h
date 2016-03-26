@@ -24,21 +24,6 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "Window.h"
 #include "ColorPopup.h"
 
-#if(WINVER <= 0x0400)
-struct COMBOBOXINFO
-{
-	int cbSize;
-	RECT rcItem;
-	RECT rcButton;
-	DWORD stateButton;
-	HWND hwndCombo;
-	HWND hwndItem;
-	HWND hwndList;
-};
-#endif
-
-
-#define	CB_GETCOMBOBOXINFO	0x0164
 
 class ColorCombo : public Window
 {
