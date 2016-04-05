@@ -24,13 +24,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define IDD_ABOUT_DIALOG                101
 #define IDD_COLOR_POPUP                 102
 #define IDD_OPTION_DIALOG               103
-#define IDB_COMPARE                     104
 #define IDD_NAV_DIALOG                  104
 #define IDB_FIRST                       120
 #define IDB_LAST                        121
 #define IDB_NEXT                        122
-#define IDB_BITMAP4                     123
 #define IDB_PREV                        123
+#define IDB_ICON                        124
 #define IDC_ABOUT_CLOSE_BUTTON          1001
 #define IDC_COLOR_LIST                  1002
 #define IDC_NPP_PLUGINS_URL             1009

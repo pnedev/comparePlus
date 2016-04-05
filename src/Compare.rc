@@ -182,14 +182,12 @@ END
 // Bitmap
 //
 
-// IDB_FIRST               BITMAP                  "..\\res\\first.bmp"
-// IDB_LAST                BITMAP                  "..\\res\\last.bmp"
-// IDB_NEXT                BITMAP                  "..\\res\\next.bmp"
-// IDB_PREV                BITMAP                  "..\\res\\prev.bmp"
 IDB_FIRST               BITMAP                  "../res/first.bmp"
 IDB_LAST                BITMAP                  "../res/last.bmp"
 IDB_NEXT                BITMAP                  "../res/next.bmp"
 IDB_PREV                BITMAP                  "../res/prev.bmp"
+
+IDB_ICON				ICON					"../res/compare.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //

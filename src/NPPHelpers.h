@@ -29,8 +29,16 @@ struct blankLineList;
 using DocLines_t = std::vector<std::vector<char>>;
 
 
-HWND getCurrentWindow();
-HWND getOtherWindow();
+bool isSingleView();
+
+HWND getView(int viewId);
+int getCurrentViewId();
+HWND getCurrentView();
+int getOtherViewId();
+HWND getOtherView();
+
+int viewIdFromBuffId(int bufferID);
+void activateBufferID(int bufferID);
 
 void markTextAsChanged(HWND window, int start, int length);
 void markAsMoved(HWND window, int line);

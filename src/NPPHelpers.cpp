@@ -44,21 +44,65 @@ static const char strEOL[3][3] =
 static const unsigned short lenEOL[3] = { 2, 1, 1 };
 
 
-HWND getCurrentWindow()
+bool isSingleView()
 {
-	int win = 3;
-	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&win);
-	HWND window = (win == 0) ? nppData._scintillaMainHandle : nppData._scintillaSecondHandle;
-	return window;
+	return (!IsWindowVisible(nppData._scintillaSecondHandle) || !IsWindowVisible(nppData._scintillaMainHandle));
 }
 
 
-HWND getOtherWindow()
+HWND getView(int viewId)
 {
-	int win = 3;
-	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&win);
-	HWND window = (win == 1) ? nppData._scintillaMainHandle : nppData._scintillaSecondHandle;
-	return window;
+	return (viewId == MAIN_VIEW) ? nppData._scintillaMainHandle : nppData._scintillaSecondHandle;
+}
+
+
+int getCurrentViewId()
+{
+	int view;
+	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&view);
+
+	return view;
+}
+
+
+HWND getCurrentView()
+{
+	int view;
+	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&view);
+
+	return (view == MAIN_VIEW) ? nppData._scintillaMainHandle : nppData._scintillaSecondHandle;
+}
+
+
+int getOtherViewId()
+{
+	int view;
+	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&view);
+
+	return (view == MAIN_VIEW) ? SUB_VIEW : MAIN_VIEW;
+}
+
+
+HWND getOtherView()
+{
+	int view;
+	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&view);
+
+	return (view == MAIN_VIEW) ? nppData._scintillaSecondHandle : nppData._scintillaMainHandle;
+}
+
+
+int viewIdFromBuffId(int bufferID)
+{
+	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, bufferID, 0);
+	return (index >> 30);
+}
+
+
+void activateBufferID(int bufferID)
+{
+	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, bufferID, 0);
+	::SendMessage(nppData._nppHandle, NPPM_ACTIVATEDOC, index >> 30, index & 0x3FFFFFFF);
 }
 
 
@@ -364,33 +408,17 @@ void clearWindow(HWND window)
 	// remove everything marked in markTextAsChanged():
 	int curIndic = ::SendMessage(window, SCI_GETINDICATORCURRENT, 0, 0);
 	int length = ::SendMessage(window, SCI_GETLENGTH, 0, 0);
+
 	::SendMessage(window, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
 	::SendMessage(window, SCI_INDICATORCLEARRANGE, 0, length);
 	::SendMessage(window, SCI_SETINDICATORCURRENT, curIndic, 0);
 
 	// reset syntax highlighting:
 	::SendMessage(window, SCI_COLOURISE, 0, -1);
-
-	//int topLine=::SendMessage(window,SCI_GETFIRSTVISIBLELINE,0,0);
-	//int linesOnScreen=::SendMessage(window,SCI_LINESONSCREEN,0,0);
-
-	//int curPosBeg = ::SendMessage(window, SCI_GETSELECTIONSTART, 0, 0);
-	//int curPosEnd = ::SendMessage(window, SCI_GETSELECTIONEND, 0, 0);
 	::SendMessage(window, SCN_UPDATEUI, 0, 0);
-	//::SendMessage(window, SCI_SHOWLINES, 0, 1);
 
-	if(clearUndo)
-	{
+	if (clearUndo)
 		clearUndoBuffer(window);
-	}
-
-	/*if(returnToPos){
-		::SendMessage(window,SCI_GOTOLINE,topLine,0);
-		::SendMessage(window,SCI_GOTOLINE,topLine+linesOnScreen-1,0);
-
-		::SendMessage(window, SCI_SETSEL, curPosBeg, curPosEnd);
-	}*/
-
 }
 
 

@@ -19,6 +19,7 @@
 
 #include <vector>
 #include "NavDialog.h"
+#include "NPPHelpers.h"
 #include "resource.h"
 
 
@@ -29,11 +30,14 @@ const int NavDialog::cMinSelectorHeight = 5;
 NavDialog::NavDialog() : DockingDlgInterface(IDD_NAV_DIALOG),
 	m_hMemDC1(NULL), m_hMemDC2(NULL), m_hMemBMP1(NULL), m_hMemBMP2(NULL)
 {
+	_data.hIconTab = NULL;
 }
 
 
 NavDialog::~NavDialog()
 {
+	if (_data.hIconTab)
+		DestroyIcon(_data.hIconTab);
 }
 
 
@@ -51,10 +55,12 @@ void NavDialog::doDialog(bool willBeShown)
 		create(&_data);
 
 		// define the default docking behaviour
-		_data.uMask			= DWS_DF_CONT_RIGHT;
+		_data.uMask			= DWS_DF_CONT_RIGHT | DWS_ICONTAB;
 		_data.pszName       = TEXT("Compare NavBar");
 		_data.pszModuleName	= getPluginFileName();
 		_data.dlgID			= CMD_USE_NAV_BAR;
+		_data.hIconTab		= (HICON)::LoadImage(GetModuleHandle(TEXT("ComparePlugin.dll")),
+				MAKEINTRESOURCE(IDB_ICON), IMAGE_ICON, 0, 0, LR_SHARED | LR_DEFAULTSIZE);
 
 		::SendMessage(_hParent, NPPM_DMMREGASDCKDLG, 0, (LPARAM)&_data);
 	}
@@ -139,20 +145,13 @@ void NavDialog::scrollView(short yPos)
 
 	long current_line = (long)((double)yPos * m_ScaleFactorDocLines);
 
-	int currentEdit = -1;
-	::SendMessage(_nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
+	HWND curView = getCurrentView();
+	int LineVisible = SendMessage(curView, SCI_LINESONSCREEN, 0, 0);
+	int LineStart = SendMessage(curView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	int Delta = current_line - LineVisible / 2 - LineStart;
 
-	if (currentEdit != -1)
-	{
-		HWND curView =
-			(currentEdit == 0) ? (_nppData._scintillaMainHandle) : (_nppData._scintillaSecondHandle);
-		int LineVisible = SendMessage(curView, SCI_LINESONSCREEN, 0, 0);
-		int LineStart = SendMessage(curView, SCI_GETFIRSTVISIBLELINE, 0, 0);
-		int Delta = current_line - LineVisible / 2 - LineStart;
-
-		SendMessage(curView, SCI_LINESCROLL, 0, (LPARAM)Delta);
-		SendMessage(curView, SCI_GOTOLINE, (WPARAM)current_line, 0);
-	}
+	SendMessage(curView, SCI_LINESCROLL, 0, (LPARAM)Delta);
+	SendMessage(curView, SCI_GOTOLINE, (WPARAM)current_line, 0);
 }
 
 

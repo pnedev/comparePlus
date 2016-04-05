@@ -1,6 +1,6 @@
 /*
  * This file is part of Compare plugin for Notepad++
- * Copyright (C)2011 Jean-Sébastien Leroy (jean.sebastien.leroy@gmail.com)
+ * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,8 @@
 #include <stdlib.h>
 #include <exception>
 #include <vector>
+#include <memory>
+#include <utility>
 
 #include "Compare.h"
 #include "NPPHelpers.h"
@@ -31,116 +33,137 @@
 #include "Engine.h"
 
 
-#define MAXCOMPARE 2
-
-
-static const TCHAR PLUGIN_NAME[]			= TEXT("Compare");
-
-static const TCHAR sectionName[]			= TEXT("Compare Settings");
-static const TCHAR addLinesOption[]			= TEXT("Align Matches");
-static const TCHAR ignoreSpacesOption[]		= TEXT("Include Spaces");
-static const TCHAR detectMovesOption[]		= TEXT("Detect Move Blocks");
-
-static const TCHAR colorsSection[]        	= TEXT("Colors");
-static const TCHAR addedColorOption[]     	= TEXT("Added");
-static const TCHAR removedColorOption[]   	= TEXT("Removed");
-static const TCHAR changedColorOption[]   	= TEXT("Changed");
-static const TCHAR movedColorOption[]     	= TEXT("Moved");
-static const TCHAR highlightColorOption[]	= TEXT("Highlight");
-static const TCHAR highlightAlphaOption[] 	= TEXT("Alpha");
-static const TCHAR NavBarOption[]         	= TEXT("Navigation bar");
-
-
-static int compareDocs[MAXCOMPARE];
-static TCHAR emptyLinesDoc[MAX_PATH];
-
-static int  tempWindow = -1;
-static bool active = false;
-static bool skipAutoReset = false;
-static int closingWin = -1;
-static HWND closingView = NULL;
-static blankLineList* lastEmptyLines = NULL;
-static int  topLine = 0;
-static long start_line_old = -1;
-static long visible_line_count_old = -1;
-static bool panelsOpened = false;
-
-static bool syncScrollVwasChecked = false;
-static bool syncScrollHwasChecked = false;
-
-static CProgress* progDlg = NULL;
-static int progMax = 0;
-static int progCounter = 0;
-
-static TCHAR compareFilePath[MAX_PATH];
-
-static AboutDialog   AboutDlg;
-static OptionDialog  OptionDlg;
-static NavDialog     NavDlg;
-
-static toolbarIcons  tbPrev;
-static toolbarIcons  tbNext;
-static toolbarIcons  tbFirst;
-static toolbarIcons  tbLast;
-
-static FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
-
-
-HINSTANCE hInstance;
-
 NppData nppData;
-
 sUserSettings Settings;
 
 
-// Declare functions that appear before they are defined
-static void ClearCompare();
-static void First();
-static void openMemBlock(const char* memblock, long size);
-static bool startCompare();
-
-
-bool progressUpdate(int mid)
+namespace // anonymous namespace
 {
-	if (!progDlg)
-		return false;
 
-	if (progDlg->IsCancelled())
-		return false;
+const TCHAR PLUGIN_NAME[]			= TEXT("Compare");
 
-	if (mid > progMax)
-		progMax = mid;
+const TCHAR sectionName[]			= TEXT("Compare Settings");
+const TCHAR addLinesOption[]		= TEXT("Align Matches");
+const TCHAR ignoreSpacesOption[]	= TEXT("Include Spaces");
+const TCHAR detectMovesOption[]		= TEXT("Detect Move Blocks");
 
-	if (progMax)
+const TCHAR colorsSection[]			= TEXT("Colors");
+const TCHAR addedColorOption[]		= TEXT("Added");
+const TCHAR removedColorOption[]	= TEXT("Removed");
+const TCHAR changedColorOption[]	= TEXT("Changed");
+const TCHAR movedColorOption[]		= TEXT("Moved");
+const TCHAR highlightColorOption[]	= TEXT("Highlight");
+const TCHAR highlightAlphaOption[]	= TEXT("Alpha");
+const TCHAR NavBarOption[]			= TEXT("Navigation bar");
+
+
+/**
+ *  \struct
+ *  \brief
+ */
+struct AutoIncrementer
+{
+	AutoIncrementer(unsigned& useCount) : _useCount(useCount)
 	{
-		int perc = (++progCounter * 100) / (progMax * 4);
-		progDlg->SetPercent(perc);
+		++_useCount;
 	}
 
-	return true;
-}
-
-
-static void progressClose()
-{
-	if (progDlg)
+	~AutoIncrementer()
 	{
-		EnableWindow(nppData._nppHandle, TRUE);
-
-		progDlg->Close();
-		delete progDlg;
-		progDlg = NULL;
+		--_useCount;
 	}
-}
+
+private:
+	unsigned&	_useCount;
+};
 
 
-static void loadSettings(void)
+/**
+ *  \struct
+ *  \brief
+ */
+struct NppSettings
+{
+	NppSettings() : compareMode(false) {}
+
+	bool	compareMode;
+	bool	syncVScroll;
+	bool	syncHScroll;
+
+	void store();
+	void restore();
+	void setCompareMode();
+};
+
+
+/**
+ *  \struct
+ *  \brief
+ */
+struct ComparedFile
+{
+	int		originalSciView;
+	int		buffId;
+	int		sciDoc;
+	TCHAR	name[MAX_PATH];
+};
+
+
+using ComparePair_t = std::pair<ComparedFile, ComparedFile>;
+using CompareList_t = std::vector<ComparePair_t>;
+
+
+CompareList_t compareList;
+std::unique_ptr<ComparedFile> fileToCompare;
+int fileToCompareCodepage;
+NppSettings nppSettings;
+
+unsigned notificationsLock = 0;
+
+long start_line_old;
+long visible_line_count_old;
+
+// TCHAR emptyLinesDoc[MAX_PATH];
+
+// int  tempWindow = -1;
+// bool skipAutoReset = false;
+// int closingWin = -1;
+// HWND closingView = NULL;
+// blankLineList* lastEmptyLines = NULL;
+// int  topLine = 0;
+// bool panelsOpened = false;
+
+CProgress* progDlg = NULL;
+int progMax = 0;
+int progCounter = 0;
+
+// TCHAR compareFilePath[MAX_PATH];
+
+AboutDialog   AboutDlg;
+OptionDialog  OptionDlg;
+NavDialog     NavDlg;
+
+toolbarIcons  tbPrev;
+toolbarIcons  tbNext;
+toolbarIcons  tbFirst;
+toolbarIcons  tbLast;
+
+HINSTANCE hInstance;
+FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
+
+
+// Declare local functions that appear before they are defined
+void Compare();
+void ClearCurrentCompare();
+void First();
+void openMemBlock(const char* memblock, long size);
+
+
+void loadSettings()
 {
 	TCHAR iniFilePath[MAX_PATH];
 
 	::SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, (WPARAM)_countof(iniFilePath), (LPARAM)iniFilePath);
-
-	_tcscpy_s(compareFilePath, _countof(compareFilePath), iniFilePath);
 
 	PathAppend(iniFilePath, TEXT("Compare.ini"));
 
@@ -148,7 +171,7 @@ static void loadSettings(void)
 	int colors = GetPrivateProfileInt(colorsSection, addedColorOption, -1, iniFilePath);
 
 	// If there is no previous color settings, load default value
-	if(colors == -1)
+	if (colors == -1)
 	{
 		Settings.ColorSettings.added     = ::GetPrivateProfileInt(colorsSection, addedColorOption, DEFAULT_ADDED_COLOR, iniFilePath);
 		Settings.ColorSettings.deleted   = ::GetPrivateProfileInt(colorsSection, removedColorOption, DEFAULT_DELETED_COLOR, iniFilePath);
@@ -176,7 +199,7 @@ static void loadSettings(void)
 }
 
 
-static void saveSettings(void)
+void saveSettings()
 {
 	TCHAR iniFilePath[MAX_PATH];
 
@@ -210,48 +233,150 @@ static void saveSettings(void)
 }
 
 
-static int getCompare(int window)
+ComparedFile& getFileFromPair(ComparePair_t& pair, int viewId)
 {
-	for(int i = 0; i < MAXCOMPARE; i++)
-		if(compareDocs[i] == window)
-			return i;
-
-	return -1;
+	return (viewId == MAIN_VIEW) ? pair.first : pair.second;
 }
 
 
-static void removeCompare(int window)
+CompareList_t::iterator getCompare(int buffId)
 {
-	const int val = getCompare(window);
-
-	if (val != -1)
-		compareDocs[val] = -1;
-}
-
-
-static int setCompare(int window)
-{
-	const int val = getCompare(window);
-
-	if(val != -1)
-		return val;
-
-	for(int i = 0; i < MAXCOMPARE; i++)
+	for (CompareList_t::iterator it = compareList.begin(); it < compareList.end(); ++it)
 	{
-		if(compareDocs[i] == -1)
-		{
-			compareDocs[i] = window;
-			return i;
-		}
+		if (it->first.buffId == buffId || it->second.buffId == buffId)
+			return it;
 	}
 
-	return -1;
+	return compareList.end();
 }
 
 
-static void jumpChangedLines(bool direction)
+void NppSettings::store()
 {
-	HWND CurView = getCurrentWindow();
+	HMENU hMenu = ::GetMenu(nppData._nppHandle);
+
+	syncVScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
+	syncHScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
+}
+
+
+void NppSettings::restore()
+{
+	if (compareMode == false)
+		return;
+
+	compareMode = false;
+
+	HMENU hMenu = ::GetMenu(nppData._nppHandle);
+
+	bool syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
+	if (syncScroll != syncVScroll)
+		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLV);
+
+	syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
+	if (syncScroll != syncHScroll)
+		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLH);
+}
+
+
+void NppSettings::setCompareMode()
+{
+	if (compareMode == true)
+		return;
+
+	compareMode = true;
+
+	HMENU hMenu = ::GetMenu(nppData._nppHandle);
+
+	bool syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
+
+	// Disable N++ vertical scroll - we handle it manually because of the Word Wrap
+	if (syncScroll)
+		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLV);
+
+	syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
+
+	// Yaron - Enable N++ horizontal scroll sync
+	if (!syncScroll)
+		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLH);
+
+	// let the second view inherit the zoom level of the main view
+	int zoom = ::SendMessage(getCurrentView(), SCI_GETZOOM, 0, 0);
+	::SendMessage(getOtherView(), SCI_SETZOOM, zoom, 0);
+}
+
+
+void enableMenuCommands(bool enable)
+{
+	HMENU hMenu = ::GetMenu(nppData._nppHandle);
+	int flag = MF_BYCOMMAND | (enable ? MF_ENABLED : (MF_DISABLED | MF_GRAYED));
+
+	::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, flag);
+	::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, flag);
+	::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, flag);
+	::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, flag);
+
+	if (enable || (bool)fileToCompare)
+		::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_CURRENT]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+	else
+		::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_CURRENT]._cmdID, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+}
+
+
+void progressOpen()
+{
+	ComparePair_t& cmpPair = compareList[compareList.size() - 1];
+
+	TCHAR* first = ::PathFindFileName(cmpPair.first.name);
+	TCHAR* second = ::PathFindFileName(cmpPair.second.name);
+
+	TCHAR msg[256];
+
+	_sntprintf_s(msg, _countof(msg), _TRUNCATE, TEXT("Comparing \"%s\" vs. \"%s\"..."), first, second);
+
+	progMax = 0;
+	progCounter = 0;
+	progDlg = new CProgress();
+	progDlg->Open(nppData._nppHandle, TEXT("Compare Plugin"));
+	progDlg->SetInfo(msg);
+
+	::EnableWindow(nppData._nppHandle, FALSE);
+}
+
+
+void progressClose()
+{
+	if (progDlg)
+	{
+		::EnableWindow(nppData._nppHandle, TRUE);
+
+		progDlg->Close();
+		delete progDlg;
+		progDlg = NULL;
+	}
+}
+
+
+void showNavBar()
+{
+	start_line_old = -1;
+	visible_line_count_old = -1;
+
+	// Save current N++ focus
+	HWND hwnd = GetFocus();
+
+	// Display NavBar
+	NavDlg.SetColor(Settings.ColorSettings);
+	NavDlg.doDialog(true);
+
+	// Restore N++ focus
+	::SetFocus(hwnd);
+}
+
+
+void jumpChangedLines(bool direction)
+{
+	HWND CurView = getCurrentView();
 
 	const int sci_search_mask = (1 << MARKER_MOVED_LINE) |
 								(1 << MARKER_CHANGED_LINE) |
@@ -315,61 +440,62 @@ static void jumpChangedLines(bool direction)
 }
 
 
-static HWND openTempFile()
-{
-	char original[MAX_PATH];
+// HWND openTempFile()
+// {
+	// char original[MAX_PATH];
 
-	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, 0, (LPARAM)original);
-	HWND originalwindow = getCurrentWindow();
+	// ::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(original), (LPARAM)original);
+	// HWND originalwindow = getCurrentView();
 
-	LRESULT curBuffer = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
-	LangType curLang = (LangType)::SendMessage(nppData._nppHandle, NPPM_GETBUFFERLANGTYPE, curBuffer, 0);
+	// LRESULT curBuffer = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+	// LangType curLang = (LangType)::SendMessage(nppData._nppHandle, NPPM_GETBUFFERLANGTYPE, curBuffer, 0);
 
-	int result = ::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)compareFilePath);
-	HWND window = getCurrentWindow();
-	int win = ::SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
+	// int result = ::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)compareFilePath);
+	// HWND window = getCurrentView();
+	// int win = ::SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
 
-	if (result == 0 || win != tempWindow)
-	{
-		::SendMessage(nppData._nppHandle, WM_COMMAND, IDM_FILE_NEW, 0);
-		::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)compareFilePath);
-		tempWindow = ::SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
+	// if (result == 0 || win != tempWindow)
+	// {
+		// ::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_NEW);
+		// ::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)compareFilePath);
+		// tempWindow = ::SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
 
-		curBuffer = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
-		::SendMessage(nppData._nppHandle, NPPM_SETBUFFERLANGTYPE, curBuffer, curLang);
-	}
+		// curBuffer = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+		// ::SendMessage(nppData._nppHandle, NPPM_SETBUFFERLANGTYPE, curBuffer, curLang);
+	// }
 
-	if (originalwindow == window)
-	{
-		::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)original);
-		skipAutoReset = true;
-		::SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_GOTO_ANOTHER_VIEW, 0);
-		skipAutoReset = false;
-		::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)compareFilePath);
-		panelsOpened = true;
-	}
+	// if (originalwindow == window)
+	// {
+		// ::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)original);
+		// skipAutoReset = true;
+		// ::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
+		// skipAutoReset = false;
+		// ::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)compareFilePath);
+		// panelsOpened = true;
+	// }
 
-	result=::SendMessage(nppData._nppHandle,NPPM_SWITCHTOFILE, 0, (LPARAM)original);
+	// result=::SendMessage(nppData._nppHandle,NPPM_SWITCHTOFILE, 0, (LPARAM)original);
 
-	window = getOtherWindow();
+	// window = getOtherView();
 
-	int pointer = ::SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
-	if (tempWindow != pointer)
-	{
-		window = getCurrentWindow();
-		pointer = ::SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
-	}
+	// int pointer = ::SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
+	// if (tempWindow != pointer)
+	// {
+		// window = getCurrentView();
+		// pointer = ::SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
+	// }
 
 	// move focus to new document, or the other document will be marked as dirty
-	::SendMessage(window, SCI_GRABFOCUS, 0, 0);
-	::SendMessage(window, SCI_SETREADONLY, 0, 0);
-	::SendMessage(window, SCI_CLEARALL, 0, 0);
+	// ::SendMessage(window, SCI_GRABFOCUS, 0, 0);
+	// ::SendMessage(window, SCI_SETREADONLY, 0, 0);
+	// ::SendMessage(window, SCI_CLEARALL, 0, 0);
 
-	return window;
-}
+	// return window;
+	// return NULL;
+// }
 
 
-static void openFile(const TCHAR *file)
+void openFile(const TCHAR *file)
 {
 	if(file == NULL || PathFileExists(file) == FALSE)
 	{
@@ -395,40 +521,36 @@ static void openFile(const TCHAR *file)
 }
 
 
-static void openMemBlock(const char* memblock, long size)
+void openMemBlock(const char* memblock, long size)
 {
-	HWND window = openTempFile();
+	// HWND window = openTempFile();
 
-	::SendMessage(window, SCI_GRABFOCUS, 0, 0);
-	::SendMessage(window, SCI_APPENDTEXT, size, (LPARAM)memblock);
+	// ::SendMessage(window, SCI_GRABFOCUS, 0, 0);
+	// ::SendMessage(window, SCI_APPENDTEXT, size, (LPARAM)memblock);
 
-	if (startCompare())
-	{
-		::SendMessage(window, SCI_GRABFOCUS, 0, 0);
-		::SendMessage(window, SCI_SETSAVEPOINT, 1, 0);
-		::SendMessage(window, SCI_EMPTYUNDOBUFFER, 0, 0);
-		::SendMessage(window, SCI_SETREADONLY, 1, 0);
+	// Compare();
+	// if (!startCompare())
+	// {
+		// ::SendMessage(window, SCI_GRABFOCUS, 0, 0);
+		// ::SendMessage(window, SCI_SETSAVEPOINT, 1, 0);
+		// ::SendMessage(window, SCI_EMPTYUNDOBUFFER, 0, 0);
+		// ::SendMessage(window, SCI_SETREADONLY, 1, 0);
 
-		ClearCompare();
-	}
-	else
-	{
-		::SendMessage(window, SCI_GRABFOCUS, 0, 0);
-		::SendMessage(window, SCI_SETSAVEPOINT, 1, 0);
-		::SendMessage(window, SCI_EMPTYUNDOBUFFER, 0, 0);
-		::SendMessage(window, SCI_SETREADONLY, 1, 0);
-		::SendMessage(nppData._scintillaSecondHandle, SCI_GRABFOCUS, 0, 1);
-	}
+		// ClearCurrentCompare();
+	// }
+	// else
+	// {
+		// ::SendMessage(window, SCI_GRABFOCUS, 0, 0);
+		// ::SendMessage(window, SCI_SETSAVEPOINT, 1, 0);
+		// ::SendMessage(window, SCI_EMPTYUNDOBUFFER, 0, 0);
+		// ::SendMessage(window, SCI_SETREADONLY, 1, 0);
+		// ::SendMessage(nppData._scintillaSecondHandle, SCI_GRABFOCUS, 0, 1);
+	// }
 }
 
 
-static bool newCompare()
+bool doCompare()
 {
-	clearWindow(nppData._scintillaMainHandle);
-	clearWindow(nppData._scintillaSecondHandle);
-
-	active = true;
-
 	std::vector<int> lineNum1;
 	const DocLines_t doc1 = getAllLines(nppData._scintillaMainHandle, lineNum1);
 	int doc1Length = doc1.size();
@@ -436,7 +558,7 @@ static bool newCompare()
 	if (doc1Length == 1 && doc1[0][0] == 0)
 	{
 		::MessageBox(nppData._nppHandle, TEXT("File empty, nothing to compare."), TEXT("Compare Plugin"), MB_OK);
-		return true;
+		return false;
 	}
 
 	std::vector<int> lineNum2;
@@ -446,43 +568,13 @@ static bool newCompare()
 	if (doc2Length == 1 && doc2[0][0] == 0)
 	{
 		::MessageBox(nppData._nppHandle, TEXT("File empty, nothing to compare."), TEXT("Compare Plugin"), MB_OK);
-		return true;
+		return false;
 	}
 
 	std::vector<unsigned int> doc1Hashes = computeHashes(doc1, Settings.IncludeSpace);
 	std::vector<unsigned int> doc2Hashes = computeHashes(doc2, Settings.IncludeSpace);
 
-	// Save current N++ focus
-	HWND hwnd = GetFocus();
-
-	TCHAR filenameMain[MAX_PATH];
-	TCHAR filenameSecond[MAX_PATH];
-
-	SetFocus(nppData._scintillaMainHandle);
-	::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)filenameMain);
-	SetFocus(nppData._scintillaSecondHandle);
-	::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)filenameSecond);
-
-	// Restore N++ focus
-	SetFocus(hwnd);
-
-	TCHAR buffer[1024];
-
-	if (_tcslen(filenameMain) > 28)
-		_tcscpy_s(filenameMain + 25, 4, TEXT("..."));
-
-	if (_tcslen(filenameSecond) > 28)
-		_tcscpy_s(filenameSecond + 25, 4, TEXT("..."));
-
-	_sntprintf_s(buffer, _countof(buffer), _TRUNCATE, TEXT("Comparing \"%s\" vs. \"%s\"..."),
-			filenameMain, filenameSecond);
-	progMax = 0;
-	progCounter = 0;
-	progDlg = new CProgress();
-	progDlg->Open(nppData._nppHandle, TEXT("Compare Plugin"));
-	progDlg->SetInfo(buffer);
-
-	EnableWindow(nppData._nppHandle, FALSE);
+	progressOpen();
 
 	std::vector<diff_edit> diff = DiffCalc<unsigned int>(doc1Hashes, doc2Hashes)();
 
@@ -700,26 +792,28 @@ static bool newCompare()
 	progressClose();
 
 	if (compareCanceled)
-	{
-		return true;
-	}
+		return false;
 
 	if (!diff.empty())
 	{
 		if (!different)
 		{
-			_sntprintf_s(buffer, _countof(buffer), _TRUNCATE,
-					TEXT("The files \"%s\" and \"%s\" match.\n\nClose compared files?\n"),
-					filenameMain, filenameSecond);
-			if (::MessageBox(nppData._nppHandle, buffer, TEXT("Compare Plugin: Files Match"),
-					MB_YESNO | MB_ICONQUESTION) == IDYES)
+			ComparePair_t& cmpPair = compareList[compareList.size() - 1];
+			TCHAR msg[2 * MAX_PATH + 64];
+
+			_sntprintf_s(msg, _countof(msg), _TRUNCATE,
+					TEXT("The files\n\"%s\"\nand\n\"%s\" match.\n\nClose compared files?\n"),
+					cmpPair.first.name, cmpPair.second.name);
+			if (::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin: Files Match"),
+					MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2) == IDYES)
 			{
-				::SendMessage(nppData._nppHandle, WM_COMMAND, IDM_FILE_CLOSE, 0);
-				::SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_SWITCHTO_OTHER_VIEW, 0);
-				::SendMessage(nppData._nppHandle, WM_COMMAND, IDM_FILE_CLOSE, 0);
-				::SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_SWITCHTO_OTHER_VIEW, 0);
+				::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
+				::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SWITCHTO_OTHER_VIEW);
+				::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
+				::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SWITCHTO_OTHER_VIEW);
 			}
-			return true;
+
+			return false;
 		}
 
 		::SendMessage(nppData._scintillaMainHandle, SCI_SHOWLINES, 0, 1);
@@ -728,122 +822,41 @@ static bool newCompare()
 		First();
 	}
 
-	return false;
+	return true;
 }
 
 
-static void activateBufferID(LRESULT bufferID, int view)
+bool prepareAndRunCompare()
 {
-	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, bufferID, view);
-	index = index & 0x3FFFFFFF;
+	if (compareList.empty())
+		nppSettings.store();
 
-	::SendMessage(nppData._nppHandle, NPPM_ACTIVATEDOC, view, index);
-}
+	nppSettings.setCompareMode();
 
-
-static bool startCompare()
-{
-	if (!IsWindowVisible(nppData._scintillaMainHandle) || !IsWindowVisible(nppData._scintillaSecondHandle))
-	{
-		skipAutoReset = true;
-
-		// Yaron - In One-View mode, the current view can be 0 or 1.
-		// In Two-Views mode, the top (or left) view is ALWAYS 0, and the bottom view is ALWAYS 1.
-		int currentView = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0);
-		LRESULT bufferID = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
-
-		// Yaron - If the current view is 0, we want the prev file to be moved to the bottom;
-		// if the current view is 1, we still need to activate it and make sure it's compared to the current file.
-		::SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_TAB_PREV, 0);
-
-		if (currentView == 1)
-		{
-			bufferID = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
-			::SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_TAB_NEXT, 0); // Yaron - Switch back to current file.
-		}
-
-		// Yaron - Current file is ALWAYS at top, and prev file is ALWAYS at bottom.
-		::SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_GOTO_ANOTHER_VIEW, 0);
-
-		// Yaron - If the current view is 0, activate current file at top;
-		// if the current view is 1, activate prev file at bottom (possibly multiple files there).
-		activateBufferID(bufferID, currentView);
-
-		// Yaron - Activate current file at top.
-		if (currentView == 1)
-			::SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_SWITCHTO_OTHER_VIEW, 0);
-
-		skipAutoReset = false;
-		panelsOpened = true;
-	}
-
-	if (!IsWindowVisible(nppData._scintillaMainHandle) || !IsWindowVisible(nppData._scintillaSecondHandle))
-	{
-		panelsOpened = false;
-		::MessageBox(nppData._nppHandle, TEXT("No files to compare."), TEXT("Compare Plugin"), MB_OK);
-		return true;
-	}
-
-	if (SendMessage(nppData._scintillaMainHandle, SCI_GETCODEPAGE, 0, 0) !=
-		SendMessage(nppData._scintillaSecondHandle, SCI_GETCODEPAGE, 0, 0))
-	{
-		if (::MessageBox(nppData._nppHandle,
-			TEXT("Trying to compare files with different encoding - \nthe result might be inaccurate and misleading.")
-			TEXT("\n\nCompare anyway?"), TEXT("Compare Plugin"), MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2) != IDYES)
-		{
-			// TODO: Return back to single view
-			panelsOpened = false;
-			return true;
-		}
-	}
-
-	LRESULT RODoc1 = ::SendMessage(nppData._scintillaMainHandle, SCI_GETREADONLY, 0, 0);
+	int RODoc1 = ::SendMessage(nppData._scintillaMainHandle, SCI_GETREADONLY, 0, 0);
 	// Remove read-only attribute
 	if (RODoc1)
 		::SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, false, 0);
 
-	LRESULT RODoc2 = ::SendMessage(nppData._scintillaSecondHandle, SCI_GETREADONLY, 0, 0);
+	int RODoc2 = ::SendMessage(nppData._scintillaSecondHandle, SCI_GETREADONLY, 0, 0);
 	// Remove read-only attribute
 	if (RODoc2)
 		::SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, false, 0);
 
 	setStyles(Settings);
 
-	int doc1 = ::SendMessage(nppData._scintillaMainHandle, SCI_GETDOCPOINTER, 0, 0);
-	int doc2 = ::SendMessage(nppData._scintillaSecondHandle, SCI_GETDOCPOINTER, 0, 0);
-
-	setCompare(doc1);
-	setCompare(doc2);
-
 	::SendMessage(nppData._scintillaMainHandle, SCI_GOTOPOS, 0, 0);
 	::SendMessage(nppData._scintillaSecondHandle, SCI_GOTOPOS, 0, 0);
+
 	::SendMessage(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
 	::SendMessage(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
 
-	/* sync pannels */
-	HMENU hMenu = ::GetMenu(nppData._nppHandle);
-
-	syncScrollVwasChecked = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
-	syncScrollHwasChecked = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
-
-	// Disable N++ vertical scroll - we handle it manually because of the Word Wrap
-	if (syncScrollVwasChecked)
-		::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLV, 0), 0);
-
-	// Yaron - Enable N++ horizontal scroll sync
-	if (!syncScrollHwasChecked)
-		::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
-
-	// let the second view inherit the zoom level of the main view
-	int mainZoomLevel = ::SendMessage(nppData._scintillaMainHandle, SCI_GETZOOM, 0, 0);
-	::SendMessage(nppData._scintillaSecondHandle, SCI_SETZOOM, mainZoomLevel, 0);
-
-	// Compare files (return false if files differ)
+	// Compare files (return true if files differ)
 	bool result = false;
 
 	try
 	{
-		result = newCompare();
+		result = doCompare();
 	}
 	catch (std::exception& e)
 	{
@@ -851,13 +864,11 @@ static bool startCompare()
 		char msg[128];
 		_snprintf_s(msg, _countof(msg), _TRUNCATE, "Exception occurred: %s", e.what());
 		MessageBoxA(nppData._nppHandle, msg, "Compare Plugin", MB_OK | MB_ICONWARNING);
-		ClearCompare();
 	}
 	catch (...)
 	{
 		progressClose();
 		MessageBoxA(nppData._nppHandle, "Unknown exception occurred.", "Compare Plugin", MB_OK | MB_ICONWARNING);
-		ClearCompare();
 	}
 
 	::SendMessage(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
@@ -870,172 +881,336 @@ static bool startCompare()
 	if (RODoc2)
 		::SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
 
-	if (!result)
-	{
-		// Enable Prev/Next menu entry
-		::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID,  MF_BYCOMMAND | MF_ENABLED);
-		::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-		::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-		::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, MF_BYCOMMAND | MF_ENABLED);
-
-		if (Settings.UseNavBar)
-		{
-			start_line_old = -1;
-			visible_line_count_old = -1;
-
-			// Save current N++ focus
-			HWND hwnd = GetFocus();
-
-			// Display NavBar
-			NavDlg.SetColor(Settings.ColorSettings);
-			NavDlg.doDialog(true);
-
-			// Restore N++ focus
-			SetFocus(hwnd);
-		}
-	}
-
 	return result;
 }
 
 
-static void Compare()
+bool isAlreadyCompared(int buffId)
 {
-	if (active)
-		return;
+	if (!compareList.empty())
+	{
+		CompareList_t::iterator cmpPair = getCompare(buffId);
+		if (cmpPair != compareList.end())
+		{
+			TCHAR msg[2 * MAX_PATH + 128];
 
-	bool filesMatch = startCompare();
+			_sntprintf_s(msg, _countof(msg), _TRUNCATE,
+				TEXT("File\n\"%s\"\nis currently compared to\n\"%s\"\n\nPlease close the current compare first."),
+				(buffId == cmpPair->first.buffId) ? cmpPair->first.name : cmpPair->second.name,
+				(buffId == cmpPair->first.buffId) ? cmpPair->second.name : cmpPair->first.name);
 
-	if (filesMatch)
-		ClearCompare();
+			::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"), MB_OK | MB_ICONINFORMATION);
+
+			return true;
+		}
+	}
+
+	return false;
 }
 
 
-// Exit current compare
-// - Clear results
-// - Delete objects
-// - Restore previous N++ appearance (markers, highlight, ...)
-static void ClearCompare()
+bool createComparePair()
 {
-	if (active)
+	ComparePair_t cmpPair;
+	ComparedFile* second;
+
+	if (fileToCompare->originalSciView == MAIN_VIEW)
 	{
-		active = false;
+		cmpPair.first = *fileToCompare;
+		second = &cmpPair.second;
+	}
+	else
+	{
+		cmpPair.second = *fileToCompare;
+		second = &cmpPair.first;
+	}
 
-		LRESULT RODoc1;
-		LRESULT RODoc2;
-		int doc1 = 0;
-		int doc2 = 0;
-		int doc1Index = -1;
-		int doc2Index = -1;
+	second->originalSciView = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0);
+	second->buffId = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
 
-		// Close NavBar
-		NavDlg.doDialog(false);
+	if (isAlreadyCompared(second->buffId))
+	{
+		activateBufferID(fileToCompare->buffId);
+		fileToCompare.reset();
+		return false;
+	}
 
-		// Restore sync scroll buttons state
-		if (syncScrollVwasChecked)
-			::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLV, 0), 0);
-		if (!syncScrollHwasChecked)
-			::SendMessage(nppData._nppHandle, WM_COMMAND, MAKELONG(IDM_VIEW_SYNSCROLLH, 0), 0);
+	if (fileToCompare->originalSciView == second->originalSciView)
+		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
 
-		// Disable Prev/Next menu entry
-		HMENU hMenu = ::GetMenu(nppData._nppHandle);
-		::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
-		::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
-		::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
-		::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+	second->sciDoc = ::SendMessage(getCurrentView(), SCI_GETDOCPOINTER, 0, 0);
+	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(second->name), (LPARAM)second->name);
 
-		if (closingView != nppData._scintillaMainHandle)
+	activateBufferID(fileToCompare->buffId);
+	fileToCompare.reset();
+
+	compareList.push_back(cmpPair);
+
+	return true;
+}
+
+
+void restoreComparedFile(const ComparedFile& comparedFile)
+{
+	const int sciViewId = viewIdFromBuffId(comparedFile.buffId);
+	HWND hSci = getView(sciViewId);
+
+	activateBufferID(comparedFile.buffId);
+
+	// Remove read-only attribute
+	const int RODoc = ::SendMessage(hSci, SCI_GETREADONLY, 0, 0);
+	if (RODoc)
+		::SendMessage(hSci, SCI_SETREADONLY, false, 0);
+
+	clearWindow(hSci);
+
+	::SendMessage(hSci, SCI_SETMARGINMASKN, 4, 0);
+	::SendMessage(hSci, SCI_SETMARGINWIDTHN, 4, 0);
+
+	// Restore previous read-only attribute
+	if (RODoc)
+		::SendMessage(hSci, SCI_SETREADONLY, true, 0);
+
+	if (sciViewId != comparedFile.originalSciView)
+		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
+}
+
+
+void clearComparePair(int buffId)
+{
+	CompareList_t::iterator cmpPair = getCompare(buffId);
+
+	if (cmpPair == compareList.end())
+		return;
+
+	AutoIncrementer autoIncr(notificationsLock);
+
+	if (cmpPair->first.buffId == buffId)
+	{
+		restoreComparedFile(cmpPair->second);
+		restoreComparedFile(cmpPair->first);
+	}
+	else
+	{
+		restoreComparedFile(cmpPair->first);
+		restoreComparedFile(cmpPair->second);
+	}
+
+	compareList.erase(cmpPair);
+
+	::SetFocus(getCurrentView());
+}
+
+
+bool SelectFirstFile()
+{
+	fileToCompare.reset(new ComparedFile);
+
+	fileToCompare->buffId = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+	if (isAlreadyCompared(fileToCompare->buffId))
+	{
+		fileToCompare.reset();
+		return false;
+	}
+
+	fileToCompare->originalSciView = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0);
+	fileToCompare->sciDoc = ::SendMessage(getCurrentView(), SCI_GETDOCPOINTER, 0, 0);
+	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(fileToCompare->name),
+			(LPARAM)fileToCompare->name);
+
+	fileToCompareCodepage = SendMessage(getCurrentView(), SCI_GETCODEPAGE, 0, 0);
+
+	return true;
+}
+
+
+void SelectFirstToCompare()
+{
+	SelectFirstFile();
+	::EnableMenuItem(::GetMenu(nppData._nppHandle), funcItem[CMD_CLEAR_CURRENT]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+}
+
+
+void Compare()
+{
+	AutoIncrementer autoIncr(notificationsLock);
+
+	bool autoSwitchToSecond = true;
+
+	if (!fileToCompare)
+	{
+		if (!SelectFirstFile())
+			return;
+	}
+	else
+	{
+		// Validate the first file
+		int buffLen = ::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, fileToCompare->buffId, 0);
+		if (buffLen > 0)
 		{
-			// Remove read-only attribute
-			if ((RODoc1 = ::SendMessage(nppData._scintillaMainHandle, SCI_GETREADONLY, 0, 0)) == 1)
-				::SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, false, 0);
-			doc1 = ::SendMessage(nppData._scintillaMainHandle, SCI_GETDOCPOINTER, 0, 0);
-			doc1Index = getCompare(doc1);
-			if (doc1Index != -1)
-				clearWindow(nppData._scintillaMainHandle);
-			// Remove margin mask
-			::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINMASKN, (WPARAM)4, 0);
-			// Remove margin
-			::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINWIDTHN, (WPARAM)4, 0);
-			// Restore previous read-only attribute
-			if (RODoc1 == 1)
-				::SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, true, 0);
+			std::vector<TCHAR> file(buffLen + 1, 0);
+			::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID,
+					fileToCompare->buffId, (LPARAM)file.data());
+			if (_tcscmp(file.data(), fileToCompare->name))
+				buffLen = -1;
 		}
-		removeCompare(doc1);
 
-		if (closingView != nppData._scintillaSecondHandle)
+		if (buffLen <= 0)
 		{
-			if ((RODoc2 = ::SendMessage(nppData._scintillaSecondHandle, SCI_GETREADONLY, 0, 0)) == 1)
-				::SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, false, 0);
-			doc2 = ::SendMessage(nppData._scintillaSecondHandle, SCI_GETDOCPOINTER, 0, 0);
-			doc2Index = getCompare(doc2);
-			if (doc2Index != -1)
-				clearWindow(nppData._scintillaSecondHandle);
-			::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINMASKN, (WPARAM)4, 0);
-			::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINWIDTHN, (WPARAM)4, 0);
-			if (RODoc2 == 1)
-				::SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
+			// First file invalid - reselect it
+			if (!SelectFirstFile())
+				return;
 		}
-		removeCompare(doc2);
-
-		if (panelsOpened && (closingWin == -1))
+		else
 		{
-			::SendMessage(nppData._scintillaSecondHandle, SCI_GRABFOCUS, 0, 0);
-			skipAutoReset = true;
-			::SendMessage(nppData._nppHandle, WM_COMMAND, IDM_VIEW_GOTO_ANOTHER_VIEW, 0);
-			skipAutoReset = false;
+			autoSwitchToSecond = false;
 		}
-		panelsOpened = false;
+	}
 
-		if (tempWindow != -1)
+	if (autoSwitchToSecond)
+	{
+		// TODO: This N++ API behaves strange now - check for workaround
+		if (::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, SECOND_VIEW, 0) - 1 < 2)
 		{
-			if (doc1 != closingWin)
-			{
-				::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)compareFilePath);
-				HWND window = getCurrentWindow();
-				int tempPointer = ::SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
-				if (tempPointer == tempWindow)
-				{
-					::SendMessage(window, SCI_EMPTYUNDOBUFFER, 0, 0);
-					skipAutoReset = true;
-					::SendMessage(nppData._nppHandle, WM_COMMAND, IDM_FILE_CLOSE, 0);
-					skipAutoReset = false;
-				}
-			}
-			tempWindow = -1;
-			LRESULT ROTemp = RODoc1;
-			RODoc1 = RODoc2;
-			RODoc2 = ROTemp;
+			::MessageBox(nppData._nppHandle, TEXT("Not enough opened files to run compare."),
+					TEXT("Compare Plugin"), MB_OK);
+			fileToCompare.reset();
+			return;
 		}
 
-		::SendMessage(getCurrentWindow(), SCI_GRABFOCUS, 0, 0);
+		if (isSingleView())
+			::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_TAB_PREV);
+		else
+			::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SWITCHTO_OTHER_VIEW);
+	}
+	else
+	{
+		// Compare to self?
+		if (fileToCompare->buffId == ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0))
+		{
+			fileToCompare.reset();
+			::MessageBox(nppData._nppHandle, TEXT("Tried to compare file to itself - ignored."),
+					TEXT("Compare Plugin"), MB_OK | MB_ICONINFORMATION);
+			return;
+		}
+	}
 
-		closingWin = -1;
-		closingView = NULL;
+	// Warn about encoding mismatches as that might compromise the compare
+	if (fileToCompareCodepage != SendMessage(getCurrentView(), SCI_GETCODEPAGE, 0, 0))
+	{
+		if (::MessageBox(nppData._nppHandle,
+			TEXT("Trying to compare files with different encoding - \n")
+			TEXT("the result might be inaccurate and misleading.\n\n")
+			TEXT("Compare anyway?"), TEXT("Compare Plugin"), MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES)
+		{
+			activateBufferID(fileToCompare->buffId);
+			fileToCompare.reset();
+			return;
+		}
+	}
+
+	if (!createComparePair())
+		return;
+
+	if (prepareAndRunCompare())
+	{
+		enableMenuCommands(true);
+
+		if (Settings.UseNavBar)
+			showNavBar();
+	}
+	else
+	{
+		ClearCurrentCompare();
 	}
 }
 
 
-static void CompareLocal()
+void ClearCurrentCompare()
 {
-	if (active)
+	fileToCompare.reset();
+
+	enableMenuCommands(false);
+
+	if (!nppSettings.compareMode)
 		return;
 
+	if (NavDlg.isVisible())
+		NavDlg.doDialog(false);
+
+	nppSettings.restore();
+
+	const int buffId = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+	clearComparePair(buffId);
+
+
+	// if (tempWindow != -1)
+	// {
+		// if (doc1 != closingWin)
+		// {
+			// ::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)compareFilePath);
+			// HWND window = getCurrentView();
+			// int tempPointer = ::SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
+			// if (tempPointer == tempWindow)
+			// {
+				// ::SendMessage(window, SCI_EMPTYUNDOBUFFER, 0, 0);
+				// skipAutoReset = true;
+				// ::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
+				// skipAutoReset = false;
+			// }
+		// }
+		// tempWindow = -1;
+		// LRESULT ROTemp = RODoc1;
+		// RODoc1 = RODoc2;
+		// RODoc2 = ROTemp;
+	// }
+
+	// closingWin = -1;
+	// closingView = NULL;
+}
+
+
+void ClearAllCompares()
+{
+	fileToCompare.reset();
+
+	const int buffId = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+
+	enableMenuCommands(false);
+
+	if (NavDlg.isVisible())
+		NavDlg.doDialog(false);
+
+	nppSettings.restore();
+
+	AutoIncrementer autoIncr(notificationsLock);
+
+	for (int i = compareList.size() - 1; i >= 0; --i)
+	{
+		restoreComparedFile(compareList[i].first);
+		restoreComparedFile(compareList[i].second);
+	}
+
+	compareList.clear();
+
+	activateBufferID(buffId);
+}
+
+
+void CompareLocal()
+{
 	TCHAR file[MAX_PATH];
 	::SendMessage(nppData._nppHandle,NPPM_GETCURRENTDIRECTORY,0,(LPARAM)file);
 
-	if(file[0] != 0)
-		::SendMessage(nppData._nppHandle,NPPM_GETFULLCURRENTPATH,0,(LPARAM)file);
+	if (file[0] != 0)
+		::SendMessage(nppData._nppHandle,NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
 
 	openFile(file);
 }
 
 
-static void CompareSvnBase()
+void CompareSvnBase()
 {
-	if (active)
-		return;
-
 	TCHAR curDir[MAX_PATH];
 
 	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTDIRECTORY, 0, (LPARAM)curDir);
@@ -1068,11 +1243,8 @@ static void CompareSvnBase()
 }
 
 
-static void CompareGitBase()
+void CompareGitBase()
 {
-	if (active)
-		return;
-
 	TCHAR curDir[MAX_PATH];
 
 	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTDIRECTORY, 0, (LPARAM)curDir);
@@ -1114,97 +1286,78 @@ static void CompareGitBase()
 }
 
 
-static void AlignMatches()
+void AlignMatches()
 {
-	HMENU hMenu = GetMenu(nppData._nppHandle);
+	HMENU hMenu = ::GetMenu(nppData._nppHandle);
 	Settings.AddLine = !Settings.AddLine;
 
 	if (hMenu)
-		CheckMenuItem(hMenu,
-					funcItem[CMD_ALIGN_MATCHES]._cmdID,
-					MF_BYCOMMAND | (Settings.AddLine ? MF_CHECKED : MF_UNCHECKED));
+		::CheckMenuItem(hMenu, funcItem[CMD_ALIGN_MATCHES]._cmdID,
+				MF_BYCOMMAND | (Settings.AddLine ? MF_CHECKED : MF_UNCHECKED));
 }
 
 
-static void IncludeSpacing()
+void IncludeSpacing()
 {
-	HMENU hMenu = GetMenu(nppData._nppHandle);
+	HMENU hMenu = ::GetMenu(nppData._nppHandle);
 	Settings.IncludeSpace = !Settings.IncludeSpace;
 
 	if (hMenu)
-		CheckMenuItem(hMenu,
-					funcItem[CMD_IGNORE_SPACING]._cmdID,
-					MF_BYCOMMAND | (Settings.IncludeSpace ? MF_CHECKED : MF_UNCHECKED));
+		::CheckMenuItem(hMenu, funcItem[CMD_IGNORE_SPACING]._cmdID,
+				MF_BYCOMMAND | (Settings.IncludeSpace ? MF_CHECKED : MF_UNCHECKED));
 }
 
 
-static void DetectMoves()
+void DetectMoves()
 {
-	HMENU hMenu = GetMenu(nppData._nppHandle);
+	HMENU hMenu = ::GetMenu(nppData._nppHandle);
 	Settings.DetectMove = !Settings.DetectMove;
 
 	if (hMenu)
-		CheckMenuItem(hMenu,
-					funcItem[CMD_DETECT_MOVES]._cmdID,
-					MF_BYCOMMAND | (Settings.DetectMove ? MF_CHECKED : MF_UNCHECKED));
+		::CheckMenuItem(hMenu, funcItem[CMD_DETECT_MOVES]._cmdID,
+				MF_BYCOMMAND | (Settings.DetectMove ? MF_CHECKED : MF_UNCHECKED));
 }
 
 
-static void ViewNavigationBar()
+void ViewNavigationBar()
 {
-	HMENU hMenu = GetMenu(nppData._nppHandle);
+	HMENU hMenu = ::GetMenu(nppData._nppHandle);
 	Settings.UseNavBar = !Settings.UseNavBar;
 
 	if (hMenu)
-		CheckMenuItem(hMenu,
-					funcItem[CMD_USE_NAV_BAR]._cmdID,
-					MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
+		::CheckMenuItem(hMenu, funcItem[CMD_USE_NAV_BAR]._cmdID,
+				MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
 
-	if (active)
+	if (nppSettings.compareMode)
 	{
 		if (Settings.UseNavBar)
-		{
-			start_line_old = -1;
-			visible_line_count_old = -1;
-
-			// Save current N++ focus
-			HWND hwnd = GetFocus();
-
-			// Display NavBar
-			NavDlg.SetColor(Settings.ColorSettings);
-			NavDlg.doDialog(true);
-
-			// Restore N++ focus
-			SetFocus(hwnd);
-		}
+			showNavBar();
 		else
-		{
 			NavDlg.doDialog(false);
-		}
 	}
 }
 
 
-static void Prev()
+void Prev()
 {
-	if (active)
+	if (nppSettings.compareMode)
 		jumpChangedLines(false);
 }
 
 
-static void Next()
+void Next()
 {
-	if (active)
+	if (nppSettings.compareMode)
 		jumpChangedLines(true);
 }
 
 
-static void First()
+void First()
 {
-	if (active)
+	if (nppSettings.compareMode)
 	{
-		HWND CurView = getCurrentWindow();
-		HWND OtherView = getOtherWindow();
+		HWND CurView = getCurrentView();
+		HWND OtherView = getOtherView();
 
 		const int sci_search_mask = (1 << MARKER_MOVED_LINE)
 								  | (1 << MARKER_CHANGED_LINE)
@@ -1221,11 +1374,11 @@ static void First()
 }
 
 
-static void Last()
+void Last()
 {
-	if (active)
+	if (nppSettings.compareMode)
 	{
-		HWND CurView = getCurrentWindow();
+		HWND CurView = getCurrentView();
 
 		const int sci_search_mask = (1 << MARKER_MOVED_LINE)
 								  | (1 << MARKER_CHANGED_LINE)
@@ -1241,13 +1394,13 @@ static void Last()
 }
 
 
-static void OpenOptionDlg(void)
+void OpenOptionDlg(void)
 {
 	if (OptionDlg.doDialog(&Settings) == IDOK)
 	{
 		saveSettings();
 
-		if (active)
+		if (!compareList.empty())
 		{
 			setStyles(Settings);
 
@@ -1261,14 +1414,22 @@ static void OpenOptionDlg(void)
 }
 
 
-static void OpenAboutDlg()
+void OpenAboutDlg()
 {
 	AboutDlg.doDialog();
 }
 
 
-static void createMenu()
+void createMenu()
 {
+	_tcscpy_s(funcItem[CMD_SELECT_FIRST]._itemName, nbChar, TEXT("Select first..."));
+	funcItem[CMD_SELECT_FIRST]._pFunc				= SelectFirstToCompare;
+	funcItem[CMD_SELECT_FIRST]._pShKey				= new ShortcutKey;
+	funcItem[CMD_SELECT_FIRST]._pShKey->_isAlt		= true;
+	funcItem[CMD_SELECT_FIRST]._pShKey->_isCtrl		= false;
+	funcItem[CMD_SELECT_FIRST]._pShKey->_isShift	= false;
+	funcItem[CMD_SELECT_FIRST]._pShKey->_key		= 'F';
+
 	_tcscpy_s(funcItem[CMD_COMPARE]._itemName, nbChar, TEXT("Compare"));
 	funcItem[CMD_COMPARE]._pFunc			= Compare;
 	funcItem[CMD_COMPARE]._pShKey			= new ShortcutKey;
@@ -1277,13 +1438,21 @@ static void createMenu()
 	funcItem[CMD_COMPARE]._pShKey->_isShift	= false;
 	funcItem[CMD_COMPARE]._pShKey->_key		= 'D';
 
-	_tcscpy_s(funcItem[CMD_CLEAR_RESULTS]._itemName, nbChar, TEXT("Clear Results"));
-	funcItem[CMD_CLEAR_RESULTS]._pFunc 				= ClearCompare;
-	funcItem[CMD_CLEAR_RESULTS]._pShKey 			= new ShortcutKey;
-	funcItem[CMD_CLEAR_RESULTS]._pShKey->_isAlt 	= true;
-	funcItem[CMD_CLEAR_RESULTS]._pShKey->_isCtrl	= true;
-	funcItem[CMD_CLEAR_RESULTS]._pShKey->_isShift	= false;
-	funcItem[CMD_CLEAR_RESULTS]._pShKey->_key 		= 'D';
+	_tcscpy_s(funcItem[CMD_CLEAR_CURRENT]._itemName, nbChar, TEXT("Clear Current Compare"));
+	funcItem[CMD_CLEAR_CURRENT]._pFunc 				= ClearCurrentCompare;
+	funcItem[CMD_CLEAR_CURRENT]._pShKey 			= new ShortcutKey;
+	funcItem[CMD_CLEAR_CURRENT]._pShKey->_isAlt 	= true;
+	funcItem[CMD_CLEAR_CURRENT]._pShKey->_isCtrl	= false;
+	funcItem[CMD_CLEAR_CURRENT]._pShKey->_isShift	= true;
+	funcItem[CMD_CLEAR_CURRENT]._pShKey->_key 		= 'D';
+
+	_tcscpy_s(funcItem[CMD_CLEAR_ALL]._itemName, nbChar, TEXT("Clear All Compares"));
+	funcItem[CMD_CLEAR_ALL]._pFunc 				= ClearAllCompares;
+	funcItem[CMD_CLEAR_ALL]._pShKey 			= new ShortcutKey;
+	funcItem[CMD_CLEAR_ALL]._pShKey->_isAlt 	= true;
+	funcItem[CMD_CLEAR_ALL]._pShKey->_isCtrl	= true;
+	funcItem[CMD_CLEAR_ALL]._pShKey->_isShift	= true;
+	funcItem[CMD_CLEAR_ALL]._pShKey->_key 		= 'D';
 
 	_tcscpy_s(funcItem[CMD_COMPARE_LAST_SAVE]._itemName, nbChar, TEXT("Compare to last Save"));
 	funcItem[CMD_COMPARE_LAST_SAVE]._pFunc 				= CompareLocal;
@@ -1361,6 +1530,59 @@ static void createMenu()
 }
 
 
+void deinitPlugin()
+{
+	// Always close it, else N++'s plugin manager would call 'ViewNavigationBar'
+	// on startup, when N++ has been shut down before with opened navigation bar
+	if (NavDlg.isVisible())
+		NavDlg.doDialog(false);
+
+	if (tbNext.hToolbarBmp)
+		::DeleteObject(tbNext.hToolbarBmp);
+
+	if (tbPrev.hToolbarBmp)
+		::DeleteObject(tbPrev.hToolbarBmp);
+
+	if (tbFirst.hToolbarBmp)
+		::DeleteObject(tbFirst.hToolbarBmp);
+
+	if (tbLast.hToolbarBmp)
+		::DeleteObject(tbLast.hToolbarBmp);
+
+	OptionDlg.destroy();
+	AboutDlg.destroy();
+	NavDlg.destroy();
+
+	// Don't forget to deallocate your shortcut here
+	for (int i = 0; i < NB_MENU_COMMANDS; i++)
+		if (funcItem[i]._pShKey != NULL)
+			delete funcItem[i]._pShKey;
+}
+
+} // anonymous namespace
+
+
+bool progressUpdate(int mid)
+{
+	if (!progDlg)
+		return false;
+
+	if (progDlg->IsCancelled())
+		return false;
+
+	if (mid > progMax)
+		progMax = mid;
+
+	if (progMax)
+	{
+		int perc = (++progCounter * 100) / (progMax * 4);
+		progDlg->SetPercent(perc);
+	}
+
+	return true;
+}
+
+
 // Main plugin DLL function
 BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID)
  {
@@ -1369,37 +1591,11 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID)
 	switch (reasonForCall)
 	{
 		case DLL_PROCESS_ATTACH:
-		{
 			createMenu();
-
-			for (int i = 0; i < MAXCOMPARE; ++i)
-				compareDocs[i] = -1;
-		}
 		break;
 
 		case DLL_PROCESS_DETACH:
-		{
-			if (tbNext.hToolbarBmp)
-				::DeleteObject(tbNext.hToolbarBmp);
-
-			if (tbPrev.hToolbarBmp)
-				::DeleteObject(tbPrev.hToolbarBmp);
-
-			if (tbFirst.hToolbarBmp)
-				::DeleteObject(tbFirst.hToolbarBmp);
-
-			if (tbLast.hToolbarBmp)
-				::DeleteObject(tbLast.hToolbarBmp);
-
-			OptionDlg.destroy();
-			AboutDlg.destroy();
-			NavDlg.destroy();
-
-			// Don't forget to deallocate your shortcut here
-			for (int i = 0; i < NB_MENU_COMMANDS; i++)
-				if (funcItem[i]._pShKey != NULL)
-					delete funcItem[i]._pShKey;
-		}
+			deinitPlugin();
 		break;
 
 		case DLL_THREAD_ATTACH:
@@ -1447,7 +1643,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 	{
 		case SCN_PAINTED:
 		{
-			if (active && NavDlg.isVisible())
+			if (NavDlg.isVisible())
 			{
 				// update NavBar if Npp views got scrolled, resized, etc..
 				long start_line, visible_line_count;
@@ -1469,63 +1665,35 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		}
 		break;
 
-		case NPPN_TBMODIFICATION:
-		{
-			UINT style = (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS);
-
-			tbPrev.hToolbarBmp = (HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_PREV), IMAGE_BITMAP, 0, 0, style);
-			tbNext.hToolbarBmp = (HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NEXT), IMAGE_BITMAP, 0, 0, style);
-			tbFirst.hToolbarBmp = (HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_FIRST), IMAGE_BITMAP, 0, 0, style);
-			tbLast.hToolbarBmp = (HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_LAST), IMAGE_BITMAP, 0, 0, style);
-
-			::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_FIRST]._cmdID, (LPARAM)&tbFirst);
-			::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_PREV]._cmdID, (LPARAM)&tbPrev);
-			::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_NEXT]._cmdID, (LPARAM)&tbNext);
-			::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_LAST]._cmdID, (LPARAM)&tbLast);
-
-			HMENU hMenu = ::GetMenu(nppData._nppHandle);
-			::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
-			::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
-			::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
-			::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID,  MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
-
-			::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID, (LPARAM)Settings.AddLine);
-			::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACING]._cmdID, (LPARAM)Settings.IncludeSpace);
-			::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID, (LPARAM)Settings.DetectMove);
-			::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_USE_NAV_BAR]._cmdID, (LPARAM)Settings.UseNavBar);
-		}
-		break;
-
 		case SCN_UPDATEUI:
 		{
-			if (active)
+			if (nppSettings.compareMode)
 			{
 				HWND activeView = NULL;
 				HWND otherView = NULL;
+
 				if (notifyCode->updated & (SC_UPDATE_SELECTION | SC_UPDATE_V_SCROLL))
 				{
-					int currentEdit = -1;
+					int currentView = -1;
+
 					if (notifyCode->updated & SC_UPDATE_SELECTION)
 					{
-						::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
+						currentView = getCurrentViewId();
 					}
 					else if (notifyCode->updated & SC_UPDATE_V_SCROLL)
 					{
 						if (notifyCode->nmhdr.hwndFrom == nppData._scintillaMainHandle)
-						{
-							currentEdit = 0;
-						}
+							currentView = MAIN_VIEW;
 						else if (notifyCode->nmhdr.hwndFrom == nppData._scintillaSecondHandle)
-						{
-							currentEdit = 1;
-						}
+							currentView = SUB_VIEW;
 					}
-					if (currentEdit != -1)
+					if (currentView != -1)
 					{
-						activeView = (currentEdit == 0) ? (nppData._scintillaMainHandle) : (nppData._scintillaSecondHandle);
-						otherView = (currentEdit == 0) ? (nppData._scintillaSecondHandle) : (nppData._scintillaMainHandle);
+						activeView = getView(currentView);
+						otherView = getView(!currentView);
 					}
 				}
+
 				if ((activeView != NULL) && (otherView != NULL))
 				{
 					int activeViewTopLine = ::SendMessage(activeView, SCI_GETFIRSTVISIBLELINE, 0, 0);
@@ -1537,17 +1705,91 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		}
 		break;
 
+		case NPPN_BUFFERACTIVATED:
+		{
+			if (!notificationsLock && !compareList.empty())
+			{
+				CompareList_t::iterator cmpPair = getCompare(notifyCode->nmhdr.idFrom);
+
+				if (cmpPair == compareList.end())
+				{
+					enableMenuCommands(false);
+
+					if (NavDlg.isVisible())
+						NavDlg.doDialog(false);
+
+					nppSettings.restore();
+				}
+				else
+				{
+					// Compared file moved to other view? -> clear compare
+					if (viewIdFromBuffId(cmpPair->first.buffId) == viewIdFromBuffId(cmpPair->second.buffId))
+					{
+						enableMenuCommands(false);
+
+						if (NavDlg.isVisible())
+							NavDlg.doDialog(false);
+
+						nppSettings.restore();
+
+						clearComparePair(notifyCode->nmhdr.idFrom);
+						return;
+					}
+
+					bool switchedFromOtherPair = false;
+					const int otherViewId = getOtherViewId();
+					ComparedFile& otherFile = getFileFromPair(*cmpPair, otherViewId);
+
+					// When compared file is activated make sure its corresponding pair file is
+					// also active in the other view
+					if (::SendMessage(getView(otherViewId), SCI_GETDOCPOINTER, 0, 0) != otherFile.sciDoc)
+					{
+						AutoIncrementer autoIncr(notificationsLock);
+
+						activateBufferID(otherFile.buffId);
+						activateBufferID(notifyCode->nmhdr.idFrom);
+
+						switchedFromOtherPair = true;
+					}
+
+					enableMenuCommands(true);
+
+					if (Settings.UseNavBar && (switchedFromOtherPair || !NavDlg.isVisible()))
+						NavDlg.doDialog(true);
+
+					nppSettings.setCompareMode();
+				}
+
+				::SetFocus(getCurrentView());
+			}
+		}
+		break;
+
 		case NPPN_FILEBEFORECLOSE:
 		{
-			if (!skipAutoReset)
+			if (!notificationsLock && !compareList.empty())
 			{
-				HWND window = getCurrentWindow();
-				int win = ::SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
-				if (getCompare(win) != -1)
+				CompareList_t::iterator cmpPair = getCompare(notifyCode->nmhdr.idFrom);
+
+				if (cmpPair != compareList.end())
 				{
-					closingWin = win;
-					closingView = (HWND)notifyCode->nmhdr.hwndFrom;
-					ClearCompare();
+					enableMenuCommands(false);
+
+					if (NavDlg.isVisible())
+						NavDlg.doDialog(false);
+
+					nppSettings.restore();
+
+					AutoIncrementer autoIncr(notificationsLock);
+
+					if (cmpPair->first.buffId == (int)notifyCode->nmhdr.idFrom)
+						restoreComparedFile(cmpPair->second);
+					else
+						restoreComparedFile(cmpPair->first);
+
+					compareList.erase(cmpPair);
+
+					::SetFocus(getCurrentView());
 				}
 			}
 		}
@@ -1555,54 +1797,85 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 
 		case NPPN_FILEBEFORESAVE:
 		{
-			::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, 0, (LPARAM)emptyLinesDoc);
+			// ::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(emptyLinesDoc), (LPARAM)emptyLinesDoc);
 
-			HWND window = getCurrentWindow();
-			int win = ::SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
+			// HWND window = getCurrentView();
+			// int win = ::SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
 
-			if (getCompare(win) != -1)
-			{
-				topLine = ::SendMessage(window, SCI_GETFIRSTVISIBLELINE, 0, 0);
-				lastEmptyLines = removeEmptyLines(window, true);
-			}
-			else
-			{
-				lastEmptyLines = NULL;
-			}
+			// if (getCompare(win) != compareList.end())
+			// {
+				// topLine = ::SendMessage(window, SCI_GETFIRSTVISIBLELINE, 0, 0);
+				// lastEmptyLines = removeEmptyLines(window, true);
+			// }
+			// else
+			// {
+				// lastEmptyLines = NULL;
+			// }
 		}
 		break;
 
 		case NPPN_FILESAVED:
 		{
-			TCHAR name[MAX_PATH];
-			::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, 0, (LPARAM)name);
+			// TCHAR name[MAX_PATH];
+			// ::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(name), (LPARAM)name);
 
-			if (lastEmptyLines != NULL && _tcscmp(name, emptyLinesDoc) == 0)
+			// if (lastEmptyLines != NULL && _tcscmp(name, emptyLinesDoc) == 0)
+			// {
+				// HWND window = getCurrentView();
+				// ::addBlankLines(window,lastEmptyLines);
+				// int linesOnScreen = ::SendMessage(window, SCI_LINESONSCREEN, 0, 0);
+				// int curPosBeg = ::SendMessage(window, SCI_GETSELECTIONSTART, 0, 0);
+				// int curPosEnd = ::SendMessage(window, SCI_GETSELECTIONEND, 0, 0);
+				// ::SendMessage(window, SCI_GOTOLINE, topLine, 0);
+				// ::SendMessage(window, SCI_GOTOLINE, topLine + linesOnScreen - 1, 0);
+				// ::SendMessage(window, SCI_SETSEL, curPosBeg, curPosEnd);
+				// cleanEmptyLines(lastEmptyLines);
+				// delete lastEmptyLines;
+				// lastEmptyLines = NULL;
+				// emptyLinesDoc[0] = 0;
+			// }
+		}
+		break;
+
+        case NPPN_WORDSTYLESUPDATED:
+        {
+			setStyles(Settings);
+
+			if (NavDlg.isVisible())
 			{
-				HWND window = getCurrentWindow();
-				::addBlankLines(window,lastEmptyLines);
-				int linesOnScreen = ::SendMessage(window, SCI_LINESONSCREEN, 0, 0);
-				int curPosBeg = ::SendMessage(window, SCI_GETSELECTIONSTART, 0, 0);
-				int curPosEnd = ::SendMessage(window, SCI_GETSELECTIONEND, 0, 0);
-				::SendMessage(window, SCI_GOTOLINE, topLine, 0);
-				::SendMessage(window, SCI_GOTOLINE, topLine + linesOnScreen - 1, 0);
-				::SendMessage(window, SCI_SETSEL, curPosBeg, curPosEnd);
-				cleanEmptyLines(lastEmptyLines);
-				delete lastEmptyLines;
-				lastEmptyLines = NULL;
-				emptyLinesDoc[0] = 0;
+				NavDlg.SetColor(Settings.ColorSettings);
+				NavDlg.CreateBitmap();
 			}
+        }
+        break;
+
+		case NPPN_TBMODIFICATION:
+		{
+			UINT style = (LR_SHARED | LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS);
+
+			tbPrev.hToolbarBmp = (HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_PREV), IMAGE_BITMAP, 0, 0, style);
+			tbNext.hToolbarBmp = (HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NEXT), IMAGE_BITMAP, 0, 0, style);
+			tbFirst.hToolbarBmp = (HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_FIRST), IMAGE_BITMAP, 0, 0, style);
+			tbLast.hToolbarBmp = (HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_LAST), IMAGE_BITMAP, 0, 0, style);
+
+			::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_FIRST]._cmdID, (LPARAM)&tbFirst);
+			::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_PREV]._cmdID, (LPARAM)&tbPrev);
+			::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_NEXT]._cmdID, (LPARAM)&tbNext);
+			::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_LAST]._cmdID, (LPARAM)&tbLast);
+
+			enableMenuCommands(false);
+
+			::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID, (LPARAM)Settings.AddLine);
+			::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACING]._cmdID, (LPARAM)Settings.IncludeSpace);
+			::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID, (LPARAM)Settings.DetectMove);
+			::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_USE_NAV_BAR]._cmdID, (LPARAM)Settings.UseNavBar);
 		}
 		break;
 
 		case NPPN_SHUTDOWN:
 		{
 			saveSettings();
-
-			// Always close it, else N++'s plugin manager would call 'ViewNavigationBar'
-			// on startup, when N++ has been shut down before with opened navigation bar
-			if (NavDlg.isVisible())
-				NavDlg.doDialog(false);
+			deinitPlugin();
 		}
 		break;
 	}
@@ -1611,15 +1884,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 
 extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM, LPARAM)
 {
-	if (Message == WM_CREATE)
-	{
-		HMENU hMenu = ::GetMenu(nppData._nppHandle);
-		::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_1]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
-		::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_2]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
-		::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_3]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
-		::ModifyMenu(hMenu, funcItem[CMD_SEPARATOR_4]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
-	}
-
 	return TRUE;
 }
 
