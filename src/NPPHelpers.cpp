@@ -58,37 +58,27 @@ HWND getView(int viewId)
 
 int getCurrentViewId()
 {
-	int view;
-	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&view);
-
-	return view;
+	return ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0);
 }
 
 
 HWND getCurrentView()
 {
-	int view;
-	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&view);
-
-	return (view == MAIN_VIEW) ? nppData._scintillaMainHandle : nppData._scintillaSecondHandle;
+	return (::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0) == MAIN_VIEW) ?
+			nppData._scintillaMainHandle : nppData._scintillaSecondHandle;
 }
 
 
 int getOtherViewId()
 {
-	int view;
-	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&view);
-
-	return (view == MAIN_VIEW) ? SUB_VIEW : MAIN_VIEW;
+	return (::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0) == MAIN_VIEW) ? SUB_VIEW : MAIN_VIEW;
 }
 
 
 HWND getOtherView()
 {
-	int view;
-	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&view);
-
-	return (view == MAIN_VIEW) ? nppData._scintillaSecondHandle : nppData._scintillaMainHandle;
+	return (::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0) == MAIN_VIEW) ?
+			nppData._scintillaSecondHandle : nppData._scintillaMainHandle;
 }
 
 

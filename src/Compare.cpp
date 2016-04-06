@@ -114,7 +114,7 @@ using CompareList_t = std::vector<ComparePair_t>;
 
 
 CompareList_t compareList;
-std::unique_ptr<ComparedFile> fileToCompare;
+std::unique_ptr<ComparedFile> firstFile;
 int fileToCompareCodepage;
 NppSettings nppSettings;
 
@@ -235,7 +235,7 @@ void saveSettings()
 
 ComparedFile& getFileFromPair(ComparePair_t& pair, int viewId)
 {
-	return (viewId == MAIN_VIEW) ? pair.first : pair.second;
+	return (viewIdFromBuffId(pair.first.buffId) == viewId) ? pair.first : pair.second;
 }
 
 
@@ -316,14 +316,26 @@ void enableMenuCommands(bool enable)
 	::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, flag);
 
-	if (enable || (bool)fileToCompare)
+	if (enable || (bool)firstFile)
 		::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_CURRENT]._cmdID, MF_BYCOMMAND | MF_ENABLED);
 	else
 		::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_CURRENT]._cmdID, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
 }
 
 
-void progressOpen()
+void progressOpen(const TCHAR* msg)
+{
+	progMax = 0;
+	progCounter = 0;
+	progDlg = new CProgress();
+	progDlg->Open(nppData._nppHandle, TEXT("Compare Plugin"));
+	progDlg->SetInfo(msg);
+
+	::EnableWindow(nppData._nppHandle, FALSE);
+}
+
+
+void progressFillCompareInfo()
 {
 	ComparePair_t& cmpPair = compareList[compareList.size() - 1];
 
@@ -334,13 +346,7 @@ void progressOpen()
 
 	_sntprintf_s(msg, _countof(msg), _TRUNCATE, TEXT("Comparing \"%s\" vs. \"%s\"..."), first, second);
 
-	progMax = 0;
-	progCounter = 0;
-	progDlg = new CProgress();
-	progDlg->Open(nppData._nppHandle, TEXT("Compare Plugin"));
 	progDlg->SetInfo(msg);
-
-	::EnableWindow(nppData._nppHandle, FALSE);
 }
 
 
@@ -354,6 +360,18 @@ void progressClose()
 		delete progDlg;
 		progDlg = NULL;
 	}
+}
+
+
+bool isCompareCancelled()
+{
+	if (progDlg->IsCancelled())
+	{
+		progressClose();
+		return true;
+	}
+
+	return false;
 }
 
 
@@ -557,7 +575,13 @@ bool doCompare()
 
 	if (doc1Length == 1 && doc1[0][0] == 0)
 	{
-		::MessageBox(nppData._nppHandle, TEXT("File empty, nothing to compare."), TEXT("Compare Plugin"), MB_OK);
+		ComparePair_t& cmpPair = compareList[compareList.size() - 1];
+		TCHAR msg[MAX_PATH + 64];
+
+		_sntprintf_s(msg, _countof(msg), _TRUNCATE,
+				TEXT("File\n\"%s\"\n is empty, nothing to compare."), cmpPair.first.name);
+		::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"), MB_OK);
+
 		return false;
 	}
 
@@ -567,16 +591,30 @@ bool doCompare()
 
 	if (doc2Length == 1 && doc2[0][0] == 0)
 	{
-		::MessageBox(nppData._nppHandle, TEXT("File empty, nothing to compare."), TEXT("Compare Plugin"), MB_OK);
+		ComparePair_t& cmpPair = compareList[compareList.size() - 1];
+		TCHAR msg[MAX_PATH + 64];
+
+		_sntprintf_s(msg, _countof(msg), _TRUNCATE,
+				TEXT("File\n\"%s\"\n is empty, nothing to compare."), cmpPair.second.name);
+		::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"), MB_OK);
+
 		return false;
 	}
+
+	progressOpen(TEXT("Computing hashes..."));
 
 	std::vector<unsigned int> doc1Hashes = computeHashes(doc1, Settings.IncludeSpace);
 	std::vector<unsigned int> doc2Hashes = computeHashes(doc2, Settings.IncludeSpace);
 
-	progressOpen();
+	if (isCompareCancelled())
+		return false;
+
+	progressFillCompareInfo();
 
 	std::vector<diff_edit> diff = DiffCalc<unsigned int>(doc1Hashes, doc2Hashes)();
+
+	if (isCompareCancelled())
+		return false;
 
 	int	doc1Changed = 0;
 	int	doc2Changed = 0;
@@ -622,6 +660,9 @@ bool doCompare()
 		}
 	}
 
+	if (isCompareCancelled())
+		return false;
+
 	std::vector<diff_edit> doc1Changes(doc1Changed);
 	std::vector<diff_edit> doc2Changes(doc2Changed);
 
@@ -630,10 +671,8 @@ bool doCompare()
 
 	// Switch from blocks of lines to one change per line.
 	// Change CHANGE to DELETE or INSERT if there are no changes on that line
-	int added;
-
-	if (!progDlg->IsCancelled())
 	{
+		int added;
 		int doc1Idx = 0;
 		int doc2Idx = 0;
 
@@ -662,9 +701,12 @@ bool doCompare()
 		}
 	}
 
+	if (isCompareCancelled())
+		return false;
+
 	bool different = true;
 
-	if (!diff.empty() && !progDlg->IsCancelled())
+	if (!diff.empty())
 	{
 		int textIndex;
 		different = (doc1Changed > 0) || (doc2Changed > 0);
@@ -788,11 +830,10 @@ bool doCompare()
 		}
 	}
 
-	bool compareCanceled = progDlg->IsCancelled();
-	progressClose();
-
-	if (compareCanceled)
+	if (isCompareCancelled())
 		return false;
+
+	progressClose();
 
 	if (!diff.empty())
 	{
@@ -807,10 +848,16 @@ bool doCompare()
 			if (::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin: Files Match"),
 					MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2) == IDYES)
 			{
+				AutoIncrementer autoIncr(notificationsLock);
+
+				nppSettings.restore();
+
 				::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
 				::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SWITCHTO_OTHER_VIEW);
 				::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
 				::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SWITCHTO_OTHER_VIEW);
+
+				compareList.pop_back();
 			}
 
 			return false;
@@ -912,37 +959,32 @@ bool isAlreadyCompared(int buffId)
 bool createComparePair()
 {
 	ComparePair_t cmpPair;
-	ComparedFile* second;
 
-	if (fileToCompare->originalSciView == MAIN_VIEW)
-	{
-		cmpPair.first = *fileToCompare;
-		second = &cmpPair.second;
-	}
-	else
-	{
-		cmpPair.second = *fileToCompare;
-		second = &cmpPair.first;
-	}
+	cmpPair.first = *firstFile;
+	firstFile.reset();
 
-	second->originalSciView = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0);
-	second->buffId = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+	cmpPair.second.originalSciView = getCurrentViewId();
+	cmpPair.second.buffId = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
 
-	if (isAlreadyCompared(second->buffId))
+	if (isAlreadyCompared(cmpPair.second.buffId))
 	{
-		activateBufferID(fileToCompare->buffId);
-		fileToCompare.reset();
+		activateBufferID(cmpPair.first.buffId);
 		return false;
 	}
 
-	if (fileToCompare->originalSciView == second->originalSciView)
+	const bool moveToOtherViewNeeded = (cmpPair.first.originalSciView == cmpPair.second.originalSciView);
+
+	if (moveToOtherViewNeeded && cmpPair.second.originalSciView == MAIN_VIEW)
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
 
-	second->sciDoc = ::SendMessage(getCurrentView(), SCI_GETDOCPOINTER, 0, 0);
-	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(second->name), (LPARAM)second->name);
+	cmpPair.second.sciDoc = ::SendMessage(getCurrentView(), SCI_GETDOCPOINTER, 0, 0);
+	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH,
+			_countof(cmpPair.second.name), (LPARAM)cmpPair.second.name);
 
-	activateBufferID(fileToCompare->buffId);
-	fileToCompare.reset();
+	activateBufferID(cmpPair.first.buffId);
+
+	if (moveToOtherViewNeeded && cmpPair.first.originalSciView == SUB_VIEW)
+		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
 
 	compareList.push_back(cmpPair);
 
@@ -1004,19 +1046,19 @@ void clearComparePair(int buffId)
 
 bool SelectFirstFile()
 {
-	fileToCompare.reset(new ComparedFile);
+	firstFile.reset(new ComparedFile);
 
-	fileToCompare->buffId = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
-	if (isAlreadyCompared(fileToCompare->buffId))
+	firstFile->buffId = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+	if (isAlreadyCompared(firstFile->buffId))
 	{
-		fileToCompare.reset();
+		firstFile.reset();
 		return false;
 	}
 
-	fileToCompare->originalSciView = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0);
-	fileToCompare->sciDoc = ::SendMessage(getCurrentView(), SCI_GETDOCPOINTER, 0, 0);
-	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(fileToCompare->name),
-			(LPARAM)fileToCompare->name);
+	firstFile->originalSciView = getCurrentViewId();
+	firstFile->sciDoc = ::SendMessage(getCurrentView(), SCI_GETDOCPOINTER, 0, 0);
+	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(firstFile->name),
+			(LPARAM)firstFile->name);
 
 	fileToCompareCodepage = SendMessage(getCurrentView(), SCI_GETCODEPAGE, 0, 0);
 
@@ -1035,61 +1077,66 @@ void Compare()
 {
 	AutoIncrementer autoIncr(notificationsLock);
 
-	bool autoSwitchToSecond = true;
+	bool autoSelectSecond = true;
 
-	if (!fileToCompare)
+	if (!firstFile)
 	{
 		if (!SelectFirstFile())
 			return;
 	}
 	else
 	{
-		// Validate the first file
-		int buffLen = ::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, fileToCompare->buffId, 0);
+		bool firstValid = false;
+
+		// Check if the first file is still open
+		const int buffLen = ::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, firstFile->buffId, 0);
 		if (buffLen > 0)
 		{
 			std::vector<TCHAR> file(buffLen + 1, 0);
-			::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID,
-					fileToCompare->buffId, (LPARAM)file.data());
-			if (_tcscmp(file.data(), fileToCompare->name))
-				buffLen = -1;
+			::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, firstFile->buffId, (LPARAM)file.data());
+			if (!_tcscmp(file.data(), firstFile->name))
+				firstValid = true;
 		}
 
-		if (buffLen <= 0)
-		{
-			// First file invalid - reselect it
-			if (!SelectFirstFile())
-				return;
-		}
-		else
-		{
-			autoSwitchToSecond = false;
-		}
+		// Detect if the first file is moved to the other view
+		if (firstValid && firstFile->originalSciView != viewIdFromBuffId(firstFile->buffId))
+			firstValid = false;
+
+		if (firstValid)
+			autoSelectSecond = false;
+		else if (!SelectFirstFile()) // First file is invalid - reselect it
+			return;
 	}
 
-	if (autoSwitchToSecond)
+	if (autoSelectSecond)
 	{
-		// TODO: This N++ API behaves strange now - check for workaround
-		if (::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, SECOND_VIEW, 0) - 1 < 2)
-		{
-			::MessageBox(nppData._nppHandle, TEXT("Not enough opened files to run compare."),
-					TEXT("Compare Plugin"), MB_OK);
-			fileToCompare.reset();
-			return;
-		}
-
 		if (isSingleView())
+		{
+			int viewId = getCurrentViewId();
+			viewId = (viewId == MAIN_VIEW) ? PRIMARY_VIEW : SECOND_VIEW;
+
+			if (::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, viewId) < 2)
+			{
+				::MessageBox(nppData._nppHandle, TEXT("Not enough opened files to run compare."),
+						TEXT("Compare Plugin"), MB_OK);
+				firstFile.reset();
+				return;
+			}
+
 			::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_TAB_PREV);
+		}
 		else
+		{
 			::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SWITCHTO_OTHER_VIEW);
+		}
 	}
 	else
 	{
 		// Compare to self?
-		if (fileToCompare->buffId == ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0))
+		if (firstFile->buffId == ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0))
 		{
-			fileToCompare.reset();
-			::MessageBox(nppData._nppHandle, TEXT("Tried to compare file to itself - ignored."),
+			firstFile.reset();
+			::MessageBox(nppData._nppHandle, TEXT("Trying to compare file to itself - ignored."),
 					TEXT("Compare Plugin"), MB_OK | MB_ICONINFORMATION);
 			return;
 		}
@@ -1099,12 +1146,12 @@ void Compare()
 	if (fileToCompareCodepage != SendMessage(getCurrentView(), SCI_GETCODEPAGE, 0, 0))
 	{
 		if (::MessageBox(nppData._nppHandle,
-			TEXT("Trying to compare files with different encoding - \n")
+			TEXT("Trying to compare files with different encodings - \n")
 			TEXT("the result might be inaccurate and misleading.\n\n")
 			TEXT("Compare anyway?"), TEXT("Compare Plugin"), MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES)
 		{
-			activateBufferID(fileToCompare->buffId);
-			fileToCompare.reset();
+			activateBufferID(firstFile->buffId);
+			firstFile.reset();
 			return;
 		}
 	}
@@ -1128,7 +1175,7 @@ void Compare()
 
 void ClearCurrentCompare()
 {
-	fileToCompare.reset();
+	firstFile.reset();
 
 	enableMenuCommands(false);
 
@@ -1172,7 +1219,7 @@ void ClearCurrentCompare()
 
 void ClearAllCompares()
 {
-	fileToCompare.reset();
+	firstFile.reset();
 
 	const int buffId = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
 
