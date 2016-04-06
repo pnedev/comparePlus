@@ -39,8 +39,9 @@ public:
 
 	virtual void destroy() {
 		_emailLinkJSL.destroy();
-		_emailLinkTY.destroy();
-		_urlNppPlugins.destroy();
+		_emailLinkPND.destroy();
+		_urlOriginalRepo.destroy();
+		_urlPNDRepo.destroy();
 	};
 
 
@@ -54,6 +55,7 @@ private:
 
 	/* for eMail */
 	URLCtrl			_emailLinkJSL;
-	URLCtrl			_emailLinkTY;
-	URLCtrl			_urlNppPlugins;
+	URLCtrl			_emailLinkPND;
+	URLCtrl			_urlOriginalRepo;
+	URLCtrl			_urlPNDRepo;
 };

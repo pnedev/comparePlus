@@ -34,8 +34,12 @@ BOOL CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*lPa
 		{
 			_emailLinkJSL.init(_hInst, _hSelf);
 			_emailLinkJSL.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK_JSL), TEXT("mailto:jean.sebastien.leroy@club-internet.fr"));
-			_urlNppPlugins.init(_hInst, _hSelf);
-			_urlNppPlugins.create(::GetDlgItem(_hSelf, IDC_NPP_PLUGINS_URL), NULL);
+			_emailLinkPND.init(_hInst, _hSelf);
+			_emailLinkPND.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK_PND), TEXT("mailto:pg.nedev@gmail.com"));
+			_urlOriginalRepo.init(_hInst, _hSelf);
+			_urlOriginalRepo.create(::GetDlgItem(_hSelf, IDC_ORIGINAL_REPO_URL), NULL);
+			_urlPNDRepo.init(_hInst, _hSelf);
+			_urlPNDRepo.create(::GetDlgItem(_hSelf, IDC_PND_REPO_URL), NULL);
 
 			return TRUE;
 		}
