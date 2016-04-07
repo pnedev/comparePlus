@@ -102,3 +102,6 @@ struct sUserSettings
 	bool           	DetectMove;
 	sColorSettings	ColorSettings;
 };
+
+
+void ViewNavigationBar();

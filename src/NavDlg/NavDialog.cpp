@@ -36,6 +36,8 @@ NavDialog::NavDialog() : DockingDlgInterface(IDD_NAV_DIALOG),
 
 NavDialog::~NavDialog()
 {
+	Hide();
+
 	if (_data.hIconTab)
 		DestroyIcon(_data.hIconTab);
 }
@@ -168,9 +170,13 @@ BOOL CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
 			OnPaint();
 		break;
 
-		case WM_DESTROY:
-			Hide();
-			::PostQuitMessage(0);
+		case WM_NOTIFY:
+		{
+			LPNMHDR	pnmh = (LPNMHDR)lParam;
+
+			if (pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_CLOSE)
+				ViewNavigationBar();
+		}
 		break;
 
 		case WM_LBUTTONDOWN:

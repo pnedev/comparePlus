@@ -1366,25 +1366,6 @@ void DetectMoves()
 }
 
 
-void ViewNavigationBar()
-{
-	HMENU hMenu = ::GetMenu(nppData._nppHandle);
-	Settings.UseNavBar = !Settings.UseNavBar;
-
-	if (hMenu)
-		::CheckMenuItem(hMenu, funcItem[CMD_USE_NAV_BAR]._cmdID,
-				MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
-
-	if (nppSettings.compareMode)
-	{
-		if (Settings.UseNavBar)
-			showNavBar();
-		else
-			NavDlg.doDialog(false);
-	}
-}
-
-
 void Prev()
 {
 	if (nppSettings.compareMode)
@@ -1627,6 +1608,25 @@ bool progressUpdate(int mid)
 	}
 
 	return true;
+}
+
+
+void ViewNavigationBar()
+{
+	HMENU hMenu = ::GetMenu(nppData._nppHandle);
+	Settings.UseNavBar = !Settings.UseNavBar;
+
+	if (hMenu)
+		::CheckMenuItem(hMenu, funcItem[CMD_USE_NAV_BAR]._cmdID,
+				MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
+
+	if (nppSettings.compareMode)
+	{
+		if (Settings.UseNavBar)
+			showNavBar();
+		else
+			NavDlg.doDialog(false);
+	}
 }
 
 
