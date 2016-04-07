@@ -147,13 +147,13 @@ void NavDialog::scrollView(short yPos)
 
 	long current_line = (long)((double)yPos * m_ScaleFactorDocLines);
 
-	HWND curView = getCurrentView();
-	int LineVisible = SendMessage(curView, SCI_LINESONSCREEN, 0, 0);
-	int LineStart = SendMessage(curView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	HWND currView = getCurrentView();
+	int LineVisible = SendMessage(currView, SCI_LINESONSCREEN, 0, 0);
+	int LineStart = SendMessage(currView, SCI_GETFIRSTVISIBLELINE, 0, 0);
 	int Delta = current_line - LineVisible / 2 - LineStart;
 
-	SendMessage(curView, SCI_LINESCROLL, 0, (LPARAM)Delta);
-	SendMessage(curView, SCI_GOTOLINE, (WPARAM)current_line, 0);
+	SendMessage(currView, SCI_LINESCROLL, 0, (LPARAM)Delta);
+	SendMessage(currView, SCI_GOTOLINE, (WPARAM)current_line, 0);
 }
 
 

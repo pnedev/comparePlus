@@ -669,13 +669,3 @@ std::vector<unsigned int> computeHashes(const DocLines_t& doc, bool IncludeSpace
 
 	return hashes;
 }
-
-
-void cleanEmptyLines(blankLineList *line)
-{
-	if (line->next != NULL)
-	{
-		cleanEmptyLines(line->next);
-		delete line->next;
-	}
-}

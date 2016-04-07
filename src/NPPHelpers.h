@@ -23,9 +23,18 @@
 
 // Forward declarations
 struct sUserSettings;
-struct blankLineList;
 
 
+struct BlankSection
+{
+	BlankSection(unsigned int line, unsigned int len) : startLine(line), length(len) {}
+
+	unsigned int startLine;
+	unsigned int length;
+};
+
+
+using BlankSections_t = std::vector<BlankSection>;
 using DocLines_t = std::vector<std::vector<char>>;
 
 
@@ -53,11 +62,11 @@ void setBlank(HWND window, int color);
 void defineSymbol(int type, int symbol);
 void defineColor(int type, int color);
 void clearWindow(HWND window);
-void clearUndoBuffer(HWND window);
-blankLineList *removeEmptyLines(HWND window, bool saveList);
-int deleteLine(HWND window, int line);
 
 DocLines_t getAllLines(HWND window, std::vector<int>& lineNum);
 
-void addBlankLines(HWND window, blankLineList *list);
-void addEmptyLines(HWND hSci, int offset, int length);
+void addBlankSection(HWND window, int line, int length);
+int deleteBlankSection(HWND window, int line);
+
+void addBlankLines(HWND window, const BlankSections_t& blanks);
+BlankSections_t removeBlankLines(HWND window, bool saveBlanks);

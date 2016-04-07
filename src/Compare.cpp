@@ -109,6 +109,21 @@ struct ComparedFile
 };
 
 
+/**
+ *  \struct
+ *  \brief
+ */
+struct SaveNotificationData
+{
+	SaveNotificationData(ComparedFile& savedFile) : file(savedFile) {}
+
+	ComparedFile		file;
+	int					firstVisibleLine;
+	int					position;
+	BlankSections_t		blankSections;
+};
+
+
 using ComparePair_t = std::pair<ComparedFile, ComparedFile>;
 using CompareList_t = std::vector<ComparePair_t>;
 
@@ -123,14 +138,12 @@ unsigned notificationsLock = 0;
 long start_line_old;
 long visible_line_count_old;
 
-// TCHAR emptyLinesDoc[MAX_PATH];
+std::unique_ptr<SaveNotificationData> saveNotifData;
 
 // int  tempWindow = -1;
 // bool skipAutoReset = false;
 // int closingWin = -1;
 // HWND closingView = NULL;
-// blankLineList* lastEmptyLines = NULL;
-// int  topLine = 0;
 // bool panelsOpened = false;
 
 CProgress* progDlg = NULL;
@@ -167,35 +180,24 @@ void loadSettings()
 
 	PathAppend(iniFilePath, TEXT("Compare.ini"));
 
-	// Try loading previous color settings
-	int colors = GetPrivateProfileInt(colorsSection, addedColorOption, -1, iniFilePath);
-
-	// If there is no previous color settings, load default value
-	if (colors == -1)
-	{
-		Settings.ColorSettings.added     = ::GetPrivateProfileInt(colorsSection, addedColorOption, DEFAULT_ADDED_COLOR, iniFilePath);
-		Settings.ColorSettings.deleted   = ::GetPrivateProfileInt(colorsSection, removedColorOption, DEFAULT_DELETED_COLOR, iniFilePath);
-		Settings.ColorSettings.changed   = ::GetPrivateProfileInt(colorsSection, changedColorOption, DEFAULT_CHANGED_COLOR, iniFilePath);
-		Settings.ColorSettings.moved     = ::GetPrivateProfileInt(colorsSection, movedColorOption, DEFAULT_MOVED_COLOR, iniFilePath);
-		Settings.ColorSettings.highlight = ::GetPrivateProfileInt(colorsSection, highlightColorOption, DEFAULT_HIGHLIGHT_COLOR, iniFilePath);
-		Settings.ColorSettings.alpha     = ::GetPrivateProfileInt(colorsSection, highlightAlphaOption, DEFAULT_HIGHLIGHT_ALPHA, iniFilePath);
-	}
-	// Else load stored color settings
-	else
-	{
-		Settings.ColorSettings.added     = ::GetPrivateProfileInt(colorsSection, addedColorOption, DEFAULT_ADDED_COLOR, iniFilePath);
-		Settings.ColorSettings.deleted   = ::GetPrivateProfileInt(colorsSection, removedColorOption, DEFAULT_DELETED_COLOR, iniFilePath);
-		Settings.ColorSettings.changed   = ::GetPrivateProfileInt(colorsSection, changedColorOption, DEFAULT_CHANGED_COLOR, iniFilePath);
-		Settings.ColorSettings.moved     = ::GetPrivateProfileInt(colorsSection, movedColorOption, DEFAULT_MOVED_COLOR, iniFilePath);
-		Settings.ColorSettings.highlight = ::GetPrivateProfileInt(colorsSection, highlightColorOption, DEFAULT_HIGHLIGHT_COLOR, iniFilePath);
-		Settings.ColorSettings.alpha     = ::GetPrivateProfileInt(colorsSection, highlightAlphaOption, DEFAULT_HIGHLIGHT_ALPHA, iniFilePath);
-	}
+	Settings.ColorSettings.added =
+			::GetPrivateProfileInt(colorsSection, addedColorOption, DEFAULT_ADDED_COLOR, iniFilePath);
+	Settings.ColorSettings.deleted =
+			::GetPrivateProfileInt(colorsSection, removedColorOption, DEFAULT_DELETED_COLOR, iniFilePath);
+	Settings.ColorSettings.changed =
+			::GetPrivateProfileInt(colorsSection, changedColorOption, DEFAULT_CHANGED_COLOR, iniFilePath);
+	Settings.ColorSettings.moved =
+			::GetPrivateProfileInt(colorsSection, movedColorOption, DEFAULT_MOVED_COLOR, iniFilePath);
+	Settings.ColorSettings.highlight =
+			::GetPrivateProfileInt(colorsSection, highlightColorOption, DEFAULT_HIGHLIGHT_COLOR, iniFilePath);
+	Settings.ColorSettings.alpha =
+			::GetPrivateProfileInt(colorsSection, highlightAlphaOption, DEFAULT_HIGHLIGHT_ALPHA, iniFilePath);
 
 	// Try loading behavior settings, else load default value
 	Settings.AddLine      = ::GetPrivateProfileInt(sectionName, addLinesOption, 1, iniFilePath) == 1;
 	Settings.IncludeSpace = ::GetPrivateProfileInt(sectionName, ignoreSpacesOption, 0, iniFilePath) == 1;
 	Settings.DetectMove   = ::GetPrivateProfileInt(sectionName, detectMovesOption, 1, iniFilePath) == 1;
-	Settings.UseNavBar    = ::GetPrivateProfileInt(sectionName, NavBarOption, 1, iniFilePath) == 1;
+	Settings.UseNavBar    = ::GetPrivateProfileInt(sectionName, NavBarOption, 0, iniFilePath) == 1;
 }
 
 
@@ -226,10 +228,14 @@ void saveSettings()
 	_itot_s(Settings.ColorSettings.alpha, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, highlightAlphaOption, buffer, iniFilePath);
 
-	::WritePrivateProfileString(sectionName, addLinesOption, Settings.AddLine ? TEXT("1") : TEXT("0"), iniFilePath);
-	::WritePrivateProfileString(sectionName, ignoreSpacesOption, Settings.IncludeSpace ? TEXT("1") : TEXT("0"), iniFilePath);
-	::WritePrivateProfileString(sectionName, detectMovesOption, Settings.DetectMove ? TEXT("1") : TEXT("0"), iniFilePath);
-	::WritePrivateProfileString(sectionName, NavBarOption, Settings.UseNavBar ? TEXT("1") : TEXT("0"), iniFilePath);
+	::WritePrivateProfileString(sectionName, addLinesOption,
+			Settings.AddLine ? TEXT("1") : TEXT("0"), iniFilePath);
+	::WritePrivateProfileString(sectionName, ignoreSpacesOption,
+			Settings.IncludeSpace ? TEXT("1") : TEXT("0"), iniFilePath);
+	::WritePrivateProfileString(sectionName, detectMovesOption,
+			Settings.DetectMove ? TEXT("1") : TEXT("0"), iniFilePath);
+	::WritePrivateProfileString(sectionName, NavBarOption,
+			Settings.UseNavBar ? TEXT("1") : TEXT("0"), iniFilePath);
 }
 
 
@@ -267,6 +273,9 @@ void NppSettings::restore()
 
 	compareMode = false;
 
+	::SendMessage(nppData._scintillaMainHandle, SCI_SETCARETLINEBACKALPHA, SC_ALPHA_NOALPHA, 0);
+	::SendMessage(nppData._scintillaSecondHandle, SCI_SETCARETLINEBACKALPHA, SC_ALPHA_NOALPHA, 0);
+
 	HMENU hMenu = ::GetMenu(nppData._nppHandle);
 
 	bool syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
@@ -286,6 +295,9 @@ void NppSettings::setCompareMode()
 
 	compareMode = true;
 
+	::SendMessage(nppData._scintillaMainHandle, SCI_SETCARETLINEBACKALPHA, 96, 0);
+	::SendMessage(nppData._scintillaSecondHandle, SCI_SETCARETLINEBACKALPHA, 96, 0);
+
 	HMENU hMenu = ::GetMenu(nppData._nppHandle);
 
 	bool syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
@@ -300,7 +312,7 @@ void NppSettings::setCompareMode()
 	if (!syncScroll)
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLH);
 
-	// let the second view inherit the zoom level of the main view
+	// synchronize zoom levels
 	int zoom = ::SendMessage(getCurrentView(), SCI_GETZOOM, 0, 0);
 	::SendMessage(getOtherView(), SCI_SETZOOM, zoom, 0);
 }
@@ -780,7 +792,7 @@ bool doCompare()
 						}
 						else
 						{
-							addEmptyLines(nppData._scintillaSecondHandle, off + doc2Offset, length);
+							addBlankSection(nppData._scintillaSecondHandle, off + doc2Offset, length);
 							doc2Offset += length;
 							off = doc1Changes[i].altLocation;
 							length = 1;
@@ -789,12 +801,7 @@ bool doCompare()
 				}
 			}
 
-			addEmptyLines(nppData._scintillaSecondHandle, off + doc2Offset, length);
-
-			if (doc2Offset > 0)
-			{
-				clearUndoBuffer(nppData._scintillaSecondHandle);
-			}
+			addBlankSection(nppData._scintillaSecondHandle, off + doc2Offset, length);
 
 			length = 0;
 			off = 0;
@@ -812,7 +819,7 @@ bool doCompare()
 						}
 						else
 						{
-							addEmptyLines(nppData._scintillaMainHandle, off + doc1Offset, length);
+							addBlankSection(nppData._scintillaMainHandle, off + doc1Offset, length);
 							doc1Offset += length;
 							off = doc2Changes[i].altLocation;
 							length = 1;
@@ -821,12 +828,7 @@ bool doCompare()
 				}
 			}
 
-			addEmptyLines(nppData._scintillaMainHandle, off + doc1Offset, length);
-
-			if (doc1Offset > 0)
-			{
-				clearUndoBuffer(nppData._scintillaMainHandle);
-			}
+			addBlankSection(nppData._scintillaMainHandle, off + doc1Offset, length);
 		}
 	}
 
@@ -891,9 +893,6 @@ bool prepareAndRunCompare()
 		::SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, false, 0);
 
 	setStyles(Settings);
-
-	::SendMessage(nppData._scintillaMainHandle, SCI_GOTOPOS, 0, 0);
-	::SendMessage(nppData._scintillaSecondHandle, SCI_GOTOPOS, 0, 0);
 
 	::SendMessage(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
 	::SendMessage(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
@@ -1006,9 +1005,6 @@ void restoreComparedFile(const ComparedFile& comparedFile)
 
 	clearWindow(hSci);
 
-	::SendMessage(hSci, SCI_SETMARGINMASKN, 4, 0);
-	::SendMessage(hSci, SCI_SETMARGINWIDTHN, 4, 0);
-
 	// Restore previous read-only attribute
 	if (RODoc)
 		::SendMessage(hSci, SCI_SETREADONLY, true, 0);
@@ -1055,12 +1051,13 @@ bool SelectFirstFile()
 		return false;
 	}
 
-	firstFile->originalSciView = getCurrentViewId();
-	firstFile->sciDoc = ::SendMessage(getCurrentView(), SCI_GETDOCPOINTER, 0, 0);
-	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(firstFile->name),
-			(LPARAM)firstFile->name);
+	HWND currView = getCurrentView();
 
-	fileToCompareCodepage = SendMessage(getCurrentView(), SCI_GETCODEPAGE, 0, 0);
+	firstFile->originalSciView = getCurrentViewId();
+	firstFile->sciDoc = ::SendMessage(currView, SCI_GETDOCPOINTER, 0, 0);
+	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(firstFile->name), (LPARAM)firstFile->name);
+
+	fileToCompareCodepage = SendMessage(currView, SCI_GETCODEPAGE, 0, 0);
 
 	return true;
 }
@@ -1450,7 +1447,7 @@ void OpenAboutDlg()
 
 void createMenu()
 {
-	_tcscpy_s(funcItem[CMD_SELECT_FIRST]._itemName, nbChar, TEXT("Select first..."));
+	_tcscpy_s(funcItem[CMD_SELECT_FIRST]._itemName, nbChar, TEXT("Select first to Compare"));
 	funcItem[CMD_SELECT_FIRST]._pFunc				= SelectFirstToCompare;
 	funcItem[CMD_SELECT_FIRST]._pShKey				= new ShortcutKey;
 	funcItem[CMD_SELECT_FIRST]._pShKey->_isAlt		= true;
@@ -1550,10 +1547,10 @@ void createMenu()
 	funcItem[CMD_LAST]._pShKey->_isShift	= false;
 	funcItem[CMD_LAST]._pShKey->_key 		= VK_NEXT;
 
-	_tcscpy_s(funcItem[CMD_OPTION]._itemName, nbChar, TEXT("Options"));
+	_tcscpy_s(funcItem[CMD_OPTION]._itemName, nbChar, TEXT("Options..."));
 	funcItem[CMD_OPTION]._pFunc = OpenOptionDlg;
 
-	_tcscpy_s(funcItem[CMD_ABOUT]._itemName, nbChar, TEXT("About"));
+	_tcscpy_s(funcItem[CMD_ABOUT]._itemName, nbChar, TEXT("About..."));
 	funcItem[CMD_ABOUT]._pFunc = OpenAboutDlg;
 }
 
@@ -1585,6 +1582,245 @@ void deinitPlugin()
 	for (int i = 0; i < NB_MENU_COMMANDS; i++)
 		if (funcItem[i]._pShKey != NULL)
 			delete funcItem[i]._pShKey;
+}
+
+
+void onToolBarReady()
+{
+	UINT style = (LR_SHARED | LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS);
+
+	tbPrev.hToolbarBmp	= (HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_PREV),	IMAGE_BITMAP, 0, 0, style);
+	tbNext.hToolbarBmp	= (HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NEXT),	IMAGE_BITMAP, 0, 0, style);
+	tbFirst.hToolbarBmp	= (HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_FIRST),	IMAGE_BITMAP, 0, 0, style);
+	tbLast.hToolbarBmp	= (HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_LAST),	IMAGE_BITMAP, 0, 0, style);
+
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_FIRST]._cmdID,	(LPARAM)&tbFirst);
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_PREV]._cmdID,	(LPARAM)&tbPrev);
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_NEXT]._cmdID,	(LPARAM)&tbNext);
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_LAST]._cmdID,	(LPARAM)&tbLast);
+
+	enableMenuCommands(false);
+
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID,
+			(LPARAM)Settings.AddLine);
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACING]._cmdID,
+			(LPARAM)Settings.IncludeSpace);
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID,
+			(LPARAM)Settings.DetectMove);
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_USE_NAV_BAR]._cmdID,
+			(LPARAM)Settings.UseNavBar);
+}
+
+
+void onSciPaint()
+{
+	// update NavBar if Npp views got scrolled, resized, etc..
+	long start_line, visible_line_count;
+
+	start_line = ::SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	visible_line_count = _MAX(
+			::SendMessage(nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0),
+			::SendMessage(nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0));
+	visible_line_count = ::SendMessage(nppData._scintillaMainHandle, SCI_VISIBLEFROMDOCLINE, visible_line_count, 0);
+
+	if ((start_line != start_line_old) || (visible_line_count != visible_line_count_old))
+	{
+		NavDlg.DrawView();
+		start_line_old = start_line;
+		visible_line_count_old = visible_line_count;
+	}
+}
+
+
+void onSciUpdateUI(SCNotification *notifyCode)
+{
+	HWND activeView = NULL;
+	HWND otherView = NULL;
+
+	if (notifyCode->updated & (SC_UPDATE_SELECTION | SC_UPDATE_V_SCROLL))
+	{
+		int currentView = -1;
+
+		if (notifyCode->updated & SC_UPDATE_SELECTION)
+		{
+			currentView = getCurrentViewId();
+		}
+		else if (notifyCode->updated & SC_UPDATE_V_SCROLL)
+		{
+			if (notifyCode->nmhdr.hwndFrom == nppData._scintillaMainHandle)
+				currentView = MAIN_VIEW;
+			else if (notifyCode->nmhdr.hwndFrom == nppData._scintillaSecondHandle)
+				currentView = SUB_VIEW;
+		}
+		if (currentView != -1)
+		{
+			activeView = getView(currentView);
+			otherView = getView(!currentView);
+		}
+	}
+
+	if ((activeView != NULL) && (otherView != NULL))
+	{
+		int activeViewTopLine = ::SendMessage(activeView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+		activeViewTopLine = ::SendMessage(activeView, SCI_DOCLINEFROMVISIBLE, activeViewTopLine, 0);
+		int otherViewTopLine = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, activeViewTopLine, 0);
+		::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, otherViewTopLine, 0);
+	}
+}
+
+
+void onSciModified(SCNotification *notifyCode)
+{
+	CompareList_t::iterator cmpPair = getCompare(::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0));
+	if (cmpPair == compareList.end())
+		return;
+
+	if (notifyCode->modificationType == (SC_MOD_BEFOREDELETE | SC_PERFORMED_USER))
+	{
+		AutoIncrementer autoIncr(notificationsLock);
+
+		HWND currentView = getCurrentView();
+
+		int line = ::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+		const int endLine =
+			::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position + notifyCode->length, 0);
+
+		while (line < endLine)
+			::SendMessage(currentView, SCI_MARKERDELETE, line++, -1);
+	}
+}
+
+
+void onSciZoom()
+{
+	CompareList_t::iterator cmpPair = getCompare(::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0));
+	if (cmpPair == compareList.end())
+		return;
+
+	AutoIncrementer autoIncr(notificationsLock);
+
+	// sync both views zoom
+	int zoom = ::SendMessage(getCurrentView(), SCI_GETZOOM, 0, 0);
+	::SendMessage(getOtherView(), SCI_SETZOOM, zoom, 0);
+}
+
+
+void onBufferActivated(SCNotification *notifyCode)
+{
+	CompareList_t::iterator cmpPair = getCompare(notifyCode->nmhdr.idFrom);
+
+	if (cmpPair == compareList.end())
+	{
+		enableMenuCommands(false);
+
+		if (NavDlg.isVisible())
+			NavDlg.doDialog(false);
+
+		nppSettings.restore();
+	}
+	else
+	{
+		// Compared file moved to other view? -> clear compare
+		if (viewIdFromBuffId(cmpPair->first.buffId) == viewIdFromBuffId(cmpPair->second.buffId))
+		{
+			enableMenuCommands(false);
+
+			if (NavDlg.isVisible())
+				NavDlg.doDialog(false);
+
+			nppSettings.restore();
+
+			clearComparePair(notifyCode->nmhdr.idFrom);
+			return;
+		}
+
+		bool switchedFromOtherPair = false;
+		const int otherViewId = getOtherViewId();
+		ComparedFile& otherFile = getFileFromPair(*cmpPair, otherViewId);
+
+		// When compared file is activated make sure its corresponding pair file is
+		// also active in the other view
+		if (::SendMessage(getView(otherViewId), SCI_GETDOCPOINTER, 0, 0) != otherFile.sciDoc)
+		{
+			AutoIncrementer autoIncr(notificationsLock);
+
+			activateBufferID(otherFile.buffId);
+			activateBufferID(notifyCode->nmhdr.idFrom);
+
+			switchedFromOtherPair = true;
+		}
+
+		enableMenuCommands(true);
+
+		if (Settings.UseNavBar && (switchedFromOtherPair || !NavDlg.isVisible()))
+			NavDlg.doDialog(true);
+
+		nppSettings.setCompareMode();
+	}
+
+	::SetFocus(getCurrentView());
+}
+
+
+void onFileBeforeClose(SCNotification *notifyCode)
+{
+	CompareList_t::iterator cmpPair = getCompare(notifyCode->nmhdr.idFrom);
+	if (cmpPair == compareList.end())
+		return;
+
+	enableMenuCommands(false);
+
+	if (NavDlg.isVisible())
+		NavDlg.doDialog(false);
+
+	nppSettings.restore();
+
+	AutoIncrementer autoIncr(notificationsLock);
+
+	if (cmpPair->first.buffId == (int)notifyCode->nmhdr.idFrom)
+		restoreComparedFile(cmpPair->second);
+	else
+		restoreComparedFile(cmpPair->first);
+
+	compareList.erase(cmpPair);
+
+	::SetFocus(getCurrentView());
+}
+
+
+void onFileBeforeSave(SCNotification *notifyCode)
+{
+	CompareList_t::iterator cmpPair = getCompare(notifyCode->nmhdr.idFrom);
+	if (cmpPair == compareList.end())
+		return;
+
+	const int viewId = viewIdFromBuffId(notifyCode->nmhdr.idFrom);
+	HWND view = getView(viewId);
+	ComparedFile& cmpFile = getFileFromPair(*cmpPair, viewId);
+
+	saveNotifData.reset(new SaveNotificationData(cmpFile));
+
+	saveNotifData->firstVisibleLine = ::SendMessage(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	saveNotifData->position = ::SendMessage(view, SCI_GETCURRENTPOS, 0, 0);
+	saveNotifData->blankSections = removeBlankLines(view, true);
+}
+
+
+void onFileSaved(SCNotification *notifyCode)
+{
+	if (saveNotifData->file.buffId == (int)notifyCode->nmhdr.idFrom)
+	{
+		const int viewId = viewIdFromBuffId(notifyCode->nmhdr.idFrom);
+		HWND view = getView(viewId);
+
+		if (!saveNotifData->blankSections.empty())
+			addBlankLines(view, saveNotifData->blankSections);
+
+		::SendMessage(view, SCI_SETFIRSTVISIBLELINE, saveNotifData->firstVisibleLine, 0);
+		::SendMessage(view, SCI_SETSEL, saveNotifData->position, saveNotifData->position);
+	}
+
+	saveNotifData.reset();
 }
 
 } // anonymous namespace
@@ -1656,6 +1892,7 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID)
 }
 
 
+//
 // Notepad++ API functions below
 //
 
@@ -1688,244 +1925,47 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 {
 	switch (notifyCode->nmhdr.code)
 	{
+		// This is used to update the NavBar
 		case SCN_PAINTED:
-		{
 			if (NavDlg.isVisible())
-			{
-				// update NavBar if Npp views got scrolled, resized, etc..
-				long start_line, visible_line_count;
-
-				start_line = ::SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
-				visible_line_count = _MAX(
-						::SendMessage(nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0),
-						::SendMessage(nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0));
-				visible_line_count =
-						::SendMessage(nppData._scintillaMainHandle, SCI_VISIBLEFROMDOCLINE, visible_line_count, 0);
-
-				if ((start_line != start_line_old) || (visible_line_count != visible_line_count_old))
-				{
-					NavDlg.DrawView();
-					start_line_old = start_line;
-					visible_line_count_old = visible_line_count;
-				}
-			}
-		}
+				onSciPaint();
 		break;
 
+		// Emulate word-wrap aware vertical scroll sync
 		case SCN_UPDATEUI:
-		{
 			if (nppSettings.compareMode)
-			{
-				HWND activeView = NULL;
-				HWND otherView = NULL;
-
-				if (notifyCode->updated & (SC_UPDATE_SELECTION | SC_UPDATE_V_SCROLL))
-				{
-					int currentView = -1;
-
-					if (notifyCode->updated & SC_UPDATE_SELECTION)
-					{
-						currentView = getCurrentViewId();
-					}
-					else if (notifyCode->updated & SC_UPDATE_V_SCROLL)
-					{
-						if (notifyCode->nmhdr.hwndFrom == nppData._scintillaMainHandle)
-							currentView = MAIN_VIEW;
-						else if (notifyCode->nmhdr.hwndFrom == nppData._scintillaSecondHandle)
-							currentView = SUB_VIEW;
-					}
-					if (currentView != -1)
-					{
-						activeView = getView(currentView);
-						otherView = getView(!currentView);
-					}
-				}
-
-				if ((activeView != NULL) && (otherView != NULL))
-				{
-					int activeViewTopLine = ::SendMessage(activeView, SCI_GETFIRSTVISIBLELINE, 0, 0);
-					activeViewTopLine = ::SendMessage(activeView, SCI_DOCLINEFROMVISIBLE, activeViewTopLine, 0);
-					int otherViewTopLine = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, activeViewTopLine, 0);
-					::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, otherViewTopLine, 0);
-				}
-			}
-		}
+				onSciUpdateUI(notifyCode);
 		break;
 
 		case NPPN_BUFFERACTIVATED:
-		{
 			if (!notificationsLock && !compareList.empty())
-			{
-				CompareList_t::iterator cmpPair = getCompare(notifyCode->nmhdr.idFrom);
-
-				if (cmpPair == compareList.end())
-				{
-					enableMenuCommands(false);
-
-					if (NavDlg.isVisible())
-						NavDlg.doDialog(false);
-
-					nppSettings.restore();
-				}
-				else
-				{
-					// Compared file moved to other view? -> clear compare
-					if (viewIdFromBuffId(cmpPair->first.buffId) == viewIdFromBuffId(cmpPair->second.buffId))
-					{
-						enableMenuCommands(false);
-
-						if (NavDlg.isVisible())
-							NavDlg.doDialog(false);
-
-						nppSettings.restore();
-
-						clearComparePair(notifyCode->nmhdr.idFrom);
-						return;
-					}
-
-					bool switchedFromOtherPair = false;
-					const int otherViewId = getOtherViewId();
-					ComparedFile& otherFile = getFileFromPair(*cmpPair, otherViewId);
-
-					// When compared file is activated make sure its corresponding pair file is
-					// also active in the other view
-					if (::SendMessage(getView(otherViewId), SCI_GETDOCPOINTER, 0, 0) != otherFile.sciDoc)
-					{
-						AutoIncrementer autoIncr(notificationsLock);
-
-						activateBufferID(otherFile.buffId);
-						activateBufferID(notifyCode->nmhdr.idFrom);
-
-						switchedFromOtherPair = true;
-					}
-
-					enableMenuCommands(true);
-
-					if (Settings.UseNavBar && (switchedFromOtherPair || !NavDlg.isVisible()))
-						NavDlg.doDialog(true);
-
-					nppSettings.setCompareMode();
-				}
-
-				::SetFocus(getCurrentView());
-			}
-		}
+				onBufferActivated(notifyCode);
 		break;
 
 		case NPPN_FILEBEFORECLOSE:
-		{
 			if (!notificationsLock && !compareList.empty())
-			{
-				CompareList_t::iterator cmpPair = getCompare(notifyCode->nmhdr.idFrom);
-
-				if (cmpPair != compareList.end())
-				{
-					enableMenuCommands(false);
-
-					if (NavDlg.isVisible())
-						NavDlg.doDialog(false);
-
-					nppSettings.restore();
-
-					AutoIncrementer autoIncr(notificationsLock);
-
-					if (cmpPair->first.buffId == (int)notifyCode->nmhdr.idFrom)
-						restoreComparedFile(cmpPair->second);
-					else
-						restoreComparedFile(cmpPair->first);
-
-					compareList.erase(cmpPair);
-
-					::SetFocus(getCurrentView());
-				}
-			}
-		}
+				onFileBeforeClose(notifyCode);
 		break;
 
 		case NPPN_FILEBEFORESAVE:
-		{
-			// ::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(emptyLinesDoc), (LPARAM)emptyLinesDoc);
-
-			// HWND window = getCurrentView();
-			// int win = ::SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
-
-			// if (getCompare(win) != compareList.end())
-			// {
-				// topLine = ::SendMessage(window, SCI_GETFIRSTVISIBLELINE, 0, 0);
-				// lastEmptyLines = removeEmptyLines(window, true);
-			// }
-			// else
-			// {
-				// lastEmptyLines = NULL;
-			// }
-		}
+			if (!compareList.empty())
+				onFileBeforeSave(notifyCode);
 		break;
 
 		case NPPN_FILESAVED:
-		{
-			// TCHAR name[MAX_PATH];
-			// ::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(name), (LPARAM)name);
-
-			// if (lastEmptyLines != NULL && _tcscmp(name, emptyLinesDoc) == 0)
-			// {
-				// HWND window = getCurrentView();
-				// ::addBlankLines(window,lastEmptyLines);
-				// int linesOnScreen = ::SendMessage(window, SCI_LINESONSCREEN, 0, 0);
-				// int curPosBeg = ::SendMessage(window, SCI_GETSELECTIONSTART, 0, 0);
-				// int curPosEnd = ::SendMessage(window, SCI_GETSELECTIONEND, 0, 0);
-				// ::SendMessage(window, SCI_GOTOLINE, topLine, 0);
-				// ::SendMessage(window, SCI_GOTOLINE, topLine + linesOnScreen - 1, 0);
-				// ::SendMessage(window, SCI_SETSEL, curPosBeg, curPosEnd);
-				// cleanEmptyLines(lastEmptyLines);
-				// delete lastEmptyLines;
-				// lastEmptyLines = NULL;
-				// emptyLinesDoc[0] = 0;
-			// }
-		}
+			if ((bool)saveNotifData)
+				onFileSaved(notifyCode);
 		break;
 
+		// This is used to monitor deletion of lines to properly clear their compare markings
         case SCN_MODIFIED:
-        {
-			if ((!notificationsLock) && !compareList.empty())
-			{
-				CompareList_t::iterator cmpPair =
-						getCompare(::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0));
-
-				if (cmpPair != compareList.end() &&
-						notifyCode->modificationType & (SC_MOD_BEFOREDELETE | SC_PERFORMED_USER))
-				{
-					AutoIncrementer autoIncr(notificationsLock);
-
-					HWND currentView = getCurrentView();
-
-					int line = ::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
-					const int endLine =
-						::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position + notifyCode->length, 0);
-
-					while (line < endLine)
-						::SendMessage(currentView, SCI_MARKERDELETE, line++, -1);
-				}
-			}
-        }
+			if (!notificationsLock && nppSettings.compareMode)
+				onSciModified(notifyCode);
         break;
 
         case SCN_ZOOM:
-        {
-			if (!notificationsLock && !compareList.empty())
-			{
-				CompareList_t::iterator cmpPair =
-						getCompare(::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0));
-
-				if (cmpPair != compareList.end())
-				{
-					AutoIncrementer autoIncr(notificationsLock);
-
-					// sync both views zoom
-					int zoom = ::SendMessage(getCurrentView(), SCI_GETZOOM, 0, 0);
-					::SendMessage(getOtherView(), SCI_SETZOOM, zoom, 0);
-				}
-			}
-        }
+			if (!notificationsLock && nppSettings.compareMode)
+				onSciZoom();
         break;
 
         case NPPN_WORDSTYLESUPDATED:
@@ -1941,33 +1981,12 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
         break;
 
 		case NPPN_TBMODIFICATION:
-		{
-			UINT style = (LR_SHARED | LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS);
-
-			tbPrev.hToolbarBmp = (HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_PREV), IMAGE_BITMAP, 0, 0, style);
-			tbNext.hToolbarBmp = (HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NEXT), IMAGE_BITMAP, 0, 0, style);
-			tbFirst.hToolbarBmp = (HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_FIRST), IMAGE_BITMAP, 0, 0, style);
-			tbLast.hToolbarBmp = (HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_LAST), IMAGE_BITMAP, 0, 0, style);
-
-			::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_FIRST]._cmdID, (LPARAM)&tbFirst);
-			::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_PREV]._cmdID, (LPARAM)&tbPrev);
-			::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_NEXT]._cmdID, (LPARAM)&tbNext);
-			::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_LAST]._cmdID, (LPARAM)&tbLast);
-
-			enableMenuCommands(false);
-
-			::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID, (LPARAM)Settings.AddLine);
-			::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACING]._cmdID, (LPARAM)Settings.IncludeSpace);
-			::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID, (LPARAM)Settings.DetectMove);
-			::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_USE_NAV_BAR]._cmdID, (LPARAM)Settings.UseNavBar);
-		}
+			onToolBarReady();
 		break;
 
 		case NPPN_SHUTDOWN:
-		{
 			saveSettings();
 			deinitPlugin();
-		}
 		break;
 	}
 }

@@ -162,16 +162,14 @@ void setStyles(sUserSettings& Settings)
     int colorShift = 0;
 
     if (((r + g + b) / 3) >= 128)
-    {
         colorShift = -30;
-    }
     else
-    {
         colorShift = 30;
-    }
+
     r = (r + colorShift) & 0xFF;
     g = (g + colorShift) & 0xFF;
     b = (b + colorShift) & 0xFF;
+
     Settings.ColorSettings.blank = r | (g << 8) | (b << 16);
 
     int MarginMask = (1 << MARKER_CHANGED_SYMBOL) |
@@ -202,41 +200,41 @@ void setStyles(sUserSettings& Settings)
 }
 
 
-void markAsBlank(HWND window,int line)
+void markAsBlank(HWND window, int line)
 {
 	::SendMessage(window, SCI_MARKERADD, line, MARKER_BLANK_LINE);
 }
 
 
-void markAsAdded(HWND window,int line)
+void markAsAdded(HWND window, int line)
 {
 	::SendMessage(window, SCI_MARKERADD, line, (LPARAM)MARKER_ADDED_SYMBOL);
 	::SendMessage(window, SCI_MARKERADD, line, (LPARAM)MARKER_ADDED_LINE);
 }
 
 
-void markAsChanged(HWND window,int line)
+void markAsChanged(HWND window, int line)
 {
 	::SendMessage(window, SCI_MARKERADD, line, (LPARAM)MARKER_CHANGED_SYMBOL);
 	::SendMessage(window, SCI_MARKERADD, line, (LPARAM)MARKER_CHANGED_LINE);
 }
 
 
-void markAsRemoved(HWND window,int line)
+void markAsRemoved(HWND window, int line)
 {
 	::SendMessage(window, SCI_MARKERADD, line, (LPARAM)MARKER_REMOVED_SYMBOL);
 	::SendMessage(window, SCI_MARKERADD, line, (LPARAM)MARKER_REMOVED_LINE);
 }
 
 
-void markAsMoved(HWND window,int line)
+void markAsMoved(HWND window, int line)
 {
 	::SendMessage(window, SCI_MARKERADD, line, (LPARAM)MARKER_MOVED_SYMBOL);
 	::SendMessage(window, SCI_MARKERADD, line, (LPARAM)MARKER_MOVED_LINE);
 }
 
 
-void markTextAsChanged(HWND window,int start,int length)
+void markTextAsChanged(HWND window, int start, int length)
 {
 	if(length!=0)
 	{
@@ -255,7 +253,7 @@ DocLines_t getAllLines(HWND window, std::vector<int>& lineNum)
 	DocLines_t lines(docLines);
 	lineNum.resize(docLines);
 
-	for (int line = 0; line < docLines; line++)
+	for (int line = 0; line < docLines; ++line)
 	{
 		Sci_TextRange tr;
 		tr.chrg.cpMin = ::SendMessage(window, SCI_POSITIONFROMLINE, line, 0);
@@ -275,115 +273,9 @@ DocLines_t getAllLines(HWND window, std::vector<int>& lineNum)
 }
 
 
-int deleteLine(HWND window, int line)
-{
-	int posAdd = ::SendMessage(window, SCI_POSITIONFROMLINE, line, 0);
-	::SendMessage(window, SCI_SETTARGETSTART, posAdd, 0);
-	int docLength = ::SendMessage(window, SCI_GETLINECOUNT, 0, 0) - 1;
-	int length = 0;//::SendMessage(window, SCI_LINELENGTH, line, 0);
-	UINT EOLtype = ::SendMessage(window,SCI_GETEOLMODE, 0, 0);
-
-	//::SendMessage(window,SCI_TARGETFROMSELECTION,0,0);
-	int start = line;
-	int lines = 0;
-	int marker = ::SendMessage(window, SCI_MARKERGET, line, 0);
-	int blankMask = 1 << MARKER_BLANK_LINE;
-
-	while((marker & blankMask) != 0)
-	{
-		unsigned int lineLength = ::SendMessage(window, SCI_LINELENGTH, line, 0);
-
-		// don't delete lines that actually have text in them
-		if ((line < docLength && lineLength > lenEOL[EOLtype]) ||
-			(line == docLength && lineLength > 0))
-			break;
-
-		++lines;
-		length += lineLength;
-		++line;
-		marker = ::SendMessage(window, SCI_MARKERGET, line, 0);
-	}
-
-	// select the end of the lines, and unmark them so they aren't called for delete again
-	::SendMessage(window, SCI_SETTARGETEND, posAdd+length, 0);
-	for (int i = start; i < line; ++i)
-		::SendMessage(window, SCI_MARKERDELETE, i, MARKER_BLANK_LINE);
-
-	//if we're at the end of the document, we can't delete that line, because it doesn't have any EOL characters to delete
-	//, so we have to delete the EOL on the previous line
-	if (line > docLength)
-	{
-		::SendMessage(window, SCI_SETTARGETSTART, posAdd - (lenEOL[EOLtype]), 0);
-		length += lenEOL[EOLtype];
-	}
-
-	if (length > 0)
-	{
-		::SendMessage(window, SCI_MARKERDELETE, line, MARKER_BLANK_LINE);
-		::SendMessage(window, SCI_REPLACETARGET, 0, (LPARAM)"");
-
-		return lines;
-	}
-
-	::SendMessage(window, SCI_MARKERDELETE, line, MARKER_BLANK_LINE);
-
-	return 0;
-}
-
-
-blankLineList *removeEmptyLines(HWND window, bool saveList)
-{
-	::SendMessage(window, SCI_SETUNDOCOLLECTION, FALSE, 0);
-
-	blankLineList *list = NULL;
-
-	//int curPosBeg = ::SendMessage(window, SCI_GETSELECTIONSTART, 0, 0);
-	//int curPosEnd = ::SendMessage(window, SCI_GETSELECTIONEND, 0, 0);
-	int marker = 1 << MARKER_BLANK_LINE;
-	int line = ::SendMessage(window, SCI_MARKERNEXT, 0, marker);
-
-	while (line != -1)
-	{
-		int lines = deleteLine(window, line);
-
-		if (lines > 0 && saveList)
-		{
-			blankLineList *newLine = new blankLineList;
-			newLine->next = list;
-			newLine->line = line;
-			newLine->length = lines;
-			list = newLine;
-		}
-
-		line = ::SendMessage(window, SCI_MARKERNEXT, 0, (LPARAM)marker);
-	}
-
-	//::SendMessage(window, SCI_SETSEL, curPosBeg, curPosEnd);
-	::SendMessage(window, SCI_SETUNDOCOLLECTION, TRUE, 0);
-
-	return list;
-}
-
-
-void clearUndoBuffer(HWND window){
-	int modified=::SendMessage(window, SCI_GETMODIFY, 0, 0);
-		::SendMessage(window, SCI_EMPTYUNDOBUFFER, 0, 0);
-		if(modified){
-			::SendMessage(window, SCI_BEGINUNDOACTION, 0, 0);
-			char fake[2];
-			fake[1]=0;
-			fake[0]=(char)::SendMessage(window, SCI_GETCHARAT, 0, 0);
-			::SendMessage(window, SCI_SETTARGETSTART, 0, 0);
-			::SendMessage(window, SCI_SETTARGETEND, 1, 0);
-			::SendMessage(window, SCI_REPLACETARGET, 1, (LPARAM)fake);
-			::SendMessage(window, SCI_ENDUNDOACTION, 0, 0);
-		}
-}
-
-
 void clearWindow(HWND window)
 {
-	bool clearUndo = (removeEmptyLines(window, false) != NULL);
+	removeBlankLines(window, false);
 
 	::SendMessage(window, SCI_MARKERDELETEALL, MARKER_CHANGED_LINE,   MARKER_CHANGED_LINE);
 	::SendMessage(window, SCI_MARKERDELETEALL, MARKER_ADDED_LINE,     MARKER_ADDED_LINE);
@@ -407,92 +299,118 @@ void clearWindow(HWND window)
 	::SendMessage(window, SCI_COLOURISE, 0, -1);
 	::SendMessage(window, SCN_UPDATEUI, 0, 0);
 
-	if (clearUndo)
-		clearUndoBuffer(window);
+	::SendMessage(window, SCI_SETMARGINMASKN, 4, 0);
+	::SendMessage(window, SCI_SETMARGINWIDTHN, 4, 0);
 }
 
 
-void addBlankLines(HWND window,blankLineList *list){
-	::SendMessage(window, SCI_SETUNDOCOLLECTION, FALSE, 0);
-	while(list!=NULL){
-		addEmptyLines(window,list->line,list->length);
-		list=list->next;
-	}
-	::SendMessage(window, SCI_SETUNDOCOLLECTION, TRUE, 0);
-}
-
-
-char *getAllText(HWND window,int *length){
-	int docLength=::SendMessage(window, SCI_GETLENGTH, 0, 0);
-	char *text = new char[docLength+1];
-	::SendMessage(window, SCI_GETTEXT, docLength, (LPARAM)text);
-	text[docLength]=0;
-	*length=docLength;
-	return text;
-
-}
-
-
-void addEmptyLines(HWND hSci, int offset, int length)
+void addBlankSection(HWND window, int line, int length)
 {
 	if (length <= 0)
 		return;
 
-	::SendMessage(hSci, SCI_SETUNDOCOLLECTION, FALSE, 0);
+	::SendMessage(window, SCI_SETUNDOCOLLECTION, FALSE, 0);
 
-	int posAdd = 0;
-	UINT EOLtype = ::SendMessage(hSci,SCI_GETEOLMODE, 0, 0);
+	const UINT EOLtype = ::SendMessage(window, SCI_GETEOLMODE, 0, 0);
 
-	if (offset != 0)
-	{
-		int docLines = ::SendMessage(hSci, SCI_GETLINECOUNT, 0, 0);
-		posAdd= ::SendMessage(hSci, SCI_POSITIONFROMLINE, offset - 1, 0);
+	int posAdd = ::SendMessage(window, SCI_POSITIONFROMLINE, line, 0);
 
-		posAdd += (::SendMessage(hSci, SCI_LINELENGTH, offset - 1, 0) - lenEOL[EOLtype]);
+	if (line == ::SendMessage(window, SCI_GETLINECOUNT, 0, 0))
+		posAdd = ::SendMessage(window, SCI_GETLENGTH, 0, 0);
 
-		if (offset == docLines)
-			posAdd=::SendMessage(hSci, SCI_GETLENGTH, 0, 0);
-
-		if (posAdd != 0)
-			--posAdd;
-		else
-			posAdd = lenEOL[EOLtype] - 1;
-	}
-
-	::SendMessage(hSci, SCI_SETTARGETSTART, posAdd, 0);
-	::SendMessage(hSci, SCI_SETTARGETEND, posAdd + 1, 0);
-
-	int blankLinesLength = lenEOL[EOLtype] * length + 1;
-	int off = 0;
-	std::vector<char> buff(blankLinesLength);
-	int marker = 0;
-
-	if (offset == 0)
-	{
-		marker = ::SendMessage(hSci, SCI_MARKERGET, 0, 0);
-		::SendMessage(hSci, SCI_MARKERDELETE, 0, -1);
-		buff[blankLinesLength - 1] = (char)::SendMessage(hSci, SCI_GETCHARAT, posAdd, 0);
-		off = 0;
-	}
-	else
-	{
-		buff[0] = (char)::SendMessage(hSci, SCI_GETCHARAT, posAdd, 0);
-		off = 1;
-	}
+	std::vector<char> buff(lenEOL[EOLtype] * length);
 
 	for (int j = 0; j < length; ++j)
 	{
-		for (unsigned int i = 0; i < lenEOL[EOLtype]; ++i)
-			buff[j * lenEOL[EOLtype] + i + off] = strEOL[EOLtype][i];
+		unsigned int i = j * lenEOL[EOLtype];
+		for (const char* eol = strEOL[EOLtype]; *eol; ++eol)
+			buff[i++] = *eol;
 	}
 
-	::SendMessage(hSci, SCI_REPLACETARGET, blankLinesLength, (LPARAM)buff.data());
+	// SCI_INSERTTEXT needs \0 terminated string
+	buff.push_back(0);
+
+	::SendMessage(window, SCI_INSERTTEXT, posAdd, (LPARAM)buff.data());
 
 	for (int i = 0; i < length; ++i)
-		markAsBlank(hSci, offset + i);
+		markAsBlank(window, line + i);
 
-	if (offset == 0)
-		::SendMessage(hSci, SCI_MARKERADDSET, length, marker);
+	::SendMessage(window, SCI_SETUNDOCOLLECTION, TRUE, 0);
+}
 
-	::SendMessage(hSci, SCI_SETUNDOCOLLECTION, TRUE, 0);
+
+int deleteBlankSection(HWND window, int line)
+{
+	const int eolLen = lenEOL[::SendMessage(window, SCI_GETEOLMODE, 0, 0)];
+	const int lastLine = ::SendMessage(window, SCI_GETLINECOUNT, 0, 0) - 1;
+	const int blankMask = 1 << MARKER_BLANK_LINE;
+
+	int blankPos = ::SendMessage(window, SCI_POSITIONFROMLINE, line, 0);
+	int blankLen = 0;
+	int blankLines = 0;
+
+	while ((line <= lastLine) && (::SendMessage(window, SCI_MARKERGET, line, 0) & blankMask))
+	{
+		::SendMessage(window, SCI_MARKERDELETE, line, MARKER_BLANK_LINE);
+
+		const int lineLen = ::SendMessage(window, SCI_LINELENGTH, line, 0);
+
+		// don't delete lines that actually have text in them
+		if ((line < lastLine && lineLen > eolLen) || (line == lastLine && lineLen > 0))
+			break;
+
+		++blankLines;
+		blankLen += lineLen;
+		++line;
+	}
+
+	// if we're at the end of the document, we can't delete that line,
+	// because it doesn't have any EOL characters to delete,
+	// so we have to delete the EOL on the previous line
+	if (line > lastLine)
+	{
+		blankPos -= eolLen;
+		blankLen += eolLen;
+	}
+
+	if (blankLen > 0)
+		::SendMessage(window, SCI_DELETERANGE, blankPos, blankLen);
+
+	return blankLines;
+}
+
+
+void addBlankLines(HWND window, const BlankSections_t& blanks)
+{
+	if (blanks.empty())
+		return;
+
+	const int size = blanks.size();
+	for (int i = 0; i < size; ++i)
+		addBlankSection(window, blanks[i].startLine, blanks[i].length);
+}
+
+
+BlankSections_t removeBlankLines(HWND window, bool saveBlanks)
+{
+	BlankSections_t blanks;
+	const int marker = 1 << MARKER_BLANK_LINE;
+
+	::SendMessage(window, SCI_SETUNDOCOLLECTION, FALSE, 0);
+
+	int deletedLines = 0;
+	for (int line = ::SendMessage(window, SCI_MARKERNEXT, 0, marker); line != -1;
+			line = ::SendMessage(window, SCI_MARKERNEXT, line, marker))
+	{
+		const int len = deleteBlankSection(window, line);
+		if (len > 0 && saveBlanks)
+		{
+			blanks.emplace_back(line + deletedLines, len);
+			deletedLines += len;
+		}
+	}
+
+	::SendMessage(window, SCI_SETUNDOCOLLECTION, TRUE, 0);
+
+	return blanks;
 }
