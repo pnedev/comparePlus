@@ -1884,6 +1884,31 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		}
 		break;
 
+        case SCN_MODIFIED:
+        {
+			if ((!notificationsLock) && !compareList.empty())
+			{
+				CompareList_t::iterator cmpPair =
+						getCompare(::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0));
+
+				if (cmpPair != compareList.end() &&
+						notifyCode->modificationType & (SC_MOD_BEFOREDELETE | SC_PERFORMED_USER))
+				{
+					AutoIncrementer autoIncr(notificationsLock);
+
+					HWND currentView = getCurrentView();
+
+					int line = ::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+					const int endLine =
+						::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position + notifyCode->length, 0);
+
+					while (line < endLine)
+						::SendMessage(currentView, SCI_MARKERDELETE, line++, -1);
+				}
+			}
+        }
+        break;
+
         case SCN_ZOOM:
         {
 			if (!notificationsLock && !compareList.empty())
