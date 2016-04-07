@@ -1884,6 +1884,25 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		}
 		break;
 
+        case SCN_ZOOM:
+        {
+			if (!notificationsLock && !compareList.empty())
+			{
+				CompareList_t::iterator cmpPair =
+						getCompare(::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0));
+
+				if (cmpPair != compareList.end())
+				{
+					AutoIncrementer autoIncr(notificationsLock);
+
+					// sync both views zoom
+					int zoom = ::SendMessage(getCurrentView(), SCI_GETZOOM, 0, 0);
+					::SendMessage(getOtherView(), SCI_SETZOOM, zoom, 0);
+				}
+			}
+        }
+        break;
+
         case NPPN_WORDSTYLESUPDATED:
         {
 			setStyles(Settings);
