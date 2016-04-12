@@ -61,14 +61,14 @@ const TCHAR NavBarOption[]			= TEXT("Navigation bar");
  *  \struct
  *  \brief
  */
-struct ScopeIncrementer
+struct ScopedIncrementer
 {
-	ScopeIncrementer(unsigned& useCount) : _useCount(useCount)
+	ScopedIncrementer(unsigned& useCount) : _useCount(useCount)
 	{
 		++_useCount;
 	}
 
-	~ScopeIncrementer()
+	~ScopedIncrementer()
 	{
 		--_useCount;
 	}
@@ -843,22 +843,14 @@ CompareResult_t runCompare(CompareList_t::iterator& cmpPair)
 {
 	nppSettings.setCompareMode();
 
-	int RODoc1 = ::SendMessage(nppData._scintillaMainHandle, SCI_GETREADONLY, 0, 0);
-	// Remove read-only attribute
-	if (RODoc1)
-		::SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, false, 0);
-
-	int RODoc2 = ::SendMessage(nppData._scintillaSecondHandle, SCI_GETREADONLY, 0, 0);
-	// Remove read-only attribute
-	if (RODoc2)
-		::SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, false, 0);
+	ScopedViewWriteEnabler writeEn1(nppData._scintillaMainHandle);
+	ScopedViewWriteEnabler writeEn2(nppData._scintillaSecondHandle);
 
 	setStyles(Settings);
 
-	::SendMessage(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
-	::SendMessage(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, FALSE, 0);
+	ScopedViewUndoCollectionBlocker undoBlock1(nppData._scintillaMainHandle);
+	ScopedViewUndoCollectionBlocker undoBlock2(nppData._scintillaSecondHandle);
 
-	// Compare files (return true if files differ)
 	CompareResult_t result = COMPARE_ERROR;
 
 	try
@@ -877,16 +869,6 @@ CompareResult_t runCompare(CompareList_t::iterator& cmpPair)
 		progressClose();
 		MessageBoxA(nppData._nppHandle, "Unknown exception occurred.", "Compare Plugin", MB_OK | MB_ICONWARNING);
 	}
-
-	::SendMessage(nppData._scintillaMainHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
-	::SendMessage(nppData._scintillaSecondHandle, SCI_SETUNDOCOLLECTION, TRUE, 0);
-
-	// Restore previous read-only attribute
-	if (RODoc1)
-		::SendMessage(nppData._scintillaMainHandle, SCI_SETREADONLY, true, 0);
-
-	if (RODoc2)
-		::SendMessage(nppData._scintillaSecondHandle, SCI_SETREADONLY, true, 0);
 
 	return result;
 }
@@ -927,23 +909,17 @@ CompareList_t::iterator createComparePair()
 
 void restoreFile(const ComparedFile& comparedFile)
 {
-	const int sciViewId = viewIdFromBuffId(comparedFile.buffId);
-	HWND hSci = getView(sciViewId);
+	const int viewId = viewIdFromBuffId(comparedFile.buffId);
+	HWND hView = getView(viewId);
 
 	activateBufferID(comparedFile.buffId);
 
-	// Remove read-only attribute
-	const int RODoc = ::SendMessage(hSci, SCI_GETREADONLY, 0, 0);
-	if (RODoc)
-		::SendMessage(hSci, SCI_SETREADONLY, false, 0);
+	{
+		ScopedViewWriteEnabler writeEn(hView);
+		clearWindow(hView);
+	}
 
-	clearWindow(hSci);
-
-	// Restore previous read-only attribute
-	if (RODoc)
-		::SendMessage(hSci, SCI_SETREADONLY, true, 0);
-
-	if (sciViewId != comparedFile.originalViewId)
+	if (viewId != comparedFile.originalViewId)
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
 }
 
@@ -957,7 +933,7 @@ void clearComparePair(int buffId)
 
 	nppSettings.setNormalMode();
 
-	ScopeIncrementer scopeIncr(notificationsLock);
+	ScopedIncrementer incr(notificationsLock);
 
 	if (cmpPair->first.buffId == buffId)
 	{
@@ -1123,7 +1099,7 @@ void SetAsFirst()
 
 void Compare()
 {
-	ScopeIncrementer scopeIncr(notificationsLock);
+	ScopedIncrementer incr(notificationsLock);
 
 	CompareList_t::iterator cmpPair = getCompare(::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0));
 
@@ -1172,7 +1148,7 @@ void Compare()
 			if (::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin: Files Match"),
 					MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2) == IDYES)
 			{
-				ScopeIncrementer scopeIncr(notificationsLock);
+				ScopedIncrementer incr(notificationsLock);
 
 				nppSettings.setNormalMode();
 
@@ -1218,7 +1194,7 @@ void ClearAllCompares()
 
 	const int buffId = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
 
-	ScopeIncrementer scopeIncr(notificationsLock);
+	ScopedIncrementer incr(notificationsLock);
 
 	for (int i = compareList.size() - 1; i >= 0; --i)
 	{
@@ -1668,7 +1644,7 @@ void onSciModified(SCNotification *notifyCode)
 
 	if (notifyCode->modificationType == (SC_MOD_BEFOREDELETE | SC_PERFORMED_USER))
 	{
-		ScopeIncrementer scopeIncr(notificationsLock);
+		ScopedIncrementer incr(notificationsLock);
 
 		HWND currentView = getCurrentView();
 
@@ -1688,7 +1664,7 @@ void onSciZoom()
 	if (cmpPair == compareList.end())
 		return;
 
-	ScopeIncrementer scopeIncr(notificationsLock);
+	ScopedIncrementer incr(notificationsLock);
 
 	// sync both views zoom
 	int zoom = ::SendMessage(getCurrentView(), SCI_GETZOOM, 0, 0);
@@ -1721,7 +1697,7 @@ void onBufferActivated(SCNotification *notifyCode)
 		// also active in the other view
 		if (::SendMessage(getView(otherViewId), SCI_GETDOCPOINTER, 0, 0) != otherFile.sciDoc)
 		{
-			ScopeIncrementer scopeIncr(notificationsLock);
+			ScopedIncrementer incr(notificationsLock);
 
 			activateBufferID(otherFile.buffId);
 			activateBufferID(notifyCode->nmhdr.idFrom);
@@ -1748,7 +1724,7 @@ void onFileBeforeClose(SCNotification *notifyCode)
 
 	nppSettings.setNormalMode();
 
-	ScopeIncrementer scopeIncr(notificationsLock);
+	ScopedIncrementer incr(notificationsLock);
 
 	if (cmpPair->first.buffId == (int)notifyCode->nmhdr.idFrom)
 		restoreFile(cmpPair->second);

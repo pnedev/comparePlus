@@ -309,7 +309,7 @@ void addBlankSection(HWND window, int line, int length)
 	if (length <= 0)
 		return;
 
-	::SendMessage(window, SCI_SETUNDOCOLLECTION, FALSE, 0);
+	ScopedViewUndoCollectionBlocker undoBlock(window);
 
 	const UINT EOLtype = ::SendMessage(window, SCI_GETEOLMODE, 0, 0);
 
@@ -334,8 +334,6 @@ void addBlankSection(HWND window, int line, int length)
 
 	for (int i = 0; i < length; ++i)
 		markAsBlank(window, line + i);
-
-	::SendMessage(window, SCI_SETUNDOCOLLECTION, TRUE, 0);
 }
 
 

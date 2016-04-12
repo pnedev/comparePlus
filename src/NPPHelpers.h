@@ -19,10 +19,57 @@
 #pragma once
 
 #include <vector>
+#include "Compare.h"
 
 
-// Forward declarations
-struct sUserSettings;
+/**
+ *  \struct
+ *  \brief
+ */
+struct ScopedViewWriteEnabler
+{
+	ScopedViewWriteEnabler(HWND hView) : _hView(hView)
+	{
+		_isRO = ::SendMessage(_hView, SCI_GETREADONLY, 0, 0);
+		if (_isRO)
+			::SendMessage(_hView, SCI_SETREADONLY, false, 0);
+	}
+
+	~ScopedViewWriteEnabler()
+	{
+		if (_isRO)
+			::SendMessage(_hView, SCI_SETREADONLY, true, 0);
+	}
+
+private:
+	HWND	_hView;
+	int		_isRO;
+};
+
+
+/**
+ *  \struct
+ *  \brief
+ */
+struct ScopedViewUndoCollectionBlocker
+{
+	ScopedViewUndoCollectionBlocker(HWND hView) : _hView(hView)
+	{
+		_isUndoOn = ::SendMessage(_hView, SCI_GETUNDOCOLLECTION, 0, 0);
+		if (_isUndoOn)
+			::SendMessage(_hView, SCI_SETUNDOCOLLECTION, false, 0);
+	}
+
+	~ScopedViewUndoCollectionBlocker()
+	{
+		if (_isUndoOn)
+			::SendMessage(_hView, SCI_SETUNDOCOLLECTION, true, 0);
+	}
+
+private:
+	HWND	_hView;
+	int		_isUndoOn;
+};
 
 
 struct BlankSection
