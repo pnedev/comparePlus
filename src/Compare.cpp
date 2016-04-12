@@ -914,7 +914,10 @@ CompareList_t::iterator createComparePair()
 	activateBufferID(cmpPair.first.buffId);
 
 	if (moveToOtherViewNeeded && cmpPair.first.originalViewId == SUB_VIEW)
+	{
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
+		cmpPair.first.sciDoc = ::SendMessage(getCurrentView(), SCI_GETDOCPOINTER, 0, 0);
+	}
 
 	compareList.push_back(cmpPair);
 
