@@ -25,6 +25,7 @@
 /**
  *  \struct
  *  \brief
+ *  \warning  Don't use that helper struct if somewhere in its scope the hView document is changed!!!
  */
 struct ScopedViewWriteEnabler
 {
@@ -50,6 +51,7 @@ private:
 /**
  *  \struct
  *  \brief
+ *  \warning  Don't use that helper struct if somewhere in its scope the hView document is changed!!!
  */
 struct ScopedViewUndoCollectionBlocker
 {
@@ -93,8 +95,8 @@ HWND getCurrentView();
 int getOtherViewId();
 HWND getOtherView();
 
-int viewIdFromBuffId(int bufferID);
-void activateBufferID(int bufferID);
+int viewIdFromBuffId(int buffId);
+void activateBufferID(int buffId);
 
 void markTextAsChanged(HWND window, int start, int length);
 void markAsMoved(HWND window, int line);

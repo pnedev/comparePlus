@@ -185,7 +185,7 @@ void loadSettings()
 
 	::SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, (WPARAM)_countof(iniFilePath), (LPARAM)iniFilePath);
 
-	PathAppend(iniFilePath, TEXT("Compare.ini"));
+	::PathAppend(iniFilePath, TEXT("Compare.ini"));
 
 	Settings.ColorSettings.added =
 			::GetPrivateProfileInt(colorsSection, addedColorOption, DEFAULT_ADDED_COLOR, iniFilePath);
@@ -213,7 +213,7 @@ void saveSettings()
 	TCHAR iniFilePath[MAX_PATH];
 
 	::SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, (WPARAM)_countof(iniFilePath), (LPARAM)iniFilePath);
-	PathAppend(iniFilePath, TEXT("Compare.ini"));
+	::PathAppend(iniFilePath, TEXT("Compare.ini"));
 
 	TCHAR buffer[64];
 
@@ -278,7 +278,7 @@ CompareList_t::iterator getCompareBySciDoc(int sciDoc)
 
 void NppSettings::updatePluginMenu() const
 {
-	HMENU hMenu = ::GetMenu(nppData._nppHandle);
+	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
 	int flag = MF_BYCOMMAND | (compareMode ? MF_ENABLED : (MF_DISABLED | MF_GRAYED));
 
 	::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, flag);
@@ -291,7 +291,7 @@ void NppSettings::updatePluginMenu() const
 
 void NppSettings::save()
 {
-	HMENU hMenu = ::GetMenu(nppData._nppHandle);
+	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
 
 	syncVScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
 	syncHScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
@@ -313,7 +313,7 @@ void NppSettings::setNormalMode()
 	::SendMessage(nppData._scintillaMainHandle, SCI_SETCARETLINEBACKALPHA, SC_ALPHA_NOALPHA, 0);
 	::SendMessage(nppData._scintillaSecondHandle, SCI_SETCARETLINEBACKALPHA, SC_ALPHA_NOALPHA, 0);
 
-	HMENU hMenu = ::GetMenu(nppData._nppHandle);
+	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
 
 	bool syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
 	if (syncScroll != syncVScroll)
@@ -335,7 +335,7 @@ void NppSettings::setCompareMode()
 	::SendMessage(nppData._scintillaMainHandle, SCI_SETCARETLINEBACKALPHA, 96, 0);
 	::SendMessage(nppData._scintillaSecondHandle, SCI_SETCARETLINEBACKALPHA, 96, 0);
 
-	HMENU hMenu = ::GetMenu(nppData._nppHandle);
+	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
 
 	bool syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
 
@@ -410,7 +410,7 @@ void showNavBar()
 	visible_line_count_old = -1;
 
 	// Save current N++ focus
-	HWND hwnd = GetFocus();
+	HWND hwnd = ::GetFocus();
 
 	// Display NavBar
 	NavDlg.SetColor(Settings.ColorSettings);
@@ -543,7 +543,7 @@ void jumpChangedLines(bool direction)
 
 void openFile(const TCHAR *file)
 {
-	if(file == NULL || PathFileExists(file) == FALSE)
+	if(file == NULL || ::PathFileExists(file) == FALSE)
 	{
 		::MessageBox(nppData._nppHandle, TEXT("No file to open."), TEXT("Compare Plugin"), MB_OK);
 		return;
@@ -1093,7 +1093,8 @@ void SetAsFirst()
 	firstFileCodepage = SendMessage(view, SCI_GETCODEPAGE, 0, 0);
 
 	// Enable ClearCurrentCompare command to be able to clear the first file that was just set
-	::EnableMenuItem(::GetMenu(nppData._nppHandle), funcItem[CMD_CLEAR_CURRENT]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+	::EnableMenuItem((HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0),
+			funcItem[CMD_CLEAR_CURRENT]._cmdID, MF_BYCOMMAND | MF_ENABLED);
 }
 
 
@@ -1299,34 +1300,25 @@ void CompareToGit()
 
 void AlignMatches()
 {
-	HMENU hMenu = ::GetMenu(nppData._nppHandle);
 	Settings.AddLine = !Settings.AddLine;
-
-	if (hMenu)
-		::CheckMenuItem(hMenu, funcItem[CMD_ALIGN_MATCHES]._cmdID,
-				MF_BYCOMMAND | (Settings.AddLine ? MF_CHECKED : MF_UNCHECKED));
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID,
+			(LPARAM)Settings.AddLine);
 }
 
 
 void IncludeSpacing()
 {
-	HMENU hMenu = ::GetMenu(nppData._nppHandle);
 	Settings.IncludeSpace = !Settings.IncludeSpace;
-
-	if (hMenu)
-		::CheckMenuItem(hMenu, funcItem[CMD_IGNORE_SPACING]._cmdID,
-				MF_BYCOMMAND | (Settings.IncludeSpace ? MF_CHECKED : MF_UNCHECKED));
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACING]._cmdID,
+			(LPARAM)Settings.IncludeSpace);
 }
 
 
 void DetectMoves()
 {
-	HMENU hMenu = ::GetMenu(nppData._nppHandle);
 	Settings.DetectMove = !Settings.DetectMove;
-
-	if (hMenu)
-		::CheckMenuItem(hMenu, funcItem[CMD_DETECT_MOVES]._cmdID,
-				MF_BYCOMMAND | (Settings.DetectMove ? MF_CHECKED : MF_UNCHECKED));
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID,
+			(LPARAM)Settings.DetectMove);
 }
 
 
@@ -1798,12 +1790,9 @@ bool progressUpdate(int mid)
 
 void ViewNavigationBar()
 {
-	HMENU hMenu = ::GetMenu(nppData._nppHandle);
 	Settings.UseNavBar = !Settings.UseNavBar;
-
-	if (hMenu)
-		::CheckMenuItem(hMenu, funcItem[CMD_USE_NAV_BAR]._cmdID,
-				MF_BYCOMMAND | (Settings.UseNavBar ? MF_CHECKED : MF_UNCHECKED));
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_USE_NAV_BAR]._cmdID,
+			(LPARAM)Settings.UseNavBar);
 
 	if (nppSettings.compareMode)
 	{

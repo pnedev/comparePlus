@@ -82,16 +82,16 @@ HWND getOtherView()
 }
 
 
-int viewIdFromBuffId(int bufferID)
+int viewIdFromBuffId(int buffId)
 {
-	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, bufferID, 0);
+	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);
 	return (index >> 30);
 }
 
 
-void activateBufferID(int bufferID)
+void activateBufferID(int buffId)
 {
-	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, bufferID, 0);
+	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);
 	::SendMessage(nppData._nppHandle, NPPM_ACTIVATEDOC, index >> 30, index & 0x3FFFFFFF);
 }
 
@@ -394,7 +394,7 @@ BlankSections_t removeBlankLines(HWND window, bool saveBlanks)
 	BlankSections_t blanks;
 	const int marker = 1 << MARKER_BLANK_LINE;
 
-	::SendMessage(window, SCI_SETUNDOCOLLECTION, FALSE, 0);
+	ScopedViewUndoCollectionBlocker undoBlock(window);
 
 	int deletedLines = 0;
 	for (int line = ::SendMessage(window, SCI_MARKERNEXT, 0, marker); line != -1;
@@ -407,8 +407,6 @@ BlankSections_t removeBlankLines(HWND window, bool saveBlanks)
 			deletedLines += len;
 		}
 	}
-
-	::SendMessage(window, SCI_SETUNDOCOLLECTION, TRUE, 0);
 
 	return blanks;
 }
