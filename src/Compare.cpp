@@ -470,8 +470,7 @@ void jumpChangedLines(bool direction)
 			lineStart--;
 	}
 
-	if ((direction && (nextLine < prevLine)) ||
-		(!direction && (nextLine > prevLine)))
+	if ((direction && (nextLine < prevLine)) || (!direction && (nextLine > prevLine)))
 	{
 		FLASHWINFO flashInfo;
 		flashInfo.cbSize = sizeof(flashInfo);
@@ -479,7 +478,7 @@ void jumpChangedLines(bool direction)
 		flashInfo.uCount = 2;
 		flashInfo.dwTimeout = 100;
 		flashInfo.dwFlags = FLASHW_ALL;
-		FlashWindowEx(&flashInfo);
+		::FlashWindowEx(&flashInfo);
 	}
 
 	::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
@@ -494,7 +493,7 @@ void jumpChangedLines(bool direction)
 	// ::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(original), (LPARAM)original);
 	// HWND originalwindow = getCurrentView();
 
-	// LRESULT curBuffer = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+	// LRESULT curBuffer = getCurrentBuffId();
 	// LangType curLang = (LangType)::SendMessage(nppData._nppHandle, NPPM_GETBUFFERLANGTYPE, curBuffer, 0);
 
 	// int result = ::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)compareFilePath);
@@ -507,7 +506,7 @@ void jumpChangedLines(bool direction)
 		// ::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)compareFilePath);
 		// tempWindow = ::SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
 
-		// curBuffer = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+		// curBuffer = getCurrentBuffId();
 		// ::SendMessage(nppData._nppHandle, NPPM_SETBUFFERLANGTYPE, curBuffer, curLang);
 	// }
 
@@ -882,7 +881,7 @@ CompareList_t::iterator createComparePair()
 	firstFile.reset();
 
 	cmpPair.second.originalViewId = getCurrentViewId();
-	cmpPair.second.buffId = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+	cmpPair.second.buffId = getCurrentBuffId();
 
 	const bool moveToOtherViewNeeded = (cmpPair.first.originalViewId == cmpPair.second.originalViewId);
 
@@ -989,7 +988,7 @@ bool prepareFiles()
 	if (manualSelectionMode)
 	{
 		// Compare to self?
-		if (firstFile->buffId == ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0))
+		if (firstFile->buffId == getCurrentBuffId())
 		{
 			::MessageBox(nppData._nppHandle, TEXT("Trying to compare file to itself - operation ignored."),
 					TEXT("Compare Plugin"), MB_OK);
@@ -1082,7 +1081,7 @@ void SetAsFirst()
 {
 	firstFile.reset(new ComparedFile);
 
-	firstFile->buffId = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+	firstFile->buffId = getCurrentBuffId();
 
 	HWND view = getCurrentView();
 
@@ -1102,7 +1101,7 @@ void Compare()
 {
 	ScopedIncrementer incr(notificationsLock);
 
-	CompareList_t::iterator cmpPair = getCompare(::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0));
+	CompareList_t::iterator cmpPair = getCompare(getCurrentBuffId());
 
 	// New compare
 	if (cmpPair == compareList.end())
@@ -1180,7 +1179,7 @@ void ClearCurrentCompare()
 	if (!nppSettings.compareMode)
 		nppSettings.updatePluginMenu();
 	else
-		clearComparePair(::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0));
+		clearComparePair(getCurrentBuffId());
 }
 
 
@@ -1193,7 +1192,7 @@ void ClearAllCompares()
 	else
 		nppSettings.setNormalMode();
 
-	const int buffId = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+	const int buffId = getCurrentBuffId();
 
 	ScopedIncrementer incr(notificationsLock);
 
@@ -1630,7 +1629,7 @@ void onSciUpdateUI(SCNotification *notifyCode)
 
 void onSciModified(SCNotification *notifyCode)
 {
-	CompareList_t::iterator cmpPair = getCompare(::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0));
+	CompareList_t::iterator cmpPair = getCompare(getCurrentBuffId());
 	if (cmpPair == compareList.end())
 		return;
 
@@ -1652,7 +1651,7 @@ void onSciModified(SCNotification *notifyCode)
 
 void onSciZoom()
 {
-	CompareList_t::iterator cmpPair = getCompare(::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0));
+	CompareList_t::iterator cmpPair = getCompare(getCurrentBuffId());
 	if (cmpPair == compareList.end())
 		return;
 

@@ -30,9 +30,6 @@
 #define INDIC_HIGHLIGHT		INDIC_CONTAINER + 7
 
 
-extern NppData nppData;
-
-
 static const char strEOL[3][3] =
 {
 	"\r\n",
@@ -42,51 +39,6 @@ static const char strEOL[3][3] =
 
 
 static const unsigned short lenEOL[3] = { 2, 1, 1 };
-
-
-bool isSingleView()
-{
-	return (!IsWindowVisible(nppData._scintillaSecondHandle) || !IsWindowVisible(nppData._scintillaMainHandle));
-}
-
-
-HWND getView(int viewId)
-{
-	return (viewId == MAIN_VIEW) ? nppData._scintillaMainHandle : nppData._scintillaSecondHandle;
-}
-
-
-int getCurrentViewId()
-{
-	return ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0);
-}
-
-
-HWND getCurrentView()
-{
-	return (::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0) == MAIN_VIEW) ?
-			nppData._scintillaMainHandle : nppData._scintillaSecondHandle;
-}
-
-
-int getOtherViewId()
-{
-	return (::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0) == MAIN_VIEW) ? SUB_VIEW : MAIN_VIEW;
-}
-
-
-HWND getOtherView()
-{
-	return (::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0) == MAIN_VIEW) ?
-			nppData._scintillaSecondHandle : nppData._scintillaMainHandle;
-}
-
-
-int viewIdFromBuffId(int buffId)
-{
-	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);
-	return (index >> 30);
-}
 
 
 void activateBufferID(int buffId)

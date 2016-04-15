@@ -104,4 +104,7 @@ struct sUserSettings
 };
 
 
+extern NppData nppData;
+
+
 void ViewNavigationBar();

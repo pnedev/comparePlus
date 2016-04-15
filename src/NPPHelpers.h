@@ -87,15 +87,57 @@ using BlankSections_t = std::vector<BlankSection>;
 using DocLines_t = std::vector<std::vector<char>>;
 
 
-bool isSingleView();
+inline bool isSingleView()
+{
+	return (!::IsWindowVisible(nppData._scintillaSecondHandle) || !::IsWindowVisible(nppData._scintillaMainHandle));
+}
 
-HWND getView(int viewId);
-int getCurrentViewId();
-HWND getCurrentView();
-int getOtherViewId();
-HWND getOtherView();
 
-int viewIdFromBuffId(int buffId);
+inline HWND getView(int viewId)
+{
+	return (viewId == MAIN_VIEW) ? nppData._scintillaMainHandle : nppData._scintillaSecondHandle;
+}
+
+
+inline int getCurrentViewId()
+{
+	return ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0);
+}
+
+
+inline HWND getCurrentView()
+{
+	return (::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0) == MAIN_VIEW) ?
+			nppData._scintillaMainHandle : nppData._scintillaSecondHandle;
+}
+
+
+inline int getOtherViewId()
+{
+	return (::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0) == MAIN_VIEW) ? SUB_VIEW : MAIN_VIEW;
+}
+
+
+inline HWND getOtherView()
+{
+	return (::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0) == MAIN_VIEW) ?
+			nppData._scintillaSecondHandle : nppData._scintillaMainHandle;
+}
+
+
+inline int viewIdFromBuffId(int buffId)
+{
+	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);
+	return (index >> 30);
+}
+
+
+inline int getCurrentBuffId()
+{
+	return ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+}
+
+
 void activateBufferID(int buffId);
 
 void markTextAsChanged(HWND window, int start, int length);
