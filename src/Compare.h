@@ -96,10 +96,11 @@ struct sColorSettings
 
 struct sUserSettings
 {
-	bool           	UseNavBar;
+	int				FirstFileCompareViewId;
 	bool           	AddLine;
 	bool           	IncludeSpace;
 	bool           	DetectMove;
+	bool           	UseNavBar;
 	sColorSettings	ColorSettings;
 };
 

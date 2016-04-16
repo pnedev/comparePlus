@@ -42,10 +42,12 @@ namespace // anonymous namespace
 
 const TCHAR PLUGIN_NAME[]			= TEXT("Compare");
 
-const TCHAR sectionName[]			= TEXT("Compare Settings");
+const TCHAR mainSection[]			= TEXT("Compare Settings");
+const TCHAR firstFileViewOption[]	= TEXT("Place First Compared File in the Right/Bottom View");
 const TCHAR addLinesOption[]		= TEXT("Align Matches");
 const TCHAR ignoreSpacesOption[]	= TEXT("Include Spaces");
 const TCHAR detectMovesOption[]		= TEXT("Detect Move Blocks");
+const TCHAR NavBarOption[]			= TEXT("Navigation bar");
 
 const TCHAR colorsSection[]			= TEXT("Colors");
 const TCHAR addedColorOption[]		= TEXT("Added");
@@ -54,7 +56,6 @@ const TCHAR changedColorOption[]	= TEXT("Changed");
 const TCHAR movedColorOption[]		= TEXT("Moved");
 const TCHAR highlightColorOption[]	= TEXT("Highlight");
 const TCHAR highlightAlphaOption[]	= TEXT("Alpha");
-const TCHAR NavBarOption[]			= TEXT("Navigation bar");
 
 
 /**
@@ -200,11 +201,12 @@ void loadSettings()
 	Settings.ColorSettings.alpha =
 			::GetPrivateProfileInt(colorsSection, highlightAlphaOption, DEFAULT_HIGHLIGHT_ALPHA, iniFilePath);
 
-	// Try loading behavior settings, else load default value
-	Settings.AddLine      = ::GetPrivateProfileInt(sectionName, addLinesOption, 1, iniFilePath) == 1;
-	Settings.IncludeSpace = ::GetPrivateProfileInt(sectionName, ignoreSpacesOption, 0, iniFilePath) == 1;
-	Settings.DetectMove   = ::GetPrivateProfileInt(sectionName, detectMovesOption, 1, iniFilePath) == 1;
-	Settings.UseNavBar    = ::GetPrivateProfileInt(sectionName, NavBarOption, 0, iniFilePath) == 1;
+	Settings.FirstFileCompareViewId = ::GetPrivateProfileInt(mainSection, firstFileViewOption, SUB_VIEW, iniFilePath);
+
+	Settings.AddLine      = ::GetPrivateProfileInt(mainSection, addLinesOption,		1, iniFilePath) == 1;
+	Settings.IncludeSpace = ::GetPrivateProfileInt(mainSection, ignoreSpacesOption,	0, iniFilePath) == 1;
+	Settings.DetectMove   = ::GetPrivateProfileInt(mainSection, detectMovesOption,	1, iniFilePath) == 1;
+	Settings.UseNavBar    = ::GetPrivateProfileInt(mainSection, NavBarOption,		0, iniFilePath) == 1;
 }
 
 
@@ -235,13 +237,16 @@ void saveSettings()
 	_itot_s(Settings.ColorSettings.alpha, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, highlightAlphaOption, buffer, iniFilePath);
 
-	::WritePrivateProfileString(sectionName, addLinesOption,
+	_itot_s(Settings.FirstFileCompareViewId, buffer, 64, 10);
+	::WritePrivateProfileString(mainSection, firstFileViewOption, buffer, iniFilePath);
+
+	::WritePrivateProfileString(mainSection, addLinesOption,
 			Settings.AddLine ? TEXT("1") : TEXT("0"), iniFilePath);
-	::WritePrivateProfileString(sectionName, ignoreSpacesOption,
+	::WritePrivateProfileString(mainSection, ignoreSpacesOption,
 			Settings.IncludeSpace ? TEXT("1") : TEXT("0"), iniFilePath);
-	::WritePrivateProfileString(sectionName, detectMovesOption,
+	::WritePrivateProfileString(mainSection, detectMovesOption,
 			Settings.DetectMove ? TEXT("1") : TEXT("0"), iniFilePath);
-	::WritePrivateProfileString(sectionName, NavBarOption,
+	::WritePrivateProfileString(mainSection, NavBarOption,
 			Settings.UseNavBar ? TEXT("1") : TEXT("0"), iniFilePath);
 }
 
@@ -596,15 +601,29 @@ void openMemBlock(const char* memblock, long size)
 
 CompareResult_t doCompare(const TCHAR* first, const TCHAR* second)
 {
+	HWND view1;
+	HWND view2;
+
+	if (Settings.FirstFileCompareViewId == MAIN_VIEW)
+	{
+		view1 = nppData._scintillaSecondHandle;
+		view2 = nppData._scintillaMainHandle;
+	}
+	else
+	{
+		view1 = nppData._scintillaMainHandle;
+		view2 = nppData._scintillaSecondHandle;
+	}
+
 	std::vector<int> lineNum1;
-	const DocLines_t doc1 = getAllLines(nppData._scintillaMainHandle, lineNum1);
+	const DocLines_t doc1 = getAllLines(view1, lineNum1);
 	int doc1Length = doc1.size();
 
 	if (doc1Length == 1 && doc1[0][0] == 0)
 		return COMPARE_CANCELLED;
 
 	std::vector<int> lineNum2;
-	const DocLines_t doc2 = getAllLines(nppData._scintillaSecondHandle, lineNum2);
+	const DocLines_t doc2 = getAllLines(view2, lineNum2);
 	int doc2Length = doc2.size();
 
 	if (doc2Length == 1 && doc2[0][0] == 0)
@@ -725,22 +744,22 @@ CompareResult_t doCompare(const TCHAR* first, const TCHAR* second)
 			switch (doc1Changes[i].op)
 			{
 				case DIFF_DELETE:
-					markAsRemoved(nppData._scintillaMainHandle, doc1Changes[i].off);
+					markAsRemoved(view1, doc1Changes[i].off);
 				break;
 
 				case DIFF_CHANGE1:
-					markAsChanged(nppData._scintillaMainHandle, doc1Changes[i].off);
+					markAsChanged(view1, doc1Changes[i].off);
 					textIndex = lineNum1[doc1Changes[i].off];
 
 					for (unsigned int k = 0; k < doc1Changes[i].changeCount; ++k)
 					{
 						diff_change& change = doc1Changes[i].changes->get(k);
-						markTextAsChanged(nppData._scintillaMainHandle, textIndex + change.off, change.len);
+						markTextAsChanged(view1, textIndex + change.off, change.len);
 					}
 				break;
 
 				case DIFF_MOVE:
-					markAsMoved(nppData._scintillaMainHandle, doc1Changes[i].off);
+					markAsMoved(view1, doc1Changes[i].off);
 				break;
 			}
 		}
@@ -750,22 +769,22 @@ CompareResult_t doCompare(const TCHAR* first, const TCHAR* second)
 			switch (doc2Changes[i].op)
 			{
 				case DIFF_INSERT:
-					markAsAdded(nppData._scintillaSecondHandle, doc2Changes[i].off);
+					markAsAdded(view2, doc2Changes[i].off);
 				break;
 
 				case DIFF_CHANGE2:
-					markAsChanged(nppData._scintillaSecondHandle, doc2Changes[i].off);
+					markAsChanged(view2, doc2Changes[i].off);
 					textIndex = lineNum2[doc2Changes[i].off];
 
 					for (unsigned int k = 0; k < doc2Changes[i].changeCount; ++k)
 					{
 						diff_change& change = doc2Changes[i].changes->get(k);
-						markTextAsChanged(nppData._scintillaSecondHandle, textIndex + change.off, change.len);
+						markTextAsChanged(view2, textIndex + change.off, change.len);
 					}
 				break;
 
 				case DIFF_MOVE:
-					markAsMoved(nppData._scintillaSecondHandle, doc2Changes[i].off);
+					markAsMoved(view2, doc2Changes[i].off);
 				break;
 			}
 		}
@@ -789,7 +808,7 @@ CompareResult_t doCompare(const TCHAR* first, const TCHAR* second)
 						}
 						else
 						{
-							addBlankSection(nppData._scintillaSecondHandle, off + doc2Offset, length);
+							addBlankSection(view2, off + doc2Offset, length);
 							doc2Offset += length;
 							off = doc1Changes[i].altLocation;
 							length = 1;
@@ -798,7 +817,7 @@ CompareResult_t doCompare(const TCHAR* first, const TCHAR* second)
 				}
 			}
 
-			addBlankSection(nppData._scintillaSecondHandle, off + doc2Offset, length);
+			addBlankSection(view2, off + doc2Offset, length);
 
 			length = 0;
 			off = 0;
@@ -816,7 +835,7 @@ CompareResult_t doCompare(const TCHAR* first, const TCHAR* second)
 						}
 						else
 						{
-							addBlankSection(nppData._scintillaMainHandle, off + doc1Offset, length);
+							addBlankSection(view1, off + doc1Offset, length);
 							doc1Offset += length;
 							off = doc2Changes[i].altLocation;
 							length = 1;
@@ -825,7 +844,7 @@ CompareResult_t doCompare(const TCHAR* first, const TCHAR* second)
 				}
 			}
 
-			addBlankSection(nppData._scintillaMainHandle, off + doc1Offset, length);
+			addBlankSection(view1, off + doc1Offset, length);
 		}
 	}
 
@@ -876,28 +895,46 @@ CompareResult_t runCompare(CompareList_t::iterator& cmpPair)
 CompareList_t::iterator createComparePair()
 {
 	ComparePair_t cmpPair;
+	ComparedFile* first;
+	ComparedFile* second;
 
-	cmpPair.first = *firstFile;
+	if (Settings.FirstFileCompareViewId == MAIN_VIEW)
+	{
+		first = &cmpPair.first;
+		second = &cmpPair.second;
+	}
+	else
+	{
+		first = &cmpPair.second;
+		second = &cmpPair.first;
+	}
+
+	*first = *firstFile;
 	firstFile.reset();
 
-	cmpPair.second.originalViewId = getCurrentViewId();
-	cmpPair.second.buffId = getCurrentBuffId();
+	second->originalViewId = getCurrentViewId();
+	second->buffId = getCurrentBuffId();
+	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(second->name), (LPARAM)second->name);
 
-	const bool moveToOtherViewNeeded = (cmpPair.first.originalViewId == cmpPair.second.originalViewId);
+	const bool moveToOtherViewNeeded = (first->originalViewId == second->originalViewId);
 
-	if (moveToOtherViewNeeded && cmpPair.second.originalViewId == MAIN_VIEW)
+	if (moveToOtherViewNeeded && second->originalViewId == Settings.FirstFileCompareViewId)
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
 
-	cmpPair.second.sciDoc = ::SendMessage(getCurrentView(), SCI_GETDOCPOINTER, 0, 0);
-	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH,
-			_countof(cmpPair.second.name), (LPARAM)cmpPair.second.name);
+	second->sciDoc = ::SendMessage(getCurrentView(), SCI_GETDOCPOINTER, 0, 0);
 
-	activateBufferID(cmpPair.first.buffId);
+	activateBufferID(first->buffId);
 
-	if (moveToOtherViewNeeded && cmpPair.first.originalViewId == SUB_VIEW)
+	if (moveToOtherViewNeeded && first->originalViewId != Settings.FirstFileCompareViewId)
 	{
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
-		cmpPair.first.sciDoc = ::SendMessage(getCurrentView(), SCI_GETDOCPOINTER, 0, 0);
+
+		// If we change the first file view we need to re-set it's doc Id.
+		// The current view will open semi-random file when the first is moved -
+		// we need to activate the second file there. Then return to the first file again
+		first->sciDoc = ::SendMessage(getCurrentView(), SCI_GETDOCPOINTER, 0, 0);
+		activateBufferID(second->buffId);
+		activateBufferID(first->buffId);
 	}
 
 	compareList.push_back(cmpPair);
@@ -1019,7 +1056,8 @@ bool prepareFiles()
 				return false;
 			}
 
-			::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_TAB_PREV);
+			::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0,
+					Settings.FirstFileCompareViewId == MAIN_VIEW ? IDM_VIEW_TAB_NEXT : IDM_VIEW_TAB_PREV);
 
 			if (isFileEmpty(currentView))
 			{
