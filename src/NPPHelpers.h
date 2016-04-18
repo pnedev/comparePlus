@@ -153,14 +153,8 @@ void markAsChanged(HWND window, int line);
 void markAsAdded(HWND window, int line);
 void markAsBlank(HWND window, int line);
 
-void setCompareMargin(HWND window);
-
-inline void restoreMargin(HWND window)
-{
-	::SendMessage(window, SCI_SETMARGINMASKN, 4, 0);
-	::SendMessage(window, SCI_SETMARGINWIDTHN, 4, 0);
-}
-
+void setNormalView(HWND window);
+void setCompareView(HWND window);
 
 void setStyles(sUserSettings& Settings);
 

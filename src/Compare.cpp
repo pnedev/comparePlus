@@ -316,9 +316,6 @@ void NppSettings::setNormalMode()
 	if (NavDlg.isVisible())
 		NavDlg.doDialog(false);
 
-	::SendMessage(nppData._scintillaMainHandle, SCI_SETCARETLINEBACKALPHA, SC_ALPHA_NOALPHA, 0);
-	::SendMessage(nppData._scintillaSecondHandle, SCI_SETCARETLINEBACKALPHA, SC_ALPHA_NOALPHA, 0);
-
 	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
 
 	bool syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
@@ -337,9 +334,6 @@ void NppSettings::setCompareMode()
 		return;
 
 	compareMode = true;
-
-	::SendMessage(nppData._scintillaMainHandle, SCI_SETCARETLINEBACKALPHA, 96, 0);
-	::SendMessage(nppData._scintillaSecondHandle, SCI_SETCARETLINEBACKALPHA, 96, 0);
 
 	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
 
@@ -361,14 +355,14 @@ void NppSettings::setCompareMode()
 }
 
 
-void resetCompareMargin(HWND view)
+void resetCompareView(HWND view)
 {
 	if (!::IsWindowVisible(view))
 		return;
 
 	CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(view));
 	if (cmpPair != compareList.end())
-		setCompareMargin(view);
+		setCompareView(view);
 }
 
 
@@ -982,8 +976,8 @@ void clearComparePair(int buffId)
 		return;
 
 	nppSettings.setNormalMode();
-	restoreMargin(nppData._scintillaMainHandle);
-	restoreMargin(nppData._scintillaSecondHandle);
+	setNormalView(nppData._scintillaMainHandle);
+	setNormalView(nppData._scintillaSecondHandle);
 
 	ScopedIncrementer incr(notificationsLock);
 
@@ -1000,15 +994,15 @@ void clearComparePair(int buffId)
 
 	compareList.erase(cmpPair);
 
-	resetCompareMargin(getOtherView());
+	resetCompareView(getOtherView());
 }
 
 
 void closeComparePair(CompareList_t::iterator& cmpPair)
 {
 	nppSettings.setNormalMode();
-	restoreMargin(nppData._scintillaMainHandle);
-	restoreMargin(nppData._scintillaSecondHandle);
+	setNormalView(nppData._scintillaMainHandle);
+	setNormalView(nppData._scintillaSecondHandle);
 
 	HWND currentView = getCurrentView();
 
@@ -1023,7 +1017,7 @@ void closeComparePair(CompareList_t::iterator& cmpPair)
 
 	onBufferActivated(getCurrentBuffId());
 
-	resetCompareMargin(getOtherView());
+	resetCompareView(getOtherView());
 
 	if (::IsWindowVisible(currentView))
 		::SetFocus(currentView);
@@ -1259,8 +1253,8 @@ void ClearAllCompares()
 	else
 		nppSettings.setNormalMode();
 
-	restoreMargin(nppData._scintillaMainHandle);
-	restoreMargin(nppData._scintillaSecondHandle);
+	setNormalView(nppData._scintillaMainHandle);
+	setNormalView(nppData._scintillaSecondHandle);
 
 	const int buffId = getCurrentBuffId();
 
@@ -1740,7 +1734,7 @@ void onBufferActivated(int buffId)
 	if (cmpPair == compareList.end())
 	{
 		nppSettings.setNormalMode();
-		restoreMargin(getCurrentView());
+		setNormalView(getCurrentView());
 		return;
 	}
 
@@ -1769,8 +1763,8 @@ void onBufferActivated(int buffId)
 
 	nppSettings.setCompareMode();
 	nppSettings.updatePluginMenu();
-	setCompareMargin(nppData._scintillaMainHandle);
-	setCompareMargin(nppData._scintillaSecondHandle);
+	setCompareView(nppData._scintillaMainHandle);
+	setCompareView(nppData._scintillaSecondHandle);
 
 	if (Settings.UseNavBar && (switchedFromOtherPair || !NavDlg.isVisible()))
 		NavDlg.doDialog(true);
@@ -1786,7 +1780,7 @@ void onFileBeforeClose(int buffId)
 		return;
 
 	nppSettings.setNormalMode();
-	restoreMargin(getView(viewIdFromBuffId(buffId)));
+	setNormalView(getView(viewIdFromBuffId(buffId)));
 
 	ScopedIncrementer incr(notificationsLock);
 
@@ -1802,7 +1796,7 @@ void onFileBeforeClose(int buffId)
 void onFileClosed(int buffId)
 {
 	HWND closedFileView = getView(viewIdFromBuffId(buffId));
-	resetCompareMargin(closedFileView);
+	resetCompareView(closedFileView);
 }
 
 
