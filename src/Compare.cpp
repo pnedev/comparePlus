@@ -956,16 +956,11 @@ void restoreFile(const ComparedFile& comparedFile)
 
 	activateBufferID(comparedFile.buffId);
 
-	{
-		ScopedViewWriteEnabler writeEn(hView);
-		clearWindow(hView);
-	}
-
 	if (viewId != comparedFile.originalViewId)
-	{
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
-		restoreMargin(getCurrentView());
-	}
+
+	ScopedViewWriteEnabler writeEn(hView);
+	clearWindow(hView);
 }
 
 
@@ -977,6 +972,8 @@ void clearComparePair(int buffId)
 		return;
 
 	nppSettings.setNormalMode();
+	restoreMargin(nppData._scintillaMainHandle);
+	restoreMargin(nppData._scintillaSecondHandle);
 
 	ScopedIncrementer incr(notificationsLock);
 
@@ -998,7 +995,6 @@ void clearComparePair(int buffId)
 void closeComparePair(CompareList_t::iterator& cmpPair)
 {
 	nppSettings.setNormalMode();
-
 	restoreMargin(nppData._scintillaMainHandle);
 	restoreMargin(nppData._scintillaSecondHandle);
 
@@ -1248,6 +1244,9 @@ void ClearAllCompares()
 		nppSettings.updatePluginMenu();
 	else
 		nppSettings.setNormalMode();
+
+	restoreMargin(nppData._scintillaMainHandle);
+	restoreMargin(nppData._scintillaSecondHandle);
 
 	const int buffId = getCurrentBuffId();
 
@@ -1773,6 +1772,7 @@ void onFileBeforeClose(int buffId)
 		return;
 
 	nppSettings.setNormalMode();
+	restoreMargin(getView(viewIdFromBuffId(buffId)));
 
 	ScopedIncrementer incr(notificationsLock);
 
