@@ -361,6 +361,17 @@ void NppSettings::setCompareMode()
 }
 
 
+void resetCompareMargin(HWND view)
+{
+	if (!::IsWindowVisible(view))
+		return;
+
+	CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(view));
+	if (cmpPair != compareList.end())
+		setCompareMargin(view);
+}
+
+
 void progressOpen(const TCHAR* msg)
 {
 	progMax = 0;
@@ -951,13 +962,12 @@ CompareList_t::iterator createComparePair()
 
 void restoreFile(const ComparedFile& comparedFile)
 {
-	const int viewId = viewIdFromBuffId(comparedFile.buffId);
-	HWND hView = getView(viewId);
-
 	activateBufferID(comparedFile.buffId);
 
-	if (viewId != comparedFile.originalViewId)
+	if (viewIdFromBuffId(comparedFile.buffId) != comparedFile.originalViewId)
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
+
+	HWND hView = getCurrentView();
 
 	ScopedViewWriteEnabler writeEn(hView);
 	clearWindow(hView);
@@ -989,6 +999,8 @@ void clearComparePair(int buffId)
 	}
 
 	compareList.erase(cmpPair);
+
+	resetCompareMargin(getOtherView());
 }
 
 
@@ -1010,6 +1022,8 @@ void closeComparePair(CompareList_t::iterator& cmpPair)
 	compareList.erase(cmpPair);
 
 	onBufferActivated(getCurrentBuffId());
+
+	resetCompareMargin(getOtherView());
 
 	if (::IsWindowVisible(currentView))
 		::SetFocus(currentView);
@@ -1788,14 +1802,7 @@ void onFileBeforeClose(int buffId)
 void onFileClosed(int buffId)
 {
 	HWND closedFileView = getView(viewIdFromBuffId(buffId));
-
-	if (!::IsWindowVisible(closedFileView))
-		return;
-
-	CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(closedFileView));
-	// Fix the margin if the new file in the closed file view is compared
-	if (cmpPair != compareList.end())
-		setCompareMargin(closedFileView);
+	resetCompareMargin(closedFileView);
 }
 
 
