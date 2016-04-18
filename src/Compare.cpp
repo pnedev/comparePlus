@@ -1785,6 +1785,20 @@ void onFileBeforeClose(int buffId)
 }
 
 
+void onFileClosed(int buffId)
+{
+	HWND closedFileView = getView(viewIdFromBuffId(buffId));
+
+	if (!::IsWindowVisible(closedFileView))
+		return;
+
+	CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(closedFileView));
+	// Fix the margin if the new file in the closed file view is compared
+	if (cmpPair != compareList.end())
+		setCompareMargin(closedFileView);
+}
+
+
 void onFileBeforeSave(int buffId)
 {
 	CompareList_t::iterator cmpPair = getCompare(buffId);
@@ -1939,6 +1953,11 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		case NPPN_FILEBEFORECLOSE:
 			if (!notificationsLock && !compareList.empty())
 				onFileBeforeClose(notifyCode->nmhdr.idFrom);
+		break;
+
+		case NPPN_FILECLOSED:
+			if (!notificationsLock && !compareList.empty())
+				onFileClosed(notifyCode->nmhdr.idFrom);
 		break;
 
 		case NPPN_FILEBEFORESAVE:
