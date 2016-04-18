@@ -962,7 +962,10 @@ void restoreFile(const ComparedFile& comparedFile)
 	}
 
 	if (viewId != comparedFile.originalViewId)
+	{
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
+		restoreMargin(getCurrentView());
+	}
 }
 
 
@@ -989,8 +992,6 @@ void clearComparePair(int buffId)
 	}
 
 	compareList.erase(cmpPair);
-
-	::SetFocus(getCurrentView());
 }
 
 
@@ -1781,8 +1782,6 @@ void onFileBeforeClose(int buffId)
 		restoreFile(cmpPair->first);
 
 	compareList.erase(cmpPair);
-
-	::SetFocus(getCurrentView());
 }
 
 
