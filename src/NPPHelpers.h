@@ -138,6 +138,12 @@ inline int getCurrentBuffId()
 }
 
 
+inline int getDocId(HWND view)
+{
+	return ::SendMessage(view, SCI_GETDOCPOINTER, 0, 0);
+}
+
+
 void activateBufferID(int buffId);
 
 void markTextAsChanged(HWND window, int start, int length);
@@ -147,7 +153,17 @@ void markAsChanged(HWND window, int line);
 void markAsAdded(HWND window, int line);
 void markAsBlank(HWND window, int line);
 
+void setCompareMargin(HWND window);
+
+inline void restoreMargin(HWND window)
+{
+	::SendMessage(window, SCI_SETMARGINMASKN, 4, 0);
+	::SendMessage(window, SCI_SETMARGINWIDTHN, 4, 0);
+}
+
+
 void setStyles(sUserSettings& Settings);
+
 void setBlank(HWND window, int color);
 
 void defineSymbol(int type, int symbol);

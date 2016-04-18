@@ -178,6 +178,7 @@ void Compare();
 void ClearCurrentCompare();
 void First();
 void openMemBlock(const char* memblock, long size);
+void onBufferActivated(int buffId);
 
 
 void loadSettings()
@@ -503,13 +504,13 @@ void jumpChangedLines(bool direction)
 
 	// int result = ::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)compareFilePath);
 	// HWND window = getCurrentView();
-	// int win = ::SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
+	// int win = getDocId(window);
 
 	// if (result == 0 || win != tempWindow)
 	// {
 		// ::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_NEW);
 		// ::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM)compareFilePath);
-		// tempWindow = ::SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
+		// tempWindow = getDocId(window);
 
 		// curBuffer = getCurrentBuffId();
 		// ::SendMessage(nppData._nppHandle, NPPM_SETBUFFERLANGTYPE, curBuffer, curLang);
@@ -528,11 +529,11 @@ void jumpChangedLines(bool direction)
 
 	// window = getOtherView();
 
-	// int pointer = ::SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
+	// int pointer = getDocId(window);
 	// if (tempWindow != pointer)
 	// {
 		// window = getCurrentView();
-		// pointer = ::SendMessage(window, SCI_GETDOCPOINTER, 0, 0);
+		// pointer = getDocId(window);
 	// }
 
 	// move focus to new document, or the other document will be marked as dirty
@@ -894,34 +895,39 @@ CompareResult_t runCompare(CompareList_t::iterator& cmpPair)
 
 CompareList_t::iterator createComparePair()
 {
+	const int secondViewId = getCurrentViewId();
+	const bool moveToOtherViewNeeded = (firstFile->originalViewId == secondViewId);
+
+	// This is needed to help us put pair.first in main view and pair.second in sub view
+	const bool swapPair = moveToOtherViewNeeded ?
+		(Settings.FirstFileCompareViewId != MAIN_VIEW) : (firstFile->originalViewId != MAIN_VIEW);
+
 	ComparePair_t cmpPair;
 	ComparedFile* first;
 	ComparedFile* second;
 
-	if (Settings.FirstFileCompareViewId == MAIN_VIEW)
-	{
-		first = &cmpPair.first;
-		second = &cmpPair.second;
-	}
-	else
+	if (swapPair)
 	{
 		first = &cmpPair.second;
 		second = &cmpPair.first;
+	}
+	else
+	{
+		first = &cmpPair.first;
+		second = &cmpPair.second;
 	}
 
 	*first = *firstFile;
 	firstFile.reset();
 
-	second->originalViewId = getCurrentViewId();
+	second->originalViewId = secondViewId;
 	second->buffId = getCurrentBuffId();
 	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(second->name), (LPARAM)second->name);
-
-	const bool moveToOtherViewNeeded = (first->originalViewId == second->originalViewId);
 
 	if (moveToOtherViewNeeded && second->originalViewId == Settings.FirstFileCompareViewId)
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
 
-	second->sciDoc = ::SendMessage(getCurrentView(), SCI_GETDOCPOINTER, 0, 0);
+	second->sciDoc = getDocId(getCurrentView());
 
 	activateBufferID(first->buffId);
 
@@ -932,7 +938,7 @@ CompareList_t::iterator createComparePair()
 		// If we change the first file view we need to re-set it's doc Id.
 		// The current view will open semi-random file when the first is moved -
 		// we need to activate the second file there. Then return to the first file again
-		first->sciDoc = ::SendMessage(getCurrentView(), SCI_GETDOCPOINTER, 0, 0);
+		first->sciDoc = getDocId(getCurrentView());
 		activateBufferID(second->buffId);
 		activateBufferID(first->buffId);
 	}
@@ -985,6 +991,31 @@ void clearComparePair(int buffId)
 	compareList.erase(cmpPair);
 
 	::SetFocus(getCurrentView());
+}
+
+
+void closeComparePair(CompareList_t::iterator& cmpPair)
+{
+	nppSettings.setNormalMode();
+
+	restoreMargin(nppData._scintillaMainHandle);
+	restoreMargin(nppData._scintillaSecondHandle);
+
+	HWND currentView = getCurrentView();
+
+	ScopedIncrementer incr(notificationsLock);
+
+	activateBufferID(cmpPair->second.buffId);
+	::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
+	activateBufferID(cmpPair->first.buffId);
+	::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
+
+	compareList.erase(cmpPair);
+
+	onBufferActivated(getCurrentBuffId());
+
+	if (::IsWindowVisible(currentView))
+		::SetFocus(currentView);
 }
 
 
@@ -1069,7 +1100,7 @@ bool prepareFiles()
 		{
 			// Check if the file in the other view is compared already
 			HWND otherView = getOtherView();
-			const int sciDoc = ::SendMessage(otherView, SCI_GETDOCPOINTER, 0, 0);
+			const int sciDoc = getDocId(otherView);
 
 			CompareList_t::iterator cmpPair = getCompareBySciDoc(sciDoc);
 			if (cmpPair != compareList.end())
@@ -1124,7 +1155,7 @@ void SetAsFirst()
 	HWND view = getCurrentView();
 
 	firstFile->originalViewId = getCurrentViewId();
-	firstFile->sciDoc = ::SendMessage(view, SCI_GETDOCPOINTER, 0, 0);
+	firstFile->sciDoc = getDocId(view);
 	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(firstFile->name), (LPARAM)firstFile->name);
 
 	firstFileCodepage = SendMessage(view, SCI_GETCODEPAGE, 0, 0);
@@ -1185,22 +1216,9 @@ void Compare()
 					TEXT("Files \"%s\" and \"%s\" match.\n\nClose compared files?"), first, second);
 			if (::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin: Files Match"),
 					MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2) == IDYES)
-			{
-				ScopedIncrementer incr(notificationsLock);
-
-				nppSettings.setNormalMode();
-
-				activateBufferID(cmpPair->second.buffId);
-				::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
-				activateBufferID(cmpPair->first.buffId);
-				::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
-
-				compareList.erase(cmpPair);
-			}
+				closeComparePair(cmpPair);
 			else
-			{
 				ClearCurrentCompare();
-			}
 		}
 		break;
 
@@ -1701,53 +1719,55 @@ void onSciZoom()
 }
 
 
-void onBufferActivated(SCNotification *notifyCode)
+void onBufferActivated(int buffId)
 {
-	CompareList_t::iterator cmpPair = getCompare(notifyCode->nmhdr.idFrom);
+	CompareList_t::iterator cmpPair = getCompare(buffId);
 
 	if (cmpPair == compareList.end())
 	{
 		nppSettings.setNormalMode();
+		restoreMargin(getCurrentView());
+		return;
 	}
-	else
+
+	// Compared file moved to other view? -> clear compare
+	if (viewIdFromBuffId(cmpPair->first.buffId) == viewIdFromBuffId(cmpPair->second.buffId))
 	{
-		// Compared file moved to other view? -> clear compare
-		if (viewIdFromBuffId(cmpPair->first.buffId) == viewIdFromBuffId(cmpPair->second.buffId))
-		{
-			clearComparePair(notifyCode->nmhdr.idFrom);
-			return;
-		}
-
-		bool switchedFromOtherPair = false;
-		const int otherViewId = getOtherViewId();
-		const ComparedFile& otherFile = getFileFromPair(*cmpPair, otherViewId);
-
-		// When compared file is activated make sure its corresponding pair file is
-		// also active in the other view
-		if (::SendMessage(getView(otherViewId), SCI_GETDOCPOINTER, 0, 0) != otherFile.sciDoc)
-		{
-			ScopedIncrementer incr(notificationsLock);
-
-			activateBufferID(otherFile.buffId);
-			activateBufferID(notifyCode->nmhdr.idFrom);
-
-			switchedFromOtherPair = true;
-		}
-
-		nppSettings.setCompareMode();
-		nppSettings.updatePluginMenu();
-
-		if (Settings.UseNavBar && (switchedFromOtherPair || !NavDlg.isVisible()))
-			NavDlg.doDialog(true);
+		clearComparePair(buffId);
+		return;
 	}
+
+	bool switchedFromOtherPair = false;
+	const int otherViewId = getOtherViewId();
+	const ComparedFile& otherFile = getFileFromPair(*cmpPair, otherViewId);
+
+	// When compared file is activated make sure its corresponding pair file is
+	// also active in the other view
+	if (getDocId(getView(otherViewId)) != otherFile.sciDoc)
+	{
+		ScopedIncrementer incr(notificationsLock);
+
+		activateBufferID(otherFile.buffId);
+		activateBufferID(buffId);
+
+		switchedFromOtherPair = true;
+	}
+
+	nppSettings.setCompareMode();
+	nppSettings.updatePluginMenu();
+	setCompareMargin(nppData._scintillaMainHandle);
+	setCompareMargin(nppData._scintillaSecondHandle);
+
+	if (Settings.UseNavBar && (switchedFromOtherPair || !NavDlg.isVisible()))
+		NavDlg.doDialog(true);
 
 	::SetFocus(getCurrentView());
 }
 
 
-void onFileBeforeClose(SCNotification *notifyCode)
+void onFileBeforeClose(int buffId)
 {
-	CompareList_t::iterator cmpPair = getCompare(notifyCode->nmhdr.idFrom);
+	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
 		return;
 
@@ -1755,7 +1775,7 @@ void onFileBeforeClose(SCNotification *notifyCode)
 
 	ScopedIncrementer incr(notificationsLock);
 
-	if (cmpPair->first.buffId == (int)notifyCode->nmhdr.idFrom)
+	if (cmpPair->first.buffId == buffId)
 		restoreFile(cmpPair->second);
 	else
 		restoreFile(cmpPair->first);
@@ -1766,13 +1786,13 @@ void onFileBeforeClose(SCNotification *notifyCode)
 }
 
 
-void onFileBeforeSave(SCNotification *notifyCode)
+void onFileBeforeSave(int buffId)
 {
-	CompareList_t::iterator cmpPair = getCompare(notifyCode->nmhdr.idFrom);
+	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
 		return;
 
-	const int viewId = viewIdFromBuffId(notifyCode->nmhdr.idFrom);
+	const int viewId = viewIdFromBuffId(buffId);
 	HWND view = getView(viewId);
 	const ComparedFile& cmpFile = getFileFromPair(*cmpPair, viewId);
 
@@ -1784,11 +1804,11 @@ void onFileBeforeSave(SCNotification *notifyCode)
 }
 
 
-void onFileSaved(SCNotification *notifyCode)
+void onFileSaved(int buffId)
 {
-	if (saveNotifData->file.buffId == (int)notifyCode->nmhdr.idFrom)
+	if (saveNotifData->file.buffId == buffId)
 	{
-		const int viewId = viewIdFromBuffId(notifyCode->nmhdr.idFrom);
+		const int viewId = viewIdFromBuffId(buffId);
 		HWND view = getView(viewId);
 
 		if (!saveNotifData->blankSections.empty())
@@ -1914,22 +1934,22 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 
 		case NPPN_BUFFERACTIVATED:
 			if (!notificationsLock && !compareList.empty())
-				onBufferActivated(notifyCode);
+				onBufferActivated(notifyCode->nmhdr.idFrom);
 		break;
 
 		case NPPN_FILEBEFORECLOSE:
 			if (!notificationsLock && !compareList.empty())
-				onFileBeforeClose(notifyCode);
+				onFileBeforeClose(notifyCode->nmhdr.idFrom);
 		break;
 
 		case NPPN_FILEBEFORESAVE:
 			if (!compareList.empty())
-				onFileBeforeSave(notifyCode);
+				onFileBeforeSave(notifyCode->nmhdr.idFrom);
 		break;
 
 		case NPPN_FILESAVED:
 			if ((bool)saveNotifData)
-				onFileSaved(notifyCode);
+				onFileSaved(notifyCode->nmhdr.idFrom);
 		break;
 
 		// This is used to monitor deletion of lines to properly clear their compare markings

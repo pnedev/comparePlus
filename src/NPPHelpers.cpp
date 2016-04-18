@@ -102,6 +102,18 @@ static void DefineXpmSymbol(int type, const char **xpm)
 }
 
 
+void setCompareMargin(HWND window)
+{
+    int MarginMask = (1 << MARKER_CHANGED_SYMBOL) |
+					 (1 << MARKER_ADDED_SYMBOL) |
+					 (1 << MARKER_REMOVED_SYMBOL) |
+					 (1 << MARKER_MOVED_SYMBOL);
+
+	::SendMessage(window, SCI_SETMARGINMASKN, 4, (LPARAM)MarginMask);
+	::SendMessage(window, SCI_SETMARGINWIDTHN, 4, 16);
+}
+
+
 void setStyles(sUserSettings& Settings)
 {
     const int bg = ::SendMessage(nppData._nppHandle, NPPM_GETEDITORDEFAULTBACKGROUNDCOLOR, 0, 0);
@@ -124,16 +136,8 @@ void setStyles(sUserSettings& Settings)
 
     Settings.ColorSettings.blank = r | (g << 8) | (b << 16);
 
-    int MarginMask = (1 << MARKER_CHANGED_SYMBOL) |
-					 (1 << MARKER_ADDED_SYMBOL) |
-					 (1 << MARKER_REMOVED_SYMBOL) |
-					 (1 << MARKER_MOVED_SYMBOL);
-
-	::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINMASKN, 4, (LPARAM)MarginMask);
-	::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINMASKN, 4, (LPARAM)MarginMask);
-
-	::SendMessage(nppData._scintillaMainHandle, SCI_SETMARGINWIDTHN, 4, 16);
-	::SendMessage(nppData._scintillaSecondHandle, SCI_SETMARGINWIDTHN, 4, 16);
+	setCompareMargin(nppData._scintillaMainHandle);
+	setCompareMargin(nppData._scintillaSecondHandle);
 
 	setBlank(nppData._scintillaMainHandle,   Settings.ColorSettings.blank);
     setBlank(nppData._scintillaSecondHandle, Settings.ColorSettings.blank);
@@ -251,8 +255,7 @@ void clearWindow(HWND window)
 	::SendMessage(window, SCI_COLOURISE, 0, -1);
 	::SendMessage(window, SCN_UPDATEUI, 0, 0);
 
-	::SendMessage(window, SCI_SETMARGINMASKN, 4, 0);
-	::SendMessage(window, SCI_SETMARGINWIDTHN, 4, 0);
+	restoreMargin(window);
 }
 
 
