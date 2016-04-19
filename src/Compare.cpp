@@ -1175,6 +1175,9 @@ void Compare()
 {
 	ScopedIncrementer incr(notificationsLock);
 
+	ViewLocation location;
+	bool recompare = false;
+
 	CompareList_t::iterator cmpPair = getCompare(getCurrentBuffId());
 
 	// New compare
@@ -1192,7 +1195,12 @@ void Compare()
 	// Re-Compare triggered - clear current results
 	else
 	{
+		recompare = true;
+
 		firstFile.reset();
+
+		location.saveCurrent();
+
 		clearWindow(nppData._scintillaMainHandle);
 		clearWindow(nppData._scintillaSecondHandle);
 	}
@@ -1207,6 +1215,9 @@ void Compare()
 
 			if (Settings.UseNavBar)
 				showNavBar();
+
+			if (recompare)
+				location.restore();
 		}
 		break;
 

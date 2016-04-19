@@ -41,6 +41,27 @@ static const char strEOL[3][3] =
 static const unsigned short lenEOL[3] = { 2, 1, 1 };
 
 
+void ViewLocation::saveCurrent()
+{
+	_view = getCurrentView();
+	_firstVisibleLine = ::SendMessage(_view, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	_line = ::SendMessage(_view, SCI_GETCURRENTPOS, 0, 0);
+	_line = ::SendMessage(_view, SCI_LINEFROMPOSITION, _line, 0);
+}
+
+
+void ViewLocation::restore()
+{
+	if (!::IsWindowVisible(_view))
+		return;
+
+	::SetFocus(_view);
+	::SendMessage(_view, SCI_ENSUREVISIBLE, _line, 0);
+	::SendMessage(_view, SCI_SETFIRSTVISIBLELINE, _firstVisibleLine, 0);
+	::SendMessage(_view, SCI_GOTOLINE, _line, 0);
+}
+
+
 void activateBufferID(int buffId)
 {
 	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);

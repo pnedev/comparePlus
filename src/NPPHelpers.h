@@ -74,6 +74,22 @@ private:
 };
 
 
+/**
+ *  \struct
+ *  \brief
+ */
+struct ViewLocation
+{
+	void saveCurrent();
+	void restore();
+
+private:
+	HWND	_view;
+	int		_firstVisibleLine;
+	int		_line;
+};
+
+
 struct BlankSection
 {
 	BlankSection(unsigned int line, unsigned int len) : startLine(line), length(len) {}
