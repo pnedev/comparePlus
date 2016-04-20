@@ -102,12 +102,34 @@ struct NppSettings
  *  \struct
  *  \brief
  */
+struct DeletedSection
+{
+	DeletedSection(int line, int len) : startLine(line)
+	{
+		markers.resize(len, 0);
+	}
+
+	int					startLine;
+	std::vector<int>	markers;
+};
+
+
+using DeletedSections_t = std::vector<DeletedSection>;
+
+
+/**
+ *  \struct
+ *  \brief
+ */
 struct ComparedFile
 {
 	int		originalViewId;
 	int		buffId;
 	int		sciDoc;
 	TCHAR	name[MAX_PATH];
+
+	// Members below are for user actions generated data
+	DeletedSections_t	deletedSections;
 };
 
 
@@ -252,7 +274,13 @@ void saveSettings()
 }
 
 
-ComparedFile& getFileFromPair(ComparePair_t& pair, int viewId)
+ComparedFile& getFileByBuffId(ComparePair_t& pair, int buffId)
+{
+	return (pair.first.buffId == buffId) ? pair.first : pair.second;
+}
+
+
+ComparedFile& getFileByViewId(ComparePair_t& pair, int viewId)
 {
 	return (viewIdFromBuffId(pair.first.buffId) == viewId) ? pair.first : pair.second;
 }
@@ -434,7 +462,7 @@ void showNavBar()
 
 void jumpChangedLines(bool direction)
 {
-	HWND CurView = getCurrentView();
+	HWND view = getCurrentView();
 
 	const int sci_search_mask = (1 << MARKER_MOVED_LINE) |
 								(1 << MARKER_CHANGED_LINE) |
@@ -442,9 +470,10 @@ void jumpChangedLines(bool direction)
 								(1 << MARKER_REMOVED_LINE) |
 								(1 << MARKER_BLANK_LINE);
 
-	const int posStart = ::SendMessage(CurView, SCI_GETCURRENTPOS, 0, 0);
-	const int lineMax = ::SendMessage(CurView, SCI_GETLINECOUNT, 0, 0);
-	int lineStart = ::SendMessage(CurView, SCI_LINEFROMPOSITION, posStart, 0);
+	const int lineMax = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0);
+	int lineStart = ::SendMessage(view, SCI_GETCURRENTPOS, 0, 0);
+	lineStart = ::SendMessage(view, SCI_LINEFROMPOSITION, lineStart, 0);
+
 	int prevLine = lineStart;
 
 	int currLine;
@@ -464,12 +493,12 @@ void jumpChangedLines(bool direction)
 			sci_marker_direction = SCI_MARKERPREVIOUS;
 		}
 
-		nextLine = ::SendMessage(CurView, sci_marker_direction, currLine, sci_search_mask);
+		nextLine = ::SendMessage(view, sci_marker_direction, currLine, sci_search_mask);
 
 		if (nextLine < 0)
 		{
 			currLine = (direction) ? (0) : (lineMax);
-			nextLine = ::SendMessage(CurView, sci_marker_direction, currLine, sci_search_mask);
+			nextLine = ::SendMessage(view, sci_marker_direction, currLine, sci_search_mask);
 			break;
 		}
 
@@ -492,8 +521,8 @@ void jumpChangedLines(bool direction)
 		::FlashWindowEx(&flashInfo);
 	}
 
-	::SendMessage(CurView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
-	::SendMessage(CurView, SCI_GOTOLINE, nextLine, 0);
+	::SendMessage(view, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
+	::SendMessage(view, SCI_GOTOLINE, nextLine, 0);
 }
 
 
@@ -795,13 +824,12 @@ CompareResult_t doCompare(const TCHAR* first, const TCHAR* second)
 			}
 		}
 
-		doc1Offset = 0;
-		doc2Offset = 0;
-
 		if (Settings.AddLine)
 		{
 			int length = 0;
-			int off = -1;
+			int off = 0;
+			doc2Offset = 0;
+
 			for (int i = 0; i < doc1Changed; ++i)
 			{
 				switch (doc1Changes[i].op)
@@ -867,13 +895,13 @@ CompareResult_t runCompare(CompareList_t::iterator& cmpPair)
 {
 	nppSettings.setCompareMode();
 
+	ScopedViewUndoCollectionBlocker undoBlock1(nppData._scintillaMainHandle);
+	ScopedViewUndoCollectionBlocker undoBlock2(nppData._scintillaSecondHandle);
+
 	ScopedViewWriteEnabler writeEn1(nppData._scintillaMainHandle);
 	ScopedViewWriteEnabler writeEn2(nppData._scintillaSecondHandle);
 
 	setStyles(Settings);
-
-	ScopedViewUndoCollectionBlocker undoBlock1(nppData._scintillaMainHandle);
-	ScopedViewUndoCollectionBlocker undoBlock2(nppData._scintillaSecondHandle);
 
 	CompareResult_t result = COMPARE_ERROR;
 
@@ -961,10 +989,7 @@ void restoreFile(const ComparedFile& comparedFile)
 	if (viewIdFromBuffId(comparedFile.buffId) != comparedFile.originalViewId)
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
 
-	HWND hView = getCurrentView();
-
-	ScopedViewWriteEnabler writeEn(hView);
-	clearWindow(hView);
+	clearWindow(getCurrentView());
 }
 
 
@@ -1203,14 +1228,15 @@ void Compare()
 
 		clearWindow(nppData._scintillaMainHandle);
 		clearWindow(nppData._scintillaSecondHandle);
+
+		cmpPair->first.deletedSections.clear();
+		cmpPair->second.deletedSections.clear();
 	}
 
 	switch (runCompare(cmpPair))
 	{
 		case FILES_DIFFER:
 		{
-			First();
-
 			nppSettings.updatePluginMenu();
 
 			if (Settings.UseNavBar)
@@ -1218,6 +1244,8 @@ void Compare()
 
 			if (recompare)
 				location.restore();
+			else
+				First();
 		}
 		break;
 
@@ -1704,22 +1732,73 @@ void onSciUpdateUI(SCNotification *notifyCode)
 
 void onSciModified(SCNotification *notifyCode)
 {
-	CompareList_t::iterator cmpPair = getCompare(getCurrentBuffId());
+	const int buffId = getCurrentBuffId();
+
+	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
 		return;
 
-	if (notifyCode->modificationType == (SC_MOD_BEFOREDELETE | SC_PERFORMED_USER))
+	if ((notifyCode->modificationType & SC_MOD_BEFOREDELETE) &&
+		(notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_REDO)))
 	{
 		ScopedIncrementer incr(notificationsLock);
 
 		HWND currentView = getCurrentView();
 
-		int line = ::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+		const int startLine = ::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 		const int endLine =
 			::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position + notifyCode->length, 0);
 
-		while (line < endLine)
-			::SendMessage(currentView, SCI_MARKERDELETE, line++, -1);
+		DeletedSection delSection(startLine, endLine - startLine);
+		bool markersDeleted = false;
+
+		for (int line = startLine; line < endLine; ++line)
+		{
+			const int marker = ::SendMessage(currentView, SCI_MARKERGET, line, 0);
+			if (marker)
+			{
+				delSection.markers[line - startLine] = marker;
+				::SendMessage(currentView, SCI_MARKERDELETE, line, -1);
+				markersDeleted = true;
+			}
+		}
+
+		if (markersDeleted)
+			getFileByBuffId(*cmpPair, buffId).deletedSections.push_back(delSection);
+	}
+	else if ((notifyCode->modificationType & SC_MOD_INSERTTEXT) &&
+			(notifyCode->modificationType & SC_PERFORMED_UNDO))
+	{
+		DeletedSections_t& deletedSections = getFileByBuffId(*cmpPair, buffId).deletedSections;
+		if (deletedSections.empty() || !notifyCode->linesAdded)
+			return;
+
+		ScopedIncrementer incr(notificationsLock);
+
+		HWND currentView = getCurrentView();
+
+		const int startLine = ::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+
+		const DeletedSection& lastDeleted = deletedSections.back();
+		if (lastDeleted.startLine == startLine)
+		{
+			const int linesCount = lastDeleted.markers.size();
+			for (int i = 0; i < linesCount; ++i)
+			{
+				if (lastDeleted.markers[i])
+				{
+					int markerId = 0;
+					for (int marker = lastDeleted.markers[i]; marker; marker >>= 1)
+					{
+						if (marker & 1)
+							::SendMessage(currentView, SCI_MARKERADD, startLine + i, markerId);
+						++markerId;
+					}
+				}
+			}
+
+			deletedSections.pop_back();
+		}
 	}
 }
 
@@ -1758,7 +1837,7 @@ void onBufferActivated(int buffId)
 
 	bool switchedFromOtherPair = false;
 	const int otherViewId = getOtherViewId();
-	const ComparedFile& otherFile = getFileFromPair(*cmpPair, otherViewId);
+	const ComparedFile& otherFile = getFileByViewId(*cmpPair, otherViewId);
 
 	// When compared file is activated make sure its corresponding pair file is
 	// also active in the other view
@@ -1819,7 +1898,7 @@ void onFileBeforeSave(int buffId)
 
 	const int viewId = viewIdFromBuffId(buffId);
 	HWND view = getView(viewId);
-	const ComparedFile& cmpFile = getFileFromPair(*cmpPair, viewId);
+	const ComparedFile& cmpFile = getFileByViewId(*cmpPair, viewId);
 
 	saveNotifData.reset(new SaveNotificationData(cmpFile));
 

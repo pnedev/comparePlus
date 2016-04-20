@@ -134,12 +134,12 @@ void setNormalView(HWND view)
 
 void setCompareView(HWND view)
 {
-    const int MarginMask =	(1 << MARKER_CHANGED_SYMBOL) |
+    const int marginMask =	(1 << MARKER_CHANGED_SYMBOL) |
 							(1 << MARKER_ADDED_SYMBOL) |
 							(1 << MARKER_REMOVED_SYMBOL) |
 							(1 << MARKER_MOVED_SYMBOL);
 
-	::SendMessage(view, SCI_SETMARGINMASKN, 4, (LPARAM)MarginMask);
+	::SendMessage(view, SCI_SETMARGINMASKN, 4, (LPARAM)marginMask);
 	::SendMessage(view, SCI_SETMARGINWIDTHN, 4, 16);
 
 	::SendMessage(view, SCI_SETCARETLINEBACKALPHA, 96, 0);
@@ -196,35 +196,35 @@ void markAsBlank(HWND window, int line)
 
 void markAsAdded(HWND window, int line)
 {
-	::SendMessage(window, SCI_MARKERADD, line, (LPARAM)MARKER_ADDED_SYMBOL);
-	::SendMessage(window, SCI_MARKERADD, line, (LPARAM)MARKER_ADDED_LINE);
+	::SendMessage(window, SCI_MARKERADD, line, MARKER_ADDED_SYMBOL);
+	::SendMessage(window, SCI_MARKERADD, line, MARKER_ADDED_LINE);
 }
 
 
 void markAsChanged(HWND window, int line)
 {
-	::SendMessage(window, SCI_MARKERADD, line, (LPARAM)MARKER_CHANGED_SYMBOL);
-	::SendMessage(window, SCI_MARKERADD, line, (LPARAM)MARKER_CHANGED_LINE);
+	::SendMessage(window, SCI_MARKERADD, line, MARKER_CHANGED_SYMBOL);
+	::SendMessage(window, SCI_MARKERADD, line, MARKER_CHANGED_LINE);
 }
 
 
 void markAsRemoved(HWND window, int line)
 {
-	::SendMessage(window, SCI_MARKERADD, line, (LPARAM)MARKER_REMOVED_SYMBOL);
-	::SendMessage(window, SCI_MARKERADD, line, (LPARAM)MARKER_REMOVED_LINE);
+	::SendMessage(window, SCI_MARKERADD, line, MARKER_REMOVED_SYMBOL);
+	::SendMessage(window, SCI_MARKERADD, line, MARKER_REMOVED_LINE);
 }
 
 
 void markAsMoved(HWND window, int line)
 {
-	::SendMessage(window, SCI_MARKERADD, line, (LPARAM)MARKER_MOVED_SYMBOL);
-	::SendMessage(window, SCI_MARKERADD, line, (LPARAM)MARKER_MOVED_LINE);
+	::SendMessage(window, SCI_MARKERADD, line, MARKER_MOVED_SYMBOL);
+	::SendMessage(window, SCI_MARKERADD, line, MARKER_MOVED_LINE);
 }
 
 
 void markTextAsChanged(HWND window, int start, int length)
 {
-	if(length!=0)
+	if (length != 0)
 	{
 		int curIndic = ::SendMessage(window, SCI_GETINDICATORCURRENT, 0, 0);
 		::SendMessage(window, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
@@ -263,7 +263,7 @@ DocLines_t getAllLines(HWND window, std::vector<int>& lineNum)
 
 void clearWindow(HWND window)
 {
-	removeBlankLines(window, false);
+	removeBlankLines(window);
 
 	::SendMessage(window, SCI_MARKERDELETEALL, MARKER_CHANGED_LINE,   MARKER_CHANGED_LINE);
 	::SendMessage(window, SCI_MARKERDELETEALL, MARKER_ADDED_LINE,     MARKER_ADDED_LINE);
@@ -287,6 +287,8 @@ void clearWindow(HWND window)
 	::SendMessage(window, SCI_COLOURISE, 0, -1);
 	::SendMessage(window, SCN_UPDATEUI, 0, 0);
 
+	::SendMessage(window, SCI_EMPTYUNDOBUFFER, 0, 0);
+
 	setNormalView(window);
 }
 
@@ -295,8 +297,6 @@ void addBlankSection(HWND window, int line, int length)
 {
 	if (length <= 0)
 		return;
-
-	ScopedViewUndoCollectionBlocker undoBlock(window);
 
 	const UINT EOLtype = ::SendMessage(window, SCI_GETEOLMODE, 0, 0);
 
@@ -330,9 +330,9 @@ int deleteBlankSection(HWND window, int line)
 	const int lastLine = ::SendMessage(window, SCI_GETLINECOUNT, 0, 0) - 1;
 	const int blankMask = 1 << MARKER_BLANK_LINE;
 
-	int blankPos = ::SendMessage(window, SCI_POSITIONFROMLINE, line, 0);
-	int blankLen = 0;
-	int blankLines = 0;
+	int deleteStartPos = ::SendMessage(window, SCI_POSITIONFROMLINE, line, 0);
+	int deleteLen = 0;
+	int deletedLines = 0;
 
 	while ((line <= lastLine) && (::SendMessage(window, SCI_MARKERGET, line, 0) & blankMask))
 	{
@@ -340,28 +340,27 @@ int deleteBlankSection(HWND window, int line)
 
 		const int lineLen = ::SendMessage(window, SCI_LINELENGTH, line, 0);
 
-		// don't delete lines that actually have text in them
+		// Don't delete a line that is not blank
 		if ((line < lastLine && lineLen > eolLen) || (line == lastLine && lineLen > 0))
 			break;
 
-		++blankLines;
-		blankLen += lineLen;
+		++deletedLines;
+		deleteLen += lineLen;
 		++line;
 	}
 
-	// if we're at the end of the document, we can't delete that line,
-	// because it doesn't have any EOL characters to delete,
-	// so we have to delete the EOL on the previous line
+	// Document's last line is blank but it doesn't have EOL to delete.
+	// Thus, we delete the EOL from the previous line
 	if (line > lastLine)
 	{
-		blankPos -= eolLen;
-		blankLen += eolLen;
+		deleteStartPos -= eolLen;
+		deleteLen += eolLen;
 	}
 
-	if (blankLen > 0)
-		::SendMessage(window, SCI_DELETERANGE, blankPos, blankLen);
+	if (deleteLen > 0)
+		::SendMessage(window, SCI_DELETERANGE, deleteStartPos, deleteLen);
 
-	return blankLines;
+	return deletedLines;
 }
 
 
@@ -369,6 +368,9 @@ void addBlankLines(HWND window, const BlankSections_t& blanks)
 {
 	if (blanks.empty())
 		return;
+
+	ScopedViewUndoCollectionBlocker undoBlock(window);
+	ScopedViewWriteEnabler writeEn(window);
 
 	const int size = blanks.size();
 	for (int i = 0; i < size; ++i)
@@ -382,6 +384,7 @@ BlankSections_t removeBlankLines(HWND window, bool saveBlanks)
 	const int marker = 1 << MARKER_BLANK_LINE;
 
 	ScopedViewUndoCollectionBlocker undoBlock(window);
+	ScopedViewWriteEnabler writeEn(window);
 
 	int deletedLines = 0;
 	for (int line = ::SendMessage(window, SCI_MARKERNEXT, 0, marker); line != -1;

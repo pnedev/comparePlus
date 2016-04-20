@@ -162,12 +162,12 @@ inline int getDocId(HWND view)
 
 void activateBufferID(int buffId);
 
-void markTextAsChanged(HWND window, int start, int length);
-void markAsMoved(HWND window, int line);
-void markAsRemoved(HWND window, int line);
-void markAsChanged(HWND window, int line);
-void markAsAdded(HWND window, int line);
 void markAsBlank(HWND window, int line);
+void markAsAdded(HWND window, int line);
+void markAsChanged(HWND window, int line);
+void markAsRemoved(HWND window, int line);
+void markAsMoved(HWND window, int line);
+void markTextAsChanged(HWND window, int start, int length);
 
 void setNormalView(HWND window);
 void setCompareView(HWND window);
@@ -183,7 +183,6 @@ void clearWindow(HWND window);
 DocLines_t getAllLines(HWND window, std::vector<int>& lineNum);
 
 void addBlankSection(HWND window, int line, int length);
-int deleteBlankSection(HWND window, int line);
 
 void addBlankLines(HWND window, const BlankSections_t& blanks);
-BlankSections_t removeBlankLines(HWND window, bool saveBlanks);
+BlankSections_t removeBlankLines(HWND window, bool saveBlanks = false);
