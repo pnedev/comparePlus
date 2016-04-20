@@ -287,8 +287,6 @@ void clearWindow(HWND window)
 	::SendMessage(window, SCI_COLOURISE, 0, -1);
 	::SendMessage(window, SCN_UPDATEUI, 0, 0);
 
-	::SendMessage(window, SCI_EMPTYUNDOBUFFER, 0, 0);
-
 	setNormalView(window);
 }
 
