@@ -423,6 +423,7 @@ void progressClose()
 	if (progDlg)
 	{
 		::EnableWindow(nppData._nppHandle, TRUE);
+		::SetForegroundWindow(nppData._nppHandle);
 
 		progDlg->Close();
 		delete progDlg;

@@ -37,7 +37,7 @@ public :
 	virtual void init(HINSTANCE hInst, HWND hNpp, HWND hCombo);
 	virtual void destroy()
 	{
-		DestroyWindow(_hSelf);
+		::DestroyWindow(_hSelf);
 	};
 
 	void onSelect(void)
@@ -48,7 +48,7 @@ public :
 	void setColor(COLORREF rgbCol)
 	{
 		_rgbCol = rgbCol;
-		::RedrawWindow(_comboBoxInfo.hwndItem, &_comboBoxInfo.rcItem, NULL, TRUE);
+		::RedrawWindow(_comboBoxInfo.hwndItem, &_comboBoxInfo.rcItem, NULL, RDW_INVALIDATE | RDW_UPDATENOW);
 	};
 
 	void getColor(LPCOLORREF p_rgbCol)
