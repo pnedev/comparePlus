@@ -59,7 +59,10 @@ struct ScopedViewUndoCollectionBlocker
 	{
 		_isUndoOn = ::SendMessage(_hView, SCI_GETUNDOCOLLECTION, 0, 0);
 		if (_isUndoOn)
+		{
 			::SendMessage(_hView, SCI_SETUNDOCOLLECTION, false, 0);
+			::SendMessage(_hView, SCI_EMPTYUNDOBUFFER, 0, 0);
+		}
 	}
 
 	~ScopedViewUndoCollectionBlocker()
