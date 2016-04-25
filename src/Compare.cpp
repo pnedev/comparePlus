@@ -1088,16 +1088,12 @@ bool prepareFiles()
 	{
 		// Compare to self?
 		if (firstFile->buffId == getCurrentBuffId())
-		{
-			::MessageBox(nppData._nppHandle, TEXT("Trying to compare file to itself - operation ignored."),
-					TEXT("Compare Plugin"), MB_OK);
-			return false;
-		}
-
-		if (isFileEmpty(getCurrentView()))
+			manualSelectionMode = false;
+		else if (isFileEmpty(getCurrentView()))
 			return false;
 	}
-	else
+
+	if (!manualSelectionMode)
 	{
 		SetAsFirst();
 
@@ -1224,6 +1220,12 @@ void Compare()
 		recompare = true;
 
 		firstFile.reset();
+
+		if (isFileEmpty(nppData._scintillaMainHandle) || isFileEmpty(nppData._scintillaSecondHandle))
+		{
+			clearComparePair(getCurrentBuffId());
+			return;
+		}
 
 		location.saveCurrent();
 
