@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 14.0.23107.0
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Compare", "Compare.vcxproj", "{73C0A930-C2F5-45D2-9795-8EFE62E2F4C6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{73C0A930-C2F5-45D2-9795-8EFE62E2F4C6}.Debug|Win32.ActiveCfg = Debug Unicode|Win32
+		{73C0A930-C2F5-45D2-9795-8EFE62E2F4C6}.Debug|Win32.Build.0 = Debug Unicode|Win32
+		{73C0A930-C2F5-45D2-9795-8EFE62E2F4C6}.Release|Win32.ActiveCfg = Release Unicode|Win32
+		{73C0A930-C2F5-45D2-9795-8EFE62E2F4C6}.Release|Win32.Build.0 = Release Unicode|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
