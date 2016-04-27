@@ -20,7 +20,6 @@
 #include <exception>
 #include <vector>
 #include <memory>
-#include <utility>
 
 #include "Compare.h"
 #include "NPPHelpers.h"
@@ -124,12 +123,35 @@ using DeletedSections_t = std::vector<DeletedSection>;
 struct ComparedFile
 {
 	int		originalViewId;
+	int		compareViewId;
 	int		buffId;
 	int		sciDoc;
 	TCHAR	name[MAX_PATH];
 
 	// Members below are for user actions generated data
 	DeletedSections_t	deletedSections;
+};
+
+
+/**
+ *  \struct
+ *  \brief
+ */
+struct ComparedPair
+{
+	ComparedFile	file[2];
+};
+
+
+using CompareList_t = std::vector<ComparedPair>;
+
+
+enum CompareResult_t
+{
+	COMPARE_ERROR = 0,
+	COMPARE_CANCELLED,
+	FILES_MATCH,
+	FILES_DIFFER
 };
 
 
@@ -146,19 +168,6 @@ struct SaveNotificationData
 	int					position;
 	BlankSections_t		blankSections;
 };
-
-
-enum CompareResult_t
-{
-	COMPARE_ERROR = 0,
-	COMPARE_CANCELLED,
-	FILES_MATCH,
-	FILES_DIFFER
-};
-
-
-using ComparePair_t = std::pair<ComparedFile, ComparedFile>;
-using CompareList_t = std::vector<ComparePair_t>;
 
 
 CompareList_t compareList;
@@ -274,15 +283,15 @@ void saveSettings()
 }
 
 
-ComparedFile& getFileByBuffId(ComparePair_t& pair, int buffId)
+ComparedFile& getFileByBuffId(ComparedPair& pair, int buffId)
 {
-	return (pair.first.buffId == buffId) ? pair.first : pair.second;
+	return (pair.file[0].buffId == buffId) ? pair.file[0] : pair.file[1];
 }
 
 
-ComparedFile& getFileByViewId(ComparePair_t& pair, int viewId)
+ComparedFile& getFileByViewId(ComparedPair& pair, int viewId)
 {
-	return (viewIdFromBuffId(pair.first.buffId) == viewId) ? pair.first : pair.second;
+	return (viewIdFromBuffId(pair.file[0].buffId) == viewId) ? pair.file[0] : pair.file[1];
 }
 
 
@@ -290,7 +299,7 @@ CompareList_t::iterator getCompare(int buffId)
 {
 	for (CompareList_t::iterator it = compareList.begin(); it < compareList.end(); ++it)
 	{
-		if (it->first.buffId == buffId || it->second.buffId == buffId)
+		if (it->file[0].buffId == buffId || it->file[1].buffId == buffId)
 			return it;
 	}
 
@@ -302,7 +311,7 @@ CompareList_t::iterator getCompareBySciDoc(int sciDoc)
 {
 	for (CompareList_t::iterator it = compareList.begin(); it < compareList.end(); ++it)
 	{
-		if (it->first.sciDoc == sciDoc || it->second.sciDoc == sciDoc)
+		if (it->file[0].sciDoc == sciDoc || it->file[1].sciDoc == sciDoc)
 			return it;
 	}
 
@@ -908,7 +917,7 @@ CompareResult_t runCompare(CompareList_t::iterator& cmpPair)
 
 	try
 	{
-		result = doCompare(cmpPair->first.name, cmpPair->second.name);
+		result = doCompare(cmpPair->file[0].name, cmpPair->file[1].name);
 	}
 	catch (std::exception& e)
 	{
@@ -936,19 +945,19 @@ CompareList_t::iterator createComparePair()
 	const bool swapPair = moveToOtherViewNeeded ?
 		(Settings.FirstFileCompareViewId != MAIN_VIEW) : (firstFile->originalViewId != MAIN_VIEW);
 
-	ComparePair_t cmpPair;
+	ComparedPair cmpPair;
 	ComparedFile* first;
 	ComparedFile* second;
 
 	if (swapPair)
 	{
-		first = &cmpPair.second;
-		second = &cmpPair.first;
+		first = &cmpPair.file[1];
+		second = &cmpPair.file[0];
 	}
 	else
 	{
-		first = &cmpPair.first;
-		second = &cmpPair.second;
+		first = &cmpPair.file[0];
+		second = &cmpPair.file[1];
 	}
 
 	*first = *firstFile;
@@ -1007,15 +1016,15 @@ void clearComparePair(int buffId)
 
 	ScopedIncrementer incr(notificationsLock);
 
-	if (cmpPair->first.buffId == buffId)
+	if (cmpPair->file[0].buffId == buffId)
 	{
-		restoreFile(cmpPair->second);
-		restoreFile(cmpPair->first);
+		restoreFile(cmpPair->file[1]);
+		restoreFile(cmpPair->file[0]);
 	}
 	else
 	{
-		restoreFile(cmpPair->first);
-		restoreFile(cmpPair->second);
+		restoreFile(cmpPair->file[0]);
+		restoreFile(cmpPair->file[1]);
 	}
 
 	compareList.erase(cmpPair);
@@ -1034,9 +1043,9 @@ void closeComparePair(CompareList_t::iterator& cmpPair)
 
 	ScopedIncrementer incr(notificationsLock);
 
-	activateBufferID(cmpPair->second.buffId);
+	activateBufferID(cmpPair->file[1].buffId);
 	::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
-	activateBufferID(cmpPair->first.buffId);
+	activateBufferID(cmpPair->file[0].buffId);
 	::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
 
 	compareList.erase(cmpPair);
@@ -1133,10 +1142,10 @@ bool prepareFiles()
 			if (cmpPair != compareList.end())
 			{
 				const TCHAR* fname;
-				if (cmpPair->first.sciDoc == sciDoc)
-					fname = ::PathFindFileName(cmpPair->first.name);
+				if (cmpPair->file[0].sciDoc == sciDoc)
+					fname = ::PathFindFileName(cmpPair->file[0].name);
 				else
-					fname = ::PathFindFileName(cmpPair->second.name);
+					fname = ::PathFindFileName(cmpPair->file[1].name);
 
 				TCHAR msg[MAX_PATH];
 				_sntprintf_s(msg, _countof(msg), _TRUNCATE,
@@ -1232,8 +1241,8 @@ void Compare()
 		clearWindow(nppData._scintillaMainHandle);
 		clearWindow(nppData._scintillaSecondHandle);
 
-		cmpPair->first.deletedSections.clear();
-		cmpPair->second.deletedSections.clear();
+		cmpPair->file[0].deletedSections.clear();
+		cmpPair->file[1].deletedSections.clear();
 	}
 
 	switch (runCompare(cmpPair))
@@ -1256,8 +1265,8 @@ void Compare()
 		{
 			TCHAR msg[2 * MAX_PATH];
 
-			const TCHAR* first = ::PathFindFileName(cmpPair->first.name);
-			const TCHAR* second = ::PathFindFileName(cmpPair->second.name);
+			const TCHAR* first = ::PathFindFileName(cmpPair->file[0].name);
+			const TCHAR* second = ::PathFindFileName(cmpPair->file[1].name);
 
 			_sntprintf_s(msg, _countof(msg), _TRUNCATE,
 					TEXT("Files \"%s\" and \"%s\" match.\n\nClose compared files?"), first, second);
@@ -1304,8 +1313,8 @@ void ClearAllCompares()
 
 	for (int i = compareList.size() - 1; i >= 0; --i)
 	{
-		restoreFile(compareList[i].first);
-		restoreFile(compareList[i].second);
+		restoreFile(compareList[i].file[0]);
+		restoreFile(compareList[i].file[1]);
 	}
 
 	compareList.clear();
@@ -1832,7 +1841,7 @@ void onBufferActivated(int buffId)
 	}
 
 	// Compared file moved to other view? -> clear compare
-	if (viewIdFromBuffId(cmpPair->first.buffId) == viewIdFromBuffId(cmpPair->second.buffId))
+	if (viewIdFromBuffId(cmpPair->file[0].buffId) == viewIdFromBuffId(cmpPair->file[1].buffId))
 	{
 		clearComparePair(buffId);
 		return;
@@ -1877,10 +1886,10 @@ void onFileBeforeClose(int buffId)
 
 	ScopedIncrementer incr(notificationsLock);
 
-	if (cmpPair->first.buffId == buffId)
-		restoreFile(cmpPair->second);
+	if (cmpPair->file[0].buffId == buffId)
+		restoreFile(cmpPair->file[1]);
 	else
-		restoreFile(cmpPair->first);
+		restoreFile(cmpPair->file[0]);
 
 	compareList.erase(cmpPair);
 }
