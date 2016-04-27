@@ -2050,6 +2050,14 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		break;
 
 		case NPPN_FILECLOSED:
+			if ((bool)firstFile)
+			{
+				firstFile.reset();
+
+				if (!nppSettings.compareMode)
+					nppSettings.updatePluginMenu();
+			}
+
 			if (!notificationsLock && !compareList.empty())
 				onFileClosed(notifyCode->nmhdr.idFrom);
 		break;
