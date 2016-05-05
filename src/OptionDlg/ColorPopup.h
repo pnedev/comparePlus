@@ -23,7 +23,6 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 #include "Window.h"
 #include "resource.h"
-#include "CompareResource.h"
 
 class ColorPopup : public Window
 {

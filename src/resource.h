@@ -25,11 +25,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define IDD_COLOR_POPUP                 102
 #define IDD_OPTION_DIALOG               103
 #define IDD_NAV_DIALOG                  104
+
 #define IDB_FIRST                       120
 #define IDB_LAST                        121
 #define IDB_NEXT                        122
 #define IDB_PREV                        123
 #define IDB_ICON                        124
+
 #define IDC_EMAIL_LINK5                 1010
 #define IDC_NPP_PLUGINS_URL3            1011
 #define IDC_EMAIL_LINK_TYL              1012
@@ -41,6 +43,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define IDC_PND_REPO_URL           		1018
 #define IDC_ABOUT_CLOSE_BUTTON          1001
 #define IDC_COLOR_LIST                  1002
+#define IDC_FIRST_FILE           		1020
+#define IDC_BASE_FILE_POS           	1021
+#define IDC_GOTO_FIRST_DIFF           	1022
 #define IDC_COMBO_ADDED_COLOR           1026
 #define IDC_COMBO_REMOVED_COLOR         1027
 #define IDC_COMBO_MOVED_COLOR           1028
@@ -49,6 +54,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define IDC_SPIN_BOX                    1035
 #define IDC_SPIN_CTL                    1036
 #define IDC_STATIC                      -1
+
+#define COLOR_POPUP_OK		10000
+#define COLOR_POPUP_CANCEL	10001
 
 // Next default values for new objects
 //

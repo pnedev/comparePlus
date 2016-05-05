@@ -40,7 +40,7 @@ public:
 		Window::init(hInst, nppData._nppHandle);
 	};
 
-	UINT doDialog(struct sUserSettings * Settings);
+	UINT doDialog(UserSettings* settings);
 
 	virtual void destroy() {};
 
@@ -63,5 +63,5 @@ private:
 	ColorCombo _ColorComboBlank;
 	ColorCombo _ColorComboHighlight;
 
-	struct sUserSettings* _Settings;
+	struct UserSettings* _Settings;
 };

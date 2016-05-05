@@ -27,7 +27,6 @@
 #include "PluginInterface.h"
 
 #include "resource.h"
-#include "CompareResource.h"
 
 
 #define DEFAULT_ADDED_COLOR     	0xAAFFAA
@@ -56,14 +55,14 @@ enum MARKER_ID
 
 enum MENU_COMMANDS
 {
-	CMD_SELECT_FIRST = 0,
+	CMD_SET_FIRST = 0,
 	CMD_COMPARE,
-	CMD_CLEAR_CURRENT,
+	CMD_CLEAR_ACTIVE,
 	CMD_CLEAR_ALL,
 	CMD_SEPARATOR_1,
-	CMD_COMPARE_LAST_SAVE,
-	CMD_COMPARE_SVN_BASE,
-	CMD_COMPARE_GIT_BASE,
+	CMD_LAST_SAVE_DIFF,
+	CMD_SVN_DIFF,
+	CMD_GIT_DIFF,
 	CMD_SEPARATOR_2,
 	CMD_ALIGN_MATCHES,
 	CMD_IGNORE_SPACING,
@@ -75,13 +74,13 @@ enum MENU_COMMANDS
 	CMD_FIRST,
 	CMD_LAST,
 	CMD_SEPARATOR_4,
-	CMD_OPTION,
+	CMD_OPTIONS,
 	CMD_ABOUT,
 	NB_MENU_COMMANDS
 };
 
 
-struct sColorSettings
+struct ColorSettings
 {
 	int added;
 	int deleted;
@@ -94,14 +93,37 @@ struct sColorSettings
 };
 
 
-struct sUserSettings
+struct UserSettings
 {
-	int				FirstFileCompareViewId;
+	void load();
+	void save();
+
+	static const TCHAR mainSection[];
+	static const TCHAR baseIsFirstOption[];
+	static const TCHAR baseFileOnLeftOption[];
+	static const TCHAR gotoFirstDiffOption[];
+	static const TCHAR alignMatchesOption[];
+	static const TCHAR ignoreSpacesOption[];
+	static const TCHAR detectMovesOption[];
+	static const TCHAR navBarOption[];
+	static const TCHAR colorsSection[];
+	static const TCHAR addedColorOption[];
+	static const TCHAR removedColorOption[];
+	static const TCHAR changedColorOption[];
+	static const TCHAR movedColorOption[];
+	static const TCHAR highlightColorOption[];
+	static const TCHAR highlightAlphaOption[];
+
+	bool           	BaseFileIsFirst;
+	int				BaseFileViewId;
+	bool           	GotoFirstDiff;
+
 	bool           	AddLine;
 	bool           	IncludeSpace;
 	bool           	DetectMove;
 	bool           	UseNavBar;
-	sColorSettings	ColorSettings;
+
+	ColorSettings	colors;
 };
 
 

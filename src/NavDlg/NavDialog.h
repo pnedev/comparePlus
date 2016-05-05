@@ -33,7 +33,7 @@ public:
 	void init(HINSTANCE hInst, NppData nppData);
 	void destroy() {};
 
-    void SetColor(const sColorSettings& colorSettings);
+    void SetColors(const ColorSettings& colorSettings);
 	void CreateBitmap();
     void DrawView();
 
@@ -59,7 +59,7 @@ private:
 	NppData	_nppData;
 	tTbData	_data;
 
-	sColorSettings _clr;
+	ColorSettings _clr;
 
 	int m_minimumDiffHeight;
 

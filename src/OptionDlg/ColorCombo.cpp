@@ -18,7 +18,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
 #include "ColorCombo.h"
-#include "CompareResource.h"
+#include "resource.h"
 
 void ColorCombo::init(HINSTANCE hInst, HWND hNpp, HWND hCombo)
 {

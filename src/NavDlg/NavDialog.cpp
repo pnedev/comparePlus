@@ -201,7 +201,7 @@ BOOL CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
 }
 
 
-void NavDialog::SetColor(const sColorSettings& colorSettings)
+void NavDialog::SetColors(const ColorSettings& colorSettings)
 {
 	_clr = colorSettings;
 }

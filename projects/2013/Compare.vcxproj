@@ -141,7 +141,6 @@
     <ClInclude Include="..\..\src\OptionDlg\ColorPopup.h" />
     <ClInclude Include="..\..\src\OptionDlg\OptionDialog.h" />
     <ClInclude Include="..\..\src\Compare.h" />
-    <ClInclude Include="..\..\src\CompareResource.h" />
     <ClInclude Include="..\..\src\Engine\Engine.h" />
     <ClInclude Include="..\..\src\LibGit2\LibGit2Helper.h" />
     <ClInclude Include="..\..\src\XpmIcons\icon_add_16.h" />

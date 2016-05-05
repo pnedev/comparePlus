@@ -175,7 +175,7 @@ void markTextAsChanged(HWND window, int start, int length);
 void setNormalView(HWND window);
 void setCompareView(HWND window);
 
-void setStyles(sUserSettings& Settings);
+void setStyles(UserSettings& settings);
 
 void setBlank(HWND window, int color);
 

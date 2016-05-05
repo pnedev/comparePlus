@@ -87,24 +87,24 @@ void defineSymbol(int type, int symbol)
 }
 
 
-static void setChangedStyle(HWND window, const sColorSettings& Settings)
+static void setChangedStyle(HWND window, const ColorSettings& settings)
 {
 	::SendMessage(window, SCI_INDICSETSTYLE, INDIC_HIGHLIGHT, (LPARAM)INDIC_ROUNDBOX);
-	::SendMessage(window, SCI_INDICSETFORE, INDIC_HIGHLIGHT, (LPARAM)Settings.highlight);
-	::SendMessage(window, SCI_INDICSETALPHA, INDIC_HIGHLIGHT, (LPARAM)Settings.alpha);
+	::SendMessage(window, SCI_INDICSETFORE, INDIC_HIGHLIGHT, (LPARAM)settings.highlight);
+	::SendMessage(window, SCI_INDICSETALPHA, INDIC_HIGHLIGHT, (LPARAM)settings.alpha);
 }
 
 
-static void setTextStyle(HWND window, const sColorSettings& Settings)
+static void setTextStyle(HWND window, const ColorSettings& settings)
 {
-	setChangedStyle(window, Settings);
+	setChangedStyle(window, settings);
 }
 
 
-static void setTextStyles(const sColorSettings& Settings)
+static void setTextStyles(const ColorSettings& settings)
 {
-	setTextStyle(nppData._scintillaMainHandle, Settings);
-	setTextStyle(nppData._scintillaSecondHandle, Settings);
+	setTextStyle(nppData._scintillaMainHandle, settings);
+	setTextStyle(nppData._scintillaSecondHandle, settings);
 }
 
 
@@ -146,11 +146,11 @@ void setCompareView(HWND view)
 }
 
 
-void setStyles(sUserSettings& Settings)
+void setStyles(UserSettings& settings)
 {
     const int bg = ::SendMessage(nppData._nppHandle, NPPM_GETEDITORDEFAULTBACKGROUNDCOLOR, 0, 0);
 
-    Settings.ColorSettings._default = bg;
+    settings.colors._default = bg;
 
     unsigned int r = bg & 0xFF;
     unsigned int g = bg >> 8 & 0xFF;
@@ -166,25 +166,25 @@ void setStyles(sUserSettings& Settings)
     g = (g + colorShift) & 0xFF;
     b = (b + colorShift) & 0xFF;
 
-    Settings.ColorSettings.blank = r | (g << 8) | (b << 16);
+    settings.colors.blank = r | (g << 8) | (b << 16);
 
 	setCompareView(nppData._scintillaMainHandle);
 	setCompareView(nppData._scintillaSecondHandle);
 
-	setBlank(nppData._scintillaMainHandle,   Settings.ColorSettings.blank);
-    setBlank(nppData._scintillaSecondHandle, Settings.ColorSettings.blank);
+	setBlank(nppData._scintillaMainHandle,   settings.colors.blank);
+    setBlank(nppData._scintillaSecondHandle, settings.colors.blank);
 
-    defineColor(MARKER_ADDED_LINE,   Settings.ColorSettings.added);
-    defineColor(MARKER_CHANGED_LINE, Settings.ColorSettings.changed);
-    defineColor(MARKER_MOVED_LINE,   Settings.ColorSettings.moved);
-    defineColor(MARKER_REMOVED_LINE, Settings.ColorSettings.deleted);
+    defineColor(MARKER_ADDED_LINE,   settings.colors.added);
+    defineColor(MARKER_CHANGED_LINE, settings.colors.changed);
+    defineColor(MARKER_MOVED_LINE,   settings.colors.moved);
+    defineColor(MARKER_REMOVED_LINE, settings.colors.deleted);
 
 	DefineXpmSymbol(MARKER_ADDED_SYMBOL,   icon_add_16_xpm);
 	DefineXpmSymbol(MARKER_REMOVED_SYMBOL, icon_sub_16_xpm);
 	DefineXpmSymbol(MARKER_CHANGED_SYMBOL, icon_warning_16_xpm);
 	DefineXpmSymbol(MARKER_MOVED_SYMBOL,   icon_moved_16_xpm);
 
-    setTextStyles(Settings.ColorSettings);
+    setTextStyles(settings.colors);
 }
 
 
