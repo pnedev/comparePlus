@@ -216,8 +216,8 @@ struct ComparedFile
 struct ComparedPair
 {
 	ComparedFile& getFileByBuffId(int buffId);
+	ComparedFile& getOtherFileByBuffId(int buffId);
 	ComparedFile& getFileBySciDoc(int sciDoc);
-	ComparedFile& getFileByViewId(int viewId);
 	ComparedFile& getOldFile();
 	ComparedFile& getNewFile();
 	void positionFiles();
@@ -336,15 +336,15 @@ ComparedFile& ComparedPair::getFileByBuffId(int buffId)
 }
 
 
-ComparedFile& ComparedPair::getFileBySciDoc(int sciDoc)
+ComparedFile& ComparedPair::getOtherFileByBuffId(int buffId)
 {
-	return (file[0].sciDoc == sciDoc) ? file[0] : file[1];
+	return (file[0].buffId == buffId) ? file[1] : file[0];
 }
 
 
-ComparedFile& ComparedPair::getFileByViewId(int viewId)
+ComparedFile& ComparedPair::getFileBySciDoc(int sciDoc)
 {
-	return (viewIdFromBuffId(file[0].buffId) == viewId) ? file[0] : file[1];
+	return (file[0].sciDoc == sciDoc) ? file[0] : file[1];
 }
 
 
@@ -744,15 +744,12 @@ void clearComparePair(int buffId)
 	if (cmpPair == compareList.end())
 		return;
 
-	const int currentViewId = getCurrentViewId();
-	const int otherViewId = getOtherViewId();
-
 	nppSettings.setNormalMode();
 
 	ScopedIncrementer incr(notificationsLock);
 
-	cmpPair->getFileByViewId(otherViewId).restore();
-	cmpPair->getFileByViewId(currentViewId).restore();
+	cmpPair->getOtherFileByBuffId(buffId).restore();
+	cmpPair->getFileByBuffId(buffId).restore();
 
 	compareList.erase(cmpPair);
 
@@ -777,11 +774,11 @@ void closeComparePair(CompareList_t::iterator& cmpPair)
 
 	compareList.erase(cmpPair);
 
-	onBufferActivated(getCurrentBuffId());
-	resetCompareView(getOtherView());
-
 	if (::IsWindowVisible(currentView))
 		::SetFocus(currentView);
+
+	onBufferActivated(getCurrentBuffId());
+	resetCompareView(getOtherView());
 }
 
 
@@ -1889,20 +1886,12 @@ void onBufferActivated(int buffId)
 		return;
 	}
 
-	// Compared file moved to other view? -> clear compare
-	if (cmpPair->getFileByBuffId(buffId).compareViewId != viewIdFromBuffId(buffId))
-	{
-		clearComparePair(buffId);
-		return;
-	}
-
 	bool switchedFromOtherPair = false;
-	const int otherViewId = getOtherViewId();
-	const ComparedFile& otherFile = cmpPair->getFileByViewId(otherViewId);
+	const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
 
 	// When compared file is activated make sure its corresponding pair file is
 	// also active in the other view
-	if (getDocId(getView(otherViewId)) != otherFile.sciDoc)
+	if (getDocId(getOtherView()) != otherFile.sciDoc)
 	{
 		ScopedIncrementer incr(notificationsLock);
 
@@ -1930,20 +1919,24 @@ void onFileBeforeClose(int buffId)
 	if (cmpPair == compareList.end())
 		return;
 
-	const int viewId = cmpPair->getFileByBuffId(buffId).compareViewId;
-	HWND currentView = getCurrentView();
+	const int currentBuffId = getCurrentBuffId();
 
 	nppSettings.setNormalMode();
-	setNormalView(getView(viewId));
 
-	ScopedIncrementer incr(notificationsLock);
+	{
+		ScopedIncrementer incr(notificationsLock);
 
-	// Restore the other compared file
-	cmpPair->getFileByViewId(viewId == MAIN_VIEW ? SUB_VIEW : MAIN_VIEW).restore();
+		if (buffId != currentBuffId)
+			activateBufferID(buffId);
 
-	compareList.erase(cmpPair);
+		clearWindow(getCurrentView());
 
-	::SetFocus(currentView);
+		cmpPair->getOtherFileByBuffId(buffId).restore();
+
+		compareList.erase(cmpPair);
+	}
+
+	activateBufferID(currentBuffId);
 }
 
 
@@ -1960,8 +1953,7 @@ void onFileBeforeSave(int buffId)
 	if (cmpPair == compareList.end())
 		return;
 
-	const int viewId = viewIdFromBuffId(buffId);
-	HWND view = getView(viewId);
+	HWND view = getView(cmpPair->getFileByBuffId(buffId).compareViewId);
 
 	saveNotifData.reset(new SaveNotificationData(buffId));
 
@@ -1975,8 +1967,11 @@ void onFileSaved(int buffId)
 {
 	if (saveNotifData->fileBuffId == buffId)
 	{
-		const int viewId = viewIdFromBuffId(buffId);
-		HWND view = getView(viewId);
+		CompareList_t::iterator cmpPair = getCompare(buffId);
+		if (cmpPair == compareList.end())
+			return;
+
+		HWND view = getView(cmpPair->getFileByBuffId(buffId).compareViewId);
 
 		if (!saveNotifData->blankSections.empty())
 			addBlankLines(view, saveNotifData->blankSections);
@@ -2117,9 +2112,10 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 				if (!nppSettings.compareMode)
 					nppSettings.updatePluginMenu();
 			}
-
-			if (!notificationsLock && !compareList.empty())
+			else if (!notificationsLock && !compareList.empty())
+			{
 				onFileClosed();
+			}
 		break;
 
 		case NPPN_FILEBEFORESAVE:
