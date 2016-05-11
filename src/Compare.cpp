@@ -741,18 +741,15 @@ void openMemBlock(const char* memblock, long size)
 void clearComparePair(int buffId)
 {
 	CompareList_t::iterator cmpPair = getCompare(buffId);
-
 	if (cmpPair == compareList.end())
 		return;
 
-	nppSettings.setNormalMode();
-	setNormalView(nppData._scintillaMainHandle);
-	setNormalView(nppData._scintillaSecondHandle);
-
-	ScopedIncrementer incr(notificationsLock);
-
 	const int currentViewId = getCurrentViewId();
 	const int otherViewId = getOtherViewId();
+
+	nppSettings.setNormalMode();
+
+	ScopedIncrementer incr(notificationsLock);
 
 	cmpPair->getFileByViewId(otherViewId).restore();
 	cmpPair->getFileByViewId(currentViewId).restore();
@@ -765,17 +762,17 @@ void clearComparePair(int buffId)
 
 void closeComparePair(CompareList_t::iterator& cmpPair)
 {
+	HWND currentView = getCurrentView();
+
 	nppSettings.setNormalMode();
 	setNormalView(nppData._scintillaMainHandle);
 	setNormalView(nppData._scintillaSecondHandle);
 
-	HWND currentView = getCurrentView();
-
 	ScopedIncrementer incr(notificationsLock);
 
-	activateBufferID(cmpPair->file[1].buffId);
-	::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
 	activateBufferID(cmpPair->file[0].buffId);
+	::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
+	activateBufferID(cmpPair->file[1].buffId);
 	::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
 
 	compareList.erase(cmpPair);
@@ -1347,17 +1344,14 @@ void ClearActiveCompare()
 
 void ClearAllCompares()
 {
+	const int buffId = getCurrentBuffId();
+
 	newPair.reset();
 
 	if (!nppSettings.compareMode)
 		nppSettings.updatePluginMenu();
 	else
 		nppSettings.setNormalMode();
-
-	setNormalView(nppData._scintillaMainHandle);
-	setNormalView(nppData._scintillaSecondHandle);
-
-	const int buffId = getCurrentBuffId();
 
 	ScopedIncrementer incr(notificationsLock);
 
@@ -1888,7 +1882,6 @@ void onSciZoom()
 void onBufferActivated(int buffId)
 {
 	CompareList_t::iterator cmpPair = getCompare(buffId);
-
 	if (cmpPair == compareList.end())
 	{
 		nppSettings.setNormalMode();
@@ -1937,15 +1930,16 @@ void onFileBeforeClose(int buffId)
 	if (cmpPair == compareList.end())
 		return;
 
+	const int viewId = cmpPair->getFileByBuffId(buffId).compareViewId;
 	HWND currentView = getCurrentView();
 
 	nppSettings.setNormalMode();
+	setNormalView(getView(viewId));
 
 	ScopedIncrementer incr(notificationsLock);
 
 	// Restore the other compared file
-	cmpPair->getFileByViewId(cmpPair->getFileByBuffId(buffId).compareViewId == MAIN_VIEW ?
-			SUB_VIEW : MAIN_VIEW).restore();
+	cmpPair->getFileByViewId(viewId == MAIN_VIEW ? SUB_VIEW : MAIN_VIEW).restore();
 
 	compareList.erase(cmpPair);
 
