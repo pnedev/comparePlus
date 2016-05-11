@@ -37,8 +37,8 @@ UserSettings Settings;
 
 
 const TCHAR UserSettings::mainSection[]				= TEXT("Main");
-const TCHAR UserSettings::baseIsFirstOption[]		= TEXT("Base is First");
-const TCHAR UserSettings::baseFileOnLeftOption[]	= TEXT("Base on Left");
+const TCHAR UserSettings::oldIsFirstOption[]		= TEXT("Old is First");
+const TCHAR UserSettings::oldFileOnLeftOption[]	= TEXT("Old on Left");
 const TCHAR UserSettings::gotoFirstDiffOption[]		= TEXT("Go to First Diff");
 const TCHAR UserSettings::alignMatchesOption[]		= TEXT("Align Matches");
 const TCHAR UserSettings::ignoreSpacesOption[]		= TEXT("Include Spaces");
@@ -61,9 +61,9 @@ void UserSettings::load()
 
 	::PathAppend(iniFile, TEXT("Compare.ini"));
 
-	BaseFileIsFirst	= ::GetPrivateProfileInt(mainSection, baseIsFirstOption, 1, iniFile) == 1;
-	BaseFileViewId	=
-			::GetPrivateProfileInt(mainSection, baseFileOnLeftOption, 1, iniFile) == 1 ? MAIN_VIEW : SUB_VIEW;
+	OldFileIsFirst	= ::GetPrivateProfileInt(mainSection, oldIsFirstOption, 1, iniFile) == 1;
+	OldFileViewId	=
+			::GetPrivateProfileInt(mainSection, oldFileOnLeftOption, 1, iniFile) == 1 ? MAIN_VIEW : SUB_VIEW;
 	GotoFirstDiff	= ::GetPrivateProfileInt(mainSection, gotoFirstDiffOption, 0, iniFile) == 1;
 
 	AddLine      = ::GetPrivateProfileInt(mainSection, alignMatchesOption,	1, iniFile) == 1;
@@ -87,10 +87,10 @@ void UserSettings::save()
 	::SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, (WPARAM)_countof(iniFile), (LPARAM)iniFile);
 	::PathAppend(iniFile, TEXT("Compare.ini"));
 
-	::WritePrivateProfileString(mainSection, baseIsFirstOption,
-			BaseFileIsFirst ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, baseFileOnLeftOption,
-			BaseFileViewId == MAIN_VIEW ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, oldIsFirstOption,
+			OldFileIsFirst ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, oldFileOnLeftOption,
+			OldFileViewId == MAIN_VIEW ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, gotoFirstDiffOption,
 			GotoFirstDiff ? TEXT("1") : TEXT("0"), iniFile);
 
@@ -192,12 +192,12 @@ using DeletedSections_t = std::vector<DeletedSection>;
  */
 struct ComparedFile
 {
-	void initFromCurrent(bool isFocal);
+	void initFromCurrent(bool newFile);
 	void updateFromCurrent();
 	void updateView();
 	void restore();
 
-	bool	focal;
+	bool	isNew;
 	int		originalViewId;
 	int		compareViewId;
 	int		buffId;
@@ -218,8 +218,8 @@ struct ComparedPair
 	ComparedFile& getFileByBuffId(int buffId);
 	ComparedFile& getFileBySciDoc(int sciDoc);
 	ComparedFile& getFileByViewId(int viewId);
-	ComparedFile& getBaseFile();
-	ComparedFile& getFocalFile();
+	ComparedFile& getOldFile();
+	ComparedFile& getNewFile();
 	void positionFiles();
 
 	ComparedFile file[2];
@@ -294,9 +294,9 @@ void openMemBlock(const char* memblock, long size);
 void onBufferActivated(int buffId);
 
 
-void ComparedFile::initFromCurrent(bool isFocal)
+void ComparedFile::initFromCurrent(bool newFile)
 {
-	focal = isFocal;
+	isNew = newFile;
 	buffId = getCurrentBuffId();
 	originalViewId = getCurrentViewId();
 	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(name), (LPARAM)name);
@@ -314,7 +314,7 @@ void ComparedFile::updateFromCurrent()
 
 void ComparedFile::updateView()
 {
-	compareViewId = focal ? ((Settings.BaseFileViewId == MAIN_VIEW) ? SUB_VIEW : MAIN_VIEW) : Settings.BaseFileViewId;
+	compareViewId = isNew ? ((Settings.OldFileViewId == MAIN_VIEW) ? SUB_VIEW : MAIN_VIEW) : Settings.OldFileViewId;
 }
 
 
@@ -348,44 +348,44 @@ ComparedFile& ComparedPair::getFileByViewId(int viewId)
 }
 
 
-ComparedFile& ComparedPair::getBaseFile()
+ComparedFile& ComparedPair::getOldFile()
 {
-	return file[0].focal ? file[1] : file[0];
+	return file[0].isNew ? file[1] : file[0];
 }
 
 
-ComparedFile& ComparedPair::getFocalFile()
+ComparedFile& ComparedPair::getNewFile()
 {
-	return file[0].focal ? file[0] : file[1];
+	return file[0].isNew ? file[0] : file[1];
 }
 
 
 void ComparedPair::positionFiles()
 {
-	ComparedFile& baseFile = getBaseFile();
-	ComparedFile& focalFile = getFocalFile();
+	ComparedFile& oldFile = getOldFile();
+	ComparedFile& newFile = getNewFile();
 
-	if (viewIdFromBuffId(baseFile.buffId) != baseFile.compareViewId)
+	if (viewIdFromBuffId(oldFile.buffId) != oldFile.compareViewId)
 	{
-		if (baseFile.buffId != getCurrentBuffId())
-			activateBufferID(baseFile.buffId);
+		if (oldFile.buffId != getCurrentBuffId())
+			activateBufferID(oldFile.buffId);
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
-		baseFile.updateFromCurrent();
+		oldFile.updateFromCurrent();
 	}
 
-	if (viewIdFromBuffId(focalFile.buffId) != focalFile.compareViewId)
+	if (viewIdFromBuffId(newFile.buffId) != newFile.compareViewId)
 	{
-		if (focalFile.buffId != getCurrentBuffId())
-			activateBufferID(focalFile.buffId);
+		if (newFile.buffId != getCurrentBuffId())
+			activateBufferID(newFile.buffId);
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
-		focalFile.updateFromCurrent();
+		newFile.updateFromCurrent();
 	}
 
-	if (baseFile.sciDoc != getDocId(getView(baseFile.compareViewId)))
-		activateBufferID(baseFile.buffId);
+	if (oldFile.sciDoc != getDocId(getView(oldFile.compareViewId)))
+		activateBufferID(oldFile.buffId);
 
-	if (focalFile.sciDoc != getDocId(getView(focalFile.compareViewId)))
-		activateBufferID(focalFile.buffId);
+	if (newFile.sciDoc != getDocId(getView(newFile.compareViewId)))
+		activateBufferID(newFile.buffId);
 }
 
 
@@ -511,11 +511,11 @@ void progressOpen(const TCHAR* msg)
 
 void progressFillCompareInfo(CompareList_t::iterator& cmpPair)
 {
-	const TCHAR* first = ::PathFindFileName(cmpPair->getFocalFile().name);
-	const TCHAR* second = ::PathFindFileName(cmpPair->getBaseFile().name);
+	const TCHAR* newName = ::PathFindFileName(cmpPair->getNewFile().name);
+	const TCHAR* oldName = ::PathFindFileName(cmpPair->getOldFile().name);
 
 	TCHAR msg[MAX_PATH];
-	_sntprintf_s(msg, _countof(msg), _TRUNCATE, TEXT("Comparing \"%s\" vs. \"%s\"..."), first, second);
+	_sntprintf_s(msg, _countof(msg), _TRUNCATE, TEXT("Comparing \"%s\" vs. \"%s\"..."), newName, oldName);
 
 	progDlg->SetInfo(msg);
 }
@@ -781,7 +781,6 @@ void closeComparePair(CompareList_t::iterator& cmpPair)
 	compareList.erase(cmpPair);
 
 	onBufferActivated(getCurrentBuffId());
-
 	resetCompareView(getOtherView());
 
 	if (::IsWindowVisible(currentView))
@@ -823,7 +822,7 @@ bool isFileCompared(HWND view)
 }
 
 
-bool setFirst(bool isFocal)
+bool setFirst(bool newFile)
 {
 	HWND view = getCurrentView();
 
@@ -832,7 +831,7 @@ bool setFirst(bool isFocal)
 
 	newPair.reset(new ComparedPair);
 
-	newPair->file[0].initFromCurrent(isFocal);
+	newPair->file[0].initFromCurrent(newFile);
 
 	firstFileCodepage = ::SendMessage(view, SCI_GETCODEPAGE, 0, 0);
 
@@ -863,9 +862,9 @@ bool initNewCompare()
 	if (!firstIsSet)
 	{
 		const bool singleView = isSingleView();
-		const bool focal = singleView ? true : getCurrentViewId() != Settings.BaseFileViewId;
+		const bool isNew = singleView ? true : getCurrentViewId() != Settings.OldFileViewId;
 
-		if (!setFirst(focal))
+		if (!setFirst(isNew))
 			return false;
 
 		if (singleView)
@@ -880,7 +879,7 @@ bool initNewCompare()
 			}
 
 			::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0,
-					Settings.BaseFileViewId == MAIN_VIEW ? IDM_VIEW_TAB_PREV : IDM_VIEW_TAB_NEXT);
+					Settings.OldFileViewId == MAIN_VIEW ? IDM_VIEW_TAB_PREV : IDM_VIEW_TAB_NEXT);
 
 			if (isFileEmpty(getCurrentView()))
 			{
@@ -915,7 +914,7 @@ bool initNewCompare()
 		}
 	}
 
-	newPair->file[1].initFromCurrent(!newPair->file[0].focal);
+	newPair->file[1].initFromCurrent(!newPair->file[0].isNew);
 
 	return true;
 }
@@ -938,7 +937,7 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 	HWND view1;
 	HWND view2;
 
-	if (Settings.BaseFileViewId != MAIN_VIEW)
+	if (Settings.OldFileViewId != MAIN_VIEW)
 	{
 		view1 = nppData._scintillaSecondHandle;
 		view2 = nppData._scintillaMainHandle;
@@ -1229,7 +1228,7 @@ CompareResult_t runCompare(CompareList_t::iterator& cmpPair)
 
 void SetAsFirst()
 {
-	if (!setFirst(!Settings.BaseFileIsFirst))
+	if (!setFirst(!Settings.OldFileIsFirst))
 	{
 		if ((bool)newPair)
 		{
@@ -1281,14 +1280,14 @@ void Compare()
 		clearWindow(nppData._scintillaMainHandle);
 		clearWindow(nppData._scintillaSecondHandle);
 
-		ComparedFile& baseFile = cmpPair->getBaseFile();
-		ComparedFile& focalFile = cmpPair->getFocalFile();
+		ComparedFile& oldFile = cmpPair->getOldFile();
+		ComparedFile& newFile = cmpPair->getNewFile();
 
-		baseFile.deletedSections.clear();
-		focalFile.deletedSections.clear();
+		oldFile.deletedSections.clear();
+		newFile.deletedSections.clear();
 
-		baseFile.updateView();
-		focalFile.updateView();
+		oldFile.updateView();
+		newFile.updateView();
 	}
 
 	switch (runCompare(cmpPair))
@@ -1306,7 +1305,7 @@ void Compare()
 			}
 			else
 			{
-				::SetFocus(getView(cmpPair->getFocalFile().compareViewId));
+				::SetFocus(getView(cmpPair->getNewFile().compareViewId));
 				First();
 			}
 		}
@@ -1316,11 +1315,11 @@ void Compare()
 		{
 			TCHAR msg[2 * MAX_PATH];
 
-			const TCHAR* first = ::PathFindFileName(cmpPair->getFocalFile().name);
-			const TCHAR* second = ::PathFindFileName(cmpPair->getBaseFile().name);
+			const TCHAR* newName = ::PathFindFileName(cmpPair->getNewFile().name);
+			const TCHAR* oldName = ::PathFindFileName(cmpPair->getOldFile().name);
 
 			_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-					TEXT("Files \"%s\" and \"%s\" match.\n\nClose compared files?"), first, second);
+					TEXT("Files \"%s\" and \"%s\" match.\n\nClose compared files?"), newName, oldName);
 			if (::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin: Files Match"),
 					MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2) == IDYES)
 				closeComparePair(cmpPair);
@@ -1939,26 +1938,25 @@ void onFileBeforeClose(int buffId)
 		return;
 
 	HWND currentView = getCurrentView();
-	const int viewId = viewIdFromBuffId(buffId);
 
 	nppSettings.setNormalMode();
-	setNormalView(getView(viewId));
 
 	ScopedIncrementer incr(notificationsLock);
 
 	// Restore the other compared file
-	cmpPair->getFileByViewId(viewId == MAIN_VIEW ? SUB_VIEW : MAIN_VIEW).restore();
-
-	::SetFocus(currentView);
+	cmpPair->getFileByViewId(cmpPair->getFileByBuffId(buffId).compareViewId == MAIN_VIEW ?
+			SUB_VIEW : MAIN_VIEW).restore();
 
 	compareList.erase(cmpPair);
+
+	::SetFocus(currentView);
 }
 
 
-void onFileClosed(int buffId)
+void onFileClosed()
 {
-	HWND closedFileView = getView(viewIdFromBuffId(buffId));
-	resetCompareView(closedFileView);
+	resetCompareView(nppData._scintillaMainHandle);
+	resetCompareView(nppData._scintillaSecondHandle);
 }
 
 
@@ -2127,7 +2125,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 			}
 
 			if (!notificationsLock && !compareList.empty())
-				onFileClosed(notifyCode->nmhdr.idFrom);
+				onFileClosed();
 		break;
 
 		case NPPN_FILEBEFORESAVE:

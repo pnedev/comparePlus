@@ -99,8 +99,8 @@ struct UserSettings
 	void save();
 
 	static const TCHAR mainSection[];
-	static const TCHAR baseIsFirstOption[];
-	static const TCHAR baseFileOnLeftOption[];
+	static const TCHAR oldIsFirstOption[];
+	static const TCHAR oldFileOnLeftOption[];
 	static const TCHAR gotoFirstDiffOption[];
 	static const TCHAR alignMatchesOption[];
 	static const TCHAR ignoreSpacesOption[];
@@ -114,8 +114,8 @@ struct UserSettings
 	static const TCHAR highlightColorOption[];
 	static const TCHAR highlightAlphaOption[];
 
-	bool           	BaseFileIsFirst;
-	int				BaseFileViewId;
+	bool           	OldFileIsFirst;
+	int				OldFileViewId;
 	bool           	GotoFirstDiff;
 
 	bool           	AddLine;

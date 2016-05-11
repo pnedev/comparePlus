@@ -32,11 +32,11 @@ BOOL CALLBACK OptionDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*lP
 			if (EnableDlgTheme != NULL)
 				EnableDlgTheme(_hSelf, ETDT_ENABLETAB);
 
-			::SendMessage(::GetDlgItem(_hSelf, IDC_FIRST_FILE), CB_ADDSTRING, 0, (LPARAM)TEXT("base"));
-			::SendMessage(::GetDlgItem(_hSelf, IDC_FIRST_FILE), CB_ADDSTRING, 0, (LPARAM)TEXT("focal"));
+			::SendMessage(::GetDlgItem(_hSelf, IDC_FIRST_FILE), CB_ADDSTRING, 0, (LPARAM)TEXT("old file"));
+			::SendMessage(::GetDlgItem(_hSelf, IDC_FIRST_FILE), CB_ADDSTRING, 0, (LPARAM)TEXT("new file"));
 
-			::SendMessage(::GetDlgItem(_hSelf, IDC_BASE_FILE_POS), CB_ADDSTRING, 0, (LPARAM)TEXT("left/top"));
-			::SendMessage(::GetDlgItem(_hSelf, IDC_BASE_FILE_POS), CB_ADDSTRING, 0, (LPARAM)TEXT("right/bottom"));
+			::SendMessage(::GetDlgItem(_hSelf, IDC_OLD_FILE_POS), CB_ADDSTRING, 0, (LPARAM)TEXT("left/top"));
+			::SendMessage(::GetDlgItem(_hSelf, IDC_OLD_FILE_POS), CB_ADDSTRING, 0, (LPARAM)TEXT("right/bottom"));
 
 			_ColorComboAdded.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_ADDED_COLOR));
 			_ColorComboChanged.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_CHANGED_COLOR));
@@ -65,8 +65,8 @@ BOOL CALLBACK OptionDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*lP
 					return TRUE;
 
 				case IDDEFAULT:
-					_Settings->BaseFileIsFirst	= true;
-					_Settings->BaseFileViewId	= MAIN_VIEW;
+					_Settings->OldFileIsFirst	= true;
+					_Settings->OldFileViewId	= MAIN_VIEW;
 					_Settings->GotoFirstDiff	= false;
 
 					_Settings->colors.added     = DEFAULT_ADDED_COLOR;
@@ -112,9 +112,9 @@ BOOL CALLBACK OptionDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*lP
 
 void OptionDialog::SetParams()
 {
-	::SendMessage(::GetDlgItem(_hSelf, IDC_FIRST_FILE), CB_SETCURSEL, _Settings->BaseFileIsFirst ? 0 : 1, 0);
-	::SendMessage(::GetDlgItem(_hSelf, IDC_BASE_FILE_POS), CB_SETCURSEL,
-			_Settings->BaseFileViewId == MAIN_VIEW ? 0 : 1, 0);
+	::SendMessage(::GetDlgItem(_hSelf, IDC_FIRST_FILE), CB_SETCURSEL, _Settings->OldFileIsFirst ? 0 : 1, 0);
+	::SendMessage(::GetDlgItem(_hSelf, IDC_OLD_FILE_POS), CB_SETCURSEL,
+			_Settings->OldFileViewId == MAIN_VIEW ? 0 : 1, 0);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_GOTO_FIRST_DIFF),
 			_Settings->GotoFirstDiff ? BST_CHECKED : BST_UNCHECKED);
 
@@ -132,10 +132,10 @@ void OptionDialog::SetParams()
 
 BOOL OptionDialog::GetParams()
 {
-	_Settings->BaseFileIsFirst	=
+	_Settings->OldFileIsFirst	=
 			::SendMessage(::GetDlgItem(_hSelf, IDC_FIRST_FILE), CB_GETCURSEL, 0, 0) == 0;
-	_Settings->BaseFileViewId	=
-			::SendMessage(::GetDlgItem(_hSelf, IDC_BASE_FILE_POS), CB_GETCURSEL, 0, 0) == 0 ? MAIN_VIEW : SUB_VIEW;
+	_Settings->OldFileViewId	=
+			::SendMessage(::GetDlgItem(_hSelf, IDC_OLD_FILE_POS), CB_GETCURSEL, 0, 0) == 0 ? MAIN_VIEW : SUB_VIEW;
 	_Settings->GotoFirstDiff	=
 			(Button_GetCheck(::GetDlgItem(_hSelf, IDC_GOTO_FIRST_DIFF)) == BST_CHECKED) ? true : false;
 

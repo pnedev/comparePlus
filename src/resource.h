@@ -44,7 +44,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define IDC_ABOUT_CLOSE_BUTTON          1001
 #define IDC_COLOR_LIST                  1002
 #define IDC_FIRST_FILE           		1020
-#define IDC_BASE_FILE_POS           	1021
+#define IDC_OLD_FILE_POS           		1021
 #define IDC_GOTO_FIRST_DIFF           	1022
 #define IDC_COMBO_ADDED_COLOR           1026
 #define IDC_COMBO_REMOVED_COLOR         1027
