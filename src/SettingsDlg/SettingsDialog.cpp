@@ -32,11 +32,11 @@ BOOL CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*
 			if (EnableDlgTheme != NULL)
 				EnableDlgTheme(_hSelf, ETDT_ENABLETAB);
 
-			::SendMessage(::GetDlgItem(_hSelf, IDC_FIRST_FILE), CB_ADDSTRING, 0, (LPARAM)TEXT("old file"));
-			::SendMessage(::GetDlgItem(_hSelf, IDC_FIRST_FILE), CB_ADDSTRING, 0, (LPARAM)TEXT("new file"));
+			::SendMessage(::GetDlgItem(_hSelf, IDC_FIRST_FILE), CB_ADDSTRING, 0, (LPARAM)TEXT("Old file"));
+			::SendMessage(::GetDlgItem(_hSelf, IDC_FIRST_FILE), CB_ADDSTRING, 0, (LPARAM)TEXT("New file"));
 
-			::SendMessage(::GetDlgItem(_hSelf, IDC_OLD_FILE_POS), CB_ADDSTRING, 0, (LPARAM)TEXT("left/top"));
-			::SendMessage(::GetDlgItem(_hSelf, IDC_OLD_FILE_POS), CB_ADDSTRING, 0, (LPARAM)TEXT("right/bottom"));
+			::SendMessage(::GetDlgItem(_hSelf, IDC_OLD_FILE_POS), CB_ADDSTRING, 0, (LPARAM)TEXT("Left/Top"));
+			::SendMessage(::GetDlgItem(_hSelf, IDC_OLD_FILE_POS), CB_ADDSTRING, 0, (LPARAM)TEXT("Right/Bottom"));
 
 			_ColorComboAdded.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_ADDED_COLOR));
 			_ColorComboChanged.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_CHANGED_COLOR));
