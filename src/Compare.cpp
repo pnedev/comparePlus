@@ -242,55 +242,66 @@ enum CompareResult_t
  *  \class
  *  \brief
  */
-class ActivateBuffPostProcess
+class DelayedProcess
 {
 public:
-	static bool start(int buffId, UINT delay_ms, TIMERPROC timerCB);
-	static void stop();
-	static int buffId()
-	{
-		return instance()._buffId;
-	}
+	using postCB_t = void(*)(int buffId);
+
+	static bool post(int buffId, UINT delay_ms, postCB_t postCB);
+	static void cancel();
 
 private:
-	static ActivateBuffPostProcess& instance()
+	static DelayedProcess& instance()
 	{
-		static ActivateBuffPostProcess inst;
+		static DelayedProcess inst;
 		return inst;
 	}
 
-	ActivateBuffPostProcess() : _timerId(0), _buffId(0) {}
-	~ActivateBuffPostProcess()
+	DelayedProcess() : _timerId(0), _buffId(0) {}
+	~DelayedProcess()
 	{
 		if (_timerId)
 			::KillTimer(NULL, _timerId);
 	}
 
+	static VOID CALLBACK timerCB(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
+
 	UINT_PTR	_timerId;
 	int			_buffId;
+	postCB_t	_postCB;
 };
 
 
-bool ActivateBuffPostProcess::start(int buffId, UINT delay_ms, TIMERPROC timerCB)
+bool DelayedProcess::post(int buffId, UINT delay_ms, postCB_t postCB)
 {
-	ActivateBuffPostProcess& inst = instance();
+	DelayedProcess& inst = instance();
 
 	inst._buffId = buffId;
+	inst._postCB = postCB;
 	inst._timerId = ::SetTimer(NULL, 0, delay_ms, timerCB);
 
 	return (inst._timerId != 0);
 }
 
 
-void ActivateBuffPostProcess::stop()
+void DelayedProcess::cancel()
 {
-	ActivateBuffPostProcess& inst = instance();
+	DelayedProcess& inst = instance();
 
 	if (inst._timerId)
 	{
 		::KillTimer(NULL, inst._timerId);
 		inst._timerId = 0;
 	}
+}
+
+
+VOID CALLBACK DelayedProcess::timerCB(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+{
+	cancel();
+	DelayedProcess& inst = instance();
+
+	inst._postCB(inst._buffId);
 }
 
 
@@ -348,6 +359,7 @@ void ClearActiveCompare();
 void First();
 void openMemBlock(const char* memblock, long size);
 void onBufferActivated(int buffId);
+void onBufferActivatedDelayed(int buffId);
 
 
 void ComparedFile::initFromCurrent(bool newFile)
@@ -833,7 +845,7 @@ void closeComparePair(CompareList_t::iterator& cmpPair)
 	if (::IsWindowVisible(currentView))
 		::SetFocus(currentView);
 
-	onBufferActivated(getCurrentBuffId());
+	onBufferActivatedDelayed(getCurrentBuffId());
 	resetCompareView(getOtherView());
 }
 
@@ -1932,12 +1944,8 @@ void onSciZoom()
 }
 
 
-VOID CALLBACK buffActivateTimerCB(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+void onBufferActivatedDelayed(int buffId)
 {
-	ActivateBuffPostProcess::stop();
-
-	int buffId = ActivateBuffPostProcess::buffId();
-
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
 		return;
@@ -1971,7 +1979,7 @@ VOID CALLBACK buffActivateTimerCB(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD 
 
 void onBufferActivated(int buffId)
 {
-	ActivateBuffPostProcess::stop();
+	DelayedProcess::cancel();
 
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
@@ -1981,7 +1989,7 @@ void onBufferActivated(int buffId)
 		return;
 	}
 
-	ActivateBuffPostProcess::start(buffId, 80, buffActivateTimerCB);
+	DelayedProcess::post(buffId, 80, onBufferActivatedDelayed);
 }
 
 
