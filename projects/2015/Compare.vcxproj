@@ -1,0 +1,185 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug Unicode|Win32">
+      <Configuration>Debug Unicode</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release Unicode|Win32">
+      <Configuration>Release Unicode</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{73C0A930-C2F5-45D2-9795-8EFE62E2F4C6}</ProjectGuid>
+    <RootNamespace>Compare</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Unicode|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140_xp</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release Unicode|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC70.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC70.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>14.0.23107.0</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|Win32'">..\..\Notepad++\plugins\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|Win32'">$(Configuration)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|Win32'">true</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release Unicode|Win32'">..\..\Notepad++\plugins\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release Unicode|Win32'">$(Configuration)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release Unicode|Win32'">false</LinkIncremental>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|Win32'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release Unicode|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release Unicode|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release Unicode|Win32'" />
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ComparePlugin</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ComparePlugin</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|Win32'">
+    <TargetName>ComparePlugin</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Unicode|Win32'">
+    <TargetName>ComparePlugin</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/OptionDlg;../../src/ProgressDlg;../../src/XpmIcons;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;NOCOMM;_DEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <EnablePREfast>false</EnablePREfast>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)ComparePlugin.dll</OutputFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(OutDir)Compare.pdb</ProgramDatabaseFile>
+      <SubSystem>Windows</SubSystem>
+      <ImportLibrary>$(OutDir)Compare.lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Unicode|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>false</OmitFramePointers>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/OptionDlg;../../src/ProgressDlg;../../src/XpmIcons;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0501;WIN32_LEAN_AND_MEAN;NOCOMM;NDEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <PrecompiledHeaderFile />
+      <CompileAs>Default</CompileAs>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)ComparePlugin.dll</OutputFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <ImportLibrary>$(OutDir)Compare.lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\AboutDlg\URLCtrl.cpp" />
+    <ClCompile Include="..\..\src\AboutDlg\AboutDialog.cpp" />
+    <ClCompile Include="..\..\src\OptionDlg\ColorCombo.cpp" />
+    <ClCompile Include="..\..\src\OptionDlg\ColorPopup.cpp" />
+    <ClCompile Include="..\..\src\OptionDlg\OptionDialog.cpp" />
+    <ClCompile Include="..\..\src\Compare.cpp" />
+    <ClCompile Include="..\..\src\Engine\Engine.cpp" />
+    <ClCompile Include="..\..\src\LibGit2\LibGit2Helper.cpp" />
+    <ClCompile Include="..\..\src\NavDlg\NavDialog.cpp" />
+    <ClCompile Include="..\..\src\NPPHelpers.cpp" />
+    <ClCompile Include="..\..\src\NppAPI\StaticDialog.cpp" />
+    <ClCompile Include="..\..\src\ProgressDlg\CProgress.cpp" />
+    <ClCompile Include="..\..\src\ScmHelper.cpp" />
+    <ClCompile Include="..\..\src\SQLite\SqliteHelper.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\AboutDlg\URLCtrl.h" />
+    <ClInclude Include="..\..\src\AboutDlg\AboutDialog.h" />
+    <ClInclude Include="..\..\src\OptionDlg\ColorCombo.h" />
+    <ClInclude Include="..\..\src\OptionDlg\ColorPopup.h" />
+    <ClInclude Include="..\..\src\OptionDlg\OptionDialog.h" />
+    <ClInclude Include="..\..\src\Compare.h" />
+    <ClInclude Include="..\..\src\CompareResource.h" />
+    <ClInclude Include="..\..\src\Engine\Engine.h" />
+    <ClInclude Include="..\..\src\LibGit2\LibGit2Helper.h" />
+    <ClInclude Include="..\..\src\XpmIcons\icon_add_16.h" />
+    <ClInclude Include="..\..\src\XpmIcons\icon_moved_16.h" />
+    <ClInclude Include="..\..\src\XpmIcons\icon_sub_16.h" />
+    <ClInclude Include="..\..\src\XpmIcons\icon_warning_16.h" />
+    <ClInclude Include="..\..\src\NavDlg\NavDialog.h" />
+    <ClInclude Include="..\..\src\NPPHelpers.h" />
+    <ClInclude Include="..\..\src\ProgressDlg\CProgress.h" />
+    <ClInclude Include="..\..\src\Resource.h" />
+    <ClInclude Include="..\..\src\NppAPI\Docking.h" />
+    <ClInclude Include="..\..\src\NppAPI\dockingResource.h" />
+    <ClInclude Include="..\..\src\NppAPI\DockingDlgInterface.h" />
+    <ClInclude Include="..\..\src\NppAPI\ImageListSet.h" />
+    <ClInclude Include="..\..\src\NppAPI\Notepad_plus_msgs.h" />
+    <ClInclude Include="..\..\src\NppAPI\menuCmdID.h" />
+    <ClInclude Include="..\..\src\NppAPI\PluginInterface.h" />
+    <ClInclude Include="..\..\src\NppAPI\Scintilla.h" />
+    <ClInclude Include="..\..\src\NppAPI\StaticDialog.h" />
+    <ClInclude Include="..\..\src\NppAPI\ToolBar.h" />
+    <ClInclude Include="..\..\src\NppAPI\Window.h" />
+    <ClInclude Include="..\..\src\Engine\diff.h" />
+    <ClInclude Include="..\..\src\Engine\varray.h" />
+    <ClInclude Include="..\..\src\ScmHelper.h" />
+    <ClInclude Include="..\..\src\SQLite\SqliteHelper.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\..\src\Compare.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\license.txt" />
+    <None Include="..\..\readme.txt" />
+    <None Include="..\..\res\first.bmp" />
+    <None Include="..\..\res\last.bmp" />
+    <None Include="..\..\res\next.bmp" />
+    <None Include="..\..\res\prev.bmp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
