@@ -1599,15 +1599,15 @@ void createMenu()
 	funcItem[CMD_CLEAR_ALL]._pShKey->_isShift	= true;
 	funcItem[CMD_CLEAR_ALL]._pShKey->_key 		= 'X';
 
-	_tcscpy_s(funcItem[CMD_LAST_SAVE_DIFF]._itemName, nbChar, TEXT("Last Save diff"));
+	_tcscpy_s(funcItem[CMD_LAST_SAVE_DIFF]._itemName, nbChar, TEXT("Diff since Last Save"));
 	funcItem[CMD_LAST_SAVE_DIFF]._pFunc				= LastSaveDiff;
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey->_isAlt 	= true;
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey->_isCtrl 	= true;
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey->_isShift	= false;
-	funcItem[CMD_LAST_SAVE_DIFF]._pShKey->_key 		= 'S';
+	funcItem[CMD_LAST_SAVE_DIFF]._pShKey->_key 		= 'D';
 
-	_tcscpy_s(funcItem[CMD_SVN_DIFF]._itemName, nbChar, TEXT("SVN diff"));
+	_tcscpy_s(funcItem[CMD_SVN_DIFF]._itemName, nbChar, TEXT("SVN Diff"));
 	funcItem[CMD_SVN_DIFF]._pFunc 				= SvnDiff;
 	funcItem[CMD_SVN_DIFF]._pShKey 				= new ShortcutKey;
 	funcItem[CMD_SVN_DIFF]._pShKey->_isAlt 		= true;
@@ -1615,7 +1615,7 @@ void createMenu()
 	funcItem[CMD_SVN_DIFF]._pShKey->_isShift	= false;
 	funcItem[CMD_SVN_DIFF]._pShKey->_key 		= 'V';
 
-	_tcscpy_s(funcItem[CMD_GIT_DIFF]._itemName, nbChar, TEXT("GIT diff"));
+	_tcscpy_s(funcItem[CMD_GIT_DIFF]._itemName, nbChar, TEXT("GIT Diff"));
 	funcItem[CMD_GIT_DIFF]._pFunc 				= GitDiff;
 	funcItem[CMD_GIT_DIFF]._pShKey 				= new ShortcutKey;
 	funcItem[CMD_GIT_DIFF]._pShKey->_isAlt 		= true;
