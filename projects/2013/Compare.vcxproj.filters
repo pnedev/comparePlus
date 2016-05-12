@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="..\..\src\AboutDlg\AboutDialog.cpp">
       <Filter>src\AboutDlg</Filter>
@@ -19,13 +19,13 @@
     <ClCompile Include="..\..\src\NavDlg\NavDialog.cpp">
       <Filter>src\NavDlg</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\OptionDlg\OptionDialog.cpp">
-      <Filter>src\OptionDlg</Filter>
+    <ClCompile Include="..\..\src\SettingsDlg\SettingsDialog.cpp">
+      <Filter>src\SettingsDlg</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\OptionDlg\ColorCombo.cpp">
+    <ClCompile Include="..\..\src\SettingsDlg\ColorCombo.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\OptionDlg\ColorPopup.cpp">
+    <ClCompile Include="..\..\src\SettingsDlg\ColorPopup.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Compare.cpp">
@@ -57,14 +57,14 @@
     <ClInclude Include="..\..\src\NavDlg\NavDialog.h">
       <Filter>src\NavDlg</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\OptionDlg\ColorCombo.h">
+    <ClInclude Include="..\..\src\SettingsDlg\ColorCombo.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\OptionDlg\ColorPopup.h">
+    <ClInclude Include="..\..\src\SettingsDlg\ColorPopup.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\OptionDlg\OptionDialog.h">
-      <Filter>src\OptionDlg</Filter>
+    <ClInclude Include="..\..\src\SettingsDlg\SettingsDialog.h">
+      <Filter>src\SettingsDlg</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Engine\diff.h">
       <Filter>src\Engine</Filter>
@@ -174,7 +174,7 @@
     <Filter Include="src\Engine">
       <UniqueIdentifier>{81b86379-fae2-4f7e-ade3-bea5c04730fd}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\OptionDlg">
+    <Filter Include="src\SettingsDlg">
       <UniqueIdentifier>{cc4ae5a0-caf0-4bca-ab24-6285b6ae4312}</UniqueIdentifier>
     </Filter>
     <Filter Include="src\NavDlg">

@@ -28,11 +28,11 @@
 
 using namespace std;
 
-class OptionDialog : public StaticDialog
+class SettingsDialog : public StaticDialog
 {
 
 public:
-	OptionDialog() : StaticDialog() {};
+	SettingsDialog() : StaticDialog() {};
 
 	void init(HINSTANCE hInst, NppData nppData)
 	{

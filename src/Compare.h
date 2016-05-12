@@ -74,7 +74,7 @@ enum MENU_COMMANDS
 	CMD_FIRST,
 	CMD_LAST,
 	CMD_SEPARATOR_4,
-	CMD_OPTIONS,
+	CMD_SETTINGS,
 	CMD_ABOUT,
 	NB_MENU_COMMANDS
 };
@@ -99,20 +99,20 @@ struct UserSettings
 	void save();
 
 	static const TCHAR mainSection[];
-	static const TCHAR oldIsFirstOption[];
-	static const TCHAR oldFileOnLeftOption[];
-	static const TCHAR gotoFirstDiffOption[];
-	static const TCHAR alignMatchesOption[];
-	static const TCHAR ignoreSpacesOption[];
-	static const TCHAR detectMovesOption[];
-	static const TCHAR navBarOption[];
+	static const TCHAR oldIsFirstSetting[];
+	static const TCHAR oldFileOnLeftSetting[];
+	static const TCHAR gotoFirstDiffSetting[];
+	static const TCHAR alignMatchesSetting[];
+	static const TCHAR ignoreSpacesSetting[];
+	static const TCHAR detectMovesSetting[];
+	static const TCHAR navBarSetting[];
 	static const TCHAR colorsSection[];
-	static const TCHAR addedColorOption[];
-	static const TCHAR removedColorOption[];
-	static const TCHAR changedColorOption[];
-	static const TCHAR movedColorOption[];
-	static const TCHAR highlightColorOption[];
-	static const TCHAR highlightAlphaOption[];
+	static const TCHAR addedColorSetting[];
+	static const TCHAR removedColorSetting[];
+	static const TCHAR changedColorSetting[];
+	static const TCHAR movedColorSetting[];
+	static const TCHAR highlightColorSetting[];
+	static const TCHAR highlightAlphaSetting[];
 
 	bool           	OldFileIsFirst;
 	int				OldFileViewId;

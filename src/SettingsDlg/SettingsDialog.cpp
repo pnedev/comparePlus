@@ -1,4 +1,4 @@
-#include "OptionDialog.h"
+#include "SettingsDialog.h"
 #include "PluginInterface.h"
 #include <windowsx.h>
 #include <commctrl.h>
@@ -9,16 +9,16 @@
 typedef HRESULT (WINAPI *ETDTProc) (HWND, DWORD);
 
 
-UINT OptionDialog::doDialog(UserSettings* settings)
+UINT SettingsDialog::doDialog(UserSettings* settings)
 {
 	_Settings = settings;
 
-	return (UINT)::DialogBoxParam(_hInst, MAKEINTRESOURCE(IDD_OPTION_DIALOG), _hParent,
+	return (UINT)::DialogBoxParam(_hInst, MAKEINTRESOURCE(IDD_SETTINGS_DIALOG), _hParent,
 			(DLGPROC)dlgProc, (LPARAM)this);
 }
 
 
-BOOL CALLBACK OptionDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*lParam*/)
+BOOL CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*lParam*/)
 {
 	switch (Message)
 	{
@@ -110,7 +110,7 @@ BOOL CALLBACK OptionDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*lP
 }
 
 
-void OptionDialog::SetParams()
+void SettingsDialog::SetParams()
 {
 	::SendMessage(::GetDlgItem(_hSelf, IDC_FIRST_FILE), CB_SETCURSEL, _Settings->OldFileIsFirst ? 0 : 1, 0);
 	::SendMessage(::GetDlgItem(_hSelf, IDC_OLD_FILE_POS), CB_SETCURSEL,
@@ -130,7 +130,7 @@ void OptionDialog::SetParams()
 }
 
 
-BOOL OptionDialog::GetParams()
+BOOL SettingsDialog::GetParams()
 {
 	_Settings->OldFileIsFirst	=
 			::SendMessage(::GetDlgItem(_hSelf, IDC_FIRST_FILE), CB_GETCURSEL, 0, 0) == 0;

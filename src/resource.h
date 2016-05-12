@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define IDDEFAULT                       3
 #define IDD_ABOUT_DIALOG                101
 #define IDD_COLOR_POPUP                 102
-#define IDD_OPTION_DIALOG               103
+#define IDD_SETTINGS_DIALOG				103
 #define IDD_NAV_DIALOG                  104
 
 #define IDB_FIRST                       120

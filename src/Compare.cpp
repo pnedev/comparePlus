@@ -26,7 +26,7 @@
 #include "ScmHelper.h"
 #include "CProgress.h"
 #include "AboutDialog.h"
-#include "OptionDialog.h"
+#include "SettingsDialog.h"
 #include "NavDialog.h"
 #include "diff.h"
 #include "Engine.h"
@@ -37,20 +37,20 @@ UserSettings Settings;
 
 
 const TCHAR UserSettings::mainSection[]				= TEXT("Main");
-const TCHAR UserSettings::oldIsFirstOption[]		= TEXT("Old is First");
-const TCHAR UserSettings::oldFileOnLeftOption[]	= TEXT("Old on Left");
-const TCHAR UserSettings::gotoFirstDiffOption[]		= TEXT("Go to First Diff");
-const TCHAR UserSettings::alignMatchesOption[]		= TEXT("Align Matches");
-const TCHAR UserSettings::ignoreSpacesOption[]		= TEXT("Include Spaces");
-const TCHAR UserSettings::detectMovesOption[]		= TEXT("Detect Moved Blocks");
-const TCHAR UserSettings::navBarOption[]			= TEXT("Navigation bar");
+const TCHAR UserSettings::oldIsFirstSetting[]		= TEXT("Old is First");
+const TCHAR UserSettings::oldFileOnLeftSetting[]	= TEXT("Old on Left");
+const TCHAR UserSettings::gotoFirstDiffSetting[]	= TEXT("Go to First Diff");
+const TCHAR UserSettings::alignMatchesSetting[]		= TEXT("Align Matches");
+const TCHAR UserSettings::ignoreSpacesSetting[]		= TEXT("Include Spaces");
+const TCHAR UserSettings::detectMovesSetting[]		= TEXT("Detect Moved Blocks");
+const TCHAR UserSettings::navBarSetting[]			= TEXT("Navigation bar");
 const TCHAR UserSettings::colorsSection[]			= TEXT("Colors");
-const TCHAR UserSettings::addedColorOption[]		= TEXT("Added");
-const TCHAR UserSettings::removedColorOption[]		= TEXT("Removed");
-const TCHAR UserSettings::changedColorOption[]		= TEXT("Changed");
-const TCHAR UserSettings::movedColorOption[]		= TEXT("Moved");
-const TCHAR UserSettings::highlightColorOption[]	= TEXT("Highlight");
-const TCHAR UserSettings::highlightAlphaOption[]	= TEXT("Alpha");
+const TCHAR UserSettings::addedColorSetting[]		= TEXT("Added");
+const TCHAR UserSettings::removedColorSetting[]		= TEXT("Removed");
+const TCHAR UserSettings::changedColorSetting[]		= TEXT("Changed");
+const TCHAR UserSettings::movedColorSetting[]		= TEXT("Moved");
+const TCHAR UserSettings::highlightColorSetting[]	= TEXT("Highlight");
+const TCHAR UserSettings::highlightAlphaSetting[]	= TEXT("Alpha");
 
 
 void UserSettings::load()
@@ -61,22 +61,22 @@ void UserSettings::load()
 
 	::PathAppend(iniFile, TEXT("Compare.ini"));
 
-	OldFileIsFirst	= ::GetPrivateProfileInt(mainSection, oldIsFirstOption, 1, iniFile) == 1;
+	OldFileIsFirst	= ::GetPrivateProfileInt(mainSection, oldIsFirstSetting, 1, iniFile) == 1;
 	OldFileViewId	=
-			::GetPrivateProfileInt(mainSection, oldFileOnLeftOption, 1, iniFile) == 1 ? MAIN_VIEW : SUB_VIEW;
-	GotoFirstDiff	= ::GetPrivateProfileInt(mainSection, gotoFirstDiffOption, 0, iniFile) == 1;
+			::GetPrivateProfileInt(mainSection, oldFileOnLeftSetting, 1, iniFile) == 1 ? MAIN_VIEW : SUB_VIEW;
+	GotoFirstDiff	= ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting, 0, iniFile) == 1;
 
-	AddLine      = ::GetPrivateProfileInt(mainSection, alignMatchesOption,	1, iniFile) == 1;
-	IncludeSpace = ::GetPrivateProfileInt(mainSection, ignoreSpacesOption,	0, iniFile) == 1;
-	DetectMove   = ::GetPrivateProfileInt(mainSection, detectMovesOption,	1, iniFile) == 1;
-	UseNavBar    = ::GetPrivateProfileInt(mainSection, navBarOption,		0, iniFile) == 1;
+	AddLine      = ::GetPrivateProfileInt(mainSection, alignMatchesSetting,	1, iniFile) == 1;
+	IncludeSpace = ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,	0, iniFile) == 1;
+	DetectMove   = ::GetPrivateProfileInt(mainSection, detectMovesSetting,	1, iniFile) == 1;
+	UseNavBar    = ::GetPrivateProfileInt(mainSection, navBarSetting,		0, iniFile) == 1;
 
-	colors.added	 = ::GetPrivateProfileInt(colorsSection, addedColorOption,		DEFAULT_ADDED_COLOR, iniFile);
-	colors.deleted	 = ::GetPrivateProfileInt(colorsSection, removedColorOption,	DEFAULT_DELETED_COLOR, iniFile);
-	colors.changed	 = ::GetPrivateProfileInt(colorsSection, changedColorOption,	DEFAULT_CHANGED_COLOR, iniFile);
-	colors.moved	 = ::GetPrivateProfileInt(colorsSection, movedColorOption,		DEFAULT_MOVED_COLOR, iniFile);
-	colors.highlight = ::GetPrivateProfileInt(colorsSection, highlightColorOption,	DEFAULT_HIGHLIGHT_COLOR, iniFile);
-	colors.alpha	 = ::GetPrivateProfileInt(colorsSection, highlightAlphaOption,	DEFAULT_HIGHLIGHT_ALPHA, iniFile);
+	colors.added	 = ::GetPrivateProfileInt(colorsSection, addedColorSetting,		DEFAULT_ADDED_COLOR, iniFile);
+	colors.deleted	 = ::GetPrivateProfileInt(colorsSection, removedColorSetting,	DEFAULT_DELETED_COLOR, iniFile);
+	colors.changed	 = ::GetPrivateProfileInt(colorsSection, changedColorSetting,	DEFAULT_CHANGED_COLOR, iniFile);
+	colors.moved	 = ::GetPrivateProfileInt(colorsSection, movedColorSetting,		DEFAULT_MOVED_COLOR, iniFile);
+	colors.highlight = ::GetPrivateProfileInt(colorsSection, highlightColorSetting,	DEFAULT_HIGHLIGHT_COLOR, iniFile);
+	colors.alpha	 = ::GetPrivateProfileInt(colorsSection, highlightAlphaSetting,	DEFAULT_HIGHLIGHT_ALPHA, iniFile);
 }
 
 
@@ -87,37 +87,37 @@ void UserSettings::save()
 	::SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, (WPARAM)_countof(iniFile), (LPARAM)iniFile);
 	::PathAppend(iniFile, TEXT("Compare.ini"));
 
-	::WritePrivateProfileString(mainSection, oldIsFirstOption,
+	::WritePrivateProfileString(mainSection, oldIsFirstSetting,
 			OldFileIsFirst ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, oldFileOnLeftOption,
+	::WritePrivateProfileString(mainSection, oldFileOnLeftSetting,
 			OldFileViewId == MAIN_VIEW ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, gotoFirstDiffOption,
+	::WritePrivateProfileString(mainSection, gotoFirstDiffSetting,
 			GotoFirstDiff ? TEXT("1") : TEXT("0"), iniFile);
 
-	::WritePrivateProfileString(mainSection, alignMatchesOption, AddLine	  ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, ignoreSpacesOption, IncludeSpace ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, detectMovesOption,	 DetectMove	  ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, navBarOption,		 UseNavBar	  ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, alignMatchesSetting, AddLine		? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, ignoreSpacesSetting, IncludeSpace	? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, detectMovesSetting,  DetectMove	? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, navBarSetting,		  UseNavBar		? TEXT("1") : TEXT("0"), iniFile);
 
 	TCHAR buffer[64];
 
 	_itot_s(colors.added, buffer, 64, 10);
-	::WritePrivateProfileString(colorsSection, addedColorOption, buffer, iniFile);
+	::WritePrivateProfileString(colorsSection, addedColorSetting, buffer, iniFile);
 
 	_itot_s(colors.deleted, buffer, 64, 10);
-	::WritePrivateProfileString(colorsSection, removedColorOption, buffer, iniFile);
+	::WritePrivateProfileString(colorsSection, removedColorSetting, buffer, iniFile);
 
 	_itot_s(colors.changed, buffer, 64, 10);
-	::WritePrivateProfileString(colorsSection, changedColorOption, buffer, iniFile);
+	::WritePrivateProfileString(colorsSection, changedColorSetting, buffer, iniFile);
 
 	_itot_s(colors.moved, buffer, 64, 10);
-	::WritePrivateProfileString(colorsSection, movedColorOption, buffer, iniFile);
+	::WritePrivateProfileString(colorsSection, movedColorSetting, buffer, iniFile);
 
 	_itot_s(colors.highlight, buffer, 64, 10);
-	::WritePrivateProfileString(colorsSection, highlightColorOption, buffer, iniFile);
+	::WritePrivateProfileString(colorsSection, highlightColorSetting, buffer, iniFile);
 
 	_itot_s(colors.alpha, buffer, 64, 10);
-	::WritePrivateProfileString(colorsSection, highlightAlphaOption, buffer, iniFile);
+	::WritePrivateProfileString(colorsSection, highlightAlphaSetting, buffer, iniFile);
 }
 
 
@@ -273,9 +273,9 @@ CProgress* progDlg = NULL;
 int progMax = 0;
 int progCounter = 0;
 
-AboutDialog   AboutDlg;
-OptionDialog  OptionDlg;
-NavDialog     NavDlg;
+AboutDialog   	AboutDlg;
+SettingsDialog	SettingsDlg;
+NavDialog     	NavDlg;
 
 toolbarIcons  tbPrev;
 toolbarIcons  tbNext;
@@ -1534,9 +1534,9 @@ void Last()
 }
 
 
-void OpenOptionDlg(void)
+void OpenSettingsDlg(void)
 {
-	if (OptionDlg.doDialog(&Settings) == IDOK)
+	if (SettingsDlg.doDialog(&Settings) == IDOK)
 	{
 		Settings.save();
 
@@ -1667,8 +1667,8 @@ void createMenu()
 	funcItem[CMD_LAST]._pShKey->_isShift	= false;
 	funcItem[CMD_LAST]._pShKey->_key 		= VK_NEXT;
 
-	_tcscpy_s(funcItem[CMD_OPTIONS]._itemName, nbChar, TEXT("Options..."));
-	funcItem[CMD_OPTIONS]._pFunc = OpenOptionDlg;
+	_tcscpy_s(funcItem[CMD_SETTINGS]._itemName, nbChar, TEXT("Settings..."));
+	funcItem[CMD_SETTINGS]._pFunc = OpenSettingsDlg;
 
 	_tcscpy_s(funcItem[CMD_ABOUT]._itemName, nbChar, TEXT("About..."));
 	funcItem[CMD_ABOUT]._pFunc = OpenAboutDlg;
@@ -1694,7 +1694,7 @@ void deinitPlugin()
 	if (tbLast.hToolbarBmp)
 		::DeleteObject(tbLast.hToolbarBmp);
 
-	OptionDlg.destroy();
+	SettingsDlg.destroy();
 	AboutDlg.destroy();
 	NavDlg.destroy();
 
@@ -2060,7 +2060,7 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 	Settings.load();
 
 	AboutDlg.init(hInstance, nppData);
-	OptionDlg.init(hInstance, nppData);
+	SettingsDlg.init(hInstance, nppData);
 	NavDlg.init(hInstance, nppData);
 }
 

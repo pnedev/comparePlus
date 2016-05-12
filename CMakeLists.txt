@@ -40,9 +40,9 @@ set (project_sources
     src/NppAPI/StaticDialog.cpp
     src/AboutDlg/URLCtrl.cpp
     src/AboutDlg/AboutDialog.cpp
-    src/OptionDlg/ColorCombo.cpp
-    src/OptionDlg/ColorPopup.cpp
-    src/OptionDlg/OptionDialog.cpp
+    src/SettingsDlg/ColorCombo.cpp
+    src/SettingsDlg/ColorPopup.cpp
+    src/SettingsDlg/SettingsDialog.cpp
     src/NavDlg/NavDialog.cpp
     src/ProgressDlg/CProgress.cpp
     src/Engine/Engine.cpp
@@ -60,7 +60,7 @@ include_directories (
 	src/XpmIcons/
 	src/Engine/
 	src/AboutDlg/
-	src/OptionDlg/
+	src/SettingsDlg/
 	src/NavDlg/
 	src/ProgressDlg/
 	src/SQLite/
