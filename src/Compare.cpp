@@ -239,6 +239,62 @@ enum CompareResult_t
 
 
 /**
+ *  \class
+ *  \brief
+ */
+class ActivateBuffPostProcess
+{
+public:
+	static bool start(int buffId, UINT delay_ms, TIMERPROC timerCB);
+	static void stop();
+	static int buffId()
+	{
+		return instance()._buffId;
+	}
+
+private:
+	static ActivateBuffPostProcess& instance()
+	{
+		static ActivateBuffPostProcess inst;
+		return inst;
+	}
+
+	ActivateBuffPostProcess() : _timerId(0), _buffId(0) {}
+	~ActivateBuffPostProcess()
+	{
+		if (_timerId)
+			::KillTimer(NULL, _timerId);
+	}
+
+	UINT_PTR	_timerId;
+	int			_buffId;
+};
+
+
+bool ActivateBuffPostProcess::start(int buffId, UINT delay_ms, TIMERPROC timerCB)
+{
+	ActivateBuffPostProcess& inst = instance();
+
+	inst._buffId = buffId;
+	inst._timerId = ::SetTimer(NULL, 0, delay_ms, timerCB);
+
+	return (inst._timerId != 0);
+}
+
+
+void ActivateBuffPostProcess::stop()
+{
+	ActivateBuffPostProcess& inst = instance();
+
+	if (inst._timerId)
+	{
+		::KillTimer(NULL, inst._timerId);
+		inst._timerId = 0;
+	}
+}
+
+
+/**
  *  \struct
  *  \brief
  */
@@ -1876,15 +1932,15 @@ void onSciZoom()
 }
 
 
-void onBufferActivated(int buffId)
+VOID CALLBACK buffActivateTimerCB(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 {
+	ActivateBuffPostProcess::stop();
+
+	int buffId = ActivateBuffPostProcess::buffId();
+
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
-	{
-		nppSettings.setNormalMode();
-		setNormalView(getCurrentView());
 		return;
-	}
 
 	bool switchedFromOtherPair = false;
 	const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
@@ -1910,6 +1966,22 @@ void onBufferActivated(int buffId)
 		NavDlg.doDialog(true);
 
 	::SetFocus(getCurrentView());
+}
+
+
+void onBufferActivated(int buffId)
+{
+	ActivateBuffPostProcess::stop();
+
+	CompareList_t::iterator cmpPair = getCompare(buffId);
+	if (cmpPair == compareList.end())
+	{
+		nppSettings.setNormalMode();
+		setNormalView(getCurrentView());
+		return;
+	}
+
+	ActivateBuffPostProcess::start(buffId, 80, buffActivateTimerCB);
 }
 
 
