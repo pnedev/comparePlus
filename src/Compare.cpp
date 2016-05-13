@@ -242,23 +242,23 @@ enum CompareResult_t
  *  \class
  *  \brief
  */
-class DelayedProcess
+class DelayedWork
 {
 public:
-	using postCB_t = void(*)(int buffId);
+	using workFunc_t = void(*)(int);
 
-	static bool post(int buffId, UINT delay_ms, postCB_t postCB);
+	static bool post(workFunc_t work, int buffId, UINT delay_ms);
 	static void cancel();
 
 private:
-	static DelayedProcess& instance()
+	static DelayedWork& instance()
 	{
-		static DelayedProcess inst;
+		static DelayedWork inst;
 		return inst;
 	}
 
-	DelayedProcess() : _timerId(0), _buffId(0) {}
-	~DelayedProcess()
+	DelayedWork() : _timerId(0), _buffId(0) {}
+	~DelayedWork()
 	{
 		if (_timerId)
 			::KillTimer(NULL, _timerId);
@@ -267,26 +267,26 @@ private:
 	static VOID CALLBACK timerCB(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
 
 	UINT_PTR	_timerId;
+	workFunc_t	_work;
 	int			_buffId;
-	postCB_t	_postCB;
 };
 
 
-bool DelayedProcess::post(int buffId, UINT delay_ms, postCB_t postCB)
+bool DelayedWork::post(workFunc_t work, int buffId, UINT delay_ms)
 {
-	DelayedProcess& inst = instance();
+	DelayedWork& inst = instance();
 
+	inst._work = work;
 	inst._buffId = buffId;
-	inst._postCB = postCB;
 	inst._timerId = ::SetTimer(NULL, 0, delay_ms, timerCB);
 
 	return (inst._timerId != 0);
 }
 
 
-void DelayedProcess::cancel()
+void DelayedWork::cancel()
 {
-	DelayedProcess& inst = instance();
+	DelayedWork& inst = instance();
 
 	if (inst._timerId)
 	{
@@ -296,12 +296,13 @@ void DelayedProcess::cancel()
 }
 
 
-VOID CALLBACK DelayedProcess::timerCB(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+VOID CALLBACK DelayedWork::timerCB(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 {
 	cancel();
-	DelayedProcess& inst = instance();
 
-	inst._postCB(inst._buffId);
+	DelayedWork& inst = instance();
+
+	inst._work(inst._buffId);
 }
 
 
@@ -1667,7 +1668,7 @@ void createMenu()
 	funcItem[CMD_CLEAR_ALL]._pShKey->_isShift	= true;
 	funcItem[CMD_CLEAR_ALL]._pShKey->_key 		= 'X';
 
-	_tcscpy_s(funcItem[CMD_LAST_SAVE_DIFF]._itemName, nbChar, TEXT("Diff since Last Save"));
+	_tcscpy_s(funcItem[CMD_LAST_SAVE_DIFF]._itemName, nbChar, TEXT("Diff vs. last Save"));
 	funcItem[CMD_LAST_SAVE_DIFF]._pFunc				= LastSaveDiff;
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey->_isAlt 	= true;
@@ -1979,7 +1980,7 @@ void onBufferActivatedDelayed(int buffId)
 
 void onBufferActivated(int buffId)
 {
-	DelayedProcess::cancel();
+	DelayedWork::cancel();
 
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
@@ -1989,7 +1990,7 @@ void onBufferActivated(int buffId)
 		return;
 	}
 
-	DelayedProcess::post(buffId, 80, onBufferActivatedDelayed);
+	DelayedWork::post(onBufferActivatedDelayed, buffId, 80);
 }
 
 
