@@ -1421,6 +1421,10 @@ void ClearAllCompares()
 
 	ScopedIncrementer incr(notificationsLock);
 
+	::SetFocus(getOtherView());
+
+	const int otherBuffId = getCurrentBuffId();
+
 	for (int i = compareList.size() - 1; i >= 0; --i)
 	{
 		compareList[i].file[0].restore();
@@ -1428,6 +1432,9 @@ void ClearAllCompares()
 	}
 
 	compareList.clear();
+
+	if (!isSingleView())
+		activateBufferID(otherBuffId);
 
 	activateBufferID(buffId);
 }
