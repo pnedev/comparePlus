@@ -1308,10 +1308,13 @@ void Compare()
 {
 	ScopedIncrementer incr(notificationsLock);
 
+	const bool doubleView = !isSingleView();
+	const int currentBuffId = getCurrentBuffId();
+
 	ViewLocation location;
 	bool recompare = false;
 
-	CompareList_t::iterator cmpPair = getCompare(getCurrentBuffId());
+	CompareList_t::iterator cmpPair = getCompare(currentBuffId);
 
 	// New compare
 	if (cmpPair == compareList.end())
@@ -1334,7 +1337,7 @@ void Compare()
 
 		if (isFileEmpty(nppData._scintillaMainHandle) || isFileEmpty(nppData._scintillaSecondHandle))
 		{
-			clearComparePair(getCurrentBuffId());
+			clearComparePair(currentBuffId);
 			return;
 		}
 
@@ -1368,7 +1371,11 @@ void Compare()
 			}
 			else
 			{
-				::SetFocus(getView(cmpPair->getNewFile().compareViewId));
+				if (doubleView)
+					activateBufferID(currentBuffId);
+				else
+					activateBufferID(cmpPair->getNewFile().buffId);
+
 				First();
 			}
 		}
@@ -1675,7 +1682,7 @@ void createMenu()
 	funcItem[CMD_CLEAR_ALL]._pShKey->_isShift	= true;
 	funcItem[CMD_CLEAR_ALL]._pShKey->_key 		= 'X';
 
-	_tcscpy_s(funcItem[CMD_LAST_SAVE_DIFF]._itemName, nbChar, TEXT("Diff vs. last Save"));
+	_tcscpy_s(funcItem[CMD_LAST_SAVE_DIFF]._itemName, nbChar, TEXT("Diff since last Save"));
 	funcItem[CMD_LAST_SAVE_DIFF]._pFunc				= LastSaveDiff;
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey->_isAlt 	= true;
