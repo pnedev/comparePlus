@@ -112,6 +112,12 @@ inline bool isSingleView()
 }
 
 
+inline int getNumberOfFiles(int viewId)
+{
+	return ::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, viewId == MAIN_VIEW ? PRIMARY_VIEW : SECOND_VIEW);
+}
+
+
 inline HWND getView(int viewId)
 {
 	return (viewId == MAIN_VIEW) ? nppData._scintillaMainHandle : nppData._scintillaSecondHandle;
@@ -148,6 +154,13 @@ inline int viewIdFromBuffId(int buffId)
 {
 	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);
 	return (index >> 30);
+}
+
+
+inline int posFromBuffId(int buffId)
+{
+	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);
+	return (index & 0x3FFFFFFF);
 }
 
 

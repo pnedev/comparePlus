@@ -222,6 +222,7 @@ struct ComparedFile
 
 	bool	isNew;
 	int		originalViewId;
+	int		originalPos;
 	int		compareViewId;
 	int		buffId;
 	int		sciDoc;
@@ -475,6 +476,7 @@ void ComparedFile::initFromCurrent(bool newFile)
 	isNew = newFile;
 	buffId = getCurrentBuffId();
 	originalViewId = getCurrentViewId();
+	originalPos = posFromBuffId(buffId);
 	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(name), (LPARAM)name);
 
 	updateFromCurrent();
@@ -502,7 +504,9 @@ void ComparedFile::restore()
 	clearWindow(getCurrentView());
 
 	if (compareViewId != originalViewId)
+	{
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
+	}
 }
 
 
@@ -966,9 +970,7 @@ bool initNewCompare()
 
 		if (singleView)
 		{
-			const int viewId = (getCurrentViewId() == MAIN_VIEW) ? PRIMARY_VIEW : SECOND_VIEW;
-
-			if (::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, viewId) < 2)
+			if (getNumberOfFiles(getCurrentViewId()) < 2)
 			{
 				::MessageBox(nppData._nppHandle, TEXT("Only one file opened - operation ignored."),
 						TEXT("Compare Plugin"), MB_OK);
