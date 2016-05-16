@@ -156,6 +156,10 @@ struct NppSettings
 {
 	NppSettings() : compareMode(false) {}
 
+	static HWND	hNppToolbar;
+
+	static BOOL CALLBACK enumWindowsCB(HWND hwnd, LPARAM lParam);
+
 	bool	compareMode;
 	bool	syncVScroll;
 	bool	syncHScroll;
@@ -165,6 +169,25 @@ struct NppSettings
 	void setNormalMode();
 	void setCompareMode();
 };
+
+
+HWND NppSettings::hNppToolbar = NULL;
+
+
+BOOL CALLBACK NppSettings::enumWindowsCB(HWND hwnd, LPARAM lParam)
+{
+	TCHAR winClassName[64];
+
+	::GetClassName(hwnd, winClassName, _countof(winClassName));
+
+	if (!_tcscmp(winClassName, TOOLBARCLASSNAME))
+	{
+		hNppToolbar = hwnd;
+		return FALSE;
+	}
+
+	return TRUE;
+}
 
 
 /**
@@ -363,6 +386,90 @@ void onBufferActivated(int buffId);
 void onBufferActivatedDelayed(int buffId);
 
 
+void NppSettings::updatePluginMenu() const
+{
+	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
+	int flag = MF_BYCOMMAND | (compareMode ? MF_ENABLED : (MF_DISABLED | MF_GRAYED));
+
+	::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, flag);
+	::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, flag);
+	::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, flag);
+	::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, flag);
+	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ACTIVE]._cmdID, flag);
+
+	if (hNppToolbar == NULL)
+		::EnumChildWindows(nppData._nppHandle, enumWindowsCB, 0);
+
+	if (hNppToolbar)
+	{
+		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_PREV]._cmdID, compareMode);
+		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_NEXT]._cmdID, compareMode);
+		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_FIRST]._cmdID, compareMode);
+		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_LAST]._cmdID, compareMode);
+	}
+}
+
+
+void NppSettings::save()
+{
+	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
+
+	syncVScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
+	syncHScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
+}
+
+
+void NppSettings::setNormalMode()
+{
+	if (compareMode == false)
+		return;
+
+	compareMode = false;
+
+	updatePluginMenu();
+
+	if (NavDlg.isVisible())
+		NavDlg.doDialog(false);
+
+	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
+
+	bool syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
+	if (syncScroll != syncVScroll)
+		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLV);
+
+	syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
+	if (syncScroll != syncHScroll)
+		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLH);
+}
+
+
+void NppSettings::setCompareMode()
+{
+	if (compareMode == true)
+		return;
+
+	compareMode = true;
+
+	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
+
+	bool syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
+
+	// Disable N++ vertical scroll - we handle it manually because of the Word Wrap
+	if (syncScroll)
+		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLV);
+
+	syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
+
+	// Yaron - Enable N++ horizontal scroll sync
+	if (!syncScroll)
+		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLH);
+
+	// synchronize zoom levels
+	int zoom = ::SendMessage(getCurrentView(), SCI_GETZOOM, 0, 0);
+	::SendMessage(getOtherView(), SCI_SETZOOM, zoom, 0);
+}
+
+
 void ComparedFile::initFromCurrent(bool newFile)
 {
 	isNew = newFile;
@@ -455,79 +562,6 @@ void ComparedPair::positionFiles()
 
 	if (newFile.sciDoc != getDocId(getView(newFile.compareViewId)))
 		activateBufferID(newFile.buffId);
-}
-
-
-void NppSettings::updatePluginMenu() const
-{
-	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
-	int flag = MF_BYCOMMAND | (compareMode ? MF_ENABLED : (MF_DISABLED | MF_GRAYED));
-
-	::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, flag);
-	::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, flag);
-	::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, flag);
-	::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, flag);
-	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ACTIVE]._cmdID, flag);
-}
-
-
-void NppSettings::save()
-{
-	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
-
-	syncVScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
-	syncHScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
-}
-
-
-void NppSettings::setNormalMode()
-{
-	if (compareMode == false)
-		return;
-
-	compareMode = false;
-
-	updatePluginMenu();
-
-	if (NavDlg.isVisible())
-		NavDlg.doDialog(false);
-
-	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
-
-	bool syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
-	if (syncScroll != syncVScroll)
-		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLV);
-
-	syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
-	if (syncScroll != syncHScroll)
-		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLH);
-}
-
-
-void NppSettings::setCompareMode()
-{
-	if (compareMode == true)
-		return;
-
-	compareMode = true;
-
-	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
-
-	bool syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
-
-	// Disable N++ vertical scroll - we handle it manually because of the Word Wrap
-	if (syncScroll)
-		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLV);
-
-	syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
-
-	// Yaron - Enable N++ horizontal scroll sync
-	if (!syncScroll)
-		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLH);
-
-	// synchronize zoom levels
-	int zoom = ::SendMessage(getCurrentView(), SCI_GETZOOM, 0, 0);
-	::SendMessage(getOtherView(), SCI_SETZOOM, zoom, 0);
 }
 
 
