@@ -1049,14 +1049,14 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 
 	std::vector<int> lineNum1;
 	const DocLines_t doc1 = getAllLines(view1, lineNum1);
-	int doc1Length = doc1.size();
+	const int doc1Length = doc1.size();
 
 	if (doc1Length == 1 && doc1[0][0] == 0)
 		return COMPARE_CANCELLED;
 
 	std::vector<int> lineNum2;
 	const DocLines_t doc2 = getAllLines(view2, lineNum2);
-	int doc2Length = doc2.size();
+	const int doc2Length = doc2.size();
 
 	if (doc2Length == 1 && doc2[0][0] == 0)
 		return COMPARE_CANCELLED;
@@ -1072,51 +1072,54 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 	progressFillCompareInfo(cmpPair);
 
 	std::vector<diff_edit> diff = DiffCalc<unsigned int>(doc1Hashes, doc2Hashes)();
+	if (diff.empty())
+	{
+		progressClose();
+		return FILES_MATCH;
+	}
 
 	if (isCompareCancelled())
 		return COMPARE_CANCELLED;
 
+	const std::size_t diffSize = diff.size();
+
 	int	doc1Changed = 0;
 	int	doc2Changed = 0;
 
-	if (!diff.empty())
+	shiftBoundries(diff, doc1Hashes.data(), doc2Hashes.data(), doc1Length, doc2Length);
+
+	if (Settings.DetectMove)
+		findMoves(diff, doc1Hashes.data(), doc2Hashes.data());
+
+	// Insert empty lines, count changed lines
+	for (unsigned int i = 0; i < diffSize; ++i)
 	{
-		shiftBoundries(diff, doc1Hashes.data(), doc2Hashes.data(), doc1Length, doc2Length);
+		diff_edit& e1 = diff[i];
 
-		if (Settings.DetectMove)
-			findMoves(diff, doc1Hashes.data(), doc2Hashes.data());
-
-		// Insert empty lines, count changed lines
-		std::size_t diffSize = diff.size();
-		for (unsigned int i = 0; i < diffSize; i++)
+		if (e1.op == DIFF_DELETE)
 		{
-			diff_edit& e1 = diff[i];
+			e1.changeCount = 0;
+			doc1Changed += e1.len;
 
-			if (e1.op == DIFF_DELETE)
+			diff_edit& e2 = diff[i + 1];
+
+			e2.changeCount = 0;
+
+			if (e2.op == DIFF_INSERT)
 			{
-				e1.changeCount = 0;
-				doc1Changed += e1.len;
-
-				diff_edit& e2 = diff[i + 1];
-
-				e2.changeCount = 0;
-
-				if (e2.op == DIFF_INSERT)
+				// check if the DELETE/INSERT COMBO includes changed lines or it's a completely new block
+				if (compareWords(e1, e2, doc1, doc2, Settings.IncludeSpace))
 				{
-					// check if the DELETE/INSERT COMBO includes changed lines or it's a completely new block
-					if (compareWords(e1, e2, doc1, doc2, Settings.IncludeSpace))
-					{
-						e1.op = DIFF_CHANGE1;
-						e2.op = DIFF_CHANGE2;
-						doc2Changed += e2.len;
-					}
+					e1.op = DIFF_CHANGE1;
+					e2.op = DIFF_CHANGE2;
+					doc2Changed += e2.len;
 				}
 			}
-			else if (e1.op == DIFF_INSERT)
-			{
-				e1.changeCount = 0;
-				doc2Changed += e1.len;
-			}
+		}
+		else if (e1.op == DIFF_INSERT)
+		{
+			e1.changeCount = 0;
+			doc2Changed += e1.len;
 		}
 	}
 
@@ -1136,8 +1139,7 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		int doc1Idx = 0;
 		int doc2Idx = 0;
 
-		std::size_t diffSize = diff.size();
-		for (unsigned int i = 0; i < diffSize; i++)
+		for (unsigned int i = 0; i < diffSize; ++i)
 		{
 			diff_edit& e = diff[i];
 			e.set = i;
@@ -1147,12 +1149,12 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 				case DIFF_CHANGE1:
 				case DIFF_DELETE:
 					added = setDiffLines(e, doc1Changes, &doc1Idx, DIFF_DELETE, e.off + doc2Offset);
-					doc2Offset -= added;
 					doc1Offset += added;
+					doc2Offset -= added;
 				break;
 
-				case DIFF_INSERT:
 				case DIFF_CHANGE2:
+				case DIFF_INSERT:
 					added = setDiffLines(e, doc2Changes, &doc2Idx, DIFF_INSERT, e.off + doc1Offset);
 					doc1Offset -= added;
 					doc2Offset += added;
@@ -1161,130 +1163,127 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		}
 	}
 
+	if ((doc1Changed == 0) && (doc2Changed == 0))
+	{
+		progressClose();
+		return FILES_MATCH;
+	}
+
 	if (isCompareCancelled())
 		return COMPARE_CANCELLED;
 
-	bool different = true;
+	int textIndex;
 
-	if (!diff.empty())
+	for (int i = 0; i < doc1Changed; ++i)
 	{
-		int textIndex;
-		different = (doc1Changed > 0) || (doc2Changed > 0);
+		switch (doc1Changes[i].op)
+		{
+			case DIFF_DELETE:
+				markAsRemoved(view1, doc1Changes[i].off);
+			break;
+
+			case DIFF_CHANGE1:
+				markAsChanged(view1, doc1Changes[i].off);
+				textIndex = lineNum1[doc1Changes[i].off];
+
+				for (unsigned int k = 0; k < doc1Changes[i].changeCount; ++k)
+				{
+					diff_change& change = doc1Changes[i].changes->get(k);
+					markTextAsChanged(view1, textIndex + change.off, change.len);
+				}
+			break;
+
+			case DIFF_MOVE:
+				markAsMoved(view1, doc1Changes[i].off);
+			break;
+		}
+	}
+
+	for (int i = 0; i < doc2Changed; ++i)
+	{
+		switch (doc2Changes[i].op)
+		{
+			case DIFF_INSERT:
+				markAsAdded(view2, doc2Changes[i].off);
+			break;
+
+			case DIFF_CHANGE2:
+				markAsChanged(view2, doc2Changes[i].off);
+				textIndex = lineNum2[doc2Changes[i].off];
+
+				for (unsigned int k = 0; k < doc2Changes[i].changeCount; ++k)
+				{
+					diff_change& change = doc2Changes[i].changes->get(k);
+					markTextAsChanged(view2, textIndex + change.off, change.len);
+				}
+			break;
+
+			case DIFF_MOVE:
+				markAsMoved(view2, doc2Changes[i].off);
+			break;
+		}
+	}
+
+	if (Settings.AddLine)
+	{
+		int length = 0;
+		int off = 0;
+		doc2Offset = 0;
 
 		for (int i = 0; i < doc1Changed; ++i)
 		{
 			switch (doc1Changes[i].op)
 			{
 				case DIFF_DELETE:
-					markAsRemoved(view1, doc1Changes[i].off);
-				break;
-
-				case DIFF_CHANGE1:
-					markAsChanged(view1, doc1Changes[i].off);
-					textIndex = lineNum1[doc1Changes[i].off];
-
-					for (unsigned int k = 0; k < doc1Changes[i].changeCount; ++k)
-					{
-						diff_change& change = doc1Changes[i].changes->get(k);
-						markTextAsChanged(view1, textIndex + change.off, change.len);
-					}
-				break;
-
 				case DIFF_MOVE:
-					markAsMoved(view1, doc1Changes[i].off);
+					if (doc1Changes[i].altLocation == off)
+					{
+						length++;
+					}
+					else
+					{
+						addBlankSection(view2, off + doc2Offset, length);
+						doc2Offset += length;
+						off = doc1Changes[i].altLocation;
+						length = 1;
+					}
 				break;
 			}
 		}
 
-		for (int i = 0; i < doc2Changed; ++i)
+		addBlankSection(view2, off + doc2Offset, length);
+
+		length = 0;
+		off = 0;
+		doc1Offset = 0;
+
+		for (int i = 0; i < doc2Changed; i++)
 		{
 			switch (doc2Changes[i].op)
 			{
 				case DIFF_INSERT:
-					markAsAdded(view2, doc2Changes[i].off);
-				break;
-
-				case DIFF_CHANGE2:
-					markAsChanged(view2, doc2Changes[i].off);
-					textIndex = lineNum2[doc2Changes[i].off];
-
-					for (unsigned int k = 0; k < doc2Changes[i].changeCount; ++k)
+				case DIFF_MOVE:
+					if (doc2Changes[i].altLocation == off)
 					{
-						diff_change& change = doc2Changes[i].changes->get(k);
-						markTextAsChanged(view2, textIndex + change.off, change.len);
+						++length;
+					}
+					else
+					{
+						addBlankSection(view1, off + doc1Offset, length);
+						doc1Offset += length;
+						off = doc2Changes[i].altLocation;
+						length = 1;
 					}
 				break;
-
-				case DIFF_MOVE:
-					markAsMoved(view2, doc2Changes[i].off);
-				break;
 			}
 		}
 
-		if (Settings.AddLine)
-		{
-			int length = 0;
-			int off = 0;
-			doc2Offset = 0;
-
-			for (int i = 0; i < doc1Changed; ++i)
-			{
-				switch (doc1Changes[i].op)
-				{
-					case DIFF_DELETE:
-					case DIFF_MOVE:
-						if (doc1Changes[i].altLocation == off)
-						{
-							length++;
-						}
-						else
-						{
-							addBlankSection(view2, off + doc2Offset, length);
-							doc2Offset += length;
-							off = doc1Changes[i].altLocation;
-							length = 1;
-						}
-					break;
-				}
-			}
-
-			addBlankSection(view2, off + doc2Offset, length);
-
-			length = 0;
-			off = 0;
-			doc1Offset = 0;
-
-			for (int i = 0; i < doc2Changed; i++)
-			{
-				switch (doc2Changes[i].op)
-				{
-					case DIFF_INSERT:
-					case DIFF_MOVE:
-						if (doc2Changes[i].altLocation == off)
-						{
-							++length;
-						}
-						else
-						{
-							addBlankSection(view1, off + doc1Offset, length);
-							doc1Offset += length;
-							off = doc2Changes[i].altLocation;
-							length = 1;
-						}
-					break;
-				}
-			}
-
-			addBlankSection(view1, off + doc1Offset, length);
-		}
+		addBlankSection(view1, off + doc1Offset, length);
 	}
-
-	if (isCompareCancelled())
-		return COMPARE_CANCELLED;
 
 	progressClose();
 
-	return (!diff.empty() && !different) ? FILES_MATCH : FILES_DIFFER;
+	return FILES_DIFFER;
 }
 
 

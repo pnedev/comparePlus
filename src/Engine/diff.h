@@ -369,14 +369,17 @@ std::vector<diff_edit> DiffCalc<Elem>::operator()()
 	 */
 	unsigned int x = 0, y = 0;
 
-	std::size_t a_size = _a.size();
-	std::size_t b_size = _b.size();
+	const std::size_t a_size = _a.size();
+	const std::size_t b_size = _b.size();
 
 	while (x < a_size && y < b_size && _a[x] == _b[y])
 	{
 		++x;
 		++y;
 	}
+
+	if (a_size == b_size && x == a_size)
+		return _diff;
 
 	_edit(DIFF_MATCH, 0, x);
 

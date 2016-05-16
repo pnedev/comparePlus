@@ -201,7 +201,7 @@ static int checkWords(diff_edit& e, chunk_info& chunk, chunk_info& otherChunk)
 
 	line2 = chunk.lineMappings[start];
 
-	// if the change does not go to the end of the line than its definitely a change
+	// if the change does not go to the end of the line then its definitely a change
 	if (line2 != -1 && (int)(e.off + e.len) < chunk.lineEndPos[start])
 	{
 		// TODO: recheck change because some of the diffs will be previous lines
@@ -411,11 +411,7 @@ int setDiffLines(const diff_edit& e, std::vector<diff_edit>& changes, int* idx, 
 			}
 			else
 			{
-				// TODO: Possible issue here? (no need for if as it does the same thing)
-				if (op == DIFF_DELETE)
-					++altLocation;
-				else
-					++altLocation;
+				++altLocation;
 			}
 		}
 
