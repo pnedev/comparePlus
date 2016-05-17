@@ -16,6 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <windows.h>
+#include <tchar.h>
+#include <commctrl.h>
+
 #include "Compare.h"
 #include "Engine.h"
 #include "NPPHelpers.h"
@@ -37,8 +41,75 @@ static const char strEOL[3][3] =
 	"\n"
 };
 
-
 static const unsigned short lenEOL[3] = { 2, 1, 1 };
+
+
+HWND NppToolbarHandleGetter::hNppToolbar = NULL;
+
+
+HWND NppToolbarHandleGetter::get()
+{
+	if (hNppToolbar == NULL)
+		::EnumChildWindows(nppData._nppHandle, enumWindowsCB, 0);
+
+	return hNppToolbar;
+}
+
+
+BOOL CALLBACK NppToolbarHandleGetter::enumWindowsCB(HWND hwnd, LPARAM lParam)
+{
+	TCHAR winClassName[64];
+
+	::GetClassName(hwnd, winClassName, _countof(winClassName));
+
+	if (!_tcscmp(winClassName, TOOLBARCLASSNAME))
+	{
+		hNppToolbar = hwnd;
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+
+HWND NppTabHandleGetter::hNppTab[2] = { NULL, NULL };
+
+
+HWND NppTabHandleGetter::get(int viewId)
+{
+	const int idx = (viewId == MAIN_VIEW) ? 0 : 1;
+
+	if (hNppTab[idx] == NULL)
+		::EnumChildWindows(nppData._nppHandle, enumWindowsCB, idx);
+
+	return hNppTab[idx];
+}
+
+
+BOOL CALLBACK NppTabHandleGetter::enumWindowsCB(HWND hwnd, LPARAM lParam)
+{
+	TCHAR winClassName[64];
+
+	::GetClassName(hwnd, winClassName, _countof(winClassName));
+
+	if (!_tcscmp(winClassName, WC_TABCONTROL))
+	{
+		RECT tabRect;
+		RECT viewRect;
+
+		::GetWindowRect(hwnd, &tabRect);
+		::GetWindowRect(getView(lParam), &viewRect);
+
+		if ((tabRect.left <= viewRect.left) && (tabRect.top <= viewRect.top) &&
+			(tabRect.right >= viewRect.right) && (tabRect.bottom >= viewRect.bottom))
+		{
+			hNppTab[lParam] = hwnd;
+			return FALSE;
+		}
+	}
+
+	return TRUE;
+}
 
 
 void ViewLocation::saveCurrent()
@@ -231,6 +302,108 @@ void markTextAsChanged(HWND window, int start, int length)
 		::SendMessage(window, SCI_INDICATORFILLRANGE, start, length);
 		::SendMessage(window, SCI_SETINDICATORCURRENT, curIndic, 0);
 	}
+}
+
+
+void jumpToFirstChange()
+{
+	HWND currView = getCurrentView();
+	HWND otherView = getOtherView();
+
+	const int sci_search_mask = (1 << MARKER_MOVED_LINE)
+							  | (1 << MARKER_CHANGED_LINE)
+							  | (1 << MARKER_ADDED_LINE)
+							  | (1 << MARKER_REMOVED_LINE)
+							  | (1 << MARKER_BLANK_LINE);
+
+	const int nextLine = ::SendMessage(currView, SCI_MARKERNEXT, 0, sci_search_mask);
+	::SendMessage(currView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
+	::SendMessage(otherView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
+	::SendMessage(currView, SCI_GOTOLINE, nextLine, 0);
+	::SendMessage(otherView, SCI_GOTOLINE, nextLine, 0);
+}
+
+
+void jumpToLastChange()
+{
+	HWND currView = getCurrentView();
+
+	const int sci_search_mask = (1 << MARKER_MOVED_LINE)
+							  | (1 << MARKER_CHANGED_LINE)
+							  | (1 << MARKER_ADDED_LINE)
+							  | (1 << MARKER_REMOVED_LINE)
+							  | (1 << MARKER_BLANK_LINE);
+
+	const int lineMax = ::SendMessage(currView, SCI_GETLINECOUNT, 0, 0);
+	const int nextLine = ::SendMessage(currView, SCI_MARKERPREVIOUS, lineMax, sci_search_mask);
+	::SendMessage(currView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
+	::SendMessage(currView, SCI_GOTOLINE, nextLine, 0);
+}
+
+
+void jumpToNextChange(bool down)
+{
+	HWND view = getCurrentView();
+
+	const int sci_search_mask = (1 << MARKER_MOVED_LINE) |
+								(1 << MARKER_CHANGED_LINE) |
+								(1 << MARKER_ADDED_LINE) |
+								(1 << MARKER_REMOVED_LINE) |
+								(1 << MARKER_BLANK_LINE);
+
+	const int lineMax = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0);
+	int lineStart = ::SendMessage(view, SCI_GETCURRENTPOS, 0, 0);
+	lineStart = ::SendMessage(view, SCI_LINEFROMPOSITION, lineStart, 0);
+
+	int prevLine = lineStart;
+
+	int currLine;
+	int nextLine;
+	int sci_marker_direction;
+
+	while (true)
+	{
+		if (down)
+		{
+			currLine = (lineStart < lineMax) ? (lineStart + 1) : (0);
+			sci_marker_direction = SCI_MARKERNEXT;
+		}
+		else
+		{
+			currLine = (lineStart > 0) ? (lineStart - 1) : (lineMax);
+			sci_marker_direction = SCI_MARKERPREVIOUS;
+		}
+
+		nextLine = ::SendMessage(view, sci_marker_direction, currLine, sci_search_mask);
+
+		if (nextLine < 0)
+		{
+			currLine = (down) ? (0) : (lineMax);
+			nextLine = ::SendMessage(view, sci_marker_direction, currLine, sci_search_mask);
+			break;
+		}
+
+		if (nextLine != currLine)
+			break;
+		else if (down)
+			lineStart++;
+		else
+			lineStart--;
+	}
+
+	if ((down && (nextLine < prevLine)) || (!down && (nextLine > prevLine)))
+	{
+		FLASHWINFO flashInfo;
+		flashInfo.cbSize = sizeof(flashInfo);
+		flashInfo.hwnd = nppData._nppHandle;
+		flashInfo.uCount = 2;
+		flashInfo.dwTimeout = 100;
+		flashInfo.dwFlags = FLASHW_ALL;
+		::FlashWindowEx(&flashInfo);
+	}
+
+	::SendMessage(view, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
+	::SendMessage(view, SCI_GOTOLINE, nextLine, 0);
 }
 
 

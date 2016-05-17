@@ -22,6 +22,52 @@
 #include "Compare.h"
 
 
+enum MARKER_ID
+{
+	MARKER_BLANK_LINE = 0,
+	MARKER_MOVED_LINE,
+	MARKER_CHANGED_LINE,
+	MARKER_ADDED_LINE,
+	MARKER_REMOVED_LINE,
+	MARKER_CHANGED_SYMBOL,
+	MARKER_ADDED_SYMBOL,
+	MARKER_REMOVED_SYMBOL,
+	MARKER_MOVED_SYMBOL
+};
+
+
+/**
+ *  \class
+ *  \brief
+ */
+class NppToolbarHandleGetter
+{
+public:
+	static HWND get();
+
+private:
+	static HWND	hNppToolbar;
+
+	static BOOL CALLBACK enumWindowsCB(HWND hwnd, LPARAM lParam);
+};
+
+
+/**
+ *  \class
+ *  \brief
+ */
+class NppTabHandleGetter
+{
+public:
+	static HWND get(int viewId);
+
+private:
+	static HWND	hNppTab[2];
+
+	static BOOL CALLBACK enumWindowsCB(HWND hwnd, LPARAM lParam);
+};
+
+
 /**
  *  \struct
  *  \brief
@@ -184,6 +230,10 @@ void markAsChanged(HWND window, int line);
 void markAsRemoved(HWND window, int line);
 void markAsMoved(HWND window, int line);
 void markTextAsChanged(HWND window, int start, int length);
+
+void jumpToFirstChange();
+void jumpToLastChange();
+void jumpToNextChange(bool down);
 
 void setNormalView(HWND window);
 void setCompareView(HWND window);
