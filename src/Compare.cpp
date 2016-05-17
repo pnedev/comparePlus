@@ -1691,7 +1691,7 @@ void createMenu()
 	funcItem[CMD_SET_FIRST]._pShKey->_isAlt		= true;
 	funcItem[CMD_SET_FIRST]._pShKey->_isCtrl	= true;
 	funcItem[CMD_SET_FIRST]._pShKey->_isShift	= false;
-	funcItem[CMD_SET_FIRST]._pShKey->_key		= 'F';
+	funcItem[CMD_SET_FIRST]._pShKey->_key		= '1';
 
 	_tcscpy_s(funcItem[CMD_COMPARE]._itemName, nbChar, TEXT("Compare"));
 	funcItem[CMD_COMPARE]._pFunc			= Compare;
