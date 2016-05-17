@@ -95,7 +95,7 @@ static int getWords(const DocLines_t& doc, chunk_info& chunk, bool IncludeSpace)
 						Word word;
 						word.length = len;
 						word.line = line;
-						word.pos = i-len;
+						word.pos = i - len;
 						word.type = type;
 						word.hash = hash;
 						chunk.words.push_back(word);
@@ -117,7 +117,7 @@ static int getWords(const DocLines_t& doc, chunk_info& chunk, bool IncludeSpace)
 				Word word;
 				word.length = len;
 				word.line = line;
-				word.pos = i-len;
+				word.pos = i - len;
 				word.type = type;
 				word.hash = hash;
 				chunk.words.push_back(word);
@@ -251,7 +251,7 @@ bool compareWords(diff_edit& e1, diff_edit& e2, const DocLines_t& doc1, const Do
 
 	// Use the MATCH results to synchronize line numbers
 	// count how many are on each line, than select the line with the most matches
-	std::size_t diffSize = diff.size();
+	const std::size_t diffSize = diff.size();
 
 	int offset = 0;
 	for (i = 0; i < diffSize; ++i)
@@ -429,10 +429,10 @@ int setDiffLines(const diff_edit& e, std::vector<diff_edit>& changes, int* idx, 
 // use one-to-one match as an anchor
 // scan to see if the lines above and below anchor also match
 static diff_edit* find_anchor(int line, std::vector<diff_edit>& diff,
-		unsigned int *doc1, unsigned int *doc2, int *line2)
+		const unsigned int *hash1, const unsigned int *hash2, int *line2)
 {
 	diff_edit* insert = NULL;
-	std::size_t diffSize = diff.size();
+	const std::size_t diffSize = diff.size();
 	bool match = false;
 
 	for (unsigned int i = 0; i < diffSize; ++i)
@@ -443,7 +443,7 @@ static diff_edit* find_anchor(int line, std::vector<diff_edit>& diff,
 		{
 			for (unsigned int j = 0; j < e.len; ++j)
 			{
-				if (doc1[line] == doc2[e.off + j])
+				if (hash1[line] == hash2[e.off + j])
 				{
 					if (match)
 						return NULL;
@@ -469,7 +469,7 @@ static diff_edit* find_anchor(int line, std::vector<diff_edit>& diff,
 		{
 			for (unsigned int j = 0; j < e.len; ++j)
 			{
-				if (doc1[line] == doc1[e.off + j])
+				if (hash1[line] == hash1[e.off + j])
 				{
 					if (match)
 						return NULL;
@@ -484,9 +484,9 @@ static diff_edit* find_anchor(int line, std::vector<diff_edit>& diff,
 }
 
 
-void findMoves(std::vector<diff_edit>& diff, unsigned int *doc1, unsigned int *doc2)
+void findMoves(std::vector<diff_edit>& diff, const unsigned int *hash1, const unsigned int *hash2)
 {
-	std::size_t diffSize = diff.size();
+	const std::size_t diffSize = diff.size();
 
 	// initialize moves arrays
 	for (unsigned int i = 0; i < diffSize; ++i)
@@ -510,7 +510,7 @@ void findMoves(std::vector<diff_edit>& diff, unsigned int *doc1, unsigned int *d
 				continue;
 
 			int line2;
-			diff_edit* match = find_anchor(e.off + j, diff, doc1, doc2, &line2);
+			diff_edit* match = find_anchor(e.off + j, diff, hash1, hash2, &line2);
 
 			if (!match)
 				continue;
@@ -522,7 +522,7 @@ void findMoves(std::vector<diff_edit>& diff, unsigned int *doc1, unsigned int *d
 			int d2 = line2 - 1;
 
 			while (d1 >= 0 && d2 >= 0 && e.moves[d1] == -1 && match->moves[d2] == -1 &&
-					doc1[e.off + d1] == doc2[match->off + d2])
+					hash1[e.off + d1] == hash2[match->off + d2])
 			{
 				e.moves[d1] = match->off + d2;
 				match->moves[d2] = e.off + d1;
@@ -534,7 +534,7 @@ void findMoves(std::vector<diff_edit>& diff, unsigned int *doc1, unsigned int *d
 			d2 = line2 + 1;
 
 			while (d1 < (int)e.len && d2 < (int)match->len && e.moves[d1] == -1 && match->moves[d2] == -1 &&
-					doc1[e.off + d1] == doc2[match->off + d2])
+					hash1[e.off + d1] == hash2[match->off + d2])
 			{
 				e.moves[d1] = match->off + d2;
 				match->moves[d2] = e.off + d1;
@@ -552,25 +552,25 @@ void findMoves(std::vector<diff_edit>& diff, unsigned int *doc1, unsigned int *d
 // since most languages start with unique lines and end with repetitive lines (end, </node>, }, etc)
 // we shift the differences down where its possible so the results will be cleaner
 void shiftBoundries(std::vector<diff_edit>& diff,
-		unsigned int *doc1, unsigned int *doc2, int doc1Length, int doc2Length)
+		const unsigned int *hash1, const unsigned int *hash2, int doc1Length, int doc2Length)
 {
-	std::size_t diffSize = diff.size();
+	const std::size_t diffSize = diff.size();
 
 	for (unsigned int i = 0; i < diffSize; ++i)
 	{
-		diff_edit& e = diff[i];
+		diff_edit& e1 = diff[i];
 
 		int max1 = doc1Length;
 		int max2 = doc2Length;
 		int end2;
 
-		if (e.op != DIFF_MATCH)
+		if (e1.op != DIFF_MATCH)
 		{
 			for (unsigned int j = i + 1; j < diffSize; ++j)
 			{
 				diff_edit& e2 = diff[j];
 
-				if (e2.op == e.op)
+				if (e2.op == e1.op)
 				{
 					max1 = e2.off;
 					max2 = e2.off;
@@ -579,7 +579,7 @@ void shiftBoundries(std::vector<diff_edit>& diff,
 			}
 		}
 
-		if (e.op == DIFF_DELETE)
+		if (e1.op == DIFF_DELETE)
 		{
 			diff_edit& e2 = diff[i + 1];
 
@@ -603,35 +603,35 @@ void shiftBoundries(std::vector<diff_edit>& diff,
 				end2 = e2.off + e2.len;
 				++i;
 
-				int end = e.off + e.len;
+				int end1 = e1.off + e1.len;
 
-				while (end < max1 && end2 < max2 && doc1[e.off] == doc1[end] && doc2[e2.off] == doc2[end2])
+				while (end1 < max1 && end2 < max2 && hash1[e1.off] == hash1[end1] && hash2[e2.off] == hash2[end2])
 				{
-					++end;
+					++end1;
 					++end2;
-					++(e.off);
+					++(e1.off);
 					++(e2.off);
 				}
 			}
 			else
 			{
-				int end = e.off + e.len;
+				int end1 = e1.off + e1.len;
 
-				while (end < max1 && doc1[e.off] == doc1[end])
+				while (end1 < max1 && hash1[e1.off] == hash1[end1])
 				{
-					++end;
-					++(e.off);
+					++end1;
+					++(e1.off);
 				}
 			}
 		}
-		else if (e.op == DIFF_INSERT)
+		else if (e1.op == DIFF_INSERT)
 		{
-			int end = e.off + e.len;
+			int end1 = e1.off + e1.len;
 
-			while (end < max2 && doc2[e.off] == doc2[end])
+			while (end1 < max2 && hash2[e1.off] == hash2[end1])
 			{
-				++end;
-				++(e.off);
+				++end1;
+				++(e1.off);
 			}
 		}
 	}

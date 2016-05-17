@@ -63,7 +63,8 @@ struct Word
 bool compareWords(diff_edit&, diff_edit&, const DocLines_t& doc1, const DocLines_t& doc2, bool IncludeSpace);
 int setDiffLines(const diff_edit&, std::vector<diff_edit>&, int* idx, short op, int altLocation);
 
-void findMoves(std::vector<diff_edit>&, unsigned int *doc1, unsigned int *doc2);
-void shiftBoundries(std::vector<diff_edit>&, unsigned int *doc1, unsigned int *doc2, int doc1Length, int doc2Length);
+void findMoves(std::vector<diff_edit>&, const unsigned int *hash1, const unsigned int *hash2);
+void shiftBoundries(std::vector<diff_edit>&, const unsigned int *hash1, const unsigned int *hash2,
+		int doc1Length, int doc2Length);
 
 std::vector<unsigned int> computeHashes(const DocLines_t& doc, bool IncludeSpace);

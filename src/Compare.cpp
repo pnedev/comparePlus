@@ -1047,8 +1047,8 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 
 	const std::size_t diffSize = diff.size();
 
-	int	doc1Changed = 0;
-	int	doc2Changed = 0;
+	int	doc1ChangedLinesCount = 0;
+	int	doc2ChangedLinesCount = 0;
 
 	shiftBoundries(diff, doc1Hashes.data(), doc2Hashes.data(), doc1Length, doc2Length);
 
@@ -1063,7 +1063,7 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		if (e1.op == DIFF_DELETE)
 		{
 			e1.changeCount = 0;
-			doc1Changed += e1.len;
+			doc1ChangedLinesCount += e1.len;
 
 			diff_edit& e2 = diff[i + 1];
 
@@ -1071,27 +1071,27 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 
 			if (e2.op == DIFF_INSERT)
 			{
-				// check if the DELETE/INSERT COMBO includes changed lines or it's a completely new block
+				// check if the DELETE/INSERT pair includes changed lines or it's a completely new block
 				if (compareWords(e1, e2, doc1, doc2, Settings.IncludeSpace))
 				{
 					e1.op = DIFF_CHANGE1;
 					e2.op = DIFF_CHANGE2;
-					doc2Changed += e2.len;
+					doc2ChangedLinesCount += e2.len;
 				}
 			}
 		}
 		else if (e1.op == DIFF_INSERT)
 		{
 			e1.changeCount = 0;
-			doc2Changed += e1.len;
+			doc2ChangedLinesCount += e1.len;
 		}
 	}
 
 	if (isCompareCancelled())
 		return COMPARE_CANCELLED;
 
-	std::vector<diff_edit> doc1Changes(doc1Changed);
-	std::vector<diff_edit> doc2Changes(doc2Changed);
+	std::vector<diff_edit> doc1Changes(doc1ChangedLinesCount);
+	std::vector<diff_edit> doc2Changes(doc2ChangedLinesCount);
 
 	int doc1Offset = 0;
 	int doc2Offset = 0;
@@ -1127,7 +1127,7 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		}
 	}
 
-	if ((doc1Changed == 0) && (doc2Changed == 0))
+	if ((doc1ChangedLinesCount == 0) && (doc2ChangedLinesCount == 0))
 	{
 		progressClose();
 		return FILES_MATCH;
@@ -1136,9 +1136,7 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 	if (isCompareCancelled())
 		return COMPARE_CANCELLED;
 
-	int textIndex;
-
-	for (int i = 0; i < doc1Changed; ++i)
+	for (int i = 0; i < doc1ChangedLinesCount; ++i)
 	{
 		switch (doc1Changes[i].op)
 		{
@@ -1147,14 +1145,16 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 			break;
 
 			case DIFF_CHANGE1:
+			{
 				markAsChanged(view1, doc1Changes[i].off);
-				textIndex = lineNum1[doc1Changes[i].off];
+				const int textIndex = lineNum1[doc1Changes[i].off];
 
 				for (unsigned int k = 0; k < doc1Changes[i].changeCount; ++k)
 				{
 					diff_change& change = doc1Changes[i].changes->get(k);
 					markTextAsChanged(view1, textIndex + change.off, change.len);
 				}
+			}
 			break;
 
 			case DIFF_MOVE:
@@ -1163,7 +1163,7 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		}
 	}
 
-	for (int i = 0; i < doc2Changed; ++i)
+	for (int i = 0; i < doc2ChangedLinesCount; ++i)
 	{
 		switch (doc2Changes[i].op)
 		{
@@ -1172,14 +1172,16 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 			break;
 
 			case DIFF_CHANGE2:
+			{
 				markAsChanged(view2, doc2Changes[i].off);
-				textIndex = lineNum2[doc2Changes[i].off];
+				const int textIndex = lineNum2[doc2Changes[i].off];
 
 				for (unsigned int k = 0; k < doc2Changes[i].changeCount; ++k)
 				{
 					diff_change& change = doc2Changes[i].changes->get(k);
 					markTextAsChanged(view2, textIndex + change.off, change.len);
 				}
+			}
 			break;
 
 			case DIFF_MOVE:
@@ -1194,7 +1196,7 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		int off = 0;
 		doc2Offset = 0;
 
-		for (int i = 0; i < doc1Changed; ++i)
+		for (int i = 0; i < doc1ChangedLinesCount; ++i)
 		{
 			switch (doc1Changes[i].op)
 			{
@@ -1221,7 +1223,7 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		off = 0;
 		doc1Offset = 0;
 
-		for (int i = 0; i < doc2Changed; i++)
+		for (int i = 0; i < doc2ChangedLinesCount; i++)
 		{
 			switch (doc2Changes[i].op)
 			{
