@@ -128,6 +128,35 @@ const TCHAR PLUGIN_NAME[] = TEXT("Compare");
 
 
 /**
+ *  \class
+ *  \brief
+ */
+class NppSettings
+{
+public:
+	static NppSettings& get()
+	{
+		static NppSettings instance;
+		return instance;
+	}
+
+	void enableClearCommands() const;
+	void updatePluginMenu() const;
+	void save();
+	void setNormalMode();
+	void setCompareMode();
+
+	bool	compareMode;
+
+private:
+	NppSettings() : compareMode(false) {}
+
+	bool	_syncVScroll;
+	bool	_syncHScroll;
+};
+
+
+/**
  *  \struct
  *  \brief
  */
@@ -149,23 +178,71 @@ private:
 
 
 /**
- *  \struct
+ *  \class
  *  \brief
  */
-struct NppSettings
+class DelayedWork
 {
-	NppSettings() : compareMode(false) {}
+public:
+	using workFunc_t = void(*)(int);
 
-	bool	compareMode;
-	bool	syncVScroll;
-	bool	syncHScroll;
+	static bool post(workFunc_t work, int buffId, UINT delay_ms);
+	static void cancel();
 
-	void enableClearCommands() const;
-	void updatePluginMenu() const;
-	void save();
-	void setNormalMode();
-	void setCompareMode();
+private:
+	static DelayedWork& instance()
+	{
+		static DelayedWork inst;
+		return inst;
+	}
+
+	DelayedWork() : _timerId(0), _buffId(0) {}
+	~DelayedWork()
+	{
+		if (_timerId)
+			::KillTimer(NULL, _timerId);
+	}
+
+	static VOID CALLBACK timerCB(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
+
+	UINT_PTR	_timerId;
+	workFunc_t	_work;
+	int			_buffId;
 };
+
+
+bool DelayedWork::post(workFunc_t work, int buffId, UINT delay_ms)
+{
+	DelayedWork& inst = instance();
+
+	inst._work = work;
+	inst._buffId = buffId;
+	inst._timerId = ::SetTimer(NULL, 0, delay_ms, timerCB);
+
+	return (inst._timerId != 0);
+}
+
+
+void DelayedWork::cancel()
+{
+	DelayedWork& inst = instance();
+
+	if (inst._timerId)
+	{
+		::KillTimer(NULL, inst._timerId);
+		inst._timerId = 0;
+	}
+}
+
+
+VOID CALLBACK DelayedWork::timerCB(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+{
+	cancel();
+
+	DelayedWork& inst = instance();
+
+	inst._work(inst._buffId);
+}
 
 
 /**
@@ -259,74 +336,6 @@ enum CompareResult_t
 
 
 /**
- *  \class
- *  \brief
- */
-class DelayedWork
-{
-public:
-	using workFunc_t = void(*)(int);
-
-	static bool post(workFunc_t work, int buffId, UINT delay_ms);
-	static void cancel();
-
-private:
-	static DelayedWork& instance()
-	{
-		static DelayedWork inst;
-		return inst;
-	}
-
-	DelayedWork() : _timerId(0), _buffId(0) {}
-	~DelayedWork()
-	{
-		if (_timerId)
-			::KillTimer(NULL, _timerId);
-	}
-
-	static VOID CALLBACK timerCB(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
-
-	UINT_PTR	_timerId;
-	workFunc_t	_work;
-	int			_buffId;
-};
-
-
-bool DelayedWork::post(workFunc_t work, int buffId, UINT delay_ms)
-{
-	DelayedWork& inst = instance();
-
-	inst._work = work;
-	inst._buffId = buffId;
-	inst._timerId = ::SetTimer(NULL, 0, delay_ms, timerCB);
-
-	return (inst._timerId != 0);
-}
-
-
-void DelayedWork::cancel()
-{
-	DelayedWork& inst = instance();
-
-	if (inst._timerId)
-	{
-		::KillTimer(NULL, inst._timerId);
-		inst._timerId = 0;
-	}
-}
-
-
-VOID CALLBACK DelayedWork::timerCB(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
-{
-	cancel();
-
-	DelayedWork& inst = instance();
-
-	inst._work(inst._buffId);
-}
-
-
-/**
  *  \struct
  *  \brief
  */
@@ -343,7 +352,6 @@ struct SaveNotificationData
 
 CompareList_t compareList;
 std::unique_ptr<NewCompare> newCompare;
-NppSettings nppSettings;
 
 unsigned notificationsLock = 0;
 
@@ -417,8 +425,8 @@ void NppSettings::save()
 {
 	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
 
-	syncVScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
-	syncHScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
+	_syncVScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
+	_syncHScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
 }
 
 
@@ -437,11 +445,11 @@ void NppSettings::setNormalMode()
 	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
 
 	bool syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
-	if (syncScroll != syncVScroll)
+	if (syncScroll != _syncVScroll)
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLV);
 
 	syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
-	if (syncScroll != syncHScroll)
+	if (syncScroll != _syncHScroll)
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLH);
 }
 
@@ -580,7 +588,7 @@ NewCompare::NewCompare(bool currFileIsNew, bool firstManuallySet)
 	firstFileCodepage = ::SendMessage(getCurrentView(), SCI_GETCODEPAGE, 0, 0);
 
 	// Enable ClearActiveCompare command to be able to clear the first file that was just set
-	nppSettings.enableClearCommands();
+	NppSettings::get().enableClearCommands();
 
 	if (firstManuallySet)
 	{
@@ -628,8 +636,8 @@ NewCompare::~NewCompare()
 		}
 	}
 
-	if (!nppSettings.compareMode)
-		nppSettings.updatePluginMenu();
+	if (!NppSettings::get().compareMode)
+		NppSettings::get().updatePluginMenu();
 }
 
 
@@ -849,7 +857,7 @@ void clearComparePair(int buffId)
 	if (cmpPair == compareList.end())
 		return;
 
-	nppSettings.setNormalMode();
+	NppSettings::get().setNormalMode();
 
 	ScopedIncrementer incr(notificationsLock);
 
@@ -866,7 +874,7 @@ void closeComparePair(CompareList_t::iterator& cmpPair)
 {
 	HWND currentView = getCurrentView();
 
-	nppSettings.setNormalMode();
+	NppSettings::get().setNormalMode();
 	setNormalView(nppData._scintillaMainHandle);
 	setNormalView(nppData._scintillaSecondHandle);
 
@@ -1015,7 +1023,7 @@ bool initNewCompare()
 CompareList_t::iterator addComparePair()
 {
 	if (compareList.empty())
-		nppSettings.save();
+		NppSettings::get().save();
 
 	compareList.push_back(newCompare->pair);
 	newCompare.reset();
@@ -1284,7 +1292,7 @@ CompareResult_t runCompare(CompareList_t::iterator& cmpPair)
 {
 	cmpPair->positionFiles();
 
-	nppSettings.setCompareMode();
+	NppSettings::get().setCompareMode();
 
 	ScopedViewUndoCollectionBlocker undoBlock1(nppData._scintillaMainHandle);
 	ScopedViewUndoCollectionBlocker undoBlock2(nppData._scintillaSecondHandle);
@@ -1382,7 +1390,7 @@ void Compare()
 	{
 		case FILES_DIFFER:
 		{
-			nppSettings.updatePluginMenu();
+			NppSettings::get().updatePluginMenu();
 
 			if (Settings.UseNavBar)
 				showNavBar();
@@ -1430,7 +1438,7 @@ void ClearActiveCompare()
 {
 	newCompare.reset();
 
-	if (nppSettings.compareMode)
+	if (NppSettings::get().compareMode)
 		clearComparePair(getCurrentBuffId());
 }
 
@@ -1441,8 +1449,8 @@ void ClearAllCompares()
 
 	newCompare.reset();
 
-	if (nppSettings.compareMode)
-		nppSettings.setNormalMode();
+	if (NppSettings::get().compareMode)
+		NppSettings::get().setNormalMode();
 
 	ScopedIncrementer incr(notificationsLock);
 
@@ -1581,28 +1589,28 @@ void DetectMoves()
 
 void Prev()
 {
-	if (nppSettings.compareMode)
+	if (NppSettings::get().compareMode)
 		jumpToNextChange(false);
 }
 
 
 void Next()
 {
-	if (nppSettings.compareMode)
+	if (NppSettings::get().compareMode)
 		jumpToNextChange(true);
 }
 
 
 void First()
 {
-	if (nppSettings.compareMode)
+	if (NppSettings::get().compareMode)
 		jumpToFirstChange();
 }
 
 
 void Last()
 {
-	if (nppSettings.compareMode)
+	if (NppSettings::get().compareMode)
 		jumpToLastChange();
 }
 
@@ -1768,7 +1776,7 @@ void deinitPlugin()
 	AboutDlg.destroy();
 	NavDlg.destroy();
 
-	// Don't forget to deallocate your shortcut here
+	// Deallocate shortcut
 	for (int i = 0; i < NB_MENU_COMMANDS; i++)
 		if (funcItem[i]._pShKey != NULL)
 			delete funcItem[i]._pShKey;
@@ -1789,7 +1797,7 @@ void onToolBarReady()
 	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_NEXT]._cmdID,	(LPARAM)&tbNext);
 	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_LAST]._cmdID,	(LPARAM)&tbLast);
 
-	nppSettings.updatePluginMenu();
+	NppSettings::get().updatePluginMenu();
 
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID,
 			(LPARAM)Settings.AddLine);
@@ -1967,8 +1975,8 @@ void onBufferActivatedDelayed(int buffId)
 		switchedFromOtherPair = true;
 	}
 
-	nppSettings.setCompareMode();
-	nppSettings.updatePluginMenu();
+	NppSettings::get().setCompareMode();
+	NppSettings::get().updatePluginMenu();
 	setCompareView(nppData._scintillaMainHandle);
 	setCompareView(nppData._scintillaSecondHandle);
 
@@ -1986,7 +1994,7 @@ void onBufferActivated(int buffId)
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
 	{
-		nppSettings.setNormalMode();
+		NppSettings::get().setNormalMode();
 		setNormalView(getCurrentView());
 		return;
 	}
@@ -2003,7 +2011,7 @@ void onFileBeforeClose(int buffId)
 
 	const int currentBuffId = getCurrentBuffId();
 
-	nppSettings.setNormalMode();
+	NppSettings::get().setNormalMode();
 
 	{
 		ScopedIncrementer incr(notificationsLock);
@@ -2095,7 +2103,7 @@ void ViewNavigationBar()
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_USE_NAV_BAR]._cmdID,
 			(LPARAM)Settings.UseNavBar);
 
-	if (nppSettings.compareMode)
+	if (NppSettings::get().compareMode)
 	{
 		if (Settings.UseNavBar)
 			showNavBar();
@@ -2172,7 +2180,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 
 		// Emulate word-wrap aware vertical scroll sync
 		case SCN_UPDATEUI:
-			if (nppSettings.compareMode)
+			if (NppSettings::get().compareMode)
 				onSciUpdateUI(notifyCode);
 		break;
 
@@ -2205,12 +2213,12 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 
 		// This is used to monitor deletion of lines to properly clear their compare markings
         case SCN_MODIFIED:
-			if (!notificationsLock && nppSettings.compareMode)
+			if (!notificationsLock && NppSettings::get().compareMode)
 				onSciModified(notifyCode);
         break;
 
         case SCN_ZOOM:
-			if (!notificationsLock && nppSettings.compareMode)
+			if (!notificationsLock && NppSettings::get().compareMode)
 				onSciZoom();
         break;
 
