@@ -160,6 +160,7 @@ struct NppSettings
 	bool	syncVScroll;
 	bool	syncHScroll;
 
+	void enableClearCommands() const;
 	void updatePluginMenu() const;
 	void save();
 	void setNormalMode();
@@ -241,8 +242,7 @@ public:
 	int				firstFileCodepage;
 
 private:
-	const bool	_firstManuallySet;
-	TCHAR		_firstTabText[64];
+	TCHAR	_firstTabText[64];
 };
 
 
@@ -382,10 +382,19 @@ void onBufferActivated(int buffId);
 void onBufferActivatedDelayed(int buffId);
 
 
+void NppSettings::enableClearCommands() const
+{
+	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
+	const int flag = MF_BYCOMMAND | MF_ENABLED;
+
+	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ACTIVE]._cmdID, flag);
+}
+
+
 void NppSettings::updatePluginMenu() const
 {
 	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
-	int flag = MF_BYCOMMAND | (compareMode ? MF_ENABLED : (MF_DISABLED | MF_GRAYED));
+	const int flag = MF_BYCOMMAND | (compareMode ? MF_ENABLED : (MF_DISABLED | MF_GRAYED));
 
 	::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, flag);
@@ -562,7 +571,7 @@ void ComparedPair::positionFiles()
 }
 
 
-NewCompare::NewCompare(bool currFileIsNew, bool firstManuallySet) : _firstManuallySet(firstManuallySet)
+NewCompare::NewCompare(bool currFileIsNew, bool firstManuallySet)
 {
 	_firstTabText[0] = 0;
 
@@ -571,8 +580,7 @@ NewCompare::NewCompare(bool currFileIsNew, bool firstManuallySet) : _firstManual
 	firstFileCodepage = ::SendMessage(getCurrentView(), SCI_GETCODEPAGE, 0, 0);
 
 	// Enable ClearActiveCompare command to be able to clear the first file that was just set
-	::EnableMenuItem((HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0),
-			funcItem[CMD_CLEAR_ACTIVE]._cmdID, MF_BYCOMMAND | MF_ENABLED);
+	nppSettings.enableClearCommands();
 
 	if (firstManuallySet)
 	{
@@ -602,17 +610,21 @@ NewCompare::NewCompare(bool currFileIsNew, bool firstManuallySet) : _firstManual
 
 NewCompare::~NewCompare()
 {
-	if (_firstManuallySet && _firstTabText[0] != 0)
+	if (_firstTabText[0] != 0)
 	{
 		HWND hNppTabBar = NppTabHandleGetter::get(pair.file[0].originalViewId);
 
 		if (hNppTabBar)
 		{
+			::InvalidateRect(hNppTabBar, NULL, FALSE);
+
 			TCITEM tab;
 			tab.mask = TCIF_TEXT;
 			tab.pszText = _firstTabText;
 
 			TabCtrl_SetItem(hNppTabBar, pair.file[0].originalPos, &tab);
+
+			::UpdateWindow(hNppTabBar);
 		}
 	}
 
@@ -916,6 +928,9 @@ bool setFirst(bool currFileIsNew, bool manuallySet = false)
 	if (isFileEmpty(view) || isFileCompared(view))
 		return false;
 
+	// Done on purpose: First wipe the std::unique_ptr so ~NewCompare is called before the new object constructor.
+	// This is important because the N++ plugin menu is updated on NewCompare construct/destruct.
+	newCompare.reset();
 	newCompare.reset(new NewCompare(currFileIsNew, manuallySet));
 
 	return true;
