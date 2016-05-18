@@ -400,6 +400,7 @@ void NppSettings::enableClearCommands() const
 	const int flag = MF_BYCOMMAND | MF_ENABLED;
 
 	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ACTIVE]._cmdID, flag);
+	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ALL]._cmdID, flag);
 
 	HWND hNppToolbar = NppToolbarHandleGetter::get();
 	if (hNppToolbar)
@@ -417,6 +418,9 @@ void NppSettings::updatePluginMenu() const
 	::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, flag);
+
+	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ALL]._cmdID,
+			MF_BYCOMMAND | ((compareList.empty() && !newCompare) ? (MF_DISABLED | MF_GRAYED) : MF_ENABLED));
 
 	HWND hNppToolbar = NppToolbarHandleGetter::get();
 	if (hNppToolbar)
@@ -445,8 +449,6 @@ void NppSettings::setNormalMode()
 		return;
 
 	compareMode = false;
-
-	updatePluginMenu();
 
 	if (NavDlg.isVisible())
 		NavDlg.doDialog(false);
@@ -866,7 +868,8 @@ void clearComparePair(int buffId)
 	if (cmpPair == compareList.end())
 		return;
 
-	NppSettings::get().setNormalMode();
+	NppSettings& nppSettings = NppSettings::get();
+	nppSettings.setNormalMode();
 
 	ScopedIncrementer incr(notificationsLock);
 
@@ -876,6 +879,8 @@ void clearComparePair(int buffId)
 	compareList.erase(cmpPair);
 
 	resetCompareView(getOtherView());
+
+	nppSettings.updatePluginMenu();
 }
 
 
@@ -883,7 +888,9 @@ void closeComparePair(CompareList_t::iterator& cmpPair)
 {
 	HWND currentView = getCurrentView();
 
-	NppSettings::get().setNormalMode();
+	NppSettings& nppSettings = NppSettings::get();
+	nppSettings.setNormalMode();
+
 	setNormalView(nppData._scintillaMainHandle);
 	setNormalView(nppData._scintillaSecondHandle);
 
@@ -901,6 +908,8 @@ void closeComparePair(CompareList_t::iterator& cmpPair)
 
 	onBufferActivatedDelayed(getCurrentBuffId());
 	resetCompareView(getOtherView());
+
+	nppSettings.updatePluginMenu();
 }
 
 
@@ -1458,8 +1467,8 @@ void ClearAllCompares()
 
 	newCompare.reset();
 
-	if (NppSettings::get().compareMode)
-		NppSettings::get().setNormalMode();
+	NppSettings& nppSettings = NppSettings::get();
+	nppSettings.setNormalMode();
 
 	ScopedIncrementer incr(notificationsLock);
 
@@ -1479,6 +1488,8 @@ void ClearAllCompares()
 		activateBufferID(otherBuffId);
 
 	activateBufferID(buffId);
+
+	nppSettings.updatePluginMenu();
 }
 
 
@@ -2020,8 +2031,9 @@ void onBufferActivatedDelayed(int buffId)
 		switchedFromOtherPair = true;
 	}
 
-	NppSettings::get().setCompareMode();
-	NppSettings::get().updatePluginMenu();
+	NppSettings& nppSettings = NppSettings::get();
+	nppSettings.setCompareMode();
+	nppSettings.updatePluginMenu();
 	setCompareView(nppData._scintillaMainHandle);
 	setCompareView(nppData._scintillaSecondHandle);
 
@@ -2039,8 +2051,10 @@ void onBufferActivated(int buffId)
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
 	{
-		NppSettings::get().setNormalMode();
+		NppSettings& nppSettings = NppSettings::get();
+		nppSettings.setNormalMode();
 		setNormalView(getCurrentView());
+		nppSettings.updatePluginMenu();
 		return;
 	}
 
@@ -2056,7 +2070,8 @@ void onFileBeforeClose(int buffId)
 
 	const int currentBuffId = getCurrentBuffId();
 
-	NppSettings::get().setNormalMode();
+	NppSettings& nppSettings = NppSettings::get();
+	nppSettings.setNormalMode();
 
 	{
 		ScopedIncrementer incr(notificationsLock);
@@ -2072,6 +2087,8 @@ void onFileBeforeClose(int buffId)
 	}
 
 	activateBufferID(currentBuffId);
+
+	nppSettings.updatePluginMenu();
 }
 
 
