@@ -190,12 +190,16 @@ END
 // Bitmap
 //
 
-IDB_FIRST               BITMAP                  "../res/First.bmp"
-IDB_LAST                BITMAP                  "../res/Last.bmp"
-IDB_NEXT                BITMAP                  "../res/Next.bmp"
-IDB_PREV                BITMAP                  "../res/Previous.bmp"
+IDB_SETFIRST		BITMAP	"../res/FirstToCompare.bmp"
+IDB_COMPARE			BITMAP	"../res/Compare.bmp"
+IDB_CLEARCOMPARE	BITMAP	"../res/ClearCompare.bmp"
+IDB_FIRST			BITMAP	"../res/First.bmp"
+IDB_LAST			BITMAP	"../res/Last.bmp"
+IDB_NEXT			BITMAP	"../res/Next.bmp"
+IDB_PREV			BITMAP	"../res/Previous.bmp"
+IDB_NAVBAR			BITMAP	"../res/NavBar.bmp"
 
-IDB_ICON				ICON					"../res/Compare.ico"
+IDB_ICON			ICON	"../res/Compare.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //

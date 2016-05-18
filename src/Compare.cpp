@@ -372,10 +372,14 @@ AboutDialog   	AboutDlg;
 SettingsDialog	SettingsDlg;
 NavDialog     	NavDlg;
 
+toolbarIcons  tbSetFirst;
+toolbarIcons  tbCompare;
+toolbarIcons  tbClearCompare;
+toolbarIcons  tbFirst;
 toolbarIcons  tbPrev;
 toolbarIcons  tbNext;
-toolbarIcons  tbFirst;
 toolbarIcons  tbLast;
+toolbarIcons  tbNavBar;
 
 HINSTANCE hInstance;
 FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
@@ -396,6 +400,10 @@ void NppSettings::enableClearCommands() const
 	const int flag = MF_BYCOMMAND | MF_ENABLED;
 
 	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ACTIVE]._cmdID, flag);
+
+	HWND hNppToolbar = NppToolbarHandleGetter::get();
+	if (hNppToolbar)
+		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_CLEAR_ACTIVE]._cmdID, true);
 }
 
 
@@ -404,18 +412,19 @@ void NppSettings::updatePluginMenu() const
 	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
 	const int flag = MF_BYCOMMAND | (compareMode ? MF_ENABLED : (MF_DISABLED | MF_GRAYED));
 
+	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ACTIVE]._cmdID, flag);
+	::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, flag);
-	::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, flag);
-	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ACTIVE]._cmdID, flag);
 
 	HWND hNppToolbar = NppToolbarHandleGetter::get();
 	if (hNppToolbar)
 	{
+		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_CLEAR_ACTIVE]._cmdID, compareMode);
+		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_FIRST]._cmdID, compareMode);
 		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_PREV]._cmdID, compareMode);
 		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_NEXT]._cmdID, compareMode);
-		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_FIRST]._cmdID, compareMode);
 		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_LAST]._cmdID, compareMode);
 	}
 }
@@ -1710,8 +1719,8 @@ void createMenu()
 	_tcscpy_s(funcItem[CMD_DETECT_MOVES]._itemName, nbChar, TEXT("Detect Moves"));
 	funcItem[CMD_DETECT_MOVES]._pFunc = DetectMoves;
 
-	_tcscpy_s(funcItem[CMD_USE_NAV_BAR]._itemName, nbChar, TEXT("Navigation Bar"));
-	funcItem[CMD_USE_NAV_BAR]._pFunc = ViewNavigationBar;
+	_tcscpy_s(funcItem[CMD_NAV_BAR]._itemName, nbChar, TEXT("Navigation Bar"));
+	funcItem[CMD_NAV_BAR]._pFunc = ViewNavigationBar;
 
 	_tcscpy_s(funcItem[CMD_PREV]._itemName, nbChar, TEXT("Previous"));
 	funcItem[CMD_PREV]._pFunc 				= Prev;
@@ -1760,17 +1769,29 @@ void deinitPlugin()
 	if (NavDlg.isVisible())
 		NavDlg.doDialog(false);
 
-	if (tbNext.hToolbarBmp)
-		::DeleteObject(tbNext.hToolbarBmp);
+	if (tbSetFirst.hToolbarBmp)
+		::DeleteObject(tbSetFirst.hToolbarBmp);
 
-	if (tbPrev.hToolbarBmp)
-		::DeleteObject(tbPrev.hToolbarBmp);
+	if (tbCompare.hToolbarBmp)
+		::DeleteObject(tbCompare.hToolbarBmp);
+
+	if (tbClearCompare.hToolbarBmp)
+		::DeleteObject(tbClearCompare.hToolbarBmp);
 
 	if (tbFirst.hToolbarBmp)
 		::DeleteObject(tbFirst.hToolbarBmp);
 
+	if (tbPrev.hToolbarBmp)
+		::DeleteObject(tbPrev.hToolbarBmp);
+
+	if (tbNext.hToolbarBmp)
+		::DeleteObject(tbNext.hToolbarBmp);
+
 	if (tbLast.hToolbarBmp)
 		::DeleteObject(tbLast.hToolbarBmp);
+
+	if (tbNavBar.hToolbarBmp)
+		::DeleteObject(tbNavBar.hToolbarBmp);
 
 	SettingsDlg.destroy();
 	AboutDlg.destroy();
@@ -1787,15 +1808,39 @@ void onToolBarReady()
 {
 	UINT style = (LR_SHARED | LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS);
 
-	tbPrev.hToolbarBmp	= (HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_PREV),	IMAGE_BITMAP, 0, 0, style);
-	tbNext.hToolbarBmp	= (HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NEXT),	IMAGE_BITMAP, 0, 0, style);
-	tbFirst.hToolbarBmp	= (HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_FIRST),	IMAGE_BITMAP, 0, 0, style);
-	tbLast.hToolbarBmp	= (HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_LAST),	IMAGE_BITMAP, 0, 0, style);
+	tbSetFirst.hToolbarBmp =
+			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_SETFIRST),	IMAGE_BITMAP, 0, 0, style);
+	tbCompare.hToolbarBmp =
+			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_COMPARE),	IMAGE_BITMAP, 0, 0, style);
+	tbClearCompare.hToolbarBmp =
+			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_CLEARCOMPARE),	IMAGE_BITMAP, 0, 0, style);
+	tbFirst.hToolbarBmp =
+			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_FIRST),	IMAGE_BITMAP, 0, 0, style);
+	tbPrev.hToolbarBmp =
+			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_PREV),	IMAGE_BITMAP, 0, 0, style);
+	tbNext.hToolbarBmp =
+			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NEXT),	IMAGE_BITMAP, 0, 0, style);
+	tbLast.hToolbarBmp =
+			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_LAST),	IMAGE_BITMAP, 0, 0, style);
+	tbNavBar.hToolbarBmp =
+			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NAVBAR),	IMAGE_BITMAP, 0, 0, style);
 
-	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_FIRST]._cmdID,	(LPARAM)&tbFirst);
-	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_PREV]._cmdID,	(LPARAM)&tbPrev);
-	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_NEXT]._cmdID,	(LPARAM)&tbNext);
-	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[CMD_LAST]._cmdID,	(LPARAM)&tbLast);
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
+			(WPARAM)funcItem[CMD_SET_FIRST]._cmdID,		(LPARAM)&tbSetFirst);
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
+			(WPARAM)funcItem[CMD_COMPARE]._cmdID,		(LPARAM)&tbCompare);
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
+			(WPARAM)funcItem[CMD_CLEAR_ACTIVE]._cmdID,	(LPARAM)&tbClearCompare);
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
+			(WPARAM)funcItem[CMD_FIRST]._cmdID,			(LPARAM)&tbFirst);
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
+			(WPARAM)funcItem[CMD_PREV]._cmdID,			(LPARAM)&tbPrev);
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
+			(WPARAM)funcItem[CMD_NEXT]._cmdID,			(LPARAM)&tbNext);
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
+			(WPARAM)funcItem[CMD_LAST]._cmdID,			(LPARAM)&tbLast);
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
+			(WPARAM)funcItem[CMD_NAV_BAR]._cmdID,		(LPARAM)&tbNavBar);
 
 	NppSettings::get().updatePluginMenu();
 
@@ -1805,7 +1850,7 @@ void onToolBarReady()
 			(LPARAM)Settings.IncludeSpace);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID,
 			(LPARAM)Settings.DetectMove);
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_USE_NAV_BAR]._cmdID,
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID,
 			(LPARAM)Settings.UseNavBar);
 }
 
@@ -2100,7 +2145,7 @@ bool progressUpdate(int mid)
 void ViewNavigationBar()
 {
 	Settings.UseNavBar = !Settings.UseNavBar;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_USE_NAV_BAR]._cmdID,
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID,
 			(LPARAM)Settings.UseNavBar);
 
 	if (NppSettings::get().compareMode)

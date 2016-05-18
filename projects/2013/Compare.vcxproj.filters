@@ -140,16 +140,28 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\res\first.bmp">
+    <None Include="..\..\res\FirstToCompare.bmp">
       <Filter>res</Filter>
     </None>
-    <None Include="..\..\res\last.bmp">
+    <None Include="..\..\res\Compare.bmp">
       <Filter>res</Filter>
     </None>
-    <None Include="..\..\res\next.bmp">
+    <None Include="..\..\res\ClearCompare.bmp">
       <Filter>res</Filter>
     </None>
-    <None Include="..\..\res\prev.bmp">
+    <None Include="..\..\res\First.bmp">
+      <Filter>res</Filter>
+    </None>
+    <None Include="..\..\res\Last.bmp">
+      <Filter>res</Filter>
+    </None>
+    <None Include="..\..\res\Next.bmp">
+      <Filter>res</Filter>
+    </None>
+    <None Include="..\..\res\Prev.bmp">
+      <Filter>res</Filter>
+    </None>
+    <None Include="..\..\res\NavBar.bmp">
       <Filter>res</Filter>
     </None>
     <None Include="..\..\license.txt" />

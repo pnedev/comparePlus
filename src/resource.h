@@ -26,11 +26,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define IDD_SETTINGS_DIALOG				103
 #define IDD_NAV_DIALOG                  104
 
-#define IDB_FIRST                       120
-#define IDB_LAST                        121
-#define IDB_NEXT                        122
-#define IDB_PREV                        123
-#define IDB_ICON                        124
+#define IDB_SETFIRST					120
+#define IDB_COMPARE						121
+#define IDB_CLEARCOMPARE				122
+#define IDB_FIRST                       123
+#define IDB_LAST                        124
+#define IDB_NEXT                        125
+#define IDB_PREV                        126
+#define IDB_NAVBAR						127
+#define IDB_ICON                        128
 
 #define IDC_EMAIL_LINK5                 1010
 #define IDC_NPP_PLUGINS_URL3            1011

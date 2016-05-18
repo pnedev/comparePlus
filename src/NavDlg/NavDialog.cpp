@@ -60,7 +60,7 @@ void NavDialog::doDialog(bool willBeShown)
 		_data.uMask			= DWS_DF_CONT_RIGHT | DWS_ICONTAB;
 		_data.pszName       = TEXT("Compare NavBar");
 		_data.pszModuleName	= getPluginFileName();
-		_data.dlgID			= CMD_USE_NAV_BAR;
+		_data.dlgID			= CMD_NAV_BAR;
 		_data.hIconTab		= (HICON)::LoadImage(GetModuleHandle(TEXT("ComparePlugin.dll")),
 				MAKEINTRESOURCE(IDB_ICON), IMAGE_ICON, 0, 0, LR_SHARED | LR_DEFAULTSIZE);
 
