@@ -617,9 +617,8 @@ NewCompare::NewCompare(bool currFileIsNew, bool firstManuallySet)
 			TCHAR tabText[128];
 			tab.pszText = tabText;
 
-			_tcscpy_s(tabText, _countof(tabText), _firstTabText);
-			_tcscat_s(tabText, _countof(tabText), Settings.OldFileIsFirst ?
-					TEXT(" (Old to Compare)") : TEXT(" (New to Compare)"));
+			_sntprintf_s(tabText, _countof(tabText), _TRUNCATE, TEXT("%s ** %s to Compare"),
+					_firstTabText, Settings.OldFileIsFirst ? TEXT("Old") : TEXT("New"));
 
 			TabCtrl_SetItem(hNppTabBar, pair.file[0].originalPos, &tab);
 		}
@@ -641,7 +640,7 @@ NewCompare::~NewCompare()
 			tab.mask = TCIF_TEXT;
 			tab.pszText = _firstTabText;
 
-			TabCtrl_SetItem(hNppTabBar, pair.file[0].originalPos, &tab);
+			TabCtrl_SetItem(hNppTabBar, posFromBuffId(pair.file[0].buffId), &tab);
 
 			::UpdateWindow(hNppTabBar);
 		}
@@ -2252,14 +2251,14 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		break;
 
 		case NPPN_FILEBEFORECLOSE:
-			if (!notificationsLock && !compareList.empty())
+			if ((bool)newCompare && (newCompare->pair.file[0].buffId == (int)notifyCode->nmhdr.idFrom))
+				newCompare.reset();
+			else if (!notificationsLock && !compareList.empty())
 				onFileBeforeClose(notifyCode->nmhdr.idFrom);
 		break;
 
 		case NPPN_FILECLOSED:
-			if ((bool)newCompare && (newCompare->pair.file[0].buffId == (int)notifyCode->nmhdr.idFrom))
-				newCompare.reset();
-			else if (!notificationsLock && !compareList.empty())
+			if (!notificationsLock && !compareList.empty())
 				onFileClosed();
 		break;
 
