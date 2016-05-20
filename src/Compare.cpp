@@ -950,7 +950,7 @@ bool setFirst(bool currFileIsNew, bool manuallySet = false)
 {
 	HWND view = getCurrentView();
 
-	if (isFileEmpty(view) || isFileCompared(view))
+	if (isFileCompared(view))
 		return false;
 
 	// Done on purpose: First wipe the std::unique_ptr so ~NewCompare is called before the new object constructor.
@@ -966,17 +966,9 @@ bool initNewCompare()
 {
 	bool firstIsSet = (bool)newCompare;
 
-	if (firstIsSet)
-	{
-		if (isFileEmpty(getView(newCompare->pair.file[0].originalViewId)))
-			return false;
-
-		// Compare to self?
-		if (newCompare->pair.file[0].buffId == getCurrentBuffId())
-			firstIsSet = false;
-		else if (isFileEmpty(getCurrentView()))
-			return false;
-	}
+	// Compare to self?
+	if (firstIsSet && (newCompare->pair.file[0].buffId == getCurrentBuffId()))
+		firstIsSet = false;
 
 	if (!firstIsSet)
 	{
@@ -997,19 +989,13 @@ bool initNewCompare()
 
 			::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0,
 					Settings.OldFileViewId == MAIN_VIEW ? IDM_VIEW_TAB_PREV : IDM_VIEW_TAB_NEXT);
-
-			if (isFileEmpty(getCurrentView()))
-			{
-				activateBufferID(newCompare->pair.file[0].buffId);
-				return false;
-			}
 		}
 		else
 		{
 			HWND otherView = getOtherView();
 
 			// Check if the file in the other view is compared already
-			if (isFileEmpty(otherView) || isFileCompared(otherView))
+			if (isFileCompared(otherView))
 				return false;
 
 			::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SWITCHTO_OTHER_VIEW);
@@ -1069,15 +1055,9 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 	const DocLines_t doc1 = getAllLines(view1, lineNum1);
 	const int doc1Length = doc1.size();
 
-	if (doc1Length == 1 && doc1[0][0] == 0)
-		return COMPARE_CANCELLED;
-
 	std::vector<int> lineNum2;
 	const DocLines_t doc2 = getAllLines(view2, lineNum2);
 	const int doc2Length = doc2.size();
-
-	if (doc2Length == 1 && doc2[0][0] == 0)
-		return COMPARE_CANCELLED;
 
 	progressOpen(TEXT("Computing hashes..."));
 
@@ -1381,12 +1361,6 @@ void Compare()
 		recompare = true;
 
 		newCompare.reset();
-
-		if (isFileEmpty(nppData._scintillaMainHandle) || isFileEmpty(nppData._scintillaSecondHandle))
-		{
-			clearComparePair(currentBuffId);
-			return;
-		}
 
 		location.saveCurrent();
 
