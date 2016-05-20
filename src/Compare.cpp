@@ -617,9 +617,8 @@ NewCompare::NewCompare(bool currFileIsNew, bool firstManuallySet)
 			TCHAR tabText[128];
 			tab.pszText = tabText;
 
-			_tcscpy_s(tabText, _countof(tabText), _firstTabText);
-			_tcscat_s(tabText, _countof(tabText), Settings.OldFileIsFirst ?
-					TEXT(" (Old to Compare)") : TEXT(" (New to Compare)"));
+			_sntprintf_s(tabText, _countof(tabText), _TRUNCATE, TEXT("%s ** %s to Compare"),
+					_firstTabText, Settings.OldFileIsFirst ? TEXT("Old") : TEXT("New"));
 
 			TabCtrl_SetItem(hNppTabBar, pair.file[0].originalPos, &tab);
 		}
@@ -641,7 +640,7 @@ NewCompare::~NewCompare()
 			tab.mask = TCIF_TEXT;
 			tab.pszText = _firstTabText;
 
-			TabCtrl_SetItem(hNppTabBar, pair.file[0].originalPos, &tab);
+			TabCtrl_SetItem(hNppTabBar, posFromBuffId(pair.file[0].buffId), &tab);
 
 			::UpdateWindow(hNppTabBar);
 		}
@@ -951,7 +950,7 @@ bool setFirst(bool currFileIsNew, bool manuallySet = false)
 {
 	HWND view = getCurrentView();
 
-	if (isFileEmpty(view) || isFileCompared(view))
+	if (isFileCompared(view))
 		return false;
 
 	// Done on purpose: First wipe the std::unique_ptr so ~NewCompare is called before the new object constructor.
@@ -967,17 +966,9 @@ bool initNewCompare()
 {
 	bool firstIsSet = (bool)newCompare;
 
-	if (firstIsSet)
-	{
-		if (isFileEmpty(getView(newCompare->pair.file[0].originalViewId)))
-			return false;
-
-		// Compare to self?
-		if (newCompare->pair.file[0].buffId == getCurrentBuffId())
-			firstIsSet = false;
-		else if (isFileEmpty(getCurrentView()))
-			return false;
-	}
+	// Compare to self?
+	if (firstIsSet && (newCompare->pair.file[0].buffId == getCurrentBuffId()))
+		firstIsSet = false;
 
 	if (!firstIsSet)
 	{
@@ -998,19 +989,13 @@ bool initNewCompare()
 
 			::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0,
 					Settings.OldFileViewId == MAIN_VIEW ? IDM_VIEW_TAB_PREV : IDM_VIEW_TAB_NEXT);
-
-			if (isFileEmpty(getCurrentView()))
-			{
-				activateBufferID(newCompare->pair.file[0].buffId);
-				return false;
-			}
 		}
 		else
 		{
 			HWND otherView = getOtherView();
 
 			// Check if the file in the other view is compared already
-			if (isFileEmpty(otherView) || isFileCompared(otherView))
+			if (isFileCompared(otherView))
 				return false;
 
 			::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SWITCHTO_OTHER_VIEW);
@@ -1070,15 +1055,9 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 	const DocLines_t doc1 = getAllLines(view1, lineNum1);
 	const int doc1Length = doc1.size();
 
-	if (doc1Length == 1 && doc1[0][0] == 0)
-		return COMPARE_CANCELLED;
-
 	std::vector<int> lineNum2;
 	const DocLines_t doc2 = getAllLines(view2, lineNum2);
 	const int doc2Length = doc2.size();
-
-	if (doc2Length == 1 && doc2[0][0] == 0)
-		return COMPARE_CANCELLED;
 
 	progressOpen(TEXT("Computing hashes..."));
 
@@ -1382,12 +1361,6 @@ void Compare()
 		recompare = true;
 
 		newCompare.reset();
-
-		if (isFileEmpty(nppData._scintillaMainHandle) || isFileEmpty(nppData._scintillaSecondHandle))
-		{
-			clearComparePair(currentBuffId);
-			return;
-		}
 
 		location.saveCurrent();
 
@@ -2252,14 +2225,14 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		break;
 
 		case NPPN_FILEBEFORECLOSE:
-			if (!notificationsLock && !compareList.empty())
+			if ((bool)newCompare && (newCompare->pair.file[0].buffId == (int)notifyCode->nmhdr.idFrom))
+				newCompare.reset();
+			else if (!notificationsLock && !compareList.empty())
 				onFileBeforeClose(notifyCode->nmhdr.idFrom);
 		break;
 
 		case NPPN_FILECLOSED:
-			if ((bool)newCompare && (newCompare->pair.file[0].buffId == (int)notifyCode->nmhdr.idFrom))
-				newCompare.reset();
-			else if (!notificationsLock && !compareList.empty())
+			if (!notificationsLock && !compareList.empty())
 				onFileClosed();
 		break;
 
