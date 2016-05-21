@@ -33,7 +33,7 @@ BOOL CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*lPa
 		case WM_INITDIALOG :
 		{
 			_emailLinkJSL.init(_hInst, _hSelf);
-			_emailLinkJSL.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK_JSL), TEXT("mailto:jean.sebastien.leroy@club-internet.fr"));
+			_emailLinkJSL.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK_JSL), TEXT("mailto:jean.sebastien.leroy@gmail.com"));
 			_emailLinkPND.init(_hInst, _hSelf);
 			_emailLinkPND.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK_PND), TEXT("mailto:pg.nedev@gmail.com"));
 			_urlOriginalRepo.init(_hInst, _hSelf);
