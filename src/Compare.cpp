@@ -802,7 +802,7 @@ bool setFirst(bool currFileIsNew, bool markName = false)
 }
 
 
-void createTempFile(const char* content, long size)
+void createTempFile(const char* content, long size, const TCHAR* mark)
 {
 	int buffId = getCurrentBuffId();
 
@@ -840,24 +840,24 @@ void createTempFile(const char* content, long size)
 
 		const TCHAR* firstName = ::PathFindFileName(newCompare->pair.file[0].name);
 
-		_sntprintf_s(tabText, _countof(tabText), _TRUNCATE, TEXT("%s ** Original"), firstName);
+		_sntprintf_s(tabText, _countof(tabText), _TRUNCATE, TEXT("%s ** %s"), firstName, mark);
 
 		TabCtrl_SetItem(hNppTabBar, posFromBuffId(buffId), &tab);
 	}
 }
 
 
-void readFile(const TCHAR *file)
+bool readFile(const TCHAR *file, const TCHAR* mark)
 {
 	if (::PathFileExists(file) == FALSE)
 	{
 		::MessageBox(nppData._nppHandle, TEXT("File is not written to disk - operation ignored."),
 				TEXT("Compare Plugin"), MB_OK);
-		return;
+		return false;
 	}
 
 	if (!setFirst(true))
-		return;
+		return false;
 
 	FILE* fd;
 	_tfopen_s(&fd, file, _T("rb"));
@@ -869,7 +869,7 @@ void readFile(const TCHAR *file)
 
 		newCompare.reset();
 
-		return;
+		return false;
 	}
 
 	fseek(fd, 0, SEEK_END);
@@ -880,7 +880,9 @@ void readFile(const TCHAR *file)
 	fread(content.data(), 1, size, fd);
 	fclose(fd);
 
-	createTempFile(content.data(), size);
+	createTempFile(content.data(), size, mark);
+
+	return true;
 }
 
 
@@ -1449,9 +1451,8 @@ void LastSaveDiff()
 	TCHAR file[MAX_PATH];
 	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
 
-	readFile(file);
-
-	Compare();
+	if (readFile(file, TEXT("Last Save")))
+		Compare();
 }
 
 
@@ -1479,9 +1480,8 @@ void SvnDiff()
 			{
 				if (GetSvnBaseFile(curDirCanon, svnDir, file, svnBaseFile, _countof(svnBaseFile)))
 				{
-					readFile(svnBaseFile);
-
-					Compare();
+					if (readFile(svnBaseFile, TEXT("SVN")))
+						Compare();
 
 					return;
 				}
@@ -1523,7 +1523,7 @@ void GitDiff()
 
 				if (size)
 				{
-					createTempFile((const char*)hMem, size);
+					createTempFile((const char*)hMem, size, TEXT("Git"));
 					::GlobalFree(hMem);
 
 					Compare();
