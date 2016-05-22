@@ -1245,6 +1245,9 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		addBlankSection(view1, off + doc1Offset, length);
 	}
 
+	if (isCompareCancelled())
+		return COMPARE_CANCELLED;
+
 	progressClose();
 
 	return FILES_DIFFER;
