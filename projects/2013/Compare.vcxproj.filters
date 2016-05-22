@@ -143,10 +143,19 @@
     <None Include="..\..\res\FirstToCompare.bmp">
       <Filter>res</Filter>
     </None>
+    <None Include="..\..\res\FirstToCompareRTL.bmp">
+      <Filter>res</Filter>
+    </None>
     <None Include="..\..\res\Compare.bmp">
       <Filter>res</Filter>
     </None>
+    <None Include="..\..\res\CompareRTL.bmp">
+      <Filter>res</Filter>
+    </None>
     <None Include="..\..\res\ClearCompare.bmp">
+      <Filter>res</Filter>
+    </None>
+    <None Include="..\..\res\ClearCompareRTL.bmp">
       <Filter>res</Filter>
     </None>
     <None Include="..\..\res\First.bmp">
@@ -162,6 +171,9 @@
       <Filter>res</Filter>
     </None>
     <None Include="..\..\res\NavBar.bmp">
+      <Filter>res</Filter>
+    </None>
+    <None Include="..\..\res\NavBarRTL.bmp">
       <Filter>res</Filter>
     </None>
     <None Include="..\..\license.txt" />

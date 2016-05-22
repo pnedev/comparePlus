@@ -1780,12 +1780,31 @@ void onToolBarReady()
 {
 	UINT style = (LR_SHARED | LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS);
 
-	tbSetFirst.hToolbarBmp =
-			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_SETFIRST),	IMAGE_BITMAP, 0, 0, style);
-	tbCompare.hToolbarBmp =
-			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_COMPARE),	IMAGE_BITMAP, 0, 0, style);
-	tbClearCompare.hToolbarBmp =
-			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_CLEARCOMPARE),	IMAGE_BITMAP, 0, 0, style);
+	const bool isRTL = ((::GetWindowLong(nppData._nppHandle, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0);
+
+	if (isRTL)
+	{
+		tbSetFirst.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_SETFIRST_RTL), IMAGE_BITMAP, 0, 0, style);
+		tbCompare.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_COMPARE_RTL), IMAGE_BITMAP, 0, 0, style);
+		tbClearCompare.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_CLEARCOMPARE_RTL), IMAGE_BITMAP, 0, 0, style);
+		tbNavBar.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NAVBAR_RTL), IMAGE_BITMAP, 0, 0, style);
+	}
+	else
+	{
+		tbSetFirst.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_SETFIRST), IMAGE_BITMAP, 0, 0, style);
+		tbCompare.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_COMPARE), IMAGE_BITMAP, 0, 0, style);
+		tbClearCompare.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_CLEARCOMPARE), IMAGE_BITMAP, 0, 0, style);
+		tbNavBar.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NAVBAR), IMAGE_BITMAP, 0, 0, style);
+	}
+
 	tbFirst.hToolbarBmp =
 			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_FIRST),	IMAGE_BITMAP, 0, 0, style);
 	tbPrev.hToolbarBmp =
@@ -1794,8 +1813,6 @@ void onToolBarReady()
 			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NEXT),	IMAGE_BITMAP, 0, 0, style);
 	tbLast.hToolbarBmp =
 			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_LAST),	IMAGE_BITMAP, 0, 0, style);
-	tbNavBar.hToolbarBmp =
-			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NAVBAR),	IMAGE_BITMAP, 0, 0, style);
 
 	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
 			(WPARAM)funcItem[CMD_SET_FIRST]._cmdID,		(LPARAM)&tbSetFirst);
