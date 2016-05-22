@@ -752,19 +752,6 @@ void showNavBar()
 }
 
 
-// bool isFileEmpty(HWND view)
-// {
-	// if (::SendMessage(view, SCI_GETLENGTH, 0, 0) == 0)
-	// {
-		// ::MessageBox(nppData._nppHandle, TEXT("Trying to compare empty file - operation ignored."),
-				// TEXT("Compare Plugin"), MB_OK);
-		// return true;
-	// }
-
-	// return false;
-// }
-
-
 bool isFileCompared(HWND view)
 {
 	const int sciDoc = getDocId(view);
@@ -783,6 +770,25 @@ bool isFileCompared(HWND view)
 	}
 
 	return false;
+}
+
+
+bool isEncodingOK(const ComparedPair& cmpPair)
+{
+	// Warn about encoding mismatches as that might compromise the compare
+	if (::SendMessage(nppData._nppHandle, NPPM_GETBUFFERENCODING, cmpPair.file[0].buffId, 0) !=
+		::SendMessage(nppData._nppHandle, NPPM_GETBUFFERENCODING, cmpPair.file[1].buffId, 0))
+	{
+		if (::MessageBox(nppData._nppHandle,
+			TEXT("Trying to compare files with different encodings - \n")
+			TEXT("the result might be inaccurate and misleading.\n\n")
+			TEXT("Compare anyway?"), TEXT("Compare Plugin"), MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES)
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 
@@ -974,22 +980,6 @@ bool initNewCompare()
 				return false;
 
 			::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SWITCHTO_OTHER_VIEW);
-		}
-	}
-
-	// Warn about encoding mismatches as that might compromise the compare
-	if (::SendMessage(nppData._nppHandle, NPPM_GETBUFFERENCODING, newCompare->pair.file[0].buffId, 0) !=
-		::SendMessage(nppData._nppHandle, NPPM_GETBUFFERENCODING, getCurrentBuffId(), 0))
-	{
-		if (::MessageBox(nppData._nppHandle,
-			TEXT("Trying to compare files with different encodings - \n")
-			TEXT("the result might be inaccurate and misleading.\n\n")
-			TEXT("Compare anyway?"), TEXT("Compare Plugin"), MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES)
-		{
-			if (!firstIsSet)
-				activateBufferID(newCompare->pair.file[0].buffId);
-
-			return false;
 		}
 	}
 
@@ -1350,7 +1340,18 @@ void Compare()
 		newFile.updateView();
 	}
 
-	switch (runCompare(cmpPair))
+	CompareResult_t cmpResult;
+
+	if (!isEncodingOK(*cmpPair))
+	{
+		cmpResult = COMPARE_CANCELLED;
+	}
+	else
+	{
+		cmpResult = runCompare(cmpPair);
+	}
+
+	switch (cmpResult)
 	{
 		case FILES_DIFFER:
 		{

@@ -158,6 +158,12 @@ inline bool isSingleView()
 }
 
 
+inline bool isFileEmpty(HWND view)
+{
+	return (::SendMessage(view, SCI_GETLENGTH, 0, 0) == 0);
+}
+
+
 inline int getNumberOfFiles(int viewId)
 {
 	return ::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, viewId == MAIN_VIEW ? PRIMARY_VIEW : SECOND_VIEW);
