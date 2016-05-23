@@ -1036,14 +1036,15 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 	progressFillCompareInfo(cmpPair);
 
 	std::vector<diff_edit> diff = DiffCalc<unsigned int>(doc1Hashes, doc2Hashes)();
+
+	if (isCompareCancelled())
+		return COMPARE_CANCELLED;
+
 	if (diff.empty())
 	{
 		progressClose();
 		return FILES_MATCH;
 	}
-
-	if (isCompareCancelled())
-		return COMPARE_CANCELLED;
 
 	const std::size_t diffSize = diff.size();
 
@@ -1127,14 +1128,14 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		}
 	}
 
+	if (isCompareCancelled())
+		return COMPARE_CANCELLED;
+
 	if ((doc1ChangedLinesCount == 0) && (doc2ChangedLinesCount == 0))
 	{
 		progressClose();
 		return FILES_MATCH;
 	}
-
-	if (isCompareCancelled())
-		return COMPARE_CANCELLED;
 
 	for (int i = 0; i < doc1ChangedLinesCount; ++i)
 	{
