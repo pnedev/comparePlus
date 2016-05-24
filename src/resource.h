@@ -29,16 +29,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define IDB_SETFIRST					120
 #define IDB_SETFIRST_RTL				121
 #define IDB_COMPARE						122
-#define IDB_COMPARE_RTL					123
-#define IDB_CLEARCOMPARE				124
-#define IDB_CLEARCOMPARE_RTL			125
-#define IDB_FIRST                       126
-#define IDB_LAST                        127
-#define IDB_NEXT                        128
-#define IDB_PREV                        129
-#define IDB_NAVBAR						130
-#define IDB_NAVBAR_RTL					131
-#define IDB_ICON                        132
+#define IDB_CLEARCOMPARE				123
+#define IDB_FIRST                       124
+#define IDB_LAST                        125
+#define IDB_PREV                        126
+#define IDB_NEXT                        127
+#define IDB_NAVBAR						128
+#define IDB_ICON                        129
 
 #define IDC_EMAIL_LINK5                 1010
 #define IDC_NPP_PLUGINS_URL3            1011

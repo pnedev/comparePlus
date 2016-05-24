@@ -176,15 +176,12 @@
     <None Include="..\..\res\FirstToCompare.bmp" />
     <None Include="..\..\res\FirstToCompareRTL.bmp" />
     <None Include="..\..\res\Compare.bmp" />
-    <None Include="..\..\res\CompareRTL.bmp" />
     <None Include="..\..\res\ClearCompare.bmp" />
-    <None Include="..\..\res\ClearCompareRTL.bmp" />
     <None Include="..\..\res\First.bmp" />
     <None Include="..\..\res\Last.bmp" />
-    <None Include="..\..\res\Next.bmp" />
     <None Include="..\..\res\Prev.bmp" />
+    <None Include="..\..\res\Next.bmp" />
     <None Include="..\..\res\NavBar.bmp" />
-    <None Include="..\..\res\NavBarRTL.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

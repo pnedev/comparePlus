@@ -193,15 +193,12 @@ END
 IDB_SETFIRST			BITMAP	"../res/FirstToCompare.bmp"
 IDB_SETFIRST_RTL		BITMAP	"../res/FirstToCompareRTL.bmp"
 IDB_COMPARE				BITMAP	"../res/Compare.bmp"
-IDB_COMPARE_RTL			BITMAP	"../res/CompareRTL.bmp"
 IDB_CLEARCOMPARE		BITMAP	"../res/ClearCompare.bmp"
-IDB_CLEARCOMPARE_RTL	BITMAP	"../res/ClearCompareRTL.bmp"
 IDB_FIRST				BITMAP	"../res/First.bmp"
 IDB_LAST				BITMAP	"../res/Last.bmp"
-IDB_NEXT				BITMAP	"../res/Next.bmp"
 IDB_PREV				BITMAP	"../res/Previous.bmp"
+IDB_NEXT				BITMAP	"../res/Next.bmp"
 IDB_NAVBAR				BITMAP	"../res/NavBar.bmp"
-IDB_NAVBAR_RTL			BITMAP	"../res/NavBarRTL.bmp"
 
 IDB_ICON				ICON	"../res/Compare.ico"
 
