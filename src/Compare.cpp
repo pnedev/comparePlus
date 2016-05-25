@@ -495,7 +495,8 @@ void ComparedFile::initFromCurrent(bool currFileIsNew)
 	buffId = getCurrentBuffId();
 	originalViewId = getCurrentViewId();
 	originalPos = posFromBuffId(buffId);
-	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(name), (LPARAM)name);
+	if (!isTemp)
+		::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(name), (LPARAM)name);
 
 	updateFromCurrent();
 	updateView();
@@ -810,10 +811,12 @@ bool setFirst(bool currFileIsNew, bool markName = false)
 
 void createTempFile(const char* content, long size, const TCHAR* mark)
 {
+	HWND view = getCurrentView();
 	int buffId = getCurrentBuffId();
 
-	const LangType currLang = (LangType)::SendMessage(nppData._nppHandle, NPPM_GETBUFFERLANGTYPE, buffId, 0);
+	const int currLang = ::SendMessage(nppData._nppHandle, NPPM_GETBUFFERLANGTYPE, buffId, 0);
 	const int currEnc = ::SendMessage(nppData._nppHandle, NPPM_GETBUFFERENCODING, buffId, 0);
+	const int currFormat = ::SendMessage(nppData._nppHandle, NPPM_GETBUFFERFORMAT, buffId, 0);
 
 	ScopedIncrementer incr(notificationsLock);
 
@@ -823,8 +826,7 @@ void createTempFile(const char* content, long size, const TCHAR* mark)
 
 	::SendMessage(nppData._nppHandle, NPPM_SETBUFFERLANGTYPE, buffId, currLang);
 	::SendMessage(nppData._nppHandle, NPPM_SETBUFFERENCODING, buffId, currEnc);
-
-	HWND view = getCurrentView();
+	::SendMessage(nppData._nppHandle, NPPM_SETBUFFERFORMAT, buffId, currFormat);
 
 	ScopedViewUndoCollectionBlocker undoBlock(view);
 
@@ -838,15 +840,14 @@ void createTempFile(const char* content, long size, const TCHAR* mark)
 	HWND hNppTabBar = NppTabHandleGetter::get(getCurrentViewId());
 	if (hNppTabBar)
 	{
-		TCHAR tabText[128];
-
 		TCITEM tab;
 		tab.mask = TCIF_TEXT;
-		tab.pszText = tabText;
+		tab.pszText = newCompare->pair.file[1].name;
 
 		const TCHAR* firstName = ::PathFindFileName(newCompare->pair.file[0].name);
 
-		_sntprintf_s(tabText, _countof(tabText), _TRUNCATE, TEXT("%s ** %s"), firstName, mark);
+		_sntprintf_s(newCompare->pair.file[1].name, _countof(newCompare->pair.file[1].name), _TRUNCATE,
+				TEXT("%s ** %s"), firstName, mark);
 
 		TabCtrl_SetItem(hNppTabBar, posFromBuffId(buffId), &tab);
 	}
@@ -1448,13 +1449,6 @@ void ClearAllCompares()
 
 void LastSaveDiff()
 {
-	if (!::SendMessage(getCurrentView(), SCI_GETMODIFY, 0, 0))
-	{
-		::MessageBox(nppData._nppHandle, TEXT("File is not modified - operation ignored."),
-				TEXT("Compare Plugin"), MB_OK);
-		return;
-	}
-
 	TCHAR file[MAX_PATH];
 	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
 
