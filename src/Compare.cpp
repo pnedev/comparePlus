@@ -565,6 +565,8 @@ ComparedFile& ComparedPair::getNewFile()
 
 void ComparedPair::positionFiles()
 {
+	const int currentBuffId = getCurrentBuffId();
+
 	ComparedFile& oldFile = getOldFile();
 	ComparedFile& newFile = getNewFile();
 
@@ -589,6 +591,8 @@ void ComparedPair::positionFiles()
 
 	if (newFile.sciDoc != getDocId(getView(newFile.compareViewId)))
 		activateBufferID(newFile.buffId);
+
+	activateBufferID(currentBuffId);
 }
 
 
@@ -1324,6 +1328,8 @@ void Compare()
 		}
 
 		cmpPair = addComparePair();
+
+		activateBufferID(currentBuffId);
 	}
 	// Re-Compare triggered - clear current results
 	else
@@ -1351,7 +1357,15 @@ void Compare()
 
 	if (!isEncodingOK(*cmpPair))
 	{
-		cmpResult = COMPARE_CANCELLED;
+		if (recompare)
+		{
+			cmpResult = COMPARE_CANCELLED;
+		}
+		else
+		{
+			compareList.erase(cmpPair);
+			return;
+		}
 	}
 	else
 	{
@@ -1373,9 +1387,7 @@ void Compare()
 			}
 			else
 			{
-				if (doubleView)
-					activateBufferID(currentBuffId);
-				else
+				if (!doubleView)
 					activateBufferID(cmpPair->getNewFile().buffId);
 
 				First();
@@ -1396,12 +1408,12 @@ void Compare()
 					MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2) == IDYES)
 				closeComparePair(cmpPair);
 			else
-				ClearActiveCompare();
+				clearComparePair(getCurrentBuffId());
 		}
 		break;
 
 		default:
-			ClearActiveCompare();
+			clearComparePair(getCurrentBuffId());
 	}
 }
 
@@ -1535,7 +1547,7 @@ void GitDiff()
 		}
 	}
 
-	::MessageBox(nppData._nppHandle, TEXT("Can not locate GIT information."), TEXT("Compare Plugin"), MB_OK);
+	::MessageBox(nppData._nppHandle, TEXT("Can not locate Git information."), TEXT("Compare Plugin"), MB_OK);
 }
 
 
@@ -1669,7 +1681,7 @@ void createMenu()
 	funcItem[CMD_SVN_DIFF]._pShKey->_isShift	= false;
 	funcItem[CMD_SVN_DIFF]._pShKey->_key 		= 'V';
 
-	_tcscpy_s(funcItem[CMD_GIT_DIFF]._itemName, nbChar, TEXT("GIT Diff"));
+	_tcscpy_s(funcItem[CMD_GIT_DIFF]._itemName, nbChar, TEXT("Git Diff"));
 	funcItem[CMD_GIT_DIFF]._pFunc 				= GitDiff;
 	funcItem[CMD_GIT_DIFF]._pShKey 				= new ShortcutKey;
 	funcItem[CMD_GIT_DIFF]._pShKey->_isAlt 		= true;
