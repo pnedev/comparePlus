@@ -21,6 +21,8 @@
 #include <vector>
 #include <memory>
 
+#include <windows.h>
+#include <tchar.h>
 #include <shlwapi.h>
 
 #include "Compare.h"
@@ -277,6 +279,10 @@ struct ComparedFile
 	void initFromCurrent(bool currFileIsNew);
 	void updateFromCurrent();
 	void updateView();
+	void clear();
+	void onBeforeClose();
+	void onClose();
+	void close();
 	void restore();
 
 	bool	isTemp;
@@ -387,10 +393,7 @@ FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
 
 
 // Declare local functions that appear before they are defined
-void Compare();
-void ClearActiveCompare();
 void First();
-void onBufferActivated(int buffId);
 void onBufferActivatedDelayed(int buffId);
 
 
@@ -517,21 +520,66 @@ void ComparedFile::updateView()
 }
 
 
+void ComparedFile::clear()
+{
+	clearWindow(getView(compareViewId));
+
+	deletedSections.clear();
+
+	updateView();
+}
+
+
+void ComparedFile::onBeforeClose()
+{
+	if (buffId != getCurrentBuffId())
+		activateBufferID(buffId);
+
+	HWND view = getCurrentView();
+	clearWindow(view);
+
+	if (isTemp)
+		::SendMessage(view, SCI_SETSAVEPOINT, true, 0);
+}
+
+
+void ComparedFile::onClose()
+{
+	if (isTemp)
+	{
+		::SetFileAttributes(name, FILE_ATTRIBUTE_NORMAL);
+		::DeleteFile(name);
+	}
+}
+
+
+void ComparedFile::close()
+{
+	onBeforeClose();
+
+	::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
+
+	onClose();
+}
+
+
 void ComparedFile::restore()
 {
+	if (isTemp)
+	{
+		close();
+		return;
+	}
+
 	if (buffId != getCurrentBuffId())
 		activateBufferID(buffId);
 
 	clearWindow(getCurrentView());
 
-	if (isTemp)
-	{
-		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
-		::DeleteFile(name);
-	}
-	else if (compareViewId != originalViewId)
+	if (compareViewId != originalViewId)
 	{
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
+		// TODO: Restore file original position here
 	}
 }
 
@@ -611,7 +659,7 @@ NewCompare::NewCompare(bool currFileIsNew, bool markFirstName)
 
 	pair.file[0].initFromCurrent(currFileIsNew);
 
-	// Enable ClearActiveCompare command to be able to clear the first file that was just set
+	// Enable commands to be able to clear the first file that was just set
 	NppSettings::get().enableClearCommands();
 
 	if (markFirstName)
@@ -856,6 +904,7 @@ bool createTempFile(const TCHAR *file, const TCHAR* nameMark)
 			_tcscat_s(tempFile, _countof(tempFile), TEXT("_"));
 			_tcscat_s(tempFile, _countof(tempFile), nameMark);
 
+			// Overwrite if file exists already
 			if (::CopyFile(file, tempFile, FALSE))
 			{
 				::SetFileAttributes(tempFile, FILE_ATTRIBUTE_TEMPORARY);
@@ -867,10 +916,24 @@ bool createTempFile(const TCHAR *file, const TCHAR* nameMark)
 
 				if (::SendMessage(nppData._nppHandle, NPPM_DOOPEN, 0, (LPARAM)tempFile))
 				{
-					::SendMessage(nppData._nppHandle, NPPM_SETBUFFERLANGTYPE, getCurrentBuffId(), langType);
+					const int buffId = getCurrentBuffId();
+
+					::SendMessage(nppData._nppHandle, NPPM_SETBUFFERLANGTYPE, buffId, langType);
 					::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_EDIT_SETREADONLY);
 
 					newCompare->pair.file[1].isTemp = true;
+
+					HWND hNppTabBar = NppTabHandleGetter::get(getCurrentViewId());
+					if (hNppTabBar)
+					{
+						TCITEM tab;
+						tab.mask = TCIF_TEXT;
+						tab.pszText = tempFile;
+
+						_sntprintf_s(tempFile, _countof(tempFile), _TRUNCATE, TEXT("%s ** %s"), fileName, nameMark);
+
+						TabCtrl_SetItem(hNppTabBar, posFromBuffId(buffId), &tab);
+					}
 
 					return true;
 				}
@@ -916,17 +979,12 @@ void closeComparePair(CompareList_t::iterator& cmpPair)
 	NppSettings& nppSettings = NppSettings::get();
 	nppSettings.setNormalMode();
 
-	setNormalView(nppData._scintillaMainHandle);
-	setNormalView(nppData._scintillaSecondHandle);
-
 	ScopedIncrementer incr(notificationsLock);
 
 	// First close the file in the SUB_VIEW as closing a file may lead to a single view mode
 	// and if that happens we want to be in single main view
-	activateBufferID(cmpPair->getFileByViewId(SUB_VIEW).buffId);
-	::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
-	activateBufferID(cmpPair->getFileByViewId(MAIN_VIEW).buffId);
-	::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
+	cmpPair->getFileByViewId(SUB_VIEW).close();
+	cmpPair->getFileByViewId(MAIN_VIEW).close();
 
 	compareList.erase(cmpPair);
 
@@ -1332,17 +1390,8 @@ void Compare()
 
 		location.saveCurrent();
 
-		clearWindow(nppData._scintillaMainHandle);
-		clearWindow(nppData._scintillaSecondHandle);
-
-		ComparedFile& oldFile = cmpPair->getOldFile();
-		ComparedFile& newFile = cmpPair->getNewFile();
-
-		oldFile.deletedSections.clear();
-		newFile.deletedSections.clear();
-
-		oldFile.updateView();
-		newFile.updateView();
+		cmpPair->getOldFile().clear();
+		cmpPair->getNewFile().clear();
 	}
 
 	CompareResult_t cmpResult;
@@ -1379,7 +1428,7 @@ void Compare()
 			}
 			else
 			{
-				if (!doubleView)
+				if (!doubleView || cmpPair->getOldFile().isTemp)
 					activateBufferID(cmpPair->getNewFile().buffId);
 
 				First();
@@ -1494,7 +1543,7 @@ void SvnDiff()
 		}
 	}
 
-	::MessageBox(nppData._nppHandle, TEXT("Can not locate SVN information."), TEXT("Compare Plugin"), MB_OK);
+	::MessageBox(nppData._nppHandle, TEXT("Missing SVN data."), TEXT("Compare Plugin"), MB_OK);
 }
 
 
@@ -1547,7 +1596,7 @@ void GitDiff()
 		}
 	}
 
-	::MessageBox(nppData._nppHandle, TEXT("Can not locate Git information."), TEXT("Compare Plugin"), MB_OK);
+	::MessageBox(nppData._nppHandle, TEXT("Missing Git data."), TEXT("Compare Plugin"), MB_OK);
 }
 
 
@@ -2028,8 +2077,11 @@ void onBufferActivated(int buffId)
 	{
 		NppSettings& nppSettings = NppSettings::get();
 		nppSettings.setNormalMode();
+
 		setNormalView(getCurrentView());
+
 		nppSettings.updatePluginMenu();
+
 		return;
 	}
 
@@ -2050,14 +2102,8 @@ void onFileBeforeClose(int buffId)
 
 	ScopedIncrementer incr(notificationsLock);
 
-	if (buffId != currentBuffId)
-		activateBufferID(buffId);
-
-	clearWindow(getCurrentView());
-
+	cmpPair->getFileByBuffId(buffId).onBeforeClose();
 	cmpPair->getOtherFileByBuffId(buffId).restore();
-
-	compareList.erase(cmpPair);
 
 	activateBufferID(currentBuffId);
 
@@ -2065,10 +2111,22 @@ void onFileBeforeClose(int buffId)
 }
 
 
-void onFileClosed()
+void onFileClosed(int buffId)
 {
-	resetCompareView(nppData._scintillaMainHandle);
-	resetCompareView(nppData._scintillaSecondHandle);
+	CompareList_t::iterator cmpPair = getCompare(buffId);
+	if (cmpPair == compareList.end())
+		return;
+
+	cmpPair->getFileByBuffId(buffId).onClose();
+
+	compareList.erase(cmpPair);
+
+	cmpPair = getCompare(getCurrentBuffId());
+	if (cmpPair != compareList.end())
+	{
+		resetCompareView(nppData._scintillaMainHandle);
+		resetCompareView(nppData._scintillaSecondHandle);
+	}
 }
 
 
@@ -2233,7 +2291,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 
 		case NPPN_FILECLOSED:
 			if (!notificationsLock && !compareList.empty())
-				onFileClosed();
+				onFileClosed(notifyCode->nmhdr.idFrom);
 		break;
 
 		case NPPN_FILEBEFORESAVE:
