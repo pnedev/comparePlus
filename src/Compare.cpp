@@ -28,7 +28,7 @@
 #include "Compare.h"
 #include "NPPHelpers.h"
 #include "ScmHelper.h"
-#include "CProgress.h"
+#include "ProgressDlg.h"
 #include "AboutDialog.h"
 #include "SettingsDialog.h"
 #include "NavDialog.h"
@@ -370,10 +370,6 @@ long start_line_old;
 long visible_line_count_old;
 
 std::unique_ptr<SaveNotificationData> saveNotifData;
-
-CProgress* progDlg = NULL;
-int progMax = 0;
-int progCounter = 0;
 
 AboutDialog   	AboutDlg;
 SettingsDialog	SettingsDlg;
@@ -747,56 +743,6 @@ void resetCompareView(HWND view)
 }
 
 
-void progressOpen(const TCHAR* msg)
-{
-	progMax = 0;
-	progCounter = 0;
-	progDlg = new CProgress();
-	progDlg->Open(nppData._nppHandle, TEXT("Compare Plugin"));
-	progDlg->SetInfo(msg);
-
-	::EnableWindow(nppData._nppHandle, FALSE);
-}
-
-
-void progressFillCompareInfo(CompareList_t::iterator& cmpPair)
-{
-	const TCHAR* newName = ::PathFindFileName(cmpPair->getNewFile().name);
-	const TCHAR* oldName = ::PathFindFileName(cmpPair->getOldFile().name);
-
-	TCHAR msg[MAX_PATH];
-	_sntprintf_s(msg, _countof(msg), _TRUNCATE, TEXT("Comparing \"%s\" vs. \"%s\"..."), newName, oldName);
-
-	progDlg->SetInfo(msg);
-}
-
-
-void progressClose()
-{
-	if (progDlg)
-	{
-		::EnableWindow(nppData._nppHandle, TRUE);
-		::SetForegroundWindow(nppData._nppHandle);
-
-		progDlg->Close();
-		delete progDlg;
-		progDlg = NULL;
-	}
-}
-
-
-bool isCompareCancelled()
-{
-	if (progDlg->IsCancelled())
-	{
-		progressClose();
-		return true;
-	}
-
-	return false;
-}
-
-
 void showNavBar()
 {
 	start_line_old = -1;
@@ -1080,24 +1026,30 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 	const DocLines_t doc2 = getAllLines(view2, lineNum2);
 	const int doc2Length = doc2.size();
 
-	progressOpen(TEXT("Computing hashes..."));
+	{
+		const TCHAR* newName = ::PathFindFileName(cmpPair->getNewFile().name);
+		const TCHAR* oldName = ::PathFindFileName(cmpPair->getOldFile().name);
+
+		TCHAR msg[MAX_PATH];
+		_sntprintf_s(msg, _countof(msg), _TRUNCATE, TEXT("Comparing \"%s\" vs. \"%s\"..."), newName, oldName);
+
+		ProgressDlg::Open(msg);
+	}
 
 	std::vector<unsigned int> doc1Hashes = computeHashes(doc1, Settings.IncludeSpace);
 	std::vector<unsigned int> doc2Hashes = computeHashes(doc2, Settings.IncludeSpace);
 
-	if (isCompareCancelled())
+	if (ProgressDlg::IsCancelled())
 		return COMPARE_CANCELLED;
-
-	progressFillCompareInfo(cmpPair);
 
 	std::vector<diff_edit> diff = DiffCalc<unsigned int>(doc1Hashes, doc2Hashes)();
 
-	if (isCompareCancelled())
+	if (ProgressDlg::IsCancelled())
 		return COMPARE_CANCELLED;
 
 	if (diff.empty())
 	{
-		progressClose();
+		ProgressDlg::Close();
 		return FILES_MATCH;
 	}
 
@@ -1143,7 +1095,7 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		}
 	}
 
-	if (isCompareCancelled())
+	if (ProgressDlg::IsCancelled())
 		return COMPARE_CANCELLED;
 
 	std::vector<diff_edit> doc1Changes(doc1ChangedLinesCount);
@@ -1183,12 +1135,12 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		}
 	}
 
-	if (isCompareCancelled())
+	if (ProgressDlg::IsCancelled())
 		return COMPARE_CANCELLED;
 
 	if ((doc1ChangedLinesCount == 0) && (doc2ChangedLinesCount == 0))
 	{
-		progressClose();
+		ProgressDlg::Close();
 		return FILES_MATCH;
 	}
 
@@ -1303,10 +1255,10 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		addBlankSection(view1, off + doc1Offset, length);
 	}
 
-	if (isCompareCancelled())
+	if (ProgressDlg::IsCancelled())
 		return COMPARE_CANCELLED;
 
-	progressClose();
+	ProgressDlg::Close();
 
 	return FILES_DIFFER;
 }
@@ -1334,14 +1286,14 @@ CompareResult_t runCompare(CompareList_t::iterator& cmpPair)
 	}
 	catch (std::exception& e)
 	{
-		progressClose();
+		ProgressDlg::Close();
 		char msg[128];
 		_snprintf_s(msg, _countof(msg), _TRUNCATE, "Exception occurred: %s", e.what());
 		MessageBoxA(nppData._nppHandle, msg, "Compare Plugin", MB_OK | MB_ICONWARNING);
 	}
 	catch (...)
 	{
-		progressClose();
+		ProgressDlg::Close();
 		MessageBoxA(nppData._nppHandle, "Unknown exception occurred.", "Compare Plugin", MB_OK | MB_ICONWARNING);
 	}
 
@@ -2167,27 +2119,6 @@ void onFileSaved(int buffId)
 }
 
 } // anonymous namespace
-
-
-bool progressUpdate(int mid)
-{
-	if (!progDlg)
-		return false;
-
-	if (progDlg->IsCancelled())
-		return false;
-
-	if (mid > progMax)
-		progMax = mid;
-
-	if (progMax)
-	{
-		int perc = (++progCounter * 100) / (progMax * 4);
-		progDlg->SetPercent(perc);
-	}
-
-	return true;
-}
 
 
 void ViewNavigationBar()

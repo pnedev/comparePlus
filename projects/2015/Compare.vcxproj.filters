@@ -37,7 +37,7 @@
     <ClCompile Include="..\..\src\ScmHelper.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ProgressDlg\CProgress.cpp">
+    <ClCompile Include="..\..\src\ProgressDlg\ProgressDlg.cpp">
       <Filter>src\ProgressDlg</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Engine\Engine.cpp">
@@ -120,7 +120,7 @@
     <ClInclude Include="..\..\src\AboutDlg\AboutDialog.h">
       <Filter>src\AboutDlg</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ProgressDlg\CProgress.h">
+    <ClInclude Include="..\..\src\ProgressDlg\ProgressDlg.h">
       <Filter>src\ProgressDlg</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\XpmIcons\icon_add_16.h">

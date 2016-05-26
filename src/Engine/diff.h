@@ -43,9 +43,7 @@
 #include <limits.h>
 #include "varray.h"
 
-
-// CProgess callback declaration
-bool progressUpdate(int mid);
+#include "ProgressDlg.h"
 
 
 enum diff_op
@@ -184,7 +182,7 @@ int DiffCalc<Elem>::_find_middle_snake(unsigned int aoff, unsigned int aend, uns
 	{
 		int k, x, y;
 
-		if (!progressUpdate(mid))
+		if (!ProgressDlg::Update(mid))
 			return -1;
 
 		if ((2 * d - 1) >= _dmax)

@@ -1,84 +1,139 @@
 #pragma comment (lib, "comctl32")
 
 
-#include "CProgress.h"
+#include "ProgressDlg.h"
+#include "Compare.h"
 #include <windowsx.h>
 #include <stdlib.h>
 
 
-const TCHAR CProgress::cClassName[]     = TEXT("OperationProgressClass");
-const TCHAR CProgress::cDefaultHeader[] = TEXT("Operation progress...");
-const int CProgress::cBackgroundColor   = COLOR_3DFACE;
-const int CProgress::cPBwidth           = 600;
-const int CProgress::cPBheight          = 10;
-const int CProgress::cBTNwidth          = 80;
-const int CProgress::cBTNheight         = 25;
+const TCHAR ProgressDlg::cClassName[]     = TEXT("CompareProgressClass");
+const int ProgressDlg::cBackgroundColor   = COLOR_3DFACE;
+const int ProgressDlg::cPBwidth           = 600;
+const int ProgressDlg::cPBheight          = 10;
+const int ProgressDlg::cBTNwidth          = 80;
+const int ProgressDlg::cBTNheight         = 25;
 
 
-volatile LONG CProgress::RefCount = 0;
-HINSTANCE CProgress::HInst = NULL;
+std::unique_ptr<ProgressDlg> ProgressDlg::Inst;
 
 
-CProgress::CProgress() : _hwnd(NULL), _hCallerWnd(NULL)
+void ProgressDlg::Open(const TCHAR* msg)
 {
-    if (::InterlockedIncrement(&RefCount) == 1)
-    {
-        ::GetModuleHandleEx(
-            GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
-            GET_MODULE_HANDLE_EX_FLAG_PIN, cClassName, &HInst);
+	if ((bool)Inst)
+		return;
 
-        WNDCLASSEX wcex;
+	Inst.reset(new ProgressDlg);
 
-        ::SecureZeroMemory(&wcex, sizeof(wcex));
-        wcex.cbSize           = sizeof(wcex);
-        wcex.style            = CS_HREDRAW | CS_VREDRAW;
-        wcex.lpfnWndProc      = wndProc;
-        wcex.hInstance        = HInst;
-        wcex.hCursor          = ::LoadCursor(NULL, IDC_ARROW);
-        wcex.hbrBackground    = ::GetSysColorBrush(cBackgroundColor);
-        wcex.lpszClassName    = cClassName;
+	if (Inst->create() == NULL)
+	{
+		Inst.reset();
+		return;
+	}
 
-        ::RegisterClassEx(&wcex);
+	Inst->setInfo(msg);
 
-        INITCOMMONCONTROLSEX icex;
-
-        ::SecureZeroMemory(&icex, sizeof(icex));
-        icex.dwSize = sizeof(icex);
-        icex.dwICC  = ICC_STANDARD_CLASSES | ICC_PROGRESS_CLASS;
-
-        ::InitCommonControlsEx(&icex);
-    }
+	::EnableWindow(nppData._nppHandle, FALSE);
 }
 
 
-CProgress::~CProgress()
+bool ProgressDlg::Update(int mid)
 {
-    Close();
+	if (!Inst)
+		return false;
 
-    if (::InterlockedDecrement(&RefCount) == 0)
-        ::UnregisterClass(cClassName, HInst);
+	if (Inst->cancelled())
+		return false;
+
+	if (mid > Inst->_max)
+		Inst->_max = mid;
+
+	if (Inst->_max)
+	{
+		int perc = (++Inst->_count * 100) / (Inst->_max * 4);
+		Inst->setPercent(perc);
+	}
+
+	return true;
 }
 
 
-HWND CProgress::Open(HWND hCallerWnd, const TCHAR* header)
+bool ProgressDlg::IsCancelled()
 {
-    if (_hwnd)
-        return _hwnd;
+	if (!Inst)
+		return true;
 
+	if (Inst->cancelled())
+	{
+		Close();
+		return true;
+	}
+
+	return false;
+}
+
+
+void ProgressDlg::Close()
+{
+	if (!Inst)
+		return;
+
+	::EnableWindow(nppData._nppHandle, TRUE);
+	::SetForegroundWindow(nppData._nppHandle);
+
+	Inst.reset();
+}
+
+
+ProgressDlg::ProgressDlg() : _hwnd(NULL),  _hKeyHook(NULL), _max(0), _count(0)
+{
+	::GetModuleHandleEx(
+		GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+		GET_MODULE_HANDLE_EX_FLAG_PIN, cClassName, &_hInst);
+
+	WNDCLASSEX wcex;
+
+	::SecureZeroMemory(&wcex, sizeof(wcex));
+	wcex.cbSize           = sizeof(wcex);
+	wcex.style            = CS_HREDRAW | CS_VREDRAW;
+	wcex.lpfnWndProc      = wndProc;
+	wcex.hInstance        = _hInst;
+	wcex.hCursor          = ::LoadCursor(NULL, IDC_ARROW);
+	wcex.hbrBackground    = ::GetSysColorBrush(cBackgroundColor);
+	wcex.lpszClassName    = cClassName;
+
+	::RegisterClassEx(&wcex);
+
+	INITCOMMONCONTROLSEX icex;
+
+	::SecureZeroMemory(&icex, sizeof(icex));
+	icex.dwSize = sizeof(icex);
+	icex.dwICC  = ICC_STANDARD_CLASSES | ICC_PROGRESS_CLASS;
+
+	::InitCommonControlsEx(&icex);
+}
+
+
+ProgressDlg::~ProgressDlg()
+{
+    if (_hKeyHook)
+        ::UnhookWindowsHookEx(_hKeyHook);
+
+    destroy();
+
+	::UnregisterClass(cClassName, _hInst);
+}
+
+
+HWND ProgressDlg::create()
+{
     // Create manually reset non-signaled event
     _hActiveState = ::CreateEvent(NULL, TRUE, FALSE, NULL);
     if (!_hActiveState)
         return NULL;
 
-    _hCallerWnd = hCallerWnd;
-
-	for (HWND hwnd = _hCallerWnd; hwnd; hwnd = ::GetParent(hwnd))
+	for (HWND hwnd = nppData._nppHandle; hwnd; hwnd = ::GetParent(hwnd))
 		::UpdateWindow(hwnd);
-
-    if (header)
-        _tcscpy_s(_header, _countof(_header), header);
-    else
-        _tcscpy_s(_header, _countof(_header), cDefaultHeader);
 
     _hThread = ::CreateThread(NULL, 0, threadFunc, this, 0, NULL);
     if (!_hThread)
@@ -102,7 +157,15 @@ HWND CProgress::Open(HWND hCallerWnd, const TCHAR* header)
 }
 
 
-void CProgress::Close()
+void ProgressDlg::cancel()
+{
+	::ResetEvent(_hActiveState);
+	::EnableWindow(_hBtn, FALSE);
+	setInfo(TEXT("Cancelling operation, please wait..."));
+}
+
+
+void ProgressDlg::destroy()
 {
     if (_hwnd)
     {
@@ -116,14 +179,14 @@ void CProgress::Close()
 }
 
 
-DWORD WINAPI CProgress::threadFunc(LPVOID data)
+DWORD WINAPI ProgressDlg::threadFunc(LPVOID data)
 {
-    CProgress* pw = static_cast<CProgress*>(data);
+    ProgressDlg* pw = static_cast<ProgressDlg*>(data);
     return (DWORD)pw->thread();
 }
 
 
-BOOL CProgress::thread()
+BOOL ProgressDlg::thread()
 {
     BOOL r = createProgressWindow();
     ::SetEvent(_hActiveState);
@@ -139,13 +202,13 @@ BOOL CProgress::thread()
 }
 
 
-BOOL CProgress::createProgressWindow()
+BOOL ProgressDlg::createProgressWindow()
 {
 	_hwnd = ::CreateWindowEx(
 		WS_EX_APPWINDOW | WS_EX_TOOLWINDOW | WS_EX_OVERLAPPEDWINDOW,
-            cClassName, _header, WS_POPUP | WS_CAPTION,
+            cClassName, TEXT("Compare Plugin"), WS_POPUP | WS_CAPTION,
             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-            NULL, NULL, HInst, (LPVOID)this);
+            NULL, NULL, _hInst, (LPVOID)this);
     if (!_hwnd)
         return FALSE;
 
@@ -160,18 +223,18 @@ BOOL CProgress::createProgressWindow()
 
 	_hPText = ::CreateWindowEx(0, TEXT("STATIC"), TEXT(""),
 			WS_CHILD | WS_VISIBLE | BS_TEXT | SS_PATHELLIPSIS,
-			5, 5, width - 10, 20, _hwnd, NULL, HInst, NULL);
+			5, 5, width - 10, 20, _hwnd, NULL, _hInst, NULL);
 
     _hPBar = ::CreateWindowEx(0, PROGRESS_CLASS, TEXT("Progress Bar"),
             WS_CHILD | WS_VISIBLE | PBS_SMOOTH,
             5, 25, width - 10, cPBheight,
-            _hwnd, NULL, HInst, NULL);
+            _hwnd, NULL, _hInst, NULL);
     ::SendMessage(_hPBar, PBM_SETRANGE, 0, MAKELPARAM(0, 100));
 
     _hBtn = ::CreateWindowEx(0, TEXT("BUTTON"), TEXT("Cancel"),
             WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON | BS_TEXT,
             (width - cBTNwidth) / 2, height - cBTNheight - 5,
-            cBTNwidth, cBTNheight, _hwnd, NULL, HInst, NULL);
+            cBTNwidth, cBTNheight, _hwnd, NULL, _hInst, NULL);
 
 	HFONT hf = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);
 	if (hf)
@@ -180,6 +243,8 @@ BOOL CProgress::createProgressWindow()
 		::SendMessage(_hBtn, WM_SETFONT, (WPARAM)hf, MAKELPARAM(TRUE, 0));
 	}
 
+    _hKeyHook = ::SetWindowsHookEx(WH_KEYBOARD, keyHookProc, NULL, GetCurrentThreadId());
+
     ::ShowWindow(_hwnd, SW_SHOWNORMAL);
     ::UpdateWindow(_hwnd);
 
@@ -187,7 +252,7 @@ BOOL CProgress::createProgressWindow()
 }
 
 
-RECT CProgress::adjustSizeAndPos(int width, int height)
+RECT ProgressDlg::adjustSizeAndPos(int width, int height)
 {
 	RECT maxWin;
 	maxWin.left		= ::GetSystemMetrics(SM_XVIRTUALSCREEN);
@@ -197,17 +262,11 @@ RECT CProgress::adjustSizeAndPos(int width, int height)
 
 	POINT center;
 
-	if (_hCallerWnd)
 	{
 		RECT biasWin;
-		::GetWindowRect(_hCallerWnd, &biasWin);
+		::GetWindowRect(nppData._nppHandle, &biasWin);
 		center.x = (biasWin.left + biasWin.right) / 2;
 		center.y = (biasWin.top + biasWin.bottom) / 2;
-	}
-	else
-	{
-		center.x = (maxWin.left + maxWin.right) / 2;
-		center.y = (maxWin.top + maxWin.bottom) / 2;
 	}
 
 	RECT win = maxWin;
@@ -259,33 +318,43 @@ RECT CProgress::adjustSizeAndPos(int width, int height)
 }
 
 
-LRESULT APIENTRY CProgress::wndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
+LRESULT CALLBACK ProgressDlg::keyHookProc(int code, WPARAM wParam, LPARAM lParam)
+{
+    if (code >= 0 && (bool)Inst)
+    {
+        if (Inst->_hBtn == ::GetFocus())
+        {
+            // Key is pressed
+            if (!(lParam & (1 << 31)))
+            {
+                if (wParam == VK_RETURN)
+                {
+                    Inst->cancel();
+                    return 1;
+                }
+            }
+        }
+    }
+
+    return ::CallNextHookEx(NULL, code, wParam, lParam);
+}
+
+
+LRESULT APIENTRY ProgressDlg::wndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 {
     switch (umsg)
     {
         case WM_CREATE:
-        {
-			CProgress* pw =(CProgress*)((LPCREATESTRUCT)lparam)->lpCreateParams;
-            ::SetWindowLongPtr(hwnd, GWLP_USERDATA, PtrToUlong(pw));
             return 0;
-        }
 
         case WM_SETFOCUS:
-        {
-			CProgress* pw =	reinterpret_cast<CProgress*>(static_cast<LONG_PTR>
-					(::GetWindowLongPtr(hwnd, GWLP_USERDATA)));
-            ::SetFocus(pw->_hBtn);
+            ::SetFocus(Inst->_hBtn);
             return 0;
-        }
 
         case WM_COMMAND:
             if (HIWORD(wparam) == BN_CLICKED)
             {
-                CProgress* pw = reinterpret_cast<CProgress*>(static_cast<LONG_PTR>
-						(::GetWindowLongPtr(hwnd, GWLP_USERDATA)));
-                ::ResetEvent(pw->_hActiveState);
-                ::EnableWindow(pw->_hBtn, FALSE);
-				pw->SetInfo(TEXT("Cancelling operation, please wait..."));
+				Inst->cancel();
                 return 0;
             }
             break;

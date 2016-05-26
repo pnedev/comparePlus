@@ -130,7 +130,7 @@
     <ClCompile Include="..\..\src\NavDlg\NavDialog.cpp" />
     <ClCompile Include="..\..\src\NPPHelpers.cpp" />
     <ClCompile Include="..\..\src\NppAPI\StaticDialog.cpp" />
-    <ClCompile Include="..\..\src\ProgressDlg\CProgress.cpp" />
+    <ClCompile Include="..\..\src\ProgressDlg\ProgressDlg.cpp" />
     <ClCompile Include="..\..\src\ScmHelper.cpp" />
     <ClCompile Include="..\..\src\SQLite\SqliteHelper.cpp" />
   </ItemGroup>
@@ -149,7 +149,7 @@
     <ClInclude Include="..\..\src\XpmIcons\icon_warning_16.h" />
     <ClInclude Include="..\..\src\NavDlg\NavDialog.h" />
     <ClInclude Include="..\..\src\NPPHelpers.h" />
-    <ClInclude Include="..\..\src\ProgressDlg\CProgress.h" />
+    <ClInclude Include="..\..\src\ProgressDlg\ProgressDlg.h" />
     <ClInclude Include="..\..\src\Resource.h" />
     <ClInclude Include="..\..\src\NppAPI\Docking.h" />
     <ClInclude Include="..\..\src\NppAPI\dockingResource.h" />

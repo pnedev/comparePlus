@@ -44,7 +44,7 @@ set (project_sources
     src/SettingsDlg/ColorPopup.cpp
     src/SettingsDlg/SettingsDialog.cpp
     src/NavDlg/NavDialog.cpp
-    src/ProgressDlg/CProgress.cpp
+    src/ProgressDlg/ProgressDlg.cpp
     src/Engine/Engine.cpp
     src/Compare.cpp
     src/LibGit2/LibGit2Helper.cpp
