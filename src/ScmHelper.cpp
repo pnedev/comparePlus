@@ -183,11 +183,12 @@ HGLOBAL GetContentFromGitRepo(const TCHAR *gitDir, const TCHAR *gitFilePath, lon
 								const void * content = git_blob_rawcontent(blob);
 								if (content)
 								{
-									hMem = GlobalAlloc(GMEM_FIXED, (SIZE_T)sizeBlob);
+									hMem = GlobalAlloc(GMEM_FIXED, (SIZE_T)sizeBlob + 1);
 									if (hMem)
 									{
 										*size = sizeBlob;
-										CopyMemory(hMem, content, (SIZE_T)*size);
+										::CopyMemory(hMem, content, (SIZE_T)sizeBlob);
+										*((char*)hMem + sizeBlob) = 0;
 									}
 								}
 							}

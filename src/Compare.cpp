@@ -21,6 +21,8 @@
 #include <vector>
 #include <memory>
 
+#include <shlwapi.h>
+
 #include "Compare.h"
 #include "NPPHelpers.h"
 #include "ScmHelper.h"
@@ -495,8 +497,7 @@ void ComparedFile::initFromCurrent(bool currFileIsNew)
 	buffId = getCurrentBuffId();
 	originalViewId = getCurrentViewId();
 	originalPos = posFromBuffId(buffId);
-	if (!isTemp)
-		::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(name), (LPARAM)name);
+	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(name), (LPARAM)name);
 
 	updateFromCurrent();
 	updateView();
@@ -525,6 +526,7 @@ void ComparedFile::restore()
 	if (isTemp)
 	{
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
+		::DeleteFile(name);
 	}
 	else if (compareViewId != originalViewId)
 	{
@@ -813,52 +815,18 @@ bool setFirst(bool currFileIsNew, bool markName = false)
 }
 
 
-void createTempFile(const char* content, long size, const TCHAR* mark)
+void setContent(const char* content)
 {
 	HWND view = getCurrentView();
-	int buffId = getCurrentBuffId();
-
-	const int currLang = ::SendMessage(nppData._nppHandle, NPPM_GETBUFFERLANGTYPE, buffId, 0);
-	const int currEnc = ::SendMessage(nppData._nppHandle, NPPM_GETBUFFERENCODING, buffId, 0);
-	const int currFormat = ::SendMessage(nppData._nppHandle, NPPM_GETBUFFERFORMAT, buffId, 0);
-
-	ScopedIncrementer incr(notificationsLock);
-
-	::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_NEW);
-
-	buffId = getCurrentBuffId();
-
-	::SendMessage(nppData._nppHandle, NPPM_SETBUFFERLANGTYPE, buffId, currLang);
-	::SendMessage(nppData._nppHandle, NPPM_SETBUFFERENCODING, buffId, currEnc);
-	::SendMessage(nppData._nppHandle, NPPM_SETBUFFERFORMAT, buffId, currFormat);
 
 	ScopedViewUndoCollectionBlocker undoBlock(view);
 
-	::SendMessage(view, SCI_APPENDTEXT, size, (LPARAM)content);
+	::SendMessage(view, SCI_SETTEXT, 0, (LPARAM)content);
 	::SendMessage(view, SCI_SETSAVEPOINT, true, 0);
-	::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_EDIT_SETREADONLY);
-
-	newCompare->pair.file[1].isTemp = true;
-
-	// Set appropriate name
-	HWND hNppTabBar = NppTabHandleGetter::get(getCurrentViewId());
-	if (hNppTabBar)
-	{
-		TCITEM tab;
-		tab.mask = TCIF_TEXT;
-		tab.pszText = newCompare->pair.file[1].name;
-
-		const TCHAR* firstName = ::PathFindFileName(newCompare->pair.file[0].name);
-
-		_sntprintf_s(newCompare->pair.file[1].name, _countof(newCompare->pair.file[1].name), _TRUNCATE,
-				TEXT("%s ** %s"), firstName, mark);
-
-		TabCtrl_SetItem(hNppTabBar, posFromBuffId(buffId), &tab);
-	}
 }
 
 
-bool readFile(const TCHAR *file, const TCHAR* mark)
+bool createTempFile(const TCHAR *file, const TCHAR* nameMark)
 {
 	if (::PathFileExists(file) == FALSE)
 	{
@@ -870,30 +838,45 @@ bool readFile(const TCHAR *file, const TCHAR* mark)
 	if (!setFirst(true))
 		return false;
 
-	FILE* fd;
-	_tfopen_s(&fd, file, _T("rb"));
+	TCHAR tempFile[MAX_PATH];
 
-	if (fd == NULL)
+	if (::GetTempPath(_countof(tempFile), tempFile))
 	{
-		::MessageBox(nppData._nppHandle, TEXT("File read failed - operation ignored."),
-				TEXT("Compare Plugin"), MB_OK);
+		const TCHAR* fileName = ::PathFindFileName(newCompare->pair.file[0].name);
 
-		newCompare.reset();
+		if (::PathAppend(tempFile, fileName))
+		{
+			_tcscat_s(tempFile, _countof(tempFile), TEXT("_"));
+			_tcscat_s(tempFile, _countof(tempFile), nameMark);
 
-		return false;
+			if (::CopyFile(file, tempFile, FALSE))
+			{
+				::SetFileAttributes(tempFile, FILE_ATTRIBUTE_TEMPORARY);
+
+				const int langType = ::SendMessage(nppData._nppHandle, NPPM_GETBUFFERLANGTYPE,
+						newCompare->pair.file[0].buffId, 0);
+
+				ScopedIncrementer incr(notificationsLock);
+
+				if (::SendMessage(nppData._nppHandle, NPPM_DOOPEN, 0, (LPARAM)tempFile))
+				{
+					::SendMessage(nppData._nppHandle, NPPM_SETBUFFERLANGTYPE, getCurrentBuffId(), langType);
+					::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_EDIT_SETREADONLY);
+
+					newCompare->pair.file[1].isTemp = true;
+
+					return true;
+				}
+			}
+		}
 	}
 
-	fseek(fd, 0, SEEK_END);
-	long size = ftell(fd);
-	std::vector<char> content(size + 1, 0);
+	::MessageBox(nppData._nppHandle, TEXT("Creating temp file failed - operation ignored."),
+			TEXT("Compare Plugin"), MB_OK);
 
-	fseek(fd, 0, SEEK_SET);
-	fread(content.data(), 1, size, fd);
-	fclose(fd);
+	newCompare.reset();
 
-	createTempFile(content.data(), size, mark);
-
-	return true;
+	return false;
 }
 
 
@@ -1464,7 +1447,7 @@ void LastSaveDiff()
 	TCHAR file[MAX_PATH];
 	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
 
-	if (readFile(file, TEXT("Last Save")))
+	if (createTempFile(file, TEXT("LastSave")))
 		Compare();
 }
 
@@ -1493,7 +1476,7 @@ void SvnDiff()
 			{
 				if (GetSvnBaseFile(curDirCanon, svnDir, file, svnBaseFile, _countof(svnBaseFile)))
 				{
-					if (readFile(svnBaseFile, TEXT("SVN")))
+					if (createTempFile(svnBaseFile, TEXT("SVN")))
 						Compare();
 
 					return;
@@ -1517,7 +1500,7 @@ void GitDiff()
 		TCHAR curDirCanon[MAX_PATH];
 		TCHAR gitDir[MAX_PATH];
 
-		PathCanonicalize(curDirCanon, curDir);
+		::PathCanonicalize(curDirCanon, curDir);
 
 		if (GetScmBaseFolder(TEXT(".git"), curDirCanon, gitDir, _countof(gitDir)))
 		{
@@ -1536,7 +1519,15 @@ void GitDiff()
 
 				if (size)
 				{
-					createTempFile((const char*)hMem, size, TEXT("Git"));
+					::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
+
+					if (!createTempFile(file, TEXT("Git")))
+					{
+						::GlobalFree(hMem);
+						return;
+					}
+
+					setContent((const char*)hMem);
 					::GlobalFree(hMem);
 
 					Compare();
