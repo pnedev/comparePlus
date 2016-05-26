@@ -299,6 +299,7 @@ struct ComparedFile
  */
 struct ComparedPair
 {
+	ComparedFile& getFileByViewId(int viewId);
 	ComparedFile& getFileByBuffId(int buffId);
 	ComparedFile& getOtherFileByBuffId(int buffId);
 	ComparedFile& getFileBySciDoc(int sciDoc);
@@ -532,6 +533,12 @@ void ComparedFile::restore()
 	{
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
 	}
+}
+
+
+ComparedFile& ComparedPair::getFileByViewId(int viewId)
+{
+	return (viewIdFromBuffId(file[0].buffId) == viewId) ? file[0] : file[1];
 }
 
 
@@ -914,9 +921,11 @@ void closeComparePair(CompareList_t::iterator& cmpPair)
 
 	ScopedIncrementer incr(notificationsLock);
 
-	activateBufferID(cmpPair->file[0].buffId);
+	// First close the file in the SUB_VIEW as closing a file may lead to a single view mode
+	// and if that happens we want to be in single main view
+	activateBufferID(cmpPair->getFileByViewId(SUB_VIEW).buffId);
 	::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
-	activateBufferID(cmpPair->file[1].buffId);
+	activateBufferID(cmpPair->getFileByViewId(MAIN_VIEW).buffId);
 	::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
 
 	compareList.erase(cmpPair);
@@ -2039,18 +2048,16 @@ void onFileBeforeClose(int buffId)
 	NppSettings& nppSettings = NppSettings::get();
 	nppSettings.setNormalMode();
 
-	{
-		ScopedIncrementer incr(notificationsLock);
+	ScopedIncrementer incr(notificationsLock);
 
-		if (buffId != currentBuffId)
-			activateBufferID(buffId);
+	if (buffId != currentBuffId)
+		activateBufferID(buffId);
 
-		clearWindow(getCurrentView());
+	clearWindow(getCurrentView());
 
-		cmpPair->getOtherFileByBuffId(buffId).restore();
+	cmpPair->getOtherFileByBuffId(buffId).restore();
 
-		compareList.erase(cmpPair);
-	}
+	compareList.erase(cmpPair);
 
 	activateBufferID(currentBuffId);
 
