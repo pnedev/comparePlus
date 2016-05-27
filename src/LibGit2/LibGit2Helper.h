@@ -16,27 +16,27 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #pragma once
-
-
-#include "Compare.h"
 
 #define GIT_ENOTFOUND -3
 #define GIT_OID_RAWSZ 20
 
 typedef struct git_repository git_repository;
 typedef struct git_index git_index;
+typedef struct git_blob git_blob;
 typedef __time64_t git_time_t;
 typedef __int64 git_off_t;
+
 typedef struct {
 	git_time_t seconds;
 	unsigned int nanoseconds;
 } git_index_time;
+
 typedef struct git_oid {
 	/** raw binary formatted id */
 	unsigned char id[GIT_OID_RAWSZ];
 } git_oid;
+
 typedef struct git_index_entry {
 	git_index_time ctime;
 	git_index_time mtime;
@@ -51,7 +51,6 @@ typedef struct git_index_entry {
 	unsigned short flags_extended;
 	char *path;
 } git_index_entry;
-typedef struct git_blob git_blob;
 
 typedef int (*PGITREPOSITORYOPEN) (git_repository **out, const char *path);
 typedef int (*PGITREPOSITORYINDEX) (git_index **out, git_repository *repo);
@@ -64,15 +63,15 @@ typedef void (*PGITBLOBFREE) (const git_blob *blob);
 typedef void (*PGITINDEXFREE) (git_index *index);
 typedef void (*PGITREPOSITORYFREE) (git_repository *repo);
 
-extern PGITREPOSITORYOPEN git_repository_open;
-extern PGITREPOSITORYINDEX git_repository_index;
-extern PGITINDEXFIND git_index_find;
-extern PGITINDEXGETBYINDEX git_index_get_byindex;
-extern PGITBLOBLOOKUP git_blob_lookup;
-extern PGITBLOBRAWSIZE git_blob_rawsize;
-extern PGITBLOBRAWCONTENT git_blob_rawcontent;
-extern PGITBLOBFREE git_blob_free;
-extern PGITINDEXFREE git_index_free;
-extern PGITREPOSITORYFREE git_repository_free;
+extern PGITREPOSITORYOPEN	git_repository_open;
+extern PGITREPOSITORYINDEX	git_repository_index;
+extern PGITINDEXFIND		git_index_find;
+extern PGITINDEXGETBYINDEX	git_index_get_byindex;
+extern PGITBLOBLOOKUP		git_blob_lookup;
+extern PGITBLOBRAWSIZE		git_blob_rawsize;
+extern PGITBLOBRAWCONTENT	git_blob_rawcontent;
+extern PGITBLOBFREE			git_blob_free;
+extern PGITINDEXFREE		git_index_free;
+extern PGITREPOSITORYFREE	git_repository_free;
 
 bool InitLibGit2();

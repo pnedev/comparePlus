@@ -16,12 +16,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #pragma once
 
-
-#include "Compare.h"
-#include <shlwapi.h>
+#include <windows.h>
+#include <tchar.h>
 #include "SQLite/SqliteHelper.h"
 #include "LibGit2/LibGit2Helper.h"
 

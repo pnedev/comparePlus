@@ -18,11 +18,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <stdlib.h>
 #include "ScmHelper.h"
+#include <shlwapi.h>
+#include "Compare.h"
 
+// Search recursively upwards for the baseDirName folder
 bool GetScmBaseFolder(const TCHAR* baseDirName, const TCHAR* currentDir, TCHAR* svnDir, unsigned svnDirSize)
 {
-	// search recursively upwards for a ".svn" folder
-
 	TCHAR buffDir1[MAX_PATH] = {0};
 	TCHAR buffDir2[MAX_PATH] = {0};
 
@@ -78,19 +79,19 @@ bool GetSvnBaseFile(const TCHAR* curDir, const TCHAR* svnDir, const TCHAR* filen
 	TCHAR buffDir1[MAX_PATH] = {0};
 	TCHAR buffDir2[MAX_PATH] = {0};
 
-	// is it svn 1.7 or above?
+	// is it SVN 1.7 or above?
 	_tcscpy_s(buffDir1, _countof(buffDir1), svnDir);
 	PathCombine(buffDir2, buffDir1, TEXT("wc.db"));
 	if (PathFileExists(buffDir2))
 	{
-		if (InitSqlite())
+		if (InitSQLite())
 		{
 			sqlite3 *ppDb;
 			if (sqlite3_open16(buffDir2, &ppDb) == SQLITE_OK)
 			{
 				sqlite3_stmt *pStmt;
 				TCHAR svnFilePath[MAX_PATH];
-				TCHAR statement[128];
+				TCHAR statement[512];
 
 				GetLocalScmPath(curDir, svnDir, filename, svnFilePath);
 
@@ -127,12 +128,12 @@ bool GetSvnBaseFile(const TCHAR* curDir, const TCHAR* svnDir, const TCHAR* filen
 		}
 		else
 		{
-			MessageBox(NULL, TEXT("Can't init sqlite"), TEXT("Compare Plugin"), MB_OK);
+			::MessageBox(nppData._nppHandle, TEXT("Failed to init SQLite"), TEXT("Compare Plugin"), MB_OK);
 		}
 	}
 	else
 	{
-		// is it an old svn version?
+		// is it an old SVN version?
 		PathCombine(buffDir2, buffDir1, TEXT("text-base"));
 		PathCombine(buffDir1, buffDir2, filename);
 		_tcscat_s(buffDir1, _countof(buffDir1), TEXT(".svn-base"));
@@ -203,7 +204,7 @@ HGLOBAL GetContentFromGitRepo(const TCHAR *gitDir, const TCHAR *gitFilePath, lon
 	}
 	else
 	{
-		MessageBox(NULL, TEXT("Can't init libgit2"), TEXT("Compare Plugin"), MB_OK);
+		::MessageBox(nppData._nppHandle, TEXT("Failed to init LibGit2"), TEXT("Compare Plugin"), MB_OK);
 	}
 
 	return hMem;
