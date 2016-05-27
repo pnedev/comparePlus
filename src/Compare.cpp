@@ -507,6 +507,35 @@ void ComparedFile::initFromCurrent(bool currFileIsNew)
 void ComparedFile::updateFromCurrent()
 {
 	sciDoc = getDocId(getCurrentView());
+
+	if (isTemp)
+	{
+		HWND hNppTabBar = NppTabHandleGetter::get(getCurrentViewId());
+		if (hNppTabBar)
+		{
+			TCHAR fileName[MAX_PATH];
+			_tcscpy_s(fileName, _countof(fileName), ::PathFindFileName(name));
+
+			TCHAR* nameMark = fileName + _tcslen(fileName) - 1;
+			for (; (nameMark != fileName) && (*nameMark != TEXT('_')); --nameMark);
+
+			if (nameMark != fileName)
+			{
+				*nameMark = 0;
+				++nameMark;
+
+				TCHAR tabName[MAX_PATH];
+
+				TCITEM tab;
+				tab.mask = TCIF_TEXT;
+				tab.pszText = tabName;
+
+				_sntprintf_s(tabName, _countof(tabName), _TRUNCATE, TEXT("%s ** %s"), fileName, nameMark);
+
+				TabCtrl_SetItem(hNppTabBar, posFromBuffId(buffId), &tab);
+			}
+		}
+	}
 }
 
 
@@ -771,7 +800,7 @@ bool isFileCompared(HWND view)
 
 		TCHAR msg[MAX_PATH];
 		_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-				TEXT("File \"%s\" is already compared - operation ignored."), fname);
+				TEXT("File \"%s\" is already compared."), fname);
 		::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"), MB_OK);
 
 		return true;
@@ -832,7 +861,7 @@ bool createTempFile(const TCHAR *file, const TCHAR* nameMark)
 {
 	if (::PathFileExists(file) == FALSE)
 	{
-		::MessageBox(nppData._nppHandle, TEXT("File is not written to disk - operation ignored."),
+		::MessageBox(nppData._nppHandle, TEXT("File is not written to disk."),
 				TEXT("Compare Plugin"), MB_OK);
 		return false;
 	}
@@ -870,25 +899,13 @@ bool createTempFile(const TCHAR *file, const TCHAR* nameMark)
 
 					newCompare->pair.file[1].isTemp = true;
 
-					HWND hNppTabBar = NppTabHandleGetter::get(getCurrentViewId());
-					if (hNppTabBar)
-					{
-						TCITEM tab;
-						tab.mask = TCIF_TEXT;
-						tab.pszText = tempFile;
-
-						_sntprintf_s(tempFile, _countof(tempFile), _TRUNCATE, TEXT("%s ** %s"), fileName, nameMark);
-
-						TabCtrl_SetItem(hNppTabBar, posFromBuffId(buffId), &tab);
-					}
-
 					return true;
 				}
 			}
 		}
 	}
 
-	::MessageBox(nppData._nppHandle, TEXT("Creating temp file failed - operation ignored."),
+	::MessageBox(nppData._nppHandle, TEXT("Creating temp file failed."),
 			TEXT("Compare Plugin"), MB_OK);
 
 	newCompare.reset();
@@ -965,7 +982,7 @@ bool initNewCompare()
 		{
 			if (getNumberOfFiles(getCurrentViewId()) < 2)
 			{
-				::MessageBox(nppData._nppHandle, TEXT("Only one file opened - operation ignored."),
+				::MessageBox(nppData._nppHandle, TEXT("Only one file opened."),
 						TEXT("Compare Plugin"), MB_OK);
 				return false;
 			}
