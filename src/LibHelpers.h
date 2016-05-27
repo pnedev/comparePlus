@@ -23,8 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "SQLite/SqliteHelper.h"
 #include "LibGit2/LibGit2Helper.h"
 
-bool GetScmBaseFolder(const TCHAR* baseDirName, const TCHAR* currentDir, TCHAR* svnDir, unsigned svnDirSize);
-void GetLocalScmPath(const TCHAR* curDir, const TCHAR* scmDir, const TCHAR* filename, TCHAR* scmFilePath);
-bool GetSvnBaseFile(const TCHAR* curDir, const TCHAR* svnDir, const TCHAR* filename,
-		TCHAR* svnBaseFile, unsigned svnBaseFileSize);
-HGLOBAL GetContentFromGitRepo(const TCHAR *gitDir, const TCHAR *gitFilePath, long *size);
+bool LocateDirUp(const TCHAR* dirName, const TCHAR* currentDir, TCHAR* fullDirPath, unsigned fullDirPathSize);
+void CreateRelativeFilePath(const TCHAR* currDir, const TCHAR* baseDir, const TCHAR* file, TCHAR* filePath);
+bool GetSvnFile(const TCHAR* currDir, const TCHAR* svnDir, const TCHAR* file, TCHAR* svnFile, unsigned svnFileSize);
+HGLOBAL GetContentFromGitRepo(const TCHAR* gitDir, const TCHAR* gitFilePath);

@@ -27,7 +27,7 @@
 
 #include "Compare.h"
 #include "NPPHelpers.h"
-#include "ScmHelper.h"
+#include "LibHelpers.h"
 #include "ProgressDlg.h"
 #include "AboutDialog.h"
 #include "SettingsDialog.h"
@@ -820,6 +820,7 @@ void setContent(const char* content)
 {
 	HWND view = getCurrentView();
 
+	ScopedViewWriteEnabler writeEn(view);
 	ScopedViewUndoCollectionBlocker undoBlock(view);
 
 	::SendMessage(view, SCI_SETTEXT, 0, (LPARAM)content);
@@ -1464,91 +1465,86 @@ void LastSaveDiff()
 
 void SvnDiff()
 {
-	TCHAR curDir[MAX_PATH];
+	TCHAR svnFile[MAX_PATH];
 
-	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTDIRECTORY, _countof(curDir), (LPARAM)curDir);
+	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTDIRECTORY, _countof(svnFile), (LPARAM)svnFile);
 
-	if (curDir[0] != 0)
+	if (svnFile[0] != 0)
 	{
-		TCHAR curDirCanon[MAX_PATH];
+		TCHAR currDir[MAX_PATH];
 		TCHAR svnDir[MAX_PATH];
 
-		PathCanonicalize(curDirCanon, curDir);
+		::PathCanonicalize(currDir, svnFile);
 
-		if (GetScmBaseFolder(TEXT(".svn"), curDirCanon, svnDir, _countof(svnDir)))
+		svnFile[0] = 0;
+
+		if (LocateDirUp(TEXT(".svn"), currDir, svnDir, _countof(svnDir)))
 		{
 			TCHAR file[MAX_PATH];
-			TCHAR svnBaseFile[MAX_PATH];
 
 			::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, _countof(file), (LPARAM)file);
 
-			if (file[0] != 0)
-			{
-				if (GetSvnBaseFile(curDirCanon, svnDir, file, svnBaseFile, _countof(svnBaseFile)))
-				{
-					if (createTempFile(svnBaseFile, TEXT("SVN")))
-						Compare();
-
-					return;
-				}
-			}
+			GetSvnFile(currDir, svnDir, file, svnFile, _countof(svnFile));
 		}
 	}
 
-	::MessageBox(nppData._nppHandle, TEXT("Missing SVN data."), TEXT("Compare Plugin"), MB_OK);
+	if (svnFile[0] != 0)
+	{
+		if (createTempFile(svnFile, TEXT("SVN")))
+			Compare();
+	}
+	else
+	{
+		::MessageBox(nppData._nppHandle, TEXT("Missing SVN data."), TEXT("Compare Plugin"), MB_OK);
+	}
 }
 
 
 void GitDiff()
 {
-	TCHAR curDir[MAX_PATH];
+	HGLOBAL hMem = NULL;
+	TCHAR file[MAX_PATH];
 
-	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTDIRECTORY, _countof(curDir), (LPARAM)curDir);
+	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTDIRECTORY, _countof(file), (LPARAM)file);
 
-	if (curDir[0] != 0)
+	if (file[0] != 0)
 	{
-		TCHAR curDirCanon[MAX_PATH];
+		TCHAR currDir[MAX_PATH];
 		TCHAR gitDir[MAX_PATH];
 
-		::PathCanonicalize(curDirCanon, curDir);
+		::PathCanonicalize(currDir, file);
 
-		if (GetScmBaseFolder(TEXT(".git"), curDirCanon, gitDir, _countof(gitDir)))
+		if (LocateDirUp(TEXT(".git"), currDir, gitDir, _countof(gitDir)))
 		{
-			TCHAR file[MAX_PATH];
-
 			::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, _countof(file), (LPARAM)file);
 
-			if (file[0] != 0)
-			{
-				TCHAR gitBaseFile[MAX_PATH];
+			TCHAR gitFile[MAX_PATH];
 
-				GetLocalScmPath(curDir, gitDir, file, gitBaseFile);
+			CreateRelativeFilePath(currDir, gitDir, file, gitFile);
 
-				long size = 0;
-				HGLOBAL hMem = GetContentFromGitRepo(gitDir, gitBaseFile, &size);
-
-				if (size)
-				{
-					::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
-
-					if (!createTempFile(file, TEXT("Git")))
-					{
-						::GlobalFree(hMem);
-						return;
-					}
-
-					setContent((const char*)hMem);
-					::GlobalFree(hMem);
-
-					Compare();
-
-					return;
-				}
-			}
+			hMem = GetContentFromGitRepo(gitDir, gitFile);
 		}
 	}
 
-	::MessageBox(nppData._nppHandle, TEXT("Missing Git data."), TEXT("Compare Plugin"), MB_OK);
+	if (hMem)
+	{
+		::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
+
+		if (!createTempFile(file, TEXT("Git")))
+		{
+			::GlobalFree(hMem);
+			return;
+		}
+
+		setContent((const char*)hMem);
+		::GlobalFree(hMem);
+
+		Compare();
+	}
+	else
+	{
+		::MessageBox(nppData._nppHandle, TEXT("Missing Git data."), TEXT("Compare Plugin"), MB_OK);
+	}
 }
 
 

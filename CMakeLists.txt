@@ -49,7 +49,7 @@ set (project_sources
     src/Compare.cpp
     src/LibGit2/LibGit2Helper.cpp
     src/NPPHelpers.cpp
-    src/ScmHelper.cpp
+    src/LibHelpers.cpp
     src/SQLite/SqliteHelper.cpp
 )
 

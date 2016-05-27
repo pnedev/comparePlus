@@ -34,7 +34,7 @@
     <ClCompile Include="..\..\src\NPPHelpers.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ScmHelper.cpp">
+    <ClCompile Include="..\..\src\LibHelpers.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ProgressDlg\ProgressDlg.cpp">
@@ -81,7 +81,7 @@
     <ClInclude Include="..\..\src\Resource.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ScmHelper.h">
+    <ClInclude Include="..\..\src\LibHelpers.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\NppAPI\Window.h">

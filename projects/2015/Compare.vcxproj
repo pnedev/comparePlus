@@ -131,7 +131,7 @@
     <ClCompile Include="..\..\src\NPPHelpers.cpp" />
     <ClCompile Include="..\..\src\NppAPI\StaticDialog.cpp" />
     <ClCompile Include="..\..\src\ProgressDlg\ProgressDlg.cpp" />
-    <ClCompile Include="..\..\src\ScmHelper.cpp" />
+    <ClCompile Include="..\..\src\LibHelpers.cpp" />
     <ClCompile Include="..\..\src\SQLite\SqliteHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -164,7 +164,7 @@
     <ClInclude Include="..\..\src\NppAPI\Window.h" />
     <ClInclude Include="..\..\src\Engine\diff.h" />
     <ClInclude Include="..\..\src\Engine\varray.h" />
-    <ClInclude Include="..\..\src\ScmHelper.h" />
+    <ClInclude Include="..\..\src\LibHelpers.h" />
     <ClInclude Include="..\..\src\SQLite\SqliteHelper.h" />
   </ItemGroup>
   <ItemGroup>
