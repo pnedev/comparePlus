@@ -268,13 +268,22 @@ struct DeletedSection
 using DeletedSections_t = std::vector<DeletedSection>;
 
 
+enum Temp_t
+{
+	NO_TEMP = 0,
+	LAST_SAVED_TEMP,
+	SVN_TEMP,
+	GIT_TEMP
+};
+
+
 /**
  *  \struct
  *  \brief
  */
 struct ComparedFile
 {
-	ComparedFile() : isTemp(false) {}
+	ComparedFile() : isTemp(NO_TEMP) {}
 
 	void initFromCurrent(bool currFileIsNew);
 	void updateFromCurrent();
@@ -285,7 +294,7 @@ struct ComparedFile
 	void close();
 	void restore();
 
-	bool	isTemp;
+	Temp_t	isTemp;
 	bool	isNew;
 	int		originalViewId;
 	int		originalPos;
@@ -358,6 +367,15 @@ struct SaveNotificationData
 	int					firstVisibleLine;
 	int					position;
 	BlankSections_t		blankSections;
+};
+
+
+static const TCHAR* tempMark[] =
+{
+	TEXT(""),
+	TEXT("_LastSave"),
+	TEXT("_SVN"),
+	TEXT("_Git")
 };
 
 
@@ -516,24 +534,18 @@ void ComparedFile::updateFromCurrent()
 			TCHAR fileName[MAX_PATH];
 			_tcscpy_s(fileName, _countof(fileName), ::PathFindFileName(name));
 
-			TCHAR* nameMark = fileName + _tcslen(fileName) - 1;
-			for (; (nameMark != fileName) && (*nameMark != TEXT('_')); --nameMark);
+			TCHAR* nameMark = fileName + _tcslen(fileName) - _tcslen(tempMark[isTemp]);
+			*nameMark = 0;
 
-			if (nameMark != fileName)
-			{
-				*nameMark = 0;
-				++nameMark;
+			TCHAR tabName[MAX_PATH];
 
-				TCHAR tabName[MAX_PATH];
+			TCITEM tab;
+			tab.mask = TCIF_TEXT;
+			tab.pszText = tabName;
 
-				TCITEM tab;
-				tab.mask = TCIF_TEXT;
-				tab.pszText = tabName;
+			_sntprintf_s(tabName, _countof(tabName), _TRUNCATE, TEXT("%s ** %s"), fileName, tempMark[isTemp] + 1);
 
-				_sntprintf_s(tabName, _countof(tabName), _TRUNCATE, TEXT("%s ** %s"), fileName, nameMark);
-
-				TabCtrl_SetItem(hNppTabBar, posFromBuffId(buffId), &tab);
-			}
+			TabCtrl_SetItem(hNppTabBar, posFromBuffId(buffId), &tab);
 		}
 	}
 }
@@ -857,7 +869,7 @@ void setContent(const char* content)
 }
 
 
-bool createTempFile(const TCHAR *file, const TCHAR* nameMark)
+bool createTempFile(const TCHAR *file, Temp_t tempType)
 {
 	if (::PathFileExists(file) == FALSE)
 	{
@@ -877,8 +889,7 @@ bool createTempFile(const TCHAR *file, const TCHAR* nameMark)
 
 		if (::PathAppend(tempFile, fileName))
 		{
-			_tcscat_s(tempFile, _countof(tempFile), TEXT("_"));
-			_tcscat_s(tempFile, _countof(tempFile), nameMark);
+			_tcscat_s(tempFile, _countof(tempFile), tempMark[tempType]);
 
 			// Overwrite if file exists already
 			if (::CopyFile(file, tempFile, FALSE))
@@ -897,7 +908,7 @@ bool createTempFile(const TCHAR *file, const TCHAR* nameMark)
 					::SendMessage(nppData._nppHandle, NPPM_SETBUFFERLANGTYPE, buffId, langType);
 					::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_EDIT_SETREADONLY);
 
-					newCompare->pair.file[1].isTemp = true;
+					newCompare->pair.file[1].isTemp = tempType;
 
 					return true;
 				}
@@ -1475,7 +1486,7 @@ void LastSaveDiff()
 	TCHAR file[MAX_PATH];
 	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
 
-	if (createTempFile(file, TEXT("LastSave")))
+	if (createTempFile(file, LAST_SAVED_TEMP))
 		Compare();
 }
 
@@ -1507,7 +1518,7 @@ void SvnDiff()
 
 	if (svnFile[0] != 0)
 	{
-		if (createTempFile(svnFile, TEXT("SVN")))
+		if (createTempFile(svnFile, SVN_TEMP))
 			Compare();
 	}
 	else
@@ -1547,7 +1558,7 @@ void GitDiff()
 	{
 		::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
 
-		if (!createTempFile(file, TEXT("Git")))
+		if (!createTempFile(file, GIT_TEMP))
 		{
 			::GlobalFree(hMem);
 			return;
