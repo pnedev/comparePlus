@@ -327,7 +327,7 @@ LRESULT CALLBACK ProgressDlg::keyHookProc(int code, WPARAM wParam, LPARAM lParam
             // Key is pressed
             if (!(lParam & (1 << 31)))
             {
-                if (wParam == VK_RETURN)
+                if (wParam == VK_RETURN || wParam == VK_ESCAPE)
                 {
                     Inst->cancel();
                     return 1;
