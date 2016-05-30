@@ -540,6 +540,7 @@ void ComparedFile::updateFromCurrent()
 	if (isTemp)
 	{
 		HWND hNppTabBar = NppTabHandleGetter::get(getCurrentViewId());
+
 		if (hNppTabBar)
 		{
 			TCHAR tabName[MAX_PATH];
@@ -721,7 +722,7 @@ NewCompare::NewCompare(bool currFileIsNew, bool markFirstName)
 
 			TabCtrl_GetItem(hNppTabBar, pair.file[0].originalPos, &tab);
 
-			TCHAR tabText[128];
+			TCHAR tabText[MAX_PATH];
 			tab.pszText = tabText;
 
 			_sntprintf_s(tabText, _countof(tabText), _TRUNCATE, TEXT("%s ** %s to Compare"),
@@ -2149,6 +2150,29 @@ void onFileSaved(int buffId)
 
 		::SendMessage(view, SCI_SETFIRSTVISIBLELINE, saveNotifData->firstVisibleLine, 0);
 		::SendMessage(view, SCI_SETSEL, saveNotifData->position, saveNotifData->position);
+
+		ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
+		if (otherFile.isTemp == LAST_SAVED_TEMP)
+		{
+			HWND hNppTabBar = NppTabHandleGetter::get(otherFile.compareViewId);
+
+			if (hNppTabBar)
+			{
+				TCHAR tabText[MAX_PATH];
+
+				TCITEM tab;
+				tab.mask = TCIF_TEXT;
+				tab.pszText = tabText;
+				tab.cchTextMax = _countof(tabText);
+
+				const int tabPos = posFromBuffId(otherFile.buffId);
+				TabCtrl_GetItem(hNppTabBar, tabPos, &tab);
+
+				_tcscat_s(tabText, _countof(tabText), TEXT(" ** DIRTY"));
+
+				TabCtrl_SetItem(hNppTabBar, tabPos, &tab);
+			}
+		}
 	}
 
 	saveNotifData.reset();
