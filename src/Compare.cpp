@@ -1361,7 +1361,10 @@ void Compare()
 
 		cmpPair = addComparePair();
 
-		activateBufferID(currentBuffId);
+		if (cmpPair->getOldFile().isTemp)
+			activateBufferID(cmpPair->getNewFile().buffId);
+		else
+			activateBufferID(currentBuffId);
 	}
 	// Re-Compare triggered - clear current results
 	else
@@ -1410,7 +1413,7 @@ void Compare()
 			}
 			else
 			{
-				if (!doubleView || cmpPair->getOldFile().isTemp)
+				if (!doubleView)
 					activateBufferID(cmpPair->getNewFile().buffId);
 
 				First();
