@@ -370,12 +370,23 @@ struct SaveNotificationData
 };
 
 
-static const TCHAR* tempMark[] =
+/**
+ *  \struct
+ *  \brief
+ */
+struct TempMark_t
 {
-	TEXT(""),
-	TEXT("_LastSave"),
-	TEXT("_SVN"),
-	TEXT("_Git")
+	const TCHAR*	fileMark;
+	const TCHAR*	tabMark;
+};
+
+
+static const TempMark_t tempMark[] =
+{
+	{ TEXT(""),				TEXT("") },
+	{ TEXT("_LastSave"),	TEXT(" ** Last Save") },
+	{ TEXT("_SVN"),			TEXT(" ** SVN") },
+	{ TEXT("_Git"),			TEXT(" ** Git") }
 };
 
 
@@ -531,20 +542,17 @@ void ComparedFile::updateFromCurrent()
 		HWND hNppTabBar = NppTabHandleGetter::get(getCurrentViewId());
 		if (hNppTabBar)
 		{
-			TCHAR fileName[MAX_PATH];
-			_tcscpy_s(fileName, _countof(fileName), ::PathFindFileName(name));
-
-			TCHAR* nameMark = fileName + _tcslen(fileName) - _tcslen(tempMark[isTemp]);
-			*nameMark = 0;
-
 			TCHAR tabName[MAX_PATH];
+			_tcscpy_s(tabName, _countof(tabName), ::PathFindFileName(name));
+
+			TCHAR* nameEnd = tabName + _tcslen(tabName) - _tcslen(tempMark[isTemp].fileMark);
+			*nameEnd = 0;
 
 			TCITEM tab;
 			tab.mask = TCIF_TEXT;
 			tab.pszText = tabName;
 
-			const TCHAR* mark = (isTemp == LAST_SAVED_TEMP) ? TEXT("Last Save") : tempMark[isTemp] + 1;
-			_sntprintf_s(tabName, _countof(tabName), _TRUNCATE, TEXT("%s ** %s"), fileName, mark);
+			_tcscat_s(tabName, _countof(tabName), tempMark[isTemp].tabMark);
 
 			TabCtrl_SetItem(hNppTabBar, posFromBuffId(buffId), &tab);
 		}
@@ -890,7 +898,7 @@ bool createTempFile(const TCHAR *file, Temp_t tempType)
 
 		if (::PathAppend(tempFile, fileName))
 		{
-			_tcscat_s(tempFile, _countof(tempFile), tempMark[tempType]);
+			_tcscat_s(tempFile, _countof(tempFile), tempMark[tempType].fileMark);
 
 			// Overwrite if file exists already
 			if (::CopyFile(file, tempFile, FALSE))
