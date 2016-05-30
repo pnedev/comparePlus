@@ -543,7 +543,8 @@ void ComparedFile::updateFromCurrent()
 			tab.mask = TCIF_TEXT;
 			tab.pszText = tabName;
 
-			_sntprintf_s(tabName, _countof(tabName), _TRUNCATE, TEXT("%s ** %s"), fileName, tempMark[isTemp] + 1);
+			const TCHAR* mark = (isTemp == LAST_SAVED_TEMP) ? TEXT("Last Save") : tempMark[isTemp] + 1;
+			_sntprintf_s(tabName, _countof(tabName), _TRUNCATE, TEXT("%s ** %s"), fileName, mark);
 
 			TabCtrl_SetItem(hNppTabBar, posFromBuffId(buffId), &tab);
 		}
