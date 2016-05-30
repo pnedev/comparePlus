@@ -30,14 +30,14 @@ public:
 	NavDialog();
 	~NavDialog();
 
-	void init(HINSTANCE hInst, NppData nppData);
+	void init(HINSTANCE hInst);
 	void destroy() {};
 
     void SetColors(const ColorSettings& colorSettings);
 	void CreateBitmap();
-    void DrawView();
+    void Update();
 
-	void doDialog(bool willBeShown = true);
+	void doDialog(bool show = true);
 
 protected:
 	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
@@ -49,25 +49,24 @@ private:
 	void Show();
 	void Hide();
 
-    void SetLinePixel(long resultsDoc, int i, HDC hMemDC, int* lastDiffColor, int* lastDiffCounter);
+    void SetDocNavLine(int lineMark, int i, HDC hMemDC);
 	void SetScalingFactor();
 
-	void scrollView(short yPos);
+	void scrollView(int x, int y);
+	void onMouseWheel(int delta);
 
 	void OnPaint();
 
-	NppData	_nppData;
 	tTbData	_data;
 
 	ColorSettings _clr;
 
-	int m_minimumDiffHeight;
+	int m_bmpLineHeight;
 
-    long m_SideBarPartWidth;
-    long m_SideBarPartHeight;
+    int m_NavHalfWidth;
+    int m_NavHeight;
 
-    double m_ScaleFactorDocLines;
-    double m_ScaleFactorVisibleLines;
+    float m_HeightScaleFactor;
 
 	HDC     m_hMemDC1;
 	HDC     m_hMemDC2;
@@ -77,13 +76,10 @@ private:
 
 	SIZE    m_hMemBMPSize;
 
-	/* Internal use */
-	RECT    m_rLeft;
-	RECT    m_rRight;
-
-    int     m_DocLineCount;
-    int     m_VisibleLineCount;
+    int     m_MaxLineCount;
 
     int     m_LineCount1;
     int     m_LineCount2;
+
+	bool	m_mouseOver;
 };

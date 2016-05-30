@@ -502,9 +502,6 @@ std::unique_ptr<NewCompare> newCompare;
 
 unsigned notificationsLock = 0;
 
-long start_line_old;
-long visible_line_count_old;
-
 std::unique_ptr<SaveNotificationData> saveNotifData;
 
 AboutDialog   	AboutDlg;
@@ -908,9 +905,6 @@ void resetCompareView(HWND view)
 
 void showNavBar()
 {
-	start_line_old = -1;
-	visible_line_count_old = -1;
-
 	// Save current N++ focus
 	HWND hwnd = ::GetFocus();
 
@@ -1991,26 +1985,6 @@ void onToolBarReady()
 }
 
 
-void onSciPaint()
-{
-	// update NavBar if Npp views got scrolled, resized, etc..
-	long start_line, visible_line_count;
-
-	start_line = ::SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
-	visible_line_count = _MAX(
-			::SendMessage(nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0),
-			::SendMessage(nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0));
-	visible_line_count = ::SendMessage(nppData._scintillaMainHandle, SCI_VISIBLEFROMDOCLINE, visible_line_count, 0);
-
-	if ((start_line != start_line_old) || (visible_line_count != visible_line_count_old))
-	{
-		NavDlg.DrawView();
-		start_line_old = start_line;
-		visible_line_count_old = visible_line_count;
-	}
-}
-
-
 void onSciUpdateUI(SCNotification *notifyCode)
 {
 	HWND activeView = NULL;
@@ -2312,7 +2286,7 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 
 	AboutDlg.init(hInstance, nppData);
 	SettingsDlg.init(hInstance, nppData);
-	NavDlg.init(hInstance, nppData);
+	NavDlg.init(hInstance);
 }
 
 
@@ -2336,7 +2310,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		// This is used to update the NavBar
 		case SCN_PAINTED:
 			if (NavDlg.isVisible())
-				onSciPaint();
+				NavDlg.Update();
 		break;
 
 		// Emulate word-wrap aware vertical scroll sync

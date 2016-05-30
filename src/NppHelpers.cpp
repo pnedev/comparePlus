@@ -127,7 +127,7 @@ void ViewLocation::restore()
 		return;
 
 	::SetFocus(_view);
-	::SendMessage(_view, SCI_ENSUREVISIBLE, _line, 0);
+	::SendMessage(_view, SCI_ENSUREVISIBLEENFORCEPOLICY, _line, 0);
 	::SendMessage(_view, SCI_SETFIRSTVISIBLELINE, _firstVisibleLine, 0);
 	::SendMessage(_view, SCI_GOTOLINE, _line, 0);
 }

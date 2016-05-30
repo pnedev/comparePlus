@@ -22,7 +22,7 @@
 #include "Compare.h"
 
 
-enum MARKER_ID
+enum Marker_t
 {
 	MARKER_BLANK_LINE = 0,
 	MARKER_MOVED_LINE,
