@@ -22,7 +22,7 @@
 
 #include "Compare.h"
 #include "Engine.h"
-#include "NPPHelpers.h"
+#include "NppHelpers.h"
 
 #include "icon_add_16.h"
 #include "icon_sub_16.h"

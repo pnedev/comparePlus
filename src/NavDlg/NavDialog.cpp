@@ -19,7 +19,7 @@
 
 #include <vector>
 #include "NavDialog.h"
-#include "NPPHelpers.h"
+#include "NppHelpers.h"
 #include "resource.h"
 
 

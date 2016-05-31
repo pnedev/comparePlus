@@ -21,7 +21,7 @@
 #include <vector>
 #include <string>
 #include <limits.h>
-#include "NPPHelpers.h"
+#include "NppHelpers.h"
 
 
 // Rotate a value n bits to the left

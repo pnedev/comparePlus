@@ -31,7 +31,7 @@
     <ClCompile Include="..\..\src\Compare.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\NPPHelpers.cpp">
+    <ClCompile Include="..\..\src\NppHelpers.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\LibHelpers.cpp">
@@ -75,7 +75,7 @@
     <ClInclude Include="..\..\src\Compare.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\NPPHelpers.h">
+    <ClInclude Include="..\..\src\NppHelpers.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Resource.h">

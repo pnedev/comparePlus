@@ -26,7 +26,7 @@
 #include <shlwapi.h>
 
 #include "Compare.h"
-#include "NPPHelpers.h"
+#include "NppHelpers.h"
 #include "LibHelpers.h"
 #include "ProgressDlg.h"
 #include "AboutDialog.h"

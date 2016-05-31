@@ -48,7 +48,7 @@ set (project_sources
     src/Engine/Engine.cpp
     src/Compare.cpp
     src/LibGit2/LibGit2Helper.cpp
-    src/NPPHelpers.cpp
+    src/NppHelpers.cpp
     src/LibHelpers.cpp
     src/SQLite/SqliteHelper.cpp
 )
