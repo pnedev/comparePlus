@@ -901,8 +901,26 @@ bool createTempFile(const TCHAR *file, Temp_t tempType)
 		{
 			_tcscat_s(tempFile, _countof(tempFile), tempMark[tempType].fileMark);
 
-			// Overwrite if file exists already
-			if (::CopyFile(file, tempFile, FALSE))
+			unsigned idxPos = _tcslen(tempFile);
+
+			// Make sure temp file is unique
+			for (int i = 1; ::PathFileExists(tempFile); ++i)
+			{
+				TCHAR idx[32];
+
+				_itot_s(i, idx, _countof(idx), 10);
+
+				if (_tcslen(idx) + idxPos > _countof(tempFile) - 1)
+				{
+					idxPos = _countof(tempFile);
+					break;
+				}
+
+				tempFile[idxPos] = 0;
+				_tcscat_s(tempFile, _countof(tempFile), idx);
+			}
+
+			if ((idxPos <= _countof(tempFile) - 1) && ::CopyFile(file, tempFile, TRUE))
 			{
 				::SetFileAttributes(tempFile, FILE_ATTRIBUTE_TEMPORARY);
 
