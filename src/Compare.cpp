@@ -970,6 +970,7 @@ void clearComparePair(int buffId)
 	compareList.erase(cmpPair);
 
 	resetCompareView(getOtherView());
+	onBufferActivatedDelayed(getCurrentBuffId());
 
 	nppSettings.updatePluginMenu();
 }
@@ -2169,7 +2170,7 @@ void onFileSaved(int buffId)
 		::SendMessage(view, SCI_SETFIRSTVISIBLELINE, saveNotifData->firstVisibleLine, 0);
 		::SendMessage(view, SCI_SETSEL, saveNotifData->position, saveNotifData->position);
 
-		ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
+		const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
 		if (otherFile.isTemp == LAST_SAVED_TEMP)
 		{
 			HWND hNppTabBar = NppTabHandleGetter::get(otherFile.compareViewId);
