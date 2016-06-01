@@ -20,10 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <windows.h>
 #include <tchar.h>
-#include "SQLite/SqliteHelper.h"
-#include "LibGit2/LibGit2Helper.h"
 
 bool LocateDirUp(const TCHAR* dirName, const TCHAR* currentDir, TCHAR* fullDirPath, unsigned fullDirPathSize);
-void CreateRelativeFilePath(const TCHAR* currDir, const TCHAR* baseDir, const TCHAR* file, TCHAR* filePath);
-bool GetSvnFile(const TCHAR* currDir, const TCHAR* svnDir, const TCHAR* file, TCHAR* svnFile, unsigned svnFileSize);
-HGLOBAL GetContentFromGitRepo(const TCHAR* gitDir, const TCHAR* gitFilePath);
+bool GetSvnFile(const TCHAR* fullFilePath, const TCHAR* svnDir, TCHAR* svnFile, unsigned svnFileSize);
+HGLOBAL GetContentFromGitRepo(const TCHAR* fullFilePath);

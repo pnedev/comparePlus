@@ -22,16 +22,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <shlwapi.h>
 #include "LibGit2Helper.h"
 
-PGITREPOSITORYOPEN	git_repository_open;
-PGITREPOSITORYINDEX	git_repository_index;
-PGITINDEXFIND		git_index_find;
-PGITINDEXGETBYINDEX	git_index_get_byindex;
-PGITBLOBLOOKUP		git_blob_lookup;
-PGITBLOBRAWSIZE		git_blob_rawsize;
-PGITBLOBRAWCONTENT	git_blob_rawcontent;
-PGITBLOBFREE		git_blob_free;
-PGITINDEXFREE		git_index_free;
-PGITREPOSITORYFREE	git_repository_free;
+PGITLIBVERSION			git_libgit2_version;
+PGITREPOSITORYOPENEXT	git_repository_open_ext;
+PGITREPOSITORYPATH		git_repository_path;
+PGITREPOSITORYINDEX		git_repository_index;
+PGITINDEXFIND			git_index_find;
+PGITINDEXGETBYINDEX		git_index_get_byindex;
+PGITBLOBLOOKUP			git_blob_lookup;
+PGITBLOBRAWSIZE			git_blob_rawsize;
+PGITBLOBRAWCONTENT		git_blob_rawcontent;
+PGITBLOBFREE			git_blob_free;
+PGITINDEXFREE			git_index_free;
+PGITREPOSITORYFREE		git_repository_free;
 
 bool InitLibGit2()
 {
@@ -53,34 +55,40 @@ bool InitLibGit2()
 		if (!libGit2)
 			return false;
 
-		git_repository_open = (PGITREPOSITORYOPEN)GetProcAddress(libGit2, "git_repository_open");
-		if (!git_repository_open)
+		git_libgit2_version = (PGITLIBVERSION)::GetProcAddress(libGit2, "git_libgit2_version");
+		if (!git_libgit2_version)
 			return false;
-		git_repository_index = (PGITREPOSITORYINDEX)GetProcAddress(libGit2, "git_repository_index");
+		git_repository_open_ext = (PGITREPOSITORYOPENEXT)::GetProcAddress(libGit2, "git_repository_open_ext");
+		if (!git_repository_open_ext)
+			return false;
+		git_repository_path = (PGITREPOSITORYPATH)::GetProcAddress(libGit2, "git_repository_path");
+		if (!git_repository_path)
+			return false;
+		git_repository_index = (PGITREPOSITORYINDEX)::GetProcAddress(libGit2, "git_repository_index");
 		if (!git_repository_index)
 			return false;
-		git_index_find = (PGITINDEXFIND)GetProcAddress(libGit2, "git_index_find");
+		git_index_find = (PGITINDEXFIND)::GetProcAddress(libGit2, "git_index_find");
 		if (!git_index_find)
 			return false;
-		git_index_get_byindex = (PGITINDEXGETBYINDEX)GetProcAddress(libGit2, "git_index_get_byindex");
+		git_index_get_byindex = (PGITINDEXGETBYINDEX)::GetProcAddress(libGit2, "git_index_get_byindex");
 		if (!git_index_get_byindex)
 			return false;
-		git_blob_lookup = (PGITBLOBLOOKUP)GetProcAddress(libGit2, "git_blob_lookup");
+		git_blob_lookup = (PGITBLOBLOOKUP)::GetProcAddress(libGit2, "git_blob_lookup");
 		if (!git_blob_lookup)
 			return false;
-		git_blob_rawsize = (PGITBLOBRAWSIZE)GetProcAddress(libGit2, "git_blob_rawsize");
+		git_blob_rawsize = (PGITBLOBRAWSIZE)::GetProcAddress(libGit2, "git_blob_rawsize");
 		if (!git_blob_rawsize)
 			return false;
-		git_blob_rawcontent = (PGITBLOBRAWCONTENT)GetProcAddress(libGit2, "git_blob_rawcontent");
+		git_blob_rawcontent = (PGITBLOBRAWCONTENT)::GetProcAddress(libGit2, "git_blob_rawcontent");
 		if (!git_blob_rawcontent)
 			return false;
-		git_blob_free = (PGITBLOBFREE)GetProcAddress(libGit2, "git_blob_free");
+		git_blob_free = (PGITBLOBFREE)::GetProcAddress(libGit2, "git_blob_free");
 		if (!git_blob_free)
 			return false;
-		git_index_free = (PGITINDEXFREE)GetProcAddress(libGit2, "git_index_free");
+		git_index_free = (PGITINDEXFREE)::GetProcAddress(libGit2, "git_index_free");
 		if (!git_index_free)
 			return false;
-		git_repository_free = (PGITREPOSITORYFREE)GetProcAddress(libGit2, "git_repository_free");
+		git_repository_free = (PGITREPOSITORYFREE)::GetProcAddress(libGit2, "git_repository_free");
 		if (!git_repository_free)
 			return false;
 

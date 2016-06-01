@@ -20,11 +20,62 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <shlwapi.h>
 #include "Compare.h"
+#include "SQLite/SqliteHelper.h"
+#include "LibGit2/LibGit2Helper.h"
 
 
-static void TCharToChar(const wchar_t* src, char* dest, int size)
+static void CharToTChar(const char* src, wchar_t* dest, int destCharsCount)
 {
-	::WideCharToMultiByte(CP_ACP, 0, src, -1, dest, size, NULL, NULL);
+	::MultiByteToWideChar(CP_ACP, 0, src, -1, dest, destCharsCount);
+}
+
+
+static void TCharToChar(const wchar_t* src, char* dest, int destCharsCount)
+{
+	::WideCharToMultiByte(CP_ACP, 0, src, -1, dest, destCharsCount, NULL, NULL);
+}
+
+
+static void RepoSubPath(const TCHAR* fullFilePath, const TCHAR* baseDir, TCHAR* filePath, unsigned filePathSize)
+{
+	TCHAR basePath[MAX_PATH];
+	TCHAR fullPath[MAX_PATH];
+
+	filePath[0] = 0;
+
+	_tcscpy_s(fullPath, _countof(fullPath), baseDir);
+	for (int i = _tcslen(fullPath) - 1; i >= 0; --i)
+	{
+		if (fullPath[i] == TEXT('/'))
+			fullPath[i] = TEXT('\\');
+	}
+
+	// basePath is supposed to be the revision control system data folder (.svn or .git for example)
+	// so drop it (up one folder)
+	::PathCombine(basePath, fullPath, TEXT(".."));
+
+	_tcscpy_s(fullPath, _countof(fullPath), fullFilePath);
+	for (int i = _tcslen(fullPath) - 1; i >= 0; --i)
+	{
+		if (fullPath[i] == TEXT('/'))
+			fullPath[i] = TEXT('\\');
+	}
+
+	int relativePathPos = _tcslen(basePath);
+
+	if (!_tcsncmp(fullPath, basePath, relativePathPos))
+	{
+		for (int i = _tcslen(fullPath) - 1; i >= relativePathPos; --i)
+		{
+			if (fullPath[i] == TEXT('\\'))
+				fullPath[i] = TEXT('/');
+		}
+
+		if (fullPath[relativePathPos] == TEXT('/'))
+			++relativePathPos;
+
+		_tcscpy_s(filePath, filePathSize, &fullPath[relativePathPos]);
+	}
 }
 
 
@@ -55,27 +106,7 @@ bool LocateDirUp(const TCHAR* dirName, const TCHAR* currentDir, TCHAR* fullDirPa
 }
 
 
-void CreateRelativeFilePath(const TCHAR* currDir, const TCHAR* baseDir, const TCHAR* file, TCHAR* filePath)
-{
-	TCHAR tmp[MAX_PATH];
-
-	filePath[0] = 0;
-
-	// baseDir is supposed to be the revision control system data folder (.svn or .git for example)
-	// so drop it (up one folder)
-	::PathCombine(filePath, baseDir, TEXT(".."));
-	::PathRelativePathTo(tmp, filePath, FILE_ATTRIBUTE_DIRECTORY, currDir, FILE_ATTRIBUTE_DIRECTORY);
-	::PathCombine(filePath, tmp, file);
-
-	for (int i = _tcslen(filePath) - 1; i >= 0; --i)
-	{
-		if (filePath[i] == TEXT('\\'))
-			filePath[i] = TEXT('/');
-	}
-}
-
-
-bool GetSvnFile(const TCHAR* currDir, const TCHAR* svnDir, const TCHAR* file, TCHAR* svnFile, unsigned svnFileSize)
+bool GetSvnFile(const TCHAR* fullFilePath, const TCHAR* svnDir, TCHAR* svnFile, unsigned svnFileSize)
 {
 	bool ret = false;
 	TCHAR svnBase[MAX_PATH];
@@ -87,7 +118,7 @@ bool GetSvnFile(const TCHAR* currDir, const TCHAR* svnDir, const TCHAR* file, TC
 	{
 		if (!InitSQLite())
 		{
-			::MessageBox(nppData._nppHandle, TEXT("Failed to initialize SQLite"), TEXT("Compare Plugin"), MB_OK);
+			::MessageBox(nppData._nppHandle, TEXT("Failed to initialize SQLite."), TEXT("Compare Plugin"), MB_OK);
 			return false;
 		}
 
@@ -97,7 +128,7 @@ bool GetSvnFile(const TCHAR* currDir, const TCHAR* svnDir, const TCHAR* file, TC
 			return false;
 
 		TCHAR svnFilePath[MAX_PATH];
-		CreateRelativeFilePath(currDir, svnDir, file, svnFilePath);
+		RepoSubPath(fullFilePath, svnDir, svnFilePath, _countof(svnFilePath));
 
 		TCHAR sqlQuery[MAX_PATH + 64];
 		_sntprintf_s(sqlQuery, _countof(sqlQuery), _TRUNCATE,
@@ -144,6 +175,9 @@ bool GetSvnFile(const TCHAR* currDir, const TCHAR* svnDir, const TCHAR* file, TC
 		TCHAR tmp[MAX_PATH];
 
 		::PathCombine(tmp, svnDir, TEXT("text-base"));
+
+		const TCHAR* file = ::PathFindFileName(fullFilePath);
+
 		::PathCombine(svnBase, tmp, file);
 		_tcscat_s(svnBase, _countof(svnBase), TEXT(".svn-base"));
 
@@ -159,71 +193,81 @@ bool GetSvnFile(const TCHAR* currDir, const TCHAR* svnDir, const TCHAR* file, TC
 }
 
 
-HGLOBAL GetContentFromGitRepo(const TCHAR* gitDir, const TCHAR* gitFilePath)
+HGLOBAL GetContentFromGitRepo(const TCHAR* fullFilePath)
 {
-	HGLOBAL hMem = NULL;
-
-	char ansiGitDir[MAX_PATH];
-
-	TCharToChar(gitDir, ansiGitDir, sizeof(ansiGitDir));
-
 	if (!InitLibGit2())
 	{
-		::MessageBox(nppData._nppHandle, TEXT("Failed to initialize LibGit2"), TEXT("Compare Plugin"), MB_OK);
+		::MessageBox(nppData._nppHandle, TEXT("Failed to initialize LibGit2."), TEXT("Compare Plugin"), MB_OK);
 		return NULL;
 	}
 
 	git_repository* repo;
 
-	if (!git_repository_open(&repo, ansiGitDir))
+	char ansiGitFilePath[MAX_PATH];
+
 	{
-		git_index* index;
+		char ansiCurrDir[MAX_PATH];
+		TCharToChar(fullFilePath, ansiCurrDir, sizeof(ansiCurrDir));
 
-		if (!git_repository_index(&index, repo))
+		if (git_repository_open_ext(&repo, ansiCurrDir, 0, NULL))
+			return NULL;
+
+		const char* ansiGitDir = git_repository_path(repo);
+
+		TCHAR gitDir[MAX_PATH];
+		CharToTChar(ansiGitDir, gitDir, _countof(gitDir));
+
+		TCHAR gitFile[MAX_PATH];
+		RepoSubPath(fullFilePath, gitDir, gitFile, _countof(gitFile));
+
+		TCharToChar(gitFile, ansiGitFilePath, sizeof(ansiGitFilePath));
+	}
+
+	HGLOBAL hMem = NULL;
+
+	git_index* index;
+
+	if (!git_repository_index(&index, repo))
+	{
+		size_t at_pos;
+
+		if (git_index_find(&at_pos, index, ansiGitFilePath) != GIT_ENOTFOUND)
 		{
-			size_t at_pos;
-			char ansiGitFilePath[MAX_PATH];
+			const git_index_entry* e = git_index_get_byindex(index, at_pos);
 
-			TCharToChar(gitFilePath, ansiGitFilePath, sizeof(ansiGitFilePath));
-
-			if (git_index_find(&at_pos, index, ansiGitFilePath) != GIT_ENOTFOUND)
+			if (e)
 			{
-				const git_index_entry* e = git_index_get_byindex(index, at_pos);
+				git_blob* blob;
 
-				if (e)
+				if (!git_blob_lookup(&blob, repo, &e->oid))
 				{
-					git_blob* blob;
+					long sizeBlob = (long)git_blob_rawsize(blob);
 
-					if (!git_blob_lookup(&blob, repo, &e->oid))
+					if (sizeBlob)
 					{
-						long sizeBlob = (long)git_blob_rawsize(blob);
+						const void* content = git_blob_rawcontent(blob);
 
-						if (sizeBlob)
+						if (content)
 						{
-							const void* content = git_blob_rawcontent(blob);
+							hMem = ::GlobalAlloc(GMEM_FIXED, (SIZE_T)sizeBlob + 1);
 
-							if (content)
+							if (hMem)
 							{
-								hMem = ::GlobalAlloc(GMEM_FIXED, (SIZE_T)sizeBlob + 1);
-
-								if (hMem)
-								{
-									::CopyMemory(hMem, content, (SIZE_T)sizeBlob);
-									*((char*)hMem + sizeBlob) = 0;
-								}
+								::CopyMemory(hMem, content, (SIZE_T)sizeBlob);
+								*((char*)hMem + sizeBlob) = 0;
 							}
 						}
-
-						git_blob_free(blob);
 					}
+
+					git_blob_free(blob);
 				}
 			}
-
-			git_index_free(index);
 		}
 
-		git_repository_free(repo);
+		git_index_free(index);
 	}
+
+	git_repository_free(repo);
 
 	return hMem;
 }

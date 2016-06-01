@@ -49,22 +49,22 @@ bool InitSQLite()
 		if (!ligSQLite)
 			return false;
 
-		sqlite3_open16 = (PSQLOPEN16)GetProcAddress(ligSQLite, "sqlite3_open16");
+		sqlite3_open16 = (PSQLOPEN16)::GetProcAddress(ligSQLite, "sqlite3_open16");
 		if (!sqlite3_open16)
 			return false;
-		sqlite3_prepare16_v2 = (PSQLPREPARE16V2)GetProcAddress(ligSQLite, "sqlite3_prepare16_v2");
+		sqlite3_prepare16_v2 = (PSQLPREPARE16V2)::GetProcAddress(ligSQLite, "sqlite3_prepare16_v2");
 		if (!sqlite3_prepare16_v2)
 			return false;
-		sqlite3_step = (PSQLSTEP)GetProcAddress(ligSQLite, "sqlite3_step");
+		sqlite3_step = (PSQLSTEP)::GetProcAddress(ligSQLite, "sqlite3_step");
 		if (!sqlite3_step)
 			return false;
-		sqlite3_column_text16 = (PSQLCOLUMNTEXT16)GetProcAddress(ligSQLite, "sqlite3_column_text16");
+		sqlite3_column_text16 = (PSQLCOLUMNTEXT16)::GetProcAddress(ligSQLite, "sqlite3_column_text16");
 		if (!sqlite3_column_text16)
 			return false;
-		sqlite3_finalize = (PSQLFINALZE)GetProcAddress(ligSQLite, "sqlite3_finalize");
+		sqlite3_finalize = (PSQLFINALZE)::GetProcAddress(ligSQLite, "sqlite3_finalize");
 		if (!sqlite3_finalize)
 			return false;
-		sqlite3_close = (PSQLCLOSE)GetProcAddress(ligSQLite, "sqlite3_close");
+		sqlite3_close = (PSQLCLOSE)::GetProcAddress(ligSQLite, "sqlite3_close");
 		if (!sqlite3_close)
 			return false;
 

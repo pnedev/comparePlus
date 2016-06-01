@@ -1540,11 +1540,9 @@ void SvnDiff()
 
 		if (LocateDirUp(TEXT(".svn"), currDir, svnDir, _countof(svnDir)))
 		{
-			TCHAR file[MAX_PATH];
+			::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(currDir), (LPARAM)currDir);
 
-			::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, _countof(file), (LPARAM)file);
-
-			GetSvnFile(currDir, svnDir, file, svnFile, _countof(svnFile));
+			GetSvnFile(currDir, svnDir, svnFile, _countof(svnFile));
 		}
 	}
 
@@ -1555,56 +1553,35 @@ void SvnDiff()
 	}
 	else
 	{
-		::MessageBox(nppData._nppHandle, TEXT("Missing SVN data."), TEXT("Compare Plugin"), MB_OK);
+		::MessageBox(nppData._nppHandle, TEXT("No SVN data found."), TEXT("Compare Plugin"), MB_OK);
 	}
 }
 
 
 void GitDiff()
 {
-	HGLOBAL hMem = NULL;
 	TCHAR file[MAX_PATH];
 
-	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTDIRECTORY, _countof(file), (LPARAM)file);
+	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
 
-	if (file[0] != 0)
+	HGLOBAL hMem = GetContentFromGitRepo(file);
+
+	if (hMem == NULL)
 	{
-		TCHAR currDir[MAX_PATH];
-		TCHAR gitDir[MAX_PATH];
-
-		::PathCanonicalize(currDir, file);
-
-		if (LocateDirUp(TEXT(".git"), currDir, gitDir, _countof(gitDir)))
-		{
-			::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, _countof(file), (LPARAM)file);
-
-			TCHAR gitFile[MAX_PATH];
-
-			CreateRelativeFilePath(currDir, gitDir, file, gitFile);
-
-			hMem = GetContentFromGitRepo(gitDir, gitFile);
-		}
+		::MessageBox(nppData._nppHandle, TEXT("No Git data found."), TEXT("Compare Plugin"), MB_OK);
+		return;
 	}
 
-	if (hMem)
+	if (!createTempFile(file, GIT_TEMP))
 	{
-		::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
-
-		if (!createTempFile(file, GIT_TEMP))
-		{
-			::GlobalFree(hMem);
-			return;
-		}
-
-		setContent((const char*)hMem);
 		::GlobalFree(hMem);
+		return;
+	}
 
-		Compare();
-	}
-	else
-	{
-		::MessageBox(nppData._nppHandle, TEXT("Missing Git data."), TEXT("Compare Plugin"), MB_OK);
-	}
+	setContent((const char*)hMem);
+	::GlobalFree(hMem);
+
+	Compare();
 }
 
 
