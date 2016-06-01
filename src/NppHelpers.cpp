@@ -409,7 +409,10 @@ void jumpToNextChange(bool down)
 
 DocLines_t getAllLines(HWND window, std::vector<int>& lineNum)
 {
-	int docLines = ::SendMessage(window, SCI_GETLINECOUNT, 0, 0) - 1;
+	int docLines = ::SendMessage(window, SCI_GETLENGTH, 0, 0);
+
+	if (docLines)
+		docLines = ::SendMessage(window, SCI_GETLINECOUNT, 0, 0);
 
 	DocLines_t lines(docLines);
 	lineNum.resize(docLines);
