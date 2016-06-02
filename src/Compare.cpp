@@ -546,16 +546,20 @@ void ComparedFile::updateFromCurrent()
 			TCHAR tabName[MAX_PATH];
 			_tcscpy_s(tabName, _countof(tabName), ::PathFindFileName(name));
 
-			TCHAR* nameEnd = tabName + _tcslen(tabName) - _tcslen(tempMark[isTemp].fileMark);
-			*nameEnd = 0;
+			int i = _tcslen(tabName) - 1 - _tcslen(tempMark[isTemp].fileMark);
+			for (; i > 0 && tabName[i] != TEXT('_'); --i);
 
-			TCITEM tab;
-			tab.mask = TCIF_TEXT;
-			tab.pszText = tabName;
+			if (i > 0)
+			{
+				tabName[i] = 0;
+				_tcscat_s(tabName, _countof(tabName), tempMark[isTemp].tabMark);
 
-			_tcscat_s(tabName, _countof(tabName), tempMark[isTemp].tabMark);
+				TCITEM tab;
+				tab.mask = TCIF_TEXT;
+				tab.pszText = tabName;
 
-			TabCtrl_SetItem(hNppTabBar, posFromBuffId(buffId), &tab);
+				TabCtrl_SetItem(hNppTabBar, posFromBuffId(buffId), &tab);
+			}
 		}
 	}
 }
@@ -904,23 +908,27 @@ bool createTempFile(const TCHAR *file, Temp_t tempType)
 			unsigned idxPos = _tcslen(tempFile);
 
 			// Make sure temp file is unique
-			for (int i = 1; ::PathFileExists(tempFile); ++i)
+			for (int i = 1; ; ++i)
 			{
 				TCHAR idx[32];
 
 				_itot_s(i, idx, _countof(idx), 10);
 
-				if (_tcslen(idx) + idxPos > _countof(tempFile) - 1)
+				if (_tcslen(idx) + idxPos + 1 > _countof(tempFile))
 				{
 					idxPos = _countof(tempFile);
 					break;
 				}
 
-				tempFile[idxPos] = 0;
 				_tcscat_s(tempFile, _countof(tempFile), idx);
+
+				if (!::PathFileExists(tempFile))
+					break;
+
+				tempFile[idxPos] = 0;
 			}
 
-			if ((idxPos <= _countof(tempFile) - 1) && ::CopyFile(file, tempFile, TRUE))
+			if ((idxPos + 1 <= _countof(tempFile)) && ::CopyFile(file, tempFile, TRUE))
 			{
 				::SetFileAttributes(tempFile, FILE_ATTRIBUTE_TEMPORARY);
 
@@ -2164,7 +2172,7 @@ void onFileSaved(int buffId)
 				const int tabPos = posFromBuffId(otherFile.buffId);
 				TabCtrl_GetItem(hNppTabBar, tabPos, &tab);
 
-				_tcscat_s(tabText, _countof(tabText), TEXT(" ** DIRTY"));
+				_tcscat_s(tabText, _countof(tabText), TEXT(" ** Outdated!"));
 
 				TabCtrl_SetItem(hNppTabBar, tabPos, &tab);
 			}
