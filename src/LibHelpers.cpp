@@ -19,24 +19,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "LibHelpers.h"
 #include <stdlib.h>
 #include <shlwapi.h>
+#include <cstring>
 #include "Compare.h"
 #include "SQLite/SqliteHelper.h"
 #include "LibGit2/LibGit2Helper.h"
 
 
-static void CharToTChar(const char* src, wchar_t* dest, int destCharsCount)
+namespace // anonymous namespace
+{
+
+void CharToTChar(const char* src, wchar_t* dest, int destCharsCount)
 {
 	::MultiByteToWideChar(CP_ACP, 0, src, -1, dest, destCharsCount);
 }
 
 
-static void TCharToChar(const wchar_t* src, char* dest, int destCharsCount)
+void TCharToChar(const wchar_t* src, char* dest, int destCharsCount)
 {
 	::WideCharToMultiByte(CP_ACP, 0, src, -1, dest, destCharsCount, NULL, NULL);
 }
 
 
-static void RepoSubPath(const TCHAR* fullFilePath, const TCHAR* baseDir, TCHAR* filePath, unsigned filePathSize)
+void RepoSubPath(const TCHAR* fullFilePath, const TCHAR* baseDir, TCHAR* filePath, unsigned filePathSize)
 {
 	TCHAR basePath[MAX_PATH];
 	TCHAR fullPath[MAX_PATH];
@@ -82,14 +86,13 @@ static void RepoSubPath(const TCHAR* fullFilePath, const TCHAR* baseDir, TCHAR* 
 // Search recursively upwards for the dirName folder
 bool LocateDirUp(const TCHAR* dirName, const TCHAR* currentDir, TCHAR* fullDirPath, unsigned fullDirPathSize)
 {
-	TCHAR currPath[MAX_PATH];
 	TCHAR testPath[MAX_PATH];
 
-	_tcscpy_s(currPath, _countof(currPath), currentDir);
+	_tcscpy_s(fullDirPath, fullDirPathSize, currentDir);
 
-	while (!::PathIsRoot(currPath))
+	while (!::PathIsRoot(fullDirPath))
 	{
-		::PathCombine(testPath, currPath, dirName);
+		::PathCombine(testPath, fullDirPath, dirName);
 		if (::PathIsDirectory(testPath))
 		{
 			// found
@@ -98,176 +101,193 @@ bool LocateDirUp(const TCHAR* dirName, const TCHAR* currentDir, TCHAR* fullDirPa
 		}
 
 		// up one folder
-		::PathCombine(testPath, currPath, TEXT(".."));
-		_tcscpy_s(currPath, _countof(currPath), testPath);
+		::PathCombine(testPath, fullDirPath, TEXT(".."));
+		_tcscpy_s(fullDirPath, fullDirPathSize, testPath);
 	}
 
 	return false;
 }
 
+} // anonymous namespace
 
-bool GetSvnFile(const TCHAR* fullFilePath, const TCHAR* svnDir, TCHAR* svnFile, unsigned svnFileSize)
+
+bool GetSvnFile(const TCHAR* fullFilePath, TCHAR* svnFile, unsigned svnFileSize)
 {
-	bool ret = false;
+	TCHAR svnDir[MAX_PATH];
 	TCHAR svnBase[MAX_PATH];
 
-	::PathCombine(svnBase, svnDir, TEXT("wc.db"));
+	_tcscpy_s(svnBase, _countof(svnBase), fullFilePath);
+	::PathRemoveFileSpec(svnBase);
 
-	// is it SVN 1.7 or above?
-	if (::PathFileExists(svnBase))
+	bool ret = LocateDirUp(TEXT(".svn"), svnBase, svnDir, _countof(svnDir));
+
+	if (ret)
 	{
-		if (!InitSQLite())
-		{
-			::MessageBox(nppData._nppHandle, TEXT("Failed to initialize SQLite."), TEXT("Compare Plugin"), MB_OK);
-			return false;
-		}
+		ret = false;
 
-		sqlite3* ppDb;
+		::PathCombine(svnBase, svnDir, TEXT("wc.db"));
 
-		if (sqlite3_open16(svnBase, &ppDb) != SQLITE_OK)
-			return false;
-
-		TCHAR svnFilePath[MAX_PATH];
-		RepoSubPath(fullFilePath, svnDir, svnFilePath, _countof(svnFilePath));
-
-		TCHAR sqlQuery[MAX_PATH + 64];
-		_sntprintf_s(sqlQuery, _countof(sqlQuery), _TRUNCATE,
-				TEXT("SELECT checksum FROM nodes_current WHERE local_relpath='%s';"), svnFilePath);
-
-		sqlite3_stmt* pStmt;
-
-		if (sqlite3_prepare16_v2(ppDb, sqlQuery, -1, &pStmt, NULL) == SQLITE_OK)
-		{
-			if (sqlite3_step(pStmt) == SQLITE_ROW)
-			{
-				const TCHAR* checksum = (const TCHAR*)sqlite3_column_text16(pStmt, 0);
-
-				if (checksum[0] != 0)
-				{
-					TCHAR tmp[MAX_PATH];
-					TCHAR idx[128];
-
-					_tcsncpy_s(idx, _countof(idx), checksum + 6, 2);
-
-					::PathCombine(svnBase, svnDir, TEXT("pristine"));
-					::PathCombine(tmp, svnBase, idx);
-
-					_tcscpy_s(idx, _countof(idx), checksum + 6);
-
-					::PathCombine(svnBase, tmp, idx);
-					_tcscat_s(svnBase, _countof(svnBase), TEXT(".svn-base"));
-
-					if (PathFileExists(svnBase))
-					{
-						_tcscpy_s(svnFile, svnFileSize, svnBase);
-						ret = true;
-					}
-				}
-			}
-
-			sqlite3_finalize(pStmt);
-		}
-
-		sqlite3_close(ppDb);
-	}
-	else
-	{
-		TCHAR tmp[MAX_PATH];
-
-		::PathCombine(tmp, svnDir, TEXT("text-base"));
-
-		const TCHAR* file = ::PathFindFileName(fullFilePath);
-
-		::PathCombine(svnBase, tmp, file);
-		_tcscat_s(svnBase, _countof(svnBase), TEXT(".svn-base"));
-
-		// Is it an old SVN version?
+		// is it SVN 1.7 or above?
 		if (::PathFileExists(svnBase))
 		{
-			_tcscpy_s(svnFile, svnFileSize, svnBase);
-			ret = true;
+			if (!InitSQLite())
+			{
+				::MessageBox(nppData._nppHandle, TEXT("Failed to initialize SQLite - operation aborted."),
+						TEXT("Compare Plugin"), MB_OK);
+				return false;
+			}
+
+			sqlite3* ppDb;
+
+			if (sqlite3_open16(svnBase, &ppDb) == SQLITE_OK)
+			{
+				TCHAR svnFilePath[MAX_PATH];
+				RepoSubPath(fullFilePath, svnDir, svnFilePath, _countof(svnFilePath));
+
+				TCHAR sqlQuery[MAX_PATH + 64];
+				_sntprintf_s(sqlQuery, _countof(sqlQuery), _TRUNCATE,
+						TEXT("SELECT checksum FROM nodes_current WHERE local_relpath='%s';"), svnFilePath);
+
+				sqlite3_stmt* pStmt;
+
+				if (sqlite3_prepare16_v2(ppDb, sqlQuery, -1, &pStmt, NULL) == SQLITE_OK)
+				{
+					if (sqlite3_step(pStmt) == SQLITE_ROW)
+					{
+						const TCHAR* checksum = (const TCHAR*)sqlite3_column_text16(pStmt, 0);
+
+						if (checksum[0] != 0)
+						{
+							TCHAR tmp[MAX_PATH];
+							TCHAR idx[128];
+
+							_tcsncpy_s(idx, _countof(idx), checksum + 6, 2);
+
+							::PathCombine(svnBase, svnDir, TEXT("pristine"));
+							::PathCombine(tmp, svnBase, idx);
+
+							_tcscpy_s(idx, _countof(idx), checksum + 6);
+
+							::PathCombine(svnBase, tmp, idx);
+							_tcscat_s(svnBase, _countof(svnBase), TEXT(".svn-base"));
+
+							if (PathFileExists(svnBase))
+							{
+								_tcscpy_s(svnFile, svnFileSize, svnBase);
+								ret = true;
+							}
+						}
+					}
+
+					sqlite3_finalize(pStmt);
+				}
+
+				sqlite3_close(ppDb);
+			}
+		}
+		else
+		{
+			TCHAR tmp[MAX_PATH];
+
+			::PathCombine(tmp, svnDir, TEXT("text-base"));
+
+			const TCHAR* file = ::PathFindFileName(fullFilePath);
+
+			::PathCombine(svnBase, tmp, file);
+			_tcscat_s(svnBase, _countof(svnBase), TEXT(".svn-base"));
+
+			// Is it an old SVN version?
+			if (::PathFileExists(svnBase))
+			{
+				_tcscpy_s(svnFile, svnFileSize, svnBase);
+				ret = true;
+			}
 		}
 	}
+
+	if (!ret)
+		::MessageBox(nppData._nppHandle, TEXT("No SVN data found."), TEXT("Compare Plugin"), MB_OK);
 
 	return ret;
 }
 
 
-HGLOBAL GetContentFromGitRepo(const TCHAR* fullFilePath)
+std::vector<char> GetGitFileContent(const TCHAR* fullFilePath)
 {
+	std::vector<char> gitFileContent;
+
 	if (!InitLibGit2())
 	{
-		::MessageBox(nppData._nppHandle, TEXT("Failed to initialize LibGit2."), TEXT("Compare Plugin"), MB_OK);
-		return NULL;
+		::MessageBox(nppData._nppHandle, TEXT("Failed to initialize LibGit2 - operation aborted."),
+				TEXT("Compare Plugin"), MB_OK);
+		return gitFileContent;
 	}
 
-	git_repository* repo;
+	git_repository* repo = NULL;
 
 	char ansiGitFilePath[MAX_PATH];
 
 	{
-		char ansiCurrDir[MAX_PATH];
-		TCharToChar(fullFilePath, ansiCurrDir, sizeof(ansiCurrDir));
+		TCharToChar(fullFilePath, ansiGitFilePath, sizeof(ansiGitFilePath));
 
-		if (git_repository_open_ext(&repo, ansiCurrDir, 0, NULL))
-			return NULL;
+		if (!git_repository_open_ext(&repo, ansiGitFilePath, 0, NULL))
+		{
+			const char* ansiGitDir = git_repository_path(repo);
 
-		const char* ansiGitDir = git_repository_path(repo);
+			TCHAR gitDir[MAX_PATH];
+			CharToTChar(ansiGitDir, gitDir, _countof(gitDir));
 
-		TCHAR gitDir[MAX_PATH];
-		CharToTChar(ansiGitDir, gitDir, _countof(gitDir));
+			TCHAR gitFile[MAX_PATH];
+			RepoSubPath(fullFilePath, gitDir, gitFile, _countof(gitFile));
 
-		TCHAR gitFile[MAX_PATH];
-		RepoSubPath(fullFilePath, gitDir, gitFile, _countof(gitFile));
-
-		TCharToChar(gitFile, ansiGitFilePath, sizeof(ansiGitFilePath));
+			TCharToChar(gitFile, ansiGitFilePath, sizeof(ansiGitFilePath));
+		}
 	}
 
-	HGLOBAL hMem = NULL;
-
-	git_index* index;
-
-	if (!git_repository_index(&index, repo))
+	if (repo)
 	{
-		size_t at_pos;
+		git_index* index;
 
-		if (git_index_find(&at_pos, index, ansiGitFilePath) != GIT_ENOTFOUND)
+		if (!git_repository_index(&index, repo))
 		{
-			const git_index_entry* e = git_index_get_byindex(index, at_pos);
+			size_t at_pos;
 
-			if (e)
+			if (git_index_find(&at_pos, index, ansiGitFilePath) != GIT_ENOTFOUND)
 			{
-				git_blob* blob;
+				const git_index_entry* e = git_index_get_byindex(index, at_pos);
 
-				if (!git_blob_lookup(&blob, repo, &e->oid))
+				if (e)
 				{
-					long sizeBlob = (long)git_blob_rawsize(blob);
+					git_blob* blob;
 
-					if (sizeBlob)
+					if (!git_blob_lookup(&blob, repo, &e->oid))
 					{
-						const void* content = git_blob_rawcontent(blob);
+						long blobSize = (long)git_blob_rawsize(blob);
 
-						if (content)
+						if (blobSize)
 						{
-							hMem = ::GlobalAlloc(GMEM_FIXED, (SIZE_T)sizeBlob + 1);
+							const void* content = git_blob_rawcontent(blob);
 
-							if (hMem)
+							if (content)
 							{
-								::CopyMemory(hMem, content, (SIZE_T)sizeBlob);
-								*((char*)hMem + sizeBlob) = 0;
+								gitFileContent.resize(blobSize + 1, 0);
+								std::memcpy(gitFileContent.data(), content, blobSize);
 							}
 						}
-					}
 
-					git_blob_free(blob);
+						git_blob_free(blob);
+					}
 				}
 			}
+
+			git_index_free(index);
 		}
 
-		git_index_free(index);
+		git_repository_free(repo);
 	}
 
-	git_repository_free(repo);
+	if (gitFileContent.empty())
+		::MessageBox(nppData._nppHandle, TEXT("No Git data found."), TEXT("Compare Plugin"), MB_OK);
 
-	return hMem;
+	return gitFileContent;
 }

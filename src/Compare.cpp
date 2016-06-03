@@ -1524,6 +1524,7 @@ void ClearAllCompares()
 void LastSaveDiff()
 {
 	TCHAR file[MAX_PATH];
+
 	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
 
 	if (createTempFile(file, LAST_SAVED_TEMP))
@@ -1533,36 +1534,16 @@ void LastSaveDiff()
 
 void SvnDiff()
 {
+	TCHAR file[MAX_PATH];
 	TCHAR svnFile[MAX_PATH];
 
-	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTDIRECTORY, _countof(svnFile), (LPARAM)svnFile);
+	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
 
-	if (svnFile[0] != 0)
-	{
-		TCHAR currDir[MAX_PATH];
-		TCHAR svnDir[MAX_PATH];
+	if (!GetSvnFile(file, svnFile, _countof(svnFile)))
+		return;
 
-		::PathCanonicalize(currDir, svnFile);
-
-		svnFile[0] = 0;
-
-		if (LocateDirUp(TEXT(".svn"), currDir, svnDir, _countof(svnDir)))
-		{
-			::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(currDir), (LPARAM)currDir);
-
-			GetSvnFile(currDir, svnDir, svnFile, _countof(svnFile));
-		}
-	}
-
-	if (svnFile[0] != 0)
-	{
-		if (createTempFile(svnFile, SVN_TEMP))
-			Compare();
-	}
-	else
-	{
-		::MessageBox(nppData._nppHandle, TEXT("No SVN data found."), TEXT("Compare Plugin"), MB_OK);
-	}
+	if (createTempFile(svnFile, SVN_TEMP))
+		Compare();
 }
 
 
@@ -1572,22 +1553,16 @@ void GitDiff()
 
 	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
 
-	HGLOBAL hMem = GetContentFromGitRepo(file);
+	std::vector<char> content = GetGitFileContent(file);
 
-	if (hMem == NULL)
-	{
-		::MessageBox(nppData._nppHandle, TEXT("No Git data found."), TEXT("Compare Plugin"), MB_OK);
+	if (content.empty())
 		return;
-	}
 
 	if (!createTempFile(file, GIT_TEMP))
-	{
-		::GlobalFree(hMem);
 		return;
-	}
 
-	setContent((const char*)hMem);
-	::GlobalFree(hMem);
+	setContent(content.data());
+	content.clear();
 
 	Compare();
 }
