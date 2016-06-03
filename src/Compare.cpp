@@ -2172,7 +2172,7 @@ void onFileSaved(int buffId)
 				const int tabPos = posFromBuffId(otherFile.buffId);
 				TabCtrl_GetItem(hNppTabBar, tabPos, &tab);
 
-				_tcscat_s(tabText, _countof(tabText), TEXT(" ** Outdated!"));
+				_tcscat_s(tabText, _countof(tabText), TEXT(" - Outdated"));
 
 				TabCtrl_SetItem(hNppTabBar, tabPos, &tab);
 			}
