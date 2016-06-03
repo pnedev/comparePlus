@@ -28,57 +28,76 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace // anonymous namespace
 {
 
-void CharToTChar(const char* src, wchar_t* dest, int destCharsCount)
-{
-	::MultiByteToWideChar(CP_ACP, 0, src, -1, dest, destCharsCount);
-}
-
-
 void TCharToChar(const wchar_t* src, char* dest, int destCharsCount)
 {
 	::WideCharToMultiByte(CP_ACP, 0, src, -1, dest, destCharsCount, NULL, NULL);
 }
 
 
-void RepoSubPath(const TCHAR* fullFilePath, const TCHAR* baseDir, TCHAR* filePath, unsigned filePathSize)
+void RelativePath(const char* fullFilePath, const char* baseDir, char* filePath, unsigned filePathSize)
 {
-	TCHAR basePath[MAX_PATH];
-	TCHAR fullPath[MAX_PATH];
-
 	filePath[0] = 0;
 
-	_tcscpy_s(fullPath, _countof(fullPath), baseDir);
-	for (int i = _tcslen(fullPath) - 1; i >= 0; --i)
+	char fullPath[MAX_PATH];
+
+	strcpy_s(fullPath, _countof(fullPath), fullFilePath);
+	for (int i = strlen(fullPath) - 1; i >= 0; --i)
 	{
-		if (fullPath[i] == TEXT('/'))
-			fullPath[i] = TEXT('\\');
+		if (fullPath[i] == '\\')
+			fullPath[i] = '/';
 	}
 
-	// basePath is supposed to be the revision control system data folder (.svn or .git for example)
-	// so drop it (up one folder)
-	::PathCombine(basePath, fullPath, TEXT(".."));
+	char basePath[MAX_PATH];
 
-	_tcscpy_s(fullPath, _countof(fullPath), fullFilePath);
-	for (int i = _tcslen(fullPath) - 1; i >= 0; --i)
+	strcpy_s(basePath, sizeof(basePath), baseDir);
+	for (int i = strlen(basePath) - 1; i >= 0; --i)
 	{
-		if (fullPath[i] == TEXT('/'))
-			fullPath[i] = TEXT('\\');
+		if (basePath[i] == '\\')
+			basePath[i] = '/';
 	}
 
-	int relativePathPos = _tcslen(basePath);
+	int relativePathPos = strlen(basePath);
 
-	if (!_tcsncmp(fullPath, basePath, relativePathPos))
+	if (!strncmp(fullPath, basePath, relativePathPos))
 	{
-		for (int i = _tcslen(fullPath) - 1; i >= relativePathPos; --i)
-		{
-			if (fullPath[i] == TEXT('\\'))
-				fullPath[i] = TEXT('/');
-		}
-
-		if (fullPath[relativePathPos] == TEXT('/'))
+		if (fullPath[relativePathPos] == '/')
 			++relativePathPos;
 
-		_tcscpy_s(filePath, filePathSize, &fullPath[relativePathPos]);
+		strcpy_s(filePath, filePathSize, &fullPath[relativePathPos]);
+	}
+}
+
+
+void RelativePath(const wchar_t* fullFilePath, const wchar_t* baseDir, wchar_t* filePath, unsigned filePathSize)
+{
+	filePath[0] = 0;
+
+	wchar_t fullPath[MAX_PATH];
+
+	wcscpy_s(fullPath, _countof(fullPath), fullFilePath);
+	for (int i = wcslen(fullPath) - 1; i >= 0; --i)
+	{
+		if (fullPath[i] == L'\\')
+			fullPath[i] = L'/';
+	}
+
+	wchar_t basePath[MAX_PATH];
+
+	wcscpy_s(basePath, _countof(basePath), baseDir);
+	for (int i = wcslen(basePath) - 1; i >= 0; --i)
+	{
+		if (basePath[i] == L'\\')
+			basePath[i] = L'/';
+	}
+
+	int relativePathPos = wcslen(basePath);
+
+	if (!wcsncmp(fullPath, basePath, relativePathPos))
+	{
+		if (fullPath[relativePathPos] == L'/')
+			++relativePathPos;
+
+		wcscpy_s(filePath, filePathSize, &fullPath[relativePathPos]);
 	}
 }
 
@@ -94,11 +113,7 @@ bool LocateDirUp(const TCHAR* dirName, const TCHAR* currentDir, TCHAR* fullDirPa
 	{
 		::PathCombine(testPath, fullDirPath, dirName);
 		if (::PathIsDirectory(testPath))
-		{
-			// found
-			_tcscpy_s(fullDirPath, fullDirPathSize, testPath);
 			return true;
-		}
 
 		// up one folder
 		::PathCombine(testPath, fullDirPath, TEXT(".."));
@@ -113,19 +128,22 @@ bool LocateDirUp(const TCHAR* dirName, const TCHAR* currentDir, TCHAR* fullDirPa
 
 bool GetSvnFile(const TCHAR* fullFilePath, TCHAR* svnFile, unsigned svnFileSize)
 {
-	TCHAR svnDir[MAX_PATH];
+	TCHAR svnTop[MAX_PATH];
 	TCHAR svnBase[MAX_PATH];
 
 	_tcscpy_s(svnBase, _countof(svnBase), fullFilePath);
 	::PathRemoveFileSpec(svnBase);
 
-	bool ret = LocateDirUp(TEXT(".svn"), svnBase, svnDir, _countof(svnDir));
+	bool ret = LocateDirUp(TEXT(".svn"), svnBase, svnTop, _countof(svnTop));
 
 	if (ret)
 	{
 		ret = false;
 
-		::PathCombine(svnBase, svnDir, TEXT("wc.db"));
+		TCHAR dotSvnIdx[MAX_PATH];
+
+		::PathCombine(dotSvnIdx, svnTop, TEXT(".svn"));
+		::PathCombine(svnBase, dotSvnIdx, TEXT("wc.db"));
 
 		// is it SVN 1.7 or above?
 		if (::PathFileExists(svnBase))
@@ -141,12 +159,11 @@ bool GetSvnFile(const TCHAR* fullFilePath, TCHAR* svnFile, unsigned svnFileSize)
 
 			if (sqlite3_open16(svnBase, &ppDb) == SQLITE_OK)
 			{
-				TCHAR svnFilePath[MAX_PATH];
-				RepoSubPath(fullFilePath, svnDir, svnFilePath, _countof(svnFilePath));
+				RelativePath(fullFilePath, svnTop, svnBase, _countof(svnBase));
 
 				TCHAR sqlQuery[MAX_PATH + 64];
 				_sntprintf_s(sqlQuery, _countof(sqlQuery), _TRUNCATE,
-						TEXT("SELECT checksum FROM nodes_current WHERE local_relpath='%s';"), svnFilePath);
+						TEXT("SELECT checksum FROM nodes_current WHERE local_relpath='%s';"), svnBase);
 
 				sqlite3_stmt* pStmt;
 
@@ -158,17 +175,16 @@ bool GetSvnFile(const TCHAR* fullFilePath, TCHAR* svnFile, unsigned svnFileSize)
 
 						if (checksum[0] != 0)
 						{
-							TCHAR tmp[MAX_PATH];
 							TCHAR idx[128];
 
 							_tcsncpy_s(idx, _countof(idx), checksum + 6, 2);
 
-							::PathCombine(svnBase, svnDir, TEXT("pristine"));
-							::PathCombine(tmp, svnBase, idx);
+							::PathCombine(svnBase, dotSvnIdx, TEXT("pristine"));
+							::PathCombine(dotSvnIdx, svnBase, idx);
 
 							_tcscpy_s(idx, _countof(idx), checksum + 6);
 
-							::PathCombine(svnBase, tmp, idx);
+							::PathCombine(svnBase, dotSvnIdx, idx);
 							_tcscat_s(svnBase, _countof(svnBase), TEXT(".svn-base"));
 
 							if (PathFileExists(svnBase))
@@ -187,13 +203,11 @@ bool GetSvnFile(const TCHAR* fullFilePath, TCHAR* svnFile, unsigned svnFileSize)
 		}
 		else
 		{
-			TCHAR tmp[MAX_PATH];
-
-			::PathCombine(tmp, svnDir, TEXT("text-base"));
+			::PathCombine(svnTop, dotSvnIdx, TEXT("text-base"));
 
 			const TCHAR* file = ::PathFindFileName(fullFilePath);
 
-			::PathCombine(svnBase, tmp, file);
+			::PathCombine(svnBase, svnTop, file);
 			_tcscat_s(svnBase, _countof(svnBase), TEXT(".svn-base"));
 
 			// Is it an old SVN version?
@@ -228,19 +242,15 @@ std::vector<char> GetGitFileContent(const TCHAR* fullFilePath)
 	char ansiGitFilePath[MAX_PATH];
 
 	{
-		TCharToChar(fullFilePath, ansiGitFilePath, sizeof(ansiGitFilePath));
+		char ansiPath[MAX_PATH];
 
-		if (!git_repository_open_ext(&repo, ansiGitFilePath, 0, NULL))
+		TCharToChar(fullFilePath, ansiPath, sizeof(ansiPath));
+
+		if (!git_repository_open_ext(&repo, ansiPath, 0, NULL))
 		{
-			const char* ansiGitDir = git_repository_path(repo);
+			const char* ansiGitDir = git_repository_workdir(repo);
 
-			TCHAR gitDir[MAX_PATH];
-			CharToTChar(ansiGitDir, gitDir, _countof(gitDir));
-
-			TCHAR gitFile[MAX_PATH];
-			RepoSubPath(fullFilePath, gitDir, gitFile, _countof(gitFile));
-
-			TCharToChar(gitFile, ansiGitFilePath, sizeof(ansiGitFilePath));
+			RelativePath(ansiPath, ansiGitDir, ansiGitFilePath, sizeof(ansiGitFilePath));
 		}
 	}
 
@@ -250,33 +260,28 @@ std::vector<char> GetGitFileContent(const TCHAR* fullFilePath)
 
 		if (!git_repository_index(&index, repo))
 		{
-			size_t at_pos;
+			const git_index_entry* e = git_index_get_bypath(index, ansiGitFilePath, 0);
 
-			if (git_index_find(&at_pos, index, ansiGitFilePath) != GIT_ENOTFOUND)
+			if (e)
 			{
-				const git_index_entry* e = git_index_get_byindex(index, at_pos);
+				git_blob* blob;
 
-				if (e)
+				if (!git_blob_lookup(&blob, repo, &e->oid))
 				{
-					git_blob* blob;
+					long blobSize = (long)git_blob_rawsize(blob);
 
-					if (!git_blob_lookup(&blob, repo, &e->oid))
+					if (blobSize)
 					{
-						long blobSize = (long)git_blob_rawsize(blob);
+						const void* content = git_blob_rawcontent(blob);
 
-						if (blobSize)
+						if (content)
 						{
-							const void* content = git_blob_rawcontent(blob);
-
-							if (content)
-							{
-								gitFileContent.resize(blobSize + 1, 0);
-								std::memcpy(gitFileContent.data(), content, blobSize);
-							}
+							gitFileContent.resize(blobSize + 1, 0);
+							std::memcpy(gitFileContent.data(), content, blobSize);
 						}
-
-						git_blob_free(blob);
 					}
+
+					git_blob_free(blob);
 				}
 			}
 

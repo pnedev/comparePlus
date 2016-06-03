@@ -24,10 +24,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 PGITLIBVERSION			git_libgit2_version;
 PGITREPOSITORYOPENEXT	git_repository_open_ext;
-PGITREPOSITORYPATH		git_repository_path;
+PGITREPOSITORYWORKDIR	git_repository_workdir;
 PGITREPOSITORYINDEX		git_repository_index;
-PGITINDEXFIND			git_index_find;
-PGITINDEXGETBYINDEX		git_index_get_byindex;
+PGITINDEXGETBYPATH		git_index_get_bypath;
 PGITBLOBLOOKUP			git_blob_lookup;
 PGITBLOBRAWSIZE			git_blob_rawsize;
 PGITBLOBRAWCONTENT		git_blob_rawcontent;
@@ -61,17 +60,14 @@ bool InitLibGit2()
 		git_repository_open_ext = (PGITREPOSITORYOPENEXT)::GetProcAddress(libGit2, "git_repository_open_ext");
 		if (!git_repository_open_ext)
 			return false;
-		git_repository_path = (PGITREPOSITORYPATH)::GetProcAddress(libGit2, "git_repository_path");
-		if (!git_repository_path)
+		git_repository_workdir = (PGITREPOSITORYWORKDIR)::GetProcAddress(libGit2, "git_repository_workdir");
+		if (!git_repository_workdir)
 			return false;
 		git_repository_index = (PGITREPOSITORYINDEX)::GetProcAddress(libGit2, "git_repository_index");
 		if (!git_repository_index)
 			return false;
-		git_index_find = (PGITINDEXFIND)::GetProcAddress(libGit2, "git_index_find");
-		if (!git_index_find)
-			return false;
-		git_index_get_byindex = (PGITINDEXGETBYINDEX)::GetProcAddress(libGit2, "git_index_get_byindex");
-		if (!git_index_get_byindex)
+		git_index_get_bypath = (PGITINDEXGETBYPATH)::GetProcAddress(libGit2, "git_index_get_bypath");
+		if (!git_index_get_bypath)
 			return false;
 		git_blob_lookup = (PGITBLOBLOOKUP)::GetProcAddress(libGit2, "git_blob_lookup");
 		if (!git_blob_lookup)
