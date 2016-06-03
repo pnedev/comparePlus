@@ -1449,13 +1449,43 @@ void Compare()
 		{
 			TCHAR msg[2 * MAX_PATH];
 
-			const TCHAR* newName = ::PathFindFileName(cmpPair->getNewFile().name);
-			const TCHAR* oldName = ::PathFindFileName(cmpPair->getOldFile().name);
+			const ComparedFile& oldFile = cmpPair->getOldFile();
 
-			_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-					TEXT("Files \"%s\" and \"%s\" match.\n\nClose compared files?"), newName, oldName);
-			if (::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin: Files Match"),
-					MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2) == IDYES)
+			const TCHAR* newName = ::PathFindFileName(cmpPair->getNewFile().name);
+
+			int choice = IDNO;
+
+			if (oldFile.isTemp)
+			{
+				if (recompare)
+				{
+					_sntprintf_s(msg, _countof(msg), _TRUNCATE,
+							TEXT("Files \"%s\" and \"%s\" match.\n\nTemp file will be closed."),
+							newName, ::PathFindFileName(oldFile.name));
+
+					::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin: Files Match"), MB_OK);
+				}
+				else
+				{
+					_sntprintf_s(msg, _countof(msg), _TRUNCATE,
+							TEXT("File \"%s\" has no changes %s."), newName,
+							oldFile.isTemp == LAST_SAVED_TEMP ? TEXT("since last Save") :
+							oldFile.isTemp == GIT_TEMP ? TEXT("against Git") : TEXT("against SVN"));
+
+					::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin: File not Changed"), MB_OK);
+				}
+			}
+			else
+			{
+				_sntprintf_s(msg, _countof(msg), _TRUNCATE,
+						TEXT("Files \"%s\" and \"%s\" match.\n\nClose compared files?"),
+						newName, ::PathFindFileName(oldFile.name));
+
+				choice = ::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin: Files Match"),
+						MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2);
+			}
+
+			if (choice == IDYES)
 				closeComparePair(cmpPair);
 			else
 				clearComparePair(getCurrentBuffId());
