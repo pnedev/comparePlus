@@ -87,6 +87,7 @@ struct UserSettings
 	static const TCHAR mainSection[];
 	static const TCHAR oldIsFirstSetting[];
 	static const TCHAR oldFileOnLeftSetting[];
+	static const TCHAR compareToPrevSetting[];
 	static const TCHAR gotoFirstDiffSetting[];
 	static const TCHAR alignMatchesSetting[];
 	static const TCHAR ignoreSpacesSetting[];
@@ -102,6 +103,7 @@ struct UserSettings
 
 	bool           	OldFileIsFirst;
 	int				OldFileViewId;
+	bool           	CompareToPrev;
 	bool           	GotoFirstDiff;
 
 	bool           	AddLine;

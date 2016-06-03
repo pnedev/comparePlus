@@ -43,11 +43,12 @@ UserSettings Settings;
 const TCHAR UserSettings::mainSection[]				= TEXT("Main");
 const TCHAR UserSettings::oldIsFirstSetting[]		= TEXT("Old is First");
 const TCHAR UserSettings::oldFileOnLeftSetting[]	= TEXT("Old on Left");
+const TCHAR UserSettings::compareToPrevSetting[]	= TEXT("Default Compare is to Prev");
 const TCHAR UserSettings::gotoFirstDiffSetting[]	= TEXT("Go to First Diff");
 const TCHAR UserSettings::alignMatchesSetting[]		= TEXT("Align Matches");
 const TCHAR UserSettings::ignoreSpacesSetting[]		= TEXT("Include Spaces");
 const TCHAR UserSettings::detectMovesSetting[]		= TEXT("Detect Moved Blocks");
-const TCHAR UserSettings::navBarSetting[]			= TEXT("Navigation bar");
+const TCHAR UserSettings::navBarSetting[]			= TEXT("Navigation Bar");
 const TCHAR UserSettings::colorsSection[]			= TEXT("Colors");
 const TCHAR UserSettings::addedColorSetting[]		= TEXT("Added");
 const TCHAR UserSettings::removedColorSetting[]		= TEXT("Removed");
@@ -68,6 +69,7 @@ void UserSettings::load()
 	OldFileIsFirst	= ::GetPrivateProfileInt(mainSection, oldIsFirstSetting, 1, iniFile) == 1;
 	OldFileViewId	=
 			::GetPrivateProfileInt(mainSection, oldFileOnLeftSetting, 1, iniFile) == 1 ? MAIN_VIEW : SUB_VIEW;
+	CompareToPrev	= ::GetPrivateProfileInt(mainSection, compareToPrevSetting, 1, iniFile) == 1;
 	GotoFirstDiff	= ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting, 0, iniFile) == 1;
 
 	AddLine      = ::GetPrivateProfileInt(mainSection, alignMatchesSetting,	1, iniFile) == 1;
@@ -95,6 +97,8 @@ void UserSettings::save()
 			OldFileIsFirst ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, oldFileOnLeftSetting,
 			OldFileViewId == MAIN_VIEW ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, compareToPrevSetting,
+			CompareToPrev ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, gotoFirstDiffSetting,
 			GotoFirstDiff ? TEXT("1") : TEXT("0"), iniFile);
 
@@ -1037,7 +1041,7 @@ bool initNewCompare()
 			}
 
 			::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0,
-					Settings.OldFileViewId == MAIN_VIEW ? IDM_VIEW_TAB_PREV : IDM_VIEW_TAB_NEXT);
+					Settings.CompareToPrev ? IDM_VIEW_TAB_PREV : IDM_VIEW_TAB_NEXT);
 		}
 		else
 		{
