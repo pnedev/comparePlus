@@ -1418,21 +1418,9 @@ void Compare()
 	CompareResult_t cmpResult;
 
 	if (!isEncodingOK(*cmpPair))
-	{
-		if (recompare)
-		{
-			cmpResult = COMPARE_CANCELLED;
-		}
-		else
-		{
-			compareList.erase(cmpPair);
-			return;
-		}
-	}
+		cmpResult = COMPARE_CANCELLED;
 	else
-	{
 		cmpResult = runCompare(cmpPair);
-	}
 
 	switch (cmpResult)
 	{
