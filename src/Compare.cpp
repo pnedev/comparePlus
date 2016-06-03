@@ -573,7 +573,7 @@ void ComparedFile::updateView()
 
 void ComparedFile::clear()
 {
-	clearWindow(getView(compareViewId));
+	clearWindow(getView(viewIdFromBuffId(buffId)));
 
 	deletedSections.clear();
 
@@ -627,7 +627,7 @@ void ComparedFile::restore()
 
 	clearWindow(getCurrentView());
 
-	if (compareViewId != originalViewId)
+	if (viewIdFromBuffId(buffId) != originalViewId)
 	{
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
 		// TODO: Restore file original position here
@@ -2140,7 +2140,7 @@ void onFileSaved(int buffId)
 		if (cmpPair == compareList.end())
 			return;
 
-		HWND view = getView(cmpPair->getFileByBuffId(buffId).compareViewId);
+		HWND view = getView(viewIdFromBuffId(buffId));
 
 		if (!saveNotifData->blankSections.empty())
 			addBlankLines(view, saveNotifData->blankSections);
