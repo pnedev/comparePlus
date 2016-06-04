@@ -525,11 +525,11 @@ void ComparedFile::initFromCurrent(bool currFileIsNew)
 	isNew = currFileIsNew;
 	buffId = getCurrentBuffId();
 	originalViewId = getCurrentViewId();
+	compareViewId = originalViewId;
 	originalPos = posFromBuffId(buffId);
 	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(name), (LPARAM)name);
 
 	updateFromCurrent();
-	updateView();
 }
 
 
@@ -576,8 +576,6 @@ void ComparedFile::clear()
 	clearWindow(getView(viewIdFromBuffId(buffId)));
 
 	deletedSections.clear();
-
-	updateView();
 }
 
 
@@ -677,6 +675,9 @@ void ComparedPair::positionFiles()
 
 	ComparedFile& oldFile = getOldFile();
 	ComparedFile& newFile = getNewFile();
+
+	oldFile.updateView();
+	newFile.updateView();
 
 	if (viewIdFromBuffId(oldFile.buffId) != oldFile.compareViewId)
 	{
@@ -2029,8 +2030,7 @@ void onBufferActivatedDelayed(int buffId)
 	bool switchedFromOtherPair = false;
 	const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
 
-	// When compared file is activated make sure its corresponding pair file is
-	// also active in the other view
+	// When compared file is activated make sure its corresponding pair file is also active in the other view
 	if (getDocId(getOtherView()) != otherFile.sciDoc)
 	{
 		ScopedIncrementer incr(notificationsLock);
@@ -2122,7 +2122,7 @@ void onFileBeforeSave(int buffId)
 	if (cmpPair == compareList.end())
 		return;
 
-	HWND view = getView(cmpPair->getFileByBuffId(buffId).compareViewId);
+	HWND view = getView(viewIdFromBuffId(buffId));
 
 	saveNotifData.reset(new SaveNotificationData(buffId));
 
