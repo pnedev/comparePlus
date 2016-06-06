@@ -147,7 +147,7 @@ BEGIN
     COMBOBOX        IDC_FIRST_FILE,129,26,60,30,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Old file position:",IDC_STATIC,17,46,100,8
     COMBOBOX        IDC_OLD_FILE_POS,129,44,60,30,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Single view default compare to:",IDC_STATIC,17,64,120,8
+    LTEXT           "Single-view default compare to:",IDC_STATIC,17,64,120,8
     COMBOBOX        IDC_DEFAULT_CMP_TO,129,62,60,30,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     AUTOCHECKBOX	"Go to first diff after re-compare",IDC_GOTO_FIRST_DIFF,17,80,172,14
     GROUPBOX        "Color settings",IDC_STATIC,7,107,191,133
