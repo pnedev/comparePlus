@@ -56,6 +56,12 @@ typedef struct git_index_entry {
 } git_index_entry;
 
 
+typedef struct {
+	char   *ptr;
+	size_t asize, size;
+} git_buf;
+
+
 typedef int (*PGITLIBVERSION) (int *major, int *minor, int *rev);
 typedef int (*PGITREPOSITORYOPENEXT) (git_repository **out, const char *path,
 		unsigned int flags, const char *ceiling_dirs);
@@ -63,8 +69,8 @@ typedef const char* (*PGITREPOSITORYWORKDIR) (git_repository *repo);
 typedef int (*PGITREPOSITORYINDEX) (git_index **out, git_repository *repo);
 typedef const git_index_entry* (*PGITINDEXGETBYPATH) (git_index *index, const char *path, int stage);
 typedef int (*PGITBLOBLOOKUP) (git_blob **blob, git_repository *repo, const git_oid *id);
-typedef git_off_t (*PGITBLOBRAWSIZE) (const git_blob *blob);
-typedef const void* (*PGITBLOBRAWCONTENT) (const git_blob *blob);
+typedef int (*PGITBLOBFILTERCONTENT) (git_buf *out, git_blob *blob, const char *as_path, int check_for_bin_data);
+typedef void (*PGITBUFFREE) (git_buf *buf);
 typedef void (*PGITBLOBFREE) (const git_blob *blob);
 typedef void (*PGITINDEXFREE) (git_index *index);
 typedef void (*PGITREPOSITORYFREE) (git_repository *repo);
@@ -76,8 +82,8 @@ extern PGITREPOSITORYWORKDIR	git_repository_workdir;
 extern PGITREPOSITORYINDEX		git_repository_index;
 extern PGITINDEXGETBYPATH		git_index_get_bypath;
 extern PGITBLOBLOOKUP			git_blob_lookup;
-extern PGITBLOBRAWSIZE			git_blob_rawsize;
-extern PGITBLOBRAWCONTENT		git_blob_rawcontent;
+extern PGITBLOBFILTERCONTENT	git_blob_filtered_content;
+extern PGITBUFFREE				git_buf_free;
 extern PGITBLOBFREE				git_blob_free;
 extern PGITINDEXFREE			git_index_free;
 extern PGITREPOSITORYFREE		git_repository_free;

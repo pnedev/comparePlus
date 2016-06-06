@@ -22,17 +22,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <shlwapi.h>
 #include "LibGit2Helper.h"
 
+
 PGITLIBVERSION			git_libgit2_version;
 PGITREPOSITORYOPENEXT	git_repository_open_ext;
 PGITREPOSITORYWORKDIR	git_repository_workdir;
 PGITREPOSITORYINDEX		git_repository_index;
 PGITINDEXGETBYPATH		git_index_get_bypath;
 PGITBLOBLOOKUP			git_blob_lookup;
-PGITBLOBRAWSIZE			git_blob_rawsize;
-PGITBLOBRAWCONTENT		git_blob_rawcontent;
+PGITBLOBFILTERCONTENT	git_blob_filtered_content;
+PGITBUFFREE				git_buf_free;
 PGITBLOBFREE			git_blob_free;
 PGITINDEXFREE			git_index_free;
 PGITREPOSITORYFREE		git_repository_free;
+
 
 bool InitLibGit2()
 {
@@ -72,11 +74,11 @@ bool InitLibGit2()
 		git_blob_lookup = (PGITBLOBLOOKUP)::GetProcAddress(libGit2, "git_blob_lookup");
 		if (!git_blob_lookup)
 			return false;
-		git_blob_rawsize = (PGITBLOBRAWSIZE)::GetProcAddress(libGit2, "git_blob_rawsize");
-		if (!git_blob_rawsize)
+		git_blob_filtered_content = (PGITBLOBFILTERCONTENT)::GetProcAddress(libGit2, "git_blob_filtered_content");
+		if (!git_blob_filtered_content)
 			return false;
-		git_blob_rawcontent = (PGITBLOBRAWCONTENT)::GetProcAddress(libGit2, "git_blob_rawcontent");
-		if (!git_blob_rawcontent)
+		git_buf_free = (PGITBUFFREE)::GetProcAddress(libGit2, "git_buf_free");
+		if (!git_buf_free)
 			return false;
 		git_blob_free = (PGITBLOBFREE)::GetProcAddress(libGit2, "git_blob_free");
 		if (!git_blob_free)

@@ -268,17 +268,14 @@ std::vector<char> GetGitFileContent(const TCHAR* fullFilePath)
 
 				if (!git_blob_lookup(&blob, repo, &e->oid))
 				{
-					long blobSize = (long)git_blob_rawsize(blob);
+					git_buf gitBuf;
 
-					if (blobSize)
+					if (!git_blob_filtered_content(&gitBuf, blob, ansiGitFilePath, 1))
 					{
-						const void* content = git_blob_rawcontent(blob);
+						gitFileContent.resize(gitBuf.size + 1, 0);
+						std::memcpy(gitFileContent.data(), gitBuf.ptr, gitBuf.size);
 
-						if (content)
-						{
-							gitFileContent.resize(blobSize + 1, 0);
-							std::memcpy(gitFileContent.data(), content, blobSize);
-						}
+						git_buf_free(&gitBuf);
 					}
 
 					git_blob_free(blob);
