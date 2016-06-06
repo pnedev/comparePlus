@@ -267,9 +267,9 @@ std::vector<char> GetGitFileContent(const TCHAR* fullFilePath)
 			{
 				git_blob* blob;
 
-				if (!gitLib->blob_lookup(&blob, repo, &e->oid))
+				if (!gitLib->blob_lookup(&blob, repo, &e->id))
 				{
-					git_buf gitBuf;
+					git_buf gitBuf = { 0 };
 
 					if (!gitLib->blob_filtered_content(&gitBuf, blob, ansiGitFilePath, 1))
 					{

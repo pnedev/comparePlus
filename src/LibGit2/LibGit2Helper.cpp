@@ -47,6 +47,8 @@ std::unique_ptr<LibGit>& LibGit::load()
 
 	Inst.reset(new LibGit);
 
+	Inst->_isInit = true;
+
 	Inst->version = (PGITLIBVERSION)::GetProcAddress(libGit2, "git_libgit2_version");
 	if (!Inst->version)
 		Inst->_isInit = false;

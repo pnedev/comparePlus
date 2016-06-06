@@ -20,41 +20,40 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <memory>
 
-#define GIT_OID_RAWSZ	20
-
 
 typedef struct git_repository git_repository;
 typedef struct git_index git_index;
 typedef struct git_blob git_blob;
-typedef __time64_t git_time_t;
-typedef __int64 git_off_t;
 
 
 typedef struct {
-	git_time_t seconds;
-	unsigned int nanoseconds;
+	int32_t seconds;
+	uint32_t nanoseconds;
 } git_index_time;
 
 
 typedef struct git_oid {
-	/** raw binary formatted id */
-	unsigned char id[GIT_OID_RAWSZ];
+	unsigned char id[20];
 } git_oid;
 
 
 typedef struct git_index_entry {
 	git_index_time ctime;
 	git_index_time mtime;
-	unsigned int dev;
-	unsigned int ino;
-	unsigned int mode;
-	unsigned int uid;
-	unsigned int gid;
-	git_off_t file_size;
-	git_oid oid;
-	unsigned short flags;
-	unsigned short flags_extended;
-	char *path;
+
+	uint32_t dev;
+	uint32_t ino;
+	uint32_t mode;
+	uint32_t uid;
+	uint32_t gid;
+	uint32_t file_size;
+
+	git_oid id;
+
+	uint16_t flags;
+	uint16_t flags_extended;
+
+	const char *path;
 } git_index_entry;
 
 
