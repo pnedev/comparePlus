@@ -23,75 +23,85 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "LibGit2Helper.h"
 
 
-PGITLIBVERSION			git_libgit2_version;
-PGITREPOSITORYOPENEXT	git_repository_open_ext;
-PGITREPOSITORYWORKDIR	git_repository_workdir;
-PGITREPOSITORYINDEX		git_repository_index;
-PGITINDEXGETBYPATH		git_index_get_bypath;
-PGITBLOBLOOKUP			git_blob_lookup;
-PGITBLOBFILTERCONTENT	git_blob_filtered_content;
-PGITBUFFREE				git_buf_free;
-PGITBLOBFREE			git_blob_free;
-PGITINDEXFREE			git_index_free;
-PGITREPOSITORYFREE		git_repository_free;
+std::unique_ptr<LibGit>	LibGit::Inst;
 
 
-bool InitLibGit2()
+std::unique_ptr<LibGit>& LibGit::load()
 {
-	static bool isInit = false;
+	if ((bool)Inst)
+		return Inst;
 
-	if (!isInit)
+	TCHAR dllPath[MAX_PATH];
+
+	HMODULE hPlugin = ::GetModuleHandle(TEXT("ComparePlugin.dll"));
+	if (!hPlugin)
+		return Inst;
+
+	::GetModuleFileName(hPlugin, (LPWSTR)dllPath, _countof(dllPath));
+	::PathRemoveExtension(dllPath);
+	_tcscat_s(dllPath, _countof(dllPath), TEXT("\\git2.dll"));
+
+	HMODULE libGit2 = ::LoadLibrary(dllPath);
+	if (!libGit2)
+		return Inst;
+
+	Inst.reset(new LibGit);
+
+	Inst->version = (PGITLIBVERSION)::GetProcAddress(libGit2, "git_libgit2_version");
+	if (!Inst->version)
+		Inst->_isInit = false;
+	Inst->repository_open_ext = (PGITREPOSITORYOPENEXT)::GetProcAddress(libGit2, "git_repository_open_ext");
+	if (!Inst->repository_open_ext)
+		Inst->_isInit = false;
+	Inst->repository_workdir = (PGITREPOSITORYWORKDIR)::GetProcAddress(libGit2, "git_repository_workdir");
+	if (!Inst->repository_workdir)
+		Inst->_isInit = false;
+	Inst->repository_index = (PGITREPOSITORYINDEX)::GetProcAddress(libGit2, "git_repository_index");
+	if (!Inst->repository_index)
+		Inst->_isInit = false;
+	Inst->index_get_bypath = (PGITINDEXGETBYPATH)::GetProcAddress(libGit2, "git_index_get_bypath");
+	if (!Inst->index_get_bypath)
+		Inst->_isInit = false;
+	Inst->blob_lookup = (PGITBLOBLOOKUP)::GetProcAddress(libGit2, "git_blob_lookup");
+	if (!Inst->blob_lookup)
+		Inst->_isInit = false;
+	Inst->blob_filtered_content = (PGITBLOBFILTERCONTENT)::GetProcAddress(libGit2, "git_blob_filtered_content");
+	if (!Inst->blob_filtered_content)
+		Inst->_isInit = false;
+	Inst->buf_free = (PGITBUFFREE)::GetProcAddress(libGit2, "git_buf_free");
+	if (!Inst->buf_free)
+		Inst->_isInit = false;
+	Inst->blob_free = (PGITBLOBFREE)::GetProcAddress(libGit2, "git_blob_free");
+	if (!Inst->blob_free)
+		Inst->_isInit = false;
+	Inst->index_free = (PGITINDEXFREE)::GetProcAddress(libGit2, "git_index_free");
+	if (!Inst->index_free)
+		Inst->_isInit = false;
+	Inst->repository_free = (PGITREPOSITORYFREE)::GetProcAddress(libGit2, "git_repository_free");
+	if (!Inst->repository_free)
+		Inst->_isInit = false;
+
+	if (Inst->_isInit)
 	{
-		TCHAR dllPath[MAX_PATH];
+		int major, minor, rev;
+		Inst->version(&major, &minor, &rev);
 
-		HMODULE hPlugin = ::GetModuleHandle(TEXT("ComparePlugin.dll"));
-		if (!hPlugin)
-			return false;
+		if (major >=0 && minor >= 22 && rev >= 0)
+		{
+			Inst->init = (PGITLIBINIT)::GetProcAddress(libGit2, "git_libgit2_init");
+			if (!Inst->init)
+				Inst->_isInit = false;
+			Inst->shutdown = (PGITLIBSHUTDOWN)::GetProcAddress(libGit2, "git_libgit2_shutdown");
+			if (!Inst->shutdown)
+				Inst->_isInit = false;
 
-		::GetModuleFileName(hPlugin, (LPWSTR)dllPath, _countof(dllPath));
-		::PathRemoveExtension(dllPath);
-		_tcscat_s(dllPath, _countof(dllPath), TEXT("\\git2.dll"));
-
-		HMODULE libGit2 = ::LoadLibrary(dllPath);
-		if (!libGit2)
-			return false;
-
-		git_libgit2_version = (PGITLIBVERSION)::GetProcAddress(libGit2, "git_libgit2_version");
-		if (!git_libgit2_version)
-			return false;
-		git_repository_open_ext = (PGITREPOSITORYOPENEXT)::GetProcAddress(libGit2, "git_repository_open_ext");
-		if (!git_repository_open_ext)
-			return false;
-		git_repository_workdir = (PGITREPOSITORYWORKDIR)::GetProcAddress(libGit2, "git_repository_workdir");
-		if (!git_repository_workdir)
-			return false;
-		git_repository_index = (PGITREPOSITORYINDEX)::GetProcAddress(libGit2, "git_repository_index");
-		if (!git_repository_index)
-			return false;
-		git_index_get_bypath = (PGITINDEXGETBYPATH)::GetProcAddress(libGit2, "git_index_get_bypath");
-		if (!git_index_get_bypath)
-			return false;
-		git_blob_lookup = (PGITBLOBLOOKUP)::GetProcAddress(libGit2, "git_blob_lookup");
-		if (!git_blob_lookup)
-			return false;
-		git_blob_filtered_content = (PGITBLOBFILTERCONTENT)::GetProcAddress(libGit2, "git_blob_filtered_content");
-		if (!git_blob_filtered_content)
-			return false;
-		git_buf_free = (PGITBUFFREE)::GetProcAddress(libGit2, "git_buf_free");
-		if (!git_buf_free)
-			return false;
-		git_blob_free = (PGITBLOBFREE)::GetProcAddress(libGit2, "git_blob_free");
-		if (!git_blob_free)
-			return false;
-		git_index_free = (PGITINDEXFREE)::GetProcAddress(libGit2, "git_index_free");
-		if (!git_index_free)
-			return false;
-		git_repository_free = (PGITREPOSITORYFREE)::GetProcAddress(libGit2, "git_repository_free");
-		if (!git_repository_free)
-			return false;
-
-		isInit = true;
+			if (Inst->_isInit)
+				Inst->init();
+		}
 	}
 
-	return true;
+	if (!Inst->_isInit)
+		Inst.reset();
+
+	return Inst;
 }

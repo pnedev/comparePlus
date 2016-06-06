@@ -18,6 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include <memory>
+
 #define GIT_OID_RAWSZ	20
 
 
@@ -62,31 +64,55 @@ typedef struct {
 } git_buf;
 
 
-typedef int (*PGITLIBVERSION) (int *major, int *minor, int *rev);
-typedef int (*PGITREPOSITORYOPENEXT) (git_repository **out, const char *path,
-		unsigned int flags, const char *ceiling_dirs);
-typedef const char* (*PGITREPOSITORYWORKDIR) (git_repository *repo);
-typedef int (*PGITREPOSITORYINDEX) (git_index **out, git_repository *repo);
-typedef const git_index_entry* (*PGITINDEXGETBYPATH) (git_index *index, const char *path, int stage);
-typedef int (*PGITBLOBLOOKUP) (git_blob **blob, git_repository *repo, const git_oid *id);
-typedef int (*PGITBLOBFILTERCONTENT) (git_buf *out, git_blob *blob, const char *as_path, int check_for_bin_data);
-typedef void (*PGITBUFFREE) (git_buf *buf);
-typedef void (*PGITBLOBFREE) (const git_blob *blob);
-typedef void (*PGITINDEXFREE) (git_index *index);
-typedef void (*PGITREPOSITORYFREE) (git_repository *repo);
+/**
+ *  \class
+ *  \brief
+ */
+class LibGit
+{
+private:
+	static std::unique_ptr<LibGit>	Inst;
 
+	LibGit() {}
 
-extern PGITLIBVERSION			git_libgit2_version;
-extern PGITREPOSITORYOPENEXT	git_repository_open_ext;
-extern PGITREPOSITORYWORKDIR	git_repository_workdir;
-extern PGITREPOSITORYINDEX		git_repository_index;
-extern PGITINDEXGETBYPATH		git_index_get_bypath;
-extern PGITBLOBLOOKUP			git_blob_lookup;
-extern PGITBLOBFILTERCONTENT	git_blob_filtered_content;
-extern PGITBUFFREE				git_buf_free;
-extern PGITBLOBFREE				git_blob_free;
-extern PGITINDEXFREE			git_index_free;
-extern PGITREPOSITORYFREE		git_repository_free;
+	typedef int (*PGITLIBVERSION) (int *major, int *minor, int *rev);
+	typedef int (*PGITLIBINIT) (void);
+	typedef int (*PGITLIBSHUTDOWN) (void);
+	typedef int (*PGITREPOSITORYOPENEXT) (git_repository **out, const char *path,
+			unsigned int flags, const char *ceiling_dirs);
+	typedef const char* (*PGITREPOSITORYWORKDIR) (git_repository *repo);
+	typedef int (*PGITREPOSITORYINDEX) (git_index **out, git_repository *repo);
+	typedef const git_index_entry* (*PGITINDEXGETBYPATH) (git_index *index, const char *path, int stage);
+	typedef int (*PGITBLOBLOOKUP) (git_blob **blob, git_repository *repo, const git_oid *id);
+	typedef int (*PGITBLOBFILTERCONTENT) (git_buf *out, git_blob *blob, const char *as_path, int check_for_bin_data);
+	typedef void (*PGITBUFFREE) (git_buf *buf);
+	typedef void (*PGITBLOBFREE) (const git_blob *blob);
+	typedef void (*PGITINDEXFREE) (git_index *index);
+	typedef void (*PGITREPOSITORYFREE) (git_repository *repo);
 
+	PGITLIBVERSION			version;
+	PGITLIBINIT				init;
+	PGITLIBSHUTDOWN			shutdown;
 
-bool InitLibGit2();
+	bool	_isInit;
+
+public:
+	static std::unique_ptr<LibGit>& load();
+
+	~LibGit()
+	{
+		if (_isInit)
+			shutdown();
+	}
+
+	PGITREPOSITORYOPENEXT	repository_open_ext;
+	PGITREPOSITORYWORKDIR	repository_workdir;
+	PGITREPOSITORYINDEX		repository_index;
+	PGITINDEXGETBYPATH		index_get_bypath;
+	PGITBLOBLOOKUP			blob_lookup;
+	PGITBLOBFILTERCONTENT	blob_filtered_content;
+	PGITBUFFREE				buf_free;
+	PGITBLOBFREE			blob_free;
+	PGITINDEXFREE			index_free;
+	PGITREPOSITORYFREE		repository_free;
+};

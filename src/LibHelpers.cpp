@@ -230,7 +230,8 @@ std::vector<char> GetGitFileContent(const TCHAR* fullFilePath)
 {
 	std::vector<char> gitFileContent;
 
-	if (!InitLibGit2())
+	std::unique_ptr<LibGit>& gitLib = LibGit::load();
+	if (!gitLib)
 	{
 		::MessageBox(nppData._nppHandle, TEXT("Failed to initialize LibGit2 - operation aborted."),
 				TEXT("Compare Plugin"), MB_OK);
@@ -246,9 +247,9 @@ std::vector<char> GetGitFileContent(const TCHAR* fullFilePath)
 
 		TCharToChar(fullFilePath, ansiPath, sizeof(ansiPath));
 
-		if (!git_repository_open_ext(&repo, ansiPath, 0, NULL))
+		if (!gitLib->repository_open_ext(&repo, ansiPath, 0, NULL))
 		{
-			const char* ansiGitDir = git_repository_workdir(repo);
+			const char* ansiGitDir = gitLib->repository_workdir(repo);
 
 			RelativePath(ansiPath, ansiGitDir, ansiGitFilePath, sizeof(ansiGitFilePath));
 		}
@@ -258,34 +259,34 @@ std::vector<char> GetGitFileContent(const TCHAR* fullFilePath)
 	{
 		git_index* index;
 
-		if (!git_repository_index(&index, repo))
+		if (!gitLib->repository_index(&index, repo))
 		{
-			const git_index_entry* e = git_index_get_bypath(index, ansiGitFilePath, 0);
+			const git_index_entry* e = gitLib->index_get_bypath(index, ansiGitFilePath, 0);
 
 			if (e)
 			{
 				git_blob* blob;
 
-				if (!git_blob_lookup(&blob, repo, &e->oid))
+				if (!gitLib->blob_lookup(&blob, repo, &e->oid))
 				{
 					git_buf gitBuf;
 
-					if (!git_blob_filtered_content(&gitBuf, blob, ansiGitFilePath, 1))
+					if (!gitLib->blob_filtered_content(&gitBuf, blob, ansiGitFilePath, 1))
 					{
 						gitFileContent.resize(gitBuf.size + 1, 0);
 						std::memcpy(gitFileContent.data(), gitBuf.ptr, gitBuf.size);
 
-						git_buf_free(&gitBuf);
+						gitLib->buf_free(&gitBuf);
 					}
 
-					git_blob_free(blob);
+					gitLib->blob_free(blob);
 				}
 			}
 
-			git_index_free(index);
+			gitLib->index_free(index);
 		}
 
-		git_repository_free(repo);
+		gitLib->repository_free(repo);
 	}
 
 	if (gitFileContent.empty())
