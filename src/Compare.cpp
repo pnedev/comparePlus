@@ -1468,7 +1468,7 @@ void Compare()
 							TEXT("Files \"%s\" and \"%s\" match.\n\nTemp file will be closed."),
 							newName, ::PathFindFileName(oldFile.name));
 
-					::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin: Files Match"), MB_OK);
+					::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"), MB_OK);
 				}
 				else
 				{
@@ -1477,7 +1477,7 @@ void Compare()
 							oldFile.isTemp == LAST_SAVED_TEMP ? TEXT("since last Save") :
 							oldFile.isTemp == GIT_TEMP ? TEXT("against Git") : TEXT("against SVN"));
 
-					::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin: File not Changed"), MB_OK);
+					::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"), MB_OK);
 				}
 			}
 			else
@@ -1486,7 +1486,7 @@ void Compare()
 						TEXT("Files \"%s\" and \"%s\" match.\n\nClose compared files?"),
 						newName, ::PathFindFileName(oldFile.name));
 
-				choice = ::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin: Files Match"),
+				choice = ::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"),
 						MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2);
 			}
 
