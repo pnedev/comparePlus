@@ -45,6 +45,7 @@ const TCHAR UserSettings::oldIsFirstSetting[]		= TEXT("Old is First");
 const TCHAR UserSettings::oldFileOnLeftSetting[]	= TEXT("Old on Left");
 const TCHAR UserSettings::compareToPrevSetting[]	= TEXT("Default Compare is to Prev");
 const TCHAR UserSettings::gotoFirstDiffSetting[]	= TEXT("Go to First Diff");
+const TCHAR UserSettings::encodingsCheckSetting[]	= TEXT("Check Encodings");
 const TCHAR UserSettings::alignMatchesSetting[]		= TEXT("Align Matches");
 const TCHAR UserSettings::ignoreSpacesSetting[]		= TEXT("Ignore Spaces");
 const TCHAR UserSettings::ignoreEOLsSetting[]		= TEXT("Ignore Line Endings");
@@ -70,8 +71,9 @@ void UserSettings::load()
 	OldFileIsFirst	= ::GetPrivateProfileInt(mainSection, oldIsFirstSetting, 1, iniFile) == 1;
 	OldFileViewId	=
 			::GetPrivateProfileInt(mainSection, oldFileOnLeftSetting, 1, iniFile) == 1 ? MAIN_VIEW : SUB_VIEW;
-	CompareToPrev	= ::GetPrivateProfileInt(mainSection, compareToPrevSetting, 1, iniFile) == 1;
-	GotoFirstDiff	= ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting, 0, iniFile) == 1;
+	CompareToPrev	= ::GetPrivateProfileInt(mainSection, compareToPrevSetting,  1, iniFile) == 1;
+	GotoFirstDiff	= ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting,  0, iniFile) == 1;
+	EncodingsCheck	= ::GetPrivateProfileInt(mainSection, encodingsCheckSetting, 1, iniFile) == 1;
 
 	AlignMatches = ::GetPrivateProfileInt(mainSection, alignMatchesSetting,	1, iniFile) == 1;
 	IgnoreSpaces = ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,	0, iniFile) == 1;
@@ -103,6 +105,8 @@ void UserSettings::save()
 			CompareToPrev ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, gotoFirstDiffSetting,
 			GotoFirstDiff ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, encodingsCheckSetting,
+			EncodingsCheck ? TEXT("1") : TEXT("0"), iniFile);
 
 	::WritePrivateProfileString(mainSection, alignMatchesSetting,	AlignMatches	? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreSpacesSetting,	IgnoreSpaces	? TEXT("1") : TEXT("0"), iniFile);
@@ -1425,7 +1429,7 @@ void Compare()
 
 	CompareResult_t cmpResult;
 
-	if (!isEncodingOK(*cmpPair))
+	if (Settings.EncodingsCheck && !isEncodingOK(*cmpPair))
 		cmpResult = COMPARE_CANCELLED;
 	else
 		cmpResult = runCompare(cmpPair);

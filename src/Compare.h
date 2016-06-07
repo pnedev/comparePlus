@@ -90,6 +90,7 @@ struct UserSettings
 	static const TCHAR oldFileOnLeftSetting[];
 	static const TCHAR compareToPrevSetting[];
 	static const TCHAR gotoFirstDiffSetting[];
+	static const TCHAR encodingsCheckSetting[];
 	static const TCHAR alignMatchesSetting[];
 	static const TCHAR ignoreSpacesSetting[];
 	static const TCHAR ignoreEOLsSetting[];
@@ -107,6 +108,7 @@ struct UserSettings
 	int				OldFileViewId;
 	bool           	CompareToPrev;
 	bool           	GotoFirstDiff;
+	bool           	EncodingsCheck;
 
 	bool           	AlignMatches;
 	bool           	IgnoreSpaces;
