@@ -407,7 +407,7 @@ void jumpToNextChange(bool down)
 }
 
 
-DocLines_t getAllLines(HWND window, std::vector<int>& lineNum)
+DocLines_t getAllLines(HWND window, std::vector<int>& lineNum, bool ignoreEOLs)
 {
 	int docLines = ::SendMessage(window, SCI_GETLENGTH, 0, 0);
 
@@ -421,7 +421,11 @@ DocLines_t getAllLines(HWND window, std::vector<int>& lineNum)
 	{
 		Sci_TextRange tr;
 		tr.chrg.cpMin = ::SendMessage(window, SCI_POSITIONFROMLINE, line, 0);
-		tr.chrg.cpMax = ::SendMessage(window, SCI_GETLINEENDPOSITION, line, 0);
+		if (ignoreEOLs)
+			tr.chrg.cpMax = ::SendMessage(window, SCI_GETLINEENDPOSITION, line, 0);
+		else
+			tr.chrg.cpMax = tr.chrg.cpMin + ::SendMessage(window, SCI_LINELENGTH, line, 0);
+
 		lineNum[line] = tr.chrg.cpMin;
 
 		int lineLength = tr.chrg.cpMax - tr.chrg.cpMin;

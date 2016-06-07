@@ -52,6 +52,10 @@ static wordType getWordType(char letter)
 		case '\t':
 		return SPACECHAR;
 
+		case '\r':
+		case '\n':
+		return EOLCHAR;
+
 		default:
 			if (::IsCharAlphaNumericA(letter))
 				return ALPHANUMCHAR;
@@ -62,7 +66,7 @@ static wordType getWordType(char letter)
 }
 
 
-static int getWords(const DocLines_t& doc, chunk_info& chunk, bool IncludeSpace)
+static int getWords(const DocLines_t& doc, chunk_info& chunk, bool IgnoreSpaces)
 {
 	unsigned int wordIndex = 0;
 
@@ -90,7 +94,7 @@ static int getWords(const DocLines_t& doc, chunk_info& chunk, bool IncludeSpace)
 			{
 				if (len > 0)
 				{
-					if (!IncludeSpace || type != SPACECHAR)
+					if (!IgnoreSpaces || type != SPACECHAR)
 					{
 						Word word;
 						word.length = len;
@@ -112,7 +116,7 @@ static int getWords(const DocLines_t& doc, chunk_info& chunk, bool IncludeSpace)
 
 		if (len > 0)
 		{
-			if (!IncludeSpace || type != SPACECHAR)
+			if (!IgnoreSpaces || type != SPACECHAR)
 			{
 				Word word;
 				word.length = len;
@@ -228,15 +232,15 @@ static int checkWords(diff_edit& e, chunk_info& chunk, chunk_info& otherChunk)
 }
 
 
-bool compareWords(diff_edit& e1, diff_edit& e2, const DocLines_t& doc1, const DocLines_t& doc2, bool IncludeSpace)
+bool compareWords(diff_edit& e1, diff_edit& e2, const DocLines_t& doc1, const DocLines_t& doc2, bool IgnoreSpaces)
 {
 	unsigned int i, j;
 
 	chunk_info chunk1(e1.off, e1.len);
 	chunk_info chunk2(e2.off, e2.len);
 
-	getWords(doc1, chunk1, IncludeSpace);
-	getWords(doc2, chunk2, IncludeSpace);
+	getWords(doc1, chunk1, IgnoreSpaces);
+	getWords(doc2, chunk2, IgnoreSpaces);
 
 	// Compare the two chunks
 	std::vector<diff_edit> diff = DiffCalc<Word>(chunk1.words, chunk2.words)();
@@ -250,7 +254,7 @@ bool compareWords(diff_edit& e1, diff_edit& e2, const DocLines_t& doc1, const Do
 		lineMappings1[i].resize(chunk2.lineCount, 0);
 
 	// Use the MATCH results to synchronize line numbers
-	// count how many are on each line, than select the line with the most matches
+	// count how many are on each line, then select the line with the most matches
 	const std::size_t diffSize = diff.size();
 
 	int offset = 0;
@@ -273,7 +277,7 @@ bool compareWords(diff_edit& e1, diff_edit& e2, const DocLines_t& doc1, const Do
 				Word *word1 = &chunk1.words[index];
 				Word *word2 = &chunk2.words[index + offset];
 
-				if (word1->type != SPACECHAR)
+				if (word1->type != SPACECHAR && word1->type != EOLCHAR)
 				{
 					int line1a = word1->line;
 					int line2a = word2->line;
@@ -638,7 +642,7 @@ void shiftBoundries(std::vector<diff_edit>& diff,
 }
 
 
-std::vector<unsigned int> computeHashes(const DocLines_t& doc, bool IncludeSpace)
+std::vector<unsigned int> computeHashes(const DocLines_t& doc, bool IgnoreSpaces)
 {
 	int docLength = doc.size();
 	std::vector<unsigned int> hashes(docLength);
@@ -651,7 +655,7 @@ std::vector<unsigned int> computeHashes(const DocLines_t& doc, bool IncludeSpace
 		{
 			if (doc[i][j] == ' ' || doc[i][j] == '\t')
 			{
-				if (!IncludeSpace)
+				if (!IgnoreSpaces)
 					hash = HASH(hash, doc[i][j]);
 			}
 			else

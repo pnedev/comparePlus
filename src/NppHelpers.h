@@ -252,7 +252,7 @@ void defineSymbol(int type, int symbol);
 void defineColor(int type, int color);
 void clearWindow(HWND window);
 
-DocLines_t getAllLines(HWND window, std::vector<int>& lineNum);
+DocLines_t getAllLines(HWND window, std::vector<int>& lineNum, bool ignoreEOLs);
 
 void addBlankSection(HWND window, int line, int length);
 

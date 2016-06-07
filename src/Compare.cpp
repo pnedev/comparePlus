@@ -46,8 +46,9 @@ const TCHAR UserSettings::oldFileOnLeftSetting[]	= TEXT("Old on Left");
 const TCHAR UserSettings::compareToPrevSetting[]	= TEXT("Default Compare is to Prev");
 const TCHAR UserSettings::gotoFirstDiffSetting[]	= TEXT("Go to First Diff");
 const TCHAR UserSettings::alignMatchesSetting[]		= TEXT("Align Matches");
-const TCHAR UserSettings::ignoreSpacesSetting[]		= TEXT("Include Spaces");
-const TCHAR UserSettings::detectMovesSetting[]		= TEXT("Detect Moved Blocks");
+const TCHAR UserSettings::ignoreSpacesSetting[]		= TEXT("Ignore Spaces");
+const TCHAR UserSettings::ignoreEOLsSetting[]		= TEXT("Ignore Line Endings");
+const TCHAR UserSettings::detectMovesSetting[]		= TEXT("Detect Moves");
 const TCHAR UserSettings::navBarSetting[]			= TEXT("Navigation Bar");
 const TCHAR UserSettings::colorsSection[]			= TEXT("Colors");
 const TCHAR UserSettings::addedColorSetting[]		= TEXT("Added");
@@ -72,9 +73,10 @@ void UserSettings::load()
 	CompareToPrev	= ::GetPrivateProfileInt(mainSection, compareToPrevSetting, 1, iniFile) == 1;
 	GotoFirstDiff	= ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting, 0, iniFile) == 1;
 
-	AddLine      = ::GetPrivateProfileInt(mainSection, alignMatchesSetting,	1, iniFile) == 1;
-	IncludeSpace = ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,	0, iniFile) == 1;
-	DetectMove   = ::GetPrivateProfileInt(mainSection, detectMovesSetting,	1, iniFile) == 1;
+	AlignMatches = ::GetPrivateProfileInt(mainSection, alignMatchesSetting,	1, iniFile) == 1;
+	IgnoreSpaces = ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,	0, iniFile) == 1;
+	IgnoreEOLs   = ::GetPrivateProfileInt(mainSection, ignoreEOLsSetting,	1, iniFile) == 1;
+	DetectMoves	 = ::GetPrivateProfileInt(mainSection, detectMovesSetting,	1, iniFile) == 1;
 	UseNavBar    = ::GetPrivateProfileInt(mainSection, navBarSetting,		0, iniFile) == 1;
 
 	colors.added	 = ::GetPrivateProfileInt(colorsSection, addedColorSetting,		DEFAULT_ADDED_COLOR, iniFile);
@@ -102,10 +104,11 @@ void UserSettings::save()
 	::WritePrivateProfileString(mainSection, gotoFirstDiffSetting,
 			GotoFirstDiff ? TEXT("1") : TEXT("0"), iniFile);
 
-	::WritePrivateProfileString(mainSection, alignMatchesSetting, AddLine		? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, ignoreSpacesSetting, IncludeSpace	? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, detectMovesSetting,  DetectMove	? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, navBarSetting,		  UseNavBar		? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, alignMatchesSetting,	AlignMatches	? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, ignoreSpacesSetting,	IgnoreSpaces	? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, ignoreEOLsSetting,		IgnoreEOLs		? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, detectMovesSetting,	DetectMoves		? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, navBarSetting,			UseNavBar		? TEXT("1") : TEXT("0"), iniFile);
 
 	TCHAR buffer[64];
 
@@ -1090,11 +1093,11 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 	}
 
 	std::vector<int> lineNum1;
-	const DocLines_t doc1 = getAllLines(view1, lineNum1);
+	const DocLines_t doc1 = getAllLines(view1, lineNum1, Settings.IgnoreEOLs);
 	const int doc1Length = doc1.size();
 
 	std::vector<int> lineNum2;
-	const DocLines_t doc2 = getAllLines(view2, lineNum2);
+	const DocLines_t doc2 = getAllLines(view2, lineNum2, Settings.IgnoreEOLs);
 	const int doc2Length = doc2.size();
 
 	{
@@ -1107,8 +1110,8 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		ProgressDlg::Open(msg);
 	}
 
-	std::vector<unsigned int> doc1Hashes = computeHashes(doc1, Settings.IncludeSpace);
-	std::vector<unsigned int> doc2Hashes = computeHashes(doc2, Settings.IncludeSpace);
+	std::vector<unsigned int> doc1Hashes = computeHashes(doc1, Settings.IgnoreSpaces);
+	std::vector<unsigned int> doc2Hashes = computeHashes(doc2, Settings.IgnoreSpaces);
 
 	if (ProgressDlg::IsCancelled())
 		return COMPARE_CANCELLED;
@@ -1131,7 +1134,7 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 
 	shiftBoundries(diff, doc1Hashes.data(), doc2Hashes.data(), doc1Length, doc2Length);
 
-	if (Settings.DetectMove)
+	if (Settings.DetectMoves)
 		findMoves(diff, doc1Hashes.data(), doc2Hashes.data());
 
 	// Insert empty lines, count changed lines
@@ -1151,7 +1154,7 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 			if (e2.op == DIFF_INSERT)
 			{
 				// check if the DELETE/INSERT pair includes changed lines or it's a completely new block
-				if (compareWords(e1, e2, doc1, doc2, Settings.IncludeSpace))
+				if (compareWords(e1, e2, doc1, doc2, Settings.IgnoreSpaces))
 				{
 					e1.op = DIFF_CHANGE1;
 					e2.op = DIFF_CHANGE2;
@@ -1269,7 +1272,7 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		}
 	}
 
-	if (Settings.AddLine)
+	if (Settings.AlignMatches)
 	{
 		int length = 0;
 		int off = 0;
@@ -1593,25 +1596,33 @@ void GitDiff()
 
 void AlignMatches()
 {
-	Settings.AddLine = !Settings.AddLine;
+	Settings.AlignMatches = !Settings.AlignMatches;
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID,
-			(LPARAM)Settings.AddLine);
+			(LPARAM)Settings.AlignMatches);
 }
 
 
-void IncludeSpacing()
+void IgnoreSpaces()
 {
-	Settings.IncludeSpace = !Settings.IncludeSpace;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACING]._cmdID,
-			(LPARAM)Settings.IncludeSpace);
+	Settings.IgnoreSpaces = !Settings.IgnoreSpaces;
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACES]._cmdID,
+			(LPARAM)Settings.IgnoreSpaces);
+}
+
+
+void IgnoreEOLs()
+{
+	Settings.IgnoreEOLs = !Settings.IgnoreEOLs;
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_EOLS]._cmdID,
+			(LPARAM)Settings.IgnoreEOLs);
 }
 
 
 void DetectMoves()
 {
-	Settings.DetectMove = !Settings.DetectMove;
+	Settings.DetectMoves = !Settings.DetectMoves;
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID,
-			(LPARAM)Settings.DetectMove);
+			(LPARAM)Settings.DetectMoves);
 }
 
 
@@ -1732,8 +1743,11 @@ void createMenu()
 	_tcscpy_s(funcItem[CMD_ALIGN_MATCHES]._itemName, nbChar, TEXT("Align Matches"));
 	funcItem[CMD_ALIGN_MATCHES]._pFunc = AlignMatches;
 
-	_tcscpy_s(funcItem[CMD_IGNORE_SPACING]._itemName, nbChar, TEXT("Ignore Spacing"));
-	funcItem[CMD_IGNORE_SPACING]._pFunc = IncludeSpacing;
+	_tcscpy_s(funcItem[CMD_IGNORE_SPACES]._itemName, nbChar, TEXT("Ignore Spaces"));
+	funcItem[CMD_IGNORE_SPACES]._pFunc = IgnoreSpaces;
+
+	_tcscpy_s(funcItem[CMD_IGNORE_EOLS]._itemName, nbChar, TEXT("Ignore Line Endings"));
+	funcItem[CMD_IGNORE_EOLS]._pFunc = IgnoreEOLs;
 
 	_tcscpy_s(funcItem[CMD_DETECT_MOVES]._itemName, nbChar, TEXT("Detect Moves"));
 	funcItem[CMD_DETECT_MOVES]._pFunc = DetectMoves;
@@ -1871,11 +1885,13 @@ void onToolBarReady()
 	NppSettings::get().updatePluginMenu();
 
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID,
-			(LPARAM)Settings.AddLine);
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACING]._cmdID,
-			(LPARAM)Settings.IncludeSpace);
+			(LPARAM)Settings.AlignMatches);
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACES]._cmdID,
+			(LPARAM)Settings.IgnoreSpaces);
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_EOLS]._cmdID,
+			(LPARAM)Settings.IgnoreEOLs);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID,
-			(LPARAM)Settings.DetectMove);
+			(LPARAM)Settings.DetectMoves);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID,
 			(LPARAM)Settings.UseNavBar);
 }

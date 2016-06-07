@@ -51,7 +51,8 @@ enum MENU_COMMANDS
 	CMD_GIT_DIFF,
 	CMD_SEPARATOR_2,
 	CMD_ALIGN_MATCHES,
-	CMD_IGNORE_SPACING,
+	CMD_IGNORE_SPACES,
+	CMD_IGNORE_EOLS,
 	CMD_DETECT_MOVES,
 	CMD_NAV_BAR,
 	CMD_SEPARATOR_3,
@@ -91,6 +92,7 @@ struct UserSettings
 	static const TCHAR gotoFirstDiffSetting[];
 	static const TCHAR alignMatchesSetting[];
 	static const TCHAR ignoreSpacesSetting[];
+	static const TCHAR ignoreEOLsSetting[];
 	static const TCHAR detectMovesSetting[];
 	static const TCHAR navBarSetting[];
 	static const TCHAR colorsSection[];
@@ -106,9 +108,10 @@ struct UserSettings
 	bool           	CompareToPrev;
 	bool           	GotoFirstDiff;
 
-	bool           	AddLine;
-	bool           	IncludeSpace;
-	bool           	DetectMove;
+	bool           	AlignMatches;
+	bool           	IgnoreSpaces;
+	bool           	IgnoreEOLs;
+	bool           	DetectMoves;
 	bool           	UseNavBar;
 
 	ColorSettings	colors;
