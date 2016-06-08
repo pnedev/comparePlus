@@ -276,7 +276,106 @@ struct DeletedSection
 };
 
 
-using DeletedSections_t = std::vector<DeletedSection>;
+/**
+ *  \struct
+ *  \brief
+ */
+struct DeletedSectionsList
+{
+	DeletedSectionsList() : skipPush(0) {}
+
+	void push(int startLine, int endLine);
+	void pop();
+
+	void clear()
+	{
+		sections.clear();
+		skipPush = 0;
+	}
+
+	bool empty()
+	{
+		return sections.empty();
+	}
+
+	const DeletedSection& lastSection()
+	{
+		return sections.back();
+	}
+
+	int	skipPush;
+
+private:
+	std::vector<DeletedSection>	sections;
+};
+
+
+void DeletedSectionsList::push(int startLine, int endLine)
+{
+	if (endLine <= startLine)
+		return;
+
+	if (skipPush)
+	{
+		--skipPush;
+		return;
+	}
+
+	DeletedSection delSection(startLine, endLine - startLine + 1);
+
+	HWND currentView = getCurrentView();
+
+	const int startPos = ::SendMessage(currentView, SCI_POSITIONFROMLINE, startLine, 0);
+	clearChangedIndicator(currentView,
+			startPos, ::SendMessage(currentView, SCI_POSITIONFROMLINE, endLine, 0) - startPos);
+
+	for (int line = startLine; line <= endLine; ++line)
+	{
+		const int marker = ::SendMessage(currentView, SCI_MARKERGET, line, 0);
+		if (marker)
+		{
+			delSection.markers[line - startLine] = marker;
+			if (line != endLine)
+				::SendMessage(currentView, SCI_MARKERDELETE, line, -1);
+		}
+	}
+
+	sections.push_back(delSection);
+}
+
+
+void DeletedSectionsList::pop()
+{
+	if (sections.empty())
+		return;
+
+	HWND currentView = getCurrentView();
+
+	const DeletedSection& last = sections.back();
+	const int linesCount = last.markers.size();
+
+	const int startPos = ::SendMessage(currentView, SCI_POSITIONFROMLINE, last.startLine, 0);
+	clearChangedIndicator(currentView,
+			startPos, ::SendMessage(currentView, SCI_POSITIONFROMLINE, last.startLine + linesCount, 0) - startPos);
+
+	for (int i = 0; i < linesCount; ++i)
+	{
+		::SendMessage(currentView, SCI_MARKERDELETE, last.startLine + i, -1);
+
+		if (last.markers[i])
+		{
+			int markerId = 0;
+			for (int marker = last.markers[i]; marker; marker >>= 1)
+			{
+				if (marker & 1)
+					::SendMessage(currentView, SCI_MARKERADD, last.startLine + i, markerId);
+				++markerId;
+			}
+		}
+	}
+
+	sections.pop_back();
+}
 
 
 enum Temp_t
@@ -314,8 +413,7 @@ struct ComparedFile
 	int		sciDoc;
 	TCHAR	name[MAX_PATH];
 
-	// Members below are for user actions generated data
-	DeletedSections_t	deletedSections;
+	DeletedSectionsList	deletedSections;
 };
 
 
@@ -887,8 +985,8 @@ void setContent(const char* content)
 {
 	HWND view = getCurrentView();
 
-	ScopedViewWriteEnabler writeEn(view);
 	ScopedViewUndoCollectionBlocker undoBlock(view);
+	ScopedViewWriteEnabler writeEn(view);
 
 	::SendMessage(view, SCI_SETTEXT, 0, (LPARAM)content);
 	::SendMessage(view, SCI_SETSAVEPOINT, true, 0);
@@ -1347,12 +1445,6 @@ CompareResult_t runCompare(CompareList_t::iterator& cmpPair)
 	cmpPair->positionFiles();
 
 	NppSettings::get().setCompareMode();
-
-	ScopedViewUndoCollectionBlocker undoBlock1(nppData._scintillaMainHandle);
-	ScopedViewUndoCollectionBlocker undoBlock2(nppData._scintillaSecondHandle);
-
-	ScopedViewWriteEnabler writeEn1(nppData._scintillaMainHandle);
-	ScopedViewWriteEnabler writeEn2(nppData._scintillaSecondHandle);
 
 	setStyles(Settings);
 
@@ -1966,10 +2058,12 @@ void onSciModified(SCNotification *notifyCode)
 	if (cmpPair == compareList.end())
 		return;
 
-	if ((notifyCode->modificationType & SC_MOD_BEFOREDELETE) &&
-		(notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_REDO)))
+	if (notifyCode->modificationType & SC_MOD_BEFOREDELETE)
 	{
-		ScopedIncrementer incr(notificationsLock);
+		const int currAction =
+			notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
+
+		DeletedSectionsList& deletedSections = cmpPair->getFileByBuffId(buffId).deletedSections;
 
 		HWND currentView = getCurrentView();
 
@@ -1977,56 +2071,31 @@ void onSciModified(SCNotification *notifyCode)
 		const int endLine =
 			::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position + notifyCode->length, 0);
 
-		DeletedSection delSection(startLine, endLine - startLine);
-		bool markersDeleted = false;
+		if (endLine > startLine)
+			deletedSections.push(startLine, endLine);
+	}
+	else if ((notifyCode->modificationType & SC_MOD_INSERTTEXT) && notifyCode->linesAdded)
+	{
+		const int currAction =
+			notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
 
-		for (int line = startLine; line < endLine; ++line)
+		DeletedSectionsList& deletedSections = cmpPair->getFileByBuffId(buffId).deletedSections;
+
+		if (deletedSections.empty() || currAction != SC_PERFORMED_UNDO)
 		{
-			const int marker = ::SendMessage(currentView, SCI_MARKERGET, line, 0);
-			if (marker)
-			{
-				delSection.markers[line - startLine] = marker;
-				::SendMessage(currentView, SCI_MARKERDELETE, line, -1);
-				markersDeleted = true;
-			}
+			++deletedSections.skipPush;
+			return;
 		}
 
-		if (markersDeleted)
-			cmpPair->getFileByBuffId(buffId).deletedSections.push_back(delSection);
-	}
-	else if ((notifyCode->modificationType & SC_MOD_INSERTTEXT) &&
-			(notifyCode->modificationType & SC_PERFORMED_UNDO))
-	{
-		DeletedSections_t& deletedSections = cmpPair->getFileByBuffId(buffId).deletedSections;
-		if (deletedSections.empty() || !notifyCode->linesAdded)
+		if (currAction == SC_PERFORMED_USER)
 			return;
-
-		ScopedIncrementer incr(notificationsLock);
 
 		HWND currentView = getCurrentView();
 
 		const int startLine = ::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 
-		const DeletedSection& lastDeleted = deletedSections.back();
-		if (lastDeleted.startLine == startLine)
-		{
-			const int linesCount = lastDeleted.markers.size();
-			for (int i = 0; i < linesCount; ++i)
-			{
-				if (lastDeleted.markers[i])
-				{
-					int markerId = 0;
-					for (int marker = lastDeleted.markers[i]; marker; marker >>= 1)
-					{
-						if (marker & 1)
-							::SendMessage(currentView, SCI_MARKERADD, startLine + i, markerId);
-						++markerId;
-					}
-				}
-			}
-
-			deletedSections.pop_back();
-		}
+		if (deletedSections.lastSection().startLine == startLine)
+			deletedSections.pop();
 	}
 }
 

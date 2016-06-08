@@ -236,6 +236,7 @@ void markAsChanged(HWND window, int line);
 void markAsRemoved(HWND window, int line);
 void markAsMoved(HWND window, int line);
 void markTextAsChanged(HWND window, int start, int length);
+void clearChangedIndicator(HWND window, int start, int length);
 
 void jumpToFirstChange();
 void jumpToLastChange();

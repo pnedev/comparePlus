@@ -305,6 +305,18 @@ void markTextAsChanged(HWND window, int start, int length)
 }
 
 
+void clearChangedIndicator(HWND window, int start, int length)
+{
+	if (length != 0)
+	{
+		int curIndic = ::SendMessage(window, SCI_GETINDICATORCURRENT, 0, 0);
+		::SendMessage(window, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
+		::SendMessage(window, SCI_INDICATORCLEARRANGE, start, length);
+		::SendMessage(window, SCI_SETINDICATORCURRENT, curIndic, 0);
+	}
+}
+
+
 void jumpToFirstChange()
 {
 	HWND currView = getCurrentView();
@@ -455,13 +467,7 @@ void clearWindow(HWND window)
 	::SendMessage(window, SCI_MARKERDELETEALL, MARKER_REMOVED_SYMBOL, MARKER_REMOVED_SYMBOL);
 	::SendMessage(window, SCI_MARKERDELETEALL, MARKER_MOVED_SYMBOL,   MARKER_MOVED_SYMBOL);
 
-	// remove everything marked in markTextAsChanged():
-	int curIndic = ::SendMessage(window, SCI_GETINDICATORCURRENT, 0, 0);
-	int length = ::SendMessage(window, SCI_GETLENGTH, 0, 0);
-
-	::SendMessage(window, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
-	::SendMessage(window, SCI_INDICATORCLEARRANGE, 0, length);
-	::SendMessage(window, SCI_SETINDICATORCURRENT, curIndic, 0);
+	clearChangedIndicator(window, 0, ::SendMessage(window, SCI_GETLENGTH, 0, 0));
 
 	// reset syntax highlighting:
 	::SendMessage(window, SCI_COLOURISE, 0, -1);
@@ -494,6 +500,9 @@ void addBlankSection(HWND window, int line, int length)
 
 	// SCI_INSERTTEXT needs \0 terminated string
 	buff.push_back(0);
+
+	ScopedViewUndoCollectionBlocker undoBlock(window);
+	ScopedViewWriteEnabler writeEn(window);
 
 	::SendMessage(window, SCI_INSERTTEXT, posAdd, (LPARAM)buff.data());
 
@@ -536,7 +545,12 @@ int deleteBlankSection(HWND window, int line)
 	}
 
 	if (deleteLen > 0)
+	{
+		ScopedViewUndoCollectionBlocker undoBlock(window);
+		ScopedViewWriteEnabler writeEn(window);
+
 		::SendMessage(window, SCI_DELETERANGE, deleteStartPos, deleteLen);
+	}
 
 	return deletedLines;
 }
@@ -546,9 +560,6 @@ void addBlankLines(HWND window, const BlankSections_t& blanks)
 {
 	if (blanks.empty())
 		return;
-
-	ScopedViewUndoCollectionBlocker undoBlock(window);
-	ScopedViewWriteEnabler writeEn(window);
 
 	const int size = blanks.size();
 	for (int i = 0; i < size; ++i)
@@ -560,9 +571,6 @@ BlankSections_t removeBlankLines(HWND window, bool saveBlanks)
 {
 	BlankSections_t blanks;
 	const int marker = 1 << MARKER_BLANK_LINE;
-
-	ScopedViewUndoCollectionBlocker undoBlock(window);
-	ScopedViewWriteEnabler writeEn(window);
 
 	int deletedLines = 0;
 	for (int line = ::SendMessage(window, SCI_MARKERNEXT, 0, marker); line != -1;
