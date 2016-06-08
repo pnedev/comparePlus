@@ -48,7 +48,7 @@ const TCHAR UserSettings::gotoFirstDiffSetting[]	= TEXT("Go to First Diff");
 const TCHAR UserSettings::encodingsCheckSetting[]	= TEXT("Check Encodings");
 const TCHAR UserSettings::alignMatchesSetting[]		= TEXT("Align Matches");
 const TCHAR UserSettings::ignoreSpacesSetting[]		= TEXT("Ignore Spaces");
-const TCHAR UserSettings::ignoreEOLsSetting[]		= TEXT("Ignore Line Endings");
+const TCHAR UserSettings::ignoreEOLsSetting[]		= TEXT("Ignore End of Lines");
 const TCHAR UserSettings::detectMovesSetting[]		= TEXT("Detect Moves");
 const TCHAR UserSettings::navBarSetting[]			= TEXT("Navigation Bar");
 const TCHAR UserSettings::colorsSection[]			= TEXT("Colors");
@@ -1750,7 +1750,7 @@ void createMenu()
 	_tcscpy_s(funcItem[CMD_IGNORE_SPACES]._itemName, nbChar, TEXT("Ignore Spaces"));
 	funcItem[CMD_IGNORE_SPACES]._pFunc = IgnoreSpaces;
 
-	_tcscpy_s(funcItem[CMD_IGNORE_EOLS]._itemName, nbChar, TEXT("Ignore Line Endings"));
+	_tcscpy_s(funcItem[CMD_IGNORE_EOLS]._itemName, nbChar, TEXT("Ignore End of Lines"));
 	funcItem[CMD_IGNORE_EOLS]._pFunc = IgnoreEOLs;
 
 	_tcscpy_s(funcItem[CMD_DETECT_MOVES]._itemName, nbChar, TEXT("Detect Moves"));
