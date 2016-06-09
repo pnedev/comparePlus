@@ -266,11 +266,14 @@ VOID CALLBACK DelayedWork::timerCB(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD
  */
 struct DeletedSection
 {
-	DeletedSection(int line, int len) : startLine(line)
+	DeletedSection(int action, int line, int len) : startLine(line)
 	{
+		restoreAction = (action == SC_PERFORMED_UNDO) ? SC_PERFORMED_REDO : SC_PERFORMED_UNDO;
+
 		markers.resize(len, 0);
 	}
 
+	int					restoreAction;
 	int					startLine;
 	std::vector<int>	markers;
 };
@@ -284,33 +287,22 @@ struct DeletedSectionsList
 {
 	DeletedSectionsList() : skipPush(0) {}
 
-	void push(int startLine, int endLine);
-	void pop();
+	void push(int currAction, int startLine, int endLine);
+	void pop(int currAction, int startLine);
 
 	void clear()
 	{
-		sections.clear();
 		skipPush = 0;
+		sections.clear();
 	}
-
-	bool empty()
-	{
-		return sections.empty();
-	}
-
-	const DeletedSection& lastSection()
-	{
-		return sections.back();
-	}
-
-	int	skipPush;
 
 private:
+	int							skipPush;
 	std::vector<DeletedSection>	sections;
 };
 
 
-void DeletedSectionsList::push(int startLine, int endLine)
+void DeletedSectionsList::push(int currAction, int startLine, int endLine)
 {
 	if (endLine <= startLine)
 		return;
@@ -321,7 +313,7 @@ void DeletedSectionsList::push(int startLine, int endLine)
 		return;
 	}
 
-	DeletedSection delSection(startLine, endLine - startLine + 1);
+	DeletedSection delSection(currAction, startLine, endLine - startLine + 1);
 
 	HWND currentView = getCurrentView();
 
@@ -344,9 +336,15 @@ void DeletedSectionsList::push(int startLine, int endLine)
 }
 
 
-void DeletedSectionsList::pop()
+void DeletedSectionsList::pop(int currAction, int startLine)
 {
-	if (sections.empty())
+	if (sections.empty() || sections.back().restoreAction != currAction)
+	{
+		++skipPush;
+		return;
+	}
+
+	if (sections.back().startLine != startLine)
 		return;
 
 	HWND currentView = getCurrentView();
@@ -2060,42 +2058,31 @@ void onSciModified(SCNotification *notifyCode)
 
 	if (notifyCode->modificationType & SC_MOD_BEFOREDELETE)
 	{
-		const int currAction =
-			notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
-
-		DeletedSectionsList& deletedSections = cmpPair->getFileByBuffId(buffId).deletedSections;
-
 		HWND currentView = getCurrentView();
 
 		const int startLine = ::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 		const int endLine =
 			::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position + notifyCode->length, 0);
 
-		if (endLine > startLine)
-			deletedSections.push(startLine, endLine);
-	}
-	else if ((notifyCode->modificationType & SC_MOD_INSERTTEXT) && notifyCode->linesAdded)
-	{
+		// Change is on single line?
+		if (endLine <= startLine)
+			return;
+
 		const int currAction =
 			notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
 
-		DeletedSectionsList& deletedSections = cmpPair->getFileByBuffId(buffId).deletedSections;
-
-		if (deletedSections.empty() || currAction != SC_PERFORMED_UNDO)
-		{
-			++deletedSections.skipPush;
-			return;
-		}
-
-		if (currAction == SC_PERFORMED_USER)
-			return;
-
+		cmpPair->getFileByBuffId(buffId).deletedSections.push(currAction, startLine, endLine);
+	}
+	else if ((notifyCode->modificationType & SC_MOD_INSERTTEXT) && notifyCode->linesAdded)
+	{
 		HWND currentView = getCurrentView();
 
 		const int startLine = ::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 
-		if (deletedSections.lastSection().startLine == startLine)
-			deletedSections.pop();
+		const int currAction =
+			notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
+
+		cmpPair->getFileByBuffId(buffId).deletedSections.pop(currAction, startLine);
 	}
 }
 
