@@ -1558,18 +1558,19 @@ void Compare()
 					_sntprintf_s(msg, _countof(msg), _TRUNCATE,
 							TEXT("Files \"%s\" and \"%s\" match.\n\nTemp file will be closed."),
 							newName, ::PathFindFileName(oldFile.name));
-
-					::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"), MB_OK);
 				}
 				else
 				{
-					_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-							TEXT("File \"%s\" has no changes %s."), newName,
-							oldFile.isTemp == LAST_SAVED_TEMP ? TEXT("since last Save") :
-							oldFile.isTemp == GIT_TEMP ? TEXT("against Git") : TEXT("against SVN"));
-
-					::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"), MB_OK);
+					if (oldFile.isTemp == LAST_SAVED_TEMP)
+						_sntprintf_s(msg, _countof(msg), _TRUNCATE,
+								TEXT("File \"%s\" has not been modified since last Save."), newName);
+					else
+						_sntprintf_s(msg, _countof(msg), _TRUNCATE,
+								TEXT("File \"%s\" has no changes against %s."), newName,
+								oldFile.isTemp == GIT_TEMP ? TEXT("Git") : TEXT("SVN"));
 				}
+
+				::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"), MB_OK);
 			}
 			else
 			{
