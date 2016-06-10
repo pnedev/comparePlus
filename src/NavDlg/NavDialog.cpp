@@ -84,7 +84,7 @@ void NavDialog::Show()
 
 	HDC hDC = ::GetDC(_hSelf);
 
-    SetScalingFactor();
+	SetScalingFactor();
 
 	// Create BMP used to store graphical representation
 	m_hMemDC1	= ::CreateCompatibleDC(hDC);
@@ -260,19 +260,19 @@ void NavDialog::SetDocNavLine(int lineMark, int i, HDC hMemDC)
 
 void NavDialog::SetScalingFactor()
 {
-    // Get max file length
-    m_LineCount1 = ::SendMessage(nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0);
-    m_LineCount2 = ::SendMessage(nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0);
+	// Get max file length
+	m_LineCount1 = ::SendMessage(nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0);
+	m_LineCount2 = ::SendMessage(nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0);
 
-    m_MaxLineCount = _MAX(m_LineCount1, m_LineCount2);
+	m_MaxLineCount = _MAX(m_LineCount1, m_LineCount2);
 
 	RECT navRect;
-    ::GetClientRect(_hSelf, &navRect);
+	::GetClientRect(_hSelf, &navRect);
 
-    m_NavHalfWidth = ((navRect.right - navRect.left) - 3 * cSpace) / 2;
-    m_NavHeight = (navRect.bottom - navRect.top) - 2 * cSpace;
+	m_NavHalfWidth = ((navRect.right - navRect.left) - 3 * cSpace) / 2;
+	m_NavHeight = (navRect.bottom - navRect.top) - 2 * cSpace;
 
-    m_bmpLineHeight = m_NavHeight / m_MaxLineCount;
+	m_bmpLineHeight = m_NavHeight / m_MaxLineCount;
 
 	if (m_bmpLineHeight > 5)
 		m_bmpLineHeight = 5;
@@ -280,7 +280,7 @@ void NavDialog::SetScalingFactor()
 	if (m_bmpLineHeight)
 		m_NavHeight = m_bmpLineHeight * m_MaxLineCount;
 
-    m_HeightScaleFactor = (float)(m_MaxLineCount) / (float)(m_NavHeight);
+	m_HeightScaleFactor = (float)(m_MaxLineCount) / (float)(m_NavHeight);
 }
 
 
@@ -290,7 +290,7 @@ void NavDialog::CreateBitmap()
 	std::vector<int> doc1LineMark(m_MaxLineCount, -1);
 	std::vector<int> doc2LineMark(m_MaxLineCount, -1);
 
-    for (int i = 0; i < m_LineCount1; ++i)
+	for (int i = 0; i < m_LineCount1; ++i)
 	{
 		int marker = SendMessage(nppData._scintillaMainHandle, SCI_MARKERGET, i, 0);
 		if (!marker)
@@ -303,7 +303,7 @@ void NavDialog::CreateBitmap()
 		else if (marker & (1 << MARKER_REMOVED_LINE)) doc1LineMark[i] = MARKER_REMOVED_LINE;
 	}
 
-    for (int i = 0; i < m_LineCount2; ++i)
+	for (int i = 0; i < m_LineCount2; ++i)
 	{
 		int marker = SendMessage(nppData._scintillaSecondHandle, SCI_MARKERGET, i, 0);
 		if (!marker)
@@ -328,10 +328,10 @@ void NavDialog::CreateBitmap()
 	FillRect(m_hMemDC1, &bmpRect, hBrush);
 	FillRect(m_hMemDC2, &bmpRect, hBrush);
 
-    for (int i = 0; i < m_MaxLineCount; ++i)
+	for (int i = 0; i < m_MaxLineCount; ++i)
 	{
 		SetDocNavLine(doc1LineMark[i], i, m_hMemDC1);
-        SetDocNavLine(doc2LineMark[i], i, m_hMemDC2);
+		SetDocNavLine(doc2LineMark[i], i, m_hMemDC2);
 	}
 
 	InvalidateRect(_hSelf, NULL, TRUE);
@@ -345,7 +345,7 @@ void NavDialog::OnPaint()
 	SetScalingFactor();
 
 	// If side bar is too small, don't draw anything
-    if ((m_NavHalfWidth < 5) || (m_NavHeight < 5))
+	if ((m_NavHalfWidth < 5) || (m_NavHeight < 5))
 		return;
 
 	PAINTSTRUCT ps;
@@ -357,21 +357,21 @@ void NavDialog::OnPaint()
 	RECT rLeft;
 	rLeft.top		= cSpace;
 	rLeft.left		= cSpace;
-    rLeft.right		= rLeft.left + m_NavHalfWidth;
-    rLeft.bottom	= rLeft.top + m_NavHeight;
+	rLeft.right		= rLeft.left + m_NavHalfWidth;
+	rLeft.bottom	= rLeft.top + m_NavHeight;
 
 	// Define right rectangle coordinates
 	RECT rRight;
 	rRight.top		= cSpace;
 	rRight.left		= rLeft.right + cSpace;
-    rRight.right	= rRight.left + m_NavHalfWidth;
-    rRight.bottom	= rRight.top + m_NavHeight;
+	rRight.right	= rRight.left + m_NavHalfWidth;
+	rRight.bottom	= rRight.top + m_NavHeight;
 
 	int x, y, cx, cy;
 
 	// Draw bar border
-    ::Rectangle(hDC, rLeft.left, rLeft.top, rLeft.right, rLeft.bottom);
-    ::Rectangle(hDC, rRight.left, rRight.top, rRight.right, rRight.bottom);
+	::Rectangle(hDC, rLeft.left, rLeft.top, rLeft.right, rLeft.bottom);
+	::Rectangle(hDC, rRight.left, rRight.top, rRight.right, rRight.bottom);
 
 	// Draw Left bar
 	x  = rLeft.left + 1;
@@ -391,44 +391,44 @@ void NavDialog::OnPaint()
 
 	HWND currView = getCurrentView();
 
-    int firstLineOnScreen = ::SendMessage(currView, SCI_GETFIRSTVISIBLELINE, 0, 0);
-    int lastLineOnScreen = firstLineOnScreen + ::SendMessage(currView, SCI_LINESONSCREEN, 0, 0);
+	int firstLineOnScreen = ::SendMessage(currView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	int lastLineOnScreen = firstLineOnScreen + ::SendMessage(currView, SCI_LINESONSCREEN, 0, 0);
 
-    firstLineOnScreen = ::SendMessage(currView, SCI_DOCLINEFROMVISIBLE, firstLineOnScreen, 0);
-    lastLineOnScreen = ::SendMessage(currView, SCI_DOCLINEFROMVISIBLE, lastLineOnScreen, 0);
+	firstLineOnScreen = ::SendMessage(currView, SCI_DOCLINEFROMVISIBLE, firstLineOnScreen, 0);
+	lastLineOnScreen = ::SendMessage(currView, SCI_DOCLINEFROMVISIBLE, lastLineOnScreen, 0);
 
-    firstLineOnScreen = (int)((float)firstLineOnScreen / m_HeightScaleFactor);
-    lastLineOnScreen = (int)((float)lastLineOnScreen / m_HeightScaleFactor);
+	firstLineOnScreen = (int)((float)firstLineOnScreen / m_HeightScaleFactor);
+	lastLineOnScreen = (int)((float)lastLineOnScreen / m_HeightScaleFactor);
 
-    x = rLeft.left - 1;
-    y = _MAX(firstLineOnScreen, cSpace); // don't exceed the top border
-    cx = rRight.right + 1;
-    cy = y + (lastLineOnScreen - firstLineOnScreen);
+	x = rLeft.left - 1;
+	y = _MAX(firstLineOnScreen, cSpace); // don't exceed the top border
+	cx = rRight.right + 1;
+	cy = y + (lastLineOnScreen - firstLineOnScreen);
 
 	// preserve the minimum height without exceeding the bottom border
-    if (cy > rLeft.bottom)
-        cy = rLeft.bottom;
+	if (cy > rLeft.bottom)
+		cy = rLeft.bottom;
 
 	// not too small or even invisible
 	if (cy < y + cMinSelectorHeight)
 		cy = y + cMinSelectorHeight;
 
-    HPEN hPenView = ::CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
-    HBRUSH hBrushView = ::CreateHatchBrush(HS_VERTICAL, RGB(200, 200, 200));
+	HPEN hPenView = ::CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
+	HBRUSH hBrushView = ::CreateHatchBrush(HS_VERTICAL, RGB(200, 200, 200));
 
-    ::SelectObject(hDC, hPenView);
-    ::SelectObject(hDC, hBrushView);
+	::SelectObject(hDC, hPenView);
+	::SelectObject(hDC, hBrushView);
 
-    int oldBkMode = ::GetBkMode(hDC);
+	int oldBkMode = ::GetBkMode(hDC);
 
-    ::SetBkMode(hDC, TRANSPARENT);
+	::SetBkMode(hDC, TRANSPARENT);
 
-    ::Rectangle(hDC, x, y, cx, cy);
+	::Rectangle(hDC, x, y, cx, cy);
 
-    ::SetBkMode(hDC, oldBkMode);
+	::SetBkMode(hDC, oldBkMode);
 
-    ::DeleteObject(hPenView);
-    ::DeleteObject(hBrushView);
+	::DeleteObject(hPenView);
+	::DeleteObject(hBrushView);
 
 	::EndPaint(_hSelf, &ps);
 }

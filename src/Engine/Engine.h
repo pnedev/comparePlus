@@ -1,6 +1,6 @@
 /*
  * This file is part of Compare plugin for Notepad++
- * Copyright (C)2011 Jean-Sébastien Leroy (jean.sebastien.leroy@gmail.com)
+ * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

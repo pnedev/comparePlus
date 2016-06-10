@@ -2331,18 +2331,18 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		break;
 
 		// This is used to monitor deletion of lines to properly clear their compare markings
-        case SCN_MODIFIED:
+		case SCN_MODIFIED:
 			if (!notificationsLock && NppSettings::get().compareMode)
 				onSciModified(notifyCode);
-        break;
+		break;
 
-        case SCN_ZOOM:
+		case SCN_ZOOM:
 			if (!notificationsLock && NppSettings::get().compareMode)
 				onSciZoom();
-        break;
+		break;
 
-        case NPPN_WORDSTYLESUPDATED:
-        {
+		case NPPN_WORDSTYLESUPDATED:
+		{
 			setStyles(Settings);
 
 			if (NavDlg.isVisible())
@@ -2350,8 +2350,8 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 				NavDlg.SetColors(Settings.colors);
 				NavDlg.CreateBitmap();
 			}
-        }
-        break;
+		}
+		break;
 
 		case NPPN_TBMODIFICATION:
 			onToolBarReady();

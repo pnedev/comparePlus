@@ -1,6 +1,6 @@
 /*
  * This file is part of Compare plugin for Notepad++
- * Copyright (C)2011 Jean-Sébastien Leroy (jean.sebastien.leroy@gmail.com)
+ * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -205,7 +205,7 @@ void setNormalView(HWND view)
 
 void setCompareView(HWND view)
 {
-    const int marginMask =	(1 << MARKER_CHANGED_SYMBOL) |
+	const int marginMask =	(1 << MARKER_CHANGED_SYMBOL) |
 							(1 << MARKER_ADDED_SYMBOL) |
 							(1 << MARKER_REMOVED_SYMBOL) |
 							(1 << MARKER_MOVED_SYMBOL);
@@ -219,43 +219,43 @@ void setCompareView(HWND view)
 
 void setStyles(UserSettings& settings)
 {
-    const int bg = ::SendMessage(nppData._nppHandle, NPPM_GETEDITORDEFAULTBACKGROUNDCOLOR, 0, 0);
+	const int bg = ::SendMessage(nppData._nppHandle, NPPM_GETEDITORDEFAULTBACKGROUNDCOLOR, 0, 0);
 
-    settings.colors._default = bg;
+	settings.colors._default = bg;
 
-    unsigned int r = bg & 0xFF;
-    unsigned int g = bg >> 8 & 0xFF;
-    unsigned int b = bg >> 16 & 0xFF;
-    int colorShift = 0;
+	unsigned int r = bg & 0xFF;
+	unsigned int g = bg >> 8 & 0xFF;
+	unsigned int b = bg >> 16 & 0xFF;
+	int colorShift = 0;
 
-    if (((r + g + b) / 3) >= 128)
-        colorShift = -30;
-    else
-        colorShift = 30;
+	if (((r + g + b) / 3) >= 128)
+		colorShift = -30;
+	else
+		colorShift = 30;
 
-    r = (r + colorShift) & 0xFF;
-    g = (g + colorShift) & 0xFF;
-    b = (b + colorShift) & 0xFF;
+	r = (r + colorShift) & 0xFF;
+	g = (g + colorShift) & 0xFF;
+	b = (b + colorShift) & 0xFF;
 
-    settings.colors.blank = r | (g << 8) | (b << 16);
+	settings.colors.blank = r | (g << 8) | (b << 16);
 
 	setCompareView(nppData._scintillaMainHandle);
 	setCompareView(nppData._scintillaSecondHandle);
 
 	setBlank(nppData._scintillaMainHandle,   settings.colors.blank);
-    setBlank(nppData._scintillaSecondHandle, settings.colors.blank);
+	setBlank(nppData._scintillaSecondHandle, settings.colors.blank);
 
-    defineColor(MARKER_ADDED_LINE,   settings.colors.added);
-    defineColor(MARKER_CHANGED_LINE, settings.colors.changed);
-    defineColor(MARKER_MOVED_LINE,   settings.colors.moved);
-    defineColor(MARKER_REMOVED_LINE, settings.colors.deleted);
+	defineColor(MARKER_ADDED_LINE,   settings.colors.added);
+	defineColor(MARKER_CHANGED_LINE, settings.colors.changed);
+	defineColor(MARKER_MOVED_LINE,   settings.colors.moved);
+	defineColor(MARKER_REMOVED_LINE, settings.colors.deleted);
 
 	DefineXpmSymbol(MARKER_ADDED_SYMBOL,   icon_add_16_xpm);
 	DefineXpmSymbol(MARKER_REMOVED_SYMBOL, icon_sub_16_xpm);
 	DefineXpmSymbol(MARKER_CHANGED_SYMBOL, icon_warning_16_xpm);
 	DefineXpmSymbol(MARKER_MOVED_SYMBOL,   icon_moved_16_xpm);
 
-    setTextStyles(settings.colors);
+	setTextStyles(settings.colors);
 }
 
 
