@@ -542,14 +542,16 @@ void NppSettings::updatePluginMenu() const
 	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
 	const int flag = MF_BYCOMMAND | (compareMode ? MF_ENABLED : (MF_DISABLED | MF_GRAYED));
 
-	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ACTIVE]._cmdID, flag);
+	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ALL]._cmdID,
+			MF_BYCOMMAND | ((compareList.empty() && !newCompare) ? (MF_DISABLED | MF_GRAYED) : MF_ENABLED));
+
+	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ACTIVE]._cmdID,
+			MF_BYCOMMAND | ((!compareMode && !newCompare) ? (MF_DISABLED | MF_GRAYED) : MF_ENABLED));
+
 	::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, flag);
-
-	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ALL]._cmdID,
-			MF_BYCOMMAND | ((compareList.empty() && !newCompare) ? (MF_DISABLED | MF_GRAYED) : MF_ENABLED));
 
 	HWND hNppToolbar = NppToolbarHandleGetter::get();
 	if (hNppToolbar)
