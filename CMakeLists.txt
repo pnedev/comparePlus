@@ -84,9 +84,14 @@ find_library (shlwapi
     PATHS ${win32_lib_dir}
 )
 
+find_library (msimg32
+    NAMES libmsimg32.a
+    PATHS ${win32_lib_dir}
+)
+
 add_library (Compare MODULE ${project_rc_files} ${project_sources})
 
-target_link_libraries (Compare ${comctl32} ${comdlg32} ${shlwapi})
+target_link_libraries (Compare ${comctl32} ${comdlg32} ${shlwapi} ${msimg32})
 
 install (FILES ${CMAKE_BINARY_DIR}/libCompare.dll
     DESTINATION "$ENV{HOME}/.wine/drive_c/Program Files/Notepad++/plugins"

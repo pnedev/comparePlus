@@ -33,35 +33,31 @@ public:
 	void init(HINSTANCE hInst);
 	void destroy() {};
 
+	void doDialog(bool show = true);
+
 	void SetColors(const ColorSettings& colorSettings);
 	void CreateBitmap();
 	void Update();
-
-	void doDialog(bool show = true);
 
 protected:
 	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
 	static const int cSpace;
-	static const int cMinSelectorHeight;
 
 	void Show();
 	void Hide();
 
-	void SetDocNavLine(int lineMark, int i, HDC hMemDC);
 	void SetScalingFactor();
+	void FillViewBitmap(HWND view, HDC hMemDC);
 
 	void scrollView(int x, int y);
 	void onMouseWheel(int delta);
-
-	void OnPaint();
+	void onPaint();
 
 	tTbData	_data;
 
-	ColorSettings _clr;
-
-	int		m_bmpLineHeight;
+	ColorSettings m_clr;
 
 	int		m_NavHalfWidth;
 	int		m_NavHeight;
@@ -70,16 +66,17 @@ private:
 
 	HDC		m_hMemDC1;
 	HDC		m_hMemDC2;
+	HDC		m_hMemDC3;
 
-	HBITMAP m_hMemBMP1;
-	HBITMAP m_hMemBMP2;
+	HBITMAP	m_hMemBMP1;
+	HBITMAP	m_hMemBMP2;
+	HBITMAP	m_hMemBMP3;
 
 	SIZE	m_hMemBMPSize;
+	SIZE	m_hMemSelBMPSize;
 
+	int		m_FirstVisibleLine;
 	int		m_MaxLineCount;
-
-	int		m_LineCount1;
-	int		m_LineCount2;
 
 	bool	m_mouseOver;
 };
