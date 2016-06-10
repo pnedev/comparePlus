@@ -50,7 +50,6 @@ enum MENU_COMMANDS
 	CMD_SVN_DIFF,
 	CMD_GIT_DIFF,
 	CMD_SEPARATOR_2,
-	CMD_ALIGN_MATCHES,
 	CMD_IGNORE_SPACES,
 	CMD_IGNORE_EOLS,
 	CMD_DETECT_MOVES,
@@ -91,7 +90,6 @@ struct UserSettings
 	static const TCHAR compareToPrevSetting[];
 	static const TCHAR gotoFirstDiffSetting[];
 	static const TCHAR encodingsCheckSetting[];
-	static const TCHAR alignMatchesSetting[];
 	static const TCHAR ignoreSpacesSetting[];
 	static const TCHAR ignoreEOLsSetting[];
 	static const TCHAR detectMovesSetting[];
@@ -110,7 +108,6 @@ struct UserSettings
 	bool           	GotoFirstDiff;
 	bool           	EncodingsCheck;
 
-	bool           	AlignMatches;
 	bool           	IgnoreSpaces;
 	bool           	IgnoreEOLs;
 	bool           	DetectMoves;

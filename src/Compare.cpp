@@ -46,7 +46,6 @@ const TCHAR UserSettings::oldFileOnLeftSetting[]	= TEXT("Old on Left");
 const TCHAR UserSettings::compareToPrevSetting[]	= TEXT("Default Compare is to Prev");
 const TCHAR UserSettings::gotoFirstDiffSetting[]	= TEXT("Go to First Diff");
 const TCHAR UserSettings::encodingsCheckSetting[]	= TEXT("Check Encodings");
-const TCHAR UserSettings::alignMatchesSetting[]		= TEXT("Align Matches");
 const TCHAR UserSettings::ignoreSpacesSetting[]		= TEXT("Ignore Spaces");
 const TCHAR UserSettings::ignoreEOLsSetting[]		= TEXT("Ignore End of Lines");
 const TCHAR UserSettings::detectMovesSetting[]		= TEXT("Detect Moves");
@@ -75,7 +74,6 @@ void UserSettings::load()
 	GotoFirstDiff	= ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting,  0, iniFile) == 1;
 	EncodingsCheck	= ::GetPrivateProfileInt(mainSection, encodingsCheckSetting, 1, iniFile) == 1;
 
-	AlignMatches = ::GetPrivateProfileInt(mainSection, alignMatchesSetting,	1, iniFile) == 1;
 	IgnoreSpaces = ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,	0, iniFile) == 1;
 	IgnoreEOLs   = ::GetPrivateProfileInt(mainSection, ignoreEOLsSetting,	1, iniFile) == 1;
 	DetectMoves	 = ::GetPrivateProfileInt(mainSection, detectMovesSetting,	1, iniFile) == 1;
@@ -108,7 +106,6 @@ void UserSettings::save()
 	::WritePrivateProfileString(mainSection, encodingsCheckSetting,
 			EncodingsCheck ? TEXT("1") : TEXT("0"), iniFile);
 
-	::WritePrivateProfileString(mainSection, alignMatchesSetting,	AlignMatches	? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreSpacesSetting,	IgnoreSpaces	? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreEOLsSetting,		IgnoreEOLs		? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, detectMovesSetting,	DetectMoves		? TEXT("1") : TEXT("0"), iniFile);
@@ -1366,7 +1363,6 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		}
 	}
 
-	if (Settings.AlignMatches)
 	{
 		int length = 0;
 		int off = 0;
@@ -1683,14 +1679,6 @@ void GitDiff()
 }
 
 
-void AlignMatches()
-{
-	Settings.AlignMatches = !Settings.AlignMatches;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID,
-			(LPARAM)Settings.AlignMatches);
-}
-
-
 void IgnoreSpaces()
 {
 	Settings.IgnoreSpaces = !Settings.IgnoreSpaces;
@@ -1828,9 +1816,6 @@ void createMenu()
 	funcItem[CMD_GIT_DIFF]._pShKey->_isCtrl 	= true;
 	funcItem[CMD_GIT_DIFF]._pShKey->_isShift	= false;
 	funcItem[CMD_GIT_DIFF]._pShKey->_key 		= 'G';
-
-	_tcscpy_s(funcItem[CMD_ALIGN_MATCHES]._itemName, nbChar, TEXT("Align Matches"));
-	funcItem[CMD_ALIGN_MATCHES]._pFunc = AlignMatches;
 
 	_tcscpy_s(funcItem[CMD_IGNORE_SPACES]._itemName, nbChar, TEXT("Ignore Spaces"));
 	funcItem[CMD_IGNORE_SPACES]._pFunc = IgnoreSpaces;
@@ -1973,8 +1958,6 @@ void onToolBarReady()
 
 	NppSettings::get().updatePluginMenu();
 
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_ALIGN_MATCHES]._cmdID,
-			(LPARAM)Settings.AlignMatches);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACES]._cmdID,
 			(LPARAM)Settings.IgnoreSpaces);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_EOLS]._cmdID,
