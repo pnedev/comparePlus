@@ -850,6 +850,7 @@ NewCompare::~NewCompare()
 
 		if (hNppTabBar)
 		{
+			// This is workaround for Wine issue with tab bar refresh
 			::InvalidateRect(hNppTabBar, NULL, FALSE);
 
 			TCITEM tab;
@@ -909,7 +910,7 @@ void showNavBar()
 
 	// Display NavBar
 	NavDlg.SetColors(Settings.colors);
-	NavDlg.doDialog(true);
+	NavDlg.doDialog();
 
 	// Restore N++ focus
 	::SetFocus(hwnd);
@@ -1745,11 +1746,7 @@ void OpenSettingsDlg(void)
 		{
 			setStyles(Settings);
 
-			if (NavDlg.isVisible())
-			{
-				NavDlg.SetColors(Settings.colors);
-				NavDlg.CreateBitmap();
-			}
+			NavDlg.SetColors(Settings.colors);
 		}
 	}
 }
@@ -1973,38 +1970,36 @@ void onToolBarReady()
 
 void onSciUpdateUI(SCNotification *notifyCode)
 {
-	HWND activeView = NULL;
-	HWND otherView = NULL;
-
 	if (notifyCode->updated & (SC_UPDATE_SELECTION | SC_UPDATE_V_SCROLL))
 	{
-		int currentView = -1;
+		HWND activeView;
+		HWND otherView;
 
 		if (notifyCode->updated & SC_UPDATE_SELECTION)
-		{
-			currentView = getCurrentViewId();
-		}
+			activeView = getCurrentView();
 		else if (notifyCode->updated & SC_UPDATE_V_SCROLL)
-		{
-			if (notifyCode->nmhdr.hwndFrom == nppData._scintillaMainHandle)
-				currentView = MAIN_VIEW;
-			else if (notifyCode->nmhdr.hwndFrom == nppData._scintillaSecondHandle)
-				currentView = SUB_VIEW;
-		}
-		if (currentView != -1)
-		{
-			activeView = getView(currentView);
-			otherView = getView(!currentView);
-		}
+			activeView = (HWND)notifyCode->nmhdr.hwndFrom;
+		else
+			return;
+
+		if (activeView == nppData._scintillaMainHandle)
+			otherView = nppData._scintillaSecondHandle;
+		else if (activeView == nppData._scintillaSecondHandle)
+			otherView = nppData._scintillaMainHandle;
+		else
+			return;
+
+		int firstVisibleLine = ::SendMessage(activeView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+		firstVisibleLine = ::SendMessage(activeView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0);
+
+		ScopedIncrementer incr(notificationsLock);
+
+		::SendMessage(otherView, SCI_ENSUREVISIBLEENFORCEPOLICY, firstVisibleLine, 0);
+		firstVisibleLine = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, firstVisibleLine, 0);
+		::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine, 0);
 	}
 
-	if ((activeView != NULL) && (otherView != NULL))
-	{
-		int activeViewTopLine = ::SendMessage(activeView, SCI_GETFIRSTVISIBLELINE, 0, 0);
-		activeViewTopLine = ::SendMessage(activeView, SCI_DOCLINEFROMVISIBLE, activeViewTopLine, 0);
-		int otherViewTopLine = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, activeViewTopLine, 0);
-		::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, otherViewTopLine, 0);
-	}
+	NavDlg.Update();
 }
 
 
@@ -2067,7 +2062,6 @@ void onBufferActivatedDelayed(int buffId)
 	if (cmpPair == compareList.end())
 		return;
 
-	bool switchedFromOtherPair = false;
 	const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
 
 	// When compared file is activated make sure its corresponding pair file is also active in the other view
@@ -2077,8 +2071,6 @@ void onBufferActivatedDelayed(int buffId)
 
 		activateBufferID(otherFile.buffId);
 		activateBufferID(buffId);
-
-		switchedFromOtherPair = true;
 	}
 
 	NppSettings& nppSettings = NppSettings::get();
@@ -2087,8 +2079,8 @@ void onBufferActivatedDelayed(int buffId)
 	setCompareView(nppData._scintillaMainHandle);
 	setCompareView(nppData._scintillaSecondHandle);
 
-	if (Settings.UseNavBar && (switchedFromOtherPair || !NavDlg.isVisible()))
-		NavDlg.doDialog(true);
+	if (Settings.UseNavBar && !NavDlg.isVisible())
+		showNavBar();
 
 	::SetFocus(getCurrentView());
 }
@@ -2293,15 +2285,9 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 {
 	switch (notifyCode->nmhdr.code)
 	{
-		// This is used to update the NavBar
-		case SCN_PAINTED:
-			if (NavDlg.isVisible())
-				NavDlg.Update();
-		break;
-
-		// Emulate word-wrap aware vertical scroll sync
+		// Emulate word-wrap aware vertical scroll sync and update NavBar
 		case SCN_UPDATEUI:
-			if (NppSettings::get().compareMode)
+			if (!notificationsLock && NppSettings::get().compareMode)
 				onSciUpdateUI(notifyCode);
 		break;
 
@@ -2347,11 +2333,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		{
 			setStyles(Settings);
 
-			if (NavDlg.isVisible())
-			{
-				NavDlg.SetColors(Settings.colors);
-				NavDlg.CreateBitmap();
-			}
+			NavDlg.SetColors(Settings.colors);
 		}
 		break;
 

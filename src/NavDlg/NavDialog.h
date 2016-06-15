@@ -36,7 +36,6 @@ public:
 	void doDialog(bool show = true);
 
 	void SetColors(const ColorSettings& colorSettings);
-	void CreateBitmap();
 	void Update();
 
 protected:
@@ -44,39 +43,71 @@ protected:
 
 private:
 	static const int cSpace;
+	static const int cScrollerWidth;
+
+	/**
+	 *  \struct
+	 *  \brief
+	 */
+	struct NavView
+	{
+		NavView() : m_hView(NULL), m_hViewDC(NULL), m_hSelDC(NULL), m_hViewBMP(NULL), m_hSelBMP(NULL) {}
+
+		~NavView()
+		{
+			reset();
+		}
+
+		void init(HDC hDC);
+		void reset();
+		void create(const ColorSettings& colors);
+		void paint(HDC hDC, int xPos, int yPos, int width, int height, int hScale, int hOffset);
+		bool updateFirstLine();
+
+		HWND	m_hView;
+
+		HDC		m_hViewDC;
+		HDC		m_hSelDC;
+
+		HBITMAP	m_hViewBMP;
+		HBITMAP	m_hSelBMP;
+
+		SIZE	m_SelBMPsize;
+
+		int		m_firstLine;
+		int		m_lines;
+	};
 
 	void Show();
 	void Hide();
 
-	void SetScalingFactor();
-	void FillViewBitmap(HWND view, HDC hMemDC);
+	void CreateBitmap();
+	void ShowScroller(RECT& r);
 
-	void scrollView(int x, int y);
-	void onMouseWheel(int delta);
+	void SetScalingFactor();
+	void FillViewBitmap(HWND view, HDC hDC);
+
+	void setPos(int x, int y);
+	void onMouseWheel(int steps);
+	int updateScroll();
 	void onPaint();
 
 	tTbData	_data;
 
-	ColorSettings m_clr;
+	ColorSettings	m_clr;
 
-	int		m_NavHalfWidth;
-	int		m_NavHeight;
+	HINSTANCE		m_hInst;
 
-	float	m_HeightScaleFactor;
+	HWND		m_hScroll;
 
-	HDC		m_hMemDC1;
-	HDC		m_hMemDC2;
-	HDC		m_hMemDC3;
+	bool		m_mouseOver;
 
-	HBITMAP	m_hMemBMP1;
-	HBITMAP	m_hMemBMP2;
-	HBITMAP	m_hMemBMP3;
+	int			m_navViewWidth;
+	int			m_navHeight;
 
-	SIZE	m_hMemBMPSize;
-	SIZE	m_hMemSelBMPSize;
+	int			m_pixelsPerLine;
+	int			m_maxLines;
 
-	int		m_FirstVisibleLine;
-	int		m_MaxLineCount;
-
-	bool	m_mouseOver;
+	NavView		m_view[2];
+	NavView*	m_syncView;
 };

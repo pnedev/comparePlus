@@ -24,14 +24,158 @@
 #include "NppHelpers.h"
 #include "resource.h"
 #include <windowsx.h>
+#include <commctrl.h>
 
 
 const int NavDialog::cSpace = 2;
+const int NavDialog::cScrollerWidth = 15;
+
+
+void NavDialog::NavView::init(HDC hDC)
+{
+	// Create bitmaps used to store graphical representation
+	m_hViewDC	= ::CreateCompatibleDC(hDC);
+	m_hSelDC	= ::CreateCompatibleDC(hDC);
+
+	m_lines	= ::SendMessage(m_hView, SCI_GETLINECOUNT, 0, 0);
+
+	m_hViewBMP	= ::CreateCompatibleBitmap(hDC, 1, m_lines);
+	m_hSelBMP	= ::CreateCompatibleBitmap(hDC, 1, 1);
+
+	BITMAP bmpInfo;
+	::GetObject(m_hViewBMP, sizeof(bmpInfo), &bmpInfo);
+	::GetObject(m_hSelBMP, sizeof(bmpInfo), &bmpInfo);
+
+	// Attach bitmaps to the DC
+	::SelectObject(m_hViewDC, m_hViewBMP);
+	::SelectObject(m_hSelDC, m_hSelBMP);
+}
+
+
+void NavDialog::NavView::reset()
+{
+	if (m_hViewDC)
+	{
+		::DeleteDC(m_hViewDC);
+		m_hViewDC = NULL;
+	}
+
+	if (m_hSelDC)
+	{
+		::DeleteDC(m_hSelDC);
+		m_hSelDC = NULL;
+	}
+
+	if (m_hViewBMP)
+	{
+		::DeleteObject(m_hViewBMP);
+		m_hViewBMP = NULL;
+	}
+
+	if (m_hSelBMP)
+	{
+		::DeleteObject(m_hSelBMP);
+		m_hSelBMP = NULL;
+	}
+}
+
+
+void NavDialog::NavView::create(const ColorSettings& colors)
+{
+	RECT bmpRect = { 0 };
+
+	bmpRect.right = 1;
+	bmpRect.bottom = 1;
+
+	HBRUSH hBrush = ::CreateSolidBrush(RGB(0, 0, 0));
+
+	::FillRect(m_hSelDC, &bmpRect, hBrush);
+
+	::DeleteObject(hBrush);
+
+	bmpRect.right = 1;
+	bmpRect.bottom = m_lines;
+
+	hBrush = ::CreateSolidBrush(colors._default);
+
+	::FillRect(m_hViewDC, &bmpRect, hBrush);
+
+	::DeleteObject(hBrush);
+
+	for (int i = 0; i < m_lines; ++i)
+	{
+		int marker = ::SendMessage(m_hView, SCI_MARKERGET, i, 0);
+		if (!marker)
+			continue;
+
+		if      (marker & (1 << MARKER_BLANK_LINE))   marker = colors.blank;
+		else if (marker & (1 << MARKER_ADDED_LINE))   marker = colors.added;
+		else if (marker & (1 << MARKER_CHANGED_LINE)) marker = colors.changed;
+		else if (marker & (1 << MARKER_MOVED_LINE))   marker = colors.moved;
+		else if (marker & (1 << MARKER_REMOVED_LINE)) marker = colors.deleted;
+		else
+			continue;
+
+		::SetPixel(m_hViewDC, 0, i, marker);
+	}
+}
+
+
+void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int height, int hScale, int hOffset)
+{
+	height = _MIN((m_lines - hOffset) * hScale, height);
+	if (height <= 0)
+		return;
+
+	RECT r;
+	r.left		= xPos;
+	r.top		= yPos;
+	r.right		= r.left + width + 2;
+	r.bottom	= r.top + height + 2;
+
+	// Draw view border
+	::Rectangle(hDC, r.left, r.top, r.right, r.bottom);
+
+	// Fill view
+	::StretchBlt(hDC, r.left + 1, r.top + 1, width, height, m_hViewDC, 0, hOffset, 1, height / hScale, SRCCOPY);
+
+	int firstLine	= ::SendMessage(m_hView, SCI_DOCLINEFROMVISIBLE, m_firstLine, 0);
+	int lastLine	= m_firstLine + ::SendMessage(m_hView, SCI_LINESONSCREEN, 0, 0);
+
+	lastLine	= ::SendMessage(m_hView, SCI_DOCLINEFROMVISIBLE, lastLine, 0);
+
+	firstLine	*= hScale;
+	lastLine	*= hScale;
+
+	r.top		= firstLine + yPos - hOffset;
+	r.bottom	= lastLine + yPos - hOffset + 2;
+
+	::Rectangle(hDC, r.left, r.top, r.right, r.bottom);
+
+	BLENDFUNCTION blend = { 0 };
+	blend.BlendOp = AC_SRC_OVER;
+	blend.SourceConstantAlpha = 20;
+
+	::AlphaBlend(hDC, r.left + 1, r.top + 1, width, lastLine - firstLine, m_hSelDC, 0, 0, 1, 1, blend);
+}
+
+
+bool NavDialog::NavView::updateFirstLine()
+{
+	const int firstLine = ::SendMessage(m_hView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+
+	if (firstLine != m_firstLine)
+	{
+		m_firstLine = firstLine;
+		return true;
+	}
+
+	return false;
+}
 
 
 NavDialog::NavDialog() : DockingDlgInterface(IDD_NAV_DIALOG),
-	m_hMemDC1(NULL), m_hMemDC2(NULL), m_hMemDC3(NULL), m_hMemBMP1(NULL), m_hMemBMP2(NULL), m_hMemBMP3(NULL),
-	m_mouseOver(false)
+	m_hScroll(NULL), m_mouseOver(false)
 {
 	_data.hIconTab = NULL;
 }
@@ -48,7 +192,12 @@ NavDialog::~NavDialog()
 
 void NavDialog::init(HINSTANCE hInst)
 {
+	m_hInst = hInst;
+
 	DockingDlgInterface::init(hInst, nppData._nppHandle);
+
+	m_view[0].m_hView = nppData._scintillaMainHandle;
+	m_view[1].m_hView = nppData._scintillaSecondHandle;
 }
 
 
@@ -69,9 +218,6 @@ void NavDialog::doDialog(bool show)
 		::SendMessage(_hParent, NPPM_DMMREGASDCKDLG, 0, (LPARAM)&_data);
 	}
 
-	// Display
-	display(show);
-
 	if (show)
 		Show();
 	else
@@ -82,60 +228,23 @@ void NavDialog::doDialog(bool show)
 void NavDialog::SetColors(const ColorSettings& colorSettings)
 {
 	m_clr = colorSettings;
-}
 
-
-void NavDialog::CreateBitmap()
-{
-	RECT bmpRect;
-	bmpRect.top = 0;
-	bmpRect.left = 0;
-	bmpRect.right = m_hMemSelBMPSize.cx;
-	bmpRect.bottom = m_hMemSelBMPSize.cy;
-
-	// Fill BMP background
-	HBRUSH hBrush = ::CreateSolidBrush(RGB(0, 0, 0));
-
-	::FillRect(m_hMemDC3, &bmpRect, hBrush);
-
-	::DeleteObject(hBrush);
-
-	bmpRect.top = 0;
-	bmpRect.left = 0;
-	bmpRect.right = m_hMemBMPSize.cx;
-	bmpRect.bottom = m_hMemBMPSize.cy;
-
-	// Fill BMP background
-	hBrush = ::CreateSolidBrush(m_clr._default);
-
-	::FillRect(m_hMemDC1, &bmpRect, hBrush);
-	::FillRect(m_hMemDC2, &bmpRect, hBrush);
-
-	::DeleteObject(hBrush);
-
-	FillViewBitmap(nppData._scintillaMainHandle, m_hMemDC1);
-	FillViewBitmap(nppData._scintillaSecondHandle, m_hMemDC2);
-
-	::InvalidateRect(_hSelf, NULL, TRUE);
+	if (isVisible())
+		CreateBitmap();
 }
 
 
 void NavDialog::Update()
 {
-	int firstLine;
-	int maxLinesCount;
+	if (!isVisible())
+		return;
 
-	firstLine = ::SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
-	maxLinesCount = _MAX(
-			::SendMessage(nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0),
-			::SendMessage(nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0));
-
-	if ((firstLine != m_FirstVisibleLine) || (maxLinesCount != m_MaxLineCount))
-	{
-		m_FirstVisibleLine = firstLine;
-		m_MaxLineCount = maxLinesCount;
-		::InvalidateRect(_hSelf, NULL, TRUE);
-	}
+	// Bitmap needs to be recreated
+	if ((m_view[0].m_lines != ::SendMessage(m_view[0].m_hView, SCI_GETLINECOUNT, 0, 0)) ||
+		(m_view[1].m_lines != ::SendMessage(m_view[1].m_hView, SCI_GETLINECOUNT, 0, 0)))
+		Show();
+	else if (m_view[0].updateFirstLine() || m_view[1].updateFirstLine())
+		::InvalidateRect(_hSelf, NULL, FALSE);
 }
 
 
@@ -146,237 +255,216 @@ void NavDialog::Show()
 
 	HDC hDC = ::GetDC(_hSelf);
 
-	SetScalingFactor();
-
-	// Create BMP used to store graphical representation
-	m_hMemDC1	= ::CreateCompatibleDC(hDC);
-	m_hMemDC2	= ::CreateCompatibleDC(hDC);
-	m_hMemDC3	= ::CreateCompatibleDC(hDC);
-
-	m_hMemBMP1	= ::CreateCompatibleBitmap(hDC, 1, m_MaxLineCount);
-	m_hMemBMP2	= ::CreateCompatibleBitmap(hDC, 1, m_MaxLineCount);
-	m_hMemBMP3	= ::CreateCompatibleBitmap(hDC, 1, 1);
+	m_view[0].init(hDC);
+	m_view[1].init(hDC);
 
 	// Release DC
 	::ReleaseDC(_hSelf, hDC);
 
-	// Retrieve created BMP info (BMP1 == BMP2)
-	BITMAP hMemBMPInfo;
-	::GetObject(m_hMemBMP1, sizeof(hMemBMPInfo), &hMemBMPInfo);
-
-	m_hMemBMPSize.cx = hMemBMPInfo.bmWidth;
-	m_hMemBMPSize.cy = hMemBMPInfo.bmHeight;
-
-	::GetObject(m_hMemBMP3, sizeof(hMemBMPInfo), &hMemBMPInfo);
-
-	m_hMemSelBMPSize.cx = hMemBMPInfo.bmWidth;
-	m_hMemSelBMPSize.cy = hMemBMPInfo.bmHeight;
-
-	// Attach BMP to a DC
-	::SelectObject(m_hMemDC1, m_hMemBMP1);
-	::SelectObject(m_hMemDC2, m_hMemBMP2);
-	::SelectObject(m_hMemDC3, m_hMemBMP3);
-
 	CreateBitmap();
+
+	display(true);
 }
 
 
 void NavDialog::Hide()
 {
-	m_FirstVisibleLine = 0;
+	display(false);
 
-	// Delete objects
-	if (m_hMemDC1)
-	{
-		::DeleteDC(m_hMemDC1);
-		m_hMemDC1 = NULL;
-	}
+	m_view[0].reset();
+	m_view[1].reset();
+}
 
-	if (m_hMemDC2)
-	{
-		::DeleteDC(m_hMemDC2);
-		m_hMemDC2 = NULL;
-	}
 
-	if (m_hMemDC3)
-	{
-		::DeleteDC(m_hMemDC3);
-		m_hMemDC3 = NULL;
-	}
+void NavDialog::CreateBitmap()
+{
+	m_view[0].create(m_clr);
+	m_view[1].create(m_clr);
 
-	if (m_hMemBMP1)
-	{
-		::DeleteObject(m_hMemBMP1);
-		m_hMemBMP1 = NULL;
-	}
+	SetScalingFactor();
+}
 
-	if (m_hMemBMP2)
-	{
-		::DeleteObject(m_hMemBMP2);
-		m_hMemBMP2 = NULL;
-	}
 
-	if (m_hMemBMP3)
-	{
-		::DeleteObject(m_hMemBMP3);
-		m_hMemBMP3 = NULL;
-	}
+void NavDialog::ShowScroller(RECT& r)
+{
+	const int x = r.right - cSpace - cScrollerWidth;
+	const int y = cSpace;
+	const int w = cScrollerWidth;
+	const int h = m_navHeight;
+
+	if (m_hScroll)
+		::MoveWindow(m_hScroll, x, y, w, h, TRUE);
+	else
+		m_hScroll = ::CreateWindowEx(WS_EX_NOPARENTNOTIFY, WC_SCROLLBAR, NULL, WS_CHILD | SBS_VERT,
+				x, y, w, h, _hSelf, NULL, m_hInst, NULL);
+
+	SCROLLINFO si = { 0 };
+	si.cbSize	= sizeof(si);
+	si.fMask	= SIF_RANGE | SIF_PAGE | SIF_POS;
+	si.nMin		= 0;
+	si.nMax		= m_maxLines * m_pixelsPerLine - 1;
+	si.nPage	= h;
+	si.nPos		= (m_syncView->m_firstLine / si.nPage) * si.nPage;
+
+	::SetScrollInfo(m_hScroll, SB_CTL, &si, TRUE);
+
+	m_navViewWidth = ((r.right - r.left) - 4 * cSpace - cScrollerWidth - 4) / 2;
+
+	::ShowScrollBar(m_hScroll, SB_CTL, TRUE);
 }
 
 
 void NavDialog::SetScalingFactor()
 {
-	m_MaxLineCount = _MAX(
-			::SendMessage(nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0),
-			::SendMessage(nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0));
+	m_view[0].m_lines = ::SendMessage(m_view[0].m_hView, SCI_GETLINECOUNT, 0, 0);
+	m_view[1].m_lines = ::SendMessage(m_view[1].m_hView, SCI_GETLINECOUNT, 0, 0);
 
-	RECT navRect;
-	::GetClientRect(_hSelf, &navRect);
+	m_view[0].m_firstLine = ::SendMessage(m_view[0].m_hView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	m_view[1].m_firstLine = ::SendMessage(m_view[1].m_hView, SCI_GETFIRSTVISIBLELINE, 0, 0);
 
-	m_NavHalfWidth = ((navRect.right - navRect.left) - 3 * cSpace) / 2;
-	m_NavHeight = (navRect.bottom - navRect.top) - 2 * cSpace;
+	m_maxLines = _MAX(m_view[0].m_lines, m_view[1].m_lines);
+	m_syncView = (m_maxLines == m_view[0].m_lines) ? &m_view[0] : &m_view[1];
 
-	int bmpLineHeight = m_NavHeight / m_MaxLineCount;
+	RECT r;
+	::GetClientRect(_hSelf, &r);
 
-	if (bmpLineHeight > 5)
-		bmpLineHeight = 5;
+	m_navViewWidth = ((r.right - r.left) - 3 * cSpace - 4) / 2;
+	m_navHeight = (r.bottom - r.top) - 2 * cSpace - 2;
 
-	if (bmpLineHeight)
-		m_NavHeight = bmpLineHeight * m_MaxLineCount;
+	m_pixelsPerLine = m_navHeight / m_maxLines;
 
-	m_HeightScaleFactor = (float)(m_MaxLineCount) / (float)(m_NavHeight);
-}
-
-
-void NavDialog::FillViewBitmap(HWND view, HDC hMemDC)
-{
-	const int lineCount = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0);
-
-	for (int i = 0; i < lineCount; ++i)
+	if (m_pixelsPerLine == 0)
 	{
-		int marker = ::SendMessage(view, SCI_MARKERGET, i, 0);
-		if (!marker)
-			continue;
+		m_pixelsPerLine = 1;
 
-		if      (marker & (1 << MARKER_BLANK_LINE))   marker = m_clr.blank;
-		else if (marker & (1 << MARKER_ADDED_LINE))   marker = m_clr.added;
-		else if (marker & (1 << MARKER_CHANGED_LINE)) marker = m_clr.changed;
-		else if (marker & (1 << MARKER_MOVED_LINE))   marker = m_clr.moved;
-		else if (marker & (1 << MARKER_REMOVED_LINE)) marker = m_clr.deleted;
-		else
-			continue;
-
-		::SetPixel(hMemDC, 0, i, marker);
+		ShowScroller(r);
 	}
+	else
+	{
+		if (m_pixelsPerLine > 5)
+			m_pixelsPerLine = 5;
+
+		m_navHeight = m_pixelsPerLine * m_maxLines;
+
+		if (m_hScroll)
+			::ShowScrollBar(m_hScroll, SB_CTL, FALSE);
+	}
+
+	::InvalidateRect(_hSelf, NULL, TRUE);
 }
 
 
-void NavDialog::scrollView(int x, int y)
+void NavDialog::setPos(int x, int y)
 {
-	y -= cSpace;
-	if (y < 0 || y > m_NavHeight)
+	y -= (cSpace + 2);
+	if (y < 0 || x < cSpace || x > (2 * m_navViewWidth + 2 * cSpace + 4))
 		return;
 
 	HWND currView;
 
-	if (cSpace < x && x < m_NavHalfWidth + cSpace)
-		currView = nppData._scintillaMainHandle;
+	const int scrollOffset = (m_hScroll && ::IsWindowVisible(m_hScroll)) ? ::GetScrollPos(m_hScroll, SB_CTL) : 0;
+
+	if (x < m_navViewWidth + cSpace + 2)
+	{
+		if (y > _MIN((m_view[0].m_lines - scrollOffset) * m_pixelsPerLine, m_navHeight))
+			return;
+		currView = m_view[0].m_hView;
+	}
 	else
-		currView = nppData._scintillaSecondHandle;
+	{
+		if (y > _MIN((m_view[1].m_lines - scrollOffset) * m_pixelsPerLine, m_navHeight))
+			return;
+		currView = m_view[1].m_hView;
+	}
 
 	::SetFocus(currView);
 
-	const int currLine = (int)((float)y * m_HeightScaleFactor);
+	const int currLine = (y + scrollOffset) / m_pixelsPerLine;
 
 	const int linesOnScreen = ::SendMessage(currView, SCI_LINESONSCREEN, 0, 0);
-	const int firstVisibleLine = ::SendMessage(currView, SCI_VISIBLEFROMDOCLINE, currLine, 0) - linesOnScreen / 2;
+	const int firstLine = ::SendMessage(currView, SCI_VISIBLEFROMDOCLINE, currLine, 0) - linesOnScreen / 2;
 
 	::SendMessage(currView, SCI_ENSUREVISIBLEENFORCEPOLICY, currLine, 0);
-	::SendMessage(currView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine, 0);
+	::SendMessage(currView, SCI_SETFIRSTVISIBLELINE, firstLine, 0);
 	::SendMessage(currView, SCI_GOTOLINE, currLine, 0);
 }
 
 
-void NavDialog::onMouseWheel(int delta)
+void NavDialog::onMouseWheel(int steps)
 {
-	const int linesOnScreen = ::SendMessage(nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0);
-	::SendMessage(nppData._scintillaMainHandle, SCI_SETFIRSTVISIBLELINE,
-			m_FirstVisibleLine - delta * linesOnScreen, 0);
+	const int linesOnScreen = ::SendMessage(m_syncView->m_hView, SCI_LINESONSCREEN, 0, 0);
+	int firstLine = m_syncView->m_firstLine;
+
+	firstLine -= steps * linesOnScreen;
+
+	::SendMessage(m_syncView->m_hView, SCI_SETFIRSTVISIBLELINE, firstLine, 0);
+}
+
+
+int NavDialog::updateScroll()
+{
+	if (m_hScroll && ::IsWindowVisible(m_hScroll))
+	{
+		const int linesOnScreen = ::SendMessage(m_syncView->m_hView, SCI_LINESONSCREEN, 0, 0);
+
+		int currentScroll = ::GetScrollPos(m_hScroll, SB_CTL);
+
+		if (currentScroll > m_syncView->m_firstLine)
+		{
+			currentScroll -= m_navHeight;
+
+			if (currentScroll < 0)
+				currentScroll = 0;
+
+			::SetScrollPos(m_hScroll, SB_CTL, currentScroll, FALSE);
+		}
+		else if (currentScroll + m_navHeight - 1 < m_syncView->m_firstLine + linesOnScreen)
+		{
+			currentScroll += m_navHeight;
+
+			if (currentScroll > m_maxLines * m_pixelsPerLine - 1)
+				currentScroll = m_maxLines * m_pixelsPerLine - m_navHeight;
+
+			::SetScrollPos(m_hScroll, SB_CTL, currentScroll, FALSE);
+		}
+
+		return currentScroll;
+	}
+
+	return 0;
 }
 
 
 void NavDialog::onPaint()
 {
-	SetScalingFactor();
-
 	// If side bar is too small, don't draw anything
-	if ((m_NavHalfWidth < 5) || (m_NavHeight < 5))
+	if ((m_navViewWidth < 5) || (m_navHeight < 5))
 		return;
+
+	HPEN hPenView = ::CreatePen(PS_SOLID, 1, RGB(180, 180, 180));
 
 	PAINTSTRUCT ps;
 
 	// Get current DC
 	HDC hDC = ::BeginPaint(_hSelf, &ps);
 
+	::SelectObject(hDC, hPenView);
 	::SelectObject(hDC, ::GetStockObject(NULL_BRUSH));
 
-	// Define left rectangle coordinates
-	RECT rLeft;
-	rLeft.left		= cSpace;
-	rLeft.top		= cSpace;
-	rLeft.right		= rLeft.left + m_NavHalfWidth;
-	rLeft.bottom	= rLeft.top + m_NavHeight;
+	const int scrollOffset = updateScroll();
 
-	// Define right rectangle coordinates
-	RECT rRight;
-	rRight.left		= rLeft.right + cSpace;
-	rRight.top		= cSpace;
-	rRight.right	= rRight.left + m_NavHalfWidth;
-	rRight.bottom	= rRight.top + m_NavHeight;
+	if (m_view[0].m_lines > scrollOffset)
+		m_view[0].paint(hDC, cSpace, cSpace, m_navViewWidth, m_navHeight, m_pixelsPerLine, scrollOffset);
+	else
+		ps.fErase = TRUE;
 
-	int x, y, cx, cy;
+	if (m_view[1].m_lines > scrollOffset)
+		m_view[1].paint(hDC, m_navViewWidth + 2 * cSpace + 2, cSpace,
+				m_navViewWidth, m_navHeight, m_pixelsPerLine, scrollOffset);
+	else
+		ps.fErase = TRUE;
 
-	// Draw bar border
-	::Rectangle(hDC, rLeft.left, rLeft.top, rLeft.right, rLeft.bottom);
-	::Rectangle(hDC, rRight.left, rRight.top, rRight.right, rRight.bottom);
-
-	// Draw Left bar
-	x  = rLeft.left + 1;
-	y  = rLeft.top + 1;
-	cx = rLeft.right - x - 1;
-	cy = rLeft.bottom - y - 1;
-
-	::StretchBlt(hDC, x, y, cx, cy, m_hMemDC1, 0, 0, m_hMemBMPSize.cx, m_hMemBMPSize.cy, SRCCOPY);
-
-	// Draw Right bar
-	x  = rRight.left + 1;
-	y  = rRight.top + 1;
-	cx = rRight.right - x - 1;
-	cy = rRight.bottom - y - 1;
-
-	::StretchBlt(hDC, x, y, cx, cy, m_hMemDC2, 0, 0, m_hMemBMPSize.cx, m_hMemBMPSize.cy, SRCCOPY);
-
-	int firstLineOnScreen = m_FirstVisibleLine;
-	int lastLineOnScreen = firstLineOnScreen + ::SendMessage(nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0);
-
-	firstLineOnScreen = ::SendMessage(nppData._scintillaMainHandle, SCI_DOCLINEFROMVISIBLE, firstLineOnScreen, 0);
-	lastLineOnScreen = ::SendMessage(nppData._scintillaMainHandle, SCI_DOCLINEFROMVISIBLE, lastLineOnScreen, 0);
-
-	firstLineOnScreen = (int)((float)firstLineOnScreen / m_HeightScaleFactor);
-	lastLineOnScreen = (int)((float)lastLineOnScreen / m_HeightScaleFactor);
-
-	x = rLeft.left - 1;
-	y = firstLineOnScreen + cSpace;
-	cx = rRight.right + 1;
-	cy = lastLineOnScreen + cSpace;
-
-	::Rectangle(hDC, x, y, cx, cy);
-
-	BLENDFUNCTION blend = { 0 };
-	blend.BlendOp = AC_SRC_OVER;
-	blend.SourceConstantAlpha = 20;
-
-	::AlphaBlend(hDC, x, y, cx - x, cy - y, m_hMemDC3, 0, 0, m_hMemSelBMPSize.cx, m_hMemSelBMPSize.cy, blend);
+	::DeleteObject(hPenView);
 
 	::EndPaint(_hSelf, &ps);
 }
@@ -387,7 +475,12 @@ BOOL CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
 	switch (Message)
 	{
 		case WM_INITDIALOG:
-			::SetClassLong(_hSelf, GCL_STYLE, CS_HREDRAW | CS_VREDRAW | CS_PARENTDC);
+		break;
+
+		case WM_SIZE:
+		case WM_MOVE:
+			if (isVisible())
+				SetScalingFactor();
 		break;
 
 		case WM_PAINT:
@@ -405,7 +498,7 @@ BOOL CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
 
 		case WM_LBUTTONDOWN:
 			::SetCapture(_hSelf);
-			scrollView(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+			setPos(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 		break;
 
 		case WM_LBUTTONUP:
@@ -414,7 +507,7 @@ BOOL CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
 
 		case WM_MOUSEMOVE:
 			if (::GetCapture() == _hSelf)
-				scrollView(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+				setPos(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 			else if (!m_mouseOver)
 				m_mouseOver = true;
 		break;
