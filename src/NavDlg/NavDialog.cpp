@@ -142,7 +142,19 @@ void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int heigh
 	int firstLine	= ::SendMessage(m_hView, SCI_DOCLINEFROMVISIBLE, m_firstLine, 0);
 	int lastLine	= m_firstLine + ::SendMessage(m_hView, SCI_LINESONSCREEN, 0, 0);
 
-	lastLine	= ::SendMessage(m_hView, SCI_DOCLINEFROMVISIBLE, lastLine, 0);
+	lastLine = ::SendMessage(m_hView, SCI_DOCLINEFROMVISIBLE, lastLine, 0);
+
+	height /= hScale;
+
+	// Selector is out of scope so don't draw it
+	if (firstLine > hOffset + height || lastLine < hOffset)
+		return;
+
+	if (firstLine < hOffset)
+		firstLine = hOffset;
+
+	if (lastLine > hOffset + height)
+		lastLine = hOffset + height;
 
 	firstLine	*= hScale;
 	lastLine	*= hScale;
@@ -242,9 +254,14 @@ void NavDialog::Update()
 	// Bitmap needs to be recreated
 	if ((m_view[0].m_lines != ::SendMessage(m_view[0].m_hView, SCI_GETLINECOUNT, 0, 0)) ||
 		(m_view[1].m_lines != ::SendMessage(m_view[1].m_hView, SCI_GETLINECOUNT, 0, 0)))
+	{
 		Show();
+	}
 	else if (m_view[0].updateFirstLine() || m_view[1].updateFirstLine())
+	{
+		updateScroll();
 		::InvalidateRect(_hSelf, NULL, FALSE);
+	}
 }
 
 
@@ -354,6 +371,7 @@ void NavDialog::SetScalingFactor()
 			::ShowScrollBar(m_hScroll, SB_CTL, FALSE);
 	}
 
+	updateScroll();
 	updateDockingDlg();
 
 	::InvalidateRect(_hSelf, NULL, TRUE);
@@ -398,10 +416,15 @@ void NavDialog::setPos(int x, int y)
 
 void NavDialog::onMouseWheel(int steps)
 {
-	const int linesOnScreen = ::SendMessage(m_syncView->m_hView, SCI_LINESONSCREEN, 0, 0);
-	int firstLine = m_syncView->m_firstLine;
+	const int linesOnScreen	= ::SendMessage(m_syncView->m_hView, SCI_LINESONSCREEN, 0, 0);
+	const int lastVisible	= ::SendMessage(m_syncView->m_hView, SCI_VISIBLEFROMDOCLINE, m_syncView->m_lines, 0);
 
-	firstLine -= steps * linesOnScreen;
+	int firstLine = m_syncView->m_firstLine - steps * linesOnScreen;
+
+	if (firstLine < 0)
+		firstLine = 0;
+	else if (firstLine > lastVisible - linesOnScreen)
+		firstLine = lastVisible - linesOnScreen;
 
 	::SendMessage(m_syncView->m_hView, SCI_SETFIRSTVISIBLELINE, firstLine, 0);
 }
@@ -447,7 +470,7 @@ void NavDialog::onPaint()
 	if ((m_navViewWidth < 5) || (m_navHeight < 5))
 		return;
 
-	const int scrollOffset = updateScroll();
+	const int scrollOffset = (m_hScroll && ::IsWindowVisible(m_hScroll)) ? ::GetScrollPos(m_hScroll, SB_CTL) : 0;
 
 	HPEN hPenView = ::CreatePen(PS_SOLID, 1, RGB(180, 180, 180));
 
@@ -483,31 +506,8 @@ BOOL CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
 		case WM_INITDIALOG:
 		break;
 
-		case WM_SIZE:
-		case WM_MOVE:
-			if (isVisible())
-				SetScalingFactor();
-		break;
-
 		case WM_PAINT:
 			onPaint();
-		break;
-
-		case WM_NOTIFY:
-		{
-			LPNMHDR	pnmh = (LPNMHDR)lParam;
-
-			if (pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_CLOSE)
-			{
-				ViewNavigationBar();
-			}
-			else if ((pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_FLOAT) ||
-					(pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_DOCK))
-			{
-				SetScalingFactor();
-				::SetFocus(m_syncView->m_hView);
-			}
-		}
 		break;
 
 		case WM_LBUTTONDOWN:
@@ -534,6 +534,75 @@ BOOL CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
 		case WM_MOUSEWHEEL:
 			if (m_mouseOver)
 				onMouseWheel(GET_WHEEL_DELTA_WPARAM(wParam) / 120);
+		break;
+
+		case WM_VSCROLL:
+		{
+			int currentScroll = ::GetScrollPos(m_hScroll, SB_CTL);
+
+			switch (LOWORD(wParam))
+			{
+				case SB_THUMBPOSITION:
+				case SB_THUMBTRACK:
+					currentScroll = HIWORD(wParam);
+				break;
+
+				case SB_PAGEDOWN:
+					currentScroll += m_navHeight;
+
+					if (currentScroll > m_maxLines * m_pixelsPerLine - 1)
+						currentScroll = m_maxLines * m_pixelsPerLine - m_navHeight;
+				break;
+
+				case SB_PAGEUP:
+					currentScroll -= m_navHeight;
+
+					if (currentScroll < 0)
+						currentScroll = 0;
+				break;
+
+				case SB_LINEDOWN:
+					++currentScroll;
+
+					if (currentScroll > m_maxLines * m_pixelsPerLine - 1)
+						currentScroll = m_maxLines * m_pixelsPerLine - m_navHeight;
+				break;
+
+				case SB_LINEUP:
+					--currentScroll;
+
+					if (currentScroll < 0)
+						currentScroll = 0;
+				break;
+			}
+
+			::SetScrollPos(m_hScroll, SB_CTL, currentScroll, TRUE);
+
+			::InvalidateRect(_hSelf, NULL, FALSE);
+		}
+		break;
+
+		case WM_SIZE:
+		case WM_MOVE:
+			if (isVisible())
+				SetScalingFactor();
+		break;
+
+		case WM_NOTIFY:
+		{
+			LPNMHDR	pnmh = (LPNMHDR)lParam;
+
+			if (pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_CLOSE)
+			{
+				ViewNavigationBar();
+			}
+			else if ((pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_FLOAT) ||
+					(pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_DOCK))
+			{
+				SetScalingFactor();
+				::SetFocus(m_syncView->m_hView);
+			}
+		}
 		break;
 
 		default:
