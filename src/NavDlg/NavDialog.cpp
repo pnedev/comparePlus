@@ -250,6 +250,8 @@ void NavDialog::Update()
 
 void NavDialog::Show()
 {
+	HWND hwnd = ::GetFocus();
+
 	// Free resources if needed
 	Hide();
 
@@ -264,6 +266,8 @@ void NavDialog::Show()
 	CreateBitmap();
 
 	display(true);
+
+	::SetFocus(hwnd);
 }
 
 
@@ -300,11 +304,10 @@ void NavDialog::ShowScroller(RECT& r)
 
 	SCROLLINFO si = { 0 };
 	si.cbSize	= sizeof(si);
-	si.fMask	= SIF_RANGE | SIF_PAGE | SIF_POS;
+	si.fMask	= SIF_RANGE | SIF_PAGE;
 	si.nMin		= 0;
 	si.nMax		= m_maxLines * m_pixelsPerLine - 1;
 	si.nPage	= h;
-	si.nPos		= (m_syncView->m_firstLine / si.nPage) * si.nPage;
 
 	::SetScrollInfo(m_hScroll, SB_CTL, &si, TRUE);
 
@@ -416,7 +419,7 @@ int NavDialog::updateScroll()
 			if (currentScroll < 0)
 				currentScroll = 0;
 
-			::SetScrollPos(m_hScroll, SB_CTL, currentScroll, FALSE);
+			::SetScrollPos(m_hScroll, SB_CTL, currentScroll, TRUE);
 		}
 		else if (currentScroll + m_navHeight - 1 < m_syncView->m_firstLine + linesOnScreen)
 		{
@@ -425,7 +428,7 @@ int NavDialog::updateScroll()
 			if (currentScroll > m_maxLines * m_pixelsPerLine - 1)
 				currentScroll = m_maxLines * m_pixelsPerLine - m_navHeight;
 
-			::SetScrollPos(m_hScroll, SB_CTL, currentScroll, FALSE);
+			::SetScrollPos(m_hScroll, SB_CTL, currentScroll, TRUE);
 		}
 
 		return currentScroll;
@@ -441,6 +444,8 @@ void NavDialog::onPaint()
 	if ((m_navViewWidth < 5) || (m_navHeight < 5))
 		return;
 
+	const int scrollOffset = updateScroll();
+
 	HPEN hPenView = ::CreatePen(PS_SOLID, 1, RGB(180, 180, 180));
 
 	PAINTSTRUCT ps;
@@ -450,8 +455,6 @@ void NavDialog::onPaint()
 
 	::SelectObject(hDC, hPenView);
 	::SelectObject(hDC, ::GetStockObject(NULL_BRUSH));
-
-	const int scrollOffset = updateScroll();
 
 	if (m_view[0].m_lines > scrollOffset)
 		m_view[0].paint(hDC, cSpace, cSpace, m_navViewWidth, m_navHeight, m_pixelsPerLine, scrollOffset);

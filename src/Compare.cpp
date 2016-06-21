@@ -905,15 +905,8 @@ void resetCompareView(HWND view)
 
 void showNavBar()
 {
-	// Save current N++ focus
-	HWND hwnd = ::GetFocus();
-
-	// Display NavBar
 	NavDlg.SetColors(Settings.colors);
 	NavDlg.doDialog();
-
-	// Restore N++ focus
-	::SetFocus(hwnd);
 }
 
 
