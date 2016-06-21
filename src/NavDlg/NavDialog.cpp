@@ -253,7 +253,8 @@ void NavDialog::Show()
 	HWND hwnd = ::GetFocus();
 
 	// Free resources if needed
-	Hide();
+	m_view[0].reset();
+	m_view[1].reset();
 
 	HDC hDC = ::GetDC(_hSelf);
 
@@ -352,6 +353,8 @@ void NavDialog::SetScalingFactor()
 		if (m_hScroll)
 			::ShowScrollBar(m_hScroll, SB_CTL, FALSE);
 	}
+
+	updateDockingDlg();
 
 	::InvalidateRect(_hSelf, NULL, TRUE);
 }
@@ -495,7 +498,15 @@ BOOL CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
 			LPNMHDR	pnmh = (LPNMHDR)lParam;
 
 			if (pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_CLOSE)
+			{
 				ViewNavigationBar();
+			}
+			else if ((pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_FLOAT) ||
+					(pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_DOCK))
+			{
+				SetScalingFactor();
+				::SetFocus(m_syncView->m_hView);
+			}
 		}
 		break;
 
