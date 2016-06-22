@@ -263,15 +263,16 @@ VOID CALLBACK DelayedWork::timerCB(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD
  */
 struct DeletedSection
 {
-	DeletedSection(int action, int line, int len) : startLine(line)
+	DeletedSection(int action, int line, int len) : startLine(line), lineReplace(false)
 	{
 		restoreAction = (action == SC_PERFORMED_UNDO) ? SC_PERFORMED_REDO : SC_PERFORMED_UNDO;
 
 		markers.resize(len, 0);
 	}
 
-	int					restoreAction;
 	int					startLine;
+	bool				lineReplace;
+	int					restoreAction;
 	std::vector<int>	markers;
 };
 
@@ -282,7 +283,7 @@ struct DeletedSection
  */
 struct DeletedSectionsList
 {
-	DeletedSectionsList() : skipPush(0) {}
+	DeletedSectionsList() : skipPush(0), lastPushTimeMark(0) {}
 
 	void push(int currAction, int startLine, int endLine);
 	void pop(int currAction, int startLine);
@@ -295,6 +296,7 @@ struct DeletedSectionsList
 
 private:
 	int							skipPush;
+	DWORD						lastPushTimeMark;
 	std::vector<DeletedSection>	sections;
 };
 
@@ -309,6 +311,10 @@ void DeletedSectionsList::push(int currAction, int startLine, int endLine)
 		--skipPush;
 		return;
 	}
+
+	// Is it line replacement revert operation?
+	if (!sections.empty() && sections.back().restoreAction == currAction && sections.back().lineReplace)
+		return;
 
 	DeletedSection delSection(currAction, startLine, endLine - startLine + 1);
 
@@ -330,23 +336,37 @@ void DeletedSectionsList::push(int currAction, int startLine, int endLine)
 	}
 
 	sections.push_back(delSection);
+
+	lastPushTimeMark = ::GetTickCount();
 }
 
 
 void DeletedSectionsList::pop(int currAction, int startLine)
 {
-	if (sections.empty() || sections.back().restoreAction != currAction)
+	if (sections.empty())
 	{
 		++skipPush;
 		return;
 	}
 
-	if (sections.back().startLine != startLine)
+	DeletedSection& last = sections.back();
+
+	if (last.restoreAction != currAction)
+	{
+		// Try to guess if this is the insert part of line replacement operation
+		if (::GetTickCount() < lastPushTimeMark + 40)
+			last.lineReplace = true;
+		else
+			++skipPush;
+
+		return;
+	}
+
+	if (last.startLine != startLine)
 		return;
 
 	HWND currentView = getCurrentView();
 
-	const DeletedSection& last = sections.back();
 	const int linesCount = last.markers.size();
 
 	const int startPos = ::SendMessage(currentView, SCI_POSITIONFROMLINE, last.startLine, 0);
