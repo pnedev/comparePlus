@@ -240,7 +240,7 @@ void clearChangedIndicator(HWND window, int start, int length);
 
 void jumpToFirstChange();
 void jumpToLastChange();
-void jumpToNextChange(bool down);
+void jumpToNextChange(bool down, bool wrapAround);
 
 void setNormalView(HWND window);
 void setCompareView(HWND window);

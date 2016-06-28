@@ -22,6 +22,7 @@
 #include "Compare.h"
 #include "Window.h"
 #include "DockingDlgInterface.h"
+#include <vector>
 
 
 class NavDialog : public DockingDlgInterface
@@ -35,7 +36,7 @@ public:
 
 	void doDialog(bool show = true);
 
-	void SetColors(const ColorSettings& colorSettings);
+	void SetConfig(const UserSettings& settings);
 	void Update();
 
 protected:
@@ -60,9 +61,14 @@ private:
 
 		void init(HDC hDC);
 		void reset();
-		void create(const ColorSettings& colors);
+		void create(const ColorSettings& colors, int reductionRatio = 0);
 		void paint(HDC hDC, int xPos, int yPos, int width, int height, int hScale, int hOffset);
-		bool updateFirstLine();
+
+		bool updateFirstVisible();
+
+		int maxBmpLines();
+		int docToBmpLine(int docLine);
+		int bmpToDocLine(int bmpLine);
 
 		HWND	m_hView;
 
@@ -74,8 +80,10 @@ private:
 
 		SIZE	m_SelBMPsize;
 
-		int		m_firstLine;
+		int		m_firstVisible;
 		int		m_lines;
+
+		std::vector<int>	m_lineMap;
 	};
 
 	void Show();
@@ -88,13 +96,14 @@ private:
 	void FillViewBitmap(HWND view, HDC hDC);
 
 	void setPos(int x, int y);
-	void onMouseWheel(int steps);
+	void onMouseWheel(int rolls);
 	int updateScroll();
 	void onPaint();
 
 	tTbData	_data;
 
 	ColorSettings	m_clr;
+	bool			m_compact;
 
 	HINSTANCE		m_hInst;
 
@@ -106,7 +115,7 @@ private:
 	int			m_navHeight;
 
 	int			m_pixelsPerLine;
-	int			m_maxLines;
+	int			m_maxBmpLines;
 
 	NavView		m_view[2];
 	NavView*	m_syncView;

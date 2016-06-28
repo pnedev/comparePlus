@@ -46,6 +46,8 @@ const TCHAR UserSettings::oldFileOnLeftSetting[]	= TEXT("Old on Left");
 const TCHAR UserSettings::compareToPrevSetting[]	= TEXT("Default Compare is to Prev");
 const TCHAR UserSettings::gotoFirstDiffSetting[]	= TEXT("Go to First Diff");
 const TCHAR UserSettings::encodingsCheckSetting[]	= TEXT("Check Encodings");
+const TCHAR UserSettings::wrapAroundSetting[]		= TEXT("Wrap Around");
+const TCHAR UserSettings::compactNavBarSetting[]	= TEXT("Compact NavBar");
 const TCHAR UserSettings::ignoreSpacesSetting[]		= TEXT("Ignore Spaces");
 const TCHAR UserSettings::ignoreEOLsSetting[]		= TEXT("Ignore End of Lines");
 const TCHAR UserSettings::detectMovesSetting[]		= TEXT("Detect Moves");
@@ -67,24 +69,26 @@ void UserSettings::load()
 
 	::PathAppend(iniFile, TEXT("Compare.ini"));
 
-	OldFileIsFirst	= ::GetPrivateProfileInt(mainSection, oldIsFirstSetting, 1, iniFile) == 1;
-	OldFileViewId	=
-			::GetPrivateProfileInt(mainSection, oldFileOnLeftSetting, 1, iniFile) == 1 ? MAIN_VIEW : SUB_VIEW;
-	CompareToPrev	= ::GetPrivateProfileInt(mainSection, compareToPrevSetting,  1, iniFile) == 1;
-	GotoFirstDiff	= ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting,  0, iniFile) == 1;
-	EncodingsCheck	= ::GetPrivateProfileInt(mainSection, encodingsCheckSetting, 1, iniFile) == 1;
+	OldFileIsFirst = ::GetPrivateProfileInt(mainSection, oldIsFirstSetting,    DEFAULT_OLD_IS_FIRST, iniFile) == 1;
+	OldFileViewId  = ::GetPrivateProfileInt(mainSection, oldFileOnLeftSetting, DEFAULT_OLD_ON_LEFT, iniFile) == 1 ?
+			MAIN_VIEW : SUB_VIEW;
+	CompareToPrev  = ::GetPrivateProfileInt(mainSection, compareToPrevSetting,  DEFAULT_COMPARE_TO_PREV, iniFile) == 1;
+	GotoFirstDiff  = ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting,  DEFAULT_GOTO_FIRST_DIFF, iniFile) == 1;
+	EncodingsCheck = ::GetPrivateProfileInt(mainSection, encodingsCheckSetting, DEFAULT_ENCODINGS_CHECK, iniFile) == 1;
+	WrapAround     = ::GetPrivateProfileInt(mainSection, wrapAroundSetting,     DEFAULT_WRAP_AROUND, iniFile) == 1;
+	CompactNavBar  = ::GetPrivateProfileInt(mainSection, compactNavBarSetting,  DEFAULT_COMPACT_NAVBAR, iniFile) == 1;
 
 	IgnoreSpaces = ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,	0, iniFile) == 1;
 	IgnoreEOLs   = ::GetPrivateProfileInt(mainSection, ignoreEOLsSetting,	1, iniFile) == 1;
-	DetectMoves	 = ::GetPrivateProfileInt(mainSection, detectMovesSetting,	1, iniFile) == 1;
+	DetectMoves  = ::GetPrivateProfileInt(mainSection, detectMovesSetting,	1, iniFile) == 1;
 	UseNavBar    = ::GetPrivateProfileInt(mainSection, navBarSetting,		0, iniFile) == 1;
 
-	colors.added	 = ::GetPrivateProfileInt(colorsSection, addedColorSetting,		DEFAULT_ADDED_COLOR, iniFile);
-	colors.deleted	 = ::GetPrivateProfileInt(colorsSection, removedColorSetting,	DEFAULT_DELETED_COLOR, iniFile);
-	colors.changed	 = ::GetPrivateProfileInt(colorsSection, changedColorSetting,	DEFAULT_CHANGED_COLOR, iniFile);
-	colors.moved	 = ::GetPrivateProfileInt(colorsSection, movedColorSetting,		DEFAULT_MOVED_COLOR, iniFile);
+	colors.added     = ::GetPrivateProfileInt(colorsSection, addedColorSetting,		DEFAULT_ADDED_COLOR, iniFile);
+	colors.deleted   = ::GetPrivateProfileInt(colorsSection, removedColorSetting,	DEFAULT_DELETED_COLOR, iniFile);
+	colors.changed   = ::GetPrivateProfileInt(colorsSection, changedColorSetting,	DEFAULT_CHANGED_COLOR, iniFile);
+	colors.moved     = ::GetPrivateProfileInt(colorsSection, movedColorSetting,		DEFAULT_MOVED_COLOR, iniFile);
 	colors.highlight = ::GetPrivateProfileInt(colorsSection, highlightColorSetting,	DEFAULT_HIGHLIGHT_COLOR, iniFile);
-	colors.alpha	 = ::GetPrivateProfileInt(colorsSection, highlightAlphaSetting,	DEFAULT_HIGHLIGHT_ALPHA, iniFile);
+	colors.alpha     = ::GetPrivateProfileInt(colorsSection, highlightAlphaSetting,	DEFAULT_HIGHLIGHT_ALPHA, iniFile);
 }
 
 
@@ -105,6 +109,10 @@ void UserSettings::save()
 			GotoFirstDiff ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, encodingsCheckSetting,
 			EncodingsCheck ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, wrapAroundSetting,
+			WrapAround ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, compactNavBarSetting,
+			CompactNavBar ? TEXT("1") : TEXT("0"), iniFile);
 
 	::WritePrivateProfileString(mainSection, ignoreSpacesSetting,	IgnoreSpaces	? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreEOLsSetting,		IgnoreEOLs		? TEXT("1") : TEXT("0"), iniFile);
@@ -925,7 +933,7 @@ void resetCompareView(HWND view)
 
 void showNavBar()
 {
-	NavDlg.SetColors(Settings.colors);
+	NavDlg.SetConfig(Settings);
 	NavDlg.doDialog();
 }
 
@@ -1722,14 +1730,14 @@ void DetectMoves()
 void Prev()
 {
 	if (NppSettings::get().compareMode)
-		jumpToNextChange(false);
+		jumpToNextChange(false, Settings.WrapAround);
 }
 
 
 void Next()
 {
 	if (NppSettings::get().compareMode)
-		jumpToNextChange(true);
+		jumpToNextChange(true, Settings.WrapAround);
 }
 
 
@@ -1759,7 +1767,7 @@ void OpenSettingsDlg(void)
 		{
 			setStyles(Settings);
 
-			NavDlg.SetColors(Settings.colors);
+			NavDlg.SetConfig(Settings);
 		}
 	}
 }
@@ -2346,7 +2354,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		{
 			setStyles(Settings);
 
-			NavDlg.SetColors(Settings.colors);
+			NavDlg.SetConfig(Settings);
 		}
 		break;
 
@@ -2372,4 +2380,3 @@ extern "C" __declspec(dllexport) BOOL isUnicode()
 {
 	return TRUE;
 }
-

@@ -353,7 +353,7 @@ void jumpToLastChange()
 }
 
 
-void jumpToNextChange(bool down)
+void jumpToNextChange(bool down, bool wrapAround)
 {
 	HWND view = getCurrentView();
 
@@ -390,6 +390,9 @@ void jumpToNextChange(bool down)
 
 		if (nextLine < 0)
 		{
+			if (!wrapAround)
+				return;
+
 			currLine = (down) ? (0) : (lineMax);
 			nextLine = ::SendMessage(view, sci_marker_direction, currLine, sci_search_mask);
 			break;

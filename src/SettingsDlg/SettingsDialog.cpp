@@ -68,11 +68,13 @@ BOOL CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*
 					return TRUE;
 
 				case IDDEFAULT:
-					_Settings->OldFileIsFirst	= true;
-					_Settings->OldFileViewId	= MAIN_VIEW;
-					_Settings->CompareToPrev	= true;
-					_Settings->GotoFirstDiff	= false;
-					_Settings->EncodingsCheck	= true;
+					_Settings->OldFileIsFirst	= (bool) DEFAULT_OLD_IS_FIRST;
+					_Settings->OldFileViewId	= DEFAULT_OLD_ON_LEFT ? MAIN_VIEW : SUB_VIEW;
+					_Settings->CompareToPrev	= (bool) DEFAULT_COMPARE_TO_PREV;
+					_Settings->GotoFirstDiff	= (bool) DEFAULT_GOTO_FIRST_DIFF;
+					_Settings->EncodingsCheck	= (bool) DEFAULT_ENCODINGS_CHECK;
+					_Settings->WrapAround		= (bool) DEFAULT_WRAP_AROUND;
+					_Settings->CompactNavBar	= (bool) DEFAULT_COMPACT_NAVBAR;
 
 					_Settings->colors.added     = DEFAULT_ADDED_COLOR;
 					_Settings->colors.changed   = DEFAULT_CHANGED_COLOR;
@@ -125,6 +127,10 @@ void SettingsDialog::SetParams()
 			_Settings->GotoFirstDiff ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_ENCODING_CHECK),
 			_Settings->EncodingsCheck ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_WRAP_AROUND),
+			_Settings->WrapAround ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_COMPACT_NAVBAR),
+			_Settings->CompactNavBar ? BST_CHECKED : BST_UNCHECKED);
 
 	// Set current colors configured in option dialog
 	_ColorComboAdded.setColor(_Settings->colors.added);
@@ -150,6 +156,10 @@ BOOL SettingsDialog::GetParams()
 			(Button_GetCheck(::GetDlgItem(_hSelf, IDC_GOTO_FIRST_DIFF)) == BST_CHECKED) ? true : false;
 	_Settings->EncodingsCheck	=
 			(Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_ENCODING_CHECK)) == BST_CHECKED) ? true : false;
+	_Settings->WrapAround	=
+			(Button_GetCheck(::GetDlgItem(_hSelf, IDC_WRAP_AROUND)) == BST_CHECKED) ? true : false;
+	_Settings->CompactNavBar	=
+			(Button_GetCheck(::GetDlgItem(_hSelf, IDC_COMPACT_NAVBAR)) == BST_CHECKED) ? true : false;
 
 	// Get color chosen in dialog
 	_ColorComboAdded.getColor((LPCOLORREF)&_Settings->colors.added);

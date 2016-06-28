@@ -29,6 +29,15 @@
 #include "resource.h"
 
 
+// Those are interpreted as bool values
+#define DEFAULT_OLD_IS_FIRST		1
+#define DEFAULT_OLD_ON_LEFT			1
+#define DEFAULT_COMPARE_TO_PREV		1
+#define DEFAULT_GOTO_FIRST_DIFF		0
+#define DEFAULT_ENCODINGS_CHECK		1
+#define DEFAULT_WRAP_AROUND			0
+#define DEFAULT_COMPACT_NAVBAR		1
+
 #define DEFAULT_ADDED_COLOR			0xAAFFAA
 #define DEFAULT_DELETED_COLOR		0xC4C4FF
 #define DEFAULT_CHANGED_COLOR		0x82E1E1
@@ -91,6 +100,8 @@ struct UserSettings
 	static const TCHAR compareToPrevSetting[];
 	static const TCHAR gotoFirstDiffSetting[];
 	static const TCHAR encodingsCheckSetting[];
+	static const TCHAR wrapAroundSetting[];
+	static const TCHAR compactNavBarSetting[];
 	static const TCHAR ignoreSpacesSetting[];
 	static const TCHAR ignoreEOLsSetting[];
 	static const TCHAR detectMovesSetting[];
@@ -108,6 +119,8 @@ struct UserSettings
 	bool           	CompareToPrev;
 	bool           	GotoFirstDiff;
 	bool           	EncodingsCheck;
+	bool           	WrapAround;
+	bool           	CompactNavBar;
 
 	bool           	IgnoreSpaces;
 	bool           	IgnoreEOLs;
