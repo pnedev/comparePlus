@@ -149,9 +149,9 @@ BEGIN
     COMBOBOX        IDC_OLD_FILE_POS,129,38,60,30,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Single-view default compare to:",IDC_STATIC,17,58,110,8
     COMBOBOX        IDC_DEFAULT_CMP_TO,129,56,60,30,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    AUTOCHECKBOX	"Go to first diff after re-compare",IDC_GOTO_FIRST_DIFF,17,78,172,14
-    AUTOCHECKBOX	"Warn about encodings mismatch",IDC_ENABLE_ENCODING_CHECK,17,94,172,14
-    AUTOCHECKBOX	"Wrap around results",IDC_WRAP_AROUND,17,110,172,14
+    AUTOCHECKBOX	"Warn about encodings mismatch",IDC_ENABLE_ENCODING_CHECK,17,78,172,14
+    AUTOCHECKBOX	"Wrap around diffs",IDC_WRAP_AROUND,17,94,172,14
+    AUTOCHECKBOX	"Go to first diff after re-compare",IDC_GOTO_FIRST_DIFF,17,110,172,14
     AUTOCHECKBOX	"Compact navigation bar",IDC_COMPACT_NAVBAR,17,126,172,14
     GROUPBOX        "Color settings",IDC_STATIC,7,153,191,127
     LTEXT           "Added line:",IDC_STATIC,17,168,120,8
