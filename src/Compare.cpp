@@ -1993,34 +1993,22 @@ void onSciUpdateUI(SCNotification *notifyCode)
 {
 	if (notifyCode->updated & (SC_UPDATE_SELECTION | SC_UPDATE_V_SCROLL))
 	{
-		HWND activeView;
-		HWND otherView;
-
-		if (notifyCode->updated & SC_UPDATE_SELECTION)
-			activeView = getCurrentView();
-		else if (notifyCode->updated & SC_UPDATE_V_SCROLL)
-			activeView = (HWND)notifyCode->nmhdr.hwndFrom;
-		else
-			return;
-
-		if (activeView == nppData._scintillaMainHandle)
-			otherView = nppData._scintillaSecondHandle;
-		else if (activeView == nppData._scintillaSecondHandle)
-			otherView = nppData._scintillaMainHandle;
-		else
-			return;
+		HWND activeView	= (HWND)notifyCode->nmhdr.hwndFrom;
+		HWND otherView	= (activeView == nppData._scintillaMainHandle) ?
+				nppData._scintillaSecondHandle : nppData._scintillaMainHandle;
 
 		int firstVisibleLine = ::SendMessage(activeView, SCI_GETFIRSTVISIBLELINE, 0, 0);
-		firstVisibleLine = ::SendMessage(activeView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0);
+		int line = ::SendMessage(activeView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0);
+		int offset = ::SendMessage(activeView, SCI_VISIBLEFROMDOCLINE, line + 1, 0) - firstVisibleLine;
 
 		ScopedIncrementer incr(notificationsLock);
 
-		::SendMessage(otherView, SCI_ENSUREVISIBLEENFORCEPOLICY, firstVisibleLine, 0);
-		firstVisibleLine = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, firstVisibleLine, 0);
+		::SendMessage(otherView, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
+		firstVisibleLine = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, line + 1, 0) - offset;
 		::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine, 0);
-	}
 
-	NavDlg.Update();
+		::UpdateWindow(otherView);
+	}
 }
 
 
@@ -2308,8 +2296,13 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 	{
 		// Emulate word-wrap aware vertical scroll sync and update NavBar
 		case SCN_UPDATEUI:
-			if (!notificationsLock && NppSettings::get().compareMode)
-				onSciUpdateUI(notifyCode);
+			if (NppSettings::get().compareMode)
+			{
+				if (!notificationsLock)
+					onSciUpdateUI(notifyCode);
+
+				NavDlg.Update();
+			}
 		break;
 
 		case NPPN_BUFFERACTIVATED:
