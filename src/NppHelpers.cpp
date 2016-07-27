@@ -320,7 +320,6 @@ void clearChangedIndicator(HWND window, int start, int length)
 void jumpToFirstChange()
 {
 	HWND currView = getCurrentView();
-	HWND otherView = getOtherView();
 
 	const int sci_search_mask = (1 << MARKER_MOVED_LINE)
 							  | (1 << MARKER_CHANGED_LINE)
@@ -329,10 +328,12 @@ void jumpToFirstChange()
 							  | (1 << MARKER_BLANK_LINE);
 
 	const int nextLine = ::SendMessage(currView, SCI_MARKERNEXT, 0, sci_search_mask);
+
+	if (nextLine < 0)
+		return;
+
 	::SendMessage(currView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
-	::SendMessage(otherView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
 	::SendMessage(currView, SCI_GOTOLINE, nextLine, 0);
-	::SendMessage(otherView, SCI_GOTOLINE, nextLine, 0);
 }
 
 
@@ -348,6 +349,10 @@ void jumpToLastChange()
 
 	const int lineMax = ::SendMessage(currView, SCI_GETLINECOUNT, 0, 0);
 	const int nextLine = ::SendMessage(currView, SCI_MARKERPREVIOUS, lineMax, sci_search_mask);
+
+	if (nextLine < 0)
+		return;
+
 	::SendMessage(currView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
 	::SendMessage(currView, SCI_GOTOLINE, nextLine, 0);
 }
@@ -363,47 +368,43 @@ void jumpToNextChange(bool down, bool wrapAround)
 								(1 << MARKER_REMOVED_LINE) |
 								(1 << MARKER_BLANK_LINE);
 
+	const int sci_marker_direction = down ? SCI_MARKERNEXT : SCI_MARKERPREVIOUS;
+
+	int currentLine = ::SendMessage(view, SCI_GETCURRENTPOS, 0, 0);
+	currentLine = ::SendMessage(view, SCI_LINEFROMPOSITION, currentLine, 0);
+
 	const int lineMax = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0);
-	int lineStart = ::SendMessage(view, SCI_GETCURRENTPOS, 0, 0);
-	lineStart = ::SendMessage(view, SCI_LINEFROMPOSITION, lineStart, 0);
+	const int prevLine = currentLine;
+	int nextLine = currentLine;
 
-	int prevLine = lineStart;
-
-	int currLine;
-	int nextLine;
-	int sci_marker_direction;
-
-	while (true)
+	while (nextLine == currentLine)
 	{
 		if (down)
 		{
-			currLine = (lineStart < lineMax) ? (lineStart + 1) : (0);
-			sci_marker_direction = SCI_MARKERNEXT;
+			while ((::SendMessage(view, SCI_MARKERGET, currentLine, 0) & sci_search_mask) && (currentLine < lineMax))
+				++currentLine;
 		}
 		else
 		{
-			currLine = (lineStart > 0) ? (lineStart - 1) : (lineMax);
-			sci_marker_direction = SCI_MARKERPREVIOUS;
+			while ((::SendMessage(view, SCI_MARKERGET, currentLine, 0) & sci_search_mask) && (currentLine > -1))
+				--currentLine;
 		}
 
-		nextLine = ::SendMessage(view, sci_marker_direction, currLine, sci_search_mask);
+		nextLine = ::SendMessage(view, sci_marker_direction, currentLine, sci_search_mask);
 
 		if (nextLine < 0)
 		{
 			if (!wrapAround)
 				return;
 
-			currLine = (down) ? (0) : (lineMax);
-			nextLine = ::SendMessage(view, sci_marker_direction, currLine, sci_search_mask);
-			break;
-		}
+			currentLine = down ? 0 : lineMax;
+			nextLine = ::SendMessage(view, sci_marker_direction, currentLine, sci_search_mask);
 
-		if (nextLine != currLine)
-			break;
-		else if (down)
-			lineStart++;
-		else
-			lineStart--;
+			if (nextLine < 0)
+				return;
+			else
+				break;
+		}
 	}
 
 	if ((down && (nextLine < prevLine)) || (!down && (nextLine > prevLine)))
