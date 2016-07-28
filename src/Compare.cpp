@@ -1998,13 +1998,17 @@ void onSciUpdateUI(SCNotification *notifyCode)
 				nppData._scintillaSecondHandle : nppData._scintillaMainHandle;
 
 		int firstVisibleLine = ::SendMessage(activeView, SCI_GETFIRSTVISIBLELINE, 0, 0);
-		int line = ::SendMessage(activeView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0);
+		const int line = ::SendMessage(activeView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0);
 		int offset = ::SendMessage(activeView, SCI_VISIBLEFROMDOCLINE, line + 1, 0) - firstVisibleLine;
 
 		ScopedIncrementer incr(notificationsLock);
 
 		::SendMessage(otherView, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
 		firstVisibleLine = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, line + 1, 0) - offset;
+
+		if (line != ::SendMessage(otherView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0))
+			firstVisibleLine = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, line, 0);
+
 		::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine, 0);
 
 		::UpdateWindow(otherView);
