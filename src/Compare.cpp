@@ -1997,19 +1997,20 @@ void onSciUpdateUI(SCNotification *notifyCode)
 		HWND otherView	= (activeView == nppData._scintillaMainHandle) ?
 				nppData._scintillaSecondHandle : nppData._scintillaMainHandle;
 
-		int firstVisibleLine = ::SendMessage(activeView, SCI_GETFIRSTVISIBLELINE, 0, 0);
-		const int line = ::SendMessage(activeView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0);
-		int offset = ::SendMessage(activeView, SCI_VISIBLEFROMDOCLINE, line + 1, 0) - firstVisibleLine;
+		const int firstVisibleLine1 = ::SendMessage(activeView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+		const int line = ::SendMessage(activeView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine1, 0);
+		int offset = ::SendMessage(activeView, SCI_VISIBLEFROMDOCLINE, line + 1, 0) - firstVisibleLine1;
 
 		ScopedIncrementer incr(notificationsLock);
 
 		::SendMessage(otherView, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
-		firstVisibleLine = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, line + 1, 0) - offset;
+		int firstVisibleLine2 = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, line + 1, 0) - offset;
 
-		if (line != ::SendMessage(otherView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0))
-			firstVisibleLine = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, line, 0);
+		if (line != ::SendMessage(otherView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine2, 0) ||
+				firstVisibleLine1 == ::SendMessage(activeView, SCI_VISIBLEFROMDOCLINE, line, 0))
+			firstVisibleLine2 = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, line, 0);
 
-		::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine, 0);
+		::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine2, 0);
 
 		::UpdateWindow(otherView);
 	}
