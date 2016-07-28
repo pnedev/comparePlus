@@ -182,7 +182,7 @@ private:
  */
 struct ScopedIncrementer
 {
-	ScopedIncrementer(unsigned& useCount) : _useCount(useCount)
+	ScopedIncrementer(volatile unsigned& useCount) : _useCount(useCount)
 	{
 		++_useCount;
 	}
@@ -193,7 +193,7 @@ struct ScopedIncrementer
 	}
 
 private:
-	unsigned&	_useCount;
+	volatile unsigned&	_useCount;
 };
 
 
@@ -525,7 +525,7 @@ static const TempMark_t tempMark[] =
 CompareList_t compareList;
 std::unique_ptr<NewCompare> newCompare;
 
-unsigned notificationsLock = 0;
+volatile unsigned notificationsLock = 0;
 
 std::unique_ptr<SaveNotificationData> saveNotifData;
 
