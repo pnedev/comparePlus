@@ -549,6 +549,7 @@ FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
 // Declare local functions that appear before they are defined
 void First();
 void onBufferActivatedDelayed(int buffId);
+void onSciUpdateUI(SCNotification *notifyCode);
 
 
 void NppSettings::enableClearCommands() const
@@ -1558,6 +1559,15 @@ void Compare()
 
 				First();
 			}
+
+			// Synchronize views and update NavBar accordingly
+			SCNotification sciNotify;
+			sciNotify.updated = SC_UPDATE_SELECTION;
+			sciNotify.nmhdr.hwndFrom = getCurrentView();
+
+			onSciUpdateUI(&sciNotify);
+
+			NavDlg.Update();
 		}
 		break;
 

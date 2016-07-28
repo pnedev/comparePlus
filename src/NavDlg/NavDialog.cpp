@@ -171,6 +171,9 @@ void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int heigh
 
 	lastVisible = ::SendMessage(m_hView, SCI_DOCLINEFROMVISIBLE, lastVisible, 0);
 
+	if (firstVisible == lastVisible)
+		++lastVisible;
+
 	firstVisible	= docToBmpLine(firstVisible);
 	lastVisible		= docToBmpLine(lastVisible);
 
@@ -187,7 +190,7 @@ void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int heigh
 		lastVisible = hOffset + height;
 
 	firstVisible	*= hScale;
-	lastVisible	*= hScale;
+	lastVisible		*= hScale;
 
 	r.top		= firstVisible + yPos - hOffset;
 	r.bottom	= lastVisible + yPos - hOffset + 2;
