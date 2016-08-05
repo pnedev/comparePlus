@@ -39,8 +39,6 @@ struct chunk_info
 	unsigned int changeCount;
 
 	std::vector<Word> words;
-
-	char *text;
 };
 
 
@@ -72,7 +70,6 @@ static int getWords(const DocLines_t& doc, chunk_info& chunk, bool IgnoreSpaces)
 
 	for (unsigned int line = 0; line < chunk.lineCount; ++line)
 	{
-		std::string text("");
 		wordType type = SPACECHAR;
 		int len = 0;
 		chunk.linePos[line] = wordIndex;
@@ -86,7 +83,6 @@ static int getWords(const DocLines_t& doc, chunk_info& chunk, bool IgnoreSpaces)
 
 			if (newType == type)
 			{
-				text += l;
 				++len;
 				hash = HASH(hash, l);
 			}
@@ -108,7 +104,6 @@ static int getWords(const DocLines_t& doc, chunk_info& chunk, bool IgnoreSpaces)
 				}
 
 				type = newType;
-				text = l;
 				len = 1;
 				hash = HASH(0, l);
 			}
