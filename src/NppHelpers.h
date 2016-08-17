@@ -135,7 +135,7 @@ struct ViewLocation
 private:
 	HWND	_view;
 	int		_firstVisibleLine;
-	int		_line;
+	int		_pos;
 };
 
 

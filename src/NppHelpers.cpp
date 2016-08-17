@@ -116,8 +116,7 @@ void ViewLocation::saveCurrent()
 {
 	_view = getCurrentView();
 	_firstVisibleLine = ::SendMessage(_view, SCI_GETFIRSTVISIBLELINE, 0, 0);
-	_line = ::SendMessage(_view, SCI_GETCURRENTPOS, 0, 0);
-	_line = ::SendMessage(_view, SCI_LINEFROMPOSITION, _line, 0);
+	_pos = ::SendMessage(_view, SCI_GETCURRENTPOS, 0, 0);
 }
 
 
@@ -127,9 +126,11 @@ void ViewLocation::restore()
 		return;
 
 	::SetFocus(_view);
-	::SendMessage(_view, SCI_ENSUREVISIBLEENFORCEPOLICY, _line, 0);
+	const int line = ::SendMessage(_view, SCI_LINEFROMPOSITION, _pos, 0);
+
+	::SendMessage(_view, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
+	::SendMessage(_view, SCI_SETSEL, _pos, _pos);
 	::SendMessage(_view, SCI_SETFIRSTVISIBLELINE, _firstVisibleLine, 0);
-	::SendMessage(_view, SCI_GOTOLINE, _line, 0);
 }
 
 

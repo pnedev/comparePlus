@@ -2091,10 +2091,21 @@ void onBufferActivatedDelayed(int buffId)
 	// When compared file is activated make sure its corresponding pair file is also active in the other view
 	if (getDocId(getOtherView()) != otherFile.sciDoc)
 	{
+		ViewLocation location;
+		location.saveCurrent();
+
 		ScopedIncrementer incr(notificationsLock);
 
 		activateBufferID(otherFile.buffId);
-		activateBufferID(buffId);
+
+		location.restore();
+
+		// Synchronize views
+		SCNotification sciNotify;
+		sciNotify.updated = SC_UPDATE_SELECTION;
+		sciNotify.nmhdr.hwndFrom = getCurrentView();
+
+		onSciUpdateUI(&sciNotify);
 	}
 
 	NppSettings& nppSettings = NppSettings::get();
