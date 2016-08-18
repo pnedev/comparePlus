@@ -549,7 +549,7 @@ FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
 // Declare local functions that appear before they are defined
 void First();
 void onBufferActivatedDelayed(int buffId);
-void onSciUpdateUI(SCNotification *notifyCode);
+void forceViewsSync(HWND focalView);
 
 
 void NppSettings::enableClearCommands() const
@@ -1561,11 +1561,7 @@ void Compare()
 			}
 
 			// Synchronize views and update NavBar accordingly
-			SCNotification sciNotify;
-			sciNotify.updated = SC_UPDATE_SELECTION;
-			sciNotify.nmhdr.hwndFrom = getCurrentView();
-
-			onSciUpdateUI(&sciNotify);
+			forceViewsSync(getCurrentView());
 
 			NavDlg.Update();
 		}
@@ -1999,31 +1995,34 @@ void onToolBarReady()
 }
 
 
+void forceViewsSync(HWND focalView)
+{
+	HWND otherView	= (focalView == nppData._scintillaMainHandle) ?
+			nppData._scintillaSecondHandle : nppData._scintillaMainHandle;
+
+	const int firstVisibleLine1 = ::SendMessage(focalView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	const int line = ::SendMessage(focalView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine1, 0);
+	int offset = ::SendMessage(focalView, SCI_VISIBLEFROMDOCLINE, line + 1, 0) - firstVisibleLine1;
+
+	ScopedIncrementer incr(notificationsLock);
+
+	::SendMessage(otherView, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
+	int firstVisibleLine2 = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, line + 1, 0) - offset;
+
+	if (line != ::SendMessage(otherView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine2, 0) ||
+			firstVisibleLine1 == ::SendMessage(focalView, SCI_VISIBLEFROMDOCLINE, line, 0))
+		firstVisibleLine2 = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, line, 0);
+
+	::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine2, 0);
+
+	::UpdateWindow(otherView);
+}
+
+
 void onSciUpdateUI(SCNotification *notifyCode)
 {
 	if (notifyCode->updated & (SC_UPDATE_SELECTION | SC_UPDATE_V_SCROLL))
-	{
-		HWND activeView	= (HWND)notifyCode->nmhdr.hwndFrom;
-		HWND otherView	= (activeView == nppData._scintillaMainHandle) ?
-				nppData._scintillaSecondHandle : nppData._scintillaMainHandle;
-
-		const int firstVisibleLine1 = ::SendMessage(activeView, SCI_GETFIRSTVISIBLELINE, 0, 0);
-		const int line = ::SendMessage(activeView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine1, 0);
-		int offset = ::SendMessage(activeView, SCI_VISIBLEFROMDOCLINE, line + 1, 0) - firstVisibleLine1;
-
-		ScopedIncrementer incr(notificationsLock);
-
-		::SendMessage(otherView, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
-		int firstVisibleLine2 = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, line + 1, 0) - offset;
-
-		if (line != ::SendMessage(otherView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine2, 0) ||
-				firstVisibleLine1 == ::SendMessage(activeView, SCI_VISIBLEFROMDOCLINE, line, 0))
-			firstVisibleLine2 = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, line, 0);
-
-		::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine2, 0);
-
-		::UpdateWindow(otherView);
-	}
+		forceViewsSync((HWND)notifyCode->nmhdr.hwndFrom);
 }
 
 
@@ -2100,12 +2099,7 @@ void onBufferActivatedDelayed(int buffId)
 
 		location.restore();
 
-		// Synchronize views
-		SCNotification sciNotify;
-		sciNotify.updated = SC_UPDATE_SELECTION;
-		sciNotify.nmhdr.hwndFrom = getCurrentView();
-
-		onSciUpdateUI(&sciNotify);
+		forceViewsSync(getCurrentView());
 	}
 
 	NppSettings& nppSettings = NppSettings::get();
