@@ -230,10 +230,14 @@ int NavDialog::NavView::docToBmpLine(int docLine)
 	if (m_lineMap.empty())
 		return docLine;
 
+	const int max = (int)m_lineMap.size();
 	int i = 0;
 
-	while (i < (int)m_lineMap.size() && m_lineMap[i] < docLine)
+	while (i < max && m_lineMap[i] <= docLine)
 		++i;
+
+	if (i == max)
+		return max;
 
 	return --i;
 }

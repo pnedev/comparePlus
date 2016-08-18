@@ -1562,7 +1562,6 @@ void Compare()
 
 			// Synchronize views and update NavBar accordingly
 			forceViewsSync(getCurrentView());
-
 			NavDlg.Update();
 		}
 		break;
@@ -2128,11 +2127,11 @@ void onBufferActivated(int buffId)
 		setNormalView(getCurrentView());
 
 		nppSettings.updatePluginMenu();
-
-		return;
 	}
-
-	DelayedWork::post(onBufferActivatedDelayed, buffId, 80);
+	else
+	{
+		DelayedWork::post(onBufferActivatedDelayed, buffId, 80);
+	}
 }
 
 
