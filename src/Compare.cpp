@@ -207,6 +207,7 @@ public:
 	using workFunc_t = void(*)(int);
 
 	static bool post(workFunc_t work, int buffId, UINT delay_ms);
+	static bool isPending();
 	static void cancel();
 
 private:
@@ -240,6 +241,12 @@ bool DelayedWork::post(workFunc_t work, int buffId, UINT delay_ms)
 	inst._timerId = ::SetTimer(NULL, 0, delay_ms, timerCB);
 
 	return (inst._timerId != 0);
+}
+
+
+bool DelayedWork::isPending()
+{
+	return (instance()._timerId != 0);
 }
 
 
@@ -2315,7 +2322,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 	{
 		// Emulate word-wrap aware vertical scroll sync and update NavBar
 		case SCN_UPDATEUI:
-			if (NppSettings::get().compareMode)
+			if (NppSettings::get().compareMode && !DelayedWork::isPending())
 			{
 				if (!notificationsLock)
 					onSciUpdateUI(notifyCode);
