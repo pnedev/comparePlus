@@ -112,25 +112,28 @@ BOOL CALLBACK NppTabHandleGetter::enumWindowsCB(HWND hwnd, LPARAM lParam)
 }
 
 
-void ViewLocation::saveCurrent()
+void ViewLocation::save(int buffId)
 {
-	_view = getCurrentView();
-	_firstVisibleLine = ::SendMessage(_view, SCI_GETFIRSTVISIBLELINE, 0, 0);
-	_pos = ::SendMessage(_view, SCI_GETCURRENTPOS, 0, 0);
+	_buffId = buffId;
+
+	HWND view = getView(viewIdFromBuffId(_buffId));
+
+	_firstVisibleLine = ::SendMessage(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	_pos = ::SendMessage(view, SCI_GETCURRENTPOS, 0, 0);
 }
 
 
 void ViewLocation::restore()
 {
-	if (!::IsWindowVisible(_view))
-		return;
+	activateBufferID(_buffId);
 
-	::SetFocus(_view);
-	const int line = ::SendMessage(_view, SCI_LINEFROMPOSITION, _pos, 0);
+	HWND view = getView(viewIdFromBuffId(_buffId));
 
-	::SendMessage(_view, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
-	::SendMessage(_view, SCI_SETSEL, _pos, _pos);
-	::SendMessage(_view, SCI_SETFIRSTVISIBLELINE, _firstVisibleLine, 0);
+	const int line = ::SendMessage(view, SCI_LINEFROMPOSITION, _pos, 0);
+
+	::SendMessage(view, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
+	::SendMessage(view, SCI_SETSEL, _pos, _pos);
+	::SendMessage(view, SCI_SETFIRSTVISIBLELINE, _firstVisibleLine, 0);
 }
 
 

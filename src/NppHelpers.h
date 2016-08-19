@@ -129,13 +129,24 @@ private:
  */
 struct ViewLocation
 {
-	void saveCurrent();
+	ViewLocation() {}
+	ViewLocation(int buffId)
+	{
+		save(buffId);
+	}
+
+	void save(int buffId);
 	void restore();
 
+	inline int getBuffId()
+	{
+		return _buffId;
+	}
+
 private:
-	HWND	_view;
-	int		_firstVisibleLine;
-	int		_pos;
+	int	_buffId;
+	int	_firstVisibleLine;
+	int	_pos;
 };
 
 

@@ -500,12 +500,27 @@ enum CompareResult_t
  */
 struct SaveNotificationData
 {
-	SaveNotificationData(int buffId) : fileBuffId(buffId) {}
+	SaveNotificationData(int buffId) : _location(buffId)
+	{
+		_blankSections = removeBlankLines(getView(viewIdFromBuffId(buffId)), true);
+	}
 
-	int					fileBuffId;
-	int					firstVisibleLine;
-	int					position;
-	BlankSections_t		blankSections;
+	void restore()
+	{
+		if (!_blankSections.empty())
+			addBlankLines(getView(viewIdFromBuffId(_location.getBuffId())), _blankSections);
+
+		_location.restore();
+	}
+
+	inline int getBuffId()
+	{
+		return _location.getBuffId();
+	}
+
+private:
+	ViewLocation	_location;
+	BlankSections_t	_blankSections;
 };
 
 
@@ -1533,7 +1548,7 @@ void Compare()
 
 		newCompare.reset();
 
-		location.saveCurrent();
+		location.save(currentBuffId);
 
 		cmpPair->getOldFile().clear();
 		cmpPair->getNewFile().clear();
@@ -1567,9 +1582,8 @@ void Compare()
 				First();
 			}
 
-			// Synchronize views and update NavBar accordingly
+			// Synchronize views
 			forceViewsSync(getCurrentView());
-			NavDlg.Update();
 		}
 		break;
 
@@ -2022,6 +2036,8 @@ void forceViewsSync(HWND focalView)
 	::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine2, 0);
 
 	::UpdateWindow(otherView);
+
+	NavDlg.Update();
 }
 
 
@@ -2096,17 +2112,16 @@ void onBufferActivatedDelayed(int buffId)
 	// When compared file is activated make sure its corresponding pair file is also active in the other view
 	if (getDocId(getOtherView()) != otherFile.sciDoc)
 	{
-		ViewLocation location;
-		location.saveCurrent();
+		ViewLocation location(buffId);
 
 		ScopedIncrementer incr(notificationsLock);
 
 		activateBufferID(otherFile.buffId);
 
 		location.restore();
-
-		forceViewsSync(getCurrentView());
 	}
+
+	forceViewsSync(getCurrentView());
 
 	NppSettings& nppSettings = NppSettings::get();
 	nppSettings.setCompareMode();
@@ -2137,7 +2152,7 @@ void onBufferActivated(int buffId)
 	}
 	else
 	{
-		DelayedWork::post(onBufferActivatedDelayed, buffId, 80);
+		DelayedWork::post(onBufferActivatedDelayed, buffId, 50);
 	}
 }
 
@@ -2189,31 +2204,19 @@ void onFileBeforeSave(int buffId)
 	if (cmpPair == compareList.end())
 		return;
 
-	HWND view = getView(viewIdFromBuffId(buffId));
-
 	saveNotifData.reset(new SaveNotificationData(buffId));
-
-	saveNotifData->firstVisibleLine = ::SendMessage(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
-	saveNotifData->position = ::SendMessage(view, SCI_GETCURRENTPOS, 0, 0);
-	saveNotifData->blankSections = removeBlankLines(view, true);
 }
 
 
 void onFileSaved(int buffId)
 {
-	if (saveNotifData->fileBuffId == buffId)
+	if (saveNotifData->getBuffId() == buffId)
 	{
 		CompareList_t::iterator cmpPair = getCompare(buffId);
 		if (cmpPair == compareList.end())
 			return;
 
-		HWND view = getView(viewIdFromBuffId(buffId));
-
-		if (!saveNotifData->blankSections.empty())
-			addBlankLines(view, saveNotifData->blankSections);
-
-		::SendMessage(view, SCI_SETFIRSTVISIBLELINE, saveNotifData->firstVisibleLine, 0);
-		::SendMessage(view, SCI_SETSEL, saveNotifData->position, saveNotifData->position);
+		saveNotifData->restore();
 
 		const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
 		if (otherFile.isTemp == LAST_SAVED_TEMP)
