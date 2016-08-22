@@ -2109,16 +2109,13 @@ void onBufferActivatedDelayed(int buffId)
 
 	const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
 
+	ScopedIncrementer incr(notificationsLock);
+
 	// When compared file is activated make sure its corresponding pair file is also active in the other view
 	if (getDocId(getOtherView()) != otherFile.sciDoc)
 	{
-		ViewLocation location(buffId);
-
-		ScopedIncrementer incr(notificationsLock);
-
 		activateBufferID(otherFile.buffId);
-
-		location.restore();
+		activateBufferID(buffId);
 	}
 
 	forceViewsSync(getCurrentView());
