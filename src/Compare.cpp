@@ -1957,6 +1957,30 @@ void deinitPlugin()
 }
 
 
+void forceViewsSync(HWND focalView)
+{
+	HWND otherView	= (focalView == nppData._scintillaMainHandle) ?
+			nppData._scintillaSecondHandle : nppData._scintillaMainHandle;
+
+	const int firstVisibleLine1 = ::SendMessage(focalView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	const int line = ::SendMessage(focalView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine1, 0);
+	int offset = ::SendMessage(focalView, SCI_VISIBLEFROMDOCLINE, line + 1, 0) - firstVisibleLine1;
+
+	ScopedIncrementer incr(notificationsLock);
+
+	::SendMessage(otherView, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
+	int firstVisibleLine2 = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, line + 1, 0) - offset;
+
+	if (line != ::SendMessage(otherView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine2, 0) ||
+			firstVisibleLine1 == ::SendMessage(focalView, SCI_VISIBLEFROMDOCLINE, line, 0))
+		firstVisibleLine2 = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, line, 0);
+
+	::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine2, 0);
+
+	::UpdateWindow(otherView);
+}
+
+
 void onToolBarReady()
 {
 	UINT style = (LR_SHARED | LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS);
@@ -2012,32 +2036,6 @@ void onToolBarReady()
 			(LPARAM)Settings.DetectMoves);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID,
 			(LPARAM)Settings.UseNavBar);
-}
-
-
-void forceViewsSync(HWND focalView)
-{
-	HWND otherView	= (focalView == nppData._scintillaMainHandle) ?
-			nppData._scintillaSecondHandle : nppData._scintillaMainHandle;
-
-	const int firstVisibleLine1 = ::SendMessage(focalView, SCI_GETFIRSTVISIBLELINE, 0, 0);
-	const int line = ::SendMessage(focalView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine1, 0);
-	int offset = ::SendMessage(focalView, SCI_VISIBLEFROMDOCLINE, line + 1, 0) - firstVisibleLine1;
-
-	ScopedIncrementer incr(notificationsLock);
-
-	::SendMessage(otherView, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
-	int firstVisibleLine2 = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, line + 1, 0) - offset;
-
-	if (line != ::SendMessage(otherView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine2, 0) ||
-			firstVisibleLine1 == ::SendMessage(focalView, SCI_VISIBLEFROMDOCLINE, line, 0))
-		firstVisibleLine2 = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, line, 0);
-
-	::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine2, 0);
-
-	::UpdateWindow(otherView);
-
-	NavDlg.Update();
 }
 
 
@@ -2320,15 +2318,15 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 {
 	switch (notifyCode->nmhdr.code)
 	{
-		// Emulate word-wrap aware vertical scroll sync and update NavBar
-		case SCN_UPDATEUI:
+		case SCN_PAINTED:
 			if (NppSettings::get().compareMode && !DelayedWork::isPending())
-			{
-				if (!notificationsLock)
-					onSciUpdateUI(notifyCode);
-
 				NavDlg.Update();
-			}
+		break;
+
+		// Emulate word-wrap aware vertical scroll sync
+		case SCN_UPDATEUI:
+			if (NppSettings::get().compareMode && !notificationsLock && !DelayedWork::isPending())
+				onSciUpdateUI(notifyCode);
 		break;
 
 		case NPPN_BUFFERACTIVATED:
@@ -2370,11 +2368,8 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		break;
 
 		case NPPN_WORDSTYLESUPDATED:
-		{
 			setStyles(Settings);
-
 			NavDlg.SetConfig(Settings);
-		}
 		break;
 
 		case NPPN_TBMODIFICATION:

@@ -321,9 +321,13 @@ void NavDialog::Update()
 	{
 		Show();
 	}
-	else if (m_view[0].updateFirstVisible() || m_view[1].updateFirstVisible())
+	else
 	{
+		m_view[0].updateFirstVisible();
+		m_view[1].updateFirstVisible();
+
 		updateScroll();
+
 		::InvalidateRect(_hSelf, NULL, FALSE);
 	}
 }
@@ -449,7 +453,8 @@ void NavDialog::SetScalingFactor()
 	updateScroll();
 	updateDockingDlg();
 
-	::InvalidateRect(_hSelf, NULL, TRUE);
+	if (isVisible())
+		::InvalidateRect(_hSelf, NULL, TRUE);
 }
 
 
