@@ -245,6 +245,12 @@ inline int getDocId(HWND view)
 }
 
 
+inline int getCurrentLine(HWND view)
+{
+	return ::SendMessage(view, SCI_LINEFROMPOSITION, ::SendMessage(view, SCI_GETCURRENTPOS, 0, 0), 0);
+}
+
+
 void activateBufferID(int buffId);
 
 void markAsBlank(HWND window, int line);

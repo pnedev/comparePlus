@@ -374,8 +374,7 @@ void jumpToNextChange(bool down, bool wrapAround)
 
 	const int sci_marker_direction = down ? SCI_MARKERNEXT : SCI_MARKERPREVIOUS;
 
-	int currentLine = ::SendMessage(view, SCI_GETCURRENTPOS, 0, 0);
-	currentLine = ::SendMessage(view, SCI_LINEFROMPOSITION, currentLine, 0);
+	int currentLine = getCurrentLine(view);
 
 	const int lineMax = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0);
 	const int prevLine = currentLine;

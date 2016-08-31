@@ -571,7 +571,7 @@ FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
 // Declare local functions that appear before they are defined
 void First();
 void onBufferActivatedDelayed(int buffId);
-void forceViewsSync(HWND focalView);
+void forceViewsSync(HWND focalView, bool syncCurrentLine = true);
 
 
 void NppSettings::enableClearCommands() const
@@ -1957,21 +1957,33 @@ void deinitPlugin()
 }
 
 
-void forceViewsSync(HWND focalView)
+void forceViewsSync(HWND focalView, bool syncCurrentLine)
 {
 	HWND otherView = getOtherView(focalView);
 
 	const int firstVisibleLine1 = ::SendMessage(focalView, SCI_GETFIRSTVISIBLELINE, 0, 0);
-	const int line = ::SendMessage(focalView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine1, 0);
-	int offset = ::SendMessage(focalView, SCI_VISIBLEFROMDOCLINE, line + 1, 0) - firstVisibleLine1;
+
+	if (syncCurrentLine)
+	{
+		const int visibleLine = ::SendMessage(focalView, SCI_VISIBLEFROMDOCLINE, getCurrentLine(focalView), 0);
+		// If current line is not visible then sync views on the first visible line
+		syncCurrentLine = (visibleLine >= firstVisibleLine1) &&
+				(visibleLine <= firstVisibleLine1 + ::SendMessage(focalView, SCI_LINESONSCREEN, 0, 0));
+	}
+
+	const int line = syncCurrentLine ? getCurrentLine(focalView) :
+			::SendMessage(focalView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine1, 0);
+	const int offset =
+			::SendMessage(focalView, SCI_VISIBLEFROMDOCLINE, syncCurrentLine ? line : line + 1, 0) - firstVisibleLine1;
 
 	ScopedIncrementer incr(notificationsLock);
 
 	::SendMessage(otherView, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
-	int firstVisibleLine2 = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, line + 1, 0) - offset;
+	int firstVisibleLine2 =
+		::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, syncCurrentLine ? line : line + 1, 0) - offset;
 
-	if (line != ::SendMessage(otherView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine2, 0) ||
-			firstVisibleLine1 == ::SendMessage(focalView, SCI_VISIBLEFROMDOCLINE, line, 0))
+	if (!syncCurrentLine && (line != ::SendMessage(otherView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine2, 0) ||
+			firstVisibleLine1 == ::SendMessage(focalView, SCI_VISIBLEFROMDOCLINE, line, 0)))
 		firstVisibleLine2 = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, line, 0);
 
 	::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine2, 0);
@@ -2115,8 +2127,6 @@ void onBufferActivatedDelayed(int buffId)
 		activateBufferID(buffId);
 	}
 
-	forceViewsSync(getCurrentView());
-
 	NppSettings& nppSettings = NppSettings::get();
 	nppSettings.setCompareMode();
 	nppSettings.updatePluginMenu();
@@ -2126,7 +2136,11 @@ void onBufferActivatedDelayed(int buffId)
 	if (Settings.UseNavBar && !NavDlg.isVisible())
 		showNavBar();
 
-	::SetFocus(getCurrentView());
+	HWND view = getCurrentView();
+
+	::SetFocus(view);
+
+	forceViewsSync(view);
 }
 
 
