@@ -1959,8 +1959,7 @@ void deinitPlugin()
 
 void forceViewsSync(HWND focalView)
 {
-	HWND otherView	= (focalView == nppData._scintillaMainHandle) ?
-			nppData._scintillaSecondHandle : nppData._scintillaMainHandle;
+	HWND otherView = getOtherView(focalView);
 
 	const int firstVisibleLine1 = ::SendMessage(focalView, SCI_GETFIRSTVISIBLELINE, 0, 0);
 	const int line = ::SendMessage(focalView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine1, 0);

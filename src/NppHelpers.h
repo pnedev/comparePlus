@@ -213,6 +213,12 @@ inline HWND getOtherView()
 }
 
 
+inline HWND getOtherView(HWND view)
+{
+	return (view == nppData._scintillaMainHandle) ? nppData._scintillaSecondHandle : nppData._scintillaMainHandle;
+}
+
+
 inline int viewIdFromBuffId(int buffId)
 {
 	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);

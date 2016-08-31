@@ -514,11 +514,9 @@ void addBlankSection(HWND window, int line, int length)
 
 	::SendMessage(window, SCI_INSERTTEXT, posAdd, (LPARAM)buff.data());
 
-	HWND otherView = (window == nppData._scintillaMainHandle) ?
-			nppData._scintillaSecondHandle : nppData._scintillaMainHandle;
 	for (int i = 0; i < length; ++i)
 	{
-		posAdd = ::SendMessage(otherView, SCI_LINELENGTH, line + i, 0) - lenEOL[EOLtype];
+		posAdd = ::SendMessage(getOtherView(window), SCI_LINELENGTH, line + i, 0) - lenEOL[EOLtype];
 		::SendMessage(window, SCI_SETLINEINDENTATION, line + i, posAdd);
 		markAsBlank(window, line + i);
 	}
