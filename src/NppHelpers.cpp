@@ -514,8 +514,14 @@ void addBlankSection(HWND window, int line, int length)
 
 	::SendMessage(window, SCI_INSERTTEXT, posAdd, (LPARAM)buff.data());
 
+	HWND otherView = (window == nppData._scintillaMainHandle) ?
+			nppData._scintillaSecondHandle : nppData._scintillaMainHandle;
 	for (int i = 0; i < length; ++i)
+	{
+		posAdd = ::SendMessage(otherView, SCI_LINELENGTH, line + i, 0) - lenEOL[EOLtype];
+		::SendMessage(window, SCI_SETLINEINDENTATION, line + i, posAdd);
 		markAsBlank(window, line + i);
+	}
 }
 
 
@@ -533,10 +539,11 @@ int deleteBlankSection(HWND window, int line)
 	{
 		::SendMessage(window, SCI_MARKERDELETE, line, MARKER_BLANK_LINE);
 
-		const int lineLen = ::SendMessage(window, SCI_LINELENGTH, line, 0);
+		const int lineLen		= ::SendMessage(window, SCI_LINELENGTH, line, 0);
+		const int lineIndent	= ::SendMessage(window, SCI_GETLINEINDENTATION, line, 0);
 
 		// Don't delete a line that is not blank
-		if ((line < lastLine && lineLen > eolLen) || (line == lastLine && lineLen > 0))
+		if ((line < lastLine && lineLen > lineIndent + eolLen) || (line == lastLine && lineLen > lineIndent))
 			break;
 
 		++deletedLines;
