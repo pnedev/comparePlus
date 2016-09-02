@@ -567,7 +567,6 @@ toolbarIcons  tbNavBar;
 HINSTANCE hInstance;
 FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
 
-
 // Declare local functions that appear before they are defined
 void First();
 void onBufferActivatedDelayed(int buffId);
@@ -965,6 +964,22 @@ void showNavBar()
 {
 	NavDlg.SetConfig(Settings);
 	NavDlg.doDialog();
+}
+
+
+void updateWrap()
+{
+	if (::SendMessage(nppData._scintillaMainHandle, SCI_GETWRAPMODE, 0, 0) == SC_WRAP_NONE)
+		return;
+
+	ScopedIncrementer incr(notificationsLock);
+
+	::UpdateWindow(nppData._nppHandle);
+
+	adjustBlanksWrap();
+
+	::UpdateWindow(nppData._scintillaMainHandle);
+	::UpdateWindow(nppData._scintillaSecondHandle);
 }
 
 
@@ -1434,7 +1449,7 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 					}
 					else
 					{
-						addBlankSection(view2, off + doc2Offset, length);
+						addBlankSection(view2, off + doc2Offset, length, true);
 						doc2Offset += length;
 						off = doc1Changes[i].altLocation;
 						length = 1;
@@ -1443,7 +1458,7 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 			}
 		}
 
-		addBlankSection(view2, off + doc2Offset, length);
+		addBlankSection(view2, off + doc2Offset, length, true);
 
 		length = 0;
 		off = 0;
@@ -1461,7 +1476,7 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 					}
 					else
 					{
-						addBlankSection(view1, off + doc1Offset, length);
+						addBlankSection(view1, off + doc1Offset, length, true);
 						doc1Offset += length;
 						off = doc2Changes[i].altLocation;
 						length = 1;
@@ -1470,13 +1485,15 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 			}
 		}
 
-		addBlankSection(view1, off + doc1Offset, length);
+		addBlankSection(view1, off + doc1Offset, length, true);
 	}
 
 	if (ProgressDlg::IsCancelled())
 		return COMPARE_CANCELLED;
 
 	ProgressDlg::Close();
+
+	adjustBlanksWrap();
 
 	return FILES_DIFFER;
 }
@@ -1575,7 +1592,10 @@ void Compare()
 			NppSettings::get().updatePluginMenu();
 
 			if (Settings.UseNavBar)
+			{
 				showNavBar();
+				updateWrap();
+			}
 
 			if (!Settings.GotoFirstDiff && recompare)
 			{
@@ -1968,17 +1988,18 @@ void forceViewsSync(HWND focalView, bool syncCurrentLine)
 {
 	HWND otherView = getOtherView(focalView);
 
+	const int activeLine = getCurrentLine(getCurrentView());
 	const int firstVisibleLine1 = ::SendMessage(focalView, SCI_GETFIRSTVISIBLELINE, 0, 0);
 
 	if (syncCurrentLine)
 	{
-		const int visibleLine = ::SendMessage(focalView, SCI_VISIBLEFROMDOCLINE, getCurrentLine(focalView), 0);
+		const int visibleLine = ::SendMessage(focalView, SCI_VISIBLEFROMDOCLINE, activeLine, 0);
 		// If current line is not visible then sync views on the first visible line
 		syncCurrentLine = (visibleLine >= firstVisibleLine1) &&
 				(visibleLine <= firstVisibleLine1 + ::SendMessage(focalView, SCI_LINESONSCREEN, 0, 0));
 	}
 
-	const int line = syncCurrentLine ? getCurrentLine(focalView) :
+	const int line = syncCurrentLine ? activeLine :
 			::SendMessage(focalView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine1, 0);
 	const int offset =
 			::SendMessage(focalView, SCI_VISIBLEFROMDOCLINE, syncCurrentLine ? line : line + 1, 0) - firstVisibleLine1;
@@ -2275,6 +2296,8 @@ void ViewNavigationBar()
 			showNavBar();
 		else
 			NavDlg.doDialog(false);
+
+		updateWrap();
 	}
 }
 
@@ -2338,8 +2361,9 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 {
 	switch (notifyCode->nmhdr.code)
 	{
+		// Handle wrap refresh
 		case SCN_PAINTED:
-			if (NppSettings::get().compareMode && !DelayedWork::isPending())
+			if (NppSettings::get().compareMode && !notificationsLock && !DelayedWork::isPending())
 				NavDlg.Update();
 		break;
 

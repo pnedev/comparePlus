@@ -278,7 +278,9 @@ void clearWindow(HWND window);
 
 DocLines_t getAllLines(HWND window, std::vector<int>& lineNum, bool ignoreEOLs);
 
-void addBlankSection(HWND window, int line, int length);
+void adjustBlanksWrap(HWND view = NULL);
+
+void addBlankSection(HWND window, int line, int length, bool skipWrapAdjustment = false);
 
 void addBlankLines(HWND window, const BlankSections_t& blanks);
 BlankSections_t removeBlankLines(HWND window, bool saveBlanks = false);

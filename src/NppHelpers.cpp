@@ -20,6 +20,8 @@
 #include <tchar.h>
 #include <commctrl.h>
 
+#include <vector>
+
 #include "Compare.h"
 #include "Engine.h"
 #include "NppHelpers.h"
@@ -484,7 +486,64 @@ void clearWindow(HWND window)
 }
 
 
-void addBlankSection(HWND window, int line, int length)
+static void adjustLineIndent(HWND view, int line)
+{
+	HWND otherView = getOtherView(view);
+
+	const int otherWrap = ::SendMessage(otherView, SCI_WRAPCOUNT, line, 0);
+
+	int indent = ::SendMessage(otherView, SCI_GETLINEENDPOSITION, line, 0) -
+			::SendMessage(otherView, SCI_POSITIONFROMLINE, line, 0);
+
+	::SendMessage(view, SCI_SETLINEINDENTATION, line, indent);
+
+	int wrap = ::SendMessage(view, SCI_WRAPCOUNT, line, 0);
+
+	while (otherWrap != wrap)
+	{
+		const int averageWrapLen = (otherWrap > wrap) ? (indent / otherWrap) : (indent / wrap);
+		indent += averageWrapLen * (otherWrap - wrap);
+
+		::SendMessage(view, SCI_SETLINEINDENTATION, line, indent);
+		wrap = ::SendMessage(view, SCI_WRAPCOUNT, line, 0);
+	}
+}
+
+
+void adjustBlanksWrap(HWND view)
+{
+	const int blankMarker = 1 << MARKER_BLANK_LINE;
+
+	std::vector<HWND> views = (view != NULL) ? std::vector<HWND>{ view } :
+			std::vector<HWND>{ nppData._scintillaMainHandle, nppData._scintillaSecondHandle };
+
+	for (unsigned int i = 0; i < views.size() ; ++i)
+	{
+		int line = ::SendMessage(views[i], SCI_MARKERNEXT, 0, blankMarker);
+
+		if (line < 0)
+			continue;
+
+		ScopedViewUndoCollectionBlocker undoBlock(views[i]);
+		ScopedViewWriteEnabler writeEn(views[i]);
+
+		for (; line >= 0; line = ::SendMessage(views[i], SCI_MARKERNEXT, line + 1, blankMarker))
+		{
+			const int lineIndent	= ::SendMessage(views[i], SCI_GETLINEINDENTATION, line, 0);
+			const int lineLen		= ::SendMessage(views[i], SCI_GETLINEENDPOSITION, line, 0) -
+					::SendMessage(views[i], SCI_POSITIONFROMLINE, line, 0);
+
+			// Skip the line if it is not blank
+			if (lineLen > lineIndent)
+				continue;
+
+			adjustLineIndent(views[i], line);
+		}
+	}
+}
+
+
+void addBlankSection(HWND window, int line, int length, bool skipWrapAdjustment)
 {
 	if (length <= 0)
 		return;
@@ -515,8 +574,9 @@ void addBlankSection(HWND window, int line, int length)
 
 	for (int i = 0; i < length; ++i)
 	{
-		posAdd = ::SendMessage(getOtherView(window), SCI_LINELENGTH, line + i, 0) - lenEOL[EOLtype];
-		::SendMessage(window, SCI_SETLINEINDENTATION, line + i, posAdd);
+		if (!skipWrapAdjustment)
+			adjustLineIndent(window, line + i);
+
 		markAsBlank(window, line + i);
 	}
 }
@@ -585,7 +645,7 @@ BlankSections_t removeBlankLines(HWND window, bool saveBlanks)
 	const int marker = 1 << MARKER_BLANK_LINE;
 
 	int deletedLines = 0;
-	for (int line = ::SendMessage(window, SCI_MARKERNEXT, 0, marker); line != -1;
+	for (int line = ::SendMessage(window, SCI_MARKERNEXT, 0, marker); line >= 0;
 			line = ::SendMessage(window, SCI_MARKERNEXT, line, marker))
 	{
 		const int len = deleteBlankSection(window, line);
