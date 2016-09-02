@@ -782,7 +782,14 @@ void ComparedFile::restore()
 	if (viewIdFromBuffId(buffId) != originalViewId)
 	{
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
-		// TODO: Restore file original position here
+
+		const int currentPos = posFromBuffId(buffId);
+
+		if (originalPos >= currentPos)
+			return;
+
+		for (int i = currentPos - originalPos; i; --i)
+			::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_TAB_MOVEBACKWARD);
 	}
 }
 
