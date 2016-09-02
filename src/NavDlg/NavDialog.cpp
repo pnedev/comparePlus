@@ -89,7 +89,7 @@ void NavDialog::NavView::create(const ColorSettings& colors, int reductionRatio)
 	bmpRect.right = 1;
 	bmpRect.bottom = 1;
 
-	HBRUSH hBrush = ::CreateSolidBrush(RGB(0, 0, 0));
+	HBRUSH hBrush = ::CreateSolidBrush(colors._default ^ 0xFFFFFF);
 
 	::FillRect(m_hSelDC, &bmpRect, hBrush);
 
@@ -199,7 +199,7 @@ void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int heigh
 
 	BLENDFUNCTION blend = { 0 };
 	blend.BlendOp = AC_SRC_OVER;
-	blend.SourceConstantAlpha = 20;
+	blend.SourceConstantAlpha = 40;
 
 	::AlphaBlend(hDC, r.left + 1, r.top + 1, width, lastVisible - firstVisible, m_hSelDC, 0, 0, 1, 1, blend);
 }
