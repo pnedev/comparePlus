@@ -460,6 +460,7 @@ struct ComparedPair
 	ComparedFile& getOldFile();
 	ComparedFile& getNewFile();
 	void positionFiles();
+	void restoreFiles(int currentBuffId);
 
 	ComparedFile file[2];
 };
@@ -865,6 +866,49 @@ void ComparedPair::positionFiles()
 }
 
 
+void ComparedPair::restoreFiles(int currentBuffId = -1)
+{
+	// Check if position update is needed -
+	// this is for relative re-positioning to keep files initial order consistent
+	if (file[0].originalViewId == file[1].originalViewId)
+	{
+		ComparedFile* biasFile;
+		ComparedFile* movedFile;
+
+		// One of the files is in its original view and won't be moved - this is the bias file
+		if (viewIdFromBuffId(file[0].buffId) == file[0].originalViewId)
+		{
+			biasFile = &file[0];
+			movedFile = &file[1];
+		}
+		else
+		{
+			biasFile = &file[1];
+			movedFile = &file[0];
+		}
+
+		if (biasFile->originalPos > movedFile->originalPos)
+		{
+			const int newPos = posFromBuffId(biasFile->buffId);
+
+			if (newPos != biasFile->originalPos && newPos <= movedFile->originalPos)
+				movedFile->originalPos = newPos;
+		}
+	}
+
+	if (currentBuffId == -1)
+	{
+		file[0].restore();
+		file[1].restore();
+	}
+	else
+	{
+		getOtherFileByBuffId(currentBuffId).restore();
+		getFileByBuffId(currentBuffId).restore();
+	}
+}
+
+
 NewCompare::NewCompare(bool currFileIsNew, bool markFirstName)
 {
 	_firstTabText[0] = 0;
@@ -1140,8 +1184,7 @@ void clearComparePair(int buffId)
 
 	ScopedIncrementer incr(notificationsLock);
 
-	cmpPair->getOtherFileByBuffId(buffId).restore();
-	cmpPair->getFileByBuffId(buffId).restore();
+	cmpPair->restoreFiles(buffId);
 
 	compareList.erase(cmpPair);
 
@@ -1693,10 +1736,7 @@ void ClearAllCompares()
 	const int otherBuffId = getCurrentBuffId();
 
 	for (int i = compareList.size() - 1; i >= 0; --i)
-	{
-		compareList[i].file[0].restore();
-		compareList[i].file[1].restore();
-	}
+		compareList[i].restoreFiles();
 
 	compareList.clear();
 
