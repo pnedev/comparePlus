@@ -28,6 +28,9 @@
     <ClCompile Include="..\..\src\SettingsDlg\ColorPopup.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Tools.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\Compare.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -71,6 +74,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\Engine\varray.h">
       <Filter>src\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Tools.h">
+      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Compare.h">
       <Filter>src</Filter>

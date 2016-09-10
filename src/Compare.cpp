@@ -25,6 +25,7 @@
 #include <tchar.h>
 #include <shlwapi.h>
 
+#include "Tools.h"
 #include "Compare.h"
 #include "NppHelpers.h"
 #include "LibHelpers.h"
@@ -174,102 +175,6 @@ private:
 	bool	_syncVScroll;
 	bool	_syncHScroll;
 };
-
-
-/**
- *  \struct
- *  \brief
- */
-struct ScopedIncrementer
-{
-	ScopedIncrementer(volatile unsigned& useCount) : _useCount(useCount)
-	{
-		++_useCount;
-	}
-
-	~ScopedIncrementer()
-	{
-		--_useCount;
-	}
-
-private:
-	volatile unsigned&	_useCount;
-};
-
-
-/**
- *  \class
- *  \brief
- */
-class DelayedWork
-{
-public:
-	using workFunc_t = void(*)(int);
-
-	static bool post(workFunc_t work, int buffId, UINT delay_ms);
-	static bool isPending();
-	static void cancel();
-
-private:
-	static DelayedWork& instance()
-	{
-		static DelayedWork inst;
-		return inst;
-	}
-
-	DelayedWork() : _timerId(0), _buffId(0) {}
-	~DelayedWork()
-	{
-		if (_timerId)
-			::KillTimer(NULL, _timerId);
-	}
-
-	static VOID CALLBACK timerCB(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
-
-	UINT_PTR	_timerId;
-	workFunc_t	_work;
-	int			_buffId;
-};
-
-
-bool DelayedWork::post(workFunc_t work, int buffId, UINT delay_ms)
-{
-	DelayedWork& inst = instance();
-
-	inst._work = work;
-	inst._buffId = buffId;
-	inst._timerId = ::SetTimer(NULL, 0, delay_ms, timerCB);
-
-	return (inst._timerId != 0);
-}
-
-
-bool DelayedWork::isPending()
-{
-	return (instance()._timerId != 0);
-}
-
-
-void DelayedWork::cancel()
-{
-	DelayedWork& inst = instance();
-
-	if (inst._timerId)
-	{
-		::KillTimer(NULL, inst._timerId);
-		inst._timerId = 0;
-	}
-}
-
-
-VOID CALLBACK DelayedWork::timerCB(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
-{
-	cancel();
-
-	DelayedWork& inst = instance();
-
-	inst._work(inst._buffId);
-}
 
 
 /**
@@ -525,6 +430,22 @@ private:
 };
 
 
+
+
+/**
+ *  \class
+ *  \brief
+ */
+class DelayedBufferActivate : public DelayedWork
+{
+public:
+	DelayedBufferActivate() : DelayedWork() {}
+	virtual void operator()();
+
+	int buffId;
+};
+
+
 /**
  *  \struct
  *  \brief
@@ -552,6 +473,8 @@ volatile unsigned notificationsLock = 0;
 
 std::unique_ptr<SaveNotificationData> saveNotifData;
 
+DelayedBufferActivate delayedBufferActivation;
+
 AboutDialog   	AboutDlg;
 SettingsDialog	SettingsDlg;
 NavDialog     	NavDlg;
@@ -570,7 +493,6 @@ FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
 
 // Declare local functions that appear before they are defined
 void First();
-void onBufferActivatedDelayed(int buffId);
 void forceViewsSync(HWND focalView, bool syncCurrentLine = true);
 
 
@@ -1189,7 +1111,9 @@ void clearComparePair(int buffId)
 	compareList.erase(cmpPair);
 
 	resetCompareView(getOtherView());
-	onBufferActivatedDelayed(getCurrentBuffId());
+
+	delayedBufferActivation.buffId = getCurrentBuffId();
+	delayedBufferActivation();
 
 	nppSettings.updatePluginMenu();
 }
@@ -1214,7 +1138,9 @@ void closeComparePair(CompareList_t::iterator& cmpPair)
 	if (::IsWindowVisible(currentView))
 		::SetFocus(currentView);
 
-	onBufferActivatedDelayed(getCurrentBuffId());
+	delayedBufferActivation.buffId = getCurrentBuffId();
+	delayedBufferActivation();
+
 	resetCompareView(getOtherView());
 
 	nppSettings.updatePluginMenu();
@@ -2178,7 +2104,7 @@ void onSciZoom()
 }
 
 
-void onBufferActivatedDelayed(int buffId)
+void DelayedBufferActivate::operator()()
 {
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
@@ -2214,7 +2140,7 @@ void onBufferActivatedDelayed(int buffId)
 
 void onBufferActivated(int buffId)
 {
-	DelayedWork::cancel();
+	delayedBufferActivation.cancel();
 
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
@@ -2228,7 +2154,8 @@ void onBufferActivated(int buffId)
 	}
 	else
 	{
-		DelayedWork::post(onBufferActivatedDelayed, buffId, 50);
+		delayedBufferActivation.buffId = buffId;
+		delayedBufferActivation.post(50);
 	}
 }
 
@@ -2403,13 +2330,13 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 	{
 		// Handle wrap refresh
 		case SCN_PAINTED:
-			if (NppSettings::get().compareMode && !notificationsLock && !DelayedWork::isPending())
+			if (NppSettings::get().compareMode && !notificationsLock && !delayedBufferActivation.isPending())
 				NavDlg.Update();
 		break;
 
 		// Emulate word-wrap aware vertical scroll sync
 		case SCN_UPDATEUI:
-			if (NppSettings::get().compareMode && !notificationsLock && !DelayedWork::isPending())
+			if (NppSettings::get().compareMode && !notificationsLock && !delayedBufferActivation.isPending())
 				onSciUpdateUI(notifyCode);
 		break;
 

@@ -46,6 +46,7 @@ set (project_sources
     src/NavDlg/NavDialog.cpp
     src/ProgressDlg/ProgressDlg.cpp
     src/Engine/Engine.cpp
+    src/Tools.cpp
     src/Compare.cpp
     src/LibGit2/LibGit2Helper.cpp
     src/NppHelpers.cpp
