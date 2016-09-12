@@ -338,6 +338,7 @@ struct ComparedFile
 	void onClose();
 	void close();
 	void restore();
+	bool isOpen();
 
 	Temp_t	isTemp;
 	bool	isNew;
@@ -367,7 +368,8 @@ struct ComparedPair
 	void positionFiles();
 	void restoreFiles(int currentBuffId);
 
-	ComparedFile file[2];
+	ComparedFile	file[2];
+	int				relativePos;
 };
 
 
@@ -430,19 +432,37 @@ private:
 };
 
 
+/**
+ *  \class
+ *  \brief
+ */
+class DelayedActivate : public DelayedWork
+{
+public:
+	DelayedActivate() : DelayedWork() {}
+	virtual void operator()();
+
+	inline void operator()(int buff)
+	{
+		buffId = buff;
+		operator()();
+	}
+
+	int buffId;
+};
 
 
 /**
  *  \class
  *  \brief
  */
-class DelayedBufferActivate : public DelayedWork
+class DelayedClose : public DelayedWork
 {
 public:
-	DelayedBufferActivate() : DelayedWork() {}
+	DelayedClose() : DelayedWork() {}
 	virtual void operator()();
 
-	int buffId;
+	std::vector<int> closedBuffs;
 };
 
 
@@ -473,7 +493,8 @@ volatile unsigned notificationsLock = 0;
 
 std::unique_ptr<SaveNotificationData> saveNotifData;
 
-DelayedBufferActivate delayedBufferActivation;
+DelayedActivate	delayedActivation;
+DelayedClose	delayedClosure;
 
 AboutDialog   	AboutDlg;
 SettingsDialog	SettingsDlg;
@@ -716,6 +737,12 @@ void ComparedFile::restore()
 }
 
 
+bool ComparedFile::isOpen()
+{
+	return (::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (LPARAM)NULL) >= 0);
+}
+
+
 ComparedFile& ComparedPair::getFileByViewId(int viewId)
 {
 	return (viewIdFromBuffId(file[0].buffId) == viewId) ? file[0] : file[1];
@@ -762,6 +789,10 @@ void ComparedPair::positionFiles()
 	oldFile.updateView();
 	newFile.updateView();
 
+	relativePos = (oldFile.originalViewId != newFile.originalViewId) ? 0 :
+			(oldFile.originalViewId == oldFile.compareViewId) ?
+			newFile.originalPos - oldFile.originalPos : oldFile.originalPos - newFile.originalPos;
+
 	if (viewIdFromBuffId(oldFile.buffId) != oldFile.compareViewId)
 	{
 		if (oldFile.buffId != getCurrentBuffId())
@@ -792,7 +823,7 @@ void ComparedPair::restoreFiles(int currentBuffId = -1)
 {
 	// Check if position update is needed -
 	// this is for relative re-positioning to keep files initial order consistent
-	if (file[0].originalViewId == file[1].originalViewId)
+	if (relativePos)
 	{
 		ComparedFile* biasFile;
 		ComparedFile* movedFile;
@@ -813,7 +844,7 @@ void ComparedPair::restoreFiles(int currentBuffId = -1)
 		{
 			const int newPos = posFromBuffId(biasFile->buffId);
 
-			if (newPos != biasFile->originalPos && newPos <= movedFile->originalPos)
+			if (newPos != biasFile->originalPos && newPos < movedFile->originalPos)
 				movedFile->originalPos = newPos;
 		}
 	}
@@ -1112,8 +1143,7 @@ void clearComparePair(int buffId)
 
 	resetCompareView(getOtherView());
 
-	delayedBufferActivation.buffId = getCurrentBuffId();
-	delayedBufferActivation();
+	delayedActivation(getCurrentBuffId());
 
 	nppSettings.updatePluginMenu();
 }
@@ -1138,8 +1168,7 @@ void closeComparePair(CompareList_t::iterator& cmpPair)
 	if (::IsWindowVisible(currentView))
 		::SetFocus(currentView);
 
-	delayedBufferActivation.buffId = getCurrentBuffId();
-	delayedBufferActivation();
+	delayedActivation(getCurrentBuffId());
 
 	resetCompareView(getOtherView());
 
@@ -2104,7 +2133,7 @@ void onSciZoom()
 }
 
 
-void DelayedBufferActivate::operator()()
+void DelayedActivate::operator()()
 {
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
@@ -2130,17 +2159,13 @@ void DelayedBufferActivate::operator()()
 	if (Settings.UseNavBar && !NavDlg.isVisible())
 		showNavBar();
 
-	HWND view = getCurrentView();
-
-	::SetFocus(view);
-
-	forceViewsSync(view);
+	forceViewsSync(getCurrentView());
 }
 
 
 void onBufferActivated(int buffId)
 {
-	delayedBufferActivation.cancel();
+	delayedActivation.cancel();
 
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
@@ -2154,9 +2179,50 @@ void onBufferActivated(int buffId)
 	}
 	else
 	{
-		delayedBufferActivation.buffId = buffId;
-		delayedBufferActivation.post(50);
+		delayedActivation.buffId = buffId;
+		delayedActivation.post(50);
 	}
+}
+
+
+void DelayedClose::operator()()
+{
+	const int currentBuffId = getCurrentBuffId();
+
+	ScopedIncrementer incr(notificationsLock);
+
+	for (int i = closedBuffs.size(); i; --i)
+	{
+		const int buffId = closedBuffs[i - 1];
+
+		CompareList_t::iterator cmpPair = getCompare(buffId);
+		if (cmpPair == compareList.end())
+			continue;
+
+		ComparedFile& closedFile = cmpPair->getFileByBuffId(buffId);
+		ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
+
+		if (closedFile.isTemp)
+		{
+			if (closedFile.isOpen())
+				closedFile.close();
+			else
+				closedFile.onClose();
+		}
+
+		if (otherFile.isOpen())
+			otherFile.restore();
+
+		compareList.erase(cmpPair);
+	}
+
+	closedBuffs.clear();
+
+	activateBufferID(currentBuffId);
+
+	delayedActivation(currentBuffId);
+
+	NppSettings::get().updatePluginMenu();
 }
 
 
@@ -2166,38 +2232,37 @@ void onFileBeforeClose(int buffId)
 	if (cmpPair == compareList.end())
 		return;
 
+	delayedClosure.cancel();
+	delayedClosure.closedBuffs.push_back(buffId);
+
 	const int currentBuffId = getCurrentBuffId();
 
-	NppSettings& nppSettings = NppSettings::get();
-	nppSettings.setNormalMode();
+	NppSettings::get().setNormalMode();
 
 	ScopedIncrementer incr(notificationsLock);
 
-	cmpPair->getFileByBuffId(buffId).onBeforeClose();
-	cmpPair->getOtherFileByBuffId(buffId).restore();
+	ComparedFile& closedFile = cmpPair->getFileByBuffId(buffId);
+	closedFile.onBeforeClose();
 
-	activateBufferID(currentBuffId);
-
-	nppSettings.updatePluginMenu();
-}
-
-
-void onFileClosed(int buffId)
-{
-	CompareList_t::iterator cmpPair = getCompare(buffId);
-	if (cmpPair == compareList.end())
-		return;
-
-	cmpPair->getFileByBuffId(buffId).onClose();
-
-	compareList.erase(cmpPair);
-
-	cmpPair = getCompare(getCurrentBuffId());
-	if (cmpPair != compareList.end())
+	if (cmpPair->relativePos && (closedFile.originalViewId == viewIdFromBuffId(buffId)))
 	{
-		resetCompareView(nppData._scintillaMainHandle);
-		resetCompareView(nppData._scintillaSecondHandle);
+		ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
+
+		otherFile.originalPos = posFromBuffId(buffId) + cmpPair->relativePos;
+
+		if (cmpPair->relativePos > 0)
+			--otherFile.originalPos;
+		else
+			++otherFile.originalPos;
+
+		if (otherFile.originalPos < 0)
+			otherFile.originalPos = 0;
 	}
+
+	if (currentBuffId != buffId)
+		activateBufferID(currentBuffId);
+
+	delayedClosure.post(50);
 }
 
 
@@ -2330,13 +2395,13 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 	{
 		// Handle wrap refresh
 		case SCN_PAINTED:
-			if (NppSettings::get().compareMode && !notificationsLock && !delayedBufferActivation.isPending())
+			if (NppSettings::get().compareMode && !notificationsLock && !delayedActivation.isPending())
 				NavDlg.Update();
 		break;
 
 		// Emulate word-wrap aware vertical scroll sync
 		case SCN_UPDATEUI:
-			if (NppSettings::get().compareMode && !notificationsLock && !delayedBufferActivation.isPending())
+			if (NppSettings::get().compareMode && !notificationsLock && !delayedActivation.isPending())
 				onSciUpdateUI(notifyCode);
 		break;
 
@@ -2352,11 +2417,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 				onFileBeforeClose(notifyCode->nmhdr.idFrom);
 		break;
 
-		case NPPN_FILECLOSED:
-			if (!notificationsLock && !compareList.empty())
-				onFileClosed(notifyCode->nmhdr.idFrom);
-		break;
-
 		case NPPN_FILEBEFORESAVE:
 			if (!compareList.empty())
 				onFileBeforeSave(notifyCode->nmhdr.idFrom);
@@ -2369,12 +2429,12 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 
 		// This is used to monitor deletion of lines to properly clear their compare markings
 		case SCN_MODIFIED:
-			if (!notificationsLock && NppSettings::get().compareMode)
+			if (NppSettings::get().compareMode && !notificationsLock)
 				onSciModified(notifyCode);
 		break;
 
 		case SCN_ZOOM:
-			if (!notificationsLock && NppSettings::get().compareMode)
+			if (NppSettings::get().compareMode && !notificationsLock)
 				onSciZoom();
 		break;
 
