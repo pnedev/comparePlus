@@ -276,7 +276,7 @@ void NavDialog::init(HINSTANCE hInst)
 }
 
 
-void NavDialog::doDialog(bool show)
+void NavDialog::doDialog()
 {
 	if (!isCreated())
 	{
@@ -292,11 +292,6 @@ void NavDialog::doDialog(bool show)
 
 		::SendMessage(_hParent, NPPM_DMMREGASDCKDLG, 0, (LPARAM)&_data);
 	}
-
-	if (show)
-		Show();
-	else
-		Hide();
 }
 
 
@@ -335,6 +330,8 @@ void NavDialog::Update()
 
 void NavDialog::Show()
 {
+	doDialog();
+
 	HWND hwnd = ::GetFocus();
 
 	// Free resources if needed
@@ -359,6 +356,8 @@ void NavDialog::Show()
 
 void NavDialog::Hide()
 {
+	doDialog();
+
 	display(false);
 
 	m_view[0].reset();

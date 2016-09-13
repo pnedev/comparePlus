@@ -34,7 +34,8 @@ public:
 	void init(HINSTANCE hInst);
 	void destroy() {};
 
-	void doDialog(bool show = true);
+	void Show();
+	void Hide();
 
 	void SetConfig(const UserSettings& settings);
 	void Update();
@@ -86,8 +87,7 @@ private:
 		std::vector<int>	m_lineMap;
 	};
 
-	void Show();
-	void Hide();
+	void doDialog();
 
 	void CreateBitmap();
 	void ShowScroller(RECT& r);

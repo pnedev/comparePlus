@@ -576,7 +576,7 @@ void NppSettings::setNormalMode()
 	compareMode = false;
 
 	if (NavDlg.isVisible())
-		NavDlg.doDialog(false);
+		NavDlg.Hide();
 
 	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
 
@@ -957,13 +957,6 @@ void resetCompareView(HWND view)
 }
 
 
-void showNavBar()
-{
-	NavDlg.SetConfig(Settings);
-	NavDlg.doDialog();
-}
-
-
 void updateWrap()
 {
 	if (::SendMessage(nppData._scintillaMainHandle, SCI_GETWRAPMODE, 0, 0) == SC_WRAP_NONE)
@@ -977,6 +970,14 @@ void updateWrap()
 
 	::UpdateWindow(nppData._scintillaMainHandle);
 	::UpdateWindow(nppData._scintillaSecondHandle);
+}
+
+
+void showNavBar()
+{
+	NavDlg.SetConfig(Settings);
+	NavDlg.Show();
+	updateWrap();
 }
 
 
@@ -1590,10 +1591,7 @@ void Compare()
 			NppSettings::get().updatePluginMenu();
 
 			if (Settings.UseNavBar)
-			{
 				showNavBar();
-				updateWrap();
-			}
 
 			if (!Settings.GotoFirstDiff && recompare)
 			{
@@ -1942,7 +1940,7 @@ void deinitPlugin()
 	// Always close it, else N++'s plugin manager would call 'ViewNavigationBar'
 	// on startup, when N++ has been shut down before with opened navigation bar
 	if (NavDlg.isVisible())
-		NavDlg.doDialog(false);
+		NavDlg.Hide();
 
 	if (tbSetFirst.hToolbarBmp)
 		::DeleteObject(tbSetFirst.hToolbarBmp);
@@ -2325,11 +2323,16 @@ void ViewNavigationBar()
 	if (NppSettings::get().compareMode)
 	{
 		if (Settings.UseNavBar)
+		{
 			showNavBar();
+		}
 		else
-			NavDlg.doDialog(false);
+		{
+			NavDlg.Hide();
+			updateWrap();
+		}
 
-		updateWrap();
+		forceViewsSync(getCurrentView());
 	}
 }
 
