@@ -356,8 +356,6 @@ void NavDialog::Show()
 
 void NavDialog::Hide()
 {
-	doDialog();
-
 	display(false);
 
 	m_view[0].reset();
