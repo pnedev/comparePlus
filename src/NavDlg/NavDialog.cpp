@@ -521,19 +521,13 @@ int NavDialog::updateScroll()
 
 		if (m_syncView->bmpToDocLine(currentScroll) > firstVisible)
 		{
-			currentScroll -= m_navHeight;
-
-			if (currentScroll < 0)
-				currentScroll = 0;
+			currentScroll = firstVisible;
 
 			::SetScrollPos(m_hScroll, SB_CTL, currentScroll, TRUE);
 		}
 		else if (m_syncView->bmpToDocLine(currentScroll + m_navHeight - 1) < lastVisible)
 		{
-			currentScroll += m_navHeight;
-
-			if (currentScroll > m_maxBmpLines * m_pixelsPerLine - 1)
-				currentScroll = m_maxBmpLines * m_pixelsPerLine - m_navHeight;
+			currentScroll = m_syncView->docToBmpLine(lastVisible) - m_navHeight;
 
 			::SetScrollPos(m_hScroll, SB_CTL, currentScroll, TRUE);
 		}
@@ -580,6 +574,20 @@ void NavDialog::onPaint()
 }
 
 
+void NavDialog::adjustScroll(int offset)
+{
+	int currentScroll = ::GetScrollPos(m_hScroll, SB_CTL) + offset;
+
+	if (currentScroll < 0)
+		currentScroll = 0;
+	else if (currentScroll > m_maxBmpLines * m_pixelsPerLine - 1)
+		currentScroll = m_maxBmpLines * m_pixelsPerLine - m_navHeight;
+
+	::SetScrollPos(m_hScroll, SB_CTL, currentScroll, TRUE);
+	::InvalidateRect(_hSelf, NULL, FALSE);
+}
+
+
 BOOL CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
 {
 	switch (Message)
@@ -619,47 +627,36 @@ BOOL CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
 
 		case WM_VSCROLL:
 		{
-			int currentScroll = ::GetScrollPos(m_hScroll, SB_CTL);
-
 			switch (LOWORD(wParam))
 			{
 				case SB_THUMBPOSITION:
 				case SB_THUMBTRACK:
-					currentScroll = HIWORD(wParam);
+				{
+					const int currentScroll = HIWORD(wParam);
+
+					::SetFocus(_hSelf);
+
+					::SetScrollPos(m_hScroll, SB_CTL, currentScroll, TRUE);
+					::InvalidateRect(_hSelf, NULL, FALSE);
+				}
 				break;
 
 				case SB_PAGEDOWN:
-					currentScroll += m_navHeight;
-
-					if (currentScroll > m_maxBmpLines * m_pixelsPerLine - 1)
-						currentScroll = m_maxBmpLines * m_pixelsPerLine - m_navHeight;
+					adjustScroll(m_navHeight);
 				break;
 
 				case SB_PAGEUP:
-					currentScroll -= m_navHeight;
-
-					if (currentScroll < 0)
-						currentScroll = 0;
+					adjustScroll(-m_navHeight);
 				break;
 
 				case SB_LINEDOWN:
-					++currentScroll;
-
-					if (currentScroll > m_maxBmpLines * m_pixelsPerLine - 1)
-						currentScroll = m_maxBmpLines * m_pixelsPerLine - m_navHeight;
+					adjustScroll(1);
 				break;
 
 				case SB_LINEUP:
-					--currentScroll;
-
-					if (currentScroll < 0)
-						currentScroll = 0;
+					adjustScroll(-1);
 				break;
 			}
-
-			::SetScrollPos(m_hScroll, SB_CTL, currentScroll, TRUE);
-
-			::InvalidateRect(_hSelf, NULL, FALSE);
 		}
 		break;
 

@@ -99,6 +99,7 @@ private:
 	void onMouseWheel(int rolls);
 	int updateScroll();
 	void onPaint();
+	void adjustScroll(int offset);
 
 	tTbData	_data;
 
