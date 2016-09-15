@@ -12,9 +12,13 @@ class ProgressDlg
 {
 public:
 	static void Open(const TCHAR* msg);
-	static bool Update(int mid);
 	static bool IsCancelled();
 	static void Close();
+
+	static unsigned NextPhase();
+	static bool SetMaxCount(unsigned max, unsigned phase = 0);
+	static bool SetCount(unsigned cnt, unsigned phase = 0);
+	static bool Advance(unsigned cnt = 1, unsigned phase = 0);
 
     ~ProgressDlg();
 
@@ -25,6 +29,8 @@ private:
     static const int cPBheight;
     static const int cBTNwidth;
     static const int cBTNheight;
+
+	static const int cPhases[];
 
 	static std::unique_ptr<ProgressDlg> Inst;
 
@@ -55,11 +61,13 @@ private:
 			::SendMessage(_hPText, WM_SETTEXT, 0, (LPARAM)info);
 	}
 
-    inline void setPercent(unsigned percent) const
+    inline void setPos(unsigned pos) const
 	{
 		if (_hwnd)
-			::PostMessage(_hPBar, PBM_SETPOS, (WPARAM)percent, 0);
+			::PostMessage(_hPBar, PBM_SETPOS, (WPARAM)pos, 0);
 	}
+
+    void update();
 
     BOOL thread();
     BOOL createProgressWindow();
@@ -74,6 +82,11 @@ private:
     HWND			_hBtn;
     HHOOK			_hKeyHook;
 
-	int				_max;
-	int				_count;
+	unsigned	_phase;
+	unsigned	_phaseRange;
+	unsigned	_phasePosOffset;
+	unsigned	_max;
+	unsigned	_count;
+
+	unsigned	_pos;
 };

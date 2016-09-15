@@ -178,12 +178,12 @@ int DiffCalc<Elem>::_find_middle_snake(unsigned int aoff, unsigned int aend, uns
 	_setv(1, 0, 0);
 	_setv(delta - 1, 1, aend);
 
+	if (!ProgressDlg::SetCount((aoff + boff) / 2, 2))
+		return -1;
+
 	for (d = 0; d <= mid; d++)
 	{
 		int k, x, y;
-
-		if (!ProgressDlg::Update(mid))
-			return -1;
 
 		if ((2 * d - 1) >= _dmax)
 			return _dmax;
@@ -367,8 +367,8 @@ std::vector<diff_edit> DiffCalc<Elem>::operator()()
 	 */
 	unsigned int x = 0, y = 0;
 
-	const std::size_t a_size = _a.size();
-	const std::size_t b_size = _b.size();
+	std::size_t a_size = _a.size();
+	std::size_t b_size = _b.size();
 
 	while (x < a_size && y < b_size && _a[x] == _b[y])
 	{
@@ -381,7 +381,16 @@ std::vector<diff_edit> DiffCalc<Elem>::operator()()
 
 	_edit(DIFF_MATCH, 0, x);
 
-	if (_ses(x, a_size - x, y, b_size - y) == -1)
+	a_size -= x;
+	b_size -= y;
+
+	if (!ProgressDlg::SetMaxCount((a_size + b_size) / 2, 2))
+	{
+		_diff.clear();
+		return _diff;
+	}
+
+	if (_ses(x, a_size, y, b_size) == -1)
 		_diff.clear();
 
 	// Wipe temporal buffer to free memory

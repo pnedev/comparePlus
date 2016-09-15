@@ -15,6 +15,16 @@ const int ProgressDlg::cBTNwidth          = 80;
 const int ProgressDlg::cBTNheight         = 25;
 
 
+// Different compare phases progress end positions
+const int ProgressDlg::cPhases[] = {
+	6,	// Files loading and hashing
+	56,	// Blocks diff
+	86,	// Words diff
+	96,	// From block to line differences
+	100	// Results colorization and presentation
+};
+
+
 std::unique_ptr<ProgressDlg> ProgressDlg::Inst;
 
 
@@ -34,27 +44,6 @@ void ProgressDlg::Open(const TCHAR* msg)
 	Inst->setInfo(msg);
 
 	::EnableWindow(nppData._nppHandle, FALSE);
-}
-
-
-bool ProgressDlg::Update(int mid)
-{
-	if (!Inst)
-		return false;
-
-	if (Inst->cancelled())
-		return false;
-
-	if (mid > Inst->_max)
-		Inst->_max = mid;
-
-	if (Inst->_max)
-	{
-		int perc = (++Inst->_count * 100) / (Inst->_max * 4);
-		Inst->setPercent(perc);
-	}
-
-	return true;
 }
 
 
@@ -85,7 +74,75 @@ void ProgressDlg::Close()
 }
 
 
-ProgressDlg::ProgressDlg() : _hwnd(NULL),  _hKeyHook(NULL), _max(0), _count(0)
+unsigned ProgressDlg::NextPhase()
+{
+	if (IsCancelled())
+		return 0;
+
+	if (Inst->_phase + 1 < _countof(cPhases))
+	{
+		Inst->_phasePosOffset = cPhases[Inst->_phase++];
+		Inst->_phaseRange = cPhases[Inst->_phase] - Inst->_phasePosOffset;
+		Inst->_max = Inst->_phaseRange;
+		Inst->_count = 0;
+		Inst->setPos(Inst->_phasePosOffset);
+	}
+	else
+	{
+		Inst->setPos(cPhases[_countof(cPhases) - 1]);
+	}
+
+	return Inst->_phase + 1;
+}
+
+
+bool ProgressDlg::SetMaxCount(unsigned max, unsigned phase)
+{
+	if (IsCancelled())
+		return false;
+
+	if (phase == 0 || phase - 1 == Inst->_phase)
+	{
+		Inst->_max = max;
+		Inst->_count = 0;
+	}
+
+	return true;
+}
+
+
+bool ProgressDlg::SetCount(unsigned cnt, unsigned phase)
+{
+	if (IsCancelled())
+		return false;
+
+	if ((phase == 0 || phase - 1 == Inst->_phase) && Inst->_count < cnt && cnt <= Inst->_max)
+	{
+		Inst->_count = cnt;
+		Inst->update();
+	}
+
+	return true;
+}
+
+
+bool ProgressDlg::Advance(unsigned cnt, unsigned phase)
+{
+	if (IsCancelled())
+		return false;
+
+	if (phase == 0 || phase - 1 == Inst->_phase)
+	{
+		Inst->_count += cnt;
+		Inst->update();
+	}
+
+	return true;
+}
+
+
+ProgressDlg::ProgressDlg() : _hwnd(NULL),  _hKeyHook(NULL),
+		_phase(0), _phaseRange(cPhases[0]), _phasePosOffset(0), _max(cPhases[0]), _count(0), _pos(0)
 {
 	::GetModuleHandleEx(
 		GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
@@ -161,7 +218,7 @@ void ProgressDlg::cancel()
 {
 	::ResetEvent(_hActiveState);
 	::EnableWindow(_hBtn, FALSE);
-	setInfo(TEXT("Cancelling operation, please wait..."));
+	setInfo(TEXT("Cancelling compare, please wait..."));
 }
 
 
@@ -176,6 +233,18 @@ void ProgressDlg::destroy()
         ::CloseHandle(_hThread);
         ::CloseHandle(_hActiveState);
     }
+}
+
+
+void ProgressDlg::update()
+{
+	const unsigned newPos = ((_count * _phaseRange) / _max) + _phasePosOffset;
+
+	if (newPos > _pos)
+	{
+		_pos = newPos;
+		setPos(newPos);
+	}
 }
 
 
@@ -229,7 +298,7 @@ BOOL ProgressDlg::createProgressWindow()
             WS_CHILD | WS_VISIBLE | PBS_SMOOTH,
             5, 25, width - 10, cPBheight,
             _hwnd, NULL, _hInst, NULL);
-    ::SendMessage(_hPBar, PBM_SETRANGE, 0, MAKELPARAM(0, 100));
+    ::SendMessage(_hPBar, PBM_SETRANGE, 0, MAKELPARAM(0, cPhases[_countof(cPhases) - 1]));
 
     _hBtn = ::CreateWindowEx(0, TEXT("BUTTON"), TEXT("Cancel"),
             WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON | BS_TEXT,

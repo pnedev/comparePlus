@@ -1251,14 +1251,6 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		view2 = nppData._scintillaSecondHandle;
 	}
 
-	std::vector<int> lineNum1;
-	const DocLines_t doc1 = getAllLines(view1, lineNum1, Settings.IgnoreEOLs);
-	const int doc1Length = doc1.size();
-
-	std::vector<int> lineNum2;
-	const DocLines_t doc2 = getAllLines(view2, lineNum2, Settings.IgnoreEOLs);
-	const int doc2Length = doc2.size();
-
 	{
 		const TCHAR* newName = ::PathFindFileName(cmpPair->getNewFile().name);
 		const TCHAR* oldName = ::PathFindFileName(cmpPair->getOldFile().name);
@@ -1267,17 +1259,32 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		_sntprintf_s(msg, _countof(msg), _TRUNCATE, TEXT("Comparing \"%s\" vs. \"%s\"..."), newName, oldName);
 
 		ProgressDlg::Open(msg);
+		ProgressDlg::SetMaxCount(3);
 	}
+
+	std::vector<int> lineNum1;
+	const DocLines_t doc1 = getAllLines(view1, lineNum1, Settings.IgnoreEOLs);
+	const int doc1Length = doc1.size();
+
+	if (!ProgressDlg::Advance())
+		return COMPARE_CANCELLED;
+
+	std::vector<int> lineNum2;
+	const DocLines_t doc2 = getAllLines(view2, lineNum2, Settings.IgnoreEOLs);
+	const int doc2Length = doc2.size();
+
+	if (!ProgressDlg::Advance())
+		return COMPARE_CANCELLED;
 
 	std::vector<unsigned int> doc1Hashes = computeHashes(doc1, Settings.IgnoreSpaces);
 	std::vector<unsigned int> doc2Hashes = computeHashes(doc2, Settings.IgnoreSpaces);
 
-	if (ProgressDlg::IsCancelled())
+	if (!ProgressDlg::NextPhase())
 		return COMPARE_CANCELLED;
 
 	std::vector<diff_edit> diff = DiffCalc<unsigned int>(doc1Hashes, doc2Hashes)();
 
-	if (ProgressDlg::IsCancelled())
+	if (!ProgressDlg::NextPhase())
 		return COMPARE_CANCELLED;
 
 	if (diff.empty())
@@ -1287,6 +1294,8 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 	}
 
 	const std::size_t diffSize = diff.size();
+
+	ProgressDlg::SetMaxCount(diffSize + 1);
 
 	int	doc1ChangedLinesCount = 0;
 	int	doc2ChangedLinesCount = 0;
@@ -1299,6 +1308,9 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 	// Insert empty lines, count changed lines
 	for (unsigned int i = 0; i < diffSize; ++i)
 	{
+		if (!ProgressDlg::Advance())
+			return COMPARE_CANCELLED;
+
 		diff_edit& e1 = diff[i];
 
 		if (e1.op == DIFF_DELETE)
@@ -1328,8 +1340,10 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		}
 	}
 
-	if (ProgressDlg::IsCancelled())
+	if (!ProgressDlg::NextPhase())
 		return COMPARE_CANCELLED;
+
+	ProgressDlg::SetMaxCount(diffSize + 1);
 
 	std::vector<diff_edit> doc1Changes(doc1ChangedLinesCount);
 	std::vector<diff_edit> doc2Changes(doc2ChangedLinesCount);
@@ -1346,6 +1360,9 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 
 		for (unsigned int i = 0; i < diffSize; ++i)
 		{
+			if (!ProgressDlg::Advance())
+				return COMPARE_CANCELLED;
+
 			diff_edit& e = diff[i];
 			e.set = i;
 
@@ -1368,7 +1385,7 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		}
 	}
 
-	if (ProgressDlg::IsCancelled())
+	if (!ProgressDlg::NextPhase())
 		return COMPARE_CANCELLED;
 
 	if ((doc1ChangedLinesCount == 0) && (doc2ChangedLinesCount == 0))
@@ -1376,6 +1393,8 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		ProgressDlg::Close();
 		return FILES_MATCH;
 	}
+
+	ProgressDlg::SetMaxCount(2);
 
 	for (int i = 0; i < doc1ChangedLinesCount; ++i)
 	{
@@ -1487,10 +1506,13 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		addBlankSection(view1, off + doc1Offset, length, true);
 	}
 
-	if (ProgressDlg::IsCancelled())
+	if (!ProgressDlg::Advance())
 		return COMPARE_CANCELLED;
 
 	adjustBlanksWrap();
+
+	if (!ProgressDlg::NextPhase())
+		return COMPARE_CANCELLED;
 
 	ProgressDlg::Close();
 
