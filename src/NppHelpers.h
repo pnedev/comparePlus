@@ -175,6 +175,15 @@ inline bool isFileEmpty(HWND view)
 }
 
 
+inline int getNumberOfFiles()
+{
+	return ((::IsWindowVisible(nppData._scintillaMainHandle) ?
+				::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, PRIMARY_VIEW) : 0) +
+			(::IsWindowVisible(nppData._scintillaSecondHandle) ?
+				::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, SECOND_VIEW) : 0));
+}
+
+
 inline int getNumberOfFiles(int viewId)
 {
 	return ::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, viewId == MAIN_VIEW ? PRIMARY_VIEW : SECOND_VIEW);
