@@ -576,6 +576,8 @@ void NavDialog::onPaint()
 
 void NavDialog::adjustScroll(int offset)
 {
+	::SetFocus(_hSelf);
+
 	int currentScroll = ::GetScrollPos(m_hScroll, SB_CTL) + offset;
 
 	if (currentScroll < 0)
