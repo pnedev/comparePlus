@@ -1490,9 +1490,9 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 	if (ProgressDlg::IsCancelled())
 		return COMPARE_CANCELLED;
 
-	ProgressDlg::Close();
-
 	adjustBlanksWrap();
+
+	ProgressDlg::Close();
 
 	return FILES_DIFFER;
 }
@@ -1675,9 +1675,12 @@ void ClearActiveCompare()
 
 void ClearAllCompares()
 {
-	const int buffId = getCurrentBuffId();
-
 	newCompare.reset();
+
+	if (!compareList.size())
+		return;
+
+	const int buffId = getCurrentBuffId();
 
 	NppSettings& nppSettings = NppSettings::get();
 	nppSettings.setNormalMode();
@@ -2457,6 +2460,10 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 
 		case NPPN_TBMODIFICATION:
 			onToolBarReady();
+		break;
+
+		case NPPN_BEFORESHUTDOWN:
+			ClearAllCompares();
 		break;
 
 		case NPPN_SHUTDOWN:
