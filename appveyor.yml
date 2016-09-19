@@ -15,8 +15,8 @@ platform:
     - Win32
 
 configuration:
-    - Release
-    - Debug
+    - Release Unicode
+    - Debug Unicode
 
 install:
     - if "%platform%"=="x64" set archi=amd64
@@ -36,19 +36,19 @@ after_build:
     - ps: >-
         $ComparePluginFileName = "ComparePlugin.$env:PLATFORM.$env:CONFIGURATION.$env:PLATFORMTOOLSET.dll"
 
-        if ($env:PLATFORM -eq "x64" -and $env:CONFIGURATION -eq "Release") {
+        if ($env:PLATFORM -eq "x64" -and $env:CONFIGURATION -eq "Release Unicode") {
             Push-AppveyorArtifact "Notepad++\plugins\ComparePlugin.dll" -FileName "$ComparePluginFileName"
         }
 
-        if ($env:PLATFORM -eq "x64" -and $env:CONFIGURATION -eq "Debug") {
+        if ($env:PLATFORM -eq "x64" -and $env:CONFIGURATION -eq "Debug Unicode") {
             Push-AppveyorArtifact "Notepad++\plugins\ComparePlugin.dll" -FileName "$ComparePluginFileName"
         }
 
-        if ($env:PLATFORM -eq "Win32" -and $env:CONFIGURATION -eq "Release") {
+        if ($env:PLATFORM -eq "Win32" -and $env:CONFIGURATION -eq "Release Unicode") {
             Push-AppveyorArtifact "Notepad++\plugins\ComparePlugin.dll" -FileName "$ComparePluginFileName"
         }
 
-        if ($env:PLATFORM -eq "Win32" -and $env:CONFIGURATION -eq "Debug") {
+        if ($env:PLATFORM -eq "Win32" -and $env:CONFIGURATION -eq "Debug Unicode") {
             Push-AppveyorArtifact "Notepad++\plugins\ComparePlugin.dll" -FileName "$ComparePluginFileName"
         }
 
