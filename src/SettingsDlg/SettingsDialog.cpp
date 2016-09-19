@@ -18,7 +18,7 @@ UINT SettingsDialog::doDialog(UserSettings* settings)
 }
 
 
-BOOL CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*lParam*/)
+INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*lParam*/)
 {
 	switch (Message)
 	{
