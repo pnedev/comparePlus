@@ -45,7 +45,7 @@ public:
 	virtual void destroy() {};
 
 protected :
-	BOOL CALLBACK run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam);
+	INT_PTR CALLBACK run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam);
 
 	void SetParams(void);
 	BOOL GetParams(void);
