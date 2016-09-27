@@ -174,7 +174,7 @@
       <Filter>res</Filter>
     </None>
     <None Include="..\..\license.txt" />
-    <None Include="..\..\readme.txt" />
+    <None Include="..\..\README.md" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
