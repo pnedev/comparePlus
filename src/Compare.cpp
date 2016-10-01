@@ -345,7 +345,7 @@ struct ComparedFile
 	int		originalViewId;
 	int		originalPos;
 	int		compareViewId;
-	int		buffId;
+	LRESULT		buffId;
 	int		sciDoc;
 	TCHAR	name[MAX_PATH];
 
@@ -360,8 +360,8 @@ struct ComparedFile
 struct ComparedPair
 {
 	ComparedFile& getFileByViewId(int viewId);
-	ComparedFile& getFileByBuffId(int buffId);
-	ComparedFile& getOtherFileByBuffId(int buffId);
+	ComparedFile& getFileByBuffId(LRESULT buffId);
+	ComparedFile& getOtherFileByBuffId(LRESULT buffId);
 	ComparedFile& getFileBySciDoc(int sciDoc);
 	ComparedFile& getOldFile();
 	ComparedFile& getNewFile();
@@ -408,7 +408,7 @@ enum CompareResult_t
  */
 struct SaveNotificationData
 {
-	SaveNotificationData(int buffId) : _location(buffId)
+	SaveNotificationData(LRESULT buffId) : _location(buffId)
 	{
 		_blankSections = removeBlankLines(getView(viewIdFromBuffId(buffId)), true);
 	}
@@ -421,7 +421,7 @@ struct SaveNotificationData
 		_location.restore();
 	}
 
-	inline int getBuffId()
+	inline LRESULT getBuffId()
 	{
 		return _location.getBuffId();
 	}
@@ -442,13 +442,13 @@ public:
 	DelayedActivate() : DelayedWork() {}
 	virtual void operator()();
 
-	inline void operator()(int buff)
+	inline void operator()(LRESULT buff)
 	{
 		buffId = buff;
 		operator()();
 	}
 
-	int buffId;
+	LRESULT buffId;
 };
 
 
@@ -462,7 +462,7 @@ public:
 	DelayedClose() : DelayedWork() {}
 	virtual void operator()();
 
-	std::vector<int> closedBuffs;
+	std::vector<LRESULT> closedBuffs;
 };
 
 
@@ -749,13 +749,13 @@ ComparedFile& ComparedPair::getFileByViewId(int viewId)
 }
 
 
-ComparedFile& ComparedPair::getFileByBuffId(int buffId)
+ComparedFile& ComparedPair::getFileByBuffId(LRESULT buffId)
 {
 	return (file[0].buffId == buffId) ? file[0] : file[1];
 }
 
 
-ComparedFile& ComparedPair::getOtherFileByBuffId(int buffId)
+ComparedFile& ComparedPair::getOtherFileByBuffId(LRESULT buffId)
 {
 	return (file[0].buffId == buffId) ? file[1] : file[0];
 }
@@ -781,7 +781,7 @@ ComparedFile& ComparedPair::getNewFile()
 
 void ComparedPair::positionFiles()
 {
-	const int currentBuffId = getCurrentBuffId();
+	const LRESULT currentBuffId = getCurrentBuffId();
 
 	ComparedFile& oldFile = getOldFile();
 	ComparedFile& newFile = getNewFile();
@@ -922,7 +922,7 @@ NewCompare::~NewCompare()
 }
 
 
-CompareList_t::iterator getCompare(int buffId)
+CompareList_t::iterator getCompare(LRESULT buffId)
 {
 	for (CompareList_t::iterator it = compareList.begin(); it < compareList.end(); ++it)
 	{
@@ -1105,7 +1105,7 @@ bool createTempFile(const TCHAR *file, Temp_t tempType)
 
 				if (::SendMessage(nppData._nppHandle, NPPM_DOOPEN, 0, (LPARAM)tempFile))
 				{
-					const int buffId = getCurrentBuffId();
+					const LRESULT buffId = getCurrentBuffId();
 
 					::SendMessage(nppData._nppHandle, NPPM_SETBUFFERLANGTYPE, buffId, langType);
 					::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_EDIT_SETREADONLY);
@@ -1127,7 +1127,7 @@ bool createTempFile(const TCHAR *file, Temp_t tempType)
 }
 
 
-void clearComparePair(int buffId)
+void clearComparePair(LRESULT buffId)
 {
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
@@ -1541,7 +1541,7 @@ void Compare()
 	ScopedIncrementer incr(notificationsLock);
 
 	const bool doubleView = !isSingleView();
-	const int currentBuffId = getCurrentBuffId();
+	const LRESULT currentBuffId = getCurrentBuffId();
 
 	ViewLocation location;
 	bool recompare = false;
@@ -1680,7 +1680,7 @@ void ClearAllCompares()
 	if (!compareList.size())
 		return;
 
-	const int buffId = getCurrentBuffId();
+	const LRESULT buffId = getCurrentBuffId();
 
 	NppSettings& nppSettings = NppSettings::get();
 	nppSettings.setNormalMode();
@@ -1689,7 +1689,7 @@ void ClearAllCompares()
 
 	::SetFocus(getOtherView());
 
-	const int otherBuffId = getCurrentBuffId();
+	const LRESULT otherBuffId = getCurrentBuffId();
 
 	for (int i = compareList.size() - 1; i >= 0; --i)
 		compareList[i].restoreFiles();
@@ -2083,7 +2083,7 @@ void onSciUpdateUI(SCNotification *notifyCode)
 
 void onSciModified(SCNotification *notifyCode)
 {
-	const int buffId = getCurrentBuffId();
+	const LRESULT buffId = getCurrentBuffId();
 
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
@@ -2164,7 +2164,7 @@ void DelayedActivate::operator()()
 }
 
 
-void onBufferActivated(int buffId)
+void onBufferActivated(LRESULT buffId)
 {
 	delayedActivation.cancel();
 
@@ -2188,13 +2188,13 @@ void onBufferActivated(int buffId)
 
 void DelayedClose::operator()()
 {
-	const int currentBuffId = getCurrentBuffId();
+	const LRESULT currentBuffId = getCurrentBuffId();
 
 	ScopedIncrementer incr(notificationsLock);
 
 	for (int i = closedBuffs.size(); i; --i)
 	{
-		const int buffId = closedBuffs[i - 1];
+		const LRESULT buffId = closedBuffs[i - 1];
 
 		CompareList_t::iterator cmpPair = getCompare(buffId);
 		if (cmpPair == compareList.end())
@@ -2236,7 +2236,7 @@ void DelayedClose::operator()()
 }
 
 
-void onFileBeforeClose(int buffId)
+void onFileBeforeClose(LRESULT buffId)
 {
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
@@ -2245,7 +2245,7 @@ void onFileBeforeClose(int buffId)
 	delayedClosure.cancel();
 	delayedClosure.closedBuffs.push_back(buffId);
 
-	const int currentBuffId = getCurrentBuffId();
+	const LRESULT currentBuffId = getCurrentBuffId();
 
 	NppSettings::get().setNormalMode();
 
@@ -2276,7 +2276,7 @@ void onFileBeforeClose(int buffId)
 }
 
 
-void onFileBeforeSave(int buffId)
+void onFileBeforeSave(LRESULT buffId)
 {
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
@@ -2286,7 +2286,7 @@ void onFileBeforeSave(int buffId)
 }
 
 
-void onFileSaved(int buffId)
+void onFileSaved(LRESULT buffId)
 {
 	if (saveNotifData->getBuffId() == buffId)
 	{
