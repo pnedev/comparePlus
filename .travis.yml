@@ -14,7 +14,7 @@ before_script:
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 20
   - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 20
   - sudo update-alternatives --config gcc
-- sudo update-alternatives --config g++
+  - sudo update-alternatives --config g++
   - if [ "$BUILDMODE" = "cmake-mingw32" ]; then sudo apt-get -qq install mingw64-x-gcc; fi
 
 script:
