@@ -1,0 +1,36 @@
+language: cpp
+
+compiler:
+  - gcc
+
+env:
+  - BUILDMODE=cmake-mingw32
+
+before_script:
+  - sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
+  - sudo add-apt-repository --yes ppa:tobydox/mingw-x-precise
+  - sudo apt-get -qq update
+  - sudo apt-get -qq install gcc-4.8 g++-4.8
+  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 20
+  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 20
+  - sudo update-alternatives --config gcc
+- sudo update-alternatives --config g++
+  - if [ "$BUILDMODE" = "cmake-mingw32" ]; then sudo apt-get -qq install mingw64-x-gcc; fi
+
+script:
+  - if [ "$BUILDMODE" = "cmake-mingw32" ]; then echo "===> Building with cmake+mingw32..." &&
+      cd "$TRAVIS_BUILD_DIR" &&
+      mkdir build &&
+      cd build &&
+      echo "SET(CMAKE_SYSTEM_NAME Windows)" > toolchain.cmake &&
+      echo "SET(CMAKE_C_COMPILER /opt/mingw64/bin/x86_64-w64-mingw32-gcc)" >> toolchain.cmake &&
+      echo "SET(CMAKE_CXX_COMPILER /opt/mingw64/bin/x86_64-w64-mingw32-g++)" >> toolchain.cmake &&
+      echo "SET(CMAKE_RC_COMPILER /opt/mingw64/bin/x86_64-w64-mingw32-windres)" >> toolchain.cmake &&
+      echo "SET(CMAKE_FIND_ROOT_PATH /opt/mingw64)" >> toolchain.cmake &&
+      echo "SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)" >> toolchain.cmake &&
+      echo "SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)" >> toolchain.cmake &&
+      echo "SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)" >> toolchain.cmake &&
+      cmake -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake .. &&
+      make &&
+      make install;
+    fi
