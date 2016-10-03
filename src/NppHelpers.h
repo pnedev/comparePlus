@@ -130,21 +130,21 @@ private:
 struct ViewLocation
 {
 	ViewLocation() {}
-	ViewLocation(int buffId)
+	ViewLocation(LRESULT buffId)
 	{
 		save(buffId);
 	}
 
-	void save(int buffId);
+	void save(LRESULT buffId);
 	void restore();
 
-	inline int getBuffId()
+	inline LRESULT getBuffId()
 	{
 		return _buffId;
 	}
 
 private:
-	int	_buffId;
+	LRESULT	_buffId;
 	int	_firstVisibleLine;
 	int	_pos;
 };
@@ -228,21 +228,21 @@ inline HWND getOtherView(HWND view)
 }
 
 
-inline int viewIdFromBuffId(int buffId)
+inline int viewIdFromBuffId(LRESULT buffId)
 {
 	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);
 	return (index >> 30);
 }
 
 
-inline int posFromBuffId(int buffId)
+inline int posFromBuffId(LRESULT buffId)
 {
 	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);
 	return (index & 0x3FFFFFFF);
 }
 
 
-inline int getCurrentBuffId()
+inline LRESULT getCurrentBuffId()
 {
 	return ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
 }
@@ -260,7 +260,7 @@ inline int getCurrentLine(HWND view)
 }
 
 
-void activateBufferID(int buffId);
+void activateBufferID(LRESULT buffId);
 
 void markAsBlank(HWND window, int line);
 void markAsAdded(HWND window, int line);

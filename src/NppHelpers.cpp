@@ -114,7 +114,7 @@ BOOL CALLBACK NppTabHandleGetter::enumWindowsCB(HWND hwnd, LPARAM lParam)
 }
 
 
-void ViewLocation::save(int buffId)
+void ViewLocation::save(LRESULT buffId)
 {
 	_buffId = buffId;
 
@@ -139,7 +139,7 @@ void ViewLocation::restore()
 }
 
 
-void activateBufferID(int buffId)
+void activateBufferID(LRESULT buffId)
 {
 	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);
 	::SendMessage(nppData._nppHandle, NPPM_ACTIVATEDOC, index >> 30, index & 0x3FFFFFFF);
