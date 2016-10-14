@@ -48,7 +48,7 @@ void ColorPopup::create(int dialogID)
 	display();
 }
 
-BOOL CALLBACK ColorPopup::dlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK ColorPopup::dlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
@@ -81,7 +81,7 @@ BOOL CALLBACK ColorPopup::dlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	}
 }
 
-BOOL CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam)
 {
 
 	switch (message)

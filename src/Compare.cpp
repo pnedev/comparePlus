@@ -1976,7 +1976,10 @@ void deinitPlugin()
 	// Deallocate shortcut
 	for (int i = 0; i < NB_MENU_COMMANDS; i++)
 		if (funcItem[i]._pShKey != NULL)
+        {
 			delete funcItem[i]._pShKey;
+            funcItem[i]._pShKey = NULL;
+        }
 }
 
 
