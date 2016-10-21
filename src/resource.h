@@ -16,10 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-//{{NO_DEPENDENCIES}}
-// Microsoft Visual C++ generated include file.
-// Used by Compare.rc
-//
+#pragma once
+
 #define IDDEFAULT					3
 #define IDD_ABOUT_DIALOG			101
 #define IDD_COLOR_POPUP				102

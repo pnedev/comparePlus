@@ -114,6 +114,9 @@
       <ImportLibrary>$(OutDir)Compare.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_VC80_UPGRADE=0x0700;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|x64'">
     <ClCompile>
@@ -121,7 +124,7 @@
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/ProgressDlg;../../src/XpmIcons;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0501;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WIN64;_WIN32_WINNT=0x0501;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -136,6 +139,9 @@
       <SubSystem>Windows</SubSystem>
       <ImportLibrary>$(OutDir)Compare.lib</ImportLibrary>
     </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_VC80_UPGRADE=0x0700;_DEBUG;_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Unicode|Win32'">
     <ClCompile>
@@ -176,7 +182,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
       <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/ProgressDlg;../../src/XpmIcons;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0501;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WIN64;_WIN32_WINNT=0x0501;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -197,6 +203,9 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <ImportLibrary>$(OutDir)Compare.lib</ImportLibrary>
     </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_VC80_UPGRADE=0x0700;_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\AboutDlg\URLCtrl.cpp" />

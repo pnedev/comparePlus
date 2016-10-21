@@ -85,57 +85,6 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x0
 BEGIN
 END
 
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// DESIGNINFO
-//
-
-#ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO
-BEGIN
-    IDD_ABOUT_DIALOG, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 183
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 141
-    END
-
-    IDD_COLOR_POPUP, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 138
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 115
-    END
-
-    IDD_NAV_DIALOG, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 187
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 85
-    END
-END
-#endif    // APSTUDIO_INVOKED
-
-#endif    // English (United States) resources
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// French (France) resources
-
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_FRA)
-LANGUAGE LANG_FRENCH, SUBLANG_FRENCH
-#pragma code_page(1252)
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Dialog
-//
-
 IDD_SETTINGS_DIALOG DIALOGEX 0, 0, 205, 312
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Compare Plugin Settings"
@@ -180,6 +129,30 @@ END
 #ifdef APSTUDIO_INVOKED
 GUIDELINES DESIGNINFO
 BEGIN
+    IDD_ABOUT_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 183
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 141
+    END
+
+    IDD_COLOR_POPUP, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 138
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 115
+    END
+
+    IDD_NAV_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 187
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 85
+    END
+
     IDD_SETTINGS_DIALOG, DIALOG
     BEGIN
         LEFTMARGIN, 7
@@ -189,6 +162,7 @@ BEGIN
     END
 END
 #endif    // APSTUDIO_INVOKED
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -207,42 +181,54 @@ IDB_NAVBAR				BITMAP	"../res/NavBar.bmp"
 
 IDB_ICON				ICON	"../res/Compare.ico"
 
+
 /////////////////////////////////////////////////////////////////////////////
 //
 // Version
 //
 
-VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,5,6,8
- PRODUCTVERSION 1,5,6,8
- FILEFLAGSMASK 0x17L
+#define VER_FILEVERSION			1,5,6,8
+#define VER_FILEVERSION_STR		"1.5.6.8\0"
+
 #ifdef _DEBUG
- FILEFLAGS 0x1L
+#define VER_FILEFLAGS	VS_FF_DEBUG
 #else
- FILEFLAGS 0x0L
+#define VER_FILEFLAGS	0
 #endif
- FILEOS 0x4L
- FILETYPE 0x0L
- FILESUBTYPE 0x0L
+
+#ifdef _WIN64
+#define VER_PRODUCT_STR		"ComparePlugin (64-bit)"
+#else
+#define VER_PRODUCT_STR		"ComparePlugin (32-bit)"
+#endif
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION		VER_FILEVERSION
+PRODUCTVERSION	VER_FILEVERSION
+FILEFLAGSMASK	VS_FFI_FILEFLAGSMASK
+FILEFLAGS		VER_FILEFLAGS
+FILEOS			VOS_NT_WINDOWS32
+FILETYPE		VFT_DLL
+FILESUBTYPE		VFT2_UNKNOWN
 BEGIN
     BLOCK "StringFileInfo"
     BEGIN
-        BLOCK "040c04b0"
+        BLOCK "040904E4"
         BEGIN
-            VALUE "FileDescription", "Compare"
-            VALUE "FileVersion", "1, 5, 6, 8"
-            VALUE "InternalName", "Compare"
-            VALUE "LegalCopyright", "Copyright (C) 2016"
-            VALUE "OriginalFilename", "Compare"
-            VALUE "ProductName", "Compare"
-            VALUE "ProductVersion", "1, 5, 6, 8"
+            VALUE "FileDescription",	"Compare Plugin for Notepad++"
+            VALUE "FileVersion",		VER_FILEVERSION_STR
+            VALUE "InternalName",		"ComparePlugin"
+            VALUE "LegalCopyright",		"Copyright (C) 2016"
+            VALUE "OriginalFilename",	"ComparePlugin.dll"
+            VALUE "ProductName",		VER_PRODUCT_STR
+            VALUE "ProductVersion",		VER_FILEVERSION_STR
         END
     END
     BLOCK "VarFileInfo"
     BEGIN
-        VALUE "Translation", 0x40c, 1200
+        VALUE "Translation", 0x409, 1252
     END
 END
 
-#endif    // French (France) resources
+#endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
