@@ -43,8 +43,6 @@
 #include <limits.h>
 #include "varray.h"
 
-#include "ProgressDlg.h"
-
 
 enum diff_op
 {
@@ -168,20 +166,14 @@ template <typename Elem>
 int DiffCalc<Elem>::_find_middle_snake(unsigned int aoff, unsigned int aend, unsigned int boff, unsigned int bend,
 		middle_snake *ms)
 {
-	int delta, odd, mid, d;
-
-	delta = aend - bend;
-	odd = delta & 1;
-	mid = (aend + bend) / 2;
-	mid += odd;
+	const int delta = aend - bend;
+	const int odd = delta & 1;
+	const int mid = (aend + bend) / 2 + odd;
 
 	_setv(1, 0, 0);
 	_setv(delta - 1, 1, aend);
 
-	if (!ProgressDlg::SetCount((aoff + boff) / 2, 2))
-		return -1;
-
-	for (d = 0; d <= mid; d++)
+	for (int d = 0; d <= mid; d++)
 	{
 		int k, x, y;
 
@@ -383,12 +375,6 @@ std::vector<diff_edit> DiffCalc<Elem>::operator()()
 
 	a_size -= x;
 	b_size -= y;
-
-	if (!ProgressDlg::SetMaxCount((a_size + b_size) / 2, 2))
-	{
-		_diff.clear();
-		return _diff;
-	}
 
 	if (_ses(x, a_size, y, b_size) == -1)
 		_diff.clear();

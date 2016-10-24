@@ -1394,7 +1394,7 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		return FILES_MATCH;
 	}
 
-	ProgressDlg::SetMaxCount(2);
+	ProgressDlg::SetMaxCount(4);
 
 	for (int i = 0; i < doc1ChangedLinesCount; ++i)
 	{
@@ -1423,6 +1423,9 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		}
 	}
 
+	if (!ProgressDlg::Advance())
+		return COMPARE_CANCELLED;
+
 	for (int i = 0; i < doc2ChangedLinesCount; ++i)
 	{
 		switch (doc2Changes[i].op)
@@ -1449,6 +1452,9 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 			break;
 		}
 	}
+
+	if (!ProgressDlg::Advance())
+		return COMPARE_CANCELLED;
 
 	{
 		int length = 0;
@@ -1478,6 +1484,9 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 
 		addBlankSection(view2, off + doc2Offset, length, true);
 
+		if (!ProgressDlg::Advance())
+			return COMPARE_CANCELLED;
+
 		length = 0;
 		off = 0;
 		doc1Offset = 0;
@@ -1506,7 +1515,7 @@ CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
 		addBlankSection(view1, off + doc1Offset, length, true);
 	}
 
-	if (!ProgressDlg::Advance())
+	if (!ProgressDlg::NextPhase())
 		return COMPARE_CANCELLED;
 
 	adjustBlanksWrap();
