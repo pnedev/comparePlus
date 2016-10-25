@@ -39,46 +39,44 @@
 
 #pragma once
 
-#include <stdlib.h>
-#include <limits.h>
+#include <cstdlib>
+#include <climits>
 #include "varray.h"
 
 
-enum diff_op
+enum class diff_type
 {
-	DIFF_MATCH = 1,
+	DIFF_MATCH,
 	DIFF_DELETE,
-	DIFF_INSERT,
-	DIFF_CHANGE1,
-	DIFF_CHANGE2,
-	DIFF_MOVE
+	DIFF_INSERT
 };
 
 
 struct diff_change
 {
 	int off;
-	unsigned int len;
-	unsigned int line;
-	unsigned int matchedLine;
+	int len;
+	int line;
+	int matchedLine;
 };
 
 
 struct diff_edit
 {
-	short op;
-	int off; // off into s1 if MATCH or DELETE but into s2 if INSERT
-	unsigned int len;
+	diff_type	type;
+	int			off; // off into _a if MATCH or DELETE but into _b if INSERT
+	int			len;
 
 	// added lines for Notepad++ use
-	int set;
-	unsigned int matchedLine;
-	int altLocation;
+	int							matchedOff {-1};
 
-	varray_sh_ptr<diff_change> changes;
-	unsigned int changeCount;
+	std::vector<diff_change>	changes;
+	std::vector<int>			moves;
 
-	std::vector<int> moves;
+	inline bool isMoved(unsigned int i) const
+	{
+		return (!moves.empty() && (moves[i] != -1));
+	}
 };
 
 
@@ -90,8 +88,8 @@ template <typename Elem>
 class DiffCalc
 {
 public:
-	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2, int max = INT_MAX) :
-		_a(v1), _b(v2), _dmax(max) {}
+	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2, bool findMovesEn = false, int max = INT_MAX) :
+		_a(v1), _b(v2), _findMovesEn(findMovesEn), _dmax(max) {}
 
 	std::vector<diff_edit> operator()();
 
@@ -104,18 +102,21 @@ private:
 
 	void _setv(int k, int r, int val);
 	int _v(int k, int r);
-	void _edit(short op, int off, unsigned int len);
-	int _find_middle_snake(unsigned int aoff, unsigned int aend, unsigned int boff, unsigned int bend,
-			middle_snake *ms);
-	int _ses(unsigned int aoff, unsigned int aend, unsigned int boff, unsigned int bend);
+	void _edit(diff_type type, int off, int len);
+	int _find_middle_snake(int aoff, int aend, int boff, int bend, middle_snake *ms);
+	int _ses(int aoff, int aend, int boff, int bend);
+	void _shift_boundries();
+	diff_edit* _find_anchor(int a_elem, int *b_elem);
+	void _find_moves();
 
 	const std::vector<Elem>& _a;
 	const std::vector<Elem>& _b;
 
 	std::vector<diff_edit> _diff;
 
-	const int _dmax;
-	varray<int> _buf;
+	const bool	_findMovesEn;
+	const int	_dmax;
+	varray<int>	_buf;
 };
 
 
@@ -139,7 +140,7 @@ int DiffCalc<Elem>::_v(int k, int r)
 
 
 template <typename Elem>
-void DiffCalc<Elem>::_edit(short op, int off, unsigned int len)
+void DiffCalc<Elem>::_edit(diff_type type, int off, int len)
 {
 	if (len == 0)
 		return;
@@ -147,12 +148,12 @@ void DiffCalc<Elem>::_edit(short op, int off, unsigned int len)
 	bool add_elem = _diff.empty();
 
 	if (!add_elem)
-		add_elem = (_diff.rbegin()->op != op);
+		add_elem = (_diff.rbegin()->type != type);
 
 	if (add_elem)
 	{
 		diff_edit new_e;
-		new_e.op = op;
+		new_e.type = type;
 		new_e.off = off;
 		new_e.len = len;
 		_diff.push_back(new_e);
@@ -165,8 +166,7 @@ void DiffCalc<Elem>::_edit(short op, int off, unsigned int len)
 
 
 template <typename Elem>
-int DiffCalc<Elem>::_find_middle_snake(unsigned int aoff, unsigned int aend, unsigned int boff, unsigned int bend,
-		middle_snake *ms)
+int DiffCalc<Elem>::_find_middle_snake(int aoff, int aend, int boff, int bend, middle_snake *ms)
 {
 	const int delta = aend - bend;
 	const int odd = delta & 1;
@@ -194,7 +194,7 @@ int DiffCalc<Elem>::_find_middle_snake(unsigned int aoff, unsigned int aend, uns
 			ms->x = x;
 			ms->y = y;
 
-			while (x < (int)aend && y < (int)bend &&  _a[aoff + x] == _b[boff + y])
+			while (x < aend && y < bend &&  _a[aoff + x] == _b[boff + y])
 			{
 				++x;
 				++y;
@@ -257,19 +257,19 @@ int DiffCalc<Elem>::_find_middle_snake(unsigned int aoff, unsigned int aend, uns
 
 
 template <typename Elem>
-int DiffCalc<Elem>::_ses(unsigned int aoff, unsigned int aend, unsigned int boff, unsigned int bend)
+int DiffCalc<Elem>::_ses(int aoff, int aend, int boff, int bend)
 {
 	middle_snake ms;
 	int d;
 
 	if (aend == 0)
 	{
-		_edit(DIFF_INSERT, boff, bend);
+		_edit(diff_type::DIFF_INSERT, boff, bend);
 		d = bend;
 	}
 	else if (bend == 0)
 	{
-		_edit(DIFF_DELETE, aoff, aend);
+		_edit(diff_type::DIFF_DELETE, aoff, aend);
 		d = aend;
 	}
 	else
@@ -289,7 +289,7 @@ int DiffCalc<Elem>::_ses(unsigned int aoff, unsigned int aend, unsigned int boff
 			if (_ses(aoff, ms.x, boff, ms.y) == -1)
 				return -1;
 
-			_edit(DIFF_MATCH, aoff + ms.x, ms.u - ms.x);
+			_edit(diff_type::DIFF_MATCH, aoff + ms.x, ms.u - ms.x);
 
 			aoff += ms.u;
 			boff += ms.v;
@@ -322,32 +322,251 @@ int DiffCalc<Elem>::_ses(unsigned int aoff, unsigned int aend, unsigned int boff
 			{
 				if (x == u)
 				{
-					_edit(DIFF_MATCH, aoff, aend);
-					_edit(DIFF_INSERT, boff + (bend - 1), 1);
+					_edit(diff_type::DIFF_MATCH, aoff, aend);
+					_edit(diff_type::DIFF_INSERT, boff + (bend - 1), 1);
 				}
 				else
 				{
-					_edit(DIFF_INSERT, boff, 1);
-					_edit(DIFF_MATCH, aoff, aend);
+					_edit(diff_type::DIFF_INSERT, boff, 1);
+					_edit(diff_type::DIFF_MATCH, aoff, aend);
 				}
 			}
 			else
 			{
 				if (x == u)
 				{
-					_edit(DIFF_MATCH, aoff, bend);
-					_edit(DIFF_DELETE, aoff + (aend - 1), 1);
+					_edit(diff_type::DIFF_MATCH, aoff, bend);
+					_edit(diff_type::DIFF_DELETE, aoff + (aend - 1), 1);
 				}
 				else
 				{
-					_edit(DIFF_DELETE, aoff, 1);
-					_edit(DIFF_MATCH, aoff + 1, bend);
+					_edit(diff_type::DIFF_DELETE, aoff, 1);
+					_edit(diff_type::DIFF_MATCH, aoff + 1, bend);
 				}
 			}
 		}
 	}
 
 	return d;
+}
+
+
+// Algorithm borrowed from WinMerge
+// If the Elem after the delete is the same as the first Elem of the delete, shift differences down:
+// If [] surrounds the marked differences, basically [abb]a is the same as a[bba]
+// Since most languages start with unique elem and end with repetitive elem (end, </node>, }, ], ), >, etc)
+// we shift the differences down to make results look cleaner
+template <typename Elem>
+void DiffCalc<Elem>::_shift_boundries()
+{
+	const int diff_size = _diff.size();
+	const int asize = _a.size();
+	const int bsize = _b.size();
+
+	for (int i = 0; i < diff_size; ++i)
+	{
+		int amax = asize;
+		int bmax = bsize;
+
+		if (_diff[i].type != diff_type::DIFF_MATCH)
+		{
+			for (int j = i + 1; j < diff_size; ++j)
+			{
+				if (_diff[i].type == _diff[j].type)
+				{
+					amax = _diff[j].off;
+					bmax = _diff[j].off;
+					break;
+				}
+			}
+		}
+
+		if (_diff[i].type == diff_type::DIFF_DELETE)
+		{
+			if (i + 1 < diff_size)
+			{
+				// If there is an insert after a delete, there is a potential match, so both blocks
+				// need to be moved at the same time
+				if (_diff[i + 1].type == diff_type::DIFF_INSERT)
+				{
+					diff_edit& adiff = _diff[i];
+					diff_edit& bdiff = _diff[i + 1];
+
+					bmax = bsize;
+
+					for (int j = i + 2; j < diff_size; ++j)
+					{
+						if (bdiff.type == _diff[j].type)
+						{
+							bmax = _diff[j].off;
+							break;
+						}
+					}
+
+					++i;
+
+					int aend = adiff.off + adiff.len;
+					int bend = bdiff.off + bdiff.len;
+
+					while (aend < amax && bend < bmax &&
+							_a[adiff.off] == _a[aend] && _b[bdiff.off] == _b[bend])
+					{
+						++aend;
+						++bend;
+						++(adiff.off);
+						++(bdiff.off);
+					}
+				}
+				else
+				{
+					diff_edit& adiff = _diff[i];
+
+					int aend = adiff.off + adiff.len;
+
+					while (aend < amax && _a[adiff.off] == _a[aend])
+					{
+						++aend;
+						++(adiff.off);
+					}
+				}
+			}
+		}
+		else if (_diff[i].type == diff_type::DIFF_INSERT)
+		{
+			diff_edit& adiff = _diff[i];
+
+			int aend = adiff.off + adiff.len;
+
+			while (aend < bmax && _b[adiff.off] == _b[aend])
+			{
+				++aend;
+				++(adiff.off);
+			}
+		}
+	}
+}
+
+
+// Move algorithm:
+// Scan for lines that are only in the other document once use one-to-one match as an anchor
+// Scan to see if the lines above and below anchor also match
+template <typename Elem>
+diff_edit* DiffCalc<Elem>::_find_anchor(int a_elem, int *b_elem)
+{
+	const int diff_size = _diff.size();
+
+	diff_edit* insert = NULL;
+	bool match = false;
+
+	for (int i = 0; i < diff_size; ++i)
+	{
+		diff_edit& e = _diff[i];
+
+		if (e.type == diff_type::DIFF_INSERT)
+		{
+			for (int j = 0; j < e.len; ++j)
+			{
+				if (_a[a_elem] == _b[e.off + j])
+				{
+					if (match)
+						return NULL;
+
+					match = true;
+					*b_elem = j;
+					insert = &e;
+				}
+			}
+		}
+	}
+
+	if (!match || insert->moves[*b_elem] != -1)
+		return NULL;
+
+	match = false;
+
+	for (int i = 0; i < diff_size; ++i)
+	{
+		const diff_edit& e = _diff[i];
+
+		if (e.type == diff_type::DIFF_DELETE)
+		{
+			for (int j = 0; j < e.len; ++j)
+			{
+				if (_a[a_elem] == _a[e.off + j])
+				{
+					if (match)
+						return NULL;
+
+					match = true;
+				}
+			}
+		}
+	}
+
+	return insert;
+}
+
+
+template <typename Elem>
+void DiffCalc<Elem>::_find_moves()
+{
+	const int diff_size = _diff.size();
+
+	// Initialize moves arrays
+	for (int i = 0; i < diff_size; ++i)
+	{
+		diff_edit& e = _diff[i];
+
+		if (e.type != diff_type::DIFF_MATCH)
+			e.moves.resize(e.len, -1);
+	}
+
+	for (int i = 0; i < diff_size; ++i)
+	{
+		diff_edit& e = _diff[i];
+
+		if (e.type != diff_type::DIFF_DELETE)
+			continue;
+
+		for (int j = 0; j < e.len; ++j)
+		{
+			if (e.moves[j] != -1)
+				continue;
+
+			int b_elem;
+			diff_edit* match = _find_anchor(e.off + j, &b_elem);
+
+			if (!match)
+				continue;
+
+			e.moves[j] = match->off + b_elem;
+			match->moves[b_elem] = e.off + j;
+
+			int d1 = j - 1;
+			int d2 = b_elem - 1;
+
+			while (d1 >= 0 && d2 >= 0 && e.moves[d1] == -1 && match->moves[d2] == -1 &&
+					_a[e.off + d1] == _b[match->off + d2])
+			{
+				e.moves[d1] = match->off + d2;
+				match->moves[d2] = e.off + d1;
+				--d1;
+				--d2;
+			}
+
+			d1 = j + 1;
+			d2 = b_elem + 1;
+
+			while (d1 < e.len && d2 < match->len && e.moves[d1] == -1 && match->moves[d2] == -1 &&
+					_a[e.off + d1] == _b[match->off + d2])
+			{
+				e.moves[d1] = match->off + d2;
+				match->moves[d2] = e.off + d1;
+				++d1;
+				++d2;
+			}
+		}
+	}
 }
 
 
@@ -359,27 +578,36 @@ std::vector<diff_edit> DiffCalc<Elem>::operator()()
 	 * beginning matches. This is also a quick to process sequences
 	 * that match entirely.
 	 */
-	unsigned int x = 0, y = 0;
+	int x = 0, y = 0;
 
-	std::size_t a_size = _a.size();
-	std::size_t b_size = _b.size();
+	int asize = _a.size();
+	int bsize = _b.size();
 
-	while (x < a_size && y < b_size && _a[x] == _b[y])
+	while (x < asize && y < bsize && _a[x] == _b[y])
 	{
 		++x;
 		++y;
 	}
 
-	if (a_size == b_size && x == a_size)
+	if (asize == bsize && x == asize)
 		return _diff;
 
-	_edit(DIFF_MATCH, 0, x);
+	_edit(diff_type::DIFF_MATCH, 0, x);
 
-	a_size -= x;
-	b_size -= y;
+	asize -= x;
+	bsize -= y;
 
-	if (_ses(x, a_size, y, b_size) == -1)
+	if (_ses(x, asize, y, bsize) == -1)
+	{
 		_diff.clear();
+	}
+	else
+	{
+		_shift_boundries();
+
+		if (_findMovesEn)
+			_find_moves();
+	}
 
 	// Wipe temporal buffer to free memory
 	_buf.get().clear();

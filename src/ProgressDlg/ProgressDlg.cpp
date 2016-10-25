@@ -4,7 +4,7 @@
 #include "ProgressDlg.h"
 #include "Compare.h"
 #include <windowsx.h>
-#include <stdlib.h>
+#include <cstdlib>
 
 
 const TCHAR ProgressDlg::cClassName[]     = TEXT("CompareProgressClass");
@@ -17,61 +17,31 @@ const int ProgressDlg::cBTNheight         = 25;
 
 // Different compare phases progress end positions
 const int ProgressDlg::cPhases[] = {
-	6,	// Files loading and hashing
-	16,	// Blocks diff
-	46,	// Words diff
-	76,	// From block to line differences
-	96,	// Results colorization and presentation
-	100	// Final blanks adjustment
+	15,		// Docs diff
+	45,		// Blocks diff
+	100,	// Results colorization and presentation
 };
 
 
-std::unique_ptr<ProgressDlg> ProgressDlg::Inst;
+progress_ptr ProgressDlg::Inst;
 
 
-void ProgressDlg::Open(const TCHAR* msg)
+progress_ptr& ProgressDlg::Open()
 {
-	if ((bool)Inst)
-		return;
+	if (Inst)
+		return Inst;
 
 	Inst.reset(new ProgressDlg);
 
 	if (Inst->create() == NULL)
 	{
 		Inst.reset();
-		return;
+		return Inst;
 	}
-
-	Inst->setInfo(msg);
 
 	::EnableWindow(nppData._nppHandle, FALSE);
-}
 
-
-bool ProgressDlg::IsCancelled()
-{
-	if (!Inst)
-		return true;
-
-	if (Inst->cancelled())
-	{
-		Close();
-		return true;
-	}
-
-	return false;
-}
-
-
-void ProgressDlg::Close()
-{
-	if (!Inst)
-		return;
-
-	::EnableWindow(nppData._nppHandle, TRUE);
-	::SetForegroundWindow(nppData._nppHandle);
-
-	Inst.reset();
+	return Inst;
 }
 
 
@@ -80,20 +50,20 @@ unsigned ProgressDlg::NextPhase()
 	if (IsCancelled())
 		return 0;
 
-	if (Inst->_phase + 1 < _countof(cPhases))
+	if (_phase + 1 < _countof(cPhases))
 	{
-		Inst->_phasePosOffset = cPhases[Inst->_phase++];
-		Inst->_phaseRange = cPhases[Inst->_phase] - Inst->_phasePosOffset;
-		Inst->_max = Inst->_phaseRange;
-		Inst->_count = 0;
-		Inst->setPos(Inst->_phasePosOffset);
+		_phasePosOffset = cPhases[_phase++];
+		_phaseRange = cPhases[_phase] - _phasePosOffset;
+		_max = _phaseRange;
+		_count = 0;
+		setPos(_phasePosOffset);
 	}
 	else
 	{
-		Inst->setPos(cPhases[_countof(cPhases) - 1]);
+		setPos(cPhases[_countof(cPhases) - 1]);
 	}
 
-	return Inst->_phase + 1;
+	return _phase + 1;
 }
 
 
@@ -102,10 +72,10 @@ bool ProgressDlg::SetMaxCount(unsigned max, unsigned phase)
 	if (IsCancelled())
 		return false;
 
-	if (phase == 0 || phase - 1 == Inst->_phase)
+	if (phase == 0 || phase - 1 == _phase)
 	{
-		Inst->_max = max;
-		Inst->_count = 0;
+		_max = max;
+		_count = 0;
 	}
 
 	return true;
@@ -117,10 +87,10 @@ bool ProgressDlg::SetCount(unsigned cnt, unsigned phase)
 	if (IsCancelled())
 		return false;
 
-	if ((phase == 0 || phase - 1 == Inst->_phase) && Inst->_count < cnt && cnt <= Inst->_max)
+	if ((phase == 0 || phase - 1 == _phase) && _count < cnt && cnt <= _max)
 	{
-		Inst->_count = cnt;
-		Inst->update();
+		_count = cnt;
+		update();
 	}
 
 	return true;
@@ -132,10 +102,10 @@ bool ProgressDlg::Advance(unsigned cnt, unsigned phase)
 	if (IsCancelled())
 		return false;
 
-	if (phase == 0 || phase - 1 == Inst->_phase)
+	if (phase == 0 || phase - 1 == _phase)
 	{
-		Inst->_count += cnt;
-		Inst->update();
+		_count += cnt;
+		update();
 	}
 
 	return true;
@@ -174,6 +144,9 @@ ProgressDlg::ProgressDlg() : _hwnd(NULL),  _hKeyHook(NULL),
 
 ProgressDlg::~ProgressDlg()
 {
+	::EnableWindow(nppData._nppHandle, TRUE);
+	::SetForegroundWindow(nppData._nppHandle);
+
     if (_hKeyHook)
         ::UnhookWindowsHookEx(_hKeyHook);
 
@@ -219,7 +192,8 @@ void ProgressDlg::cancel()
 {
 	::ResetEvent(_hActiveState);
 	::EnableWindow(_hBtn, FALSE);
-	setInfo(TEXT("Cancelling compare, please wait..."));
+
+	SetInfo(TEXT("Cancelling compare, please wait..."));
 }
 
 
@@ -390,7 +364,7 @@ RECT ProgressDlg::adjustSizeAndPos(int width, int height)
 
 LRESULT CALLBACK ProgressDlg::keyHookProc(int code, WPARAM wParam, LPARAM lParam)
 {
-    if (code >= 0 && (bool)Inst)
+    if (code >= 0 && Inst)
     {
         if (Inst->_hBtn == ::GetFocus())
         {

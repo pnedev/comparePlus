@@ -17,650 +17,587 @@
  */
 
 #include <windows.h>
+#include <climits>
 #include "Engine.h"
-#include "diff.h"
+
+
+// Rotate a value n bits to the left
+#define UINT_BIT (sizeof(unsigned) * CHAR_BIT)
+#define ROL(v, n) ((v) << (n) | (v) >> (UINT_BIT - (n)))
+
+// Given a hash value and a new character, return a new hash value
+#define HASH(h, c) ((c) + ROL(h, 7))
+
+
+namespace {
+
+enum diff_mark {
+	DELETED_MARK = 0,
+	ADDED_MARK,
+	MOVED_MARK,
+	CHANGED_MARK,
+	END_MARK
+};
+
+
+const Marker_t lineMark[END_MARK] = {
+	MARKER_REMOVED_LINE,
+	MARKER_ADDED_LINE,
+	MARKER_MOVED_LINE,
+	MARKER_CHANGED_LINE
+};
+
+
+const Marker_t symbolMark[END_MARK] = {
+	MARKER_REMOVED_SYMBOL,
+	MARKER_ADDED_SYMBOL,
+	MARKER_MOVED_SYMBOL,
+	MARKER_CHANGED_SYMBOL
+};
 
 
 struct chunk_info
 {
 	chunk_info(int line_offset, int line_count) :
 		lineStart(line_offset), lineCount(line_count),
-		linePos(line_count), lineEndPos(line_count), lineMappings(line_count, -1)
+		lineStartWordIdx(line_count), lineEndWordIdx(line_count), lineMappings(line_count, -1)
 	{}
 
-	unsigned int lineStart;
-	unsigned int lineCount;
+	int lineStart;
+	int lineCount;
 
-	std::vector<int> linePos;
-	std::vector<int> lineEndPos;
+	std::vector<int> lineStartWordIdx;
+	std::vector<int> lineEndWordIdx;
 	std::vector<int> lineMappings;
-
-	varray_sh_ptr<diff_change> changes;
-	unsigned int changeCount;
 
 	std::vector<Word> words;
 };
 
 
-static wordType getWordType(char letter)
+std::vector<unsigned int> computeLineHashes(HWND view, const UserSettings& settings)
+{
+	int docLines = ::SendMessage(view, SCI_GETLENGTH, 0, 0);
+
+	if (docLines)
+		docLines = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0);
+
+	std::vector<unsigned int> lineHashes(docLines);
+
+	for (int lineNum = 0; lineNum < docLines; ++lineNum)
+	{
+		const int lineStart = ::SendMessage(view, SCI_POSITIONFROMLINE, lineNum, 0);
+		const int lineEnd = ::SendMessage(view, SCI_GETLINEENDPOSITION, lineNum, 0);
+
+		unsigned int hash = 0;
+
+		if (lineEnd - lineStart)
+		{
+			const std::vector<char> line = getText(view, lineStart, lineEnd);
+			const int lineLen = line.size() - 1;
+
+			for (int i = 0; i < lineLen; ++i)
+			{
+				if (settings.IgnoreSpaces && (line[i] == ' ' || line[i] == '\t'))
+					continue;
+
+				hash = HASH(hash, line[i]);
+			}
+		}
+
+		lineHashes[lineNum] = hash;
+	}
+
+	return lineHashes;
+}
+
+
+charType getCharType(char letter)
 {
 	switch (letter)
 	{
 		case ' ':
 		case '\t':
-		return SPACECHAR;
-
-		case '\r':
-		case '\n':
-		return EOLCHAR;
+		return charType::SPACECHAR;
 
 		default:
 			if (::IsCharAlphaNumericA(letter))
-				return ALPHANUMCHAR;
+				return charType::ALPHANUMCHAR;
 		break;
 	}
 
-	return OTHERCHAR;
+	return charType::OTHERCHAR;
 }
 
 
-static int getWords(const DocLines_t& doc, chunk_info& chunk, bool IgnoreSpaces)
+void getWords(HWND view, const UserSettings& settings, chunk_info& chunk)
 {
-	unsigned int wordIndex = 0;
+	chunk.words.clear();
 
-	for (unsigned int line = 0; line < chunk.lineCount; ++line)
+	for (int lineNum = 0; lineNum < chunk.lineCount; ++lineNum)
 	{
-		wordType type = SPACECHAR;
-		int len = 0;
-		chunk.linePos[line] = wordIndex;
-		int i = 0;
-		unsigned int hash = 0;
+		chunk.lineStartWordIdx[lineNum] = chunk.words.size();
 
-		for (i = 0; doc[line + chunk.lineStart][i] != 0; ++i)
+		const int docLineNum = lineNum + chunk.lineStart;
+		const int docLineStart = ::SendMessage(view, SCI_POSITIONFROMLINE, docLineNum, 0);
+		const int docLineEnd = ::SendMessage(view, SCI_GETLINEENDPOSITION, docLineNum, 0);
+
+		const std::vector<char> line = getText(view, docLineStart, docLineEnd);
+		const int lineLen = static_cast<int>(line.size()) - 1;
+
+		if (lineLen > 0)
 		{
-			char l = doc[line + chunk.lineStart][i];
-			wordType newType = getWordType(l);
+			Word word;
+			word.type = getCharType(line[0]);
+			word.hash = HASH(0, line[0]);
+			word.line = lineNum;
+			word.pos = 0;
+			word.length = 1;
 
-			if (newType == type)
+			for (int i = 1; i < lineLen; ++i)
 			{
-				++len;
-				hash = HASH(hash, l);
-			}
-			else
-			{
-				if (len > 0)
+				const char l = line[i];
+				charType newType = getCharType(l);
+
+				if (newType == word.type)
 				{
-					if (!IgnoreSpaces || type != SPACECHAR)
-					{
-						Word word;
-						word.length = len;
-						word.line = line;
-						word.pos = i - len;
-						word.type = type;
-						word.hash = hash;
+					++word.length;
+					word.hash = HASH(word.hash, l);
+				}
+				else
+				{
+					if (!settings.IgnoreSpaces || word.type != charType::SPACECHAR)
 						chunk.words.push_back(word);
-						++wordIndex;
-					}
+
+					word.type = newType;
+					word.hash = HASH(0, l);
+					word.pos = i;
+					word.length = 1;
 				}
-
-				type = newType;
-				len = 1;
-				hash = HASH(0, l);
 			}
-		}
 
-		if (len > 0)
-		{
-			if (!IgnoreSpaces || type != SPACECHAR)
-			{
-				Word word;
-				word.length = len;
-				word.line = line;
-				word.pos = i - len;
-				word.type = type;
-				word.hash = hash;
+			if (!settings.IgnoreSpaces || word.type != charType::SPACECHAR)
 				chunk.words.push_back(word);
-				++wordIndex;
-			}
 		}
 
-		chunk.lineEndPos[line] = wordIndex;
+		chunk.lineEndWordIdx[lineNum] = chunk.words.size();
 	}
-
-	return wordIndex;
 }
 
 
-static int checkWords(diff_edit& e, chunk_info& chunk, chunk_info& otherChunk)
+void compareLines(diff_edit& blockDiff1, diff_edit& blockDiff2, const chunk_info& chunk1, const chunk_info& chunk2)
 {
-	int start = chunk.words[e.off].line;
-	int end = chunk.words[e.off + e.len - 1].line;
-	int line2 = chunk.lineMappings[start];
-	int len = e.len;
-	int off = e.off;
-
-	// if the beginning is not at the start of the line, than its definitely a change;
-	if (line2 == -1)
+	for (int line1 = 0; line1 < chunk1.lineCount; ++line1)
 	{
-		// if this line is not matched to another line, don't bother checking it
-		if (start == end)
-		{
-			return chunk.changeCount;
-		}
-		else
-		{
-			e.len -= chunk.lineEndPos[start] - e.off;
-			e.off = chunk.lineEndPos[start];
-			++start;
-		}
-	}
-	else if (e.off != (int)chunk.linePos[start])
-	{
-		diff_change& change = chunk.changes->get(chunk.changeCount++);
-		diff_change& change2 = otherChunk.changes->get(otherChunk.changeCount++);
-
-		change2.line = line2;
-		change2.len = 0;
-		change2.off = 0;
-		change2.matchedLine = chunk.lineStart + start;
-
-		change.off = chunk.words[e.off].pos;
-		change.line = start;
-		change.matchedLine = otherChunk.lineStart + line2;
-
-		// multi-line change or single line change
-		if (start != end)
-		{
-			len = chunk.lineEndPos[start] - e.off;
-			e.off = chunk.lineEndPos[start];
-			e.len -= len;
-			Word& word = chunk.words[e.off + len - 1];
-			change.len = (word.pos + word.length) - change.off;
-
-			++start;
-		}
-		else
-		{
-			len = e.len;
-			Word& word = chunk.words[e.off + len - 1];
-			change.len = (word.pos + word.length) - change.off;
-
-			return chunk.changeCount;
-		}
-	}
-
-	// if a change spans more than one line, all the middle lines are just inserts or deletes
-	while (start != end)
-	{
-		// potentially a inserted line
-		e.off = chunk.lineEndPos[start];
-		e.len -= (chunk.lineEndPos[start] - chunk.linePos[start]);
-		++start;
-	}
-
-	line2 = chunk.lineMappings[start];
-
-	// if the change does not go to the end of the line then its definitely a change
-	if (line2 != -1 && (int)(e.off + e.len) < chunk.lineEndPos[start])
-	{
-		// TODO: recheck change because some of the diffs will be previous lines
-		diff_change& change = chunk.changes->get(chunk.changeCount++);
-		diff_change& change2 = otherChunk.changes->get(otherChunk.changeCount++);
-
-		change2.line = line2;
-		change2.matchedLine = chunk.lineStart + start;
-		change2.len = 0;
-		change2.off = 0;
-
-		change.off = chunk.words[e.off].pos;
-		len = e.len;
-		Word& word = chunk.words[e.off + len - 1];
-		change.len = (word.pos + word.length) - change.off;
-		change.line = start;
-		change.matchedLine = otherChunk.lineStart + line2;
-	}
-
-	e.off = off;
-	e.len = len;
-
-	return chunk.changeCount;
-}
-
-
-bool compareWords(diff_edit& e1, diff_edit& e2, const DocLines_t& doc1, const DocLines_t& doc2, bool IgnoreSpaces)
-{
-	unsigned int i, j;
-
-	chunk_info chunk1(e1.off, e1.len);
-	chunk_info chunk2(e2.off, e2.len);
-
-	getWords(doc1, chunk1, IgnoreSpaces);
-	getWords(doc2, chunk2, IgnoreSpaces);
-
-	// Compare the two chunks
-	std::vector<diff_edit> diff = DiffCalc<Word>(chunk1.words, chunk2.words)();
-
-	chunk1.changes.reset(new varray<diff_change>);
-	chunk2.changes.reset(new varray<diff_change>);
-
-	std::vector<std::vector<int>> lineMappings1(chunk1.lineCount);
-
-	for (i = 0; i < chunk1.lineCount; ++i)
-		lineMappings1[i].resize(chunk2.lineCount, 0);
-
-	// Use the MATCH results to synchronize line numbers
-	// count how many are on each line, then select the line with the most matches
-	const std::size_t diffSize = diff.size();
-
-	int offset = 0;
-	for (i = 0; i < diffSize; ++i)
-	{
-		diff_edit& e = diff[i];
-
-		if (e.op == DIFF_DELETE)
-		{
-			offset -= e.len;
-		}
-		else if (e.op == DIFF_INSERT)
-		{
-			offset += e.len;
-		}
-		else
-		{
-			for (unsigned int index = e.off; index < (e.off + e.len); ++index)
-			{
-				Word *word1 = &chunk1.words[index];
-				Word *word2 = &chunk2.words[index + offset];
-
-				if (word1->type != SPACECHAR && word1->type != EOLCHAR)
-				{
-					int line1a = word1->line;
-					int line2a = word2->line;
-					lineMappings1[line1a][line2a] += word1->length;
-				}
-			}
-		}
-	}
-
-	// go through each line, and select the line with the highest strength
-	for (i = 0; i < chunk1.lineCount; ++i)
-	{
-		int line = -1;
-		int max = 0;
-
-		for (j = 0; j <chunk2.lineCount; ++j)
-		{
-			if (lineMappings1[i][j] > max && (e2.moves.empty() || e2.moves[j] == -1))
-			{
-				line = j;
-				max = lineMappings1[i][j];
-			}
-		}
-
-		// make sure that the line isn't already matched to another line,
-		// and that enough of the line is matched to be significant
-		const int size = doc1[e1.off + i].size();
-
-		if (line != -1 && chunk2.lineMappings[line] == -1 && max > (size / 3) &&
-				(e1.moves.empty() || e1.moves[i] == -1))
-		{
-			chunk1.lineMappings[i] = line;
-			chunk2.lineMappings[line] = i;
-		}
-	}
-
-	// find all the differences between the lines
-	chunk1.changeCount = 0;
-	chunk2.changeCount = 0;
-
-	for (i = 0; i < diffSize; ++i)
-	{
-		diff_edit& e = diff[i];
-
-		if (e.op == DIFF_DELETE)
-		{
-			// Differences for Doc 1
-			checkWords(e, chunk1, chunk2);
-		}
-		else if (e.op == DIFF_INSERT)
-		{
-			// Differences for Doc2
-			checkWords(e, chunk2, chunk1);
-		}
-	}
-
-	e1.changeCount = chunk1.changeCount;
-	e1.changes = chunk1.changes;
-	e2.changeCount = chunk2.changeCount;
-	e2.changes = chunk2.changes;
-
-	return (chunk1.changeCount + chunk2.changeCount > 0);
-}
-
-
-// change the blocks of diffs to one diff per line.
-// revert a "Changed" line to a insert or delete line if there are no changes
-int setDiffLines(const diff_edit& e, std::vector<diff_edit>& changes, int* idx, short op, int altLocation)
-{
-	int index = *idx;
-	int addedLines = 0;
-
-	for (unsigned int j = 0; j < e.len; ++j)
-	{
-		changes[index].set = e.set;
-		changes[index].len = 1;
-		changes[index].op = e.op;
-		changes[index].off = e.off + j;
-		changes[index].changeCount = 0;
-
-		// see if line is already marked as move
-		if (!e.moves.empty() && e.moves[j] != -1)
-		{
-			changes[index].op = DIFF_MOVE;
-			changes[index].matchedLine = e.moves[j];
-			changes[index].altLocation = altLocation;
-			++addedLines;
-		}
-		else
-		{
-			for (unsigned int k = 0; k < e.changeCount; ++k)
-			{
-				diff_change& change = e.changes->get(k);
-
-				if (change.line == j)
-				{
-					changes[index].matchedLine = change.matchedLine;
-					changes[index].altLocation = altLocation;
-
-					if (altLocation != (int) change.matchedLine)
-					{
-						int diff = altLocation - change.matchedLine;
-						altLocation = change.matchedLine;
-
-						for (unsigned int i = 1; i <= j; i++)
-						{
-							if (changes[index - i].changes)
-								break;
-
-							if (op == DIFF_DELETE)
-								changes[index - i].altLocation = change.matchedLine + diff;
-							else
-								changes[index - i].altLocation = change.matchedLine;
-						}
-
-						if (op == DIFF_INSERT)
-							altLocation += diff;
-					}
-
-					if (!changes[index].changes)
-						changes[index].changes.reset(new varray<diff_change>);
-
-					diff_change& newChange = changes[index].changes->get(changes[index].changeCount++);
-
-					newChange.len = change.len;
-					newChange.off = change.off;
-				}
-			}
-
-			if (!changes[index].changes)
-			{
-				changes[index].op = op;
-				changes[index].altLocation = altLocation;
-				++addedLines;
-			}
-			else
-			{
-				++altLocation;
-			}
-		}
-
-		++index;
-	}
-
-	*idx = index;
-
-	return addedLines;
-}
-
-
-// Move algorithm:
-// scan for lines that are only in the other document once
-// use one-to-one match as an anchor
-// scan to see if the lines above and below anchor also match
-static diff_edit* find_anchor(int line, std::vector<diff_edit>& diff,
-		const unsigned int *hash1, const unsigned int *hash2, int *line2)
-{
-	diff_edit* insert = NULL;
-	const std::size_t diffSize = diff.size();
-	bool match = false;
-
-	for (unsigned int i = 0; i < diffSize; ++i)
-	{
-		diff_edit& e = diff[i];
-
-		if (e.op == DIFF_INSERT)
-		{
-			for (unsigned int j = 0; j < e.len; ++j)
-			{
-				if (hash1[line] == hash2[e.off + j])
-				{
-					if (match)
-						return NULL;
-
-					match = true;
-					*line2 = j;
-					insert = &e;
-				}
-			}
-		}
-	}
-
-	if (!match || insert->moves[*line2] != -1)
-		return NULL;
-
-	match = false;
-
-	for (unsigned int i = 0; i < diffSize; ++i)
-	{
-		const diff_edit& e = diff[i];
-
-		if (e.op == DIFF_DELETE)
-		{
-			for (unsigned int j = 0; j < e.len; ++j)
-			{
-				if (hash1[line] == hash1[e.off + j])
-				{
-					if (match)
-						return NULL;
-
-					match = true;
-				}
-			}
-		}
-	}
-
-	return insert;
-}
-
-
-void findMoves(std::vector<diff_edit>& diff, const unsigned int *hash1, const unsigned int *hash2)
-{
-	const std::size_t diffSize = diff.size();
-
-	// initialize moves arrays
-	for (unsigned int i = 0; i < diffSize; ++i)
-	{
-		diff_edit& e = diff[i];
-
-		if (e.op != DIFF_MATCH)
-			e.moves.resize(e.len, -1);
-	}
-
-	for (unsigned int i = 0; i < diffSize; ++i)
-	{
-		diff_edit& e = diff[i];
-
-		if (e.op != DIFF_DELETE)
+		if (chunk1.lineMappings[line1] == -1)
 			continue;
 
-		for (unsigned int j = 0; j < e.len; ++j)
+		const int line2 = chunk1.lineMappings[line1];
+
+		const std::vector<Word> words1(&chunk1.words[chunk1.lineStartWordIdx[line1]],
+				&chunk1.words[chunk1.lineEndWordIdx[line1]]);
+		const std::vector<Word> words2(&chunk2.words[chunk2.lineStartWordIdx[line2]],
+				&chunk2.words[chunk2.lineEndWordIdx[line2]]);
+
+		diff_edit* pBlockDiff1 = &blockDiff1;
+		diff_edit* pBlockDiff2 = &blockDiff2;
+
+		const std::vector<Word>* pWords1 = &words1;
+		const std::vector<Word>* pWords2 = &words2;
+
+		const int* pLine1 = &line1;
+		const int* pLine2 = &line2;
+
+		if (words1.size() > words2.size())
 		{
-			if (e.moves[j] != -1)
-				continue;
+			std::swap(pBlockDiff1, pBlockDiff2);
+			std::swap(pWords1, pWords2);
+			std::swap(pLine1, pLine2);
+		}
 
-			int line2;
-			diff_edit* match = find_anchor(e.off + j, diff, hash1, hash2, &line2);
+		// Compare the two lines
+		const std::vector<diff_edit> lineDiff = DiffCalc<Word>(*pWords1, *pWords2)();
 
-			if (!match)
-				continue;
+		const int lineDiffSize = static_cast<int>(lineDiff.size());
 
-			e.moves[j] = match->off + line2;
-			match->moves[line2] = e.off + j;
+		if (lineDiffSize == 0)
+			continue;
 
-			int d1 = j - 1;
-			int d2 = line2 - 1;
+		bool line1Changed = false;
+		bool line2Changed = false;
 
-			while (d1 >= 0 && d2 >= 0 && e.moves[d1] == -1 && match->moves[d2] == -1 &&
-					hash1[e.off + d1] == hash2[match->off + d2])
+		for (int i = 0; i < lineDiffSize; ++i)
+		{
+			const diff_edit& ld = lineDiff[i];
+
+			if (ld.type == diff_type::DIFF_DELETE)
 			{
-				e.moves[d1] = match->off + d2;
-				match->moves[d2] = e.off + d1;
-				--d1;
-				--d2;
+				for (int j = 0; j < ld.len; ++j)
+				{
+					const Word& word = (*pWords1)[ld.off + j];
+					diff_change change;
+
+					change.off = word.pos;
+					change.len = word.length;
+					change.line = *pLine1;
+					change.matchedLine = *pLine2;
+
+					pBlockDiff1->changes.emplace_back(change);
+				}
+
+				line1Changed = true;
 			}
-
-			d1 = j + 1;
-			d2 = line2 + 1;
-
-			while (d1 < (int)e.len && d2 < (int)match->len && e.moves[d1] == -1 && match->moves[d2] == -1 &&
-					hash1[e.off + d1] == hash2[match->off + d2])
+			else if (ld.type == diff_type::DIFF_INSERT)
 			{
-				e.moves[d1] = match->off + d2;
-				match->moves[d2] = e.off + d1;
-				++d1;
-				++d2;
+				for (int j = 0; j < ld.len; ++j)
+				{
+					const Word& word = (*pWords2)[ld.off + j];
+					diff_change change;
+
+					change.off = word.pos;
+					change.len = word.length;
+					change.line = *pLine2;
+					change.matchedLine = *pLine1;
+
+					pBlockDiff2->changes.emplace_back(change);
+				}
+
+				line2Changed = true;
 			}
+		}
+
+		if (!line1Changed)
+		{
+			diff_change change;
+
+			change.off = 0;
+			change.len = 0;
+			change.line = *pLine1;
+			change.matchedLine = *pLine2;
+
+			pBlockDiff1->changes.emplace_back(change);
+		}
+
+		if (!line2Changed)
+		{
+			diff_change change;
+
+			change.off = 0;
+			change.len = 0;
+			change.line = *pLine2;
+			change.matchedLine = *pLine1;
+
+			pBlockDiff2->changes.emplace_back(change);
 		}
 	}
 }
 
 
-// algorithm borrowed from WinMerge
-// if the line after the delete is the same as the first line of the delete, shift down
-// basically -abb is the same as -bba
-// since most languages start with unique lines and end with repetitive lines (end, </node>, }, etc)
-// we shift the differences down where its possible so the results will be cleaner
-void shiftBoundries(std::vector<diff_edit>& diff,
-		const unsigned int *hash1, const unsigned int *hash2, int doc1Length, int doc2Length)
+int markSection(HWND view, HWND otherView, int line, int length, diff_mark marker, bool addBlanks)
 {
-	const std::size_t diffSize = diff.size();
+	if (length <= 0)
+		return 0;
 
-	for (unsigned int i = 0; i < diffSize; ++i)
+	for (int i = 0; i < length; ++i)
 	{
-		diff_edit& e1 = diff[i];
+		::SendMessage(view, SCI_MARKERADD, line + i, lineMark[marker]);
+		::SendMessage(view, SCI_MARKERADD, line + i, symbolMark[marker]);
+	}
 
-		int max1 = doc1Length;
-		int max2 = doc2Length;
-		int end2;
+	if (addBlanks)
+	{
+		addBlankSection(otherView, line, length);
+		return length;
+	}
 
-		if (e1.op != DIFF_MATCH)
+	return 0;
+}
+
+}
+
+
+// The returned bool is true if views are swapped and false otherwise
+std::pair<std::vector<diff_edit>, bool>
+	compareDocs(HWND& view1, HWND& view2, const UserSettings& settings, progress_ptr& progress)
+{
+	if (progress)
+		progress->SetMaxCount(3);
+
+	const std::vector<unsigned int> lineHashes1 = computeLineHashes(view1, settings);
+
+	if (progress && !progress->Advance())
+		return std::make_pair(std::vector<diff_edit>(), false);
+
+	const std::vector<unsigned int> lineHashes2 = computeLineHashes(view2, settings);
+
+	if (progress && !progress->Advance())
+		return std::make_pair(std::vector<diff_edit>(), false);
+
+	bool viewsSwapped = false;
+
+	const std::vector<unsigned int>* pLineHashes1 = &lineHashes1;
+	const std::vector<unsigned int>* pLineHashes2 = &lineHashes2;
+
+	if (lineHashes1.size() > lineHashes2.size())
+	{
+		std::swap(view1, view2);
+		std::swap(pLineHashes1, pLineHashes2);
+		viewsSwapped = true;
+	}
+
+	return std::make_pair
+			(DiffCalc<unsigned int>(*pLineHashes1, *pLineHashes2, settings.DetectMoves)(), viewsSwapped);
+}
+
+
+bool compareBlocks(HWND view1, HWND view2, const UserSettings& settings, diff_edit& blockDiff1, diff_edit& blockDiff2)
+{
+	diff_edit* pBlockDiff1 = &blockDiff1;
+	diff_edit* pBlockDiff2 = &blockDiff2;
+
+	if (blockDiff1.len > blockDiff2.len)
+	{
+		std::swap(view1, view2);
+		std::swap(pBlockDiff1, pBlockDiff2);
+	}
+
+	chunk_info chunk1(pBlockDiff1->off, pBlockDiff1->len);
+	chunk_info chunk2(pBlockDiff2->off, pBlockDiff2->len);
+
+	getWords(view1, settings, chunk1);
+	getWords(view2, settings, chunk2);
+
+	// Compare the two chunks
+	const std::vector<diff_edit> chunkDiff = DiffCalc<Word>(chunk1.words, chunk2.words)();
+
+	const int chunkDiffSize = static_cast<int>(chunkDiff.size());
+
+	if (chunkDiffSize == 0)
+		return false;
+
+	std::vector<std::vector<int>> linesConvergence(chunk1.lineCount, std::vector<int>(chunk2.lineCount, 0));
+
+	// Use the MATCH results to synchronize line numbers (count the match length of each line)
+	int wordOffset = 0;
+	for (int i = 0; i < chunkDiffSize; ++i)
+	{
+		const diff_edit& cd = chunkDiff[i];
+
+		if (cd.type == diff_type::DIFF_DELETE)
 		{
-			for (unsigned int j = i + 1; j < diffSize; ++j)
+			wordOffset -= cd.len;
+		}
+		else if (cd.type == diff_type::DIFF_INSERT)
+		{
+			wordOffset += cd.len;
+		}
+		else // diff_type::DIFF_MATCH
+		{
+			for (int wordIdx = cd.off; wordIdx < (cd.off + cd.len); ++wordIdx)
 			{
-				diff_edit& e2 = diff[j];
+				const Word& word1 = chunk1.words[wordIdx];
+				const Word& word2 = chunk2.words[wordIdx + wordOffset];
 
-				if (e2.op == e1.op)
-				{
-					max1 = e2.off;
-					max2 = e2.off;
-					break;
-				}
+				if (word1.type != charType::SPACECHAR)
+					linesConvergence[word1.line][word2.line] += word1.length;
+			}
+		}
+	}
+
+	// Select the line with the most matches (as length)
+	for (int line1 = 0; line1 < chunk1.lineCount; ++line1)
+	{
+		if (pBlockDiff1->isMoved(line1))
+			continue;
+
+		int maxConvergence = 0;
+		int line2 = 0;
+
+		for (int i = 0; i < chunk2.lineCount; ++i)
+		{
+			if (!pBlockDiff2->isMoved(i) && linesConvergence[line1][i] > maxConvergence)
+			{
+				line2 = i;
+				maxConvergence = linesConvergence[line1][i];
 			}
 		}
 
-		if (e1.op == DIFF_DELETE)
+		// Make sure that the line is matched and the other line is not already matched
+		if (maxConvergence == 0 || chunk2.lineMappings[line2] != -1)
+			continue;
+
+		int line1Size = 0;
+		for (int i = chunk1.lineStartWordIdx[line1]; i < chunk1.lineEndWordIdx[line1]; ++i)
 		{
-			diff_edit& e2 = diff[i + 1];
+			const Word& word1 = chunk1.words[i];
 
-			// if theres an insert after a delete, theres a potential match, so both blocks
-			// need to be moved at the same time
-			if (e2.op == DIFF_INSERT)
+			if (word1.type != charType::SPACECHAR)
+				line1Size += word1.length;
+		}
+
+		// Is enough portion of the line matched to be significant?
+		if (line1Size && maxConvergence > (line1Size / 3))
+		{
+			chunk1.lineMappings[line1] = line2;
+			chunk2.lineMappings[line2] = line1;
+		}
+	}
+
+	compareLines(*pBlockDiff1, *pBlockDiff2, chunk1, chunk2);
+
+	return true;
+}
+
+
+// Mark all line differences
+bool showDiffs(HWND view1, HWND view2, const std::pair<std::vector<diff_edit>, bool>& cmpResults,
+		progress_ptr& progress)
+{
+	const std::vector<diff_edit>& blockDiff = cmpResults.first;
+	const bool viewsSwapped = cmpResults.second;
+
+	const diff_mark deletedMark	= viewsSwapped ? ADDED_MARK : DELETED_MARK;
+	const diff_mark addedMark	= viewsSwapped ? DELETED_MARK : ADDED_MARK;
+
+	const int blockDiffSize = static_cast<int>(blockDiff.size());
+
+	if (progress)
+		progress->SetMaxCount(blockDiffSize);
+
+	int doc1Offset = 0;
+	int doc2Offset = 0;
+
+	for (int i = 0; i < blockDiffSize; ++i)
+	{
+		const diff_edit& bd = blockDiff[i];
+
+		if (bd.type != diff_type::DIFF_MATCH)
+		{
+			int* docOffset;
+			int* otherDocOffset;
+
+			HWND view;
+			HWND otherView;
+
+			diff_mark bdMark;
+
+			int matchedBdLine;
+
+			if (bd.type == diff_type::DIFF_DELETE)
 			{
-				max2 = doc2Length;
+				docOffset		= &doc1Offset;
+				otherDocOffset	= &doc2Offset;
+				view			= view1;
+				otherView		= view2;
+				bdMark			= deletedMark;
+				matchedBdLine	= -1;
+			}
+			else // diff_type::DIFF_INSERT
+			{
+				docOffset		= &doc2Offset;
+				otherDocOffset	= &doc1Offset;
+				view			= view2;
+				otherView		= view1;
+				bdMark			= addedMark;
+				matchedBdLine	= bd.matchedOff + *otherDocOffset;
+			}
 
-				for (unsigned int j = i + 2; j < diffSize; ++j)
+			const int bdLine = bd.off + *docOffset;
+
+			if (bd.changes.empty() && bd.moves.empty())
+			{
+				*otherDocOffset += markSection(view, otherView, bdLine, bd.len, bdMark, true);
+			}
+			else
+			{
+				int sectionLine = 0;
+				int sectionLen = 0;
+
+				diff_mark sectionMark = END_MARK;
+
+				bool addBlanks = false;
+
+				int line = bdLine;
+				int addedLines = 0;
+
+				for (int j = 0; j < bd.len; ++j, ++sectionLen, ++line)
 				{
-					const diff_edit& e3 = diff[j];
-
-					if (e2.op == e3.op)
+					if (bd.isMoved(j))
 					{
-						max2 = e3.off;
-						break;
+						if (sectionMark != MOVED_MARK)
+						{
+							addedLines +=
+									markSection(view, otherView, sectionLine, sectionLen, sectionMark, addBlanks);
+							sectionLine	= line;
+							sectionLen	= 0;
+							sectionMark	= MOVED_MARK;
+							addBlanks	= true;
+						}
+
+						continue;
+					}
+
+					const int changeCount = static_cast<int>(bd.changes.size());
+					bool lineChanged = false;
+					int linePos = 0;
+
+					for (int k = 0; k < changeCount; ++k)
+					{
+						const diff_change& change = bd.changes[k];
+
+						if (change.line == j)
+						{
+							if (!lineChanged)
+							{
+								if (matchedBdLine != -1 && change.line <= change.matchedLine)
+									line = matchedBdLine + change.matchedLine + addedLines;
+								linePos = ::SendMessage(view, SCI_POSITIONFROMLINE, line, 0);
+								lineChanged = true;
+							}
+
+							if (change.len)
+								markTextAsChanged(view, linePos + change.off, change.len);
+						}
+					}
+
+					if (lineChanged)
+					{
+						if (sectionMark != CHANGED_MARK || line != sectionLine + sectionLen)
+						{
+							addedLines +=
+									markSection(view, otherView, sectionLine, sectionLen, sectionMark, addBlanks);
+							sectionLine	= line;
+							sectionLen	= 0;
+							sectionMark	= CHANGED_MARK;
+							addBlanks	= false;
+						}
+
+						line = bdLine + j;
+					}
+					else
+					{
+						if (sectionMark != bdMark)
+						{
+							addedLines +=
+									markSection(view, otherView, sectionLine, sectionLen, sectionMark, addBlanks);
+							sectionLine	= line;
+							sectionLen	= 0;
+							sectionMark	= bdMark;
+							addBlanks	= true;
+						}
 					}
 				}
 
-				end2 = e2.off + e2.len;
-				++i;
-
-				int end1 = e1.off + e1.len;
-
-				while (end1 < max1 && end2 < max2 && hash1[e1.off] == hash1[end1] && hash2[e2.off] == hash2[end2])
-				{
-					++end1;
-					++end2;
-					++(e1.off);
-					++(e2.off);
-				}
-			}
-			else
-			{
-				int end1 = e1.off + e1.len;
-
-				while (end1 < max1 && hash1[e1.off] == hash1[end1])
-				{
-					++end1;
-					++(e1.off);
-				}
-			}
-		}
-		else if (e1.op == DIFF_INSERT)
-		{
-			int end1 = e1.off + e1.len;
-
-			while (end1 < max2 && hash2[e1.off] == hash2[end1])
-			{
-				++end1;
-				++(e1.off);
-			}
-		}
-	}
-}
-
-
-std::vector<unsigned int> computeHashes(const DocLines_t& doc, bool IgnoreSpaces)
-{
-	int docLength = doc.size();
-	std::vector<unsigned int> hashes(docLength);
-
-	for (int i = 0; i < docLength; ++i)
-	{
-		unsigned int hash = 0;
-
-		for (int j = 0; doc[i][j] != 0; ++j)
-		{
-			if (doc[i][j] == ' ' || doc[i][j] == '\t')
-			{
-				if (!IgnoreSpaces)
-					hash = HASH(hash, doc[i][j]);
-			}
-			else
-			{
-				hash = HASH(hash, doc[i][j]);
+				addedLines += markSection(view, otherView, sectionLine, sectionLen, sectionMark, addBlanks);
+				*otherDocOffset += addedLines;
 			}
 		}
 
-		hashes[i] = hash;
+		if (progress && !progress->Advance())
+			return false;
 	}
 
-	return hashes;
+	if (progress && !progress->NextPhase())
+		return false;
+
+	return true;
 }

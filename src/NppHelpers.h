@@ -152,15 +152,14 @@ private:
 
 struct BlankSection
 {
-	BlankSection(unsigned int line, unsigned int len) : startLine(line), length(len) {}
+	BlankSection(int line, int len) : startLine(line), length(len) {}
 
-	unsigned int startLine;
-	unsigned int length;
+	int startLine;
+	int length;
 };
 
 
 using BlankSections_t = std::vector<BlankSection>;
-using DocLines_t = std::vector<std::vector<char>>;
 
 
 inline bool isSingleView()
@@ -262,34 +261,29 @@ inline int getCurrentLine(HWND view)
 
 void activateBufferID(LRESULT buffId);
 
-void markAsBlank(HWND window, int line);
-void markAsAdded(HWND window, int line);
-void markAsChanged(HWND window, int line);
-void markAsRemoved(HWND window, int line);
-void markAsMoved(HWND window, int line);
-void markTextAsChanged(HWND window, int start, int length);
-void clearChangedIndicator(HWND window, int start, int length);
+void markTextAsChanged(HWND view, int start, int length);
+void clearChangedIndicator(HWND view, int start, int length);
 
 void jumpToFirstChange();
 void jumpToLastChange();
 void jumpToNextChange(bool down, bool wrapAround);
 
-void setNormalView(HWND window);
-void setCompareView(HWND window);
+void setNormalView(HWND view);
+void setCompareView(HWND view);
 
 void setStyles(UserSettings& settings);
 
-void setBlank(HWND window, int color);
+void setBlank(HWND view, int color);
 
 void defineSymbol(int type, int symbol);
 void defineColor(int type, int color);
-void clearWindow(HWND window);
+void clearWindow(HWND view);
 
-DocLines_t getAllLines(HWND window, std::vector<int>& lineNum, bool ignoreEOLs);
+std::vector<char> getText(HWND view, int startPos, int endPos);
 
 void adjustBlanksWrap(HWND view = NULL);
 
-void addBlankSection(HWND window, int line, int length, bool skipWrapAdjustment = false);
+void addBlankSection(HWND view, int line, int length);
 
-void addBlankLines(HWND window, const BlankSections_t& blanks);
-BlankSections_t removeBlankLines(HWND window, bool saveBlanks = false);
+void addBlankLines(HWND view, const BlankSections_t& blanks);
+BlankSections_t removeBlankLines(HWND view, bool saveBlanks = false);

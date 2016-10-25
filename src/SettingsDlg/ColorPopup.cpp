@@ -91,8 +91,8 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 			unsigned nColor;
 			for (nColor = 0 ; nColor < _countof(colorItems); nColor++)
 			{
-				::SendDlgItemMessage(_hSelf, IDC_COLOR_LIST, LB_ADDSTRING, nColor, (LPARAM) "");
-				::SendDlgItemMessage(_hSelf, IDC_COLOR_LIST, LB_SETITEMDATA , nColor, (LPARAM) colorItems[nColor]);
+				::SendDlgItemMessage(_hSelf, IDC_COLOR_LIST, LB_ADDSTRING, nColor, (LPARAM)TEXT(""));
+				::SendDlgItemMessage(_hSelf, IDC_COLOR_LIST, LB_SETITEMDATA , nColor, (LPARAM)colorItems[nColor]);
 			}
 			return TRUE;
 		}

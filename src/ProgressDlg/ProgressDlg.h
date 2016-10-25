@@ -8,19 +8,34 @@
 #include <memory>
 
 
+class ProgressDlg;
+using progress_ptr = std::unique_ptr<ProgressDlg>;
+
+
 class ProgressDlg
 {
 public:
-	static void Open(const TCHAR* msg);
-	static bool IsCancelled();
-	static void Close();
-
-	static unsigned NextPhase();
-	static bool SetMaxCount(unsigned max, unsigned phase = 0);
-	static bool SetCount(unsigned cnt, unsigned phase = 0);
-	static bool Advance(unsigned cnt = 1, unsigned phase = 0);
+	static progress_ptr& Open();
 
     ~ProgressDlg();
+
+	inline void SetInfo(const TCHAR *info) const
+	{
+		if (_hwnd)
+			::SendMessage(_hPText, WM_SETTEXT, 0, (LPARAM)info);
+	}
+
+	inline bool IsCancelled() const
+	{
+		if (_hwnd)
+			return (::WaitForSingleObject(_hActiveState, 0) != WAIT_OBJECT_0);
+		return false;
+	}
+
+	unsigned NextPhase();
+	bool SetMaxCount(unsigned max, unsigned phase = 0);
+	bool SetCount(unsigned cnt, unsigned phase = 0);
+	bool Advance(unsigned cnt = 1, unsigned phase = 0);
 
 private:
     static const TCHAR cClassName[];
@@ -32,7 +47,7 @@ private:
 
 	static const int cPhases[];
 
-	static std::unique_ptr<ProgressDlg> Inst;
+	static progress_ptr Inst;
 
     static DWORD WINAPI threadFunc(LPVOID data);
     static LRESULT CALLBACK keyHookProc(int code, WPARAM wParam, LPARAM lParam);
@@ -47,19 +62,6 @@ private:
     HWND create();
     void cancel();
     void destroy();
-
-    inline bool cancelled() const
-	{
-		if (_hwnd)
-			return (::WaitForSingleObject(_hActiveState, 0) != WAIT_OBJECT_0);
-		return false;
-	}
-
-	inline void setInfo(const TCHAR *info) const
-	{
-		if (_hwnd)
-			::SendMessage(_hPText, WM_SETTEXT, 0, (LPARAM)info);
-	}
 
     inline void setPos(unsigned pos) const
 	{

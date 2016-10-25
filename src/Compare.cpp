@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <exception>
 #include <vector>
 #include <memory>
@@ -33,7 +33,6 @@
 #include "AboutDialog.h"
 #include "SettingsDialog.h"
 #include "NavDialog.h"
-#include "diff.h"
 #include "Engine.h"
 
 
@@ -50,7 +49,6 @@ const TCHAR UserSettings::encodingsCheckSetting[]	= TEXT("Check Encodings");
 const TCHAR UserSettings::wrapAroundSetting[]		= TEXT("Wrap Around");
 const TCHAR UserSettings::compactNavBarSetting[]	= TEXT("Compact NavBar");
 const TCHAR UserSettings::ignoreSpacesSetting[]		= TEXT("Ignore Spaces");
-const TCHAR UserSettings::ignoreEOLsSetting[]		= TEXT("Ignore End of Lines");
 const TCHAR UserSettings::detectMovesSetting[]		= TEXT("Detect Moves");
 const TCHAR UserSettings::navBarSetting[]			= TEXT("Navigation Bar");
 const TCHAR UserSettings::colorsSection[]			= TEXT("Colors");
@@ -68,7 +66,7 @@ void UserSettings::load()
 
 	::SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, (WPARAM)_countof(iniFile), (LPARAM)iniFile);
 
-	::PathAppend(iniFile, TEXT("Compare.ini"));
+	::PathAppend(iniFile, TEXT("ComparePlugin.ini"));
 
 	OldFileIsFirst = ::GetPrivateProfileInt(mainSection, oldIsFirstSetting,    DEFAULT_OLD_IS_FIRST, iniFile) == 1;
 	OldFileViewId  = ::GetPrivateProfileInt(mainSection, oldFileOnLeftSetting, DEFAULT_OLD_ON_LEFT, iniFile) == 1 ?
@@ -80,7 +78,6 @@ void UserSettings::load()
 	CompactNavBar  = ::GetPrivateProfileInt(mainSection, compactNavBarSetting,  DEFAULT_COMPACT_NAVBAR, iniFile) == 1;
 
 	IgnoreSpaces = ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,	0, iniFile) == 1;
-	IgnoreEOLs   = ::GetPrivateProfileInt(mainSection, ignoreEOLsSetting,	1, iniFile) == 1;
 	DetectMoves  = ::GetPrivateProfileInt(mainSection, detectMovesSetting,	1, iniFile) == 1;
 	UseNavBar    = ::GetPrivateProfileInt(mainSection, navBarSetting,		0, iniFile) == 1;
 
@@ -98,7 +95,7 @@ void UserSettings::save()
 	TCHAR iniFile[MAX_PATH];
 
 	::SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, (WPARAM)_countof(iniFile), (LPARAM)iniFile);
-	::PathAppend(iniFile, TEXT("Compare.ini"));
+	::PathAppend(iniFile, TEXT("ComparePlugin.ini"));
 
 	::WritePrivateProfileString(mainSection, oldIsFirstSetting,
 			OldFileIsFirst ? TEXT("1") : TEXT("0"), iniFile);
@@ -116,7 +113,6 @@ void UserSettings::save()
 			CompactNavBar ? TEXT("1") : TEXT("0"), iniFile);
 
 	::WritePrivateProfileString(mainSection, ignoreSpacesSetting,	IgnoreSpaces	? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, ignoreEOLsSetting,		IgnoreEOLs		? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, detectMovesSetting,	DetectMoves		? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, navBarSetting,			UseNavBar		? TEXT("1") : TEXT("0"), iniFile);
 
@@ -345,7 +341,7 @@ struct ComparedFile
 	int		originalViewId;
 	int		originalPos;
 	int		compareViewId;
-	LRESULT		buffId;
+	LRESULT	buffId;
 	int		sciDoc;
 	TCHAR	name[MAX_PATH];
 
@@ -393,9 +389,9 @@ private:
 using CompareList_t = std::vector<ComparedPair>;
 
 
-enum CompareResult_t
+enum class CompareResult
 {
-	COMPARE_ERROR = 0,
+	COMPARE_ERROR,
 	COMPARE_CANCELLED,
 	FILES_MATCH,
 	FILES_DIFFER
@@ -1235,301 +1231,73 @@ CompareList_t::iterator addComparePair()
 }
 
 
-CompareResult_t doCompare(CompareList_t::iterator& cmpPair)
+CompareResult compareViews(progress_ptr& progress)
 {
 	HWND view1;
 	HWND view2;
 
-	if (Settings.OldFileViewId != MAIN_VIEW)
-	{
-		view1 = nppData._scintillaSecondHandle;
-		view2 = nppData._scintillaMainHandle;
-	}
-	else
+	if (Settings.OldFileViewId == MAIN_VIEW)
 	{
 		view1 = nppData._scintillaMainHandle;
 		view2 = nppData._scintillaSecondHandle;
 	}
-
+	else
 	{
-		const TCHAR* newName = ::PathFindFileName(cmpPair->getNewFile().name);
-		const TCHAR* oldName = ::PathFindFileName(cmpPair->getOldFile().name);
-
-		TCHAR msg[MAX_PATH];
-		_sntprintf_s(msg, _countof(msg), _TRUNCATE, TEXT("Comparing \"%s\" vs. \"%s\"..."), newName, oldName);
-
-		ProgressDlg::Open(msg);
-		ProgressDlg::SetMaxCount(3);
+		view1 = nppData._scintillaSecondHandle;
+		view2 = nppData._scintillaMainHandle;
 	}
 
-	std::vector<int> lineNum1;
-	const DocLines_t doc1 = getAllLines(view1, lineNum1, Settings.IgnoreEOLs);
-	const int doc1Length = doc1.size();
+	std::pair<std::vector<diff_edit>, bool> cmpResults = compareDocs(view1, view2, Settings, progress);
+	std::vector<diff_edit>& blockDiff = cmpResults.first;
 
-	if (!ProgressDlg::Advance())
-		return COMPARE_CANCELLED;
+	if (progress && !progress->NextPhase())
+		return CompareResult::COMPARE_CANCELLED;
 
-	std::vector<int> lineNum2;
-	const DocLines_t doc2 = getAllLines(view2, lineNum2, Settings.IgnoreEOLs);
-	const int doc2Length = doc2.size();
+	const int blockDiffSize = static_cast<int>(blockDiff.size());
 
-	if (!ProgressDlg::Advance())
-		return COMPARE_CANCELLED;
+	if (blockDiffSize == 0)
+		return CompareResult::FILES_MATCH;
 
-	std::vector<unsigned int> doc1Hashes = computeHashes(doc1, Settings.IgnoreSpaces);
-	std::vector<unsigned int> doc2Hashes = computeHashes(doc2, Settings.IgnoreSpaces);
+	if (progress)
+		progress->SetMaxCount(blockDiffSize);
 
-	if (!ProgressDlg::NextPhase())
-		return COMPARE_CANCELLED;
-
-	std::vector<diff_edit> diff = DiffCalc<unsigned int>(doc1Hashes, doc2Hashes)();
-
-	if (!ProgressDlg::NextPhase())
-		return COMPARE_CANCELLED;
-
-	if (diff.empty())
+	// Do block compares
+	for (int i = 0; i < blockDiffSize; ++i)
 	{
-		ProgressDlg::Close();
-		return FILES_MATCH;
-	}
-
-	const std::size_t diffSize = diff.size();
-
-	ProgressDlg::SetMaxCount(diffSize + 1);
-
-	int	doc1ChangedLinesCount = 0;
-	int	doc2ChangedLinesCount = 0;
-
-	shiftBoundries(diff, doc1Hashes.data(), doc2Hashes.data(), doc1Length, doc2Length);
-
-	if (Settings.DetectMoves)
-		findMoves(diff, doc1Hashes.data(), doc2Hashes.data());
-
-	// Insert empty lines, count changed lines
-	for (unsigned int i = 0; i < diffSize; ++i)
-	{
-		if (!ProgressDlg::Advance())
-			return COMPARE_CANCELLED;
-
-		diff_edit& e1 = diff[i];
-
-		if (e1.op == DIFF_DELETE)
+		if (blockDiff[i].type == diff_type::DIFF_INSERT)
 		{
-			e1.changeCount = 0;
-			doc1ChangedLinesCount += e1.len;
-
-			diff_edit& e2 = diff[i + 1];
-
-			e2.changeCount = 0;
-
-			if (e2.op == DIFF_INSERT)
+			if (i > 0) // Should always be the case but check it anyway for safety
 			{
-				// check if the DELETE/INSERT pair includes changed lines or it's a completely new block
-				if (compareWords(e1, e2, doc1, doc2, Settings.IgnoreSpaces))
+				diff_edit& blockDiff1 = blockDiff[i - 1];
+				diff_edit& blockDiff2 = blockDiff[i];
+
+				// Check if the DELETE/INSERT pair includes changed lines or it's a completely new block
+				if (blockDiff1.type == diff_type::DIFF_DELETE)
 				{
-					e1.op = DIFF_CHANGE1;
-					e2.op = DIFF_CHANGE2;
-					doc2ChangedLinesCount += e2.len;
+					if (compareBlocks(view1, view2, Settings, blockDiff1, blockDiff2))
+					{
+						blockDiff1.matchedOff = blockDiff2.off;
+						blockDiff2.matchedOff = blockDiff1.off;
+					}
 				}
 			}
 		}
-		else if (e1.op == DIFF_INSERT)
-		{
-			e1.changeCount = 0;
-			doc2ChangedLinesCount += e1.len;
-		}
+
+		if (progress && !progress->Advance())
+			return CompareResult::COMPARE_CANCELLED;
 	}
 
-	if (!ProgressDlg::NextPhase())
-		return COMPARE_CANCELLED;
+	if (progress && !progress->NextPhase())
+		return CompareResult::COMPARE_CANCELLED;
 
-	ProgressDlg::SetMaxCount(diffSize + 1);
+	if (!showDiffs(view1, view2, cmpResults, progress))
+		return CompareResult::COMPARE_CANCELLED;
 
-	std::vector<diff_edit> doc1Changes(doc1ChangedLinesCount);
-	std::vector<diff_edit> doc2Changes(doc2ChangedLinesCount);
-
-	int doc1Offset = 0;
-	int doc2Offset = 0;
-
-	// Switch from blocks of lines to one change per line.
-	// Change CHANGE to DELETE or INSERT if there are no changes on that line
-	{
-		int added;
-		int doc1Idx = 0;
-		int doc2Idx = 0;
-
-		for (unsigned int i = 0; i < diffSize; ++i)
-		{
-			if (!ProgressDlg::Advance())
-				return COMPARE_CANCELLED;
-
-			diff_edit& e = diff[i];
-			e.set = i;
-
-			switch (e.op)
-			{
-				case DIFF_CHANGE1:
-				case DIFF_DELETE:
-					added = setDiffLines(e, doc1Changes, &doc1Idx, DIFF_DELETE, e.off + doc2Offset);
-					doc1Offset += added;
-					doc2Offset -= added;
-				break;
-
-				case DIFF_CHANGE2:
-				case DIFF_INSERT:
-					added = setDiffLines(e, doc2Changes, &doc2Idx, DIFF_INSERT, e.off + doc1Offset);
-					doc1Offset -= added;
-					doc2Offset += added;
-				break;
-			}
-		}
-	}
-
-	if (!ProgressDlg::NextPhase())
-		return COMPARE_CANCELLED;
-
-	if ((doc1ChangedLinesCount == 0) && (doc2ChangedLinesCount == 0))
-	{
-		ProgressDlg::Close();
-		return FILES_MATCH;
-	}
-
-	ProgressDlg::SetMaxCount(4);
-
-	for (int i = 0; i < doc1ChangedLinesCount; ++i)
-	{
-		switch (doc1Changes[i].op)
-		{
-			case DIFF_DELETE:
-				markAsRemoved(view1, doc1Changes[i].off);
-			break;
-
-			case DIFF_CHANGE1:
-			{
-				markAsChanged(view1, doc1Changes[i].off);
-				const int textIndex = lineNum1[doc1Changes[i].off];
-
-				for (unsigned int k = 0; k < doc1Changes[i].changeCount; ++k)
-				{
-					diff_change& change = doc1Changes[i].changes->get(k);
-					markTextAsChanged(view1, textIndex + change.off, change.len);
-				}
-			}
-			break;
-
-			case DIFF_MOVE:
-				markAsMoved(view1, doc1Changes[i].off);
-			break;
-		}
-	}
-
-	if (!ProgressDlg::Advance())
-		return COMPARE_CANCELLED;
-
-	for (int i = 0; i < doc2ChangedLinesCount; ++i)
-	{
-		switch (doc2Changes[i].op)
-		{
-			case DIFF_INSERT:
-				markAsAdded(view2, doc2Changes[i].off);
-			break;
-
-			case DIFF_CHANGE2:
-			{
-				markAsChanged(view2, doc2Changes[i].off);
-				const int textIndex = lineNum2[doc2Changes[i].off];
-
-				for (unsigned int k = 0; k < doc2Changes[i].changeCount; ++k)
-				{
-					diff_change& change = doc2Changes[i].changes->get(k);
-					markTextAsChanged(view2, textIndex + change.off, change.len);
-				}
-			}
-			break;
-
-			case DIFF_MOVE:
-				markAsMoved(view2, doc2Changes[i].off);
-			break;
-		}
-	}
-
-	if (!ProgressDlg::Advance())
-		return COMPARE_CANCELLED;
-
-	{
-		int length = 0;
-		int off = 0;
-		doc2Offset = 0;
-
-		for (int i = 0; i < doc1ChangedLinesCount; ++i)
-		{
-			switch (doc1Changes[i].op)
-			{
-				case DIFF_DELETE:
-				case DIFF_MOVE:
-					if (doc1Changes[i].altLocation == off)
-					{
-						length++;
-					}
-					else
-					{
-						addBlankSection(view2, off + doc2Offset, length, true);
-						doc2Offset += length;
-						off = doc1Changes[i].altLocation;
-						length = 1;
-					}
-				break;
-			}
-		}
-
-		addBlankSection(view2, off + doc2Offset, length, true);
-
-		if (!ProgressDlg::Advance())
-			return COMPARE_CANCELLED;
-
-		length = 0;
-		off = 0;
-		doc1Offset = 0;
-
-		for (int i = 0; i < doc2ChangedLinesCount; i++)
-		{
-			switch (doc2Changes[i].op)
-			{
-				case DIFF_INSERT:
-				case DIFF_MOVE:
-					if (doc2Changes[i].altLocation == off)
-					{
-						++length;
-					}
-					else
-					{
-						addBlankSection(view1, off + doc1Offset, length, true);
-						doc1Offset += length;
-						off = doc2Changes[i].altLocation;
-						length = 1;
-					}
-				break;
-			}
-		}
-
-		addBlankSection(view1, off + doc1Offset, length, true);
-	}
-
-	if (!ProgressDlg::NextPhase())
-		return COMPARE_CANCELLED;
-
-	adjustBlanksWrap();
-
-	if (!ProgressDlg::NextPhase())
-		return COMPARE_CANCELLED;
-
-	ProgressDlg::Close();
-
-	return FILES_DIFFER;
+	return CompareResult::FILES_DIFFER;
 }
 
 
-CompareResult_t runCompare(CompareList_t::iterator& cmpPair)
+CompareResult runCompare(CompareList_t::iterator& cmpPair)
 {
 	cmpPair->positionFiles();
 
@@ -1537,22 +1305,38 @@ CompareResult_t runCompare(CompareList_t::iterator& cmpPair)
 
 	setStyles(Settings);
 
-	CompareResult_t result = COMPARE_ERROR;
+	CompareResult result = CompareResult::COMPARE_ERROR;
+
+	progress_ptr& progress = ProgressDlg::Open();
+
+	if (progress)
+	{
+		const TCHAR* newName = ::PathFindFileName(cmpPair->getNewFile().name);
+		const TCHAR* oldName = ::PathFindFileName(cmpPair->getOldFile().name);
+
+		TCHAR msg[MAX_PATH];
+		_sntprintf_s(msg, _countof(msg), _TRUNCATE, TEXT("Comparing \"%s\" vs. \"%s\"..."), newName, oldName);
+
+		progress->SetInfo(msg);
+	}
 
 	try
 	{
-		result = doCompare(cmpPair);
+		result = compareViews(progress);
+		progress.reset();
 	}
 	catch (std::exception& e)
 	{
-		ProgressDlg::Close();
+		progress.reset();
+
 		char msg[128];
 		_snprintf_s(msg, _countof(msg), _TRUNCATE, "Exception occurred: %s", e.what());
 		MessageBoxA(nppData._nppHandle, msg, "Compare Plugin", MB_OK | MB_ICONWARNING);
 	}
 	catch (...)
 	{
-		ProgressDlg::Close();
+		progress.reset();
+
 		MessageBoxA(nppData._nppHandle, "Unknown exception occurred.", "Compare Plugin", MB_OK | MB_ICONWARNING);
 	}
 
@@ -1608,16 +1392,16 @@ void Compare()
 		cmpPair->getNewFile().clear();
 	}
 
-	CompareResult_t cmpResult;
+	CompareResult cmpResult;
 
 	if (Settings.EncodingsCheck && !isEncodingOK(*cmpPair))
-		cmpResult = COMPARE_CANCELLED;
+		cmpResult = CompareResult::COMPARE_CANCELLED;
 	else
 		cmpResult = runCompare(cmpPair);
 
 	switch (cmpResult)
 	{
-		case FILES_DIFFER:
+		case CompareResult::FILES_DIFFER:
 		{
 			NppSettings::get().updatePluginMenu();
 
@@ -1641,7 +1425,7 @@ void Compare()
 		}
 		break;
 
-		case FILES_MATCH:
+		case CompareResult::FILES_MATCH:
 		{
 			TCHAR msg[2 * MAX_PATH];
 
@@ -1791,14 +1575,6 @@ void IgnoreSpaces()
 }
 
 
-void IgnoreEOLs()
-{
-	Settings.IgnoreEOLs = !Settings.IgnoreEOLs;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_EOLS]._cmdID,
-			(LPARAM)Settings.IgnoreEOLs);
-}
-
-
 void DetectMoves()
 {
 	Settings.DetectMoves = !Settings.DetectMoves;
@@ -1919,9 +1695,6 @@ void createMenu()
 
 	_tcscpy_s(funcItem[CMD_IGNORE_SPACES]._itemName, nbChar, TEXT("Ignore Spaces"));
 	funcItem[CMD_IGNORE_SPACES]._pFunc = IgnoreSpaces;
-
-	_tcscpy_s(funcItem[CMD_IGNORE_EOLS]._itemName, nbChar, TEXT("Ignore End of Lines"));
-	funcItem[CMD_IGNORE_EOLS]._pFunc = IgnoreEOLs;
 
 	_tcscpy_s(funcItem[CMD_DETECT_MOVES]._itemName, nbChar, TEXT("Detect Moves"));
 	funcItem[CMD_DETECT_MOVES]._pFunc = DetectMoves;
@@ -2099,8 +1872,6 @@ void onToolBarReady()
 
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACES]._cmdID,
 			(LPARAM)Settings.IgnoreSpaces);
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_EOLS]._cmdID,
-			(LPARAM)Settings.IgnoreEOLs);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID,
 			(LPARAM)Settings.DetectMoves);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID,
@@ -2460,7 +2231,8 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		break;
 
 		case NPPN_FILEBEFORECLOSE:
-			if ((bool)newCompare && (newCompare->pair.file[0].buffId == (int)notifyCode->nmhdr.idFrom))
+			if ((bool)newCompare &&
+				(newCompare->pair.file[0].buffId == static_cast<LRESULT>(notifyCode->nmhdr.idFrom)))
 				newCompare.reset();
 			else if (!notificationsLock && !compareList.empty())
 				onFileBeforeClose(notifyCode->nmhdr.idFrom);

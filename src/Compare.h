@@ -61,7 +61,6 @@ enum MENU_COMMANDS
 	CMD_GIT_DIFF,
 	CMD_SEPARATOR_2,
 	CMD_IGNORE_SPACES,
-	CMD_IGNORE_EOLS,
 	CMD_DETECT_MOVES,
 	CMD_NAV_BAR,
 	CMD_SEPARATOR_3,
@@ -103,7 +102,6 @@ struct UserSettings
 	static const TCHAR wrapAroundSetting[];
 	static const TCHAR compactNavBarSetting[];
 	static const TCHAR ignoreSpacesSetting[];
-	static const TCHAR ignoreEOLsSetting[];
 	static const TCHAR detectMovesSetting[];
 	static const TCHAR navBarSetting[];
 	static const TCHAR colorsSection[];
@@ -123,7 +121,6 @@ struct UserSettings
 	bool           	CompactNavBar;
 
 	bool           	IgnoreSpaces;
-	bool           	IgnoreEOLs;
 	bool           	DetectMoves;
 	bool           	UseNavBar;
 

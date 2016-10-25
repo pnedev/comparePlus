@@ -19,27 +19,15 @@
 #pragma once
 
 #include <vector>
-#include <string>
-#include <limits.h>
+#include <utility>
 #include "NppHelpers.h"
+#include "diff.h"
+#include "ProgressDlg.h"
 
 
-// Rotate a value n bits to the left
-#define UINT_BIT (sizeof (unsigned) * CHAR_BIT)
-#define ROL(v, n) ((v) << (n) | (v) >> (UINT_BIT - (n)))
-
-// Given a hash value and a new character, return a new hash value
-#define HASH(h, c) ((c) + ROL(h, 7))
-
-
-// Forward declarations
-struct diff_edit;
-
-
-enum wordType
+enum class charType
 {
 	SPACECHAR,
-	EOLCHAR,
 	ALPHANUMCHAR,
 	OTHERCHAR
 };
@@ -47,11 +35,12 @@ enum wordType
 
 struct Word
 {
-	unsigned int line;
-	unsigned int pos;
-	unsigned int length;
-	wordType type;
-	std::string text;
+	charType type;
+
+	int line;
+	int pos;
+	int length;
+
 	unsigned int hash;
 
 	inline bool operator==(const Word& rhs) const
@@ -61,11 +50,9 @@ struct Word
 };
 
 
-bool compareWords(diff_edit&, diff_edit&, const DocLines_t& doc1, const DocLines_t& doc2, bool IgnoreSpaces);
-int setDiffLines(const diff_edit&, std::vector<diff_edit>&, int* idx, short op, int altLocation);
-
-void findMoves(std::vector<diff_edit>&, const unsigned int *hash1, const unsigned int *hash2);
-void shiftBoundries(std::vector<diff_edit>&, const unsigned int *hash1, const unsigned int *hash2,
-		int doc1Length, int doc2Length);
-
-std::vector<unsigned int> computeHashes(const DocLines_t& doc, bool IgnoreSpaces);
+// The returned bool is true if views are swapped and false otherwise
+std::pair<std::vector<diff_edit>, bool>
+		compareDocs(HWND& view1, HWND& view2, const UserSettings& settings, progress_ptr& progress);
+bool compareBlocks(HWND view1, HWND view2, const UserSettings& settings, diff_edit& blockDiff1, diff_edit& blockDiff2);
+bool showDiffs(HWND view1, HWND view2, const std::pair<std::vector<diff_edit>, bool>& cmpResults,
+		progress_ptr& progress);

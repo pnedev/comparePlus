@@ -20,10 +20,10 @@
 #include <tchar.h>
 #include <commctrl.h>
 
+#include <stdlib.h>
 #include <vector>
 
 #include "Compare.h"
-#include "Engine.h"
 #include "NppHelpers.h"
 
 #include "icon_add_16.h"
@@ -36,14 +36,14 @@
 #define INDIC_HIGHLIGHT		INDIC_CONTAINER + 7
 
 
-static const char strEOL[3][3] =
+static const char EOLstr[3][3] =
 {
 	"\r\n",
 	"\r",
 	"\n"
 };
 
-static const unsigned short lenEOL[3] = { 2, 1, 1 };
+static const short EOLlen[3] = { 2, 1, 1 };
 
 
 HWND NppToolbarHandleGetter::hNppToolbar = NULL;
@@ -164,17 +164,17 @@ void defineSymbol(int type, int symbol)
 }
 
 
-static void setChangedStyle(HWND window, const ColorSettings& settings)
+static void setChangedStyle(HWND view, const ColorSettings& settings)
 {
-	::SendMessage(window, SCI_INDICSETSTYLE, INDIC_HIGHLIGHT, (LPARAM)INDIC_ROUNDBOX);
-	::SendMessage(window, SCI_INDICSETFORE, INDIC_HIGHLIGHT, (LPARAM)settings.highlight);
-	::SendMessage(window, SCI_INDICSETALPHA, INDIC_HIGHLIGHT, (LPARAM)settings.alpha);
+	::SendMessage(view, SCI_INDICSETSTYLE, INDIC_HIGHLIGHT, (LPARAM)INDIC_ROUNDBOX);
+	::SendMessage(view, SCI_INDICSETFORE, INDIC_HIGHLIGHT, (LPARAM)settings.highlight);
+	::SendMessage(view, SCI_INDICSETALPHA, INDIC_HIGHLIGHT, (LPARAM)settings.alpha);
 }
 
 
-static void setTextStyle(HWND window, const ColorSettings& settings)
+static void setTextStyle(HWND view, const ColorSettings& settings)
 {
-	setChangedStyle(window, settings);
+	setChangedStyle(view, settings);
 }
 
 
@@ -185,11 +185,11 @@ static void setTextStyles(const ColorSettings& settings)
 }
 
 
-void setBlank(HWND window, int color)
+void setBlank(HWND view, int color)
 {
-	::SendMessage(window, SCI_MARKERDEFINE, MARKER_BLANK_LINE, (LPARAM)SC_MARK_BACKGROUND);
-	::SendMessage(window, SCI_MARKERSETBACK, MARKER_BLANK_LINE, (LPARAM)color);
-	::SendMessage(window, SCI_MARKERSETFORE, MARKER_BLANK_LINE, (LPARAM)color);
+	::SendMessage(view, SCI_MARKERDEFINE, MARKER_BLANK_LINE, (LPARAM)SC_MARK_BACKGROUND);
+	::SendMessage(view, SCI_MARKERSETBACK, MARKER_BLANK_LINE, (LPARAM)color);
+	::SendMessage(view, SCI_MARKERSETFORE, MARKER_BLANK_LINE, (LPARAM)color);
 }
 
 
@@ -265,60 +265,26 @@ void setStyles(UserSettings& settings)
 }
 
 
-void markAsBlank(HWND window, int line)
-{
-	::SendMessage(window, SCI_MARKERADD, line, MARKER_BLANK_LINE);
-}
-
-
-void markAsAdded(HWND window, int line)
-{
-	::SendMessage(window, SCI_MARKERADD, line, MARKER_ADDED_SYMBOL);
-	::SendMessage(window, SCI_MARKERADD, line, MARKER_ADDED_LINE);
-}
-
-
-void markAsChanged(HWND window, int line)
-{
-	::SendMessage(window, SCI_MARKERADD, line, MARKER_CHANGED_SYMBOL);
-	::SendMessage(window, SCI_MARKERADD, line, MARKER_CHANGED_LINE);
-}
-
-
-void markAsRemoved(HWND window, int line)
-{
-	::SendMessage(window, SCI_MARKERADD, line, MARKER_REMOVED_SYMBOL);
-	::SendMessage(window, SCI_MARKERADD, line, MARKER_REMOVED_LINE);
-}
-
-
-void markAsMoved(HWND window, int line)
-{
-	::SendMessage(window, SCI_MARKERADD, line, MARKER_MOVED_SYMBOL);
-	::SendMessage(window, SCI_MARKERADD, line, MARKER_MOVED_LINE);
-}
-
-
-void markTextAsChanged(HWND window, int start, int length)
+void markTextAsChanged(HWND view, int start, int length)
 {
 	if (length != 0)
 	{
-		int curIndic = ::SendMessage(window, SCI_GETINDICATORCURRENT, 0, 0);
-		::SendMessage(window, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
-		::SendMessage(window, SCI_INDICATORFILLRANGE, start, length);
-		::SendMessage(window, SCI_SETINDICATORCURRENT, curIndic, 0);
+		int curIndic = ::SendMessage(view, SCI_GETINDICATORCURRENT, 0, 0);
+		::SendMessage(view, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
+		::SendMessage(view, SCI_INDICATORFILLRANGE, start, length);
+		::SendMessage(view, SCI_SETINDICATORCURRENT, curIndic, 0);
 	}
 }
 
 
-void clearChangedIndicator(HWND window, int start, int length)
+void clearChangedIndicator(HWND view, int start, int length)
 {
 	if (length != 0)
 	{
-		int curIndic = ::SendMessage(window, SCI_GETINDICATORCURRENT, 0, 0);
-		::SendMessage(window, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
-		::SendMessage(window, SCI_INDICATORCLEARRANGE, start, length);
-		::SendMessage(window, SCI_SETINDICATORCURRENT, curIndic, 0);
+		int curIndic = ::SendMessage(view, SCI_GETINDICATORCURRENT, 0, 0);
+		::SendMessage(view, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
+		::SendMessage(view, SCI_INDICATORCLEARRANGE, start, length);
+		::SendMessage(view, SCI_SETINDICATORCURRENT, curIndic, 0);
 	}
 }
 
@@ -428,61 +394,47 @@ void jumpToNextChange(bool down, bool wrapAround)
 }
 
 
-DocLines_t getAllLines(HWND window, std::vector<int>& lineNum, bool ignoreEOLs)
+std::vector<char> getText(HWND view, int startPos, int endPos)
 {
-	int docLines = ::SendMessage(window, SCI_GETLENGTH, 0, 0);
+	const int lineLength = endPos - startPos;
 
-	if (docLines)
-		docLines = ::SendMessage(window, SCI_GETLINECOUNT, 0, 0);
+	if (lineLength <= 0)
+		return std::vector<char>(1, 0);
 
-	DocLines_t lines(docLines);
-	lineNum.resize(docLines);
+	std::vector<char> text(lineLength + 1, 0);
 
-	for (int line = 0; line < docLines; ++line)
-	{
-		Sci_TextRange tr;
-		tr.chrg.cpMin = ::SendMessage(window, SCI_POSITIONFROMLINE, line, 0);
-		if (ignoreEOLs)
-			tr.chrg.cpMax = ::SendMessage(window, SCI_GETLINEENDPOSITION, line, 0);
-		else
-			tr.chrg.cpMax = tr.chrg.cpMin + ::SendMessage(window, SCI_LINELENGTH, line, 0);
+	Sci_TextRange tr;
+	tr.chrg.cpMin = startPos;
+	tr.chrg.cpMax = endPos;
+	tr.lpstrText = text.data();
 
-		lineNum[line] = tr.chrg.cpMin;
+	::SendMessage(view, SCI_GETTEXTRANGE, 0, (LPARAM)&tr);
 
-		int lineLength = tr.chrg.cpMax - tr.chrg.cpMin;
-
-		lines[line].resize(lineLength + 1, 0);
-		tr.lpstrText = lines[line].data();
-
-		if (lineLength > 0)
-			::SendMessage(window, SCI_GETTEXTRANGE, 0, (LPARAM)&tr);
-	}
-
-	return lines;
+	return text;
 }
 
 
-void clearWindow(HWND window)
+void clearWindow(HWND view)
 {
-	removeBlankLines(window);
+	removeBlankLines(view);
 
-	::SendMessage(window, SCI_MARKERDELETEALL, MARKER_CHANGED_LINE,   MARKER_CHANGED_LINE);
-	::SendMessage(window, SCI_MARKERDELETEALL, MARKER_ADDED_LINE,     MARKER_ADDED_LINE);
-	::SendMessage(window, SCI_MARKERDELETEALL, MARKER_REMOVED_LINE,   MARKER_REMOVED_LINE);
-	::SendMessage(window, SCI_MARKERDELETEALL, MARKER_MOVED_LINE,     MARKER_MOVED_LINE);
-	::SendMessage(window, SCI_MARKERDELETEALL, MARKER_BLANK_LINE,     MARKER_BLANK_LINE);
-	::SendMessage(window, SCI_MARKERDELETEALL, MARKER_CHANGED_SYMBOL, MARKER_CHANGED_SYMBOL);
-	::SendMessage(window, SCI_MARKERDELETEALL, MARKER_ADDED_SYMBOL,   MARKER_ADDED_SYMBOL);
-	::SendMessage(window, SCI_MARKERDELETEALL, MARKER_REMOVED_SYMBOL, MARKER_REMOVED_SYMBOL);
-	::SendMessage(window, SCI_MARKERDELETEALL, MARKER_MOVED_SYMBOL,   MARKER_MOVED_SYMBOL);
+	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_CHANGED_LINE,   MARKER_CHANGED_LINE);
+	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_ADDED_LINE,     MARKER_ADDED_LINE);
+	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_REMOVED_LINE,   MARKER_REMOVED_LINE);
+	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_MOVED_LINE,     MARKER_MOVED_LINE);
+	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_BLANK_LINE,     MARKER_BLANK_LINE);
+	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_CHANGED_SYMBOL, MARKER_CHANGED_SYMBOL);
+	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_ADDED_SYMBOL,   MARKER_ADDED_SYMBOL);
+	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_REMOVED_SYMBOL, MARKER_REMOVED_SYMBOL);
+	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_MOVED_SYMBOL,   MARKER_MOVED_SYMBOL);
 
-	clearChangedIndicator(window, 0, ::SendMessage(window, SCI_GETLENGTH, 0, 0));
+	clearChangedIndicator(view, 0, ::SendMessage(view, SCI_GETLENGTH, 0, 0));
 
 	// reset syntax highlighting:
-	::SendMessage(window, SCI_COLOURISE, 0, -1);
-	::SendMessage(window, SCN_UPDATEUI, 0, 0);
+	::SendMessage(view, SCI_COLOURISE, 0, -1);
+	::SendMessage(view, SCN_UPDATEUI, 0, 0);
 
-	setNormalView(window);
+	setNormalView(view);
 }
 
 
@@ -543,61 +495,22 @@ void adjustBlanksWrap(HWND view)
 }
 
 
-void addBlankSection(HWND window, int line, int length, bool skipWrapAdjustment)
+static int deleteBlankSection(HWND view, int line)
 {
-	if (length <= 0)
-		return;
-
-	const UINT EOLtype = ::SendMessage(window, SCI_GETEOLMODE, 0, 0);
-
-	int posAdd = ::SendMessage(window, SCI_POSITIONFROMLINE, line, 0);
-
-	if (line == ::SendMessage(window, SCI_GETLINECOUNT, 0, 0))
-		posAdd = ::SendMessage(window, SCI_GETLENGTH, 0, 0);
-
-	std::vector<char> buff(lenEOL[EOLtype] * length);
-
-	for (int j = 0; j < length; ++j)
-	{
-		unsigned int i = j * lenEOL[EOLtype];
-		for (const char* eol = strEOL[EOLtype]; *eol; ++eol)
-			buff[i++] = *eol;
-	}
-
-	// SCI_INSERTTEXT needs \0 terminated string
-	buff.push_back(0);
-
-	ScopedViewUndoCollectionBlocker undoBlock(window);
-	ScopedViewWriteEnabler writeEn(window);
-
-	::SendMessage(window, SCI_INSERTTEXT, posAdd, (LPARAM)buff.data());
-
-	for (int i = 0; i < length; ++i)
-	{
-		if (!skipWrapAdjustment)
-			adjustLineIndent(window, line + i);
-
-		markAsBlank(window, line + i);
-	}
-}
-
-
-int deleteBlankSection(HWND window, int line)
-{
-	const int eolLen = lenEOL[::SendMessage(window, SCI_GETEOLMODE, 0, 0)];
-	const int lastLine = ::SendMessage(window, SCI_GETLINECOUNT, 0, 0) - 1;
+	const int eolLen = EOLlen[::SendMessage(view, SCI_GETEOLMODE, 0, 0)];
+	const int lastLine = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0) - 1;
 	const int blankMask = 1 << MARKER_BLANK_LINE;
 
-	int deleteStartPos = ::SendMessage(window, SCI_POSITIONFROMLINE, line, 0);
+	int deleteStartPos = ::SendMessage(view, SCI_POSITIONFROMLINE, line, 0);
 	int deleteLen = 0;
 	int deletedLines = 0;
 
-	while ((line <= lastLine) && (::SendMessage(window, SCI_MARKERGET, line, 0) & blankMask))
+	while ((line <= lastLine) && (::SendMessage(view, SCI_MARKERGET, line, 0) & blankMask))
 	{
-		::SendMessage(window, SCI_MARKERDELETE, line, MARKER_BLANK_LINE);
+		::SendMessage(view, SCI_MARKERDELETE, line, MARKER_BLANK_LINE);
 
-		const int lineLen		= ::SendMessage(window, SCI_LINELENGTH, line, 0);
-		const int lineIndent	= ::SendMessage(window, SCI_GETLINEINDENTATION, line, 0);
+		const int lineLen		= ::SendMessage(view, SCI_LINELENGTH, line, 0);
+		const int lineIndent	= ::SendMessage(view, SCI_GETLINEINDENTATION, line, 0);
 
 		// Don't delete a line that is not blank
 		if ((line < lastLine && lineLen > lineIndent + eolLen) || (line == lastLine && lineLen > lineIndent))
@@ -618,37 +531,95 @@ int deleteBlankSection(HWND window, int line)
 
 	if (deleteLen > 0)
 	{
-		ScopedViewUndoCollectionBlocker undoBlock(window);
-		ScopedViewWriteEnabler writeEn(window);
+		ScopedViewUndoCollectionBlocker undoBlock(view);
+		ScopedViewWriteEnabler writeEn(view);
 
-		::SendMessage(window, SCI_DELETERANGE, deleteStartPos, deleteLen);
+		::SendMessage(view, SCI_DELETERANGE, deleteStartPos, deleteLen);
 	}
 
 	return deletedLines;
 }
 
 
-void addBlankLines(HWND window, const BlankSections_t& blanks)
+void addBlankSection(HWND view, int line, int length)
+{
+	if (length <= 0)
+		return;
+
+	const UINT EOLtype = ::SendMessage(view, SCI_GETEOLMODE, 0, 0);
+	const int lineCount = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0);
+
+	std::vector<char> buff(EOLlen[EOLtype] * length + 1);
+
+	for (int j = 0; j < length; ++j)
+	{
+		int i = j * EOLlen[EOLtype];
+		for (const char* eol = EOLstr[EOLtype]; *eol; ++eol)
+			buff[i++] = *eol;
+	}
+
+	// SCI_INSERTTEXT needs \0 terminated string
+	buff.back() = 0;
+
+	ScopedViewUndoCollectionBlocker undoBlock(view);
+	ScopedViewWriteEnabler writeEn(view);
+
+	if (line < lineCount)
+	{
+		const int posAdd = ::SendMessage(view, SCI_POSITIONFROMLINE, line, 0);
+		::SendMessage(view, SCI_INSERTTEXT, posAdd, (LPARAM)buff.data());
+	}
+	else
+	{
+		line = lineCount - 1;
+
+		int marker = ::SendMessage(view, SCI_MARKERGET, line, 0);
+
+		if (marker)
+			::SendMessage(view, SCI_MARKERDELETE, line, -1);
+
+		::SendMessage(view, SCI_APPENDTEXT, buff.size() - 1, (LPARAM)buff.data());
+
+		for (int markerId = 0; marker; ++markerId)
+		{
+			if (marker & 1)
+				::SendMessage(view, SCI_MARKERADD, line, markerId);
+			marker >>= 1;
+		}
+
+		line = lineCount;
+	}
+
+	for (int i = 0; i < length; ++i)
+	{
+		adjustLineIndent(view, line + i);
+
+		::SendMessage(view, SCI_MARKERADD, line + i, MARKER_BLANK_LINE);
+	}
+}
+
+
+void addBlankLines(HWND view, const BlankSections_t& blanks)
 {
 	if (blanks.empty())
 		return;
 
 	const int size = blanks.size();
 	for (int i = 0; i < size; ++i)
-		addBlankSection(window, blanks[i].startLine, blanks[i].length);
+		addBlankSection(view, blanks[i].startLine, blanks[i].length);
 }
 
 
-BlankSections_t removeBlankLines(HWND window, bool saveBlanks)
+BlankSections_t removeBlankLines(HWND view, bool saveBlanks)
 {
 	BlankSections_t blanks;
 	const int marker = 1 << MARKER_BLANK_LINE;
 
 	int deletedLines = 0;
-	for (int line = ::SendMessage(window, SCI_MARKERNEXT, 0, marker); line >= 0;
-			line = ::SendMessage(window, SCI_MARKERNEXT, line, marker))
+	for (int line = ::SendMessage(view, SCI_MARKERNEXT, 0, marker); line >= 0;
+			line = ::SendMessage(view, SCI_MARKERNEXT, line, marker))
 	{
-		const int len = deleteBlankSection(window, line);
+		const int len = deleteBlankSection(view, line);
 		if (len > 0 && saveBlanks)
 		{
 			blanks.emplace_back(line + deletedLines, len);
