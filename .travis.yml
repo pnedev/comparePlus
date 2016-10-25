@@ -1,32 +1,59 @@
 language: cpp
 
-compiler:
-  - gcc
+sudo: required
+dist: trusty
 
-env:
-  - BUILDMODE=cmake-mingw32
-
-before_script:
-  - sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
-  - sudo add-apt-repository --yes ppa:tobydox/mingw-x-precise
-  - sudo apt-get -qq update
-  - sudo apt-get -qq install gcc-4.8 g++-4.8
-  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 20
-  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 20
-  - sudo update-alternatives --config gcc
-  - sudo update-alternatives --config g++
-  - if [ "$BUILDMODE" = "cmake-mingw32" ]; then sudo apt-get -qq install mingw64-x-gcc; fi
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+      env: BUILDMODE=cmake-mingw64_x64
+      addons:
+        apt:
+          packages:
+            - gcc-mingw-w64-base
+            - binutils-mingw-w64-x86-64
+            - g++-mingw-w64-x86-64
+            - gcc-mingw-w64-x86-64
+            - g++-mingw-w64
+            - mingw-w64-x86-64-dev
+    - os: linux
+      compiler: gcc
+      env: BUILDMODE=cmake-mingw64_i686
+      addons:
+        apt:
+          packages:
+            - gcc-mingw-w64-base
+            - binutils-mingw-w64-i686
+            - g++-mingw-w64-i686
+            - gcc-mingw-w64-i686
+            - mingw-w64-i686-dev
 
 script:
-  - if [ "$BUILDMODE" = "cmake-mingw32" ]; then echo "===> Building with cmake+mingw32..." &&
+  - if [ "$BUILDMODE" = "cmake-mingw64_i686" ]; then echo "===> Building with cmake+mingw64_i686..." &&
       cd "$TRAVIS_BUILD_DIR" &&
       mkdir build &&
       cd build &&
       echo "SET(CMAKE_SYSTEM_NAME Windows)" > toolchain.cmake &&
-      echo "SET(CMAKE_C_COMPILER /opt/mingw64/bin/x86_64-w64-mingw32-gcc)" >> toolchain.cmake &&
-      echo "SET(CMAKE_CXX_COMPILER /opt/mingw64/bin/x86_64-w64-mingw32-g++)" >> toolchain.cmake &&
-      echo "SET(CMAKE_RC_COMPILER /opt/mingw64/bin/x86_64-w64-mingw32-windres)" >> toolchain.cmake &&
-      echo "SET(CMAKE_FIND_ROOT_PATH /opt/mingw64)" >> toolchain.cmake &&
+      echo "SET(CMAKE_C_COMPILER /usr/bin/i686-w64-mingw32-gcc)" >> toolchain.cmake &&
+      echo "SET(CMAKE_CXX_COMPILER /usr/bin/i686-w64-mingw32-g++)" >> toolchain.cmake &&
+      echo "SET(CMAKE_RC_COMPILER /usr/bin/i686-w64-mingw32-windres)" >> toolchain.cmake &&
+      echo "SET(CMAKE_FIND_ROOT_PATH /usr/i686-w64-mingw32)" >> toolchain.cmake &&
+      echo "SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)" >> toolchain.cmake &&
+      echo "SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)" >> toolchain.cmake &&
+      echo "SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)" >> toolchain.cmake &&
+      cmake -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake .. &&
+      make &&
+      make install;
+    elif [ "$BUILDMODE" = "cmake-mingw64_x64" ]; then echo "===> Building with cmake+mingw64_x64..." &&
+      cd "$TRAVIS_BUILD_DIR" &&
+      mkdir build &&
+      cd build &&
+      echo "SET(CMAKE_SYSTEM_NAME Windows)" > toolchain.cmake &&
+      echo "SET(CMAKE_C_COMPILER /usr/bin/x86_64-w64-mingw32-gcc)" >> toolchain.cmake &&
+      echo "SET(CMAKE_CXX_COMPILER /usr/bin/x86_64-w64-mingw32-g++)" >> toolchain.cmake &&
+      echo "SET(CMAKE_RC_COMPILER /usr/bin/x86_64-w64-mingw32-windres)" >> toolchain.cmake &&
+      echo "SET(CMAKE_FIND_ROOT_PATH /usr/x86_64-w64-mingw32)" >> toolchain.cmake &&
       echo "SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)" >> toolchain.cmake &&
       echo "SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)" >> toolchain.cmake &&
       echo "SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)" >> toolchain.cmake &&
