@@ -19,7 +19,8 @@ Build Compare plugin for Notepad++ from source:
 
  1. Open [`plugin_compare\compare-plugin\projects\2013\Compare.vcxproj`](https://github.com/jsleroy/compare-plugin/blob/master/projects/2013/Compare.vcxproj)
  2. Build Compare plugin [like a normal Visual Studio project](https://msdn.microsoft.com/en-us/library/7s88b19e.aspx). Available platforms are x86 win32 and x64 for Unicode Release and Debug.
- 3. x64 builds currently just have beta status, report issues at [GitHub](https://github.com/jsleroy/compare-plugin/issues).
+ 3. CMake config is available and tested for the generators MinGW Makefiles, Visual Studio and NMake Makefiles
+ 4. x64 builds currently just have beta status, report issues at [GitHub](https://github.com/jsleroy/compare-plugin/issues).
 
 Installation:
 ----------
@@ -50,6 +51,4 @@ see [`ReleaseNotes.txt`](https://github.com/jsleroy/compare-plugin/blob/master/R
 TODOs:
 ----------
 
- - Description of cmake build on mingw
- - extend cmake config for vs and further generator builds
  - Correct changelog of 1.5.2, 1.5.6.8, 1.5.7
