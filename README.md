@@ -10,20 +10,23 @@ A very useful diff plugin to show the difference between:
 Build Status
 ------------
 
-AppVeyor `VS2013` and `VS2015`  [![Build status](https://ci.appveyor.com/api/projects/status/github/jsleroy/compare-plugin?svg=true)](https://ci.appveyor.com/project/jsleroy/compare-plugin)
+- AppVeyor `VS2013` and `VS2015`  [![Build status](https://ci.appveyor.com/api/projects/status/github/jsleroy/compare-plugin?svg=true)](https://ci.appveyor.com/project/jsleroy/compare-plugin)
+- Travis '[mingw-w64](https://mingw-w64.org)' cmake build
+[![Build Status](https://travis-ci.org/jsleroy/compare-plugin.svg?branch=master)](https://travis-ci.org/jsleroy/compare-plugin)
 
 Build Compare plugin for Notepad++ from source:
 -------------------------------
 
  1. Open [`plugin_compare\compare-plugin\projects\2013\Compare.vcxproj`](https://github.com/jsleroy/compare-plugin/blob/master/projects/2013/Compare.vcxproj)
- 2. Build Compare plugin [like a normal Visual Studio project](https://msdn.microsoft.com/en-us/library/7s88b19e.aspx).
- 3. X64 builds currently just have beta status, report issues at [GitHub](https://github.com/jsleroy/compare-plugin/issues).
+ 2. Build Compare plugin [like a normal Visual Studio project](https://msdn.microsoft.com/en-us/library/7s88b19e.aspx). Available platforms are x86 win32 and x64 for Unicode Release and Debug.
+ 3. x64 builds currently just have beta status, report issues at [GitHub](https://github.com/jsleroy/compare-plugin/issues).
 
 Installation:
 ----------
 
-To install manually for usage with Notepad++, copy ComparePlugin.dll and ComparePlugin subfolder
+To install the plugin manually for usage with Notepad++, copy ComparePlugin.dll and ComparePlugin subfolder
 into the plugins directory (`Notepad++ installation dir`)\Notepad++\Plugins.
+The ComparePlugin subfolder contains the libs libgit2.dll and sqlite.dll for the Diff against Git and SVN.
 
 Get Compare plugin for Notepad++ at the web:
 -------------------------------
@@ -47,9 +50,6 @@ see [`ReleaseNotes.txt`](https://github.com/jsleroy/compare-plugin/blob/master/R
 TODOs:
 ----------
 
- 1. Description of cmake build on mingw
- 2. Correct changelog of 1.5.2, 1.5.6.8, 1.5.7
- 3. Check broken Travis build
- 4. Description of X64 build
- 5. Description of dependency to libgit2.dll and sqlite.dll for plugin installation with current sources
- 6. X64 version of libgit2.dll and sqlite.dll
+ - Description of cmake build on mingw
+ - extend cmake config for vs and further generator builds
+ - Correct changelog of 1.5.2, 1.5.6.8, 1.5.7
