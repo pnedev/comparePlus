@@ -29,3 +29,5 @@ Thumbs.db
 Notepad++/
 *~
 *.swp
+*.ipch
+*.exp
