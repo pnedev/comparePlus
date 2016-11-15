@@ -29,10 +29,10 @@ class AboutDialog : public StaticDialog
 public:
 	AboutDialog() : StaticDialog() {};
 
-	void init(HINSTANCE hInst, NppData nppData)
+	void init(HINSTANCE hInst, NppData nppDataParam)
 	{
-		_nppData = nppData;
-		Window::init(hInst, nppData._nppHandle);
+		_nppData = nppDataParam;
+		Window::init(hInst, nppDataParam._nppHandle);
 	};
 
 	void doDialog();
