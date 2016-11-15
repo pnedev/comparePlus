@@ -39,6 +39,8 @@ struct ScopedIncrementer
 		--_useCount;
 	}
 
+	ScopedIncrementer& operator=(const ScopedIncrementer&) = delete;
+
 private:
 	volatile unsigned&	_useCount;
 };

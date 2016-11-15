@@ -95,6 +95,8 @@ public:
 
 	std::vector<diff_edit> operator()();
 
+	DiffCalc& operator=(const DiffCalc&) = delete;
+
 private:
 	struct middle_snake {
 		int x, y, u, v;
