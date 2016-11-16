@@ -246,10 +246,14 @@ std::vector<char> GetGitFileContent(const TCHAR* fullFilePath)
 		char ansiPath[MAX_PATH];
 
 		TCharToChar(fullFilePath, ansiPath, sizeof(ansiPath));
+		::PathRemoveFileSpecA(ansiPath);
 
 		if (!gitLib->repository_open_ext(&repo, ansiPath, 0, NULL))
 		{
 			const char* ansiGitDir = gitLib->repository_workdir(repo);
+
+			//reinit with fullFilePath after modification by PathRemoveFileSpecA(), needed to get the relative path
+			TCharToChar(fullFilePath, ansiPath, sizeof(ansiPath));
 
 			RelativePath(ansiPath, ansiGitDir, ansiGitFilePath, sizeof(ansiGitFilePath));
 		}
