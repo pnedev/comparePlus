@@ -51,7 +51,7 @@ void DelayedWork::cancel()
 }
 
 
-VOID CALLBACK DelayedWork::timerCB(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+VOID CALLBACK DelayedWork::timerCB(HWND, UINT, UINT_PTR idEvent, DWORD)
 {
 	std::map<UINT_PTR, DelayedWork*>::iterator it = workMap.find(idEvent);
 

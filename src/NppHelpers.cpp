@@ -58,7 +58,7 @@ HWND NppToolbarHandleGetter::get()
 }
 
 
-BOOL CALLBACK NppToolbarHandleGetter::enumWindowsCB(HWND hwnd, LPARAM lParam)
+BOOL CALLBACK NppToolbarHandleGetter::enumWindowsCB(HWND hwnd, LPARAM )
 {
 	TCHAR winClassName[64];
 
