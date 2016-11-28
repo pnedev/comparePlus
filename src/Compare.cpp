@@ -2033,10 +2033,14 @@ void DelayedClose::operator()()
 	// If it is the last file and it is not in the main view - move it there
 	if (getNumberOfFiles() == 1 && getCurrentViewId() == SUB_VIEW)
 	{
-		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_CLONE_TO_ANOTHER_VIEW);
-		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SWITCHTO_OTHER_VIEW);
+		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_NEW);
+
+		const LRESULT newBuffId = getCurrentBuffId();
+
+		activateBufferID(currentBuffId);
+		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
+		activateBufferID(newBuffId);
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
-		::UpdateWindow(nppData._scintillaMainHandle);
 	}
 }
 
