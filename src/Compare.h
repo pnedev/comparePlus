@@ -90,8 +90,14 @@ struct ColorSettings
 
 struct UserSettings
 {
+public:
 	void load();
 	void save();
+
+	inline void markAsDirty()
+	{
+		dirty = true;
+	}
 
 	static const TCHAR mainSection[];
 	static const TCHAR oldIsFirstSetting[];
@@ -125,6 +131,9 @@ struct UserSettings
 	bool           	UseNavBar;
 
 	ColorSettings	colors;
+
+private:
+	bool dirty {false};
 };
 
 

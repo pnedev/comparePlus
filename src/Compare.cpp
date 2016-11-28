@@ -79,7 +79,7 @@ void UserSettings::load()
 
 	IgnoreSpaces = ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,	0, iniFile) == 1;
 	DetectMoves  = ::GetPrivateProfileInt(mainSection, detectMovesSetting,	1, iniFile) == 1;
-	UseNavBar    = ::GetPrivateProfileInt(mainSection, navBarSetting,		0, iniFile) == 1;
+	UseNavBar    = ::GetPrivateProfileInt(mainSection, navBarSetting,		1, iniFile) == 1;
 
 	colors.added     = ::GetPrivateProfileInt(colorsSection, addedColorSetting,		DEFAULT_ADDED_COLOR, iniFile);
 	colors.deleted   = ::GetPrivateProfileInt(colorsSection, removedColorSetting,	DEFAULT_DELETED_COLOR, iniFile);
@@ -87,11 +87,16 @@ void UserSettings::load()
 	colors.moved     = ::GetPrivateProfileInt(colorsSection, movedColorSetting,		DEFAULT_MOVED_COLOR, iniFile);
 	colors.highlight = ::GetPrivateProfileInt(colorsSection, highlightColorSetting,	DEFAULT_HIGHLIGHT_COLOR, iniFile);
 	colors.alpha     = ::GetPrivateProfileInt(colorsSection, highlightAlphaSetting,	DEFAULT_HIGHLIGHT_ALPHA, iniFile);
+
+	dirty = false;
 }
 
 
 void UserSettings::save()
 {
+	if (!dirty)
+		return;
+
 	TCHAR iniFile[MAX_PATH];
 
 	::SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, (WPARAM)_countof(iniFile), (LPARAM)iniFile);
@@ -135,6 +140,8 @@ void UserSettings::save()
 
 	_itot_s(colors.alpha, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, highlightAlphaSetting, buffer, iniFile);
+
+	dirty = false;
 }
 
 
@@ -1572,6 +1579,7 @@ void IgnoreSpaces()
 	Settings.IgnoreSpaces = !Settings.IgnoreSpaces;
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACES]._cmdID,
 			(LPARAM)Settings.IgnoreSpaces);
+	Settings.markAsDirty();
 }
 
 
@@ -1580,6 +1588,7 @@ void DetectMoves()
 	Settings.DetectMoves = !Settings.DetectMoves;
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID,
 			(LPARAM)Settings.DetectMoves);
+	Settings.markAsDirty();
 }
 
 
@@ -2140,6 +2149,7 @@ void ViewNavigationBar()
 	Settings.UseNavBar = !Settings.UseNavBar;
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID,
 			(LPARAM)Settings.UseNavBar);
+	Settings.markAsDirty();
 
 	if (NppSettings::get().compareMode)
 	{

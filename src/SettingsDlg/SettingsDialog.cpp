@@ -60,6 +60,7 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 			{
 				case IDOK:
 					if (GetParams() == FALSE) return FALSE;
+					_Settings->markAsDirty();
 					::EndDialog(_hSelf, IDOK);
 					return TRUE;
 
