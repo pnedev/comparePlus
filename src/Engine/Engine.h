@@ -47,6 +47,11 @@ struct Word
 	{
 		return (hash == rhs.hash);
 	}
+
+	inline operator bool() const
+	{
+		return (hash != 0);
+	}
 };
 
 

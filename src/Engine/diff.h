@@ -69,13 +69,14 @@ struct diff_edit
 
 	// added lines for Notepad++ use
 	int							matchedOff {-1};
+	int							matchedLen {0};
 
 	std::vector<diff_change>	changes;
-	std::vector<int>			moves;
+	std::vector<bool>			moved;
 
 	inline bool isMoved(unsigned int i) const
 	{
-		return (!moves.empty() && (moves[i] != -1));
+		return (!moved.empty() && moved[i]);
 	}
 };
 
@@ -456,7 +457,6 @@ diff_edit* DiffCalc<Elem>::_find_anchor(int a_elem, int *b_elem)
 	const int diff_size = _diff.size();
 
 	diff_edit* insert = NULL;
-	bool match = false;
 
 	for (int i = 0; i < diff_size; ++i)
 	{
@@ -466,12 +466,11 @@ diff_edit* DiffCalc<Elem>::_find_anchor(int a_elem, int *b_elem)
 		{
 			for (int j = 0; j < e.len; ++j)
 			{
-				if (_a[a_elem] == _b[e.off + j])
+				if ((bool)_a[a_elem] && _a[a_elem] == _b[e.off + j])
 				{
-					if (match)
+					if (insert)
 						return NULL;
 
-					match = true;
 					*b_elem = j;
 					insert = &e;
 				}
@@ -479,29 +478,8 @@ diff_edit* DiffCalc<Elem>::_find_anchor(int a_elem, int *b_elem)
 		}
 	}
 
-	if (!match || insert->moves[*b_elem] != -1)
+	if (!insert || insert->isMoved(*b_elem))
 		return NULL;
-
-	match = false;
-
-	for (int i = 0; i < diff_size; ++i)
-	{
-		const diff_edit& e = _diff[i];
-
-		if (e.type == diff_type::DIFF_DELETE)
-		{
-			for (int j = 0; j < e.len; ++j)
-			{
-				if (_a[a_elem] == _a[e.off + j])
-				{
-					if (match)
-						return NULL;
-
-					match = true;
-				}
-			}
-		}
-	}
 
 	return insert;
 }
@@ -512,15 +490,6 @@ void DiffCalc<Elem>::_find_moves()
 {
 	const int diff_size = _diff.size();
 
-	// Initialize moves arrays
-	for (int i = 0; i < diff_size; ++i)
-	{
-		diff_edit& e = _diff[i];
-
-		if (e.type != diff_type::DIFF_MATCH)
-			e.moves.resize(e.len, -1);
-	}
-
 	for (int i = 0; i < diff_size; ++i)
 	{
 		diff_edit& e = _diff[i];
@@ -530,7 +499,7 @@ void DiffCalc<Elem>::_find_moves()
 
 		for (int j = 0; j < e.len; ++j)
 		{
-			if (e.moves[j] != -1)
+			if (e.isMoved(j))
 				continue;
 
 			int b_elem;
@@ -539,31 +508,32 @@ void DiffCalc<Elem>::_find_moves()
 			if (!match)
 				continue;
 
-			e.moves[j] = match->off + b_elem;
-			match->moves[b_elem] = e.off + j;
+			// Move found - initialize move vectors
+			if (e.moved.empty())
+				e.moved.resize(e.len, false);
 
-			int d1 = j - 1;
-			int d2 = b_elem - 1;
+			if (match->moved.empty())
+				match->moved.resize(match->len, false);
 
-			while (d1 >= 0 && d2 >= 0 && e.moves[d1] == -1 && match->moves[d2] == -1 &&
-					_a[e.off + d1] == _b[match->off + d2])
+			e.moved[j] = true;
+			match->moved[b_elem] = true;
+
+			// We might have missed some blank diffs as _find_anchor ignores them.
+			// But if anchor is found it is good to include the blanks also to see the whole moved block.
+			for (int d1 = j - 1, d2 = b_elem - 1;
+					d1 >= 0 && d2 >= 0 && !e.moved[d1] && !match->moved[d2] && _a[e.off + d1] == _b[match->off + d2];
+					--d1, --d2)
 			{
-				e.moves[d1] = match->off + d2;
-				match->moves[d2] = e.off + d1;
-				--d1;
-				--d2;
+				e.moved[d1] = true;
+				match->moved[d2] = true;
 			}
 
-			d1 = j + 1;
-			d2 = b_elem + 1;
-
-			while (d1 < e.len && d2 < match->len && e.moves[d1] == -1 && match->moves[d2] == -1 &&
-					_a[e.off + d1] == _b[match->off + d2])
+			for (++j, ++b_elem;
+					j < e.len && b_elem < match->len && !e.moved[j] && !match->moved[b_elem] &&
+					_a[e.off + j] == _b[match->off + b_elem]; ++j, ++b_elem)
 			{
-				e.moves[d1] = match->off + d2;
-				match->moves[d2] = e.off + d1;
-				++d1;
-				++d2;
+				e.moved[j] = true;
+				match->moved[b_elem] = true;
 			}
 		}
 	}

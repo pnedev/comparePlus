@@ -1281,11 +1281,12 @@ CompareResult compareViews(progress_ptr& progress)
 				// Check if the DELETE/INSERT pair includes changed lines or it's a completely new block
 				if (blockDiff1.type == diff_type::DIFF_DELETE)
 				{
-					if (compareBlocks(view1, view2, Settings, blockDiff1, blockDiff2))
-					{
-						blockDiff1.matchedOff = blockDiff2.off;
-						blockDiff2.matchedOff = blockDiff1.off;
-					}
+					blockDiff1.matchedOff = blockDiff2.off;
+					blockDiff1.matchedLen = blockDiff2.len;
+					blockDiff2.matchedOff = blockDiff1.off;
+					blockDiff2.matchedLen = blockDiff1.len;
+
+					compareBlocks(view1, view2, Settings, blockDiff1, blockDiff2);
 				}
 			}
 		}

@@ -312,6 +312,30 @@ int markSection(HWND view, HWND otherView, int line, int length, diff_mark marke
 	return 0;
 }
 
+
+int markSection(HWND view, int docOffset, const diff_edit& bd, diff_mark bdMark)
+{
+	const int blanksLen = bd.matchedLen - bd.len;
+
+	int line = docOffset + bd.off;
+
+	for (int i = 0; i < bd.len; ++i, ++line)
+	{
+		const diff_mark marker = bd.isMoved(i) ? MOVED_MARK : bdMark;
+
+		::SendMessage(view, SCI_MARKERADD, line, lineMark[marker]);
+		::SendMessage(view, SCI_MARKERADD, line, symbolMark[marker]);
+	}
+
+	if (blanksLen > 0)
+	{
+		addBlankSection(view, line, blanksLen);
+		return blanksLen;
+	}
+
+	return 0;
+}
+
 }
 
 
@@ -503,9 +527,15 @@ bool showDiffs(HWND view1, HWND view2, const std::pair<std::vector<diff_edit>, b
 
 			const int bdLine = bd.off + *docOffset;
 
-			if (bd.changes.empty() && bd.moves.empty())
+			if (bd.changes.empty())
 			{
-				*otherDocOffset += markSection(view, otherView, bdLine, bd.len, bdMark, true);
+				*docOffset += markSection(view, *docOffset, bd, bdMark);
+
+				if (!bd.matchedLen)
+				{
+					addBlankSection(otherView, bdLine, bd.len);
+					*otherDocOffset += bd.len;
+				}
 			}
 			else
 			{
