@@ -50,12 +50,12 @@ struct Word
 
 	inline bool operator==(unsigned int rhs) const
 	{
-		return (hash == 0);
+		return (hash == rhs);
 	}
 
 	inline bool operator!=(unsigned int rhs) const
 	{
-		return (hash != 0);
+		return (hash != rhs);
 	}
 };
 
