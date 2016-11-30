@@ -466,7 +466,7 @@ diff_edit* DiffCalc<Elem>::_find_anchor(int a_elem, int *b_elem)
 		{
 			for (int j = 0; j < e.len; ++j)
 			{
-				if ((bool)_a[a_elem] && _a[a_elem] == _b[e.off + j])
+				if (_a[a_elem] != 0 && _a[a_elem] == _b[e.off + j])
 				{
 					if (insert)
 						return NULL;
