@@ -2238,18 +2238,20 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 	{
 		// Handle wrap refresh
 		case SCN_PAINTED:
-			if (NppSettings::get().compareMode && !notificationsLock && !delayedActivation.isPending())
+			if (NppSettings::get().compareMode && !notificationsLock &&
+					!delayedActivation.isPending() && !delayedClosure.isPending())
 				NavDlg.Update();
 		break;
 
 		// Emulate word-wrap aware vertical scroll sync
 		case SCN_UPDATEUI:
-			if (NppSettings::get().compareMode && !notificationsLock && !delayedActivation.isPending())
+			if (NppSettings::get().compareMode && !notificationsLock &&
+					!delayedActivation.isPending() && !delayedClosure.isPending())
 				onSciUpdateUI(notifyCode);
 		break;
 
 		case NPPN_BUFFERACTIVATED:
-			if (!notificationsLock && !compareList.empty())
+			if (!notificationsLock && !compareList.empty() && !delayedClosure.isPending())
 				onBufferActivated(notifyCode->nmhdr.idFrom);
 		break;
 
