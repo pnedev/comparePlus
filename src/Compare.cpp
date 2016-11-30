@@ -2026,8 +2026,18 @@ void DelayedClose::operator()()
 				closedFile.onClose();
 		}
 
-		if (otherFile.isOpen())
-			otherFile.restore();
+		if (otherFile.isTemp)
+		{
+			if (otherFile.isOpen())
+				otherFile.close();
+			else
+				otherFile.onClose();
+		}
+		else
+		{
+			if (otherFile.isOpen())
+				otherFile.restore();
+		}
 
 		compareList.erase(cmpPair);
 	}
