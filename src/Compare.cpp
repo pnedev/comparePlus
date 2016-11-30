@@ -2036,9 +2036,7 @@ void DelayedClose::operator()()
 
 	activateBufferID(currentBuffId);
 
-	delayedActivation(currentBuffId);
-
-	NppSettings::get().updatePluginMenu();
+	onBufferActivated(currentBuffId);
 
 	// If it is the last file and it is not in the main view - move it there
 	if (getNumberOfFiles() == 1 && getCurrentViewId() == SUB_VIEW)
