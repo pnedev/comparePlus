@@ -337,17 +337,19 @@ struct ComparedFile
 	void updateFromCurrent();
 	void updateView();
 	void clear();
-	void onBeforeClose();
-	void onClose();
-	void close();
-	void restore();
-	bool isOpen();
+	void onBeforeClose() const;
+	void onClose() const;
+	void close() const;
+	void restore() const;
+	bool isOpen() const;
 
 	Temp_t	isTemp;
 	bool	isNew;
+
 	int		originalViewId;
 	int		originalPos;
 	int		compareViewId;
+
 	LRESULT	buffId;
 	int		sciDoc;
 	TCHAR	name[MAX_PATH];
@@ -518,6 +520,7 @@ FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
 // Declare local functions that appear before they are defined
 void First();
 void forceViewsSync(HWND focalView, bool syncCurrentLine = true);
+void comparedFileActivated();
 
 
 void NppSettings::enableClearCommands() const
@@ -679,7 +682,7 @@ void ComparedFile::clear()
 }
 
 
-void ComparedFile::onBeforeClose()
+void ComparedFile::onBeforeClose() const
 {
 	if (buffId != getCurrentBuffId())
 		activateBufferID(buffId);
@@ -692,7 +695,7 @@ void ComparedFile::onBeforeClose()
 }
 
 
-void ComparedFile::onClose()
+void ComparedFile::onClose() const
 {
 	if (isTemp)
 	{
@@ -702,7 +705,7 @@ void ComparedFile::onClose()
 }
 
 
-void ComparedFile::close()
+void ComparedFile::close() const
 {
 	onBeforeClose();
 
@@ -712,7 +715,7 @@ void ComparedFile::close()
 }
 
 
-void ComparedFile::restore()
+void ComparedFile::restore() const
 {
 	if (isTemp)
 	{
@@ -740,7 +743,7 @@ void ComparedFile::restore()
 }
 
 
-bool ComparedFile::isOpen()
+bool ComparedFile::isOpen() const
 {
 	return (::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (LPARAM)NULL) >= 0);
 }
@@ -1172,9 +1175,9 @@ void closeComparePair(CompareList_t::iterator& cmpPair)
 	if (::IsWindowVisible(currentView))
 		::SetFocus(currentView);
 
-	delayedActivation(getCurrentBuffId());
-
 	resetCompareView(getOtherView());
+
+	delayedActivation(getCurrentBuffId());
 
 	nppSettings.updatePluginMenu();
 }
@@ -1801,7 +1804,7 @@ void forceViewsSync(HWND focalView, bool syncCurrentLine)
 {
 	HWND otherView = getOtherView(focalView);
 
-	const int activeLine = getCurrentLine(getCurrentView());
+	const int activeLine = getCurrentLine(focalView);
 	const int firstVisibleLine1 = ::SendMessage(focalView, SCI_GETFIRSTVISIBLELINE, 0, 0);
 
 	if (syncCurrentLine)
@@ -1831,6 +1834,21 @@ void forceViewsSync(HWND focalView, bool syncCurrentLine)
 	::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine2, 0);
 
 	::UpdateWindow(otherView);
+}
+
+
+void comparedFileActivated()
+{
+	NppSettings& nppSettings = NppSettings::get();
+	nppSettings.setCompareMode();
+	nppSettings.updatePluginMenu();
+	setCompareView(nppData._scintillaMainHandle);
+	setCompareView(nppData._scintillaSecondHandle);
+
+	if (Settings.UseNavBar && !NavDlg.isVisible())
+		showNavBar();
+
+	forceViewsSync(getCurrentView());
 }
 
 
@@ -1967,16 +1985,7 @@ void DelayedActivate::operator()()
 		activateBufferID(buffId);
 	}
 
-	NppSettings& nppSettings = NppSettings::get();
-	nppSettings.setCompareMode();
-	nppSettings.updatePluginMenu();
-	setCompareView(nppData._scintillaMainHandle);
-	setCompareView(nppData._scintillaSecondHandle);
-
-	if (Settings.UseNavBar && !NavDlg.isVisible())
-		showNavBar();
-
-	forceViewsSync(getCurrentView());
+	comparedFileActivated();
 }
 
 
@@ -1989,15 +1998,26 @@ void onBufferActivated(LRESULT buffId)
 	{
 		NppSettings& nppSettings = NppSettings::get();
 		nppSettings.setNormalMode();
-
-		setNormalView(getCurrentView());
-
 		nppSettings.updatePluginMenu();
+		setNormalView(getCurrentView());
 	}
 	else
 	{
-		delayedActivation.buffId = buffId;
-		delayedActivation.post(50);
+		const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
+
+		// The other compared file is active in the other view - perhaps we are simply switching between views
+		if (getDocId(getOtherView()) == otherFile.sciDoc)
+		{
+			comparedFileActivated();
+		}
+		// The other compared file is not active in the other view - we must activate it but let's wait because
+		// if the view is also switched this might not be the user activated buffer
+		// (it might be intermediate buffer activation notification)
+		else
+		{
+			delayedActivation.buffId = buffId;
+			delayedActivation.post(30);
+		}
 	}
 }
 
@@ -2046,7 +2066,6 @@ void DelayedClose::operator()()
 	closedBuffs.clear();
 
 	activateBufferID(currentBuffId);
-
 	onBufferActivated(currentBuffId);
 
 	// If it is the last file and it is not in the main view - move it there
@@ -2075,8 +2094,6 @@ void onFileBeforeClose(LRESULT buffId)
 
 	const LRESULT currentBuffId = getCurrentBuffId();
 
-	NppSettings::get().setNormalMode();
-
 	ScopedIncrementer incr(notificationsLock);
 
 	ComparedFile& closedFile = cmpPair->getFileByBuffId(buffId);
@@ -2100,7 +2117,7 @@ void onFileBeforeClose(LRESULT buffId)
 	if (currentBuffId != buffId)
 		activateBufferID(currentBuffId);
 
-	delayedClosure.post(50);
+	delayedClosure.post(30);
 }
 
 
@@ -2257,8 +2274,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		break;
 
 		case NPPN_FILEBEFORECLOSE:
-			if ((bool)newCompare &&
-				(newCompare->pair.file[0].buffId == static_cast<LRESULT>(notifyCode->nmhdr.idFrom)))
+			if (newCompare && (newCompare->pair.file[0].buffId == static_cast<LRESULT>(notifyCode->nmhdr.idFrom)))
 				newCompare.reset();
 			else if (!notificationsLock && !compareList.empty())
 				onFileBeforeClose(notifyCode->nmhdr.idFrom);
@@ -2270,7 +2286,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		break;
 
 		case NPPN_FILESAVED:
-			if ((bool)saveNotifData)
+			if (saveNotifData)
 				onFileSaved(notifyCode->nmhdr.idFrom);
 		break;
 

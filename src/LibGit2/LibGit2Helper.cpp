@@ -28,7 +28,7 @@ std::unique_ptr<LibGit>	LibGit::Inst;
 
 std::unique_ptr<LibGit>& LibGit::load()
 {
-	if ((bool)Inst)
+	if (Inst)
 		return Inst;
 
 	TCHAR dllPath[MAX_PATH];
