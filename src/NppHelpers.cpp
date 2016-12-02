@@ -245,9 +245,6 @@ void setStyles(UserSettings& settings)
 
 	settings.colors.blank = r | (g << 8) | (b << 16);
 
-	setCompareView(nppData._scintillaMainHandle);
-	setCompareView(nppData._scintillaSecondHandle);
-
 	setBlank(nppData._scintillaMainHandle,   settings.colors.blank);
 	setBlank(nppData._scintillaSecondHandle, settings.colors.blank);
 

@@ -370,6 +370,7 @@ struct ComparedPair
 	ComparedFile& getFileBySciDoc(int sciDoc);
 	ComparedFile& getOldFile();
 	ComparedFile& getNewFile();
+
 	void positionFiles();
 	void restoreFiles(int currentBuffId);
 
@@ -519,8 +520,8 @@ FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
 
 // Declare local functions that appear before they are defined
 void First();
+void onBufferActivated(LRESULT buffId, bool delay = true);
 void forceViewsSync(HWND focalView, bool syncCurrentLine = true);
-void comparedFileActivated();
 
 
 void NppSettings::enableClearCommands() const
@@ -593,6 +594,8 @@ void NppSettings::setNormalMode()
 	syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
 	if (syncScroll != _syncHScroll)
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLH);
+
+	updatePluginMenu();
 }
 
 
@@ -620,6 +623,8 @@ void NppSettings::setCompareMode()
 	// synchronize zoom levels
 	int zoom = ::SendMessage(getCurrentView(), SCI_GETZOOM, 0, 0);
 	::SendMessage(getOtherView(), SCI_SETZOOM, zoom, 0);
+
+	updatePluginMenu();
 }
 
 
@@ -1139,29 +1144,19 @@ void clearComparePair(LRESULT buffId)
 	if (cmpPair == compareList.end())
 		return;
 
-	NppSettings& nppSettings = NppSettings::get();
-	nppSettings.setNormalMode();
-
 	ScopedIncrementer incr(notificationsLock);
 
 	cmpPair->restoreFiles(buffId);
 
 	compareList.erase(cmpPair);
 
-	resetCompareView(getOtherView());
-
-	delayedActivation(getCurrentBuffId());
-
-	nppSettings.updatePluginMenu();
+	onBufferActivated(getCurrentBuffId(), false);
 }
 
 
 void closeComparePair(CompareList_t::iterator& cmpPair)
 {
 	HWND currentView = getCurrentView();
-
-	NppSettings& nppSettings = NppSettings::get();
-	nppSettings.setNormalMode();
 
 	ScopedIncrementer incr(notificationsLock);
 
@@ -1175,11 +1170,7 @@ void closeComparePair(CompareList_t::iterator& cmpPair)
 	if (::IsWindowVisible(currentView))
 		::SetFocus(currentView);
 
-	resetCompareView(getOtherView());
-
-	delayedActivation(getCurrentBuffId());
-
-	nppSettings.updatePluginMenu();
+	onBufferActivated(getCurrentBuffId(), false);
 }
 
 
@@ -1312,8 +1303,6 @@ CompareResult runCompare(CompareList_t::iterator& cmpPair)
 {
 	cmpPair->positionFiles();
 
-	NppSettings::get().setCompareMode();
-
 	setStyles(Settings);
 
 	CompareResult result = CompareResult::COMPARE_ERROR;
@@ -1414,7 +1403,10 @@ void Compare()
 	{
 		case CompareResult::FILES_DIFFER:
 		{
-			NppSettings::get().updatePluginMenu();
+			NppSettings::get().setCompareMode();
+
+			setCompareView(nppData._scintillaMainHandle);
+			setCompareView(nppData._scintillaSecondHandle);
 
 			if (Settings.UseNavBar)
 				showNavBar();
@@ -1508,8 +1500,7 @@ void ClearAllCompares()
 
 	const LRESULT buffId = getCurrentBuffId();
 
-	NppSettings& nppSettings = NppSettings::get();
-	nppSettings.setNormalMode();
+	NppSettings::get().setNormalMode();
 
 	ScopedIncrementer incr(notificationsLock);
 
@@ -1526,8 +1517,6 @@ void ClearAllCompares()
 		activateBufferID(otherBuffId);
 
 	activateBufferID(buffId);
-
-	nppSettings.updatePluginMenu();
 }
 
 
@@ -1837,18 +1826,28 @@ void forceViewsSync(HWND focalView, bool syncCurrentLine)
 }
 
 
-void comparedFileActivated()
+void comparedFileActivated(bool delayed = false)
 {
-	NppSettings& nppSettings = NppSettings::get();
-	nppSettings.setCompareMode();
-	nppSettings.updatePluginMenu();
+	HWND syncView = getCurrentView();
+
+	if (!NppSettings::get().compareMode)
+	{
+		NppSettings::get().setCompareMode();
+
+		if (Settings.UseNavBar && !NavDlg.isVisible())
+			showNavBar();
+
+		syncView = getOtherView(syncView);
+	}
+	else if (delayed)
+	{
+		syncView = getOtherView(syncView);
+	}
+
 	setCompareView(nppData._scintillaMainHandle);
 	setCompareView(nppData._scintillaSecondHandle);
 
-	if (Settings.UseNavBar && !NavDlg.isVisible())
-		showNavBar();
-
-	forceViewsSync(getCurrentView());
+	forceViewsSync(syncView);
 }
 
 
@@ -1976,30 +1975,29 @@ void DelayedActivate::operator()()
 
 	const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
 
-	ScopedIncrementer incr(notificationsLock);
-
 	// When compared file is activated make sure its corresponding pair file is also active in the other view
 	if (getDocId(getOtherView()) != otherFile.sciDoc)
 	{
+		ScopedIncrementer incr(notificationsLock);
+
 		activateBufferID(otherFile.buffId);
 		activateBufferID(buffId);
 	}
 
-	comparedFileActivated();
+	comparedFileActivated(true);
 }
 
 
-void onBufferActivated(LRESULT buffId)
+void onBufferActivated(LRESULT buffId, bool delay)
 {
 	delayedActivation.cancel();
 
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
 	{
-		NppSettings& nppSettings = NppSettings::get();
-		nppSettings.setNormalMode();
-		nppSettings.updatePluginMenu();
+		NppSettings::get().setNormalMode();
 		setNormalView(getCurrentView());
+		resetCompareView(getOtherView());
 	}
 	else
 	{
@@ -2015,8 +2013,15 @@ void onBufferActivated(LRESULT buffId)
 		// (it might be intermediate buffer activation notification)
 		else
 		{
-			delayedActivation.buffId = buffId;
-			delayedActivation.post(30);
+			if (delay)
+			{
+				delayedActivation.buffId = buffId;
+				delayedActivation.post(30);
+			}
+			else
+			{
+				delayedActivation(buffId);
+			}
 		}
 	}
 }
@@ -2066,7 +2071,7 @@ void DelayedClose::operator()()
 	closedBuffs.clear();
 
 	activateBufferID(currentBuffId);
-	onBufferActivated(currentBuffId);
+	onBufferActivated(currentBuffId, false);
 
 	// If it is the last file and it is not in the main view - move it there
 	if (getNumberOfFiles() == 1 && getCurrentViewId() == SUB_VIEW)
@@ -2088,6 +2093,8 @@ void onFileBeforeClose(LRESULT buffId)
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
 		return;
+
+	delayedActivation.cancel();
 
 	delayedClosure.cancel();
 	delayedClosure.closedBuffs.push_back(buffId);
