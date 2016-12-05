@@ -1831,7 +1831,7 @@ void forceViewsSync(HWND focalView, bool syncCurrentLine)
 }
 
 
-void comparedFileActivated(bool delayed = false)
+void comparedFileActivated(const ComparedFile& cmpFile)
 {
 	HWND syncView = getCurrentView();
 
@@ -1841,13 +1841,10 @@ void comparedFileActivated(bool delayed = false)
 
 		if (Settings.UseNavBar && !NavDlg.isVisible())
 			showNavBar();
+	}
 
+	if (cmpFile.originalViewId != cmpFile.compareViewId)
 		syncView = getOtherView(syncView);
-	}
-	else if (delayed)
-	{
-		syncView = getOtherView(syncView);
-	}
 
 	setCompareView(nppData._scintillaMainHandle);
 	setCompareView(nppData._scintillaSecondHandle);
@@ -1989,7 +1986,7 @@ void DelayedActivate::operator()()
 		activateBufferID(buffId);
 	}
 
-	comparedFileActivated(true);
+	comparedFileActivated(cmpPair->getFileByBuffId(buffId));
 }
 
 
@@ -2011,7 +2008,7 @@ void onBufferActivated(LRESULT buffId, bool delay)
 		// The other compared file is active in the other view - perhaps we are simply switching between views
 		if (getDocId(getOtherView()) == otherFile.sciDoc)
 		{
-			comparedFileActivated();
+			comparedFileActivated(cmpPair->getFileByBuffId(buffId));
 		}
 		// The other compared file is not active in the other view - we must activate it but let's wait because
 		// if the view is also switched this might not be the user activated buffer

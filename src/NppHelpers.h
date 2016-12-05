@@ -19,6 +19,7 @@
 #pragma once
 
 #include <vector>
+#include <utility>
 #include "Compare.h"
 
 
@@ -262,6 +263,20 @@ inline int getCurrentLine(HWND view)
 inline bool isSelection(HWND view)
 {
 	return (::SendMessage(view, SCI_GETSELECTIONEND, 0, 0) - ::SendMessage(view, SCI_GETSELECTIONSTART, 0, 0) != 0);
+}
+
+
+inline std::pair<int, int> getSelection(HWND view)
+{
+	return std::make_pair(::SendMessage(view, SCI_GETSELECTIONSTART, 0, 0),
+			::SendMessage(view, SCI_GETSELECTIONEND, 0, 0));
+}
+
+
+inline void clearSelection(HWND view)
+{
+	const int currentPos = ::SendMessage(view, SCI_GETCURRENTPOS, 0, 0);
+	::SendMessage(view, SCI_SETSEL, currentPos, currentPos);
 }
 
 
