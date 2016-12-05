@@ -737,6 +737,9 @@ void ComparedFile::restore() const
 	{
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
 
+		if (!isOpen())
+			return;
+
 		const int currentPos = posFromBuffId(buffId);
 
 		if (originalPos >= currentPos)
