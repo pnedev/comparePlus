@@ -259,6 +259,12 @@ inline int getCurrentLine(HWND view)
 }
 
 
+inline bool isSelection(HWND view)
+{
+	return (::SendMessage(view, SCI_GETSELECTIONEND, 0, 0) - ::SendMessage(view, SCI_GETSELECTIONSTART, 0, 0) != 0);
+}
+
+
 void activateBufferID(LRESULT buffId);
 
 void markTextAsChanged(HWND view, int start, int length);

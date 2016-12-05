@@ -1819,7 +1819,9 @@ void forceViewsSync(HWND focalView, bool syncCurrentLine)
 			firstVisibleLine1 == ::SendMessage(focalView, SCI_VISIBLEFROMDOCLINE, line, 0)))
 		firstVisibleLine2 = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, line, 0);
 
-	::SendMessage(otherView, SCI_GOTOLINE, activeLine, 0);
+	if ((activeLine != getCurrentLine(otherView)) && !isSelection(otherView))
+		::SendMessage(otherView, SCI_GOTOLINE, activeLine, 0);
+
 	::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine2, 0);
 
 	::UpdateWindow(otherView);
