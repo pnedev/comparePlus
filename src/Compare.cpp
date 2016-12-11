@@ -1413,6 +1413,8 @@ void Compare()
 
 			if (Settings.UseNavBar)
 				showNavBar();
+			else
+				updateWrap();
 
 			if (!Settings.GotoFirstDiff && recompare)
 			{
