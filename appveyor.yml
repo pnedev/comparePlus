@@ -36,7 +36,7 @@ after_build:
     - ps: >-
 
         Push-AppveyorArtifact "Notepad++\plugins\ComparePlugin.dll" -FileName ComparePlugin.dll
-        
+
         if ($env:PLATFORM -eq "x64" -and $env:CONFIGURATION -eq "Release Unicode" -and $env:PLATFORMTOOLSET -eq "v120_xp") {
             $ZipFileName = "ComparePlugin_$($env:APPVEYOR_REPO_TAG_NAME)_x64.zip"
             Remove-Item .\Notepad++\plugins\*.pdb
@@ -56,7 +56,7 @@ artifacts:
 deploy:
   provider: GitHub
   auth_token:
-    secure: <your encrypted token> # your encrypted token from GitHub
+    secure: b9E1qivB5Vn1wX4kAT+TFE7JdNjx1CWznNFc1nylaBZxFguRRpe2WV908G8XRfw4 # your encrypted token from GitHub
   artifact: /.ComparePlugin_*\.zip/ # upload all zip packages to release assets
   draft: false
   prerelease: false
