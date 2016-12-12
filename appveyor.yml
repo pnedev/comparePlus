@@ -1,9 +1,7 @@
 version: 1.5.7.{build}
 image: Visual Studio 2015
 
-
 clone_depth: 1
-
 
 environment:
   matrix:
@@ -12,7 +10,7 @@ environment:
 
 platform:
     - x64
-    - Win32
+    - x86
 
 configuration:
     - Release Unicode
@@ -20,7 +18,7 @@ configuration:
 
 install:
     - if "%platform%"=="x64" set archi=amd64
-    - if "%platform%"=="Win32" set archi=x86
+    - if "%platform%"=="x86" set archi=x86
     - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" %archi%
 
 build:
@@ -37,16 +35,10 @@ after_build:
 
         Push-AppveyorArtifact "Notepad++\plugins\ComparePlugin.dll" -FileName ComparePlugin.dll
 
-        if ($env:PLATFORM -eq "x64" -and $env:CONFIGURATION -eq "Release Unicode" -and $env:PLATFORMTOOLSET -eq "v120_xp") {
-            $ZipFileName = "ComparePlugin_$($env:APPVEYOR_REPO_TAG_NAME)_x64.zip"
+        if ($($env:APPVEYOR_REPO_TAG) -eq "true" -and $env:CONFIGURATION -eq "Release Unicode" -and $env:PLATFORMTOOLSET -eq "v120_xp") {
+            $ZipFileName = "ComparePlugin_$($env:APPVEYOR_REPO_TAG_NAME)_$env:PLATFORM.zip"
             Remove-Item .\Notepad++\plugins\*.pdb
-            7z a $ZipFileName .\Notepad++\*
-        }
-
-        if ($env:PLATFORM -eq "Win32" -and $env:CONFIGURATION -eq "Release Unicode" -and $env:PLATFORMTOOLSET -eq "v120_xp") {
-            $ZipFileName = "ComparePlugin_$($env:APPVEYOR_REPO_TAG_NAME)_x86.zip"
-            Remove-Item .\Notepad++\plugins\*.pdb
-            7z a $ZipFileName .\Notepad++\*
+            7z a $ZipFileName .\Notepad++\plugins\*
         }
 
 artifacts:
