@@ -1,12 +1,10 @@
 version: Build {build}
 image: Visual Studio 2015
 
-clone_depth: 1
-
 environment:
-  matrix:
-  - PlatformToolset: v140_xp
-  - PlatformToolset: v120_xp
+    matrix:
+        - PlatformToolset: v140_xp
+        - PlatformToolset: v120_xp
 
 platform:
     - x64
@@ -22,7 +20,7 @@ install:
     - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" %archi%
 
 build:
-    parallel: true                  # enable MSBuild parallel builds
+    parallel: true
     verbosity: minimal
 
 build_script:
@@ -48,12 +46,12 @@ artifacts:
 deploy:
     provider: GitHub
     auth_token:
-        secure: b9E1qivB5Vn1wX4kAT+TFE7JdNjx1CWznNFc1nylaBZxFguRRpe2WV908G8XRfw4 # your encrypted token from GitHub
-    artifact: /.ComparePlugin_*\.zip/ # upload all zip packages to release assets
+        secure: b9E1qivB5Vn1wX4kAT+TFE7JdNjx1CWznNFc1nylaBZxFguRRpe2WV908G8XRfw4
+    artifact: releases
     draft: false
     prerelease: false
     force_update: true
     on:
-        appveyor_repo_tag: true     # deploy on tag push only
+        appveyor_repo_tag: true
         PlatformToolset: v120_xp
         configuration: Release Unicode
