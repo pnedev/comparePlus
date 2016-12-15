@@ -52,27 +52,33 @@ enum class diff_type
 };
 
 
-struct diff_change
+struct section_t
 {
 	int off;
 	int len;
-	int line;
-	int matchedLine;
 };
 
 
-struct diff_edit
+struct diff_line
+{
+	diff_line(int lineNum) : line(lineNum) {}
+
+	int line;
+	std::vector<section_t> changes;
+};
+
+
+struct diff_info
 {
 	diff_type	type;
 	int			off; // off into _a if MATCH or DELETE but into _b if INSERT
 	int			len;
 
 	// added lines for Notepad++ use
-	int							matchedOff {-1};
-	int							matchedLen {0};
+	const diff_info*	matchedDiff {nullptr};
 
-	std::vector<diff_change>	changes;
-	std::vector<bool>			moved;
+	std::vector<diff_line>	changedLines;
+	std::vector<bool>		moved;
 
 	inline bool isMoved(unsigned int i) const
 	{
@@ -92,7 +98,7 @@ public:
 	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2, bool findMovesEn = false, int max = INT_MAX) :
 		_a(v1), _b(v2), _findMovesEn(findMovesEn), _dmax(max) {}
 
-	std::vector<diff_edit> operator()();
+	std::vector<diff_info> operator()();
 
 	DiffCalc& operator=(const DiffCalc&) = delete;
 
@@ -107,13 +113,13 @@ private:
 	int _find_middle_snake(int aoff, int aend, int boff, int bend, middle_snake *ms);
 	int _ses(int aoff, int aend, int boff, int bend);
 	void _shift_boundries();
-	diff_edit* _find_anchor(int a_elem, int *b_elem);
+	diff_info* _find_anchor(int a_elem, int *b_elem);
 	void _find_moves();
 
 	const std::vector<Elem>& _a;
 	const std::vector<Elem>& _b;
 
-	std::vector<diff_edit> _diff;
+	std::vector<diff_info> _diff;
 
 	const bool	_findMovesEn;
 	const int	_dmax;
@@ -153,11 +159,11 @@ void DiffCalc<Elem>::_edit(diff_type type, int off, int len)
 
 	if (add_elem)
 	{
-		diff_edit new_e;
-		new_e.type = type;
-		new_e.off = off;
-		new_e.len = len;
-		_diff.push_back(new_e);
+		diff_info new_di;
+		new_di.type = type;
+		new_di.off = off;
+		new_di.len = len;
+		_diff.push_back(new_di);
 	}
 	else
 	{
@@ -390,8 +396,8 @@ void DiffCalc<Elem>::_shift_boundries()
 				// need to be moved at the same time
 				if (_diff[i + 1].type == diff_type::DIFF_INSERT)
 				{
-					diff_edit& adiff = _diff[i];
-					diff_edit& bdiff = _diff[i + 1];
+					diff_info& adiff = _diff[i];
+					diff_info& bdiff = _diff[i + 1];
 
 					bmax = bsize;
 
@@ -420,7 +426,7 @@ void DiffCalc<Elem>::_shift_boundries()
 				}
 				else
 				{
-					diff_edit& adiff = _diff[i];
+					diff_info& adiff = _diff[i];
 
 					int aend = adiff.off + adiff.len;
 
@@ -434,7 +440,7 @@ void DiffCalc<Elem>::_shift_boundries()
 		}
 		else if (_diff[i].type == diff_type::DIFF_INSERT)
 		{
-			diff_edit& adiff = _diff[i];
+			diff_info& adiff = _diff[i];
 
 			int aend = adiff.off + adiff.len;
 
@@ -452,27 +458,27 @@ void DiffCalc<Elem>::_shift_boundries()
 // Scan for lines that are only in the other document once use one-to-one match as an anchor
 // Scan to see if the lines above and below anchor also match
 template <typename Elem>
-diff_edit* DiffCalc<Elem>::_find_anchor(int a_elem, int *b_elem)
+diff_info* DiffCalc<Elem>::_find_anchor(int a_elem, int *b_elem)
 {
 	const int diff_size = _diff.size();
 
-	diff_edit* insert = NULL;
+	diff_info* insert = NULL;
 
 	for (int i = 0; i < diff_size; ++i)
 	{
-		diff_edit& e = _diff[i];
+		diff_info& di = _diff[i];
 
-		if (e.type == diff_type::DIFF_INSERT)
+		if (di.type == diff_type::DIFF_INSERT)
 		{
-			for (int j = 0; j < e.len; ++j)
+			for (int j = 0; j < di.len; ++j)
 			{
-				if (_a[a_elem] != 0 && _a[a_elem] == _b[e.off + j])
+				if (_a[a_elem] != 0 && _a[a_elem] == _b[di.off + j])
 				{
 					if (insert)
 						return NULL;
 
 					*b_elem = j;
-					insert = &e;
+					insert = &di;
 				}
 			}
 		}
@@ -492,47 +498,47 @@ void DiffCalc<Elem>::_find_moves()
 
 	for (int i = 0; i < diff_size; ++i)
 	{
-		diff_edit& e = _diff[i];
+		diff_info& di = _diff[i];
 
-		if (e.type != diff_type::DIFF_DELETE)
+		if (di.type != diff_type::DIFF_DELETE)
 			continue;
 
-		for (int j = 0; j < e.len; ++j)
+		for (int j = 0; j < di.len; ++j)
 		{
-			if (e.isMoved(j))
+			if (di.isMoved(j))
 				continue;
 
 			int b_elem;
-			diff_edit* match = _find_anchor(e.off + j, &b_elem);
+			diff_info* match = _find_anchor(di.off + j, &b_elem);
 
 			if (!match)
 				continue;
 
 			// Move found - initialize move vectors
-			if (e.moved.empty())
-				e.moved.resize(e.len, false);
+			if (di.moved.empty())
+				di.moved.resize(di.len, false);
 
 			if (match->moved.empty())
 				match->moved.resize(match->len, false);
 
-			e.moved[j] = true;
+			di.moved[j] = true;
 			match->moved[b_elem] = true;
 
 			// We might have missed some blank diffs as _find_anchor ignores them.
 			// But if anchor is found it is good to include the blanks also to see the whole moved block.
 			for (int d1 = j - 1, d2 = b_elem - 1;
-					d1 >= 0 && d2 >= 0 && !e.moved[d1] && !match->moved[d2] && _a[e.off + d1] == _b[match->off + d2];
+					d1 >= 0 && d2 >= 0 && !di.moved[d1] && !match->moved[d2] && _a[di.off + d1] == _b[match->off + d2];
 					--d1, --d2)
 			{
-				e.moved[d1] = true;
+				di.moved[d1] = true;
 				match->moved[d2] = true;
 			}
 
 			for (++j, ++b_elem;
-					j < e.len && b_elem < match->len && !e.moved[j] && !match->moved[b_elem] &&
-					_a[e.off + j] == _b[match->off + b_elem]; ++j, ++b_elem)
+					j < di.len && b_elem < match->len && !di.moved[j] && !match->moved[b_elem] &&
+					_a[di.off + j] == _b[match->off + b_elem]; ++j, ++b_elem)
 			{
-				e.moved[j] = true;
+				di.moved[j] = true;
 				match->moved[b_elem] = true;
 			}
 		}
@@ -541,7 +547,7 @@ void DiffCalc<Elem>::_find_moves()
 
 
 template <typename Elem>
-std::vector<diff_edit> DiffCalc<Elem>::operator()()
+std::vector<diff_info> DiffCalc<Elem>::operator()()
 {
 	/* The _ses function assumes the SES will begin or end with a delete
 	 * or insert. The following will ensure this is true by eating any

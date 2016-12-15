@@ -1251,8 +1251,8 @@ CompareResult compareViews(progress_ptr& progress)
 		view2 = nppData._scintillaMainHandle;
 	}
 
-	std::pair<std::vector<diff_edit>, bool> cmpResults = compareDocs(view1, view2, Settings, progress);
-	std::vector<diff_edit>& blockDiff = cmpResults.first;
+	std::pair<std::vector<diff_info>, bool> cmpResults = compareDocs(view1, view2, Settings, progress);
+	std::vector<diff_info>& blockDiff = cmpResults.first;
 
 	if (progress && !progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
@@ -1272,16 +1272,14 @@ CompareResult compareViews(progress_ptr& progress)
 		{
 			if (i > 0) // Should always be the case but check it anyway for safety
 			{
-				diff_edit& blockDiff1 = blockDiff[i - 1];
-				diff_edit& blockDiff2 = blockDiff[i];
+				diff_info& blockDiff1 = blockDiff[i - 1];
+				diff_info& blockDiff2 = blockDiff[i];
 
 				// Check if the DELETE/INSERT pair includes changed lines or it's a completely new block
 				if (blockDiff1.type == diff_type::DIFF_DELETE)
 				{
-					blockDiff1.matchedOff = blockDiff2.off;
-					blockDiff1.matchedLen = blockDiff2.len;
-					blockDiff2.matchedOff = blockDiff1.off;
-					blockDiff2.matchedLen = blockDiff1.len;
+					blockDiff1.matchedDiff = &blockDiff2;
+					blockDiff2.matchedDiff = &blockDiff1;
 
 					compareBlocks(view1, view2, Settings, blockDiff1, blockDiff2);
 				}
