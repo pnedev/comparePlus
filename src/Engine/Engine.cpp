@@ -231,29 +231,21 @@ void compareLines(diff_info& blockDiff1, diff_info& blockDiff2, const chunk_info
 
 			if (ld.type == diff_type::DIFF_DELETE)
 			{
-				for (int j = 0; j < ld.len; ++j)
-				{
-					const Word& word = (*pWords1)[ld.off + j];
-					section_t change;
+				section_t change;
 
-					change.off = word.pos;
-					change.len = word.length;
+				change.off = (*pWords1)[ld.off].pos;
+				change.len = (*pWords1)[ld.off + ld.len - 1].pos - change.off + (*pWords1)[ld.off + ld.len - 1].length;
 
-					pBlockDiff1->changedLines.back().changes.emplace_back(change);
-				}
+				pBlockDiff1->changedLines.back().changes.emplace_back(change);
 			}
 			else if (ld.type == diff_type::DIFF_INSERT)
 			{
-				for (int j = 0; j < ld.len; ++j)
-				{
-					const Word& word = (*pWords2)[ld.off + j];
-					section_t change;
+				section_t change;
 
-					change.off = word.pos;
-					change.len = word.length;
+				change.off = (*pWords2)[ld.off].pos;
+				change.len = (*pWords2)[ld.off + ld.len - 1].pos - change.off + (*pWords2)[ld.off + ld.len - 1].length;
 
-					pBlockDiff2->changedLines.back().changes.emplace_back(change);
-				}
+				pBlockDiff2->changedLines.back().changes.emplace_back(change);
 			}
 		}
 	}
