@@ -262,7 +262,7 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlugin"</Command>
     <ClInclude Include="..\..\src\XpmIcons\icon_add_16.h" />
     <ClInclude Include="..\..\src\XpmIcons\icon_moved_16.h" />
     <ClInclude Include="..\..\src\XpmIcons\icon_sub_16.h" />
-    <ClInclude Include="..\..\src\XpmIcons\icon_warning_16.h" />
+    <ClInclude Include="..\..\src\XpmIcons\icon_diff_16.h" />
     <ClInclude Include="..\..\src\NavDlg\NavDialog.h" />
     <ClInclude Include="..\..\src\NppHelpers.h" />
     <ClInclude Include="..\..\src\ProgressDlg\ProgressDlg.h" />

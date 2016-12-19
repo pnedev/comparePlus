@@ -138,7 +138,7 @@
     <ClInclude Include="..\..\src\XpmIcons\icon_sub_16.h">
       <Filter>src\XpmIcons</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\XpmIcons\icon_warning_16.h">
+    <ClInclude Include="..\..\src\XpmIcons\icon_diff_16.h">
       <Filter>src\XpmIcons</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Engine\Engine.h">

@@ -28,7 +28,7 @@
 
 #include "icon_add_16.h"
 #include "icon_sub_16.h"
-#include "icon_warning_16.h"
+#include "icon_diff_16.h"
 #include "icon_moved_16.h"
 
 
@@ -255,7 +255,7 @@ void setStyles(UserSettings& settings)
 
 	DefineXpmSymbol(MARKER_ADDED_SYMBOL,   icon_add_16_xpm);
 	DefineXpmSymbol(MARKER_REMOVED_SYMBOL, icon_sub_16_xpm);
-	DefineXpmSymbol(MARKER_CHANGED_SYMBOL, icon_warning_16_xpm);
+	DefineXpmSymbol(MARKER_CHANGED_SYMBOL, icon_diff_16_xpm);
 	DefineXpmSymbol(MARKER_MOVED_SYMBOL,   icon_moved_16_xpm);
 
 	setTextStyles(settings.colors);
