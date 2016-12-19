@@ -1,8 +1,29 @@
-To install manually, copy ComparePlugin.dll and ComparePlugin subfolder
-into the plugins directory C:\Program Files\Notepad++\Plugins.
-	
 Changelog:
 ----------
+
+2.0.0.0
+
+	- Major Compare plugin re-work, big portions of the code are re-written.
+	- Fix crashes and unstable behavior.
+	- Fix memory leaks.
+	- Improved compare algorithm in both accuracy and speed.
+	- Reduced memory usage.
+	- Support for unlimited active compares.
+	- 'Set First' command added to select the first file to compare (that removes the need to manually
+		move one of the files to the other view before comparing).
+	- Better N++ notifications handling - closing or moving compared files is handled appropriately
+		and doesn't lead to weird/unexpected results.
+	- Proper file positions restoring after closing the compare.
+	- Greatly improved Navigation bar.
+	- Improved Compare progress behavior - it now accurately represents the compare process.
+	- Improved settings dialog - the plugin behavior / results presentation is more customizable now.
+	- Better results synchronization in case of wrap around active setting and in general.
+	- Added compare toolbar icons (thanks to Yaron).
+	- Better compare results line margin symbols (thanks to Yaron).
+	- Better default diff colors (thanks to Yaron).
+	- Updated for 64-bit build (thanks to Christian Grasser - chcg).
+	- Added VS2015 project (thanks to Waldi Ravens - xylographe).
+	- Numerous bug fixes and improvements.
 
 [1.5.7]
 [    1. NEW: *** Compare released under GPLv3 ***]
@@ -98,38 +119,38 @@ Changelog:
 1.5.3
 
 	1. New Option and About menu entry, thanks to Jens.
-	2. Colors used for comparison results are now configurable in Option menu 
+	2. Colors used for comparison results are now configurable in Option menu
       (there is now no need to edit Compare.ini).
 	3. Compare to last save shortcut move to Alt+S
 	4. Compare against SVN base shortcut move to Alt+B
 	5. Bookmark and Compare marker bugs resolved, thanks to Thell
 
 1.5.2
-    
-1.5.1 
+
+1.5.1
 
     1. New colors. Thanks to Mark Baines for the suggestions
-	2. Fixes ( Thanks to Todd Schmitt for the excellent QA):	
+	2. Fixes ( Thanks to Todd Schmitt for the excellent QA):
        Memory leak fixed
        Letters were getting cut off if the Formats weren't Windows
        Occasionaly the some letters were cut off at the end of the file
        Crash bug if there was a blank line at the beginning of the document
-	
+
 1.5
 
 	1. "Align Matches", "Detect Moves", and "Ignore spaces" are now options
-	2. "Show Changes since last save" option added in case you want to see the differences 
-       since you last saved, or if the file is modified outside of Notepad++ and 
+	2. "Show Changes since last save" option added in case you want to see the differences
+       since you last saved, or if the file is modified outside of Notepad++ and
        you want to see those changes
-	3. "Compare with SVN base" if the file is in a svn repository you can see the 
+	3. "Compare with SVN base" if the file is in a svn repository you can see the
        changes since you last committed
 	4. There is now a colors section in the compare.ini to change the colors
 	5. Fixed a bug in the change detection
 	6. Compare checks to see if enough files are open before it checks if it has the right version.
-	
+
 
 1.4
-	
+
 	1. Fixed Issue where plugin would hang if you cleared a result that had an extra line at the end
 	2. Fixed a bug where matches in the middle of insert and delete blocks would not line up properly
 	3. Fixed bug that would delete a empty line on clear if there was a blank line under it
@@ -139,8 +160,8 @@ Changelog:
 
 
 1.3
-	
-	1. New feature! Matches will now sync up with each other, so its easier to see the differences in the files. 
+
+	1. New feature! Matches will now sync up with each other, so its easier to see the differences in the files.
        Much like how winmerge or some of the other major diff tools look. (thanks for the help Jens)
 
 1.2.1
@@ -150,13 +171,13 @@ Changelog:
     2. If compare moves a tab to another panel, than it will now move it back when the user selects Clear
 	3. Optimization:
        When possible, changes are shifted to make the results more readable.
-	
+
 1.2
 
-	1. By very, very popular demand: If two panels aren't already selected, the plugin will move the current tab 
+	1. By very, very popular demand: If two panels aren't already selected, the plugin will move the current tab
        into the second panel and than run the compare.
 	2. Improved Moved detection.
-	3. Vastly improved Changed detection. Only lines that were actually modified will show up as green, 
+	3. Vastly improved Changed detection. Only lines that were actually modified will show up as green,
        and the parts of the line that are different are highlighted.
 	4. Horizontal and vertical syncronization are enabled by default. (thanks to jenslorenz)
 	5. Fixed bug where files claimed to be identical if there was only one change. (Thanks to nicolasjolet)
@@ -167,8 +188,8 @@ Changelog:
 	2. Changed the way lines were marked to improve performance
 	3. There is now a prompt to notify you if the two files are identical
 	4. A description of each of the colors meaning was added to the about dialog box
-	5. A very crude "moved" detection algorithm was added. So lines that are the same but just 
+	5. A very crude "moved" detection algorithm was added. So lines that are the same but just
        in a different place are now marked as grey
 
-	
-	
+
+
