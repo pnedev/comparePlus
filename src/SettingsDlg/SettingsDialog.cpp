@@ -72,9 +72,11 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					_Settings->OldFileIsFirst	= (bool) DEFAULT_OLD_IS_FIRST;
 					_Settings->OldFileViewId	= DEFAULT_OLD_ON_LEFT ? MAIN_VIEW : SUB_VIEW;
 					_Settings->CompareToPrev	= (bool) DEFAULT_COMPARE_TO_PREV;
-					_Settings->GotoFirstDiff	= (bool) DEFAULT_GOTO_FIRST_DIFF;
+
 					_Settings->EncodingsCheck	= (bool) DEFAULT_ENCODINGS_CHECK;
 					_Settings->WrapAround		= (bool) DEFAULT_WRAP_AROUND;
+					_Settings->AutoRecompare	= (bool) DEFAULT_RECOMPARE_ON_SAVE;
+					_Settings->GotoFirstDiff	= (bool) DEFAULT_GOTO_FIRST_DIFF;
 					_Settings->CompactNavBar	= (bool) DEFAULT_COMPACT_NAVBAR;
 
 					_Settings->colors.added     = DEFAULT_ADDED_COLOR;
@@ -124,12 +126,15 @@ void SettingsDialog::SetParams()
 	::SendMessage(::GetDlgItem(_hSelf, IDC_OLD_FILE_POS), CB_SETCURSEL,
 			_Settings->OldFileViewId == MAIN_VIEW ? 0 : 1, 0);
 	::SendMessage(::GetDlgItem(_hSelf, IDC_DEFAULT_CMP_TO), CB_SETCURSEL, _Settings->CompareToPrev ? 0 : 1, 0);
-	Button_SetCheck(::GetDlgItem(_hSelf, IDC_GOTO_FIRST_DIFF),
-			_Settings->GotoFirstDiff ? BST_CHECKED : BST_UNCHECKED);
+
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_ENCODING_CHECK),
 			_Settings->EncodingsCheck ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_WRAP_AROUND),
 			_Settings->WrapAround ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_AUTO_RECOMPARE),
+			_Settings->AutoRecompare ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_GOTO_FIRST_DIFF),
+			_Settings->GotoFirstDiff ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_COMPACT_NAVBAR),
 			_Settings->CompactNavBar ? BST_CHECKED : BST_UNCHECKED);
 
@@ -153,12 +158,15 @@ BOOL SettingsDialog::GetParams()
 			::SendMessage(::GetDlgItem(_hSelf, IDC_OLD_FILE_POS), CB_GETCURSEL, 0, 0) == 0 ? MAIN_VIEW : SUB_VIEW;
 	_Settings->CompareToPrev	=
 			::SendMessage(::GetDlgItem(_hSelf, IDC_DEFAULT_CMP_TO), CB_GETCURSEL, 0, 0) == 0;
-	_Settings->GotoFirstDiff	=
-			(Button_GetCheck(::GetDlgItem(_hSelf, IDC_GOTO_FIRST_DIFF)) == BST_CHECKED) ? true : false;
+
 	_Settings->EncodingsCheck	=
 			(Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_ENCODING_CHECK)) == BST_CHECKED) ? true : false;
-	_Settings->WrapAround	=
+	_Settings->WrapAround		=
 			(Button_GetCheck(::GetDlgItem(_hSelf, IDC_WRAP_AROUND)) == BST_CHECKED) ? true : false;
+	_Settings->AutoRecompare	=
+			(Button_GetCheck(::GetDlgItem(_hSelf, IDC_AUTO_RECOMPARE)) == BST_CHECKED) ? true : false;
+	_Settings->GotoFirstDiff	=
+			(Button_GetCheck(::GetDlgItem(_hSelf, IDC_GOTO_FIRST_DIFF)) == BST_CHECKED) ? true : false;
 	_Settings->CompactNavBar	=
 			(Button_GetCheck(::GetDlgItem(_hSelf, IDC_COMPACT_NAVBAR)) == BST_CHECKED) ? true : false;
 

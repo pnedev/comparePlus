@@ -41,17 +41,23 @@ UserSettings Settings;
 
 
 const TCHAR UserSettings::mainSection[]				= TEXT("Main");
+
 const TCHAR UserSettings::oldIsFirstSetting[]		= TEXT("Old is First");
 const TCHAR UserSettings::oldFileOnLeftSetting[]	= TEXT("Old on Left");
 const TCHAR UserSettings::compareToPrevSetting[]	= TEXT("Default Compare is to Prev");
-const TCHAR UserSettings::gotoFirstDiffSetting[]	= TEXT("Go to First Diff");
+
 const TCHAR UserSettings::encodingsCheckSetting[]	= TEXT("Check Encodings");
 const TCHAR UserSettings::wrapAroundSetting[]		= TEXT("Wrap Around");
+const TCHAR UserSettings::recompareOnSaveSetting[]	= TEXT("ReCompare on Save");
+const TCHAR UserSettings::gotoFirstDiffSetting[]	= TEXT("Go to First Diff");
 const TCHAR UserSettings::compactNavBarSetting[]	= TEXT("Compact NavBar");
+
 const TCHAR UserSettings::ignoreSpacesSetting[]		= TEXT("Ignore Spaces");
 const TCHAR UserSettings::detectMovesSetting[]		= TEXT("Detect Moves");
 const TCHAR UserSettings::navBarSetting[]			= TEXT("Navigation Bar");
+
 const TCHAR UserSettings::colorsSection[]			= TEXT("Colors");
+
 const TCHAR UserSettings::addedColorSetting[]		= TEXT("Added");
 const TCHAR UserSettings::removedColorSetting[]		= TEXT("Removed");
 const TCHAR UserSettings::changedColorSetting[]		= TEXT("Changed");
@@ -68,25 +74,40 @@ void UserSettings::load()
 
 	::PathAppend(iniFile, TEXT("ComparePlugin.ini"));
 
-	OldFileIsFirst = ::GetPrivateProfileInt(mainSection, oldIsFirstSetting,    DEFAULT_OLD_IS_FIRST, iniFile) == 1;
-	OldFileViewId  = ::GetPrivateProfileInt(mainSection, oldFileOnLeftSetting, DEFAULT_OLD_ON_LEFT, iniFile) == 1 ?
-			MAIN_VIEW : SUB_VIEW;
-	CompareToPrev  = ::GetPrivateProfileInt(mainSection, compareToPrevSetting,  DEFAULT_COMPARE_TO_PREV, iniFile) == 1;
-	GotoFirstDiff  = ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting,  DEFAULT_GOTO_FIRST_DIFF, iniFile) == 1;
-	EncodingsCheck = ::GetPrivateProfileInt(mainSection, encodingsCheckSetting, DEFAULT_ENCODINGS_CHECK, iniFile) == 1;
-	WrapAround     = ::GetPrivateProfileInt(mainSection, wrapAroundSetting,     DEFAULT_WRAP_AROUND, iniFile) == 1;
-	CompactNavBar  = ::GetPrivateProfileInt(mainSection, compactNavBarSetting,  DEFAULT_COMPACT_NAVBAR, iniFile) == 1;
+	OldFileIsFirst	= ::GetPrivateProfileInt(mainSection, oldIsFirstSetting,
+			DEFAULT_OLD_IS_FIRST, iniFile) == 1;
+	OldFileViewId	= ::GetPrivateProfileInt(mainSection, oldFileOnLeftSetting,
+			DEFAULT_OLD_ON_LEFT, iniFile) == 1 ? MAIN_VIEW : SUB_VIEW;
+	CompareToPrev	= ::GetPrivateProfileInt(mainSection, compareToPrevSetting,
+			DEFAULT_COMPARE_TO_PREV, iniFile) == 1;
 
-	IgnoreSpaces = ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,	0, iniFile) == 1;
-	DetectMoves  = ::GetPrivateProfileInt(mainSection, detectMovesSetting,	1, iniFile) == 1;
-	UseNavBar    = ::GetPrivateProfileInt(mainSection, navBarSetting,		1, iniFile) == 1;
+	EncodingsCheck	= ::GetPrivateProfileInt(mainSection, encodingsCheckSetting,
+			DEFAULT_ENCODINGS_CHECK, iniFile) == 1;
+	WrapAround		= ::GetPrivateProfileInt(mainSection, wrapAroundSetting,
+			DEFAULT_WRAP_AROUND, iniFile) == 1;
+	AutoRecompare	= ::GetPrivateProfileInt(mainSection, recompareOnSaveSetting,
+			DEFAULT_RECOMPARE_ON_SAVE, iniFile) == 1;
+	GotoFirstDiff	= ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting,
+			DEFAULT_GOTO_FIRST_DIFF, iniFile) == 1;
+	CompactNavBar	= ::GetPrivateProfileInt(mainSection, compactNavBarSetting,
+			DEFAULT_COMPACT_NAVBAR, iniFile) == 1;
 
-	colors.added     = ::GetPrivateProfileInt(colorsSection, addedColorSetting,		DEFAULT_ADDED_COLOR, iniFile);
-	colors.deleted   = ::GetPrivateProfileInt(colorsSection, removedColorSetting,	DEFAULT_DELETED_COLOR, iniFile);
-	colors.changed   = ::GetPrivateProfileInt(colorsSection, changedColorSetting,	DEFAULT_CHANGED_COLOR, iniFile);
-	colors.moved     = ::GetPrivateProfileInt(colorsSection, movedColorSetting,		DEFAULT_MOVED_COLOR, iniFile);
-	colors.highlight = ::GetPrivateProfileInt(colorsSection, highlightColorSetting,	DEFAULT_HIGHLIGHT_COLOR, iniFile);
-	colors.alpha     = ::GetPrivateProfileInt(colorsSection, highlightAlphaSetting,	DEFAULT_HIGHLIGHT_ALPHA, iniFile);
+	IgnoreSpaces	= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,	1, iniFile) == 1;
+	DetectMoves		= ::GetPrivateProfileInt(mainSection, detectMovesSetting,	1, iniFile) == 1;
+	UseNavBar		= ::GetPrivateProfileInt(mainSection, navBarSetting,		1, iniFile) == 1;
+
+	colors.added		= ::GetPrivateProfileInt(colorsSection, addedColorSetting,
+			DEFAULT_ADDED_COLOR, iniFile);
+	colors.deleted		= ::GetPrivateProfileInt(colorsSection, removedColorSetting,
+			DEFAULT_DELETED_COLOR, iniFile);
+	colors.changed		= ::GetPrivateProfileInt(colorsSection, changedColorSetting,
+			DEFAULT_CHANGED_COLOR, iniFile);
+	colors.moved		= ::GetPrivateProfileInt(colorsSection, movedColorSetting,
+			DEFAULT_MOVED_COLOR, iniFile);
+	colors.highlight	= ::GetPrivateProfileInt(colorsSection, highlightColorSetting,
+			DEFAULT_HIGHLIGHT_COLOR, iniFile);
+	colors.alpha		= ::GetPrivateProfileInt(colorsSection, highlightAlphaSetting,
+			DEFAULT_HIGHLIGHT_ALPHA, iniFile);
 
 	dirty = false;
 }
@@ -108,12 +129,15 @@ void UserSettings::save()
 			OldFileViewId == MAIN_VIEW ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, compareToPrevSetting,
 			CompareToPrev ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, gotoFirstDiffSetting,
-			GotoFirstDiff ? TEXT("1") : TEXT("0"), iniFile);
+
 	::WritePrivateProfileString(mainSection, encodingsCheckSetting,
 			EncodingsCheck ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, wrapAroundSetting,
 			WrapAround ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, recompareOnSaveSetting,
+			AutoRecompare ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, gotoFirstDiffSetting,
+			GotoFirstDiff ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, compactNavBarSetting,
 			CompactNavBar ? TEXT("1") : TEXT("0"), iniFile);
 
@@ -2174,6 +2198,9 @@ void onFileSaved(LRESULT buffId)
 				TabCtrl_SetItem(hNppTabBar, tabPos, &tab);
 			}
 		}
+
+		if (Settings.AutoRecompare)
+			Compare();
 	}
 
 	saveNotifData.reset();

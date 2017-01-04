@@ -33,9 +33,11 @@
 #define DEFAULT_OLD_IS_FIRST		1
 #define DEFAULT_OLD_ON_LEFT			1
 #define DEFAULT_COMPARE_TO_PREV		1
-#define DEFAULT_GOTO_FIRST_DIFF		0
+
 #define DEFAULT_ENCODINGS_CHECK		1
 #define DEFAULT_WRAP_AROUND			0
+#define DEFAULT_RECOMPARE_ON_SAVE	1
+#define DEFAULT_GOTO_FIRST_DIFF		0
 #define DEFAULT_COMPACT_NAVBAR		1
 
 #define DEFAULT_ADDED_COLOR			0xD9FFD9
@@ -100,17 +102,23 @@ public:
 	}
 
 	static const TCHAR mainSection[];
+
 	static const TCHAR oldIsFirstSetting[];
 	static const TCHAR oldFileOnLeftSetting[];
 	static const TCHAR compareToPrevSetting[];
-	static const TCHAR gotoFirstDiffSetting[];
+
 	static const TCHAR encodingsCheckSetting[];
 	static const TCHAR wrapAroundSetting[];
+	static const TCHAR recompareOnSaveSetting[];
+	static const TCHAR gotoFirstDiffSetting[];
 	static const TCHAR compactNavBarSetting[];
+
 	static const TCHAR ignoreSpacesSetting[];
 	static const TCHAR detectMovesSetting[];
 	static const TCHAR navBarSetting[];
+
 	static const TCHAR colorsSection[];
+
 	static const TCHAR addedColorSetting[];
 	static const TCHAR removedColorSetting[];
 	static const TCHAR changedColorSetting[];
@@ -121,9 +129,11 @@ public:
 	bool           	OldFileIsFirst;
 	int				OldFileViewId;
 	bool           	CompareToPrev;
-	bool           	GotoFirstDiff;
+
 	bool           	EncodingsCheck;
 	bool           	WrapAround;
+	bool           	AutoRecompare;
+	bool           	GotoFirstDiff;
 	bool           	CompactNavBar;
 
 	bool           	IgnoreSpaces;
