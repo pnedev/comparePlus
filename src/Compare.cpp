@@ -2174,7 +2174,10 @@ void onFileSaved(LRESULT buffId)
 		if (cmpPair == compareList.end())
 			return;
 
-		saveNotifData->restore();
+		if (Settings.AutoRecompare && getCurrentBuffId() == buffId)
+			Compare();
+		else
+			saveNotifData->restore();
 
 		const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
 		if (otherFile.isTemp == LAST_SAVED_TEMP)
@@ -2198,9 +2201,6 @@ void onFileSaved(LRESULT buffId)
 				TabCtrl_SetItem(hNppTabBar, tabPos, &tab);
 			}
 		}
-
-		if (Settings.AutoRecompare)
-			Compare();
 	}
 
 	saveNotifData.reset();
