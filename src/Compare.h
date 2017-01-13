@@ -38,6 +38,7 @@
 #define DEFAULT_WRAP_AROUND			0
 #define DEFAULT_RECOMPARE_ON_SAVE	1
 #define DEFAULT_GOTO_FIRST_DIFF		0
+#define DEFAULT_UPDATE_ON_CHANGE	1
 #define DEFAULT_COMPACT_NAVBAR		1
 
 #define DEFAULT_ADDED_COLOR			0xD9FFD9
@@ -111,6 +112,7 @@ public:
 	static const TCHAR wrapAroundSetting[];
 	static const TCHAR recompareOnSaveSetting[];
 	static const TCHAR gotoFirstDiffSetting[];
+	static const TCHAR updateOnChangeSetting[];
 	static const TCHAR compactNavBarSetting[];
 
 	static const TCHAR ignoreSpacesSetting[];
@@ -132,8 +134,9 @@ public:
 
 	bool           	EncodingsCheck;
 	bool           	WrapAround;
-	bool           	AutoRecompare;
+	bool           	RecompareOnSave;
 	bool           	GotoFirstDiff;
+	bool           	UpdateOnChange;
 	bool           	CompactNavBar;
 
 	bool           	IgnoreSpaces;

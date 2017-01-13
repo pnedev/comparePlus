@@ -435,6 +435,99 @@ void clearWindow(HWND view)
 }
 
 
+void clearMarks(HWND view, int startLine, int linesCount)
+{
+	const int startPos = ::SendMessage(view, SCI_POSITIONFROMLINE, startLine, 0);
+	const int len = ::SendMessage(view, SCI_GETLINEENDPOSITION, startLine + linesCount - 1, 0) - startPos;
+
+	clearChangedIndicator(view, startPos, len);
+
+	for (int i = startLine + linesCount - 1; i >= startLine; --i)
+		::SendMessage(view, SCI_MARKERDELETE, i, -1);
+}
+
+
+int clearMarksAndBlanks(HWND view, int startLine, int linesCount)
+{
+	int deletedLines = 0;
+
+	const int eolLen = EOLlen[::SendMessage(view, SCI_GETEOLMODE, 0, 0)];
+	const int blankMask = 1 << MARKER_BLANK_LINE;
+
+	const int startPos = ::SendMessage(view, SCI_POSITIONFROMLINE, startLine, 0);
+	const int len = ::SendMessage(view, SCI_GETLINEENDPOSITION, startLine + linesCount - 1, 0) - startPos;
+
+	clearChangedIndicator(view, startPos, len);
+
+	for (int i = startLine + linesCount - 1; i >= startLine; --i)
+	{
+		int deletePos;
+		int deleteLen = 0;
+
+		if (::SendMessage(view, SCI_MARKERGET, i, 0) & blankMask)
+		{
+			deletePos = ::SendMessage(view, SCI_POSITIONFROMLINE, i, 0) - eolLen;
+			deleteLen = ::SendMessage(view, SCI_GETLINEENDPOSITION, i, 0) - deletePos;
+
+			const int lineIndent = ::SendMessage(view, SCI_GETLINEINDENTATION, i, 0);
+
+			// Don't delete a line that is not blank
+			if (deleteLen != lineIndent + eolLen)
+				deleteLen = 0;
+		}
+
+		::SendMessage(view, SCI_MARKERDELETE, i, -1);
+
+		if (deleteLen > 0)
+		{
+			ScopedViewUndoCollectionBlocker undoBlock(view);
+			ScopedViewWriteEnabler writeEn(view);
+
+			::SendMessage(view, SCI_DELETERANGE, deletePos, deleteLen);
+
+			++deletedLines;
+		}
+	}
+
+	return deletedLines;
+}
+
+
+int getPrevUnmarkedLine(HWND view, int startLine)
+{
+	const int searchMask = (1 << MARKER_MOVED_LINE) |
+							(1 << MARKER_CHANGED_LINE) |
+							(1 << MARKER_ADDED_LINE) |
+							(1 << MARKER_REMOVED_LINE) |
+							(1 << MARKER_BLANK_LINE);
+
+	int prevUnmarkedLine = startLine;
+
+	for (; (prevUnmarkedLine > 0) && (::SendMessage(view, SCI_MARKERGET, prevUnmarkedLine, 0) & searchMask);
+			--prevUnmarkedLine);
+
+	return prevUnmarkedLine;
+}
+
+
+int getNextUnmarkedLine(HWND view, int startLine)
+{
+	const int searchMask = (1 << MARKER_MOVED_LINE) |
+							(1 << MARKER_CHANGED_LINE) |
+							(1 << MARKER_ADDED_LINE) |
+							(1 << MARKER_REMOVED_LINE) |
+							(1 << MARKER_BLANK_LINE);
+
+	const int lineMax = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0) - 1;
+	int nextUnmarkedLine = startLine;
+
+	for (; (nextUnmarkedLine < lineMax) && (::SendMessage(view, SCI_MARKERGET, nextUnmarkedLine, 0) & searchMask);
+			++nextUnmarkedLine);
+
+	return nextUnmarkedLine;
+}
+
+
 static void adjustLineIndent(HWND view, int line)
 {
 	HWND otherView = getOtherView(view);

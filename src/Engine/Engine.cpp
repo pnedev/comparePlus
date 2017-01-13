@@ -74,25 +74,28 @@ struct chunk_info
 };
 
 
-std::vector<unsigned int> computeLineHashes(HWND view, const UserSettings& settings)
+std::vector<unsigned int> computeLineHashes(DocCmpInfo& doc, const UserSettings& settings)
 {
-	int docLines = ::SendMessage(view, SCI_GETLENGTH, 0, 0);
+	int docLines = ::SendMessage(doc.view, SCI_GETLENGTH, 0, 0);
 
 	if (docLines)
-		docLines = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0);
+		docLines = ::SendMessage(doc.view, SCI_GETLINECOUNT, 0, 0);
 
-	std::vector<unsigned int> lineHashes(docLines);
+	if (doc.section.len <= 0 || doc.section.len > docLines)
+		doc.section.len = docLines;
 
-	for (int lineNum = 0; lineNum < docLines; ++lineNum)
+	std::vector<unsigned int> lineHashes(doc.section.len);
+
+	for (int lineNum = 0; lineNum < doc.section.len; ++lineNum)
 	{
-		const int lineStart = ::SendMessage(view, SCI_POSITIONFROMLINE, lineNum, 0);
-		const int lineEnd = ::SendMessage(view, SCI_GETLINEENDPOSITION, lineNum, 0);
+		const int lineStart = ::SendMessage(doc.view, SCI_POSITIONFROMLINE, lineNum + doc.section.off, 0);
+		const int lineEnd = ::SendMessage(doc.view, SCI_GETLINEENDPOSITION, lineNum + doc.section.off, 0);
 
 		unsigned int hash = 0;
 
 		if (lineEnd - lineStart)
 		{
-			const std::vector<char> line = getText(view, lineStart, lineEnd);
+			const std::vector<char> line = getText(doc.view, lineStart, lineEnd);
 			const int lineLen = line.size() - 1;
 
 			for (int i = 0; i < lineLen; ++i)
@@ -320,17 +323,17 @@ void markLineDiffs(std::pair<HWND, HWND>& views,
 
 // The returned bool is true if views are swapped and false otherwise
 std::pair<std::vector<diff_info>, bool>
-	compareDocs(HWND& view1, HWND& view2, const UserSettings& settings, progress_ptr& progress)
+	compareDocs(DocCmpInfo& doc1, DocCmpInfo& doc2, const UserSettings& settings, progress_ptr& progress)
 {
 	if (progress)
 		progress->SetMaxCount(3);
 
-	const std::vector<unsigned int> lineHashes1 = computeLineHashes(view1, settings);
+	const std::vector<unsigned int> lineHashes1 = computeLineHashes(doc1, settings);
 
 	if (progress && !progress->Advance())
 		return std::make_pair(std::vector<diff_info>(), false);
 
-	const std::vector<unsigned int> lineHashes2 = computeLineHashes(view2, settings);
+	const std::vector<unsigned int> lineHashes2 = computeLineHashes(doc2, settings);
 
 	if (progress && !progress->Advance())
 		return std::make_pair(std::vector<diff_info>(), false);
@@ -342,13 +345,34 @@ std::pair<std::vector<diff_info>, bool>
 
 	if (lineHashes1.size() > lineHashes2.size())
 	{
-		std::swap(view1, view2);
+		std::swap(doc1, doc2);
 		std::swap(pLineHashes1, pLineHashes2);
 		viewsSwapped = true;
 	}
 
-	return std::make_pair
-			(DiffCalc<unsigned int>(*pLineHashes1, *pLineHashes2, settings.DetectMoves)(), viewsSwapped);
+	std::pair<std::vector<diff_info>, bool> cmpResults =
+			std::make_pair(DiffCalc<unsigned int>(*pLineHashes1, *pLineHashes2, settings.DetectMoves)(), viewsSwapped);
+
+	std::vector<diff_info>& blockDiff = cmpResults.first;
+
+	const int startOff = (doc1.section.off > doc2.section.off) ? doc1.section.off : doc2.section.off;
+
+	if (startOff)
+	{
+		for (auto& bd : blockDiff)
+			bd.off += startOff;
+	}
+
+	// Align views if comparison start offsets differ
+	if (doc1.section.off != doc2.section.off)
+	{
+		if (doc1.section.off > doc2.section.off)
+			addBlankSection(doc2.view, doc2.section.off, doc1.section.off - doc2.section.off);
+		else
+			addBlankSection(doc1.view, doc1.section.off, doc2.section.off - doc1.section.off);
+	}
+
+	return std::move(cmpResults);
 }
 
 
@@ -452,8 +476,8 @@ bool compareBlocks(HWND view1, HWND view2, const UserSettings& settings, diff_in
 
 
 // Mark all line differences
-bool showDiffs(HWND view1, HWND view2, const std::pair<std::vector<diff_info>, bool>& cmpResults,
-		progress_ptr& progress)
+bool showDiffs(const DocCmpInfo& doc1, const DocCmpInfo& doc2,
+		const std::pair<std::vector<diff_info>, bool>& cmpResults, progress_ptr& progress)
 {
 	const std::vector<diff_info>& blockDiff = cmpResults.first;
 
@@ -482,8 +506,8 @@ bool showDiffs(HWND view1, HWND view2, const std::pair<std::vector<diff_info>, b
 			{
 				addedBlanks.first	= &addedBlanks1;
 				addedBlanks.second	= &addedBlanks2;
-				views.first			= view1;
-				views.second		= view2;
+				views.first			= doc1.view;
+				views.second		= doc2.view;
 				bdMarks.first		= deletedMark;
 				bdMarks.second		= addedMark;
 			}
@@ -491,20 +515,20 @@ bool showDiffs(HWND view1, HWND view2, const std::pair<std::vector<diff_info>, b
 			{
 				addedBlanks.first	= &addedBlanks2;
 				addedBlanks.second	= &addedBlanks1;
-				views.first			= view2;
-				views.second		= view1;
+				views.first			= doc2.view;
+				views.second		= doc1.view;
 				bdMarks.first		= addedMark;
 				bdMarks.second		= deletedMark;
 			}
 
-			std::pair<section_t, section_t> sections( {0, 0}, {0, 0} );
+			std::pair<section_t, section_t> sections( { 0, 0 }, { 0, 0 } );
 
 			const int changedLinesCount = static_cast<int>(bd.changedLines.size());
 
 			for (int j = 0; j < changedLinesCount; ++j)
 			{
 				const std::pair<const diff_line&, const diff_line&>
-						changedLines( bd.changedLines[j], bd.matchedDiff->changedLines[j] );
+						changedLines(bd.changedLines[j], bd.matchedDiff->changedLines[j]);
 
 				if (sections.first.off != changedLines.first.line ||
 					sections.second.off != changedLines.second.line)

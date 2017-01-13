@@ -299,6 +299,10 @@ void setBlank(HWND view, int color);
 void defineSymbol(int type, int symbol);
 void defineColor(int type, int color);
 void clearWindow(HWND view);
+void clearMarks(HWND view, int startLine, int linesCount);
+int clearMarksAndBlanks(HWND view, int startLine, int linesCount);
+int getPrevUnmarkedLine(HWND view, int startLine);
+int getNextUnmarkedLine(HWND view, int startLine);
 
 std::vector<char> getText(HWND view, int startPos, int endPos);
 

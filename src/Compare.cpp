@@ -49,8 +49,9 @@ const TCHAR UserSettings::compareToPrevSetting[]	= TEXT("Default Compare is to P
 
 const TCHAR UserSettings::encodingsCheckSetting[]	= TEXT("Check Encodings");
 const TCHAR UserSettings::wrapAroundSetting[]		= TEXT("Wrap Around");
-const TCHAR UserSettings::recompareOnSaveSetting[]	= TEXT("ReCompare on Save");
+const TCHAR UserSettings::recompareOnSaveSetting[]	= TEXT("Re-compare on Save");
 const TCHAR UserSettings::gotoFirstDiffSetting[]	= TEXT("Go to First Diff");
+const TCHAR UserSettings::updateOnChangeSetting[]	= TEXT("Update on Change");
 const TCHAR UserSettings::compactNavBarSetting[]	= TEXT("Compact NavBar");
 
 const TCHAR UserSettings::ignoreSpacesSetting[]		= TEXT("Ignore Spaces");
@@ -86,10 +87,12 @@ void UserSettings::load()
 			DEFAULT_ENCODINGS_CHECK, iniFile) == 1;
 	WrapAround		= ::GetPrivateProfileInt(mainSection, wrapAroundSetting,
 			DEFAULT_WRAP_AROUND, iniFile) == 1;
-	AutoRecompare	= ::GetPrivateProfileInt(mainSection, recompareOnSaveSetting,
+	RecompareOnSave	= ::GetPrivateProfileInt(mainSection, recompareOnSaveSetting,
 			DEFAULT_RECOMPARE_ON_SAVE, iniFile) == 1;
 	GotoFirstDiff	= ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting,
 			DEFAULT_GOTO_FIRST_DIFF, iniFile) == 1;
+	UpdateOnChange	= ::GetPrivateProfileInt(mainSection, updateOnChangeSetting,
+			DEFAULT_UPDATE_ON_CHANGE, iniFile) == 1;
 	CompactNavBar	= ::GetPrivateProfileInt(mainSection, compactNavBarSetting,
 			DEFAULT_COMPACT_NAVBAR, iniFile) == 1;
 
@@ -136,9 +139,11 @@ void UserSettings::save()
 	::WritePrivateProfileString(mainSection, wrapAroundSetting,
 			WrapAround ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, recompareOnSaveSetting,
-			AutoRecompare ? TEXT("1") : TEXT("0"), iniFile);
+			RecompareOnSave ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, gotoFirstDiffSetting,
 			GotoFirstDiff ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, updateOnChangeSetting,
+			UpdateOnChange ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, compactNavBarSetting,
 			CompactNavBar ? TEXT("1") : TEXT("0"), iniFile);
 
@@ -505,6 +510,22 @@ public:
 
 
 /**
+ *  \class
+ *  \brief
+ */
+class DelayedUpdate : public DelayedWork
+{
+public:
+	DelayedUpdate() : DelayedWork(), isReplace(false), fullCompare(false) {}
+	virtual void operator()();
+
+	SCNotification	notifyCode;
+	bool			isReplace;
+	bool			fullCompare;
+};
+
+
+/**
  *  \struct
  *  \brief
  */
@@ -533,6 +554,7 @@ std::unique_ptr<SaveNotificationData> saveNotifData;
 
 DelayedActivate	delayedActivation;
 DelayedClose	delayedClosure;
+DelayedUpdate	delayedUpdate;
 
 AboutDialog   	AboutDlg;
 SettingsDialog	SettingsDlg;
@@ -1371,23 +1393,28 @@ CompareList_t::iterator addComparePair()
 }
 
 
-CompareResult compareViews(progress_ptr& progress)
+CompareResult compareViews(progress_ptr& progress,
+	section_t mainViewSection = { 0, 0 }, section_t subViewSection = { 0, 0 })
 {
-	HWND view1;
-	HWND view2;
+	DocCmpInfo doc1;
+	DocCmpInfo doc2;
 
 	if (Settings.OldFileViewId == MAIN_VIEW)
 	{
-		view1 = nppData._scintillaMainHandle;
-		view2 = nppData._scintillaSecondHandle;
+		doc1.view		= nppData._scintillaMainHandle;
+		doc1.section	= mainViewSection;
+		doc2.view		= nppData._scintillaSecondHandle;
+		doc2.section	= subViewSection;
 	}
 	else
 	{
-		view1 = nppData._scintillaSecondHandle;
-		view2 = nppData._scintillaMainHandle;
+		doc2.view		= nppData._scintillaMainHandle;
+		doc2.section	= mainViewSection;
+		doc1.view		= nppData._scintillaSecondHandle;
+		doc1.section	= subViewSection;
 	}
 
-	std::pair<std::vector<diff_info>, bool> cmpResults = compareDocs(view1, view2, Settings, progress);
+	std::pair<std::vector<diff_info>, bool> cmpResults = compareDocs(doc1, doc2, Settings, progress);
 	std::vector<diff_info>& blockDiff = cmpResults.first;
 
 	if (progress && !progress->NextPhase())
@@ -1417,7 +1444,7 @@ CompareResult compareViews(progress_ptr& progress)
 					blockDiff1.matchedDiff = &blockDiff2;
 					blockDiff2.matchedDiff = &blockDiff1;
 
-					compareBlocks(view1, view2, Settings, blockDiff1, blockDiff2);
+					compareBlocks(doc1.view, doc2.view, Settings, blockDiff1, blockDiff2);
 				}
 			}
 		}
@@ -1429,7 +1456,7 @@ CompareResult compareViews(progress_ptr& progress)
 	if (progress && !progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
-	if (!showDiffs(view1, view2, cmpResults, progress))
+	if (!showDiffs(doc1, doc2, cmpResults, progress))
 		return CompareResult::COMPARE_CANCELLED;
 
 	return CompareResult::FILES_DIFFER;
@@ -2054,6 +2081,91 @@ void onSciUpdateUI(SCNotification *notifyCode)
 }
 
 
+void DelayedUpdate::operator()()
+{
+	if (fullCompare)
+	{
+		fullCompare = false;
+		Compare();
+		return;
+	}
+
+	HWND currentView = getCurrentView();
+
+	const int startLine = ::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode.position, 0);
+
+	section_t mainViewSec = { startLine, 1 };
+	section_t subViewSec = { startLine, 1 };
+
+	ScopedIncrementer incr(notificationsLock);
+
+	if (notifyCode.linesAdded)
+	{
+		const int startOff = startLine - getPrevUnmarkedLine(currentView, startLine);
+
+		mainViewSec.off -= startOff;
+		subViewSec.off -= startOff;
+
+		mainViewSec.len += startOff;
+		subViewSec.len += startOff;
+
+		int endLine;
+
+		if (currentView == nppData._scintillaMainHandle)
+		{
+			if (notifyCode.modificationType & SC_MOD_INSERTTEXT)
+				mainViewSec.len += notifyCode.linesAdded;
+			else
+				subViewSec.len -= notifyCode.linesAdded;
+
+			endLine = mainViewSec.off + mainViewSec.len - 1;
+		}
+		else
+		{
+			if (notifyCode.modificationType & SC_MOD_DELETETEXT)
+				mainViewSec.len -= notifyCode.linesAdded;
+			else
+				subViewSec.len += notifyCode.linesAdded;
+
+			endLine = subViewSec.off + subViewSec.len - 1;
+		}
+
+		const int lenOff = getNextUnmarkedLine(currentView, endLine) - endLine;
+
+		mainViewSec.len += lenOff;
+		subViewSec.len += lenOff;
+
+		if (isReplace)
+		{
+			if (mainViewSec.len > subViewSec.len)
+				subViewSec.len = mainViewSec.len;
+			else
+				mainViewSec.len = subViewSec.len;
+		}
+
+		mainViewSec.len -= clearMarksAndBlanks(nppData._scintillaMainHandle, mainViewSec.off, mainViewSec.len);
+		subViewSec.len -= clearMarksAndBlanks(nppData._scintillaSecondHandle, subViewSec.off, subViewSec.len);
+	}
+	else
+	{
+		clearMarks(nppData._scintillaMainHandle, mainViewSec.off, mainViewSec.len);
+		clearMarks(nppData._scintillaSecondHandle, subViewSec.off, subViewSec.len);
+	}
+
+	isReplace = false;
+
+	progress_ptr progress;
+	compareViews(progress, mainViewSec, subViewSec);
+
+	// Force NavBar redraw
+	if (NavDlg.isVisible())
+		NavDlg.Show();
+
+	// Synchronize views
+	forceViewsSync(currentView);
+}
+
+
 void onSciModified(SCNotification *notifyCode)
 {
 	const LRESULT buffId = getCurrentBuffId();
@@ -2089,6 +2201,49 @@ void onSciModified(SCNotification *notifyCode)
 			notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
 
 		cmpPair->getFileByBuffId(buffId).deletedSections.pop(currAction, startLine);
+	}
+}
+
+
+void onSciModifiedUpdate(SCNotification *notifyCode)
+{
+	const LRESULT buffId = getCurrentBuffId();
+
+	CompareList_t::iterator cmpPair = getCompare(buffId);
+	if (cmpPair == compareList.end())
+		return;
+
+	if (notifyCode->modificationType & SC_MOD_BEFOREDELETE)
+	{
+		HWND currentView = getCurrentView();
+
+		const int startLine = ::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+		const int endLine =
+			::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position + notifyCode->length, 0);
+
+		if (endLine > startLine)
+		{
+			ScopedIncrementer incr(notificationsLock);
+
+			clearMarks(currentView, startLine, endLine - startLine);
+		}
+	}
+	else if (notifyCode->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT))
+	{
+		if (!delayedUpdate.fullCompare)
+		{
+			if (delayedUpdate.isPending())
+			{
+				delayedUpdate.cancel();
+
+				delayedUpdate.isReplace = ((notifyCode->modificationType & SC_MOD_INSERTTEXT) &&
+						(delayedUpdate.notifyCode.modificationType & SC_MOD_DELETETEXT) &&
+						(notifyCode->position == delayedUpdate.notifyCode.position)) ? true : false;
+			}
+
+			delayedUpdate.notifyCode = *notifyCode;
+			delayedUpdate.post(10);
+		}
 	}
 }
 
@@ -2286,10 +2441,16 @@ void onFileSaved(LRESULT buffId)
 		if (cmpPair == compareList.end())
 			return;
 
-		if (Settings.AutoRecompare && getCurrentBuffId() == buffId)
-			Compare();
+		if (Settings.RecompareOnSave && getCurrentBuffId() == buffId)
+		{
+			delayedUpdate.cancel();
+			delayedUpdate.fullCompare = true;
+			delayedUpdate.post(10);
+		}
 		else
+		{
 			saveNotifData->restore();
+		}
 
 		const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
 		if (otherFile.isTemp == LAST_SAVED_TEMP)
@@ -2407,14 +2568,14 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		// Handle wrap refresh
 		case SCN_PAINTED:
 			if (NppSettings::get().compareMode && !notificationsLock &&
-					!delayedActivation.isPending() && !delayedClosure.isPending())
+					!delayedActivation.isPending() && !delayedClosure.isPending() && !delayedUpdate.isPending())
 				NavDlg.Update();
 		break;
 
 		// Emulate word-wrap aware vertical scroll sync
 		case SCN_UPDATEUI:
 			if (NppSettings::get().compareMode && !notificationsLock &&
-					!delayedActivation.isPending() && !delayedClosure.isPending())
+					!delayedActivation.isPending() && !delayedClosure.isPending() && !delayedUpdate.isPending())
 				onSciUpdateUI(notifyCode);
 		break;
 
@@ -2440,10 +2601,17 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 				onFileSaved(notifyCode->nmhdr.idFrom);
 		break;
 
-		// This is used to monitor deletion of lines to properly clear their compare markings
+		// This is used to monitor either:
+		// - text change to automatically update results or
+		// - deletion of lines to properly clear their compare markings
 		case SCN_MODIFIED:
 			if (NppSettings::get().compareMode && !notificationsLock)
-				onSciModified(notifyCode);
+			{
+				if (Settings.UpdateOnChange)
+					onSciModifiedUpdate(notifyCode);
+				else
+					onSciModified(notifyCode);
+			}
 		break;
 
 		case SCN_ZOOM:
