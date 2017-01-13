@@ -300,7 +300,7 @@ void markLineDiffs(std::pair<HWND, HWND>& views,
 {
 	int linePos = ::SendMessage(views.first, SCI_POSITIONFROMLINE, line, 0);
 
-	for (auto change : changedLines.first.changes)
+	for (const auto& change : changedLines.first.changes)
 		markTextAsChanged(views.first, linePos + change.off, change.len);
 
 	::SendMessage(views.first, SCI_MARKERADD, line, lineMark[CHANGED_MARK]);
@@ -308,7 +308,7 @@ void markLineDiffs(std::pair<HWND, HWND>& views,
 
 	linePos = ::SendMessage(views.second, SCI_POSITIONFROMLINE, line, 0);
 
-	for (auto change : changedLines.second.changes)
+	for (const auto& change : changedLines.second.changes)
 		markTextAsChanged(views.second, linePos + change.off, change.len);
 
 	::SendMessage(views.second, SCI_MARKERADD, line, lineMark[CHANGED_MARK]);
