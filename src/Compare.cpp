@@ -821,6 +821,10 @@ ComparedFile& ComparedPair::getNewFile()
 
 void ComparedPair::positionFiles()
 {
+	// sync both views zoom
+	const int zoom = ::SendMessage(getCurrentView(), SCI_GETZOOM, 0, 0);
+	::SendMessage(getOtherView(), SCI_SETZOOM, zoom, 0);
+
 	const LRESULT currentBuffId = getCurrentBuffId();
 
 	ComparedFile& oldFile = getOldFile();
@@ -1990,7 +1994,7 @@ void onSciZoom()
 	ScopedIncrementer incr(notificationsLock);
 
 	// sync both views zoom
-	int zoom = ::SendMessage(getCurrentView(), SCI_GETZOOM, 0, 0);
+	const int zoom = ::SendMessage(getCurrentView(), SCI_GETZOOM, 0, 0);
 	::SendMessage(getOtherView(), SCI_SETZOOM, zoom, 0);
 }
 
