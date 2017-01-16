@@ -189,15 +189,19 @@ public:
 	}
 
 	void enableClearCommands(bool enable) const;
-	void updatePluginMenu() const;
+	void updatePluginMenu();
 	void save();
 	void setNormalMode();
 	void setCompareMode();
+	void toSingleLineTab();
+	void restoreMultilineTab();
 
 	bool	compareMode;
 
 private:
-	NppSettings() : compareMode(false) {}
+	NppSettings() : compareMode(false), _restoreMultilineTab(false) {}
+
+	bool	_restoreMultilineTab;
 
 	bool	_syncVScroll;
 	bool	_syncHScroll;
@@ -564,7 +568,7 @@ void NppSettings::enableClearCommands(bool enable) const
 }
 
 
-void NppSettings::updatePluginMenu() const
+void NppSettings::updatePluginMenu()
 {
 	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
 	const int flag = MF_BYCOMMAND | (compareMode ? MF_ENABLED : (MF_DISABLED | MF_GRAYED));
@@ -574,6 +578,9 @@ void NppSettings::updatePluginMenu() const
 
 	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ALL]._cmdID,
 			MF_BYCOMMAND | ((compareList.empty() && !newCompare) ? (MF_DISABLED | MF_GRAYED) : MF_ENABLED));
+
+	if (compareList.empty())
+		restoreMultilineTab();
 
 	::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, flag);
@@ -651,6 +658,55 @@ void NppSettings::setCompareMode()
 	::SendMessage(getOtherView(), SCI_SETZOOM, zoom, 0);
 
 	updatePluginMenu();
+}
+
+
+void NppSettings::toSingleLineTab()
+{
+	HWND hNppMainTabBar = NppTabHandleGetter::get(MAIN_VIEW);
+	HWND hNppSubTabBar = NppTabHandleGetter::get(SUB_VIEW);
+
+	RECT tabRec;
+	::GetWindowRect(hNppMainTabBar, &tabRec);
+	const int mainTabYPos = tabRec.top;
+
+	::GetWindowRect(hNppSubTabBar, &tabRec);
+	const int subTabYPos = tabRec.top;
+
+	// Both views are side-by-side positioned
+	if (mainTabYPos == subTabYPos)
+	{
+		LONG_PTR tabStyle = ::GetWindowLongPtr(hNppMainTabBar, GWL_STYLE);
+
+		if ((tabStyle & TCS_MULTILINE) && !(tabStyle & TCS_VERTICAL))
+		{
+			::SetWindowLongPtr(hNppMainTabBar, GWL_STYLE, tabStyle & ~TCS_MULTILINE);
+
+			tabStyle = ::GetWindowLongPtr(hNppSubTabBar, GWL_STYLE);
+			::SetWindowLongPtr(hNppSubTabBar, GWL_STYLE, tabStyle & ~TCS_MULTILINE);
+
+			_restoreMultilineTab = true;
+		}
+	}
+}
+
+
+void NppSettings::restoreMultilineTab()
+{
+	if (_restoreMultilineTab)
+	{
+		HWND hNppTabBar = NppTabHandleGetter::get(MAIN_VIEW);
+		LONG_PTR tabStyle = ::GetWindowLongPtr(hNppTabBar, GWL_STYLE);
+
+		::SetWindowLongPtr(hNppTabBar, GWL_STYLE, tabStyle | TCS_MULTILINE);
+
+		hNppTabBar = NppTabHandleGetter::get(SUB_VIEW);
+		tabStyle = ::GetWindowLongPtr(hNppTabBar, GWL_STYLE);
+
+		::SetWindowLongPtr(hNppTabBar, GWL_STYLE, tabStyle | TCS_MULTILINE);
+
+		_restoreMultilineTab = false;
+	}
 }
 
 
@@ -1439,6 +1495,8 @@ void Compare()
 			setCompareView(nppData._scintillaMainHandle);
 			setCompareView(nppData._scintillaSecondHandle);
 
+			NppSettings::get().toSingleLineTab();
+
 			if (Settings.UseNavBar)
 				showNavBar();
 			else
@@ -1887,7 +1945,7 @@ void onToolBarReady()
 {
 	UINT style = (LR_SHARED | LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS);
 
-	const bool isRTL = ((::GetWindowLong(nppData._nppHandle, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0);
+	const bool isRTL = ((::GetWindowLongPtr(nppData._nppHandle, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0);
 
 	if (isRTL)
 		tbSetFirst.hToolbarBmp =

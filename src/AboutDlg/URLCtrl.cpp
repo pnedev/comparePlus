@@ -97,7 +97,7 @@ static BYTE ANDMask[128] =
 void URLCtrl::create(HWND itemHandle, const TCHAR* link, COLORREF linkColor)
 {
 	// turn on notify style
-	::SetWindowLongPtr(itemHandle, GWL_STYLE, ::GetWindowLong(itemHandle, GWL_STYLE) | SS_NOTIFY);
+	::SetWindowLongPtr(itemHandle, GWL_STYLE, ::GetWindowLongPtr(itemHandle, GWL_STYLE) | SS_NOTIFY);
 
 	// set the URL text (not the display text)
 	if (link) _tcscpy_s(_URL, _countof(_URL), link);
@@ -128,7 +128,7 @@ LRESULT URLCtrl::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 		// colours, and with an underline text style
 		case WM_PAINT:
 		{
-			DWORD dwStyle = GetWindowLong(hwnd, GWL_STYLE);
+			DWORD dwStyle = GetWindowLongPtr(hwnd, GWL_STYLE);
 			DWORD dwDTStyle = DT_SINGLELINE;
 
 			//Test if centered horizontally or vertically
