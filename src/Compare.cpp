@@ -663,29 +663,32 @@ void NppSettings::setCompareMode()
 
 void NppSettings::toSingleLineTab()
 {
-	HWND hNppMainTabBar = NppTabHandleGetter::get(MAIN_VIEW);
-	HWND hNppSubTabBar = NppTabHandleGetter::get(SUB_VIEW);
-
-	RECT tabRec;
-	::GetWindowRect(hNppMainTabBar, &tabRec);
-	const int mainTabYPos = tabRec.top;
-
-	::GetWindowRect(hNppSubTabBar, &tabRec);
-	const int subTabYPos = tabRec.top;
-
-	// Both views are side-by-side positioned
-	if (mainTabYPos == subTabYPos)
+	if (!_restoreMultilineTab)
 	{
-		LONG_PTR tabStyle = ::GetWindowLongPtr(hNppMainTabBar, GWL_STYLE);
+		HWND hNppMainTabBar = NppTabHandleGetter::get(MAIN_VIEW);
+		HWND hNppSubTabBar = NppTabHandleGetter::get(SUB_VIEW);
 
-		if ((tabStyle & TCS_MULTILINE) && !(tabStyle & TCS_VERTICAL))
+		RECT tabRec;
+		::GetWindowRect(hNppMainTabBar, &tabRec);
+		const int mainTabYPos = tabRec.top;
+
+		::GetWindowRect(hNppSubTabBar, &tabRec);
+		const int subTabYPos = tabRec.top;
+
+		// Both views are side-by-side positioned
+		if (mainTabYPos == subTabYPos)
 		{
-			::SetWindowLongPtr(hNppMainTabBar, GWL_STYLE, tabStyle & ~TCS_MULTILINE);
+			LONG_PTR tabStyle = ::GetWindowLongPtr(hNppMainTabBar, GWL_STYLE);
 
-			tabStyle = ::GetWindowLongPtr(hNppSubTabBar, GWL_STYLE);
-			::SetWindowLongPtr(hNppSubTabBar, GWL_STYLE, tabStyle & ~TCS_MULTILINE);
+			if ((tabStyle & TCS_MULTILINE) && !(tabStyle & TCS_VERTICAL))
+			{
+				::SetWindowLongPtr(hNppMainTabBar, GWL_STYLE, tabStyle & ~TCS_MULTILINE);
 
-			_restoreMultilineTab = true;
+				tabStyle = ::GetWindowLongPtr(hNppSubTabBar, GWL_STYLE);
+				::SetWindowLongPtr(hNppSubTabBar, GWL_STYLE, tabStyle & ~TCS_MULTILINE);
+
+				_restoreMultilineTab = true;
+			}
 		}
 	}
 }
