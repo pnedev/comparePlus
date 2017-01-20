@@ -725,6 +725,8 @@ void NppSettings::toSingleLineTab()
 					::SetWindowLongPtr(hNppSubTabBar, GWL_STYLE, tabStyle & ~TCS_MULTILINE);
 					::SendMessage(hNppSubTabBar, WM_TABSETSTYLE, 0, 0);
 
+					refreshTabBars();
+
 					_restoreMultilineTab = true;
 				}
 			}
