@@ -34,6 +34,7 @@
 #include "SettingsDialog.h"
 #include "NavDialog.h"
 #include "Engine.h"
+#include "NppInternalDefines.h"
 
 
 NppData nppData;
@@ -718,11 +719,11 @@ void NppSettings::toSingleLineTab()
 				if ((tabStyle & TCS_MULTILINE) && !(tabStyle & TCS_VERTICAL))
 				{
 					::SetWindowLongPtr(hNppMainTabBar, GWL_STYLE, tabStyle & ~TCS_MULTILINE);
+					::SendMessage(hNppMainTabBar, WM_TABSETSTYLE, 0, 0);
 
 					tabStyle = ::GetWindowLongPtr(hNppSubTabBar, GWL_STYLE);
 					::SetWindowLongPtr(hNppSubTabBar, GWL_STYLE, tabStyle & ~TCS_MULTILINE);
-
-					refreshTabBars();
+					::SendMessage(hNppSubTabBar, WM_TABSETSTYLE, 0, 0);
 
 					_restoreMultilineTab = true;
 				}
@@ -745,9 +746,11 @@ void NppSettings::restoreMultilineTab()
 		{
 			LONG_PTR tabStyle = ::GetWindowLongPtr(hNppMainTabBar, GWL_STYLE);
 			::SetWindowLongPtr(hNppMainTabBar, GWL_STYLE, tabStyle | TCS_MULTILINE);
+			::SendMessage(hNppMainTabBar, WM_TABSETSTYLE, 0, 0);
 
 			tabStyle = ::GetWindowLongPtr(hNppSubTabBar, GWL_STYLE);
 			::SetWindowLongPtr(hNppSubTabBar, GWL_STYLE, tabStyle | TCS_MULTILINE);
+			::SendMessage(hNppSubTabBar, WM_TABSETSTYLE, 0, 0);
 
 			refreshTabBars();
 		}
@@ -1636,8 +1639,6 @@ void ClearAllCompares()
 
 	const LRESULT buffId = getCurrentBuffId();
 
-	NppSettings::get().setNormalMode();
-
 	ScopedIncrementer incr(notificationsLock);
 
 	::SetFocus(getOtherView());
@@ -1648,6 +1649,8 @@ void ClearAllCompares()
 		compareList[i].restoreFiles();
 
 	compareList.clear();
+
+	NppSettings::get().setNormalMode();
 
 	if (!isSingleView())
 		activateBufferID(otherBuffId);

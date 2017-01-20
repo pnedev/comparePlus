@@ -93,6 +93,9 @@
     <ClInclude Include="..\..\src\NppAPI\Window.h">
       <Filter>src\NppAPI</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\NppAPI\NppInternalDefines.h">
+      <Filter>src\NppAPI</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\NppAPI\Docking.h">
       <Filter>src\NppAPI</Filter>
     </ClInclude>
@@ -100,9 +103,6 @@
       <Filter>src\NppAPI</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\NppAPI\DockingDlgInterface.h">
-      <Filter>src\NppAPI</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\NppAPI\ImageListSet.h">
       <Filter>src\NppAPI</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\NppAPI\Notepad_plus_msgs.h">
@@ -118,9 +118,6 @@
       <Filter>src\NppAPI</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\NppAPI\StaticDialog.h">
-      <Filter>src\NppAPI</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\NppAPI\ToolBar.h">
       <Filter>src\NppAPI</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\AboutDlg\AboutDialog.h">

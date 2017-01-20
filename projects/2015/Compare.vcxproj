@@ -270,14 +270,13 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlugin"</Command>
     <ClInclude Include="..\..\src\NppAPI\Docking.h" />
     <ClInclude Include="..\..\src\NppAPI\dockingResource.h" />
     <ClInclude Include="..\..\src\NppAPI\DockingDlgInterface.h" />
-    <ClInclude Include="..\..\src\NppAPI\ImageListSet.h" />
     <ClInclude Include="..\..\src\NppAPI\Notepad_plus_msgs.h" />
     <ClInclude Include="..\..\src\NppAPI\menuCmdID.h" />
     <ClInclude Include="..\..\src\NppAPI\PluginInterface.h" />
     <ClInclude Include="..\..\src\NppAPI\Scintilla.h" />
     <ClInclude Include="..\..\src\NppAPI\StaticDialog.h" />
-    <ClInclude Include="..\..\src\NppAPI\ToolBar.h" />
     <ClInclude Include="..\..\src\NppAPI\Window.h" />
+    <ClInclude Include="..\..\src\NppAPI\NppInternalDefines.h" />
     <ClInclude Include="..\..\src\Engine\diff.h" />
     <ClInclude Include="..\..\src\Engine\varray.h" />
     <ClInclude Include="..\..\src\LibHelpers.h" />
