@@ -15,10 +15,17 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
+#include <windows.h>
+#include <tchar.h>
+#include <shellapi.h>
 #include "AboutDialog.h"
 #include "PluginInterface.h"
 #include "resource.h"
 #include "Window.h"
+
+
+static const TCHAR cDonate_URL[] = TEXT("https://www.paypal.me/pnedev");
+
 
 void AboutDialog::doDialog()
 {
@@ -50,10 +57,14 @@ INT_PTR CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*
 				case IDC_ABOUT_CLOSE_BUTTON :
 				case IDCANCEL :
 					display(FALSE);
-					return TRUE;
+				return TRUE;
+
+				case IDC_DONATE_BUTTON :
+					::ShellExecute(NULL, _T("open"), cDonate_URL, NULL, NULL, SW_SHOWNORMAL);
+				return TRUE;
 
 				default :
-					break;
+				break;
 			}
 			break;
 		}
