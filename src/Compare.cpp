@@ -516,12 +516,14 @@ public:
 class DelayedUpdate : public DelayedWork
 {
 public:
-	DelayedUpdate() : DelayedWork(), isReplace(false), fullCompare(false) {}
+	DelayedUpdate() : DelayedWork(), linesAdded(0), linesDeleted(0), fullCompare(false) {}
 	virtual void operator()();
 
-	SCNotification	notifyCode;
-	bool			isReplace;
-	bool			fullCompare;
+	int		changePos;
+	int		linesAdded;
+	int		linesDeleted;
+
+	bool	fullCompare;
 };
 
 
@@ -2085,66 +2087,47 @@ void DelayedUpdate::operator()()
 {
 	if (fullCompare)
 	{
+		linesAdded = 0;
+		linesDeleted = 0;
 		fullCompare = false;
+
 		Compare();
+
 		return;
 	}
 
-	HWND currentView = getCurrentView();
+	HWND changeView = getCurrentView();
 
-	const int startLine = ::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode.position, 0);
+	const int startLine = ::SendMessage(changeView, SCI_LINEFROMPOSITION, changePos, 0);
 
 	section_t mainViewSec = { startLine, 1 };
 	section_t subViewSec = { startLine, 1 };
 
 	ScopedIncrementer incr(notificationsLock);
 
-	if (notifyCode.linesAdded)
+	if (linesAdded || linesDeleted)
 	{
-		const int startOff = startLine - getPrevUnmarkedLine(currentView, startLine);
+		HWND otherView = getOtherView();
 
-		mainViewSec.off -= startOff;
-		subViewSec.off -= startOff;
+		section_t& changeViewSec = (changeView == nppData._scintillaMainHandle) ? mainViewSec : subViewSec;
+		section_t& otherViewSec = (changeView == nppData._scintillaMainHandle) ? subViewSec : mainViewSec;
 
-		mainViewSec.len += startOff;
-		subViewSec.len += startOff;
+		const int startOff = startLine - getPrevUnmarkedLine(otherView, startLine);
 
-		int endLine;
+		changeViewSec.off -= startOff;
+		otherViewSec.off -= startOff;
 
-		if (currentView == nppData._scintillaMainHandle)
-		{
-			if (notifyCode.modificationType & SC_MOD_INSERTTEXT)
-				mainViewSec.len += notifyCode.linesAdded;
-			else
-				subViewSec.len -= notifyCode.linesAdded;
+		changeViewSec.len += (startOff + linesAdded);
+		otherViewSec.len += (startOff + linesDeleted);
 
-			endLine = mainViewSec.off + mainViewSec.len - 1;
-		}
-		else
-		{
-			if (notifyCode.modificationType & SC_MOD_DELETETEXT)
-				mainViewSec.len -= notifyCode.linesAdded;
-			else
-				subViewSec.len += notifyCode.linesAdded;
+		const int endLine = otherViewSec.off + otherViewSec.len - 1;
+		const int endOff = getNextUnmarkedLine(otherView, endLine) - endLine;
 
-			endLine = subViewSec.off + subViewSec.len - 1;
-		}
+		changeViewSec.len += endOff;
+		otherViewSec.len += endOff;
 
-		const int lenOff = getNextUnmarkedLine(currentView, endLine) - endLine;
-
-		mainViewSec.len += lenOff;
-		subViewSec.len += lenOff;
-
-		if (isReplace)
-		{
-			if (mainViewSec.len > subViewSec.len)
-				subViewSec.len = mainViewSec.len;
-			else
-				mainViewSec.len = subViewSec.len;
-		}
-
-		mainViewSec.len -= clearMarksAndBlanks(nppData._scintillaMainHandle, mainViewSec.off, mainViewSec.len);
-		subViewSec.len -= clearMarksAndBlanks(nppData._scintillaSecondHandle, subViewSec.off, subViewSec.len);
+		changeViewSec.len -= clearMarksAndBlanks(changeView, changeViewSec.off, changeViewSec.len);
+		otherViewSec.len -= clearMarksAndBlanks(otherView, otherViewSec.off, otherViewSec.len);
 	}
 	else
 	{
@@ -2152,7 +2135,8 @@ void DelayedUpdate::operator()()
 		clearMarks(nppData._scintillaSecondHandle, subViewSec.off, subViewSec.len);
 	}
 
-	isReplace = false;
+	linesAdded = 0;
+	linesDeleted = 0;
 
 	progress_ptr progress;
 	compareViews(progress, mainViewSec, subViewSec);
@@ -2162,7 +2146,7 @@ void DelayedUpdate::operator()()
 		NavDlg.Show();
 
 	// Synchronize views
-	forceViewsSync(currentView);
+	forceViewsSync(changeView);
 }
 
 
@@ -2225,7 +2209,7 @@ void onSciModifiedUpdate(SCNotification *notifyCode)
 		{
 			ScopedIncrementer incr(notificationsLock);
 
-			clearMarks(currentView, startLine, endLine - startLine);
+			clearMarks(currentView, startLine, endLine - startLine + 1);
 		}
 	}
 	else if (notifyCode->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT))
@@ -2236,12 +2220,19 @@ void onSciModifiedUpdate(SCNotification *notifyCode)
 			{
 				delayedUpdate.cancel();
 
-				delayedUpdate.isReplace = ((notifyCode->modificationType & SC_MOD_INSERTTEXT) &&
-						(delayedUpdate.notifyCode.modificationType & SC_MOD_DELETETEXT) &&
-						(notifyCode->position == delayedUpdate.notifyCode.position)) ? true : false;
+				if (delayedUpdate.changePos > notifyCode->position)
+					delayedUpdate.changePos = notifyCode->position;
+			}
+			else
+			{
+				delayedUpdate.changePos = notifyCode->position;
 			}
 
-			delayedUpdate.notifyCode = *notifyCode;
+			if (notifyCode->modificationType & SC_MOD_INSERTTEXT)
+				delayedUpdate.linesAdded += notifyCode->linesAdded;
+			else
+				delayedUpdate.linesDeleted += (-notifyCode->linesAdded);
+
 			delayedUpdate.post(10);
 		}
 	}
