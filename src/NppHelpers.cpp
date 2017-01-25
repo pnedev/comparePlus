@@ -461,7 +461,7 @@ int clearMarksAndBlanks(HWND view, int startLine, int linesCount)
 
 	for (int i = startLine + linesCount - 1; i >= startLine; --i)
 	{
-		int deletePos;
+		int deletePos = 0;
 		int deleteLen = 0;
 
 		if (::SendMessage(view, SCI_MARKERGET, i, 0) & blankMask)
