@@ -31,31 +31,6 @@
 
 namespace {
 
-enum diff_mark {
-	DELETED_MARK = 0,
-	ADDED_MARK,
-	MOVED_MARK,
-	CHANGED_MARK,
-	END_MARK
-};
-
-
-const Marker_t lineMark[END_MARK] = {
-	MARKER_REMOVED_LINE,
-	MARKER_ADDED_LINE,
-	MARKER_MOVED_LINE,
-	MARKER_CHANGED_LINE
-};
-
-
-const Marker_t symbolMark[END_MARK] = {
-	MARKER_REMOVED_SYMBOL,
-	MARKER_ADDED_SYMBOL,
-	MARKER_MOVED_SYMBOL,
-	MARKER_CHANGED_SYMBOL
-};
-
-
 struct chunk_info
 {
 	chunk_info(int line_offset, int line_count) :
@@ -255,7 +230,7 @@ void compareLines(diff_info& blockDiff1, diff_info& blockDiff2, const chunk_info
 }
 
 
-void markSection(std::pair<HWND, HWND>& views, const diff_info& bd, const std::pair<diff_mark, diff_mark>& bdMarks,
+void markSection(std::pair<HWND, HWND>& views, const diff_info& bd, const std::pair<int, int>& bdMarks,
 		const std::pair<section_t, section_t>& sections, std::pair<int*, int*>& addedBlanks)
 {
 	const int startLine = bd.off + *addedBlanks.first + sections.first.off;
@@ -266,10 +241,9 @@ void markSection(std::pair<HWND, HWND>& views, const diff_info& bd, const std::p
 
 	for (int i = sections.first.off; i < endOff; ++i, ++line)
 	{
-		const diff_mark marker = bd.isMoved(i) ? MOVED_MARK : bdMarks.first;
+		const int markerMask = bd.isMoved(i) ? MARKER_MASK_MOVED : bdMarks.first;
 
-		::SendMessage(views.first, SCI_MARKERADD, line, lineMark[marker]);
-		::SendMessage(views.first, SCI_MARKERADD, line, symbolMark[marker]);
+		::SendMessage(views.first, SCI_MARKERADDSET, line, markerMask);
 	}
 
 	if (lenDiff > 0)
@@ -284,10 +258,9 @@ void markSection(std::pair<HWND, HWND>& views, const diff_info& bd, const std::p
 
 	for (int i = sections.second.off; i < endOff; ++i, ++line)
 	{
-		const diff_mark marker = bd.matchedDiff->isMoved(i) ? MOVED_MARK : bdMarks.second;
+		const int markerMask = bd.matchedDiff->isMoved(i) ? MARKER_MASK_MOVED : bdMarks.second;
 
-		::SendMessage(views.second, SCI_MARKERADD, line, lineMark[marker]);
-		::SendMessage(views.second, SCI_MARKERADD, line, symbolMark[marker]);
+		::SendMessage(views.second, SCI_MARKERADDSET, line, markerMask);
 	}
 
 	if (lenDiff > 0)
@@ -306,16 +279,14 @@ void markLineDiffs(std::pair<HWND, HWND>& views,
 	for (const auto& change : changedLines.first.changes)
 		markTextAsChanged(views.first, linePos + change.off, change.len);
 
-	::SendMessage(views.first, SCI_MARKERADD, line, lineMark[CHANGED_MARK]);
-	::SendMessage(views.first, SCI_MARKERADD, line, symbolMark[CHANGED_MARK]);
+	::SendMessage(views.first, SCI_MARKERADDSET, line, MARKER_MASK_CHANGED);
 
 	linePos = ::SendMessage(views.second, SCI_POSITIONFROMLINE, line, 0);
 
 	for (const auto& change : changedLines.second.changes)
 		markTextAsChanged(views.second, linePos + change.off, change.len);
 
-	::SendMessage(views.second, SCI_MARKERADD, line, lineMark[CHANGED_MARK]);
-	::SendMessage(views.second, SCI_MARKERADD, line, symbolMark[CHANGED_MARK]);
+	::SendMessage(views.second, SCI_MARKERADDSET, line, MARKER_MASK_CHANGED);
 }
 
 }
@@ -481,8 +452,8 @@ bool showDiffs(const DocCmpInfo& doc1, const DocCmpInfo& doc2,
 {
 	const std::vector<diff_info>& blockDiff = cmpResults.first;
 
-	const diff_mark deletedMark	= cmpResults.second ? ADDED_MARK : DELETED_MARK;
-	const diff_mark addedMark	= cmpResults.second ? DELETED_MARK : ADDED_MARK;
+	const int deletedMark	= cmpResults.second ? MARKER_MASK_ADDED : MARKER_MASK_REMOVED;
+	const int addedMark		= cmpResults.second ? MARKER_MASK_REMOVED : MARKER_MASK_ADDED;
 
 	const int blockDiffSize = static_cast<int>(blockDiff.size());
 
@@ -500,7 +471,7 @@ bool showDiffs(const DocCmpInfo& doc1, const DocCmpInfo& doc2,
 		{
 			std::pair<HWND, HWND> views;
 			std::pair<int*, int*> addedBlanks;
-			std::pair<diff_mark, diff_mark> bdMarks;
+			std::pair<int, int> bdMarks;
 
 			if (bd.type == diff_type::DIFF_DELETE)
 			{
