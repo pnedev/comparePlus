@@ -25,6 +25,7 @@
 
 #include "Compare.h"
 #include "NppHelpers.h"
+#include "NppInternalDefines.h"
 
 #include "icon_add_16.h"
 #include "icon_sub_16.h"
@@ -211,12 +212,7 @@ void setNormalView(HWND view)
 
 void setCompareView(HWND view)
 {
-	const int marginMask =	(1 << MARKER_CHANGED_SYMBOL) |
-							(1 << MARKER_ADDED_SYMBOL) |
-							(1 << MARKER_REMOVED_SYMBOL) |
-							(1 << MARKER_MOVED_SYMBOL);
-
-	::SendMessage(view, SCI_SETMARGINMASKN, 4, (LPARAM)marginMask);
+	::SendMessage(view, SCI_SETMARGINMASKN, 4, (LPARAM)MARKER_MASK_SYMBOL);
 	::SendMessage(view, SCI_SETMARGINWIDTHN, 4, 16);
 
 	::SendMessage(view, SCI_SETCARETLINEBACKALPHA, 96, 0);
@@ -290,13 +286,7 @@ void jumpToFirstChange()
 {
 	HWND currView = getCurrentView();
 
-	const int sci_search_mask = (1 << MARKER_MOVED_LINE)
-							  | (1 << MARKER_CHANGED_LINE)
-							  | (1 << MARKER_ADDED_LINE)
-							  | (1 << MARKER_REMOVED_LINE)
-							  | (1 << MARKER_BLANK_LINE);
-
-	const int nextLine = ::SendMessage(currView, SCI_MARKERNEXT, 0, sci_search_mask);
+	const int nextLine = ::SendMessage(currView, SCI_MARKERNEXT, 0, MARKER_MASK_LINE);
 
 	if (nextLine < 0)
 		return;
@@ -310,14 +300,8 @@ void jumpToLastChange()
 {
 	HWND currView = getCurrentView();
 
-	const int sci_search_mask = (1 << MARKER_MOVED_LINE)
-							  | (1 << MARKER_CHANGED_LINE)
-							  | (1 << MARKER_ADDED_LINE)
-							  | (1 << MARKER_REMOVED_LINE)
-							  | (1 << MARKER_BLANK_LINE);
-
 	const int lineMax = ::SendMessage(currView, SCI_GETLINECOUNT, 0, 0);
-	const int nextLine = ::SendMessage(currView, SCI_MARKERPREVIOUS, lineMax, sci_search_mask);
+	const int nextLine = ::SendMessage(currView, SCI_MARKERPREVIOUS, lineMax, MARKER_MASK_LINE);
 
 	if (nextLine < 0)
 		return;
@@ -331,12 +315,6 @@ void jumpToNextChange(bool down, bool wrapAround)
 {
 	HWND view = getCurrentView();
 
-	const int sci_search_mask = (1 << MARKER_MOVED_LINE) |
-								(1 << MARKER_CHANGED_LINE) |
-								(1 << MARKER_ADDED_LINE) |
-								(1 << MARKER_REMOVED_LINE) |
-								(1 << MARKER_BLANK_LINE);
-
 	const int sci_marker_direction = down ? SCI_MARKERNEXT : SCI_MARKERPREVIOUS;
 
 	int currentLine = getCurrentLine(view);
@@ -349,16 +327,16 @@ void jumpToNextChange(bool down, bool wrapAround)
 	{
 		if (down)
 		{
-			while ((::SendMessage(view, SCI_MARKERGET, currentLine, 0) & sci_search_mask) && (currentLine < lineMax))
+			while ((::SendMessage(view, SCI_MARKERGET, currentLine, 0) & MARKER_MASK_LINE) && (currentLine < lineMax))
 				++currentLine;
 		}
 		else
 		{
-			while ((::SendMessage(view, SCI_MARKERGET, currentLine, 0) & sci_search_mask) && (currentLine > -1))
+			while ((::SendMessage(view, SCI_MARKERGET, currentLine, 0) & MARKER_MASK_LINE) && (currentLine > -1))
 				--currentLine;
 		}
 
-		nextLine = ::SendMessage(view, sci_marker_direction, currentLine, sci_search_mask);
+		nextLine = ::SendMessage(view, sci_marker_direction, currentLine, MARKER_MASK_LINE);
 
 		if (nextLine < 0)
 		{
@@ -366,7 +344,7 @@ void jumpToNextChange(bool down, bool wrapAround)
 				return;
 
 			currentLine = down ? 0 : lineMax;
-			nextLine = ::SendMessage(view, sci_marker_direction, currentLine, sci_search_mask);
+			nextLine = ::SendMessage(view, sci_marker_direction, currentLine, MARKER_MASK_LINE);
 
 			if (nextLine < 0)
 				return;
@@ -411,6 +389,31 @@ std::vector<char> getText(HWND view, int startPos, int endPos)
 }
 
 
+std::pair<int, int> getBookmarkRange(HWND view)
+{
+	const int markerMask = (1 << MARK_BOOKMARK);
+	const int lineMax = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0) - 1;
+
+	std::pair<int, int> range = { 0, lineMax };
+
+	int markedLine = ::SendMessage(view, SCI_MARKERNEXT, 0, markerMask);
+
+	if (markedLine < 0)
+		return range;
+
+	range.first = markedLine;
+
+	markedLine = ::SendMessage(view, SCI_MARKERNEXT, markedLine + 1, markerMask);
+
+	if (markedLine < 0)
+		return range;
+
+	range.second = markedLine;
+
+	return range;
+}
+
+
 void clearWindow(HWND view)
 {
 	removeBlankLines(view);
@@ -435,6 +438,20 @@ void clearWindow(HWND view)
 }
 
 
+void clearMarks(HWND view, int line)
+{
+	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_BLANK_LINE);
+	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_MOVED_LINE);
+	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_CHANGED_LINE);
+	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_ADDED_LINE);
+	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_REMOVED_LINE);
+	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_CHANGED_SYMBOL);
+	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_ADDED_SYMBOL);
+	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_REMOVED_SYMBOL);
+	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_MOVED_SYMBOL);
+}
+
+
 void clearMarks(HWND view, int startLine, int linesCount)
 {
 	const int startPos = ::SendMessage(view, SCI_POSITIONFROMLINE, startLine, 0);
@@ -442,8 +459,9 @@ void clearMarks(HWND view, int startLine, int linesCount)
 
 	clearChangedIndicator(view, startPos, len);
 
-	for (int i = startLine + linesCount - 1; i >= startLine; --i)
-		::SendMessage(view, SCI_MARKERDELETE, i, -1);
+	for (int line = ::SendMessage(view, SCI_MARKERPREVIOUS, startLine + linesCount - 1, MARKER_MASK_LINE);
+			line >= startLine; line = ::SendMessage(view, SCI_MARKERPREVIOUS, line - 1, MARKER_MASK_LINE))
+		clearMarks(view, line);
 }
 
 
@@ -459,24 +477,25 @@ int clearMarksAndBlanks(HWND view, int startLine, int linesCount)
 
 	clearChangedIndicator(view, startPos, len);
 
-	for (int i = startLine + linesCount - 1; i >= startLine; --i)
+	for (int line = ::SendMessage(view, SCI_MARKERPREVIOUS, startLine + linesCount - 1, MARKER_MASK_LINE);
+			line >= startLine; line = ::SendMessage(view, SCI_MARKERPREVIOUS, line - 1, MARKER_MASK_LINE))
 	{
 		int deletePos = 0;
 		int deleteLen = 0;
 
-		if (::SendMessage(view, SCI_MARKERGET, i, 0) & blankMask)
+		if (::SendMessage(view, SCI_MARKERGET, line, 0) & blankMask)
 		{
-			deletePos = ::SendMessage(view, SCI_POSITIONFROMLINE, i, 0) - eolLen;
-			deleteLen = ::SendMessage(view, SCI_GETLINEENDPOSITION, i, 0) - deletePos;
+			deletePos = ::SendMessage(view, SCI_POSITIONFROMLINE, line, 0) - eolLen;
+			deleteLen = ::SendMessage(view, SCI_GETLINEENDPOSITION, line, 0) - deletePos;
 
-			const int lineIndent = ::SendMessage(view, SCI_GETLINEINDENTATION, i, 0);
+			const int lineIndent = ::SendMessage(view, SCI_GETLINEINDENTATION, line, 0);
 
 			// Don't delete a line that is not blank
 			if (deleteLen != lineIndent + eolLen)
 				deleteLen = 0;
 		}
 
-		::SendMessage(view, SCI_MARKERDELETE, i, -1);
+		clearMarks(view, line);
 
 		if (deleteLen > 0)
 		{
@@ -663,19 +682,15 @@ void addBlankSection(HWND view, int line, int length)
 	{
 		line = lineCount - 1;
 
-		int marker = ::SendMessage(view, SCI_MARKERGET, line, 0);
+		const int marker = ::SendMessage(view, SCI_MARKERGET, line, 0);
 
 		if (marker)
 			::SendMessage(view, SCI_MARKERDELETE, line, -1);
 
 		::SendMessage(view, SCI_APPENDTEXT, buff.size() - 1, (LPARAM)buff.data());
 
-		for (int markerId = 0; marker; ++markerId)
-		{
-			if (marker & 1)
-				::SendMessage(view, SCI_MARKERADD, line, markerId);
-			marker >>= 1;
-		}
+		if (marker)
+			::SendMessage(view, SCI_MARKERADDSET, line, marker);
 
 		line = lineCount;
 	}

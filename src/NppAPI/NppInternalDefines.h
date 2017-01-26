@@ -25,3 +25,5 @@
 #include <windows.h>
 
 #define WM_TABSETSTYLE	(WM_APP + 0x024)
+
+const int MARK_BOOKMARK = 24;

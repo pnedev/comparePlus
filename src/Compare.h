@@ -63,15 +63,17 @@ enum MENU_COMMANDS
 	CMD_SVN_DIFF,
 	CMD_GIT_DIFF,
 	CMD_SEPARATOR_2,
+	CMD_PARTIAL_COMPARE,
+	CMD_SEPARATOR_3,
 	CMD_IGNORE_SPACES,
 	CMD_DETECT_MOVES,
 	CMD_NAV_BAR,
-	CMD_SEPARATOR_3,
+	CMD_SEPARATOR_4,
 	CMD_PREV,
 	CMD_NEXT,
 	CMD_FIRST,
 	CMD_LAST,
-	CMD_SEPARATOR_4,
+	CMD_SEPARATOR_5,
 	CMD_SETTINGS,
 	CMD_ABOUT,
 	NB_MENU_COMMANDS
@@ -115,6 +117,8 @@ public:
 	static const TCHAR updateOnChangeSetting[];
 	static const TCHAR compactNavBarSetting[];
 
+	static const TCHAR partialCompareSetting[];
+
 	static const TCHAR ignoreSpacesSetting[];
 	static const TCHAR detectMovesSetting[];
 	static const TCHAR navBarSetting[];
@@ -138,6 +142,8 @@ public:
 	bool           	GotoFirstDiff;
 	bool           	UpdateOnChange;
 	bool           	CompactNavBar;
+
+	bool           	PartialCompare;
 
 	bool           	IgnoreSpaces;
 	bool           	DetectMoves;

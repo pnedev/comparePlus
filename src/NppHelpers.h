@@ -26,15 +26,34 @@
 enum Marker_t
 {
 	MARKER_BLANK_LINE = 0,
-	MARKER_MOVED_LINE,
 	MARKER_CHANGED_LINE,
 	MARKER_ADDED_LINE,
 	MARKER_REMOVED_LINE,
+	MARKER_MOVED_LINE,
 	MARKER_CHANGED_SYMBOL,
 	MARKER_ADDED_SYMBOL,
 	MARKER_REMOVED_SYMBOL,
 	MARKER_MOVED_SYMBOL
 };
+
+
+const int MARKER_MASK_CHANGED	= (1 << MARKER_CHANGED_LINE)	| (1 << MARKER_CHANGED_SYMBOL);
+const int MARKER_MASK_ADDED		= (1 << MARKER_ADDED_LINE)		| (1 << MARKER_ADDED_SYMBOL);
+const int MARKER_MASK_REMOVED	= (1 << MARKER_REMOVED_LINE)	| (1 << MARKER_REMOVED_SYMBOL);
+const int MARKER_MASK_MOVED		= (1 << MARKER_MOVED_LINE)		| (1 << MARKER_MOVED_SYMBOL);
+
+const int MARKER_MASK_LINE = (1 << MARKER_BLANK_LINE) |
+							(1 << MARKER_CHANGED_LINE) |
+							(1 << MARKER_ADDED_LINE) |
+							(1 << MARKER_REMOVED_LINE) |
+							(1 << MARKER_MOVED_LINE);
+
+const int MARKER_MASK_SYMBOL = (1 << MARKER_CHANGED_SYMBOL) |
+								(1 << MARKER_ADDED_SYMBOL) |
+								(1 << MARKER_REMOVED_SYMBOL) |
+								(1 << MARKER_MOVED_SYMBOL);
+
+const int MARKER_MASK_ALL = MARKER_MASK_LINE | MARKER_MASK_SYMBOL;
 
 
 /**
@@ -298,7 +317,11 @@ void setBlank(HWND view, int color);
 
 void defineSymbol(int type, int symbol);
 void defineColor(int type, int color);
+
+std::pair<int, int> getBookmarkRange(HWND view);
+
 void clearWindow(HWND view);
+void clearMarks(HWND view, int line);
 void clearMarks(HWND view, int startLine, int linesCount);
 int clearMarksAndBlanks(HWND view, int startLine, int linesCount);
 int getPrevUnmarkedLine(HWND view, int startLine);

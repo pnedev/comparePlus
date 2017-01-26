@@ -32,8 +32,9 @@
 #define IDB_LAST					125
 #define IDB_PREV					126
 #define IDB_NEXT					127
-#define IDB_NAVBAR					128
-#define IDB_ICON					129
+#define IDB_PARTCOMPARE				128
+#define IDB_NAVBAR					129
+#define IDB_ICON					130
 
 #define IDC_EMAIL_LINK5				1010
 #define IDC_NPP_PLUGINS_URL3		1011
