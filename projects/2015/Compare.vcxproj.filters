@@ -167,6 +167,9 @@
     <None Include="..\..\res\Next.bmp">
       <Filter>res</Filter>
     </None>
+    <None Include="..\..\res\Partial.bmp">
+      <Filter>res</Filter>
+    </None>
     <None Include="..\..\res\NavBar.bmp">
       <Filter>res</Filter>
     </None>

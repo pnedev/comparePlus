@@ -296,6 +296,7 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlugin"</Command>
     <None Include="..\..\res\Last.bmp" />
     <None Include="..\..\res\Prev.bmp" />
     <None Include="..\..\res\Next.bmp" />
+    <None Include="..\..\res\Partial.bmp" />
     <None Include="..\..\res\NavBar.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
