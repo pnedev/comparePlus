@@ -523,6 +523,9 @@ public:
 	int		linesDeleted;
 
 	bool	fullCompare;
+
+private:
+	void adjustRange(HWND view, section_t& section);
 };
 
 
@@ -954,6 +957,25 @@ ComparedFile& ComparedPair::getOldFile()
 ComparedFile& ComparedPair::getNewFile()
 {
 	return file[0].isNew ? file[0] : file[1];
+}
+
+
+void DelayedUpdate::adjustRange(HWND view, section_t& section)
+{
+	std::pair<int, int> viewRange = getBookmarkRange(view);
+	const int secEndLine = section.off + section.len - 1;
+
+	if (section.off > viewRange.second || secEndLine < viewRange.first)
+	{
+		section.len = 0;
+	}
+	else
+	{
+		if (section.off < viewRange.first)
+			section.off = viewRange.first;
+		if (secEndLine > viewRange.second)
+			section.len = viewRange.second - section.off + 1;
+	}
 }
 
 
@@ -2192,21 +2214,8 @@ void DelayedUpdate::operator()()
 	// Get update and user-set ranges intersection
 	if (Settings.PartialCompare)
 	{
-		std::pair<int, int> viewRange = getBookmarkRange(nppData._scintillaMainHandle);
-		int secEnd = mainViewSec.off + mainViewSec.len - 1;
-
-		if (mainViewSec.off < viewRange.first)
-			mainViewSec.off = viewRange.first;
-		if (secEnd > viewRange.second)
-			mainViewSec.len = viewRange.second - mainViewSec.off + 1;
-
-		viewRange = getBookmarkRange(nppData._scintillaSecondHandle);
-		secEnd = subViewSec.off + subViewSec.len - 1;
-
-		if (subViewSec.off < viewRange.first)
-			subViewSec.off = viewRange.first;
-		if (secEnd > viewRange.second)
-			subViewSec.len = viewRange.second - subViewSec.off + 1;
+		adjustRange(nppData._scintillaMainHandle, mainViewSec);
+		adjustRange(nppData._scintillaSecondHandle, subViewSec);
 	}
 
 	ScopedIncrementer incr(notificationsLock);
