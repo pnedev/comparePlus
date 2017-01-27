@@ -290,15 +290,12 @@ void DeletedSectionsList::push(int currAction, int startLine, int endLine)
 	clearChangedIndicator(currentView,
 			startPos, ::SendMessage(currentView, SCI_POSITIONFROMLINE, endLine, 0) - startPos);
 
-	for (int line = startLine; line <= endLine; ++line)
+	for (int line = ::SendMessage(currentView, SCI_MARKERPREVIOUS, endLine, MARKER_MASK_LINE);
+			line >= startLine; line = ::SendMessage(currentView, SCI_MARKERPREVIOUS, line - 1, MARKER_MASK_LINE))
 	{
-		const int marker = ::SendMessage(currentView, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL;
-		if (marker)
-		{
-			delSection.markers[line - startLine] = marker;
-			if (line != endLine)
-				clearMarks(currentView, line);
-		}
+		delSection.markers[line - startLine] = ::SendMessage(currentView, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL;
+		if (line != endLine)
+			clearMarks(currentView, line);
 	}
 
 	sections.push_back(delSection);

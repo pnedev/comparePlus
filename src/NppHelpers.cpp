@@ -470,7 +470,6 @@ int clearMarksAndBlanks(HWND view, int startLine, int linesCount)
 	int deletedLines = 0;
 
 	const int eolLen = EOLlen[::SendMessage(view, SCI_GETEOLMODE, 0, 0)];
-	const int blankMask = 1 << MARKER_BLANK_LINE;
 
 	const int startPos = ::SendMessage(view, SCI_POSITIONFROMLINE, startLine, 0);
 	const int len = ::SendMessage(view, SCI_GETLINEENDPOSITION, startLine + linesCount - 1, 0) - startPos;
@@ -483,7 +482,7 @@ int clearMarksAndBlanks(HWND view, int startLine, int linesCount)
 		int deletePos = 0;
 		int deleteLen = 0;
 
-		if (::SendMessage(view, SCI_MARKERGET, line, 0) & blankMask)
+		if (::SendMessage(view, SCI_MARKERGET, line, 0) & MARKER_BLANK_LINE)
 		{
 			deletePos = ::SendMessage(view, SCI_POSITIONFROMLINE, line, 0) - eolLen;
 			deleteLen = ::SendMessage(view, SCI_GETLINEENDPOSITION, line, 0) - deletePos;
@@ -514,16 +513,10 @@ int clearMarksAndBlanks(HWND view, int startLine, int linesCount)
 
 int getPrevUnmarkedLine(HWND view, int startLine)
 {
-	const int searchMask = (1 << MARKER_MOVED_LINE) |
-							(1 << MARKER_CHANGED_LINE) |
-							(1 << MARKER_ADDED_LINE) |
-							(1 << MARKER_REMOVED_LINE) |
-							(1 << MARKER_BLANK_LINE);
-
 	int prevUnmarkedLine = startLine;
 
-	for (; (prevUnmarkedLine > 0) && (::SendMessage(view, SCI_MARKERGET, prevUnmarkedLine, 0) & searchMask);
-			--prevUnmarkedLine);
+	for (; (prevUnmarkedLine > 0) &&
+			(::SendMessage(view, SCI_MARKERGET, prevUnmarkedLine, 0) & MARKER_MASK_LINE); --prevUnmarkedLine);
 
 	return prevUnmarkedLine;
 }
@@ -531,17 +524,11 @@ int getPrevUnmarkedLine(HWND view, int startLine)
 
 int getNextUnmarkedLine(HWND view, int startLine)
 {
-	const int searchMask = (1 << MARKER_MOVED_LINE) |
-							(1 << MARKER_CHANGED_LINE) |
-							(1 << MARKER_ADDED_LINE) |
-							(1 << MARKER_REMOVED_LINE) |
-							(1 << MARKER_BLANK_LINE);
-
 	const int lineMax = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0) - 1;
 	int nextUnmarkedLine = startLine;
 
-	for (; (nextUnmarkedLine < lineMax) && (::SendMessage(view, SCI_MARKERGET, nextUnmarkedLine, 0) & searchMask);
-			++nextUnmarkedLine);
+	for (; (nextUnmarkedLine < lineMax) &&
+			(::SendMessage(view, SCI_MARKERGET, nextUnmarkedLine, 0) & MARKER_MASK_LINE); ++nextUnmarkedLine);
 
 	return nextUnmarkedLine;
 }
@@ -573,14 +560,12 @@ static void adjustLineIndent(HWND view, int line)
 
 void adjustBlanksWrap(HWND view)
 {
-	const int blankMarker = 1 << MARKER_BLANK_LINE;
-
 	std::vector<HWND> views = (view != NULL) ? std::vector<HWND>{ view } :
 			std::vector<HWND>{ nppData._scintillaMainHandle, nppData._scintillaSecondHandle };
 
 	for (unsigned int i = 0; i < views.size() ; ++i)
 	{
-		int line = ::SendMessage(views[i], SCI_MARKERNEXT, 0, blankMarker);
+		int line = ::SendMessage(views[i], SCI_MARKERNEXT, 0, MARKER_MASK_BLANK);
 
 		if (line < 0)
 			continue;
@@ -588,7 +573,7 @@ void adjustBlanksWrap(HWND view)
 		ScopedViewUndoCollectionBlocker undoBlock(views[i]);
 		ScopedViewWriteEnabler writeEn(views[i]);
 
-		for (; line >= 0; line = ::SendMessage(views[i], SCI_MARKERNEXT, line + 1, blankMarker))
+		for (; line >= 0; line = ::SendMessage(views[i], SCI_MARKERNEXT, line + 1, MARKER_MASK_BLANK))
 		{
 			const int lineIndent	= ::SendMessage(views[i], SCI_GETLINEINDENTATION, line, 0);
 			const int lineLen		= ::SendMessage(views[i], SCI_GETLINEENDPOSITION, line, 0) -
@@ -608,13 +593,12 @@ static int deleteBlankSection(HWND view, int line)
 {
 	const int eolLen = EOLlen[::SendMessage(view, SCI_GETEOLMODE, 0, 0)];
 	const int lastLine = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0) - 1;
-	const int blankMask = 1 << MARKER_BLANK_LINE;
 
 	int deleteStartPos = ::SendMessage(view, SCI_POSITIONFROMLINE, line, 0);
 	int deleteLen = 0;
 	int deletedLines = 0;
 
-	while ((line <= lastLine) && (::SendMessage(view, SCI_MARKERGET, line, 0) & blankMask))
+	while ((line <= lastLine) && (::SendMessage(view, SCI_MARKERGET, line, 0) & MARKER_MASK_BLANK))
 	{
 		::SendMessage(view, SCI_MARKERDELETE, line, MARKER_BLANK_LINE);
 
@@ -718,11 +702,10 @@ void addBlankLines(HWND view, const BlankSections_t& blanks)
 BlankSections_t removeBlankLines(HWND view, bool saveBlanks)
 {
 	BlankSections_t blanks;
-	const int marker = 1 << MARKER_BLANK_LINE;
 
 	int deletedLines = 0;
-	for (int line = ::SendMessage(view, SCI_MARKERNEXT, 0, marker); line >= 0;
-			line = ::SendMessage(view, SCI_MARKERNEXT, line, marker))
+	for (int line = ::SendMessage(view, SCI_MARKERNEXT, 0, MARKER_MASK_BLANK); line >= 0;
+			line = ::SendMessage(view, SCI_MARKERNEXT, line, MARKER_MASK_BLANK))
 	{
 		const int len = deleteBlankSection(view, line);
 		if (len > 0 && saveBlanks)

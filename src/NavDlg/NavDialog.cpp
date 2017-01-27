@@ -116,12 +116,12 @@ void NavDialog::NavView::create(const ColorSettings& colors, int reductionRatio)
 		if (!marker && !reductionRatio)
 			continue;
 
-		if      (marker & (1 << MARKER_BLANK_LINE))		marker = colors.blank;
-		else if (marker & (1 << MARKER_ADDED_LINE))		marker = colors.added;
-		else if (marker & (1 << MARKER_CHANGED_LINE))	marker = colors.changed;
-		else if (marker & (1 << MARKER_MOVED_LINE))		marker = colors.moved;
-		else if (marker & (1 << MARKER_REMOVED_LINE))	marker = colors.deleted;
-		else if (reductionRatio)						marker = colors._default;
+		if      (marker & MARKER_MASK_BLANK)	marker = colors.blank;
+		else if (marker & MARKER_MASK_CHANGED)	marker = colors.changed;
+		else if (marker & MARKER_MASK_ADDED)	marker = colors.added;
+		else if (marker & MARKER_MASK_REMOVED)	marker = colors.deleted;
+		else if (marker & MARKER_MASK_MOVED)	marker = colors.moved;
+		else if (reductionRatio)				marker = colors._default;
 		else
 			continue;
 
