@@ -54,8 +54,6 @@ const TCHAR UserSettings::gotoFirstDiffSetting[]	= TEXT("Go to First Diff");
 const TCHAR UserSettings::updateOnChangeSetting[]	= TEXT("Update on Change");
 const TCHAR UserSettings::compactNavBarSetting[]	= TEXT("Compact NavBar");
 
-const TCHAR UserSettings::partialCompareSetting[]	= TEXT("Partial Compare");
-
 const TCHAR UserSettings::ignoreSpacesSetting[]		= TEXT("Ignore Spaces");
 const TCHAR UserSettings::detectMovesSetting[]		= TEXT("Detect Moves");
 const TCHAR UserSettings::navBarSetting[]			= TEXT("Navigation Bar");
@@ -97,8 +95,6 @@ void UserSettings::load()
 			DEFAULT_UPDATE_ON_CHANGE, iniFile) == 1;
 	CompactNavBar	= ::GetPrivateProfileInt(mainSection, compactNavBarSetting,
 			DEFAULT_COMPACT_NAVBAR, iniFile) == 1;
-
-	PartialCompare	= ::GetPrivateProfileInt(mainSection, partialCompareSetting, 0, iniFile) == 1;
 
 	IgnoreSpaces	= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,	1, iniFile) == 1;
 	DetectMoves		= ::GetPrivateProfileInt(mainSection, detectMovesSetting,	1, iniFile) == 1;
@@ -150,8 +146,6 @@ void UserSettings::save()
 			UpdateOnChange ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, compactNavBarSetting,
 			CompactNavBar ? TEXT("1") : TEXT("0"), iniFile);
-
-	::WritePrivateProfileString(mainSection, partialCompareSetting,	PartialCompare	? TEXT("1") : TEXT("0"), iniFile);
 
 	::WritePrivateProfileString(mainSection, ignoreSpacesSetting,	IgnoreSpaces	? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, detectMovesSetting,	DetectMoves		? TEXT("1") : TEXT("0"), iniFile);
@@ -520,9 +514,6 @@ public:
 	int		linesDeleted;
 
 	bool	fullCompare;
-
-private:
-	void adjustRange(HWND view, section_t& section);
 };
 
 
@@ -568,7 +559,6 @@ toolbarIcons  tbFirst;
 toolbarIcons  tbPrev;
 toolbarIcons  tbNext;
 toolbarIcons  tbLast;
-toolbarIcons  tbPartialCompare;
 toolbarIcons  tbNavBar;
 
 HINSTANCE hInstance;
@@ -954,25 +944,6 @@ ComparedFile& ComparedPair::getOldFile()
 ComparedFile& ComparedPair::getNewFile()
 {
 	return file[0].isNew ? file[0] : file[1];
-}
-
-
-void DelayedUpdate::adjustRange(HWND view, section_t& section)
-{
-	std::pair<int, int> viewRange = getBookmarkRange(view);
-	const int secEndLine = section.off + section.len - 1;
-
-	if (section.off > viewRange.second || secEndLine < viewRange.first)
-	{
-		section.len = 0;
-	}
-	else
-	{
-		if (section.off < viewRange.first)
-			section.off = viewRange.first;
-		if (secEndLine > viewRange.second)
-			section.len = viewRange.second - section.off + 1;
-	}
 }
 
 
@@ -1491,14 +1462,14 @@ CompareResult compareViews(progress_ptr& progress, section_t mainViewSection, se
 }
 
 
-CompareResult runCompare(CompareList_t::iterator& cmpPair)
+CompareResult runCompare(CompareList_t::iterator& cmpPair, bool rangeCompare)
 {
 	cmpPair->positionFiles();
 
 	section_t mainViewSection = { 0, 0 };
 	section_t subViewSection = { 0, 0 };
 
-	if (Settings.PartialCompare)
+	if (rangeCompare)
 	{
 		std::pair<int, int> viewRange = getBookmarkRange(nppData._scintillaMainHandle);
 
@@ -1552,14 +1523,7 @@ CompareResult runCompare(CompareList_t::iterator& cmpPair)
 }
 
 
-void SetAsFirst()
-{
-	if (!setFirst(!Settings.OldFileIsFirst, true))
-		newCompare.reset();
-}
-
-
-void Compare()
+void compare(bool rangeCompare = false)
 {
 	ScopedIncrementer incr(notificationsLock);
 
@@ -1596,7 +1560,7 @@ void Compare()
 
 		location.save(currentBuffId);
 
-		if (Settings.PartialCompare)
+		if (rangeCompare)
 		{
 			const std::pair<int, int> mainViewRange = getBookmarkRange(nppData._scintillaMainHandle);
 			const std::pair<int, int> subViewRange = getBookmarkRange(nppData._scintillaSecondHandle);
@@ -1623,7 +1587,7 @@ void Compare()
 	if (Settings.EncodingsCheck && !isEncodingOK(*cmpPair))
 		cmpResult = CompareResult::COMPARE_CANCELLED;
 	else
-		cmpResult = runCompare(cmpPair);
+		cmpResult = runCompare(cmpPair, rangeCompare);
 
 	switch (cmpResult)
 	{
@@ -1712,6 +1676,25 @@ void Compare()
 }
 
 
+void SetAsFirst()
+{
+	if (!setFirst(!Settings.OldFileIsFirst, true))
+		newCompare.reset();
+}
+
+
+void CompareWhole()
+{
+	compare();
+}
+
+
+void CompareRange()
+{
+	compare(true);
+}
+
+
 void ClearActiveCompare()
 {
 	newCompare.reset();
@@ -1757,7 +1740,7 @@ void LastSaveDiff()
 	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
 
 	if (createTempFile(file, LAST_SAVED_TEMP))
-		Compare();
+		compare();
 }
 
 
@@ -1772,7 +1755,7 @@ void SvnDiff()
 		return;
 
 	if (createTempFile(svnFile, SVN_TEMP))
-		Compare();
+		compare();
 }
 
 
@@ -1793,16 +1776,7 @@ void GitDiff()
 	setContent(content.data());
 	content.clear();
 
-	Compare();
-}
-
-
-void PartialCompare()
-{
-	Settings.PartialCompare = !Settings.PartialCompare;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_PARTIAL_COMPARE]._cmdID,
-			(LPARAM)Settings.PartialCompare);
-	Settings.markAsDirty();
+	compare();
 }
 
 
@@ -1887,12 +1861,20 @@ void createMenu()
 	funcItem[CMD_SET_FIRST]._pShKey->_key		= '1';
 
 	_tcscpy_s(funcItem[CMD_COMPARE]._itemName, nbChar, TEXT("Compare"));
-	funcItem[CMD_COMPARE]._pFunc			= Compare;
+	funcItem[CMD_COMPARE]._pFunc			= CompareWhole;
 	funcItem[CMD_COMPARE]._pShKey			= new ShortcutKey;
 	funcItem[CMD_COMPARE]._pShKey->_isAlt	= true;
 	funcItem[CMD_COMPARE]._pShKey->_isCtrl	= true;
 	funcItem[CMD_COMPARE]._pShKey->_isShift	= false;
 	funcItem[CMD_COMPARE]._pShKey->_key		= 'C';
+
+	_tcscpy_s(funcItem[CMD_COMPARE_RANGE]._itemName, nbChar, TEXT("Compare Range"));
+	funcItem[CMD_COMPARE_RANGE]._pFunc				= CompareRange;
+	funcItem[CMD_COMPARE_RANGE]._pShKey				= new ShortcutKey;
+	funcItem[CMD_COMPARE_RANGE]._pShKey->_isAlt		= true;
+	funcItem[CMD_COMPARE_RANGE]._pShKey->_isCtrl	= true;
+	funcItem[CMD_COMPARE_RANGE]._pShKey->_isShift	= false;
+	funcItem[CMD_COMPARE_RANGE]._pShKey->_key		= 'R';
 
 	_tcscpy_s(funcItem[CMD_CLEAR_ACTIVE]._itemName, nbChar, TEXT("Clear Active Compare"));
 	funcItem[CMD_CLEAR_ACTIVE]._pFunc				= ClearActiveCompare;
@@ -1933,9 +1915,6 @@ void createMenu()
 	funcItem[CMD_GIT_DIFF]._pShKey->_isCtrl 	= true;
 	funcItem[CMD_GIT_DIFF]._pShKey->_isShift	= false;
 	funcItem[CMD_GIT_DIFF]._pShKey->_key 		= 'G';
-
-	_tcscpy_s(funcItem[CMD_PARTIAL_COMPARE]._itemName, nbChar, TEXT("Partial Compare"));
-	funcItem[CMD_PARTIAL_COMPARE]._pFunc = PartialCompare;
 
 	_tcscpy_s(funcItem[CMD_IGNORE_SPACES]._itemName, nbChar, TEXT("Ignore Spaces"));
 	funcItem[CMD_IGNORE_SPACES]._pFunc = IgnoreSpaces;
@@ -2013,9 +1992,6 @@ void deinitPlugin()
 
 	if (tbLast.hToolbarBmp)
 		::DeleteObject(tbLast.hToolbarBmp);
-
-	if (tbPartialCompare.hToolbarBmp)
-		::DeleteObject(tbPartialCompare.hToolbarBmp);
 
 	if (tbNavBar.hToolbarBmp)
 		::DeleteObject(tbNavBar.hToolbarBmp);
@@ -2120,8 +2096,6 @@ void onToolBarReady()
 			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NEXT),	IMAGE_BITMAP, 0, 0, style);
 	tbLast.hToolbarBmp =
 			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_LAST),	IMAGE_BITMAP, 0, 0, style);
-	tbPartialCompare.hToolbarBmp =
-			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_PARTCOMPARE), IMAGE_BITMAP, 0, 0, style);
 	tbNavBar.hToolbarBmp =
 			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NAVBAR), IMAGE_BITMAP, 0, 0, style);
 
@@ -2140,14 +2114,9 @@ void onToolBarReady()
 	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
 			(WPARAM)funcItem[CMD_LAST]._cmdID,				(LPARAM)&tbLast);
 	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
-			(WPARAM)funcItem[CMD_PARTIAL_COMPARE]._cmdID,	(LPARAM)&tbPartialCompare);
-	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
 			(WPARAM)funcItem[CMD_NAV_BAR]._cmdID,			(LPARAM)&tbNavBar);
 
 	NppSettings::get().updatePluginMenu();
-
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_PARTIAL_COMPARE]._cmdID,
-			(LPARAM)Settings.PartialCompare);
 
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACES]._cmdID,
 			(LPARAM)Settings.IgnoreSpaces);
@@ -2173,7 +2142,7 @@ void DelayedUpdate::operator()()
 		linesDeleted = 0;
 		fullCompare = false;
 
-		Compare();
+		compare();
 
 		return;
 	}
@@ -2208,31 +2177,21 @@ void DelayedUpdate::operator()()
 		otherViewSec.len += endOff;
 	}
 
-	// Get update and user-set ranges intersection
-	if (Settings.PartialCompare)
-	{
-		adjustRange(nppData._scintillaMainHandle, mainViewSec);
-		adjustRange(nppData._scintillaSecondHandle, subViewSec);
-	}
-
 	ScopedIncrementer incr(notificationsLock);
 
-	if (mainViewSec.len || subViewSec.len)
+	if (linesAdded || linesDeleted)
 	{
-		if (linesAdded || linesDeleted)
-		{
-			mainViewSec.len -= clearMarksAndBlanks(nppData._scintillaMainHandle, mainViewSec.off, mainViewSec.len);
-			subViewSec.len -= clearMarksAndBlanks(nppData._scintillaSecondHandle, subViewSec.off, subViewSec.len);
-		}
-		else
-		{
-			clearMarks(nppData._scintillaMainHandle, mainViewSec.off, mainViewSec.len);
-			clearMarks(nppData._scintillaSecondHandle, subViewSec.off, subViewSec.len);
-		}
-
-		progress_ptr progress;
-		compareViews(progress, mainViewSec, subViewSec);
+		mainViewSec.len -= clearMarksAndBlanks(nppData._scintillaMainHandle, mainViewSec.off, mainViewSec.len);
+		subViewSec.len -= clearMarksAndBlanks(nppData._scintillaSecondHandle, subViewSec.off, subViewSec.len);
 	}
+	else
+	{
+		clearMarks(nppData._scintillaMainHandle, mainViewSec.off, mainViewSec.len);
+		clearMarks(nppData._scintillaSecondHandle, subViewSec.off, subViewSec.len);
+	}
+
+	progress_ptr progress;
+	compareViews(progress, mainViewSec, subViewSec);
 
 	linesAdded = 0;
 	linesDeleted = 0;
