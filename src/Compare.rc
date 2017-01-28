@@ -230,7 +230,7 @@ BEGIN
             VALUE "FileDescription",	"Compare Plugin for Notepad++"
             VALUE "FileVersion",		VER_FILEVERSION_STR
             VALUE "InternalName",		"ComparePlugin"
-            VALUE "LegalCopyright",		"Copyright (C) 2016"
+            VALUE "LegalCopyright",		"Copyright (C) 2017"
             VALUE "OriginalFilename",	"ComparePlugin.dll"
             VALUE "ProductName",		VER_PRODUCT_STR
             VALUE "ProductVersion",		VER_FILEVERSION_STR
