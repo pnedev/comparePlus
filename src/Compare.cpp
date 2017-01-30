@@ -2190,6 +2190,8 @@ void DelayedUpdate::operator()()
 	section_t mainViewSec = { startLine, 1 };
 	section_t subViewSec = { startLine, 1 };
 
+	ScopedIncrementer incr(notificationsLock);
+
 	// Adjust views re-compare range
 	if (linesAdded || linesDeleted)
 	{
@@ -2211,23 +2213,26 @@ void DelayedUpdate::operator()()
 
 		changeViewSec.len += endOff;
 		otherViewSec.len += endOff;
-	}
 
-	ScopedIncrementer incr(notificationsLock);
-
-	if (linesAdded || linesDeleted)
-	{
 		mainViewSec.len -= clearMarksAndBlanks(nppData._scintillaMainHandle, mainViewSec.off, mainViewSec.len);
 		subViewSec.len -= clearMarksAndBlanks(nppData._scintillaSecondHandle, subViewSec.off, subViewSec.len);
+
+		progress_ptr& progress = ProgressDlg::Open();
+
+		if (progress)
+			progress->SetInfo(TEXT("Re-comparing changes..."));
+
+		compareViews(progress, mainViewSec, subViewSec);
+		progress.reset();
 	}
 	else
 	{
 		clearMarks(nppData._scintillaMainHandle, mainViewSec.off, mainViewSec.len);
 		clearMarks(nppData._scintillaSecondHandle, subViewSec.off, subViewSec.len);
-	}
 
-	progress_ptr progress;
-	compareViews(progress, mainViewSec, subViewSec);
+		progress_ptr progress;
+		compareViews(progress, mainViewSec, subViewSec);
+	}
 
 	linesAdded = 0;
 	linesDeleted = 0;
