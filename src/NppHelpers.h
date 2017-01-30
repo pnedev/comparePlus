@@ -286,6 +286,12 @@ inline bool isSelection(HWND view)
 }
 
 
+inline int isSelectionVertical(HWND view)
+{
+	return SendMessage(view, SCI_SELECTIONISRECTANGLE, 0, 0);
+}
+
+
 inline std::pair<int, int> getSelection(HWND view)
 {
 	return std::make_pair(::SendMessage(view, SCI_GETSELECTIONSTART, 0, 0),
@@ -301,6 +307,7 @@ inline void clearSelection(HWND view)
 
 
 void activateBufferID(LRESULT buffId);
+std::pair<int, int> getSelectionLines(HWND view);
 
 void markTextAsChanged(HWND view, int start, int length);
 void clearChangedIndicator(HWND view, int start, int length);
@@ -318,8 +325,6 @@ void setBlank(HWND view, int color);
 
 void defineSymbol(int type, int symbol);
 void defineColor(int type, int color);
-
-std::pair<int, int> getBookmarkRange(HWND view);
 
 void clearWindow(HWND view);
 void clearMarks(HWND view, int line);

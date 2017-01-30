@@ -147,6 +147,26 @@ void activateBufferID(LRESULT buffId)
 }
 
 
+std::pair<int, int> getSelectionLines(HWND view)
+{
+	if (isSelectionVertical(view))
+		return std::make_pair(-1, -1);
+
+	const int selectionStart = ::SendMessage(view, SCI_GETSELECTIONSTART, 0, 0);
+	const int selectionEnd = ::SendMessage(view, SCI_GETSELECTIONEND, 0, 0);
+
+	if (selectionEnd - selectionStart == 0)
+		return std::make_pair(-1, -1);
+
+	int endLine = ::SendMessage(view, SCI_LINEFROMPOSITION, selectionEnd, 0);
+
+	if (selectionEnd == ::SendMessage(view, SCI_POSITIONFROMLINE, endLine, 0))
+		--endLine;
+
+	return std::make_pair(::SendMessage(view, SCI_LINEFROMPOSITION, selectionStart, 0), endLine);
+}
+
+
 void defineColor(int type, int color)
 {
 	::SendMessage(nppData._scintillaMainHandle, SCI_MARKERDEFINE,type, (LPARAM)SC_MARK_BACKGROUND);
@@ -386,31 +406,6 @@ std::vector<char> getText(HWND view, int startPos, int endPos)
 	::SendMessage(view, SCI_GETTEXTRANGE, 0, (LPARAM)&tr);
 
 	return text;
-}
-
-
-std::pair<int, int> getBookmarkRange(HWND view)
-{
-	const int markerMask = (1 << MARK_BOOKMARK);
-	const int lineMax = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0) - 1;
-
-	std::pair<int, int> range = { 0, lineMax };
-
-	int markedLine = ::SendMessage(view, SCI_MARKERNEXT, 0, markerMask);
-
-	if (markedLine < 0)
-		return range;
-
-	range.first = markedLine;
-
-	markedLine = ::SendMessage(view, SCI_MARKERNEXT, markedLine + 1, markerMask);
-
-	if (markedLine < 0)
-		return range;
-
-	range.second = markedLine;
-
-	return range;
 }
 
 
