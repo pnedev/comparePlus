@@ -27,13 +27,14 @@
 #define IDB_SETFIRST				120
 #define IDB_SETFIRST_RTL			121
 #define IDB_COMPARE					122
-#define IDB_CLEARCOMPARE			123
-#define IDB_FIRST					124
-#define IDB_LAST					125
-#define IDB_PREV					126
-#define IDB_NEXT					127
-#define IDB_NAVBAR					128
-#define IDB_ICON					129
+#define IDB_COMPARE_LINES			123
+#define IDB_CLEARCOMPARE			124
+#define IDB_FIRST					125
+#define IDB_LAST					126
+#define IDB_PREV					127
+#define IDB_NEXT					128
+#define IDB_NAVBAR					129
+#define IDB_ICON					130
 
 #define IDC_EMAIL_LINK5				1010
 #define IDC_NPP_PLUGINS_URL3		1011

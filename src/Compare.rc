@@ -179,6 +179,7 @@ END
 IDB_SETFIRST			BITMAP	"../res/FirstToCompare.bmp"
 IDB_SETFIRST_RTL		BITMAP	"../res/FirstToCompareRTL.bmp"
 IDB_COMPARE				BITMAP	"../res/Compare.bmp"
+IDB_COMPARE_LINES		BITMAP	"../res/CompareLines.bmp"
 IDB_CLEARCOMPARE		BITMAP	"../res/ClearCompare.bmp"
 IDB_FIRST				BITMAP	"../res/First.bmp"
 IDB_LAST				BITMAP	"../res/Last.bmp"

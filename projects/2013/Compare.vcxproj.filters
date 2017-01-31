@@ -152,6 +152,9 @@
     <None Include="..\..\res\Compare.bmp">
       <Filter>res</Filter>
     </None>
+    <None Include="..\..\res\CompareLines.bmp">
+      <Filter>res</Filter>
+    </None>
     <None Include="..\..\res\ClearCompare.bmp">
       <Filter>res</Filter>
     </None>

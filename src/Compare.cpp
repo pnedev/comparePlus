@@ -391,12 +391,12 @@ struct ComparedFile
  */
 struct ComparedPair
 {
-	ComparedFile& getFileByViewId(int viewId);
-	ComparedFile& getFileByBuffId(LRESULT buffId);
-	ComparedFile& getOtherFileByBuffId(LRESULT buffId);
-	ComparedFile& getFileBySciDoc(int sciDoc);
-	ComparedFile& getOldFile();
-	ComparedFile& getNewFile();
+	inline ComparedFile& getFileByViewId(int viewId);
+	inline ComparedFile& getFileByBuffId(LRESULT buffId);
+	inline ComparedFile& getOtherFileByBuffId(LRESULT buffId);
+	inline ComparedFile& getFileBySciDoc(int sciDoc);
+	inline ComparedFile& getOldFile();
+	inline ComparedFile& getNewFile();
 
 	void positionFiles();
 	void restoreFiles(int currentBuffId);
@@ -429,7 +429,6 @@ using CompareList_t = std::vector<ComparedPair>;
 enum class CompareResult
 {
 	COMPARE_ERROR,
-	COMPARE_NOT_VALID,
 	COMPARE_CANCELLED,
 	COMPARE_MATCH,
 	COMPARE_MISMATCH
@@ -555,6 +554,7 @@ NavDialog     	NavDlg;
 
 toolbarIcons  tbSetFirst;
 toolbarIcons  tbCompare;
+toolbarIcons  tbCompareLines;
 toolbarIcons  tbClearCompare;
 toolbarIcons  tbFirst;
 toolbarIcons  tbPrev;
@@ -1194,6 +1194,34 @@ bool isEncodingOK(const ComparedPair& cmpPair)
 }
 
 
+bool areSelectionsValid(LRESULT currentBuffId, LRESULT otherBuffId)
+{
+	HWND view1 = getView(viewIdFromBuffId(currentBuffId));
+	HWND view2 = getView(viewIdFromBuffId(otherBuffId));
+
+	if (view1 == view2)
+		activateBufferID(otherBuffId);
+
+	std::pair<int, int> viewSel = getSelectionLines(view2);
+	bool valid = !(viewSel.first < 0);
+
+	if (view1 == view2)
+		activateBufferID(currentBuffId);
+
+	if (valid)
+	{
+		viewSel = getSelectionLines(view1);
+		valid = !(viewSel.first < 0);
+	}
+
+	if (!valid)
+		::MessageBox(nppData._nppHandle, TEXT("No selected lines to compare - operation ignored."),
+				TEXT("Compare Plugin"), MB_OK);
+
+	return valid;
+}
+
+
 bool setFirst(bool currFileIsNew, bool markName = false)
 {
 	HWND view = getCurrentView();
@@ -1475,9 +1503,6 @@ CompareResult runCompare(CompareList_t::iterator& cmpPair, bool selectionCompare
 		const std::pair<int, int> mainViewSel = getSelectionLines(nppData._scintillaMainHandle);
 		const std::pair<int, int> subViewSel = getSelectionLines(nppData._scintillaSecondHandle);
 
-		if ((mainViewSel.first < 0) || (subViewSel.first < 0))
-			return CompareResult::COMPARE_NOT_VALID;
-
 		mainViewSection.off = mainViewSel.first;
 		mainViewSection.len = mainViewSel.second - mainViewSel.first + 1;
 
@@ -1533,7 +1558,7 @@ void compare(bool selectionCompare = false)
 	ScopedIncrementer incr(notificationsLock);
 
 	const bool doubleView = !isSingleView();
-	const LRESULT currentBuffId = getCurrentBuffId();
+	LRESULT currentBuffId = getCurrentBuffId();
 
 	ViewLocation location;
 	bool recompare = false;
@@ -1567,15 +1592,11 @@ void compare(bool selectionCompare = false)
 
 		if (selectionCompare)
 		{
+			if (!areSelectionsValid(currentBuffId, cmpPair->getOtherFileByBuffId(currentBuffId).buffId))
+				return;
+
 			const std::pair<int, int> mainViewSel = getSelectionLines(nppData._scintillaMainHandle);
 			const std::pair<int, int> subViewSel = getSelectionLines(nppData._scintillaSecondHandle);
-
-			if ((mainViewSel.first < 0) || (subViewSel.first < 0))
-			{
-				::MessageBox(nppData._nppHandle, TEXT("No selected lines to compare - operation ignored."),
-						TEXT("Compare Plugin"), MB_OK);
-				return;
-			}
 
 			const int startLine =
 					(mainViewSel.first > subViewSel.first) ? subViewSel.first : mainViewSel.first;
@@ -1597,9 +1618,23 @@ void compare(bool selectionCompare = false)
 	CompareResult cmpResult;
 
 	if (Settings.EncodingsCheck && !isEncodingOK(*cmpPair))
+	{
 		cmpResult = CompareResult::COMPARE_CANCELLED;
+	}
 	else
+	{
+		currentBuffId = getCurrentBuffId();
+
+		// On re-compare we have already checked the selections when clearing the old compare marks
+		if (selectionCompare && !recompare &&
+			!areSelectionsValid(currentBuffId, cmpPair->getOtherFileByBuffId(currentBuffId).buffId))
+		{
+			compareList.erase(cmpPair);
+			return;
+		}
+
 		cmpResult = runCompare(cmpPair, selectionCompare);
+	}
 
 	switch (cmpResult)
 	{
@@ -1645,65 +1680,58 @@ void compare(bool selectionCompare = false)
 
 			TCHAR msg[2 * MAX_PATH];
 
+			int choice = IDNO;
+
 			if (selectionCompare)
 			{
-				_sntprintf_s(msg, _countof(msg), _TRUNCATE, TEXT("Selected lines in files \"%s\" and \"%s\" match."),
-						newName, ::PathFindFileName(oldFile.name));
+				_sntprintf_s(msg, _countof(msg), _TRUNCATE,
+						TEXT("Selected lines in files \"%s\" and \"%s\" match.%s"),
+						newName, ::PathFindFileName(oldFile.name), recompare ?
+						TEXT("") : TEXT("\n\nClose compared files?"));
+
+				if (recompare)
+					::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"), MB_OK);
+				else
+					choice = ::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"),
+							MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2);
+			}
+			else if (oldFile.isTemp)
+			{
+				if (recompare)
+				{
+					_sntprintf_s(msg, _countof(msg), _TRUNCATE,
+							TEXT("Files \"%s\" and \"%s\" match.\n\nTemp file will be closed."),
+							newName, ::PathFindFileName(oldFile.name));
+				}
+				else
+				{
+					if (oldFile.isTemp == LAST_SAVED_TEMP)
+						_sntprintf_s(msg, _countof(msg), _TRUNCATE,
+								TEXT("File \"%s\" has not been modified since last Save."), newName);
+					else
+						_sntprintf_s(msg, _countof(msg), _TRUNCATE,
+								TEXT("File \"%s\" has no changes against %s."), newName,
+								oldFile.isTemp == GIT_TEMP ? TEXT("Git") : TEXT("SVN"));
+				}
 
 				::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"), MB_OK);
-
-				if (!recompare)
-					clearComparePair(getCurrentBuffId());
 			}
 			else
 			{
-				int choice = IDNO;
+				_sntprintf_s(msg, _countof(msg), _TRUNCATE,
 
-				if (oldFile.isTemp)
-				{
-					if (recompare)
-					{
-						_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-								TEXT("Files \"%s\" and \"%s\" match.\n\nTemp file will be closed."),
-								newName, ::PathFindFileName(oldFile.name));
-					}
-					else
-					{
-						if (oldFile.isTemp == LAST_SAVED_TEMP)
-							_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-									TEXT("File \"%s\" has not been modified since last Save."), newName);
-						else
-							_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-									TEXT("File \"%s\" has no changes against %s."), newName,
-									oldFile.isTemp == GIT_TEMP ? TEXT("Git") : TEXT("SVN"));
-					}
+						TEXT("Files \"%s\" and \"%s\" match.\n\nClose compared files?"),
+						newName, ::PathFindFileName(oldFile.name));
 
-					::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"), MB_OK);
-				}
-				else
-				{
-					_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-							TEXT("Files \"%s\" and \"%s\" match.\n\nClose compared files?"),
-							newName, ::PathFindFileName(oldFile.name));
-
-					choice = ::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"),
-							MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2);
-				}
-
-				if (choice == IDYES)
-					closeComparePair(cmpPair);
-				else
-					clearComparePair(getCurrentBuffId());
+				choice = ::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"),
+						MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2);
 			}
+
+			if (choice == IDYES)
+				closeComparePair(cmpPair);
+			else if (!selectionCompare || (selectionCompare && !recompare))
+				clearComparePair(getCurrentBuffId());
 		}
-		break;
-
-		case CompareResult::COMPARE_NOT_VALID:
-			if (selectionCompare)
-				::MessageBox(nppData._nppHandle, TEXT("No selected lines to compare - operation ignored."),
-						TEXT("Compare Plugin"), MB_OK);
-
-			clearComparePair(getCurrentBuffId());
 		break;
 
 		default:
@@ -1904,13 +1932,13 @@ void createMenu()
 	funcItem[CMD_COMPARE]._pShKey->_isShift	= false;
 	funcItem[CMD_COMPARE]._pShKey->_key		= 'C';
 
-	_tcscpy_s(funcItem[CMD_COMPARE_SELECTIONS]._itemName, nbChar, TEXT("Compare Selected Lines"));
-	funcItem[CMD_COMPARE_SELECTIONS]._pFunc				= CompareSelectedLines;
-	funcItem[CMD_COMPARE_SELECTIONS]._pShKey			= new ShortcutKey;
-	funcItem[CMD_COMPARE_SELECTIONS]._pShKey->_isAlt	= true;
-	funcItem[CMD_COMPARE_SELECTIONS]._pShKey->_isCtrl	= true;
-	funcItem[CMD_COMPARE_SELECTIONS]._pShKey->_isShift	= false;
-	funcItem[CMD_COMPARE_SELECTIONS]._pShKey->_key		= 'L';
+	_tcscpy_s(funcItem[CMD_COMPARE_LINES]._itemName, nbChar, TEXT("Compare Selected Lines"));
+	funcItem[CMD_COMPARE_LINES]._pFunc				= CompareSelectedLines;
+	funcItem[CMD_COMPARE_LINES]._pShKey				= new ShortcutKey;
+	funcItem[CMD_COMPARE_LINES]._pShKey->_isAlt		= true;
+	funcItem[CMD_COMPARE_LINES]._pShKey->_isCtrl	= true;
+	funcItem[CMD_COMPARE_LINES]._pShKey->_isShift	= false;
+	funcItem[CMD_COMPARE_LINES]._pShKey->_key		= 'N';
 
 	_tcscpy_s(funcItem[CMD_CLEAR_ACTIVE]._itemName, nbChar, TEXT("Clear Active Compare"));
 	funcItem[CMD_CLEAR_ACTIVE]._pFunc				= ClearActiveCompare;
@@ -2013,6 +2041,9 @@ void deinitPlugin()
 
 	if (tbCompare.hToolbarBmp)
 		::DeleteObject(tbCompare.hToolbarBmp);
+
+	if (tbCompareLines.hToolbarBmp)
+		::DeleteObject(tbCompareLines.hToolbarBmp);
 
 	if (tbClearCompare.hToolbarBmp)
 		::DeleteObject(tbClearCompare.hToolbarBmp);
@@ -2122,6 +2153,8 @@ void onToolBarReady()
 
 	tbCompare.hToolbarBmp =
 			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_COMPARE), IMAGE_BITMAP, 0, 0, style);
+	tbCompareLines.hToolbarBmp =
+			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_COMPARE_LINES), IMAGE_BITMAP, 0, 0, style);
 	tbClearCompare.hToolbarBmp =
 			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_CLEARCOMPARE), IMAGE_BITMAP, 0, 0, style);
 	tbFirst.hToolbarBmp =
@@ -2139,6 +2172,8 @@ void onToolBarReady()
 			(WPARAM)funcItem[CMD_SET_FIRST]._cmdID,			(LPARAM)&tbSetFirst);
 	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
 			(WPARAM)funcItem[CMD_COMPARE]._cmdID,			(LPARAM)&tbCompare);
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
+			(WPARAM)funcItem[CMD_COMPARE_LINES]._cmdID,		(LPARAM)&tbCompareLines);
 	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
 			(WPARAM)funcItem[CMD_CLEAR_ACTIVE]._cmdID,		(LPARAM)&tbClearCompare);
 	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,

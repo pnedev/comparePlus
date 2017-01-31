@@ -291,6 +291,7 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlugin"</Command>
     <None Include="..\..\res\FirstToCompare.bmp" />
     <None Include="..\..\res\FirstToCompareRTL.bmp" />
     <None Include="..\..\res\Compare.bmp" />
+    <None Include="..\..\res\CompareLines.bmp" />
     <None Include="..\..\res\ClearCompare.bmp" />
     <None Include="..\..\res\First.bmp" />
     <None Include="..\..\res\Last.bmp" />
