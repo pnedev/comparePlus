@@ -477,10 +477,13 @@ int clearMarksAndBlanks(HWND view, int startLine, int linesCount)
 		int deletePos = 0;
 		int deleteLen = 0;
 
-		if (::SendMessage(view, SCI_MARKERGET, line, 0) & MARKER_BLANK_LINE)
+		if (::SendMessage(view, SCI_MARKERGET, line, 0) & MARKER_MASK_BLANK)
 		{
-			deletePos = ::SendMessage(view, SCI_POSITIONFROMLINE, line, 0) - eolLen;
-			deleteLen = ::SendMessage(view, SCI_GETLINEENDPOSITION, line, 0) - deletePos;
+			deletePos = ::SendMessage(view, SCI_POSITIONFROMLINE, line, 0);
+			deleteLen = ::SendMessage(view, SCI_GETLINEENDPOSITION, line, 0) - deletePos + eolLen;
+
+			if (deletePos != 0)
+				deletePos -= eolLen;
 
 			const int lineIndent = ::SendMessage(view, SCI_GETLINEINDENTATION, line, 0);
 
