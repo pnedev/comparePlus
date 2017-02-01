@@ -334,13 +334,15 @@ std::pair<std::vector<diff_info>, bool>
 			bd.off += startOff;
 	}
 
+	const int offMisalignment = doc1.section.off - doc2.section.off;
+
 	// Align views if comparison start offsets differ
-	if (doc1.section.off != doc2.section.off)
+	if (offMisalignment)
 	{
-		if (doc1.section.off > doc2.section.off)
-			addBlankSection(doc2.view, doc2.section.off, doc1.section.off - doc2.section.off);
+		if (offMisalignment > 0)
+			addBlankSection(doc2.view, doc2.section.off, offMisalignment);
 		else
-			addBlankSection(doc1.view, doc1.section.off, doc2.section.off - doc1.section.off);
+			addBlankSection(doc1.view, doc1.section.off, -offMisalignment);
 	}
 
 	return std::move(cmpResults);
@@ -533,6 +535,23 @@ bool showDiffs(const DocCmpInfo& doc1, const DocCmpInfo& doc2,
 
 		if (progress && !progress->Advance())
 			return false;
+	}
+
+	const int endLineMisalignment =
+			(doc1.section.off + doc1.section.len + addedBlanks1) -
+			(doc2.section.off + doc2.section.len + addedBlanks2);
+
+	// If needed, insert blanks at the end of compared sections to preserve the alignment of lines below them
+	if (endLineMisalignment)
+	{
+		const diff_info& bd = blockDiff.back();
+		const int sectionEndLine =
+				bd.off + bd.len + ((bd.type == diff_type::DIFF_INSERT) ? addedBlanks2 : addedBlanks1);
+
+		if (endLineMisalignment > 0)
+			addBlankSection(doc2.view, sectionEndLine, endLineMisalignment);
+		else
+			addBlankSection(doc1.view, sectionEndLine, -endLineMisalignment);
 	}
 
 	if (progress && !progress->NextPhase())
