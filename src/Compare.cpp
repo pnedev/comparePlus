@@ -1194,16 +1194,23 @@ bool isEncodingOK(const ComparedPair& cmpPair)
 }
 
 
-bool areSelectionsValid(LRESULT currentBuffId, LRESULT otherBuffId)
+// Call it with no arguments when re-comparing (the files are active in both views)
+bool areSelectionsValid(LRESULT currentBuffId = -1, LRESULT otherBuffId = -1)
 {
-	HWND view1 = getView(viewIdFromBuffId(currentBuffId));
-	HWND view2 = getView(viewIdFromBuffId(otherBuffId));
+	HWND view1 = (currentBuffId == otherBuffId) ?
+			nppData._scintillaMainHandle : getView(viewIdFromBuffId(currentBuffId));
+	HWND view2 = (currentBuffId == otherBuffId) ?
+			nppData._scintillaSecondHandle : getView(viewIdFromBuffId(otherBuffId));
 
 	if (view1 == view2)
 		activateBufferID(otherBuffId);
 
 	std::pair<int, int> viewSel = getSelectionLines(view2);
 	bool valid = !(viewSel.first < 0);
+	bool notOnlyBlanks = true;
+
+	if (valid && (currentBuffId == otherBuffId))
+		valid = notOnlyBlanks = !areOnlyBlanks(view2, viewSel);
 
 	if (view1 == view2)
 		activateBufferID(currentBuffId);
@@ -1212,11 +1219,20 @@ bool areSelectionsValid(LRESULT currentBuffId, LRESULT otherBuffId)
 	{
 		viewSel = getSelectionLines(view1);
 		valid = !(viewSel.first < 0);
+
+		if (valid && (currentBuffId == otherBuffId))
+			valid = notOnlyBlanks = !areOnlyBlanks(view1, viewSel);
 	}
 
 	if (!valid)
-		::MessageBox(nppData._nppHandle, TEXT("No selected lines to compare - operation ignored."),
-				TEXT("Compare Plugin"), MB_OK);
+	{
+		if (notOnlyBlanks)
+			::MessageBox(nppData._nppHandle, TEXT("No selected lines to compare - operation ignored."),
+					TEXT("Compare Plugin"), MB_OK);
+		else
+			::MessageBox(nppData._nppHandle, TEXT("Only blank lines selected - operation ignored."),
+					TEXT("Compare Plugin"), MB_OK);
+	}
 
 	return valid;
 }
@@ -1592,7 +1608,7 @@ void compare(bool selectionCompare = false)
 
 		if (selectionCompare)
 		{
-			if (!areSelectionsValid(currentBuffId, cmpPair->getOtherFileByBuffId(currentBuffId).buffId))
+			if (!areSelectionsValid())
 				return;
 
 			const std::pair<int, int> mainViewSel = getSelectionLines(nppData._scintillaMainHandle);

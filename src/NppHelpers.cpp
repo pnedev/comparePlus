@@ -167,6 +167,18 @@ std::pair<int, int> getSelectionLines(HWND view)
 }
 
 
+bool areOnlyBlanks(HWND view, const std::pair<int, int> linesRange)
+{
+	for (int line = linesRange.first; line <= linesRange.second; ++line)
+	{
+		if (!(::SendMessage(view, SCI_MARKERGET, line, 0) & MARKER_MASK_BLANK))
+			return false;
+	}
+
+	return true;
+}
+
+
 void defineColor(int type, int color)
 {
 	::SendMessage(nppData._scintillaMainHandle, SCI_MARKERDEFINE,type, (LPARAM)SC_MARK_BACKGROUND);

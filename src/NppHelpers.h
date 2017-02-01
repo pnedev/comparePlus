@@ -308,6 +308,7 @@ inline void clearSelection(HWND view)
 
 void activateBufferID(LRESULT buffId);
 std::pair<int, int> getSelectionLines(HWND view);
+bool areOnlyBlanks(HWND view, const std::pair<int, int> linesRange);
 
 void markTextAsChanged(HWND view, int start, int length);
 void clearChangedIndicator(HWND view, int start, int length);
