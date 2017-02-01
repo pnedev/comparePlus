@@ -332,8 +332,8 @@ void jumpToLastChange()
 {
 	HWND currView = getCurrentView();
 
-	const int lineMax = ::SendMessage(currView, SCI_GETLINECOUNT, 0, 0);
-	const int nextLine = ::SendMessage(currView, SCI_MARKERPREVIOUS, lineMax, MARKER_MASK_LINE);
+	const int lineCount = ::SendMessage(currView, SCI_GETLINECOUNT, 0, 0);
+	const int nextLine = ::SendMessage(currView, SCI_MARKERPREVIOUS, lineCount, MARKER_MASK_LINE);
 
 	if (nextLine < 0)
 		return;
@@ -351,7 +351,7 @@ void jumpToNextChange(bool down, bool wrapAround)
 
 	int currentLine = getCurrentLine(view);
 
-	const int lineMax = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0);
+	const int lineCount = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0);
 	const int prevLine = currentLine;
 	int nextLine = currentLine;
 
@@ -359,7 +359,7 @@ void jumpToNextChange(bool down, bool wrapAround)
 	{
 		if (down)
 		{
-			while ((::SendMessage(view, SCI_MARKERGET, currentLine, 0) & MARKER_MASK_LINE) && (currentLine < lineMax))
+			while ((::SendMessage(view, SCI_MARKERGET, currentLine, 0) & MARKER_MASK_LINE) && (currentLine < lineCount))
 				++currentLine;
 		}
 		else
@@ -375,7 +375,7 @@ void jumpToNextChange(bool down, bool wrapAround)
 			if (!wrapAround)
 				return;
 
-			currentLine = down ? 0 : lineMax;
+			currentLine = down ? 0 : lineCount;
 			nextLine = ::SendMessage(view, sci_marker_direction, currentLine, MARKER_MASK_LINE);
 
 			if (nextLine < 0)
@@ -534,10 +534,10 @@ int getPrevUnmarkedLine(HWND view, int startLine)
 
 int getNextUnmarkedLine(HWND view, int startLine)
 {
-	const int lineMax = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0) - 1;
+	const int lineCount = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0);
 	int nextUnmarkedLine = startLine;
 
-	for (; (nextUnmarkedLine < lineMax) &&
+	for (; (nextUnmarkedLine < lineCount) &&
 			(::SendMessage(view, SCI_MARKERGET, nextUnmarkedLine, 0) & MARKER_MASK_LINE); ++nextUnmarkedLine);
 
 	return nextUnmarkedLine;

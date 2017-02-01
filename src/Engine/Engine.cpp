@@ -51,13 +51,13 @@ struct chunk_info
 
 std::vector<unsigned int> computeLineHashes(DocCmpInfo& doc, const UserSettings& settings)
 {
-	int docLines = ::SendMessage(doc.view, SCI_GETLENGTH, 0, 0);
+	int lineCount = ::SendMessage(doc.view, SCI_GETLENGTH, 0, 0);
 
-	if (docLines)
-		docLines = ::SendMessage(doc.view, SCI_GETLINECOUNT, 0, 0);
+	if (lineCount)
+		lineCount = ::SendMessage(doc.view, SCI_GETLINECOUNT, 0, 0);
 
-	if (doc.section.len <= 0 || doc.section.len > docLines)
-		doc.section.len = docLines;
+	if ((doc.section.len <= 0) || (doc.section.off + doc.section.len > lineCount))
+		doc.section.len = lineCount - doc.section.off;
 
 	std::vector<unsigned int> lineHashes(doc.section.len);
 
@@ -537,21 +537,19 @@ bool showDiffs(const DocCmpInfo& doc1, const DocCmpInfo& doc2,
 			return false;
 	}
 
-	const int endLineMisalignment =
-			(doc1.section.off + doc1.section.len + addedBlanks1) -
-			(doc2.section.off + doc2.section.len + addedBlanks2);
+	int endLineMisalignment = 0;
+
+	if ((::SendMessage(doc1.view, SCI_GETLINECOUNT, 0, 0) != doc1.section.off + doc1.section.len + addedBlanks1) ||
+		(::SendMessage(doc2.view, SCI_GETLINECOUNT, 0, 0) != doc2.section.off + doc2.section.len + addedBlanks2))
+		endLineMisalignment = (doc2.section.off + addedBlanks1) - (doc1.section.off + addedBlanks2);
 
 	// If needed, insert blanks at the end of compared sections to preserve the alignment of lines below them
 	if (endLineMisalignment)
 	{
-		const diff_info& bd = blockDiff.back();
-		const int sectionEndLine =
-				bd.off + bd.len + ((bd.type == diff_type::DIFF_INSERT) ? addedBlanks2 : addedBlanks1);
-
 		if (endLineMisalignment > 0)
-			addBlankSection(doc2.view, sectionEndLine, endLineMisalignment);
+			addBlankSection(doc2.view, doc2.section.off + doc2.section.len + addedBlanks2 + 1, endLineMisalignment);
 		else
-			addBlankSection(doc1.view, sectionEndLine, -endLineMisalignment);
+			addBlankSection(doc1.view, doc1.section.off + doc1.section.len + addedBlanks1 + 1, -endLineMisalignment);
 	}
 
 	if (progress && !progress->NextPhase())
