@@ -1573,16 +1573,24 @@ void compare(bool selectionCompare = false)
 {
 	ScopedIncrementer incr(notificationsLock);
 
-	const bool doubleView = !isSingleView();
-	LRESULT currentBuffId = getCurrentBuffId();
+	const bool				doubleView		= !isSingleView();
+	const LRESULT			currentBuffId	= getCurrentBuffId();
+	CompareList_t::iterator	cmpPair			= getCompare(currentBuffId);
+	const bool				recompare		= (cmpPair != compareList.end());
 
 	ViewLocation location;
-	bool recompare = false;
 
-	CompareList_t::iterator cmpPair = getCompare(currentBuffId);
+	if (recompare)
+	{
+		newCompare.reset();
 
+		if (selectionCompare && !areSelectionsValid())
+			return;
+
+		location.save(currentBuffId);
+	}
 	// New compare
-	if (cmpPair == compareList.end())
+	else
 	{
 		if (!initNewCompare())
 		{
@@ -1593,24 +1601,33 @@ void compare(bool selectionCompare = false)
 		cmpPair = addComparePair();
 
 		if (cmpPair->getOldFile().isTemp)
+		{
 			activateBufferID(cmpPair->getNewFile().buffId);
+		}
 		else
+		{
 			activateBufferID(currentBuffId);
+
+			if (selectionCompare &&
+				!areSelectionsValid(currentBuffId, cmpPair->getOtherFileByBuffId(currentBuffId).buffId))
+			{
+				compareList.erase(cmpPair);
+				return;
+			}
+		}
+
+		if (Settings.EncodingsCheck && !isEncodingOK(*cmpPair))
+		{
+			clearComparePair(getCurrentBuffId());
+			return;
+		}
 	}
-	// Re-Compare triggered - clear current results
-	else
+
+	// On re-compare clear current results
+	if (recompare)
 	{
-		recompare = true;
-
-		newCompare.reset();
-
-		location.save(currentBuffId);
-
 		if (selectionCompare)
 		{
-			if (!areSelectionsValid())
-				return;
-
 			const std::pair<int, int> mainViewSel = getSelectionLines(nppData._scintillaMainHandle);
 			const std::pair<int, int> subViewSel = getSelectionLines(nppData._scintillaSecondHandle);
 
@@ -1631,26 +1648,7 @@ void compare(bool selectionCompare = false)
 		}
 	}
 
-	CompareResult cmpResult;
-
-	if (Settings.EncodingsCheck && !isEncodingOK(*cmpPair))
-	{
-		cmpResult = CompareResult::COMPARE_CANCELLED;
-	}
-	else
-	{
-		currentBuffId = getCurrentBuffId();
-
-		// On re-compare we have already checked the selections when clearing the old compare marks
-		if (selectionCompare && !recompare &&
-			!areSelectionsValid(currentBuffId, cmpPair->getOtherFileByBuffId(currentBuffId).buffId))
-		{
-			compareList.erase(cmpPair);
-			return;
-		}
-
-		cmpResult = runCompare(cmpPair, selectionCompare);
-	}
+	CompareResult cmpResult = runCompare(cmpPair, selectionCompare);
 
 	switch (cmpResult)
 	{
