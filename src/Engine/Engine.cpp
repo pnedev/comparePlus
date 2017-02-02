@@ -547,9 +547,9 @@ bool showDiffs(const DocCmpInfo& doc1, const DocCmpInfo& doc2,
 	if (endLineMisalignment)
 	{
 		if (endLineMisalignment > 0)
-			addBlankSection(doc2.view, doc2.section.off + doc2.section.len + addedBlanks2 + 1, endLineMisalignment);
+			addBlankSection(doc2.view, doc2.section.off + doc2.section.len + addedBlanks2, endLineMisalignment);
 		else
-			addBlankSection(doc1.view, doc1.section.off + doc1.section.len + addedBlanks1 + 1, -endLineMisalignment);
+			addBlankSection(doc1.view, doc1.section.off + doc1.section.len + addedBlanks1, -endLineMisalignment);
 	}
 
 	if (progress && !progress->NextPhase())
