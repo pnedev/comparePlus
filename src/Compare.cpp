@@ -2245,7 +2245,7 @@ void DelayedUpdate::operator()()
 		section_t& changeViewSec = (changeView == nppData._scintillaMainHandle) ? mainViewSec : subViewSec;
 		section_t& otherViewSec = (changeView == nppData._scintillaMainHandle) ? subViewSec : mainViewSec;
 
-		const int startOff = startLine - getPrevUnmarkedLine(otherView, startLine);
+		const int startOff = startLine - getPrevUnmarkedLine(otherView, startLine, MARKER_MASK_LINE);
 
 		changeViewSec.off -= startOff;
 		otherViewSec.off -= startOff;
@@ -2254,7 +2254,7 @@ void DelayedUpdate::operator()()
 		otherViewSec.len += (startOff + linesDeleted);
 
 		const int endLine = otherViewSec.off + otherViewSec.len - 1;
-		const int endOff = getNextUnmarkedLine(otherView, endLine) - endLine;
+		const int endOff = getNextUnmarkedLine(otherView, endLine, MARKER_MASK_LINE) - endLine;
 
 		changeViewSec.len += endOff;
 		otherViewSec.len += endOff;

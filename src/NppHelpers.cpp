@@ -521,24 +521,24 @@ int clearMarksAndBlanks(HWND view, int startLine, int linesCount)
 }
 
 
-int getPrevUnmarkedLine(HWND view, int startLine)
+int getPrevUnmarkedLine(HWND view, int startLine, int markMask)
 {
 	int prevUnmarkedLine = startLine;
 
 	for (; (prevUnmarkedLine > 0) &&
-			(::SendMessage(view, SCI_MARKERGET, prevUnmarkedLine, 0) & MARKER_MASK_LINE); --prevUnmarkedLine);
+			(::SendMessage(view, SCI_MARKERGET, prevUnmarkedLine, 0) & markMask); --prevUnmarkedLine);
 
 	return prevUnmarkedLine;
 }
 
 
-int getNextUnmarkedLine(HWND view, int startLine)
+int getNextUnmarkedLine(HWND view, int startLine, int markMask)
 {
-	const int lineCount = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0);
+	const int endLine = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0) - 1;
 	int nextUnmarkedLine = startLine;
 
-	for (; (nextUnmarkedLine < lineCount) &&
-			(::SendMessage(view, SCI_MARKERGET, nextUnmarkedLine, 0) & MARKER_MASK_LINE); ++nextUnmarkedLine);
+	for (; (nextUnmarkedLine < endLine) &&
+			(::SendMessage(view, SCI_MARKERGET, nextUnmarkedLine, 0) & markMask); ++nextUnmarkedLine);
 
 	return nextUnmarkedLine;
 }

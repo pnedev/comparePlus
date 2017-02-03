@@ -331,8 +331,8 @@ void clearWindow(HWND view);
 void clearMarks(HWND view, int line);
 void clearMarks(HWND view, int startLine, int linesCount);
 int clearMarksAndBlanks(HWND view, int startLine, int linesCount);
-int getPrevUnmarkedLine(HWND view, int startLine);
-int getNextUnmarkedLine(HWND view, int startLine);
+int getPrevUnmarkedLine(HWND view, int startLine, int markMask);
+int getNextUnmarkedLine(HWND view, int startLine, int markMask);
 
 std::vector<char> getText(HWND view, int startPos, int endPos);
 
