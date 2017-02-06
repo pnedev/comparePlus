@@ -2503,6 +2503,7 @@ void onFileBeforeClose(LRESULT buffId)
 	if (cmpPair == compareList.end())
 		return;
 
+	delayedUpdate.cancel();
 	delayedActivation.cancel();
 
 	delayedClosure.cancel();
@@ -2559,7 +2560,7 @@ void onFileSaved(LRESULT buffId)
 		{
 			delayedUpdate.cancel();
 			delayedUpdate.fullCompare = true;
-			delayedUpdate.post(10);
+			delayedUpdate.post(30);
 		}
 		else
 		{
@@ -2706,7 +2707,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		break;
 
 		case NPPN_FILEBEFORESAVE:
-			if (!compareList.empty())
+			if (!notificationsLock && !compareList.empty())
 				onFileBeforeSave(notifyCode->nmhdr.idFrom);
 		break;
 
