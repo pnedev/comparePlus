@@ -1679,7 +1679,8 @@ void compare(bool selectionCompare = false)
 				if (recompare)
 				{
 					_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-							TEXT("Files \"%s\" and \"%s\" match.\n\nTemp file will be closed."),
+							TEXT("%s \"%s\" and \"%s\" match.\n\nTemp file will be closed."), selectionCompare ?
+							TEXT("Selected lines in files") : TEXT("Files"),
 							newName, ::PathFindFileName(oldFile.name));
 				}
 				else
@@ -1698,7 +1699,7 @@ void compare(bool selectionCompare = false)
 			else
 			{
 				_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-						TEXT("%s \"%s\" and \"%s\" match.\n\nClose compared files?"), recompare ?
+						TEXT("%s \"%s\" and \"%s\" match.\n\nClose compared files?"), selectionCompare ?
 						TEXT("Selected lines in files") : TEXT("Files"),
 						newName, ::PathFindFileName(oldFile.name));
 
