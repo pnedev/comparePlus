@@ -537,18 +537,6 @@ bool showDiffs(const DocCmpInfo& doc1, const DocCmpInfo& doc2,
 			return false;
 	}
 
-	const int endLineMisalignment =
-			::SendMessage(doc1.view, SCI_GETLINECOUNT, 0, 0) - ::SendMessage(doc2.view, SCI_GETLINECOUNT, 0, 0);
-
-	// If needed, insert blanks at the end of compared sections to preserve the alignment of lines below them
-	if (endLineMisalignment)
-	{
-		if (endLineMisalignment > 0)
-			addBlankSection(doc2.view, doc2.section.off + doc2.section.len + addedBlanks2, endLineMisalignment);
-		else
-			addBlankSection(doc1.view, doc1.section.off + doc1.section.len + addedBlanks1, -endLineMisalignment);
-	}
-
 	if (progress && !progress->NextPhase())
 		return false;
 

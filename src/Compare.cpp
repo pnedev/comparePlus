@@ -1589,26 +1589,8 @@ void compare(bool selectionCompare = false)
 
 		location.save(currentBuffId);
 
-		if (selectionCompare)
-		{
-			const std::pair<int, int> mainViewSel = getSelectionLines(nppData._scintillaMainHandle);
-			const std::pair<int, int> subViewSel = getSelectionLines(nppData._scintillaSecondHandle);
-
-			const int startLine =
-					(mainViewSel.first > subViewSel.first) ? subViewSel.first : mainViewSel.first;
-			const int endLine =
-					(mainViewSel.second < subViewSel.second) ? subViewSel.second : mainViewSel.second;
-
-			const section_t clearSection = { startLine, endLine - startLine + 1 };
-
-			cmpPair->getOldFile().clear(clearSection);
-			cmpPair->getNewFile().clear(clearSection);
-		}
-		else
-		{
-			cmpPair->getOldFile().clear();
-			cmpPair->getNewFile().clear();
-		}
+		cmpPair->getOldFile().clear();
+		cmpPair->getNewFile().clear();
 	}
 	// New compare
 	else
