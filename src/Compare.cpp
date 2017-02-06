@@ -1674,20 +1674,7 @@ void compare(bool selectionCompare = false)
 
 			int choice = IDNO;
 
-			if (selectionCompare)
-			{
-				_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-						TEXT("Selected lines in files \"%s\" and \"%s\" match.%s"),
-						newName, ::PathFindFileName(oldFile.name), recompare ?
-						TEXT("") : TEXT("\n\nClose compared files?"));
-
-				if (recompare)
-					::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"), MB_OK);
-				else
-					choice = ::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"),
-							MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2);
-			}
-			else if (oldFile.isTemp)
+			if (oldFile.isTemp)
 			{
 				if (recompare)
 				{
@@ -1711,8 +1698,8 @@ void compare(bool selectionCompare = false)
 			else
 			{
 				_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-
-						TEXT("Files \"%s\" and \"%s\" match.\n\nClose compared files?"),
+						TEXT("%s \"%s\" and \"%s\" match.\n\nClose compared files?"), recompare ?
+						TEXT("Selected lines in files") : TEXT("Files"),
 						newName, ::PathFindFileName(oldFile.name));
 
 				choice = ::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"),
@@ -1721,7 +1708,7 @@ void compare(bool selectionCompare = false)
 
 			if (choice == IDYES)
 				closeComparePair(cmpPair);
-			else if (!selectionCompare || (selectionCompare && !recompare))
+			else
 				clearComparePair(getCurrentBuffId());
 		}
 		break;
