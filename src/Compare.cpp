@@ -1920,7 +1920,7 @@ void createMenu()
 	funcItem[CMD_COMPARE_LINES]._pShKey->_isShift	= false;
 	funcItem[CMD_COMPARE_LINES]._pShKey->_key		= 'N';
 
-	_tcscpy_s(funcItem[CMD_CLEAR_ACTIVE]._itemName, nbChar, TEXT("Clear Active Compare"));
+	_tcscpy_s(funcItem[CMD_CLEAR_ACTIVE]._itemName, nbChar, TEXT("Clear active Compare"));
 	funcItem[CMD_CLEAR_ACTIVE]._pFunc				= ClearActiveCompare;
 	funcItem[CMD_CLEAR_ACTIVE]._pShKey 				= new ShortcutKey;
 	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_isAlt 		= true;
@@ -1928,7 +1928,7 @@ void createMenu()
 	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_isShift	= false;
 	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_key 		= 'X';
 
-	_tcscpy_s(funcItem[CMD_CLEAR_ALL]._itemName, nbChar, TEXT("Clear All Compares"));
+	_tcscpy_s(funcItem[CMD_CLEAR_ALL]._itemName, nbChar, TEXT("Clear all Compares"));
 	funcItem[CMD_CLEAR_ALL]._pFunc 				= ClearAllCompares;
 	funcItem[CMD_CLEAR_ALL]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_CLEAR_ALL]._pShKey->_isAlt 	= true;
