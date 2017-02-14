@@ -49,7 +49,7 @@ const TCHAR UserSettings::compareToPrevSetting[]	= TEXT("Default Compare is to P
 
 const TCHAR UserSettings::encodingsCheckSetting[]	= TEXT("Check Encodings");
 const TCHAR UserSettings::wrapAroundSetting[]		= TEXT("Wrap Around");
-const TCHAR UserSettings::recompareOnSaveSetting[]	= TEXT("Re-compare on Save");
+const TCHAR UserSettings::reCompareOnSaveSetting[]	= TEXT("Re-Compare on Save");
 const TCHAR UserSettings::gotoFirstDiffSetting[]	= TEXT("Go to First Diff");
 const TCHAR UserSettings::updateOnChangeSetting[]	= TEXT("Update on Change");
 const TCHAR UserSettings::compactNavBarSetting[]	= TEXT("Compact NavBar");
@@ -87,7 +87,7 @@ void UserSettings::load()
 			DEFAULT_ENCODINGS_CHECK, iniFile) == 1;
 	WrapAround		= ::GetPrivateProfileInt(mainSection, wrapAroundSetting,
 			DEFAULT_WRAP_AROUND, iniFile) == 1;
-	RecompareOnSave	= ::GetPrivateProfileInt(mainSection, recompareOnSaveSetting,
+	RecompareOnSave	= ::GetPrivateProfileInt(mainSection, reCompareOnSaveSetting,
 			DEFAULT_RECOMPARE_ON_SAVE, iniFile) == 1;
 	GotoFirstDiff	= ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting,
 			DEFAULT_GOTO_FIRST_DIFF, iniFile) == 1;
@@ -138,7 +138,7 @@ void UserSettings::save()
 			EncodingsCheck ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, wrapAroundSetting,
 			WrapAround ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, recompareOnSaveSetting,
+	::WritePrivateProfileString(mainSection, reCompareOnSaveSetting,
 			RecompareOnSave ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, gotoFirstDiffSetting,
 			GotoFirstDiff ? TEXT("1") : TEXT("0"), iniFile);
@@ -352,11 +352,12 @@ enum Temp_t
 
 
 /**
- *  \struct
+ *  \class
  *  \brief
  */
-struct ComparedFile
+class ComparedFile
 {
+public:
 	ComparedFile() : isTemp(NO_TEMP) {}
 
 	void initFromCurrent(bool currFileIsNew);
@@ -370,6 +371,10 @@ struct ComparedFile
 	void restore() const;
 	bool isOpen() const;
 
+    inline void removeAndStoreBlanks();
+    inline void restoreBlanks();
+    inline void clearStoredBlanks();
+
 	Temp_t	isTemp;
 	bool	isNew;
 
@@ -381,16 +386,20 @@ struct ComparedFile
 	int		sciDoc;
 	TCHAR	name[MAX_PATH];
 
-	DeletedSectionsList	deletedSections;
+	DeletedSectionsList deletedSections;
+
+private:
+	BlankSections_t     blankSections;
 };
 
 
 /**
- *  \struct
+ *  \class
  *  \brief
  */
-struct ComparedPair
+class ComparedPair
 {
+public:
 	inline ComparedFile& getFileByViewId(int viewId);
 	inline ComparedFile& getFileByBuffId(LRESULT buffId);
 	inline ComparedFile& getOtherFileByBuffId(LRESULT buffId);
@@ -407,10 +416,10 @@ struct ComparedPair
 
 
 /**
- *  \struct
+ *  \class
  *  \brief
  */
-struct NewCompare
+class NewCompare
 {
 public:
 	NewCompare(bool currFileIsNew, bool markFirstName);
@@ -432,36 +441,6 @@ enum class CompareResult
 	COMPARE_CANCELLED,
 	COMPARE_MATCH,
 	COMPARE_MISMATCH
-};
-
-
-/**
- *  \struct
- *  \brief
- */
-struct SaveNotificationData
-{
-	SaveNotificationData(LRESULT buffId) : _location(buffId)
-	{
-		_blankSections = removeBlankLines(getView(viewIdFromBuffId(buffId)), true);
-	}
-
-	void restore()
-	{
-		if (!_blankSections.empty())
-			addBlankLines(getView(viewIdFromBuffId(_location.getBuffId())), _blankSections);
-
-		_location.restore();
-	}
-
-	inline LRESULT getBuffId()
-	{
-		return _location.getBuffId();
-	}
-
-private:
-	ViewLocation	_location;
-	BlankSections_t	_blankSections;
 };
 
 
@@ -541,8 +520,6 @@ CompareList_t compareList;
 std::unique_ptr<NewCompare> newCompare;
 
 volatile unsigned notificationsLock = 0;
-
-std::unique_ptr<SaveNotificationData> saveNotifData;
 
 DelayedActivate	delayedActivation;
 DelayedClose	delayedClosure;
@@ -909,6 +886,25 @@ void ComparedFile::restore() const
 bool ComparedFile::isOpen() const
 {
 	return (::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (LPARAM)NULL) >= 0);
+}
+
+
+void ComparedFile::removeAndStoreBlanks()
+{
+    blankSections = removeBlankLines(getView(viewIdFromBuffId(buffId)), true);
+}
+
+
+void ComparedFile::restoreBlanks()
+{
+    if (!blankSections.empty())
+        addBlankLines(getView(viewIdFromBuffId(buffId)), blankSections);
+}
+
+
+void ComparedFile::clearStoredBlanks()
+{
+    blankSections.clear();
 }
 
 
@@ -2532,54 +2528,78 @@ void onFileBeforeSave(LRESULT buffId)
 	if (cmpPair == compareList.end())
 		return;
 
-	saveNotifData.reset(new SaveNotificationData(buffId));
+    ComparedFile& savedFile = cmpPair->getFileByBuffId(buffId);
+    const LRESULT currentBuffId = getCurrentBuffId();
+
+	ScopedIncrementer incr(notificationsLock);
+
+    if (currentBuffId != buffId)
+        activateBufferID(buffId);
+
+    savedFile.removeAndStoreBlanks();
+
+    if (currentBuffId != buffId)
+        activateBufferID(currentBuffId);
 }
 
 
 void onFileSaved(LRESULT buffId)
 {
-	if (saveNotifData->getBuffId() == buffId)
-	{
-		CompareList_t::iterator cmpPair = getCompare(buffId);
-		if (cmpPair == compareList.end())
-			return;
+	CompareList_t::iterator cmpPair = getCompare(buffId);
+	if (cmpPair == compareList.end())
+		return;
 
-		if (Settings.RecompareOnSave && getCurrentBuffId() == buffId)
-		{
-			delayedUpdate.cancel();
-			delayedUpdate.fullCompare = true;
-			delayedUpdate.post(30);
-		}
-		else
-		{
-			saveNotifData->restore();
-		}
+    ComparedFile& savedFile = cmpPair->getFileByBuffId(buffId);
+    const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
 
-		const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
-		if (otherFile.isTemp == LAST_SAVED_TEMP)
-		{
-			HWND hNppTabBar = NppTabHandleGetter::get(otherFile.compareViewId);
+    const LRESULT currentBuffId = getCurrentBuffId();
+    const bool pairIsActive = (currentBuffId == buffId || currentBuffId == otherFile.buffId);
 
-			if (hNppTabBar)
-			{
-				TCHAR tabText[MAX_PATH];
+	ScopedIncrementer incr(notificationsLock);
 
-				TCITEM tab;
-				tab.mask = TCIF_TEXT;
-				tab.pszText = tabText;
-				tab.cchTextMax = _countof(tabText);
+    if (!pairIsActive)
+        activateBufferID(buffId);
 
-				const int tabPos = posFromBuffId(otherFile.buffId);
-				TabCtrl_GetItem(hNppTabBar, tabPos, &tab);
+    if (pairIsActive && Settings.RecompareOnSave)
+    {
+        delayedUpdate.cancel();
+        delayedUpdate.fullCompare = true;
+        delayedUpdate.post(30);
+    }
+    else
+    {
+        savedFile.restoreBlanks();
+    }
 
-				_tcscat_s(tabText, _countof(tabText), TEXT(" - Outdated"));
+    savedFile.clearStoredBlanks();
 
-				TabCtrl_SetItem(hNppTabBar, tabPos, &tab);
-			}
-		}
-	}
+    if (otherFile.isTemp == LAST_SAVED_TEMP)
+    {
+        HWND hNppTabBar = NppTabHandleGetter::get(otherFile.compareViewId);
 
-	saveNotifData.reset();
+        if (hNppTabBar)
+        {
+            TCHAR tabText[MAX_PATH];
+
+            TCITEM tab;
+            tab.mask = TCIF_TEXT;
+            tab.pszText = tabText;
+            tab.cchTextMax = _countof(tabText);
+
+            const int tabPos = posFromBuffId(otherFile.buffId);
+            TabCtrl_GetItem(hNppTabBar, tabPos, &tab);
+
+            _tcscat_s(tabText, _countof(tabText), TEXT(" - Outdated"));
+
+            TabCtrl_SetItem(hNppTabBar, tabPos, &tab);
+        }
+    }
+
+    if (!pairIsActive)
+    {
+        activateBufferID(currentBuffId);
+        onBufferActivated(currentBuffId, false);
+    }
 }
 
 } // anonymous namespace
@@ -2695,12 +2715,12 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		break;
 
 		case NPPN_FILEBEFORESAVE:
-			if (!notificationsLock && !compareList.empty())
+			if (!compareList.empty())
 				onFileBeforeSave(notifyCode->nmhdr.idFrom);
 		break;
 
 		case NPPN_FILESAVED:
-			if (saveNotifData)
+			if (!notificationsLock && !compareList.empty())
 				onFileSaved(notifyCode->nmhdr.idFrom);
 		break;
 

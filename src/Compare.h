@@ -111,7 +111,7 @@ public:
 
 	static const TCHAR encodingsCheckSetting[];
 	static const TCHAR wrapAroundSetting[];
-	static const TCHAR recompareOnSaveSetting[];
+	static const TCHAR reCompareOnSaveSetting[];
 	static const TCHAR gotoFirstDiffSetting[];
 	static const TCHAR updateOnChangeSetting[];
 	static const TCHAR compactNavBarSetting[];
