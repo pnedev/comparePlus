@@ -421,6 +421,25 @@ std::vector<char> getText(HWND view, int startPos, int endPos)
 }
 
 
+void toLowerCase(std::vector<char>& text)
+{
+	const int len = text.size();
+
+	if (len == 0)
+		return;
+
+	std::vector<wchar_t> wText(len);
+
+	::MultiByteToWideChar(CP_UTF8, 0, text.data(), -1, wText.data(), len * sizeof(wchar_t));
+
+	wText.push_back(L'\0');
+	::CharLowerW((LPWSTR)wText.data());
+	wText.pop_back();
+
+	::WideCharToMultiByte(CP_UTF8, 0, wText.data(), -1, text.data(), len * sizeof(char), NULL, NULL);
+}
+
+
 void clearWindow(HWND view)
 {
 	removeBlankLines(view);

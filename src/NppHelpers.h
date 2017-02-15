@@ -268,6 +268,12 @@ inline LRESULT getCurrentBuffId()
 }
 
 
+inline int getEncoding(LRESULT buffId)
+{
+	return ::SendMessage(nppData._nppHandle, NPPM_GETBUFFERENCODING, buffId, 0);
+}
+
+
 inline int getDocId(HWND view)
 {
 	return ::SendMessage(view, SCI_GETDOCPOINTER, 0, 0);
@@ -335,6 +341,7 @@ int getPrevUnmarkedLine(HWND view, int startLine, int markMask);
 int getNextUnmarkedLine(HWND view, int startLine, int markMask);
 
 std::vector<char> getText(HWND view, int startPos, int endPos);
+void toLowerCase(std::vector<char>& text);
 
 void adjustBlanksWrap(HWND view = NULL);
 

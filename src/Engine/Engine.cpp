@@ -70,8 +70,11 @@ std::vector<unsigned int> computeLineHashes(DocCmpInfo& doc, const UserSettings&
 
 		if (lineEnd - lineStart)
 		{
-			const std::vector<char> line = getText(doc.view, lineStart, lineEnd);
+			std::vector<char> line = getText(doc.view, lineStart, lineEnd);
 			const int lineLen = line.size() - 1;
+
+			if (settings.IgnoreCase)
+				toLowerCase(line);
 
 			for (int i = 0; i < lineLen; ++i)
 			{
@@ -119,8 +122,11 @@ void getWords(HWND view, const UserSettings& settings, chunk_info& chunk)
 		const int docLineStart = ::SendMessage(view, SCI_POSITIONFROMLINE, docLineNum, 0);
 		const int docLineEnd = ::SendMessage(view, SCI_GETLINEENDPOSITION, docLineNum, 0);
 
-		const std::vector<char> line = getText(view, docLineStart, docLineEnd);
+		std::vector<char> line = getText(view, docLineStart, docLineEnd);
 		const int lineLen = static_cast<int>(line.size()) - 1;
+
+		if (settings.IgnoreCase)
+			toLowerCase(line);
 
 		if (lineLen > 0)
 		{

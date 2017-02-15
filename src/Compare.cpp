@@ -55,6 +55,7 @@ const TCHAR UserSettings::updateOnChangeSetting[]	= TEXT("Update on Change");
 const TCHAR UserSettings::compactNavBarSetting[]	= TEXT("Compact NavBar");
 
 const TCHAR UserSettings::ignoreSpacesSetting[]		= TEXT("Ignore Spaces");
+const TCHAR UserSettings::ignoreCaseSetting[]		= TEXT("Ignore Case");
 const TCHAR UserSettings::detectMovesSetting[]		= TEXT("Detect Moves");
 const TCHAR UserSettings::navBarSetting[]			= TEXT("Navigation Bar");
 
@@ -97,6 +98,7 @@ void UserSettings::load()
 			DEFAULT_COMPACT_NAVBAR, iniFile) == 1;
 
 	IgnoreSpaces	= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,	1, iniFile) == 1;
+	IgnoreCase		= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,	0, iniFile) == 1;
 	DetectMoves		= ::GetPrivateProfileInt(mainSection, detectMovesSetting,	1, iniFile) == 1;
 	UseNavBar		= ::GetPrivateProfileInt(mainSection, navBarSetting,		1, iniFile) == 1;
 
@@ -148,6 +150,7 @@ void UserSettings::save()
 			CompactNavBar ? TEXT("1") : TEXT("0"), iniFile);
 
 	::WritePrivateProfileString(mainSection, ignoreSpacesSetting,	IgnoreSpaces	? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, ignoreCaseSetting,	    IgnoreCase		? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, detectMovesSetting,	DetectMoves		? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, navBarSetting,			UseNavBar		? TEXT("1") : TEXT("0"), iniFile);
 
@@ -1174,8 +1177,7 @@ bool isFileCompared(HWND view)
 bool isEncodingOK(const ComparedPair& cmpPair)
 {
 	// Warn about encoding mismatches as that might compromise the compare
-	if (::SendMessage(nppData._nppHandle, NPPM_GETBUFFERENCODING, cmpPair.file[0].buffId, 0) !=
-		::SendMessage(nppData._nppHandle, NPPM_GETBUFFERENCODING, cmpPair.file[1].buffId, 0))
+	if (getEncoding(cmpPair.file[0].buffId) != getEncoding(cmpPair.file[1].buffId))
 	{
 		if (::MessageBox(nppData._nppHandle,
 			TEXT("Trying to compare files with different encodings - \n")
@@ -1829,6 +1831,15 @@ void IgnoreSpaces()
 }
 
 
+void IgnoreCase()
+{
+	Settings.IgnoreCase = !Settings.IgnoreCase;
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_CASE]._cmdID,
+			(LPARAM)Settings.IgnoreCase);
+	Settings.markAsDirty();
+}
+
+
 void DetectMoves()
 {
 	Settings.DetectMoves = !Settings.DetectMoves;
@@ -1958,6 +1969,9 @@ void createMenu()
 
 	_tcscpy_s(funcItem[CMD_IGNORE_SPACES]._itemName, nbChar, TEXT("Ignore Spaces"));
 	funcItem[CMD_IGNORE_SPACES]._pFunc = IgnoreSpaces;
+
+	_tcscpy_s(funcItem[CMD_IGNORE_CASE]._itemName, nbChar, TEXT("Ignore Case"));
+	funcItem[CMD_IGNORE_CASE]._pFunc = IgnoreCase;
 
 	_tcscpy_s(funcItem[CMD_DETECT_MOVES]._itemName, nbChar, TEXT("Detect Moves"));
 	funcItem[CMD_DETECT_MOVES]._pFunc = DetectMoves;
@@ -2167,6 +2181,8 @@ void onToolBarReady()
 
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACES]._cmdID,
 			(LPARAM)Settings.IgnoreSpaces);
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_CASE]._cmdID,
+			(LPARAM)Settings.IgnoreCase);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID,
 			(LPARAM)Settings.DetectMoves);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID,

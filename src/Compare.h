@@ -65,6 +65,7 @@ enum MENU_COMMANDS
 	CMD_GIT_DIFF,
 	CMD_SEPARATOR_2,
 	CMD_IGNORE_SPACES,
+	CMD_IGNORE_CASE,
 	CMD_DETECT_MOVES,
 	CMD_NAV_BAR,
 	CMD_SEPARATOR_3,
@@ -117,6 +118,7 @@ public:
 	static const TCHAR compactNavBarSetting[];
 
 	static const TCHAR ignoreSpacesSetting[];
+	static const TCHAR ignoreCaseSetting[];
 	static const TCHAR detectMovesSetting[];
 	static const TCHAR navBarSetting[];
 
@@ -141,6 +143,7 @@ public:
 	bool           	CompactNavBar;
 
 	bool           	IgnoreSpaces;
+	bool           	IgnoreCase;
 	bool           	DetectMoves;
 	bool           	UseNavBar;
 
