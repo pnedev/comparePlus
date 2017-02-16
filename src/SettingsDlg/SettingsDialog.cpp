@@ -69,23 +69,24 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					return TRUE;
 
 				case IDDEFAULT:
-					_Settings->OldFileIsFirst	= (bool) DEFAULT_OLD_IS_FIRST;
-					_Settings->OldFileViewId	= DEFAULT_OLD_ON_LEFT ? MAIN_VIEW : SUB_VIEW;
-					_Settings->CompareToPrev	= (bool) DEFAULT_COMPARE_TO_PREV;
+					_Settings->OldFileIsFirst		= (bool) DEFAULT_OLD_IS_FIRST;
+					_Settings->OldFileViewId		= DEFAULT_OLD_ON_LEFT ? MAIN_VIEW : SUB_VIEW;
+					_Settings->CompareToPrev		= (bool) DEFAULT_COMPARE_TO_PREV;
 
-					_Settings->EncodingsCheck	= (bool) DEFAULT_ENCODINGS_CHECK;
-					_Settings->WrapAround		= (bool) DEFAULT_WRAP_AROUND;
-					_Settings->RecompareOnSave	= (bool) DEFAULT_RECOMPARE_ON_SAVE;
-					_Settings->GotoFirstDiff	= (bool) DEFAULT_GOTO_FIRST_DIFF;
-					_Settings->UpdateOnChange	= (bool) DEFAULT_UPDATE_ON_CHANGE;
-					_Settings->CompactNavBar	= (bool) DEFAULT_COMPACT_NAVBAR;
+					_Settings->EncodingsCheck		= (bool) DEFAULT_ENCODINGS_CHECK;
+					_Settings->AlignReplacements	= (bool) DEFAULT_ALIGN_REPLACEMENTS;
+					_Settings->WrapAround			= (bool) DEFAULT_WRAP_AROUND;
+					_Settings->RecompareOnSave		= (bool) DEFAULT_RECOMPARE_ON_SAVE;
+					_Settings->GotoFirstDiff		= (bool) DEFAULT_GOTO_FIRST_DIFF;
+					_Settings->UpdateOnChange		= (bool) DEFAULT_UPDATE_ON_CHANGE;
+					_Settings->CompactNavBar		= (bool) DEFAULT_COMPACT_NAVBAR;
 
-					_Settings->colors.added     = DEFAULT_ADDED_COLOR;
-					_Settings->colors.changed   = DEFAULT_CHANGED_COLOR;
-					_Settings->colors.deleted   = DEFAULT_DELETED_COLOR;
-					_Settings->colors.moved     = DEFAULT_MOVED_COLOR;
-					_Settings->colors.highlight = DEFAULT_HIGHLIGHT_COLOR;
-					_Settings->colors.alpha     = DEFAULT_HIGHLIGHT_ALPHA;
+					_Settings->colors.added     	= DEFAULT_ADDED_COLOR;
+					_Settings->colors.changed   	= DEFAULT_CHANGED_COLOR;
+					_Settings->colors.deleted   	= DEFAULT_DELETED_COLOR;
+					_Settings->colors.moved     	= DEFAULT_MOVED_COLOR;
+					_Settings->colors.highlight 	= DEFAULT_HIGHLIGHT_COLOR;
+					_Settings->colors.alpha     	= DEFAULT_HIGHLIGHT_ALPHA;
 
 					SetParams();
 					break;
@@ -130,6 +131,8 @@ void SettingsDialog::SetParams()
 
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_ENCODING_CHECK),
 			_Settings->EncodingsCheck ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ALIGN_REPLACEMENTS),
+			_Settings->AlignReplacements ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_WRAP_AROUND),
 			_Settings->WrapAround ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_RECOMPARE_ON_SAVE),
@@ -164,6 +167,8 @@ BOOL SettingsDialog::GetParams()
 
 	_Settings->EncodingsCheck	=
 			(Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_ENCODING_CHECK)) == BST_CHECKED) ? true : false;
+	_Settings->AlignReplacements	=
+			(Button_GetCheck(::GetDlgItem(_hSelf, IDC_ALIGN_REPLACEMENTS)) == BST_CHECKED) ? true : false;
 	_Settings->WrapAround		=
 			(Button_GetCheck(::GetDlgItem(_hSelf, IDC_WRAP_AROUND)) == BST_CHECKED) ? true : false;
 	_Settings->RecompareOnSave	=

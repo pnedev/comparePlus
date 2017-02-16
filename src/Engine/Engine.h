@@ -71,6 +71,7 @@ struct Word
 // The returned bool is true if views are swapped and false otherwise
 std::pair<std::vector<diff_info>, bool>
 		compareDocs(DocCmpInfo& doc1, DocCmpInfo& doc2, const UserSettings& settings, progress_ptr& progress);
-bool compareBlocks(HWND view1, HWND view2, const UserSettings& settings, diff_info& blockDiff1, diff_info& blockDiff2);
-bool showDiffs(const DocCmpInfo& doc1, const DocCmpInfo& doc2,
+bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSettings& settings,
+		diff_info& blockDiff1, diff_info& blockDiff2);
+bool showDiffs(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSettings& settings,
 		const std::pair<std::vector<diff_info>, bool>& cmpResults, progress_ptr& progress);

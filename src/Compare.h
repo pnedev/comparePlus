@@ -35,6 +35,7 @@
 #define DEFAULT_COMPARE_TO_PREV		1
 
 #define DEFAULT_ENCODINGS_CHECK		1
+#define DEFAULT_ALIGN_REPLACEMENTS	1
 #define DEFAULT_WRAP_AROUND			0
 #define DEFAULT_RECOMPARE_ON_SAVE	1
 #define DEFAULT_GOTO_FIRST_DIFF		0
@@ -111,6 +112,7 @@ public:
 	static const TCHAR compareToPrevSetting[];
 
 	static const TCHAR encodingsCheckSetting[];
+	static const TCHAR alignReplacementsSetting[];
 	static const TCHAR wrapAroundSetting[];
 	static const TCHAR reCompareOnSaveSetting[];
 	static const TCHAR gotoFirstDiffSetting[];
@@ -136,6 +138,7 @@ public:
 	bool           	CompareToPrev;
 
 	bool           	EncodingsCheck;
+	bool           	AlignReplacements;
 	bool           	WrapAround;
 	bool           	RecompareOnSave;
 	bool           	GotoFirstDiff;

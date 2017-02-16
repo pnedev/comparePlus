@@ -41,32 +41,33 @@ NppData nppData;
 UserSettings Settings;
 
 
-const TCHAR UserSettings::mainSection[]				= TEXT("Main");
+const TCHAR UserSettings::mainSection[]					= TEXT("Main");
 
-const TCHAR UserSettings::oldIsFirstSetting[]		= TEXT("Old is First");
-const TCHAR UserSettings::oldFileOnLeftSetting[]	= TEXT("Old on Left");
-const TCHAR UserSettings::compareToPrevSetting[]	= TEXT("Default Compare is to Prev");
+const TCHAR UserSettings::oldIsFirstSetting[]			= TEXT("Old is First");
+const TCHAR UserSettings::oldFileOnLeftSetting[]		= TEXT("Old on Left");
+const TCHAR UserSettings::compareToPrevSetting[]		= TEXT("Default Compare is to Prev");
 
-const TCHAR UserSettings::encodingsCheckSetting[]	= TEXT("Check Encodings");
-const TCHAR UserSettings::wrapAroundSetting[]		= TEXT("Wrap Around");
-const TCHAR UserSettings::reCompareOnSaveSetting[]	= TEXT("Re-Compare on Save");
-const TCHAR UserSettings::gotoFirstDiffSetting[]	= TEXT("Go to First Diff");
-const TCHAR UserSettings::updateOnChangeSetting[]	= TEXT("Update on Change");
-const TCHAR UserSettings::compactNavBarSetting[]	= TEXT("Compact NavBar");
+const TCHAR UserSettings::encodingsCheckSetting[]		= TEXT("Check Encodings");
+const TCHAR UserSettings::alignReplacementsSetting[]	= TEXT("Align Replacements");
+const TCHAR UserSettings::wrapAroundSetting[]			= TEXT("Wrap Around");
+const TCHAR UserSettings::reCompareOnSaveSetting[]		= TEXT("Re-Compare on Save");
+const TCHAR UserSettings::gotoFirstDiffSetting[]		= TEXT("Go to First Diff");
+const TCHAR UserSettings::updateOnChangeSetting[]		= TEXT("Update on Change");
+const TCHAR UserSettings::compactNavBarSetting[]		= TEXT("Compact NavBar");
 
-const TCHAR UserSettings::ignoreSpacesSetting[]		= TEXT("Ignore Spaces");
-const TCHAR UserSettings::ignoreCaseSetting[]		= TEXT("Ignore Case");
-const TCHAR UserSettings::detectMovesSetting[]		= TEXT("Detect Moves");
-const TCHAR UserSettings::navBarSetting[]			= TEXT("Navigation Bar");
+const TCHAR UserSettings::ignoreSpacesSetting[]			= TEXT("Ignore Spaces");
+const TCHAR UserSettings::ignoreCaseSetting[]			= TEXT("Ignore Case");
+const TCHAR UserSettings::detectMovesSetting[]			= TEXT("Detect Moves");
+const TCHAR UserSettings::navBarSetting[]				= TEXT("Navigation Bar");
 
-const TCHAR UserSettings::colorsSection[]			= TEXT("Colors");
+const TCHAR UserSettings::colorsSection[]				= TEXT("Colors");
 
-const TCHAR UserSettings::addedColorSetting[]		= TEXT("Added");
-const TCHAR UserSettings::removedColorSetting[]		= TEXT("Removed");
-const TCHAR UserSettings::changedColorSetting[]		= TEXT("Changed");
-const TCHAR UserSettings::movedColorSetting[]		= TEXT("Moved");
-const TCHAR UserSettings::highlightColorSetting[]	= TEXT("Highlight");
-const TCHAR UserSettings::highlightAlphaSetting[]	= TEXT("Alpha");
+const TCHAR UserSettings::addedColorSetting[]			= TEXT("Added");
+const TCHAR UserSettings::removedColorSetting[]			= TEXT("Removed");
+const TCHAR UserSettings::changedColorSetting[]			= TEXT("Changed");
+const TCHAR UserSettings::movedColorSetting[]			= TEXT("Moved");
+const TCHAR UserSettings::highlightColorSetting[]		= TEXT("Highlight");
+const TCHAR UserSettings::highlightAlphaSetting[]		= TEXT("Alpha");
 
 
 void UserSettings::load()
@@ -84,17 +85,19 @@ void UserSettings::load()
 	CompareToPrev	= ::GetPrivateProfileInt(mainSection, compareToPrevSetting,
 			DEFAULT_COMPARE_TO_PREV, iniFile) == 1;
 
-	EncodingsCheck	= ::GetPrivateProfileInt(mainSection, encodingsCheckSetting,
+	EncodingsCheck		= ::GetPrivateProfileInt(mainSection, encodingsCheckSetting,
 			DEFAULT_ENCODINGS_CHECK, iniFile) == 1;
-	WrapAround		= ::GetPrivateProfileInt(mainSection, wrapAroundSetting,
+	AlignReplacements	= ::GetPrivateProfileInt(mainSection, alignReplacementsSetting,
+			DEFAULT_ALIGN_REPLACEMENTS, iniFile) == 1;
+	WrapAround			= ::GetPrivateProfileInt(mainSection, wrapAroundSetting,
 			DEFAULT_WRAP_AROUND, iniFile) == 1;
-	RecompareOnSave	= ::GetPrivateProfileInt(mainSection, reCompareOnSaveSetting,
+	RecompareOnSave		= ::GetPrivateProfileInt(mainSection, reCompareOnSaveSetting,
 			DEFAULT_RECOMPARE_ON_SAVE, iniFile) == 1;
-	GotoFirstDiff	= ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting,
+	GotoFirstDiff		= ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting,
 			DEFAULT_GOTO_FIRST_DIFF, iniFile) == 1;
-	UpdateOnChange	= ::GetPrivateProfileInt(mainSection, updateOnChangeSetting,
+	UpdateOnChange		= ::GetPrivateProfileInt(mainSection, updateOnChangeSetting,
 			DEFAULT_UPDATE_ON_CHANGE, iniFile) == 1;
-	CompactNavBar	= ::GetPrivateProfileInt(mainSection, compactNavBarSetting,
+	CompactNavBar		= ::GetPrivateProfileInt(mainSection, compactNavBarSetting,
 			DEFAULT_COMPACT_NAVBAR, iniFile) == 1;
 
 	IgnoreSpaces	= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,	1, iniFile) == 1;
@@ -138,6 +141,8 @@ void UserSettings::save()
 
 	::WritePrivateProfileString(mainSection, encodingsCheckSetting,
 			EncodingsCheck ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, alignReplacementsSetting,
+			AlignReplacements ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, wrapAroundSetting,
 			WrapAround ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, reCompareOnSaveSetting,
@@ -1486,7 +1491,7 @@ CompareResult compareViews(progress_ptr& progress, section_t mainViewSection, se
 					blockDiff1.matchedDiff = &blockDiff2;
 					blockDiff2.matchedDiff = &blockDiff1;
 
-					compareBlocks(doc1.view, doc2.view, Settings, blockDiff1, blockDiff2);
+					compareBlocks(doc1, doc2, Settings, blockDiff1, blockDiff2);
 				}
 			}
 		}
@@ -1498,7 +1503,7 @@ CompareResult compareViews(progress_ptr& progress, section_t mainViewSection, se
 	if (progress && !progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
-	if (!showDiffs(doc1, doc2, cmpResults, progress))
+	if (!showDiffs(doc1, doc2, Settings, cmpResults, progress))
 		return CompareResult::COMPARE_CANCELLED;
 
 	return CompareResult::COMPARE_MISMATCH;

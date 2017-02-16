@@ -237,12 +237,12 @@ void compareLines(diff_info& blockDiff1, diff_info& blockDiff2, const chunk_info
 
 
 void markSection(std::pair<HWND, HWND>& views, const diff_info& bd, const std::pair<int, int>& bdMarks,
-		const std::pair<section_t, section_t>& sections, std::pair<int*, int*>& addedBlanks)
+		const std::pair<section_t, section_t>& sections, std::pair<int*, int*>& addedBlanks, bool alignReplacements)
 {
 	const int startLine = bd.off + *addedBlanks.first + sections.first.off;
 
 	int line = startLine;
-	int lenDiff = sections.second.len - sections.first.len;
+	int lenDiff = (alignReplacements ? sections.second.len - sections.first.len : sections.second.len);
 	int endOff = sections.first.off + sections.first.len;
 
 	for (int i = sections.first.off; i < endOff; ++i, ++line)
@@ -259,7 +259,24 @@ void markSection(std::pair<HWND, HWND>& views, const diff_info& bd, const std::p
 	}
 
 	line = startLine;
-	lenDiff = -lenDiff;
+
+	if (alignReplacements)
+	{
+		lenDiff = -lenDiff;
+	}
+	else
+	{
+		lenDiff = sections.first.len;
+
+		if (lenDiff > 0)
+		{
+			addBlankSection(views.second, line, lenDiff);
+			*addedBlanks.second += lenDiff;
+			line += lenDiff;
+			lenDiff = 0;
+		}
+	}
+
 	endOff = sections.second.off + sections.second.len;
 
 	for (int i = sections.second.off; i < endOff; ++i, ++line)
@@ -355,10 +372,14 @@ std::pair<std::vector<diff_info>, bool>
 }
 
 
-bool compareBlocks(HWND view1, HWND view2, const UserSettings& settings, diff_info& blockDiff1, diff_info& blockDiff2)
+bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSettings& settings,
+		diff_info& blockDiff1, diff_info& blockDiff2)
 {
 	diff_info* pBlockDiff1 = &blockDiff1;
 	diff_info* pBlockDiff2 = &blockDiff2;
+
+	HWND view1 = doc1.view;
+	HWND view2 = doc2.view;
 
 	if (blockDiff1.len > blockDiff2.len)
 	{
@@ -455,7 +476,7 @@ bool compareBlocks(HWND view1, HWND view2, const UserSettings& settings, diff_in
 
 
 // Mark all line differences
-bool showDiffs(const DocCmpInfo& doc1, const DocCmpInfo& doc2,
+bool showDiffs(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSettings& settings,
 		const std::pair<std::vector<diff_info>, bool>& cmpResults, progress_ptr& progress)
 {
 	const std::vector<diff_info>& blockDiff = cmpResults.first;
@@ -515,7 +536,7 @@ bool showDiffs(const DocCmpInfo& doc1, const DocCmpInfo& doc2,
 					sections.first.len = changedLines.first.line - sections.first.off;
 					sections.second.len = changedLines.second.line - sections.second.off;
 
-					markSection(views, bd, bdMarks, sections, addedBlanks);
+					markSection(views, bd, bdMarks, sections, addedBlanks, settings.AlignReplacements);
 				}
 
 				markLineDiffs(views, changedLines, bd.off + *addedBlanks.first + changedLines.first.line);
@@ -536,7 +557,7 @@ bool showDiffs(const DocCmpInfo& doc1, const DocCmpInfo& doc2,
 				sections.second.len = 0;
 			}
 
-			markSection(views, bd, bdMarks, sections, addedBlanks);
+			markSection(views, bd, bdMarks, sections, addedBlanks, settings.AlignReplacements);
 		}
 
 		if (progress && !progress->Advance())
