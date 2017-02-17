@@ -418,8 +418,15 @@ public:
 	void positionFiles();
 	void restoreFiles(int currentBuffId);
 
+	void setStatus();
+
 	ComparedFile	file[2];
 	int				relativePos;
+
+	bool			isFullCompare;
+	bool			SpacesIgnored;
+	bool			CaseIgnored;
+	bool			MovesDetected;
 };
 
 
@@ -1039,6 +1046,26 @@ void ComparedPair::restoreFiles(int currentBuffId = -1)
 }
 
 
+void ComparedPair::setStatus()
+{
+	HWND hNppStatusBar = NppStatusBarHandleGetter::get();
+
+	if (hNppStatusBar)
+	{
+		TCHAR msg[512];
+
+		_sntprintf_s(msg, _countof(msg), _TRUNCATE,
+				TEXT("Compare (%s)    Ignore Spaces (%s)    Ignore Case (%s)    Detect Moves (%s)"),
+				isFullCompare	? TEXT("Full")	: TEXT("Selected Lines"),
+				SpacesIgnored	? TEXT("Yes")	: TEXT("No"),
+				CaseIgnored		? TEXT("Yes")	: TEXT("No"),
+				MovesDetected	? TEXT("Yes")	: TEXT("No"));
+
+		::SendMessage(hNppStatusBar, SB_SETTEXT, 0, static_cast<LPARAM>((LONG_PTR)msg));
+	}
+}
+
+
 NewCompare::NewCompare(bool currFileIsNew, bool markFirstName)
 {
 	_firstTabText[0] = 0;
@@ -1635,6 +1662,13 @@ void compare(bool selectionCompare = false)
 	{
 		case CompareResult::COMPARE_MISMATCH:
 		{
+			cmpPair->isFullCompare	= !selectionCompare;
+			cmpPair->SpacesIgnored	= Settings.IgnoreSpaces;
+			cmpPair->CaseIgnored	= Settings.IgnoreCase;
+			cmpPair->MovesDetected	= Settings.DetectMoves;
+
+			cmpPair->setStatus();
+
 			NppSettings::get().setCompareMode();
 
 			setCompareView(nppData._scintillaMainHandle);
@@ -2398,6 +2432,8 @@ void DelayedActivate::operator()()
 		activateBufferID(buffId);
 	}
 
+	cmpPair->setStatus();
+
 	comparedFileActivated(cmpPair->getFileByBuffId(buffId));
 }
 
@@ -2420,6 +2456,8 @@ void onBufferActivated(LRESULT buffId, bool delay)
 		// The other compared file is active in the other view - perhaps we are simply switching between views
 		if (getDocId(getOtherView()) == otherFile.sciDoc)
 		{
+			cmpPair->setStatus();
+
 			comparedFileActivated(cmpPair->getFileByBuffId(buffId));
 		}
 		// The other compared file is not active in the other view - we must activate it but let's wait because

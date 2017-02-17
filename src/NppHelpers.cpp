@@ -75,6 +75,34 @@ BOOL CALLBACK NppToolbarHandleGetter::enumWindowsCB(HWND hwnd, LPARAM )
 }
 
 
+HWND NppStatusBarHandleGetter::hNppStatusBar = NULL;
+
+
+HWND NppStatusBarHandleGetter::get()
+{
+	if (hNppStatusBar == NULL)
+		::EnumChildWindows(nppData._nppHandle, enumWindowsCB, 0);
+
+	return hNppStatusBar;
+}
+
+
+BOOL CALLBACK NppStatusBarHandleGetter::enumWindowsCB(HWND hwnd, LPARAM )
+{
+	TCHAR winClassName[64];
+
+	::GetClassName(hwnd, winClassName, _countof(winClassName));
+
+	if (!_tcscmp(winClassName, STATUSCLASSNAME))
+	{
+		hNppStatusBar = hwnd;
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+
 HWND NppTabHandleGetter::hNppTab[2] = { NULL, NULL };
 
 
