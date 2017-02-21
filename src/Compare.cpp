@@ -1056,10 +1056,10 @@ void ComparedPair::setStatus()
 
 		_sntprintf_s(msg, _countof(msg), _TRUNCATE,
 				TEXT("Compare (%s)    Ignore Spaces (%s)    Ignore Case (%s)    Detect Moves (%s)"),
-				isFullCompare	? TEXT("Full")	: TEXT("Selected Lines"),
-				SpacesIgnored	? TEXT("Yes")	: TEXT("No"),
-				CaseIgnored		? TEXT("Yes")	: TEXT("No"),
-				MovesDetected	? TEXT("Yes")	: TEXT("No"));
+				isFullCompare	? TEXT("Full")	: TEXT("Sel"),
+				SpacesIgnored	? TEXT("Y")	: TEXT("N"),
+				CaseIgnored		? TEXT("Y")	: TEXT("N"),
+				MovesDetected	? TEXT("Y")	: TEXT("N"));
 
 		::SendMessage(hNppStatusBar, SB_SETTEXT, 0, static_cast<LPARAM>((LONG_PTR)msg));
 	}
