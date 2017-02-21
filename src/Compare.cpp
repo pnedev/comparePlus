@@ -2137,7 +2137,17 @@ void forceViewsSync(HWND focalView, bool syncCurrentLine)
 		firstVisibleLine2 = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, line, 0);
 
 	if ((activeLine != getCurrentLine(otherView)) && !isSelection(otherView))
-		::SendMessage(otherView, SCI_GOTOLINE, activeLine, 0);
+	{
+		int pos = ::SendMessage(focalView, SCI_GETCURRENTPOS, 0, 0) -
+				::SendMessage(focalView, SCI_POSITIONFROMLINE, activeLine, 0);
+		pos += ::SendMessage(otherView, SCI_POSITIONFROMLINE, activeLine, 0);
+
+		const int lineEndPos = ::SendMessage(otherView, SCI_GETLINEENDPOSITION, activeLine, 0);
+		if (lineEndPos < pos)
+			pos = lineEndPos;
+
+		::SendMessage(otherView, SCI_SETSEL, pos, pos);
+	}
 
 	::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine2, 0);
 
