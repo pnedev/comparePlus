@@ -206,7 +206,7 @@ public:
 	void updatePluginMenu();
 	void save();
 	void setNormalMode();
-	void setCompareMode();
+	void setCompareMode(bool clearHorizontalScroll = false);
 	void toSingleLineTab();
 	void restoreMultilineTab();
 
@@ -643,12 +643,23 @@ void NppSettings::setNormalMode()
 }
 
 
-void NppSettings::setCompareMode()
+void NppSettings::setCompareMode(bool clearHorizontalScroll)
 {
 	if (compareMode == true)
 		return;
 
 	compareMode = true;
+
+	if (clearHorizontalScroll)
+	{
+		int pos = ::SendMessage(nppData._scintillaMainHandle, SCI_POSITIONFROMLINE,
+				getCurrentLine(nppData._scintillaMainHandle), 0);
+		::SendMessage(nppData._scintillaMainHandle, SCI_SETSEL, pos, pos);
+
+		pos = ::SendMessage(nppData._scintillaSecondHandle, SCI_POSITIONFROMLINE,
+				getCurrentLine(nppData._scintillaSecondHandle), 0);
+		::SendMessage(nppData._scintillaSecondHandle, SCI_SETSEL, pos, pos);
+	}
 
 	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
 
@@ -1669,7 +1680,7 @@ void compare(bool selectionCompare = false)
 
 			cmpPair->setStatus();
 
-			NppSettings::get().setCompareMode();
+			NppSettings::get().setCompareMode(true);
 
 			setCompareView(nppData._scintillaMainHandle);
 			setCompareView(nppData._scintillaSecondHandle);
