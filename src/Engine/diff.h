@@ -110,10 +110,10 @@ private:
 	void _setv(int k, int r, int val);
 	int _v(int k, int r);
 	void _edit(diff_type type, int off, int len);
-	int _find_middle_snake(int aoff, int aend, int boff, int bend, middle_snake *ms);
+	int _find_middle_snake(int aoff, int aend, int boff, int bend, middle_snake* ms);
 	int _ses(int aoff, int aend, int boff, int bend);
 	void _shift_boundries();
-	diff_info* _find_anchor(int a_elem, int *b_elem);
+	diff_info* _find_match(int aoff, int* boff);
 	void _find_moves();
 
 	const std::vector<Elem>& _a;
@@ -173,7 +173,7 @@ void DiffCalc<Elem>::_edit(diff_type type, int off, int len)
 
 
 template <typename Elem>
-int DiffCalc<Elem>::_find_middle_snake(int aoff, int aend, int boff, int bend, middle_snake *ms)
+int DiffCalc<Elem>::_find_middle_snake(int aoff, int aend, int boff, int bend, middle_snake* ms)
 {
 	const int delta = aend - bend;
 	const int odd = delta & 1;
@@ -454,15 +454,13 @@ void DiffCalc<Elem>::_shift_boundries()
 }
 
 
-// Move algorithm:
-// Scan for lines that are only in the other document once use one-to-one match as an anchor
-// Scan to see if the lines above and below anchor also match
+// Scan for lines that are only in the other document once - use one-to-one match
 template <typename Elem>
-diff_info* DiffCalc<Elem>::_find_anchor(int a_elem, int *b_elem)
+diff_info* DiffCalc<Elem>::_find_match(int aoff, int* boff)
 {
 	const int diff_size = _diff.size();
 
-	diff_info* insert = NULL;
+	diff_info* match = NULL;
 
 	for (int i = 0; i < diff_size; ++i)
 	{
@@ -472,22 +470,22 @@ diff_info* DiffCalc<Elem>::_find_anchor(int a_elem, int *b_elem)
 		{
 			for (int j = 0; j < di.len; ++j)
 			{
-				if (_a[a_elem] != 0 && _a[a_elem] == _b[di.off + j])
+				if (_a[aoff] == _b[di.off + j])
 				{
-					if (insert)
+					if (match)
 						return NULL;
 
-					*b_elem = j;
-					insert = &di;
+					*boff = j;
+					match = &di;
 				}
 			}
 		}
 	}
 
-	if (!insert || insert->isMoved(*b_elem))
+	if (!match || match->isMoved(*boff))
 		return NULL;
 
-	return insert;
+	return match;
 }
 
 
@@ -505,41 +503,41 @@ void DiffCalc<Elem>::_find_moves()
 
 		for (int j = 0; j < di.len; ++j)
 		{
-			if (di.isMoved(j))
+			// Skip blanks or if already detected as moved
+			if ((_a[di.off + j] == 0) || di.isMoved(j))
 				continue;
 
-			int b_elem;
-			diff_info* match = _find_anchor(di.off + j, &b_elem);
+			int match_j;
+			diff_info* match_di = _find_match(di.off + j, &match_j);
 
-			if (!match)
+			if (!match_di)
 				continue;
 
 			// Move found - initialize move vectors
 			if (di.moved.empty())
 				di.moved.resize(di.len, false);
 
-			if (match->moved.empty())
-				match->moved.resize(match->len, false);
+			if (match_di->moved.empty())
+				match_di->moved.resize(match_di->len, false);
 
 			di.moved[j] = true;
-			match->moved[b_elem] = true;
+			match_di->moved[match_j] = true;
 
-			// We might have missed some blank diffs as _find_anchor ignores them.
-			// But if anchor is found it is good to include the blanks also to see the whole moved block.
-			for (int d1 = j - 1, d2 = b_elem - 1;
-					d1 >= 0 && d2 >= 0 && !di.moved[d1] && !match->moved[d2] && _a[di.off + d1] == _b[match->off + d2];
-					--d1, --d2)
+			// We skipped blanks but if match is found it is good to include them to see the whole moved block.
+			for (int d1 = j - 1, d2 = match_j - 1;
+					d1 >= 0 && d2 >= 0 && !di.moved[d1] && !match_di->moved[d2] &&
+					_a[di.off + d1] == _b[match_di->off + d2]; --d1, --d2)
 			{
 				di.moved[d1] = true;
-				match->moved[d2] = true;
+				match_di->moved[d2] = true;
 			}
 
-			for (++j, ++b_elem;
-					j < di.len && b_elem < match->len && !di.moved[j] && !match->moved[b_elem] &&
-					_a[di.off + j] == _b[match->off + b_elem]; ++j, ++b_elem)
+			for (int d1 = j + 1, d2 = match_j + 1;
+					d1 < di.len && d2 < match_di->len && !di.moved[d1] && !match_di->moved[d2] &&
+					_a[di.off + d1] == _b[match_di->off + d2]; ++d1, ++d2)
 			{
-				di.moved[j] = true;
-				match->moved[b_elem] = true;
+				di.moved[d1] = true;
+				match_di->moved[d2] = true;
 			}
 		}
 	}
