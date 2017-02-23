@@ -48,6 +48,7 @@ const TCHAR UserSettings::oldFileOnLeftSetting[]		= TEXT("Old on Left");
 const TCHAR UserSettings::compareToPrevSetting[]		= TEXT("Default Compare is to Prev");
 
 const TCHAR UserSettings::encodingsCheckSetting[]		= TEXT("Check Encodings");
+const TCHAR UserSettings::promptCloseOnMatchSetting[]	= TEXT("Prompt to Close on Match");
 const TCHAR UserSettings::alignReplacementsSetting[]	= TEXT("Align Replacements");
 const TCHAR UserSettings::wrapAroundSetting[]			= TEXT("Wrap Around");
 const TCHAR UserSettings::reCompareOnSaveSetting[]		= TEXT("Re-Compare on Save");
@@ -85,19 +86,21 @@ void UserSettings::load()
 	CompareToPrev	= ::GetPrivateProfileInt(mainSection, compareToPrevSetting,
 			DEFAULT_COMPARE_TO_PREV, iniFile) == 1;
 
-	EncodingsCheck		= ::GetPrivateProfileInt(mainSection, encodingsCheckSetting,
+	EncodingsCheck			= ::GetPrivateProfileInt(mainSection, encodingsCheckSetting,
 			DEFAULT_ENCODINGS_CHECK, iniFile) == 1;
-	AlignReplacements	= ::GetPrivateProfileInt(mainSection, alignReplacementsSetting,
+	PromptToCloseOnMatch	= ::GetPrivateProfileInt(mainSection, promptCloseOnMatchSetting,
+			DEFAULT_PROMPT_CLOSE_ON_MATCH, iniFile) == 1;
+	AlignReplacements		= ::GetPrivateProfileInt(mainSection, alignReplacementsSetting,
 			DEFAULT_ALIGN_REPLACEMENTS, iniFile) == 1;
-	WrapAround			= ::GetPrivateProfileInt(mainSection, wrapAroundSetting,
+	WrapAround				= ::GetPrivateProfileInt(mainSection, wrapAroundSetting,
 			DEFAULT_WRAP_AROUND, iniFile) == 1;
-	RecompareOnSave		= ::GetPrivateProfileInt(mainSection, reCompareOnSaveSetting,
+	RecompareOnSave			= ::GetPrivateProfileInt(mainSection, reCompareOnSaveSetting,
 			DEFAULT_RECOMPARE_ON_SAVE, iniFile) == 1;
-	GotoFirstDiff		= ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting,
+	GotoFirstDiff			= ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting,
 			DEFAULT_GOTO_FIRST_DIFF, iniFile) == 1;
-	UpdateOnChange		= ::GetPrivateProfileInt(mainSection, updateOnChangeSetting,
+	UpdateOnChange			= ::GetPrivateProfileInt(mainSection, updateOnChangeSetting,
 			DEFAULT_UPDATE_ON_CHANGE, iniFile) == 1;
-	CompactNavBar		= ::GetPrivateProfileInt(mainSection, compactNavBarSetting,
+	CompactNavBar			= ::GetPrivateProfileInt(mainSection, compactNavBarSetting,
 			DEFAULT_COMPACT_NAVBAR, iniFile) == 1;
 
 	IgnoreSpaces	= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,	1, iniFile) == 1;
@@ -141,6 +144,8 @@ void UserSettings::save()
 
 	::WritePrivateProfileString(mainSection, encodingsCheckSetting,
 			EncodingsCheck ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, promptCloseOnMatchSetting,
+			PromptToCloseOnMatch ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, alignReplacementsSetting,
 			AlignReplacements ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, wrapAroundSetting,
@@ -1757,12 +1762,16 @@ void compare(bool selectionCompare = false)
 			else
 			{
 				_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-						TEXT("%s \"%s\" and \"%s\" match.\n\nClose compared files?"), selectionCompare ?
-						TEXT("Selected lines in files") : TEXT("Files"),
-						newName, ::PathFindFileName(oldFile.name));
+						TEXT("%s \"%s\" and \"%s\" match.%s"),
+						selectionCompare ? TEXT("Selected lines in files") : TEXT("Files"),
+						newName, ::PathFindFileName(oldFile.name),
+						Settings.PromptToCloseOnMatch ? TEXT("\n\nClose compared files?") : TEXT(""));
 
-				choice = ::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"),
-						MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2);
+				if (Settings.PromptToCloseOnMatch)
+					choice = ::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"),
+							MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON1);
+				else
+					::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"), MB_OK);
 			}
 
 			if (choice == IDYES)

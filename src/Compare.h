@@ -30,24 +30,25 @@
 
 
 // Those are interpreted as bool values
-#define DEFAULT_OLD_IS_FIRST		1
-#define DEFAULT_OLD_ON_LEFT			1
-#define DEFAULT_COMPARE_TO_PREV		1
+#define DEFAULT_OLD_IS_FIRST			1
+#define DEFAULT_OLD_ON_LEFT				1
+#define DEFAULT_COMPARE_TO_PREV			1
 
-#define DEFAULT_ENCODINGS_CHECK		1
-#define DEFAULT_ALIGN_REPLACEMENTS	1
-#define DEFAULT_WRAP_AROUND			0
-#define DEFAULT_RECOMPARE_ON_SAVE	1
-#define DEFAULT_GOTO_FIRST_DIFF		0
-#define DEFAULT_UPDATE_ON_CHANGE	0
-#define DEFAULT_COMPACT_NAVBAR		1
+#define DEFAULT_ENCODINGS_CHECK			1
+#define DEFAULT_PROMPT_CLOSE_ON_MATCH	0
+#define DEFAULT_ALIGN_REPLACEMENTS		1
+#define DEFAULT_WRAP_AROUND				0
+#define DEFAULT_RECOMPARE_ON_SAVE		1
+#define DEFAULT_GOTO_FIRST_DIFF			0
+#define DEFAULT_UPDATE_ON_CHANGE		0
+#define DEFAULT_COMPACT_NAVBAR			1
 
-#define DEFAULT_ADDED_COLOR			0xD9FFD9
-#define DEFAULT_DELETED_COLOR		0xD7D7FF
-#define DEFAULT_CHANGED_COLOR		0x98E7E7
-#define DEFAULT_MOVED_COLOR			0xFFE6CC
-#define DEFAULT_HIGHLIGHT_COLOR		0x683FF
-#define DEFAULT_HIGHLIGHT_ALPHA		100
+#define DEFAULT_ADDED_COLOR				0xD9FFD9
+#define DEFAULT_DELETED_COLOR			0xD7D7FF
+#define DEFAULT_CHANGED_COLOR			0x98E7E7
+#define DEFAULT_MOVED_COLOR				0xFFE6CC
+#define DEFAULT_HIGHLIGHT_COLOR			0x683FF
+#define DEFAULT_HIGHLIGHT_ALPHA			100
 
 #define _MIN(a, b)	((a) < (b) ? (a) : (b))
 #define _MAX(a, b)	((a) > (b) ? (a) : (b))
@@ -112,6 +113,7 @@ public:
 	static const TCHAR compareToPrevSetting[];
 
 	static const TCHAR encodingsCheckSetting[];
+	static const TCHAR promptCloseOnMatchSetting[];
 	static const TCHAR alignReplacementsSetting[];
 	static const TCHAR wrapAroundSetting[];
 	static const TCHAR reCompareOnSaveSetting[];
@@ -138,6 +140,7 @@ public:
 	bool           	CompareToPrev;
 
 	bool           	EncodingsCheck;
+	bool           	PromptToCloseOnMatch;
 	bool           	AlignReplacements;
 	bool           	WrapAround;
 	bool           	RecompareOnSave;

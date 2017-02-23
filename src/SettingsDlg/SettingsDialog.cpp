@@ -74,6 +74,7 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					_Settings->CompareToPrev		= (bool) DEFAULT_COMPARE_TO_PREV;
 
 					_Settings->EncodingsCheck		= (bool) DEFAULT_ENCODINGS_CHECK;
+					_Settings->PromptToCloseOnMatch	= (bool) DEFAULT_PROMPT_CLOSE_ON_MATCH;
 					_Settings->AlignReplacements	= (bool) DEFAULT_ALIGN_REPLACEMENTS;
 					_Settings->WrapAround			= (bool) DEFAULT_WRAP_AROUND;
 					_Settings->RecompareOnSave		= (bool) DEFAULT_RECOMPARE_ON_SAVE;
@@ -131,6 +132,8 @@ void SettingsDialog::SetParams()
 
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_ENCODING_CHECK),
 			_Settings->EncodingsCheck ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_PROMPT_CLOSE_ON_MATCH),
+			_Settings->PromptToCloseOnMatch ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ALIGN_REPLACEMENTS),
 			_Settings->AlignReplacements ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_WRAP_AROUND),
@@ -167,6 +170,8 @@ BOOL SettingsDialog::GetParams()
 
 	_Settings->EncodingsCheck	=
 			(Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_ENCODING_CHECK)) == BST_CHECKED) ? true : false;
+	_Settings->PromptToCloseOnMatch	=
+			(Button_GetCheck(::GetDlgItem(_hSelf, IDC_PROMPT_CLOSE_ON_MATCH)) == BST_CHECKED) ? true : false;
 	_Settings->AlignReplacements	=
 			(Button_GetCheck(::GetDlgItem(_hSelf, IDC_ALIGN_REPLACEMENTS)) == BST_CHECKED) ? true : false;
 	_Settings->WrapAround		=
