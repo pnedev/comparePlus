@@ -41,6 +41,7 @@
 
 #include <cstdlib>
 #include <climits>
+#include <utility>
 #include "varray.h"
 
 
@@ -49,6 +50,14 @@ enum class diff_type
 	DIFF_MATCH,
 	DIFF_DELETE,
 	DIFF_INSERT
+};
+
+
+enum moved_type
+{
+	NOT_MOVED = 0,
+	MOVED,
+	MOVED_MULTIPLE
 };
 
 
@@ -78,11 +87,11 @@ struct diff_info
 	const diff_info*	matchedDiff {nullptr};
 
 	std::vector<diff_line>	changedLines;
-	std::vector<bool>		moved;
+	std::vector<moved_type>	moved;
 
-	inline bool isMoved(unsigned int i) const
+	inline moved_type isMoved(unsigned int i) const
 	{
-		return (!moved.empty() && moved[i]);
+		return (moved.empty() ? NOT_MOVED : moved[i]);
 	}
 };
 
@@ -107,13 +116,19 @@ private:
 		int x, y, u, v;
 	};
 
+	struct move_match_info
+	{
+		section_t								asec;
+		std::vector<std::pair<diff_info*, int>>	bmatches;
+	};
+
 	void _setv(int k, int r, int val);
 	int _v(int k, int r);
 	void _edit(diff_type type, int off, int len);
 	int _find_middle_snake(int aoff, int aend, int boff, int bend, middle_snake* ms);
 	int _ses(int aoff, int aend, int boff, int bend);
 	void _shift_boundries();
-	diff_info* _find_match(int aoff, int* boff);
+	void _find_b_matches(const diff_info& adiff, int aidx, move_match_info& matchInfo);
 	void _find_moves();
 
 	const std::vector<Elem>& _a;
@@ -454,90 +469,122 @@ void DiffCalc<Elem>::_shift_boundries()
 }
 
 
-// Scan for lines that are only in the other document once - use one-to-one match
+// Scan for matching blocks (containing aidx element).
 template <typename Elem>
-diff_info* DiffCalc<Elem>::_find_match(int aoff, int* boff)
+void DiffCalc<Elem>::_find_b_matches(const diff_info& adiff, int aidx, move_match_info& matchInfo)
 {
-	const int diff_size = _diff.size();
+	matchInfo.asec.len = 0;
+	matchInfo.bmatches.clear();
 
-	diff_info* match = NULL;
-
-	for (int i = 0; i < diff_size; ++i)
+	for (diff_info& bdiff : _diff)
 	{
-		diff_info& di = _diff[i];
+		// Is it bdiff?
+		if (bdiff.type != diff_type::DIFF_INSERT)
+			continue;
 
-		if (di.type == diff_type::DIFF_INSERT)
+		for (int i = 0; i < bdiff.len; ++i)
 		{
-			for (int j = 0; j < di.len; ++j)
+			if (_a[adiff.off + aidx] == _b[bdiff.off + i])
 			{
-				if (_a[aoff] == _b[di.off + j])
-				{
-					if (match)
-						return NULL;
+				int bMovedLen = (bdiff.isMoved(i)) ? 1 : 0;
 
-					*boff = j;
-					match = &di;
+				int astart	= aidx - 1;
+				int aend	= aidx + 1;
+				int bstart	= i - 1;
+				int bend	= i + 1;
+
+				// Check for the beginning of a matched block (containing aidx element).
+				for (; astart >= 0 && bstart >= 0 && _a[adiff.off + astart] == _b[bdiff.off + bstart];
+						--astart, --bstart)
+				{
+					if (bdiff.isMoved(bstart))
+						++bMovedLen;
+				}
+
+				// Check for the end of a matched block (containing aidx element).
+				for (; aend < adiff.len && bend < bdiff.len && _a[adiff.off + aend] == _b[bdiff.off + bend];
+						++aend, ++bend)
+				{
+					if (bdiff.isMoved(bend))
+						++bMovedLen;
+				}
+
+				if ((bstart >= 0 && bdiff.isMoved(bstart)) || (bend < bdiff.len && bdiff.isMoved(bend)))
+					++bMovedLen;
+
+				++astart;
+				++bstart;
+				--aend;
+
+				const int matchLen = aend - astart + 1;
+
+				if ((matchLen < matchInfo.asec.len) || (bMovedLen > matchLen))
+					continue;
+
+				if (matchLen > matchInfo.asec.len)
+				{
+					matchInfo.asec.off = astart;
+					matchInfo.asec.len = matchLen;
+					matchInfo.bmatches.clear();
+				}
+
+				if (matchInfo.asec.off == astart)
+				{
+					i = bstart + matchLen - 1;
+
+					matchInfo.bmatches.emplace_back(&bdiff, bstart);
 				}
 			}
 		}
 	}
-
-	if (!match || match->isMoved(*boff))
-		return NULL;
-
-	return match;
 }
 
 
 template <typename Elem>
 void DiffCalc<Elem>::_find_moves()
 {
-	const int diff_size = _diff.size();
-
-	for (int i = 0; i < diff_size; ++i)
+	for (diff_info& adiff : _diff)
 	{
-		diff_info& di = _diff[i];
-
-		if (di.type != diff_type::DIFF_DELETE)
+		// Is it adiff?
+		if (adiff.type != diff_type::DIFF_DELETE)
 			continue;
 
-		for (int j = 0; j < di.len; ++j)
+		for (int aidx = 0; aidx < adiff.len; ++aidx)
 		{
-			// Skip blanks or if already detected as moved
-			if ((_a[di.off + j] == 0) || di.isMoved(j))
+			// Skip blanks
+			if (_a[adiff.off + aidx] == 0)
 				continue;
 
-			int match_j;
-			diff_info* match_di = _find_match(di.off + j, &match_j);
+			move_match_info matchInfo;
 
-			if (!match_di)
+			_find_b_matches(adiff, aidx, matchInfo);
+
+			if (matchInfo.bmatches.empty())
 				continue;
+
+			const moved_type moveType = (matchInfo.bmatches.size() == 1) ? MOVED : MOVED_MULTIPLE;
 
 			// Move found - initialize move vectors
-			if (di.moved.empty())
-				di.moved.resize(di.len, false);
+			if (adiff.moved.empty())
+				adiff.moved.resize(adiff.len, NOT_MOVED);
 
-			if (match_di->moved.empty())
-				match_di->moved.resize(match_di->len, false);
+			aidx = matchInfo.asec.off + matchInfo.asec.len - 1;
 
-			di.moved[j] = true;
-			match_di->moved[match_j] = true;
+			for (int i = matchInfo.asec.off; i <= aidx; ++i)
+				adiff.moved[i] = moveType;
 
-			// We skipped blanks but if match is found it is good to include them to see the whole moved block.
-			for (int d1 = j - 1, d2 = match_j - 1;
-					d1 >= 0 && d2 >= 0 && !di.moved[d1] && !match_di->moved[d2] &&
-					_a[di.off + d1] == _b[match_di->off + d2]; --d1, --d2)
+			for (auto& bmatch : matchInfo.bmatches)
 			{
-				di.moved[d1] = true;
-				match_di->moved[d2] = true;
-			}
+				diff_info*	match_di	= bmatch.first;
+				int 		boff		= bmatch.second;
 
-			for (int d1 = j + 1, d2 = match_j + 1;
-					d1 < di.len && d2 < match_di->len && !di.moved[d1] && !match_di->moved[d2] &&
-					_a[di.off + d1] == _b[match_di->off + d2]; ++d1, ++d2)
-			{
-				di.moved[d1] = true;
-				match_di->moved[d2] = true;
+				if (match_di->moved.empty())
+					match_di->moved.resize(match_di->len, NOT_MOVED);
+
+				const int bend = boff + matchInfo.asec.len - 1;
+
+				for (int i = boff; i <= bend; ++i)
+					match_di->moved[i] = moveType;
 			}
 		}
 	}

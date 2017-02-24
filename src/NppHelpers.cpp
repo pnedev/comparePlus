@@ -31,6 +31,7 @@
 #include "icon_sub_16.h"
 #include "icon_diff_16.h"
 #include "icon_moved_16.h"
+#include "icon_moved_multiple_16.h"
 
 
 // don't use "INDIC_CONTAINER + 1" since it conflicts with DSpellCheck plugin
@@ -309,10 +310,11 @@ void setStyles(UserSettings& settings)
 	defineColor(MARKER_MOVED_LINE,   settings.colors.moved);
 	defineColor(MARKER_REMOVED_LINE, settings.colors.deleted);
 
-	DefineXpmSymbol(MARKER_ADDED_SYMBOL,   icon_add_16_xpm);
-	DefineXpmSymbol(MARKER_REMOVED_SYMBOL, icon_sub_16_xpm);
-	DefineXpmSymbol(MARKER_CHANGED_SYMBOL, icon_diff_16_xpm);
-	DefineXpmSymbol(MARKER_MOVED_SYMBOL,   icon_moved_16_xpm);
+	DefineXpmSymbol(MARKER_ADDED_SYMBOL,   			icon_add_16_xpm);
+	DefineXpmSymbol(MARKER_REMOVED_SYMBOL, 			icon_sub_16_xpm);
+	DefineXpmSymbol(MARKER_CHANGED_SYMBOL, 			icon_diff_16_xpm);
+	DefineXpmSymbol(MARKER_MOVED_SYMBOL,   			icon_moved_16_xpm);
+	DefineXpmSymbol(MARKER_MOVED_MULTIPLE_SYMBOL,	icon_moved_multiple_16_xpm);
 
 	setTextStyles(settings.colors);
 }
@@ -481,6 +483,7 @@ void clearWindow(HWND view)
 	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_ADDED_SYMBOL, 0);
 	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_REMOVED_SYMBOL, 0);
 	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_MOVED_SYMBOL, 0);
+	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_MOVED_MULTIPLE_SYMBOL, 0);
 
 	clearChangedIndicator(view, 0, ::SendMessage(view, SCI_GETLENGTH, 0, 0));
 
@@ -503,6 +506,7 @@ void clearMarks(HWND view, int line)
 	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_ADDED_SYMBOL);
 	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_REMOVED_SYMBOL);
 	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_MOVED_SYMBOL);
+	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_MOVED_MULTIPLE_SYMBOL);
 }
 
 

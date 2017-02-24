@@ -247,7 +247,9 @@ void markSection(std::pair<HWND, HWND>& views, const diff_info& bd, const std::p
 
 	for (int i = sections.first.off; i < endOff; ++i, ++line)
 	{
-		const int markerMask = bd.isMoved(i) ? MARKER_MASK_MOVED : bdMarks.first;
+		const int markerMask =
+				(bd.isMoved(i) == NOT_MOVED) ? bdMarks.first :
+				(bd.isMoved(i) == MOVED) ? MARKER_MASK_MOVED : MARKER_MASK_MOVED_MULTIPLE;
 
 		::SendMessage(views.first, SCI_MARKERADDSET, line, markerMask);
 	}
@@ -281,7 +283,9 @@ void markSection(std::pair<HWND, HWND>& views, const diff_info& bd, const std::p
 
 	for (int i = sections.second.off; i < endOff; ++i, ++line)
 	{
-		const int markerMask = bd.matchedDiff->isMoved(i) ? MARKER_MASK_MOVED : bdMarks.second;
+		const int markerMask =
+				(bd.matchedDiff->isMoved(i) == NOT_MOVED) ? bdMarks.second :
+				(bd.matchedDiff->isMoved(i) == MOVED) ? MARKER_MASK_MOVED : MARKER_MASK_MOVED_MULTIPLE;
 
 		::SendMessage(views.second, SCI_MARKERADDSET, line, markerMask);
 	}
