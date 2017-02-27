@@ -2006,11 +2006,6 @@ void createMenu()
 
 	_tcscpy_s(funcItem[CMD_CLEAR_ALL]._itemName, nbChar, TEXT("Clear All Compares"));
 	funcItem[CMD_CLEAR_ALL]._pFunc 				= ClearAllCompares;
-	funcItem[CMD_CLEAR_ALL]._pShKey 			= new ShortcutKey;
-	funcItem[CMD_CLEAR_ALL]._pShKey->_isAlt 	= true;
-	funcItem[CMD_CLEAR_ALL]._pShKey->_isCtrl	= true;
-	funcItem[CMD_CLEAR_ALL]._pShKey->_isShift	= true;
-	funcItem[CMD_CLEAR_ALL]._pShKey->_key 		= 'X';
 
 	_tcscpy_s(funcItem[CMD_LAST_SAVE_DIFF]._itemName, nbChar, TEXT("Diff since last Save"));
 	funcItem[CMD_LAST_SAVE_DIFF]._pFunc				= LastSaveDiff;
