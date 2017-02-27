@@ -592,6 +592,13 @@ void NppSettings::enableNppScrollCommands(bool enable) const
 
 	::EnableMenuItem(hMenu, IDM_VIEW_SYNSCROLLH, flag);
 	::EnableMenuItem(hMenu, IDM_VIEW_SYNSCROLLV, flag);
+
+	HWND hNppToolbar = NppToolbarHandleGetter::get();
+	if (hNppToolbar)
+	{
+		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, IDM_VIEW_SYNSCROLLH, enable);
+		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, IDM_VIEW_SYNSCROLLV, enable);
+	}
 }
 
 
