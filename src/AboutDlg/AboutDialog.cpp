@@ -24,7 +24,8 @@
 #include "Window.h"
 
 
-static const TCHAR cDonate_URL[] = TEXT("https://www.paypal.me/pnedev");
+static const TCHAR cDonate_URL[]	= TEXT("https://www.paypal.me/pnedev");
+static const TCHAR cHelp_URL[]		= TEXT("https://github.com/pnedev/compare-plugin/issues/116");
 
 
 void AboutDialog::doDialog()
@@ -47,6 +48,8 @@ INT_PTR CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*
 			_urlOriginalRepo.create(::GetDlgItem(_hSelf, IDC_ORIGINAL_REPO_URL), NULL);
 			_urlPNDRepo.init(_hInst, _hSelf);
 			_urlPNDRepo.create(::GetDlgItem(_hSelf, IDC_LATEST_DEV_REPO_URL), NULL);
+			_helpLink.init(_hInst, _hSelf);
+			_helpLink.create(::GetDlgItem(_hSelf, IDC_HELP_URL), cHelp_URL);
 
 			return TRUE;
 		}

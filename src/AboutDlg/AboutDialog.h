@@ -42,6 +42,7 @@ public:
 		_emailLinkPND.destroy();
 		_urlOriginalRepo.destroy();
 		_urlPNDRepo.destroy();
+		_helpLink.destroy();
 	};
 
 
@@ -58,4 +59,5 @@ private:
 	URLCtrl			_emailLinkPND;
 	URLCtrl			_urlOriginalRepo;
 	URLCtrl			_urlPNDRepo;
+	URLCtrl			_helpLink;
 };
