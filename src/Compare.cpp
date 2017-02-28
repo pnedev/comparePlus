@@ -2257,7 +2257,11 @@ void onToolBarReady()
 			(WPARAM)funcItem[CMD_LAST]._cmdID,				(LPARAM)&tbLast);
 	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
 			(WPARAM)funcItem[CMD_NAV_BAR]._cmdID,			(LPARAM)&tbNavBar);
+}
 
+
+void onNppReady()
+{
 	// It's N++'s job actually to disable its scroll menu commands but since it's not the case provide this as a patch
 	if (isSingleView())
 		NppSettings::get().enableNppScrollCommands(false);
@@ -2854,6 +2858,10 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 
 		case NPPN_TBMODIFICATION:
 			onToolBarReady();
+		break;
+
+		case NPPN_READY:
+			onNppReady();
 		break;
 
 		case NPPN_BEFORESHUTDOWN:
