@@ -56,6 +56,11 @@ struct Word
 		return (hash == rhs.hash);
 	}
 
+	inline bool operator!=(const Word& rhs) const
+	{
+		return (hash != rhs.hash);
+	}
+
 	inline bool operator==(unsigned int rhs) const
 	{
 		return (hash == rhs);

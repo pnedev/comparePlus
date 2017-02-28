@@ -119,7 +119,7 @@ private:
 	struct move_match_info
 	{
 		section_t								asec;
-		std::vector<std::pair<diff_info*, int>>	bmatches;
+		std::vector<std::pair<diff_info*, int>>	matches;
 	};
 
 	void _setv(int k, int r, int val);
@@ -469,12 +469,12 @@ void DiffCalc<Elem>::_shift_boundries()
 }
 
 
-// Scan for matching blocks (containing aidx element).
+// Scan for best matching b blocks (containing aidx element).
 template <typename Elem>
 void DiffCalc<Elem>::_find_b_matches(const diff_info& adiff, int aidx, move_match_info& matchInfo)
 {
 	matchInfo.asec.len = 0;
-	matchInfo.bmatches.clear();
+	matchInfo.matches.clear();
 
 	for (diff_info& bdiff : _diff)
 	{
@@ -484,56 +484,43 @@ void DiffCalc<Elem>::_find_b_matches(const diff_info& adiff, int aidx, move_matc
 
 		for (int i = 0; i < bdiff.len; ++i)
 		{
-			if (_a[adiff.off + aidx] == _b[bdiff.off + i])
+			if (bdiff.isMoved(i) || _a[adiff.off + aidx] != _b[bdiff.off + i])
+				continue;
+
+			int astart	= aidx - 1;
+			int aend	= aidx + 1;
+			int bstart	= i - 1;
+			int bend	= i + 1;
+
+			// Check for the beginning of a matched block (containing aidx element).
+			for (; astart >= 0 && bstart >= 0 && !bdiff.isMoved(bstart) &&
+					_a[adiff.off + astart] == _b[bdiff.off + bstart]; --astart, --bstart);
+
+			// Check for the end of a matched block (containing aidx element).
+			for (; aend < adiff.len && bend < bdiff.len && !bdiff.isMoved(bend) &&
+					_a[adiff.off + aend] == _b[bdiff.off + bend]; ++aend, ++bend);
+
+			++astart;
+			++bstart;
+			--aend;
+
+			const int matchLen = aend - astart + 1;
+
+			if (matchLen < matchInfo.asec.len)
+				continue;
+
+			if (matchLen > matchInfo.asec.len)
 			{
-				int bMovedLen = (bdiff.isMoved(i)) ? 1 : 0;
+				matchInfo.asec.off = astart;
+				matchInfo.asec.len = matchLen;
+				matchInfo.matches.clear();
+			}
 
-				int astart	= aidx - 1;
-				int aend	= aidx + 1;
-				int bstart	= i - 1;
-				int bend	= i + 1;
+			if (matchInfo.asec.off == astart)
+			{
+				i = bstart + matchLen - 1;
 
-				// Check for the beginning of a matched block (containing aidx element).
-				for (; astart >= 0 && bstart >= 0 && _a[adiff.off + astart] == _b[bdiff.off + bstart];
-						--astart, --bstart)
-				{
-					if (bdiff.isMoved(bstart))
-						++bMovedLen;
-				}
-
-				// Check for the end of a matched block (containing aidx element).
-				for (; aend < adiff.len && bend < bdiff.len && _a[adiff.off + aend] == _b[bdiff.off + bend];
-						++aend, ++bend)
-				{
-					if (bdiff.isMoved(bend))
-						++bMovedLen;
-				}
-
-				if ((bstart >= 0 && bdiff.isMoved(bstart)) || (bend < bdiff.len && bdiff.isMoved(bend)))
-					++bMovedLen;
-
-				++astart;
-				++bstart;
-				--aend;
-
-				const int matchLen = aend - astart + 1;
-
-				if ((matchLen < matchInfo.asec.len) || (bMovedLen > matchLen))
-					continue;
-
-				if (matchLen > matchInfo.asec.len)
-				{
-					matchInfo.asec.off = astart;
-					matchInfo.asec.len = matchLen;
-					matchInfo.bmatches.clear();
-				}
-
-				if (matchInfo.asec.off == astart)
-				{
-					i = bstart + matchLen - 1;
-
-					matchInfo.bmatches.emplace_back(&bdiff, bstart);
-				}
+				matchInfo.matches.emplace_back(&bdiff, bstart);
 			}
 		}
 	}
@@ -543,49 +530,114 @@ void DiffCalc<Elem>::_find_b_matches(const diff_info& adiff, int aidx, move_matc
 template <typename Elem>
 void DiffCalc<Elem>::_find_moves()
 {
-	for (diff_info& adiff : _diff)
+	const int diff_size = _diff.size();
+
+	for (int i = 0; i < diff_size; ++i)
 	{
+		diff_info& adiff = _diff[i];
+
 		// Is it adiff?
 		if (adiff.type != diff_type::DIFF_DELETE)
 			continue;
 
+		// Go through all a diff's elements and check if each is moved
 		for (int aidx = 0; aidx < adiff.len; ++aidx)
 		{
-			// Skip blanks
-			if (_a[adiff.off + aidx] == 0)
+			// Skip already detected moves and blanks
+			if (adiff.isMoved(aidx) || _a[adiff.off + aidx] == 0)
 				continue;
 
 			move_match_info matchInfo;
 
 			_find_b_matches(adiff, aidx, matchInfo);
 
-			if (matchInfo.bmatches.empty())
+			if (matchInfo.matches.empty())
 				continue;
 
-			const moved_type moveType = (matchInfo.bmatches.size() == 1) ? MOVED : MOVED_MULTIPLE;
+			diff_info* best_match_adiff = &adiff;
+
+			// Search for the same a element in different deleted block - potential better match or multiple move
+			for (int j = i + 1; j < diff_size; ++j)
+			{
+				diff_info& alt_adiff = _diff[j];
+
+				// Is it adiff?
+				if (alt_adiff.type != diff_type::DIFF_DELETE)
+					continue;
+
+				for (int alt_aidx = 0; alt_aidx < alt_adiff.len; ++alt_aidx)
+				{
+					if (alt_adiff.isMoved(alt_aidx) || _a[alt_adiff.off + alt_aidx] != _a[adiff.off + aidx])
+						continue;
+
+					move_match_info alt_matchInfo;
+
+					// Find alternative matches
+					_find_b_matches(alt_adiff, alt_aidx, alt_matchInfo);
+
+					if (alt_matchInfo.matches.empty())
+						continue;
+
+					// The alternative match is actually better - the length of the matching block is bigger
+					if (matchInfo.asec.len < alt_matchInfo.asec.len)
+					{
+						matchInfo = alt_matchInfo;
+						best_match_adiff = &alt_adiff;
+
+						alt_aidx = alt_matchInfo.asec.off + alt_matchInfo.asec.len - 1;
+					}
+					// Both matching blocks are of equal size - check if those are actually one and the same block
+					// (multi-moved block)
+					else if (matchInfo.asec.len == alt_matchInfo.asec.len)
+					{
+						int k = 0;
+
+						for (; k < alt_matchInfo.asec.len &&
+								_a[best_match_adiff->off + matchInfo.asec.off + k] ==
+								_a[alt_adiff.off + alt_matchInfo.asec.off + k]; ++k);
+
+						if (k == alt_matchInfo.asec.len)
+						{
+							// Blocks are identical - a multi-move detected
+							matchInfo.matches.emplace_back(&alt_adiff, alt_matchInfo.asec.off);
+
+							alt_aidx = alt_matchInfo.asec.off + alt_matchInfo.asec.len - 1;
+						}
+					}
+				}
+			}
+
+			const moved_type moveType = (matchInfo.matches.size() == 1) ? MOVED : MOVED_MULTIPLE;
 
 			// Move found - initialize move vectors
-			if (adiff.moved.empty())
-				adiff.moved.resize(adiff.len, NOT_MOVED);
+			if (best_match_adiff->moved.empty())
+				best_match_adiff->moved.resize(best_match_adiff->len, NOT_MOVED);
 
-			aidx = matchInfo.asec.off + matchInfo.asec.len - 1;
+			int end = matchInfo.asec.off + matchInfo.asec.len - 1;
 
-			for (int i = matchInfo.asec.off; i <= aidx; ++i)
-				adiff.moved[i] = moveType;
+			for (int k = matchInfo.asec.off; k <= end; ++k)
+				best_match_adiff->moved[k] = moveType;
 
-			for (auto& bmatch : matchInfo.bmatches)
+			for (auto& match : matchInfo.matches)
 			{
-				diff_info*	match_di	= bmatch.first;
-				int 		boff		= bmatch.second;
+				diff_info*	match_di	= match.first;
+				int 		off			= match.second;
 
 				if (match_di->moved.empty())
 					match_di->moved.resize(match_di->len, NOT_MOVED);
 
-				const int bend = boff + matchInfo.asec.len - 1;
+				end = off + matchInfo.asec.len - 1;
 
-				for (int i = boff; i <= bend; ++i)
-					match_di->moved[i] = moveType;
+				for (int k = off; k <= end; ++k)
+					match_di->moved[k] = moveType;
 			}
+
+			// If the best a element matching block is the current the skip checks to the end  of the match block
+			if (best_match_adiff == &adiff)
+				aidx = matchInfo.asec.off + matchInfo.asec.len - 1;
+			// Otherwise the current a element is still not matched - recheck it
+			else
+				--aidx;
 		}
 	}
 }
