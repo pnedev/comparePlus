@@ -70,7 +70,7 @@ BEGIN
     CTEXT			"Jean-Sébastien Leroy",IDC_EMAIL_LINK_JSL,7,56,176,8
     CTEXT			"ufo",IDC_EMAIL_LINK_UFO,7,70,176,8
     CTEXT			"Pavel Nedev",IDC_EMAIL_LINK_PND,7,84,176,8
-    CTEXT			"Original Project Link:",IDC_ORIGINAL_LINK,7,106,176,8
+    CTEXT			"Old Version:",IDC_ORIGINAL_LINK,7,106,176,8
     CTEXT			"https://github.com/jsleroy/compare-plugin",IDC_ORIGINAL_REPO_URL,7,120,176,8
     CTEXT			"Ongoing Development and Support at:",IDC_LATEST_DEV_LINK,7,142,176,8
     CTEXT			"https://github.com/pnedev/compare-plugin",IDC_LATEST_DEV_REPO_URL,7,156,176,8

@@ -25,7 +25,7 @@
 
 
 static const TCHAR cDonate_URL[]	= TEXT("https://www.paypal.me/pnedev");
-static const TCHAR cHelp_URL[]		= TEXT("https://github.com/pnedev/compare-plugin/issues/116");
+static const TCHAR cHelp_URL[]		= TEXT("https://github.com/pnedev/compare-plugin/blob/master/Help.md");
 
 
 void AboutDialog::doDialog()

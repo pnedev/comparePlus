@@ -2085,7 +2085,7 @@ void createMenu()
 	_tcscpy_s(funcItem[CMD_SETTINGS]._itemName, nbChar, TEXT("Settings..."));
 	funcItem[CMD_SETTINGS]._pFunc = OpenSettingsDlg;
 
-	_tcscpy_s(funcItem[CMD_ABOUT]._itemName, nbChar, TEXT("About..."));
+	_tcscpy_s(funcItem[CMD_ABOUT]._itemName, nbChar, TEXT("Help / About..."));
 	funcItem[CMD_ABOUT]._pFunc = OpenAboutDlg;
 }
 
