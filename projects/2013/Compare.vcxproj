@@ -288,6 +288,7 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlugin"</Command>
   <ItemGroup>
     <None Include="..\..\license.txt" />
     <None Include="..\..\README.md" />
+    <None Include="..\..\Help.md" />
     <None Include="..\..\res\FirstToCompare.bmp" />
     <None Include="..\..\res\FirstToCompareRTL.bmp" />
     <None Include="..\..\res\Compare.bmp" />

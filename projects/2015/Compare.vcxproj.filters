@@ -175,6 +175,7 @@
     </None>
     <None Include="..\..\license.txt" />
     <None Include="..\..\README.md" />
+    <None Include="..\..\Help.md" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
