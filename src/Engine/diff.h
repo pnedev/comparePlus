@@ -53,6 +53,14 @@ enum class diff_type
 };
 
 
+enum detect_moves_type
+{
+	DONT_DETECT = 0,
+	ELEMENT_BASED,
+	BLOCK_BASED
+};
+
+
 enum moved_type
 {
 	NOT_MOVED = 0,
@@ -104,8 +112,9 @@ template <typename Elem>
 class DiffCalc
 {
 public:
-	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2, bool findMovesEn = false, int max = INT_MAX) :
-		_a(v1), _b(v2), _findMovesEn(findMovesEn), _dmax(max) {}
+	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
+			detect_moves_type findMoves = DONT_DETECT, int max = INT_MAX) :
+		_a(v1), _b(v2), _findMoves(findMoves), _dmax(max) {}
 
 	std::vector<diff_info> operator()();
 
@@ -136,9 +145,9 @@ private:
 
 	std::vector<diff_info> _diff;
 
-	const bool	_findMovesEn;
-	const int	_dmax;
-	varray<int>	_buf;
+	const detect_moves_type	_findMoves;
+	const int				_dmax;
+	varray<int>				_buf;
 };
 
 
@@ -492,13 +501,16 @@ void DiffCalc<Elem>::_find_b_matches(const diff_info& adiff, int aidx, move_matc
 			int bstart	= i - 1;
 			int bend	= i + 1;
 
-			// Check for the beginning of a matched block (containing aidx element).
-			for (; astart >= 0 && bstart >= 0 && !bdiff.isMoved(bstart) &&
-					_a[adiff.off + astart] == _b[bdiff.off + bstart]; --astart, --bstart);
+			if (_findMoves == BLOCK_BASED)
+			{
+				// Check for the beginning of a matched block (containing aidx element).
+				for (; astart >= 0 && bstart >= 0 && !bdiff.isMoved(bstart) &&
+						_a[adiff.off + astart] == _b[bdiff.off + bstart]; --astart, --bstart);
 
-			// Check for the end of a matched block (containing aidx element).
-			for (; aend < adiff.len && bend < bdiff.len && !bdiff.isMoved(bend) &&
-					_a[adiff.off + aend] == _b[bdiff.off + bend]; ++aend, ++bend);
+				// Check for the end of a matched block (containing aidx element).
+				for (; aend < adiff.len && bend < bdiff.len && !bdiff.isMoved(bend) &&
+						_a[adiff.off + aend] == _b[bdiff.off + bend]; ++aend, ++bend);
+			}
 
 			++astart;
 			++bstart;
@@ -678,7 +690,7 @@ std::vector<diff_info> DiffCalc<Elem>::operator()()
 	{
 		_shift_boundries();
 
-		if (_findMovesEn)
+		if (_findMoves)
 			_find_moves();
 	}
 

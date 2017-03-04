@@ -348,8 +348,11 @@ std::pair<std::vector<diff_info>, bool>
 		viewsSwapped = true;
 	}
 
+	const detect_moves_type detectMoves = !settings.DetectMoves ? DONT_DETECT :
+			settings.DetectMovesLineMode ? ELEMENT_BASED : BLOCK_BASED;
+
 	std::pair<std::vector<diff_info>, bool> cmpResults =
-			std::make_pair(DiffCalc<unsigned int>(*pLineHashes1, *pLineHashes2, settings.DetectMoves)(), viewsSwapped);
+			std::make_pair(DiffCalc<unsigned int>(*pLineHashes1, *pLineHashes2, detectMoves)(), viewsSwapped);
 
 	std::vector<diff_info>& blockDiff = cmpResults.first;
 
