@@ -47,8 +47,8 @@ public:
 protected :
 	INT_PTR CALLBACK run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam);
 
-	void SetParams(void);
-	BOOL GetParams(void);
+	void SetParams();
+	void GetParams();
 
 private:
 	/* Handles */

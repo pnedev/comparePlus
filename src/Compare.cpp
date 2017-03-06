@@ -81,16 +81,14 @@ void UserSettings::load()
 
 	::PathAppend(iniFile, TEXT("ComparePlugin.ini"));
 
-	OldFileIsFirst	= ::GetPrivateProfileInt(mainSection, oldIsFirstSetting,
+	OldFileIsFirst			= ::GetPrivateProfileInt(mainSection, oldIsFirstSetting,
 			DEFAULT_OLD_IS_FIRST, iniFile) == 1;
-	OldFileViewId	= ::GetPrivateProfileInt(mainSection, oldFileOnLeftSetting,
+	OldFileViewId			= ::GetPrivateProfileInt(mainSection, oldFileOnLeftSetting,
 			DEFAULT_OLD_ON_LEFT, iniFile) == 1 ? MAIN_VIEW : SUB_VIEW;
-	CompareToPrev	= ::GetPrivateProfileInt(mainSection, compareToPrevSetting,
+	CompareToPrev			= ::GetPrivateProfileInt(mainSection, compareToPrevSetting,
 			DEFAULT_COMPARE_TO_PREV, iniFile) == 1;
-
 	DetectMovesLineMode		= ::GetPrivateProfileInt(mainSection, detectMovesLineModeSetting,
 			DEFAULT_DETECT_MOVE_LINE_MODE, iniFile) == 1;
-
 	EncodingsCheck			= ::GetPrivateProfileInt(mainSection, encodingsCheckSetting,
 			DEFAULT_ENCODINGS_CHECK, iniFile) == 1;
 	PromptToCloseOnMatch	= ::GetPrivateProfileInt(mainSection, promptCloseOnMatchSetting,
@@ -146,10 +144,8 @@ void UserSettings::save()
 			OldFileViewId == MAIN_VIEW ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, compareToPrevSetting,
 			CompareToPrev ? TEXT("1") : TEXT("0"), iniFile);
-
 	::WritePrivateProfileString(mainSection, detectMovesLineModeSetting,
 			DetectMovesLineMode ? TEXT("1") : TEXT("0"), iniFile);
-
 	::WritePrivateProfileString(mainSection, encodingsCheckSetting,
 			EncodingsCheck ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, promptCloseOnMatchSetting,

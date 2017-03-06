@@ -114,9 +114,7 @@ public:
 	static const TCHAR oldIsFirstSetting[];
 	static const TCHAR oldFileOnLeftSetting[];
 	static const TCHAR compareToPrevSetting[];
-
 	static const TCHAR detectMovesLineModeSetting[];
-
 	static const TCHAR encodingsCheckSetting[];
 	static const TCHAR promptCloseOnMatchSetting[];
 	static const TCHAR alignReplacementsSetting[];
@@ -143,9 +141,7 @@ public:
 	bool           	OldFileIsFirst;
 	int				OldFileViewId;
 	bool           	CompareToPrev;
-
 	bool           	DetectMovesLineMode;
-
 	bool           	EncodingsCheck;
 	bool           	PromptToCloseOnMatch;
 	bool           	AlignReplacements;
