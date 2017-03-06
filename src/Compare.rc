@@ -74,7 +74,7 @@ BEGIN
     CTEXT			"https://github.com/jsleroy/compare-plugin",IDC_ORIGINAL_REPO_URL,7,120,176,8
     CTEXT			"Ongoing Development and Support at:",IDC_LATEST_DEV_LINK,7,142,176,8
     CTEXT			"https://github.com/pnedev/compare-plugin",IDC_LATEST_DEV_REPO_URL,7,156,176,8
-    CTEXT			"Help - Overview...",IDC_HELP_URL,7,178,176,8
+    CTEXT			"User Guide",IDC_HELP_URL,7,178,176,8
 END
 
 IDD_COLOR_POPUP DIALOGEX 0, 0, 145, 122
