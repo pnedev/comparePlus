@@ -342,7 +342,7 @@ void DeletedSectionsList::pop(int currAction, int startLine)
 
 	HWND currentView = getCurrentView();
 
-	const int linesCount = last.markers.size();
+	const int linesCount = static_cast<int>(last.markers.size());
 
 	const int startPos = ::SendMessage(currentView, SCI_POSITIONFROMLINE, last.startLine, 0);
 	clearChangedIndicator(currentView,
@@ -1841,7 +1841,7 @@ void ClearAllCompares()
 
 	const LRESULT otherBuffId = getCurrentBuffId();
 
-	for (int i = compareList.size() - 1; i >= 0; --i)
+	for (int i = static_cast<int>(compareList.size()) - 1; i >= 0; --i)
 		compareList[i].restoreFiles();
 
 	compareList.clear();
@@ -2539,7 +2539,7 @@ void DelayedClose::operator()()
 
 	ScopedIncrementer incr(notificationsLock);
 
-	for (int i = closedBuffs.size(); i; --i)
+	for (int i = static_cast<int>(closedBuffs.size()); i; --i)
 	{
 		const LRESULT buffId = closedBuffs[i - 1];
 

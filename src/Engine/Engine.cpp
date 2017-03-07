@@ -71,7 +71,7 @@ std::vector<unsigned int> computeLineHashes(DocCmpInfo& doc, const UserSettings&
 		if (lineEnd - lineStart)
 		{
 			std::vector<char> line = getText(doc.view, lineStart, lineEnd);
-			const int lineLen = line.size() - 1;
+			const int lineLen = static_cast<int>(line.size()) - 1;
 
 			if (settings.IgnoreCase)
 				toLowerCase(line);
@@ -116,7 +116,7 @@ void getWords(HWND view, const UserSettings& settings, chunk_info& chunk)
 
 	for (int lineNum = 0; lineNum < chunk.lineCount; ++lineNum)
 	{
-		chunk.lineStartWordIdx[lineNum] = chunk.words.size();
+		chunk.lineStartWordIdx[lineNum] = static_cast<int>(chunk.words.size());
 
 		const int docLineNum = lineNum + chunk.lineStart;
 		const int docLineStart = ::SendMessage(view, SCI_POSITIONFROMLINE, docLineNum, 0);
@@ -125,11 +125,11 @@ void getWords(HWND view, const UserSettings& settings, chunk_info& chunk)
 		std::vector<char> line = getText(view, docLineStart, docLineEnd);
 		const int lineLen = static_cast<int>(line.size()) - 1;
 
-		if (settings.IgnoreCase)
-			toLowerCase(line);
-
 		if (lineLen > 0)
 		{
+			if (settings.IgnoreCase)
+				toLowerCase(line);
+
 			Word word;
 			word.type = getCharType(line[0]);
 			word.hash = HASH(0, line[0]);
@@ -163,7 +163,7 @@ void getWords(HWND view, const UserSettings& settings, chunk_info& chunk)
 				chunk.words.push_back(word);
 		}
 
-		chunk.lineEndWordIdx[lineNum] = chunk.words.size();
+		chunk.lineEndWordIdx[lineNum] = static_cast<int>(chunk.words.size());
 	}
 }
 

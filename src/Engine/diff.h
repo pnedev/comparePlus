@@ -390,9 +390,9 @@ int DiffCalc<Elem>::_ses(int aoff, int aend, int boff, int bend)
 template <typename Elem>
 void DiffCalc<Elem>::_shift_boundries()
 {
-	const int diff_size = _diff.size();
-	const int asize = _a.size();
-	const int bsize = _b.size();
+	const int diff_size = static_cast<int>(_diff.size());
+	const int asize = static_cast<int>(_a.size());
+	const int bsize = static_cast<int>(_b.size());
 
 	for (int i = 0; i < diff_size; ++i)
 	{
@@ -542,7 +542,7 @@ void DiffCalc<Elem>::_find_b_matches(const diff_info& adiff, int aidx, move_matc
 template <typename Elem>
 void DiffCalc<Elem>::_find_moves()
 {
-	const int diff_size = _diff.size();
+	const int diff_size = static_cast<int>(_diff.size());
 
 	for (int i = 0; i < diff_size; ++i)
 	{
@@ -665,8 +665,8 @@ std::vector<diff_info> DiffCalc<Elem>::operator()()
 	 */
 	int x = 0, y = 0;
 
-	int asize = _a.size();
-	int bsize = _b.size();
+	int asize = static_cast<int>(_a.size());
+	int bsize = static_cast<int>(_b.size());
 
 	while (x < asize && y < bsize && _a[x] == _b[y])
 	{

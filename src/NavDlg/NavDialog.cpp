@@ -221,7 +221,7 @@ bool NavDialog::NavView::updateFirstVisible()
 
 int NavDialog::NavView::maxBmpLines()
 {
-	return (m_lineMap.empty() ? m_lines : m_lineMap.size());
+	return (m_lineMap.empty() ? m_lines : static_cast<int>(m_lineMap.size()));
 }
 
 

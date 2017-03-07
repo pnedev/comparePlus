@@ -453,7 +453,7 @@ std::vector<char> getText(HWND view, int startPos, int endPos)
 
 void toLowerCase(std::vector<char>& text)
 {
-	const int len = text.size();
+	const int len = static_cast<int>(text.size());
 
 	if (len == 0)
 		return;
@@ -624,7 +624,7 @@ void adjustBlanksWrap(HWND view)
 	std::vector<HWND> views = (view != NULL) ? std::vector<HWND>{ view } :
 			std::vector<HWND>{ nppData._scintillaMainHandle, nppData._scintillaSecondHandle };
 
-	for (unsigned int i = 0; i < views.size() ; ++i)
+	for (int i = 0; i < static_cast<int>(views.size()); ++i)
 	{
 		int line = ::SendMessage(views[i], SCI_MARKERNEXT, 0, MARKER_MASK_BLANK);
 
@@ -732,7 +732,7 @@ void addBlankSection(HWND view, int line, int length)
 		if (marker)
 			::SendMessage(view, SCI_MARKERDELETE, line, -1);
 
-		::SendMessage(view, SCI_APPENDTEXT, buff.size() - 1, (LPARAM)buff.data());
+		::SendMessage(view, SCI_APPENDTEXT, (WPARAM)buff.size() - 1, (LPARAM)buff.data());
 
 		if (marker)
 			::SendMessage(view, SCI_MARKERADDSET, line, marker);
@@ -754,7 +754,7 @@ void addBlankLines(HWND view, const BlankSections_t& blanks)
 	if (blanks.empty())
 		return;
 
-	const int size = blanks.size();
+	const int size = static_cast<int>(blanks.size());
 	for (int i = 0; i < size; ++i)
 		addBlankSection(view, blanks[i].startLine, blanks[i].length);
 }
