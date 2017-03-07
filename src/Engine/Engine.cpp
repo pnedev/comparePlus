@@ -382,33 +382,33 @@ std::pair<std::vector<diff_info>, bool>
 bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSettings& settings,
 		diff_info& blockDiff1, diff_info& blockDiff2)
 {
+	chunk_info chunk1(blockDiff1.off, blockDiff1.len);
+	chunk_info chunk2(blockDiff2.off, blockDiff2.len);
+
+	getWords(doc1.view, settings, chunk1);
+	getWords(doc2.view, settings, chunk2);
+
+	chunk_info* pChunk1 = &chunk1;
+	chunk_info* pChunk2 = &chunk2;
+
 	diff_info* pBlockDiff1 = &blockDiff1;
 	diff_info* pBlockDiff2 = &blockDiff2;
 
-	HWND view1 = doc1.view;
-	HWND view2 = doc2.view;
-
-	if (blockDiff1.len > blockDiff2.len)
+	if (chunk1.words.size() > chunk2.words.size())
 	{
-		std::swap(view1, view2);
 		std::swap(pBlockDiff1, pBlockDiff2);
+		std::swap(pChunk1, pChunk2);
 	}
 
-	chunk_info chunk1(pBlockDiff1->off, pBlockDiff1->len);
-	chunk_info chunk2(pBlockDiff2->off, pBlockDiff2->len);
-
-	getWords(view1, settings, chunk1);
-	getWords(view2, settings, chunk2);
-
 	// Compare the two chunks
-	const std::vector<diff_info> chunkDiff = DiffCalc<Word>(chunk1.words, chunk2.words)();
+	const std::vector<diff_info> chunkDiff = DiffCalc<Word>(pChunk1->words, pChunk2->words)();
 
 	const int chunkDiffSize = static_cast<int>(chunkDiff.size());
 
 	if (chunkDiffSize == 0)
 		return false;
 
-	std::vector<std::vector<int>> linesConvergence(chunk1.lineCount, std::vector<int>(chunk2.lineCount, 0));
+	std::vector<std::vector<int>> linesConvergence(pChunk1->lineCount, std::vector<int>(pChunk2->lineCount, 0));
 
 	// Use the MATCH results to synchronize line numbers (count the match length of each line)
 	int wordOffset = 0;
@@ -428,8 +428,8 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 		{
 			for (int wordIdx = cd.off; wordIdx < (cd.off + cd.len); ++wordIdx)
 			{
-				const Word& word1 = chunk1.words[wordIdx];
-				const Word& word2 = chunk2.words[wordIdx + wordOffset];
+				const Word& word1 = pChunk1->words[wordIdx];
+				const Word& word2 = pChunk2->words[wordIdx + wordOffset];
 
 				if (word1.type != charType::SPACECHAR)
 					linesConvergence[word1.line][word2.line] += word1.length;
@@ -438,7 +438,7 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 	}
 
 	// Select the line with the most matches (as length)
-	for (int line1 = 0; line1 < chunk1.lineCount; ++line1)
+	for (int line1 = 0; line1 < pChunk1->lineCount; ++line1)
 	{
 		if (pBlockDiff1->isMoved(line1))
 			continue;
@@ -446,7 +446,7 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 		int maxConvergence = 0;
 		int line2 = 0;
 
-		for (int i = 0; i < chunk2.lineCount; ++i)
+		for (int i = 0; i < pChunk2->lineCount; ++i)
 		{
 			if (!pBlockDiff2->isMoved(i) && linesConvergence[line1][i] > maxConvergence)
 			{
@@ -456,13 +456,13 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 		}
 
 		// Make sure that the line is matched and the other line is not already matched
-		if (maxConvergence == 0 || chunk2.lineMappings[line2] != -1)
+		if (maxConvergence == 0 || pChunk2->lineMappings[line2] != -1)
 			continue;
 
 		int line1Size = 0;
-		for (int i = chunk1.lineStartWordIdx[line1]; i < chunk1.lineEndWordIdx[line1]; ++i)
+		for (int i = pChunk1->lineStartWordIdx[line1]; i < pChunk1->lineEndWordIdx[line1]; ++i)
 		{
-			const Word& word1 = chunk1.words[i];
+			const Word& word1 = pChunk1->words[i];
 
 			if (word1.type != charType::SPACECHAR)
 				line1Size += word1.length;
@@ -471,12 +471,12 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 		// Is enough portion of the line matched to be significant?
 		if (line1Size && maxConvergence > (line1Size / 3))
 		{
-			chunk1.lineMappings[line1] = line2;
-			chunk2.lineMappings[line2] = line1;
+			pChunk1->lineMappings[line1] = line2;
+			pChunk2->lineMappings[line2] = line1;
 		}
 	}
 
-	compareLines(*pBlockDiff1, *pBlockDiff2, chunk1, chunk2);
+	compareLines(*pBlockDiff1, *pBlockDiff2, *pChunk1, *pChunk2);
 
 	return true;
 }
