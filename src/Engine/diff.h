@@ -499,7 +499,6 @@ void DiffCalc<Elem>::_find_b_matches(const diff_info& adiff, int aidx, move_matc
 			int astart	= aidx - 1;
 			int aend	= aidx + 1;
 			int bstart	= i - 1;
-			int bend	= i + 1;
 
 			if (_findMoves == BLOCK_BASED)
 			{
@@ -508,7 +507,7 @@ void DiffCalc<Elem>::_find_b_matches(const diff_info& adiff, int aidx, move_matc
 						_a[adiff.off + astart] == _b[bdiff.off + bstart]; --astart, --bstart);
 
 				// Check for the end of a matched block (containing aidx element).
-				for (; aend < adiff.len && bend < bdiff.len && !bdiff.isMoved(bend) &&
+				for (int bend = i + 1; aend < adiff.len && bend < bdiff.len && !bdiff.isMoved(bend) &&
 						_a[adiff.off + aend] == _b[bdiff.off + bend]; ++aend, ++bend);
 			}
 
@@ -518,17 +517,17 @@ void DiffCalc<Elem>::_find_b_matches(const diff_info& adiff, int aidx, move_matc
 
 			const int matchLen = aend - astart + 1;
 
-			if (matchLen < matchInfo.asec.len)
+			if (matchInfo.asec.len > matchLen)
 				continue;
 
-			if (matchLen > matchInfo.asec.len)
+			if (matchInfo.asec.len < matchLen)
 			{
 				matchInfo.asec.off = astart;
 				matchInfo.asec.len = matchLen;
 				matchInfo.matches.clear();
 			}
 
-			if (matchInfo.asec.off == astart)
+			if (matchInfo.asec.len == matchLen)
 			{
 				i = bstart + matchLen - 1;
 
