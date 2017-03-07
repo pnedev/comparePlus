@@ -177,10 +177,10 @@ void compareLines(diff_info& blockDiff1, diff_info& blockDiff2, const chunk_info
 
 		const int line2 = chunk1.lineMappings[line1];
 
-		const std::vector<Word> words1(&chunk1.words[chunk1.lineStartWordIdx[line1]],
-				&chunk1.words[chunk1.lineEndWordIdx[line1] - 1]);
-		const std::vector<Word> words2(&chunk2.words[chunk2.lineStartWordIdx[line2]],
-				&chunk2.words[chunk2.lineEndWordIdx[line2] - 1]);
+		const std::vector<Word> words1(chunk1.words.begin() + chunk1.lineStartWordIdx[line1],
+				chunk1.words.begin() + chunk1.lineEndWordIdx[line1]);
+		const std::vector<Word> words2(chunk2.words.begin() + chunk2.lineStartWordIdx[line2],
+				chunk2.words.begin() + chunk2.lineEndWordIdx[line2]);
 
 		diff_info* pBlockDiff1 = &blockDiff1;
 		diff_info* pBlockDiff2 = &blockDiff2;
