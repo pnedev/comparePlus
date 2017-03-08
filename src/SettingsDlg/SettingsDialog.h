@@ -47,7 +47,7 @@ public:
 protected :
 	INT_PTR CALLBACK run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam);
 
-	void SetParams();
+	void SetParams(UserSettings* settings = nullptr);
 	void GetParams();
 
 private:

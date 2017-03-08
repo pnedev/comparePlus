@@ -61,31 +61,29 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 
 				case IDDEFAULT:
 				{
-					UserSettings storedSettings {*_Settings};
+					UserSettings settings;
 
-					_Settings->OldFileIsFirst		= (bool) DEFAULT_OLD_IS_FIRST;
-					_Settings->OldFileViewId		= DEFAULT_OLD_ON_LEFT ? MAIN_VIEW : SUB_VIEW;
-					_Settings->CompareToPrev		= (bool) DEFAULT_COMPARE_TO_PREV;
-					_Settings->DetectMovesLineMode	= (bool) DEFAULT_DETECT_MOVE_LINE_MODE;
-					_Settings->EncodingsCheck		= (bool) DEFAULT_ENCODINGS_CHECK;
-					_Settings->PromptToCloseOnMatch	= (bool) DEFAULT_PROMPT_CLOSE_ON_MATCH;
-					_Settings->AlignReplacements	= (bool) DEFAULT_ALIGN_REPLACEMENTS;
-					_Settings->WrapAround			= (bool) DEFAULT_WRAP_AROUND;
-					_Settings->RecompareOnSave		= (bool) DEFAULT_RECOMPARE_ON_SAVE;
-					_Settings->GotoFirstDiff		= (bool) DEFAULT_GOTO_FIRST_DIFF;
-					_Settings->UpdateOnChange		= (bool) DEFAULT_UPDATE_ON_CHANGE;
-					_Settings->CompactNavBar		= (bool) DEFAULT_COMPACT_NAVBAR;
+					settings.OldFileIsFirst			= (bool) DEFAULT_OLD_IS_FIRST;
+					settings.OldFileViewId			= DEFAULT_OLD_ON_LEFT ? MAIN_VIEW : SUB_VIEW;
+					settings.CompareToPrev			= (bool) DEFAULT_COMPARE_TO_PREV;
+					settings.DetectMovesLineMode	= (bool) DEFAULT_DETECT_MOVE_LINE_MODE;
+					settings.EncodingsCheck			= (bool) DEFAULT_ENCODINGS_CHECK;
+					settings.PromptToCloseOnMatch	= (bool) DEFAULT_PROMPT_CLOSE_ON_MATCH;
+					settings.AlignReplacements		= (bool) DEFAULT_ALIGN_REPLACEMENTS;
+					settings.WrapAround				= (bool) DEFAULT_WRAP_AROUND;
+					settings.RecompareOnSave		= (bool) DEFAULT_RECOMPARE_ON_SAVE;
+					settings.GotoFirstDiff			= (bool) DEFAULT_GOTO_FIRST_DIFF;
+					settings.UpdateOnChange			= (bool) DEFAULT_UPDATE_ON_CHANGE;
+					settings.CompactNavBar			= (bool) DEFAULT_COMPACT_NAVBAR;
 
-					_Settings->colors.added     	= DEFAULT_ADDED_COLOR;
-					_Settings->colors.changed   	= DEFAULT_CHANGED_COLOR;
-					_Settings->colors.deleted   	= DEFAULT_DELETED_COLOR;
-					_Settings->colors.moved     	= DEFAULT_MOVED_COLOR;
-					_Settings->colors.highlight 	= DEFAULT_HIGHLIGHT_COLOR;
-					_Settings->colors.alpha     	= DEFAULT_HIGHLIGHT_ALPHA;
+					settings.colors.added     	= DEFAULT_ADDED_COLOR;
+					settings.colors.changed   	= DEFAULT_CHANGED_COLOR;
+					settings.colors.deleted   	= DEFAULT_DELETED_COLOR;
+					settings.colors.moved     	= DEFAULT_MOVED_COLOR;
+					settings.colors.highlight 	= DEFAULT_HIGHLIGHT_COLOR;
+					settings.colors.alpha     	= DEFAULT_HIGHLIGHT_ALPHA;
 
-					SetParams();
-
-					*_Settings = storedSettings;
+					SetParams(&settings);
 				}
 				break;
 
@@ -120,41 +118,51 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 }
 
 
-void SettingsDialog::SetParams()
+void SettingsDialog::SetParams(UserSettings* settings)
 {
-	Button_SetCheck(::GetDlgItem(_hSelf, _Settings->OldFileIsFirst ? IDC_FIRST_OLD : IDC_FIRST_NEW), BST_CHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, _Settings->OldFileViewId == MAIN_VIEW ? IDC_OLD_LEFT : IDC_OLD_RIGHT),
+	if (settings == nullptr)
+		settings = _Settings;
+
+	Button_SetCheck(::GetDlgItem(_hSelf, settings->OldFileIsFirst ? IDC_FIRST_OLD : IDC_FIRST_NEW), BST_CHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, settings->OldFileIsFirst ? IDC_FIRST_NEW : IDC_FIRST_OLD), BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, settings->OldFileViewId == MAIN_VIEW ? IDC_OLD_LEFT : IDC_OLD_RIGHT),
 			BST_CHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, _Settings->CompareToPrev ? IDC_COMPARE_TO_PREV : IDC_COMPARE_TO_NEXT),
+	Button_SetCheck(::GetDlgItem(_hSelf, settings->OldFileViewId == MAIN_VIEW ? IDC_OLD_RIGHT : IDC_OLD_LEFT),
+			BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, settings->CompareToPrev ? IDC_COMPARE_TO_PREV : IDC_COMPARE_TO_NEXT),
 			BST_CHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, _Settings->DetectMovesLineMode ? IDC_MOVE_LINE_BASED : IDC_MOVE_BLOCK_BASED),
+	Button_SetCheck(::GetDlgItem(_hSelf, settings->CompareToPrev ? IDC_COMPARE_TO_NEXT : IDC_COMPARE_TO_PREV),
+			BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, settings->DetectMovesLineMode ? IDC_MOVE_LINE_BASED : IDC_MOVE_BLOCK_BASED),
 			BST_CHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, settings->DetectMovesLineMode ? IDC_MOVE_BLOCK_BASED : IDC_MOVE_LINE_BASED),
+			BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_ENCODING_CHECK),
-			_Settings->EncodingsCheck ? BST_CHECKED : BST_UNCHECKED);
+			settings->EncodingsCheck ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_PROMPT_CLOSE_ON_MATCH),
-			_Settings->PromptToCloseOnMatch ? BST_CHECKED : BST_UNCHECKED);
+			settings->PromptToCloseOnMatch ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ALIGN_REPLACEMENTS),
-			_Settings->AlignReplacements ? BST_CHECKED : BST_UNCHECKED);
+			settings->AlignReplacements ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_WRAP_AROUND),
-			_Settings->WrapAround ? BST_CHECKED : BST_UNCHECKED);
+			settings->WrapAround ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_RECOMPARE_ON_SAVE),
-			_Settings->RecompareOnSave ? BST_CHECKED : BST_UNCHECKED);
+			settings->RecompareOnSave ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_GOTO_FIRST_DIFF),
-			_Settings->GotoFirstDiff ? BST_CHECKED : BST_UNCHECKED);
+			settings->GotoFirstDiff ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_UPDATE_ON_CHANGE),
-			_Settings->UpdateOnChange ? BST_CHECKED : BST_UNCHECKED);
+			settings->UpdateOnChange ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_COMPACT_NAVBAR),
-			_Settings->CompactNavBar ? BST_CHECKED : BST_UNCHECKED);
+			settings->CompactNavBar ? BST_CHECKED : BST_UNCHECKED);
 
 	// Set current colors configured in option dialog
-	_ColorComboAdded.setColor(_Settings->colors.added);
-	_ColorComboMoved.setColor(_Settings->colors.moved);
-	_ColorComboRemoved.setColor(_Settings->colors.deleted);
-	_ColorComboChanged.setColor(_Settings->colors.changed);
-	_ColorComboHighlight.setColor(_Settings->colors.highlight);
+	_ColorComboAdded.setColor(settings->colors.added);
+	_ColorComboMoved.setColor(settings->colors.moved);
+	_ColorComboRemoved.setColor(settings->colors.deleted);
+	_ColorComboChanged.setColor(settings->colors.changed);
+	_ColorComboHighlight.setColor(settings->colors.highlight);
 
 	// Set transparency
-	::SetDlgItemInt(_hSelf, IDC_SPIN_BOX, _Settings->colors.alpha, FALSE);
+	::SetDlgItemInt(_hSelf, IDC_SPIN_BOX, settings->colors.alpha, FALSE);
 }
 
 
