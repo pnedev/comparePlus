@@ -19,41 +19,11 @@
 #pragma once
 
 #include <windows.h>
-#include <commdlg.h>
 
 #include "Notepad_plus_msgs.h"
 #include "Scintilla.h"
 #include "menuCmdID.h"
 #include "PluginInterface.h"
-
-#include "resource.h"
-
-
-// Those are interpreted as bool values
-#define DEFAULT_OLD_IS_FIRST			1
-#define DEFAULT_OLD_ON_LEFT				1
-#define DEFAULT_COMPARE_TO_PREV			1
-
-#define DEFAULT_DETECT_MOVE_LINE_MODE	0
-
-#define DEFAULT_ENCODINGS_CHECK			1
-#define DEFAULT_PROMPT_CLOSE_ON_MATCH	0
-#define DEFAULT_ALIGN_REPLACEMENTS		1
-#define DEFAULT_WRAP_AROUND				0
-#define DEFAULT_RECOMPARE_ON_SAVE		1
-#define DEFAULT_GOTO_FIRST_DIFF			0
-#define DEFAULT_UPDATE_ON_CHANGE		0
-#define DEFAULT_COMPACT_NAVBAR			1
-
-#define DEFAULT_ADDED_COLOR				0xD9FFD9
-#define DEFAULT_DELETED_COLOR			0xD7D7FF
-#define DEFAULT_CHANGED_COLOR			0x98E7E7
-#define DEFAULT_MOVED_COLOR				0xFFE6CC
-#define DEFAULT_HIGHLIGHT_COLOR			0x683FF
-#define DEFAULT_HIGHLIGHT_ALPHA			100
-
-#define _MIN(a, b)	((a) < (b) ? (a) : (b))
-#define _MAX(a, b)	((a) > (b) ? (a) : (b))
 
 
 enum MENU_COMMANDS
@@ -82,84 +52,6 @@ enum MENU_COMMANDS
 	CMD_SEPARATOR_5,
 	CMD_ABOUT,
 	NB_MENU_COMMANDS
-};
-
-
-struct ColorSettings
-{
-	int added;
-	int deleted;
-	int changed;
-	int moved;
-	int blank;
-    int _default;
-	int highlight;
-	int alpha;
-};
-
-
-struct UserSettings
-{
-public:
-	void load();
-	void save();
-
-	inline void markAsDirty()
-	{
-		dirty = true;
-	}
-
-	static const TCHAR mainSection[];
-
-	static const TCHAR oldIsFirstSetting[];
-	static const TCHAR oldFileOnLeftSetting[];
-	static const TCHAR compareToPrevSetting[];
-	static const TCHAR detectMovesLineModeSetting[];
-	static const TCHAR encodingsCheckSetting[];
-	static const TCHAR promptCloseOnMatchSetting[];
-	static const TCHAR alignReplacementsSetting[];
-	static const TCHAR wrapAroundSetting[];
-	static const TCHAR reCompareOnSaveSetting[];
-	static const TCHAR gotoFirstDiffSetting[];
-	static const TCHAR updateOnChangeSetting[];
-	static const TCHAR compactNavBarSetting[];
-
-	static const TCHAR ignoreSpacesSetting[];
-	static const TCHAR ignoreCaseSetting[];
-	static const TCHAR detectMovesSetting[];
-	static const TCHAR navBarSetting[];
-
-	static const TCHAR colorsSection[];
-
-	static const TCHAR addedColorSetting[];
-	static const TCHAR removedColorSetting[];
-	static const TCHAR changedColorSetting[];
-	static const TCHAR movedColorSetting[];
-	static const TCHAR highlightColorSetting[];
-	static const TCHAR highlightAlphaSetting[];
-
-	bool           	OldFileIsFirst;
-	int				OldFileViewId;
-	bool           	CompareToPrev;
-	bool           	DetectMovesLineMode;
-	bool           	EncodingsCheck;
-	bool           	PromptToCloseOnMatch;
-	bool           	AlignReplacements;
-	bool           	WrapAround;
-	bool           	RecompareOnSave;
-	bool           	GotoFirstDiff;
-	bool           	UpdateOnChange;
-	bool           	CompactNavBar;
-
-	bool           	IgnoreSpaces;
-	bool           	IgnoreCase;
-	bool           	DetectMoves;
-	bool           	UseNavBar;
-
-	ColorSettings	colors;
-
-private:
-	bool dirty {false};
 };
 
 

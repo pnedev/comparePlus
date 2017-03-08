@@ -1,6 +1,7 @@
 /*
  * This file is part of Compare plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
+ * Copyright (C)2017 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,14 +67,13 @@
 #define IDC_RECOMPARE_ON_SAVE		1033
 #define IDC_GOTO_FIRST_DIFF			1034
 #define IDC_UPDATE_ON_CHANGE		1035
-#define IDC_COMPACT_NAVBAR			1036
-#define IDC_COMBO_ADDED_COLOR		1037
-#define IDC_COMBO_REMOVED_COLOR		1038
-#define IDC_COMBO_MOVED_COLOR		1039
-#define IDC_COMBO_CHANGED_COLOR		1040
-#define IDC_COMBO_HIGHLIGHT_COLOR	1041
-#define IDC_SPIN_BOX				1042
-#define IDC_SPIN_CTL				1043
+#define IDC_COMBO_ADDED_COLOR		1036
+#define IDC_COMBO_REMOVED_COLOR		1037
+#define IDC_COMBO_MOVED_COLOR		1038
+#define IDC_COMBO_CHANGED_COLOR		1039
+#define IDC_COMBO_HIGHLIGHT_COLOR	1040
+#define IDC_SPIN_BOX				1041
+#define IDC_SPIN_CTL				1042
 #define IDC_STATIC					-1
 
 #define COLOR_POPUP_OK		10000

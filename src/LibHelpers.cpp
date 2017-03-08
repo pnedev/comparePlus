@@ -1,6 +1,7 @@
 /*
  * This file is part of Compare plugin for Notepad++
  * Copyright (C)2013 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
+ * Copyright (C)2017 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,11 +17,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "LibHelpers.h"
 #include <stdlib.h>
 #include <shlwapi.h>
 #include <cstring>
+
 #include "Compare.h"
+#include "LibHelpers.h"
 #include "SQLite/SqliteHelper.h"
 #include "LibGit2/LibGit2Helper.h"
 

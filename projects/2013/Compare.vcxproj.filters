@@ -31,6 +31,9 @@
     <ClCompile Include="..\..\src\Tools.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\UserSettings.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\Compare.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -76,6 +79,9 @@
       <Filter>src\Engine</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Tools.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\UserSettings.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Compare.h">

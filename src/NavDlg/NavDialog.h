@@ -20,8 +20,10 @@
 #pragma once
 
 #include "Compare.h"
+#include "UserSettings.h"
 #include "Window.h"
 #include "DockingDlgInterface.h"
+
 #include <vector>
 
 
@@ -79,8 +81,6 @@ private:
 		HBITMAP	m_hViewBMP;
 		HBITMAP	m_hSelBMP;
 
-		SIZE	m_SelBMPsize;
-
 		int		m_firstVisible;
 		int		m_lines;
 
@@ -104,7 +104,6 @@ private:
 	tTbData	_data;
 
 	ColorSettings	m_clr;
-	bool			m_compact;
 
 	HINSTANCE		m_hInst;
 

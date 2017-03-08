@@ -1,5 +1,22 @@
+/*
+ * This file is part of Compare Plugin for Notepad++
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "SettingsDialog.h"
-#include "PluginInterface.h"
+
 #include <windowsx.h>
 #include <commctrl.h>
 #include <shlobj.h>
@@ -74,7 +91,6 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					settings.RecompareOnSave		= (bool) DEFAULT_RECOMPARE_ON_SAVE;
 					settings.GotoFirstDiff			= (bool) DEFAULT_GOTO_FIRST_DIFF;
 					settings.UpdateOnChange			= (bool) DEFAULT_UPDATE_ON_CHANGE;
-					settings.CompactNavBar			= (bool) DEFAULT_COMPACT_NAVBAR;
 
 					settings.colors.added     	= DEFAULT_ADDED_COLOR;
 					settings.colors.changed   	= DEFAULT_CHANGED_COLOR;
@@ -151,8 +167,6 @@ void SettingsDialog::SetParams(UserSettings* settings)
 			settings->GotoFirstDiff ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_UPDATE_ON_CHANGE),
 			settings->UpdateOnChange ? BST_CHECKED : BST_UNCHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, IDC_COMPACT_NAVBAR),
-			settings->CompactNavBar ? BST_CHECKED : BST_UNCHECKED);
 
 	// Set current colors configured in option dialog
 	_ColorComboAdded.setColor(settings->colors.added);
@@ -180,7 +194,6 @@ void SettingsDialog::GetParams()
 	_Settings->RecompareOnSave		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_RECOMPARE_ON_SAVE)) == BST_CHECKED);
 	_Settings->GotoFirstDiff		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_GOTO_FIRST_DIFF)) == BST_CHECKED);
 	_Settings->UpdateOnChange		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_UPDATE_ON_CHANGE)) == BST_CHECKED);
-	_Settings->CompactNavBar		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_COMPACT_NAVBAR)) == BST_CHECKED);
 
 	// Get color chosen in dialog
 	_ColorComboAdded.getColor((LPCOLORREF)&_Settings->colors.added);

@@ -1,6 +1,7 @@
 /*
  * This file is part of Compare plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
+ * Copyright (C)2017 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,20 +17,78 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <windows.h>
 #include <climits>
+#include <exception>
+#include <cstdint>
+
+#include <windows.h>
+
 #include "Engine.h"
-
-
-// Rotate a value n bits to the left
-#define UINT_BIT (sizeof(unsigned) * CHAR_BIT)
-#define ROL(v, n) ((v) << (n) | (v) >> (UINT_BIT - (n)))
-
-// Given a hash value and a new character, return a new hash value
-#define HASH(h, c) ((c) + ROL(h, 7))
+#include "diff.h"
+#include "ProgressDlg.h"
 
 
 namespace {
+
+enum class charType
+{
+	SPACECHAR,
+	ALPHANUMCHAR,
+	OTHERCHAR
+};
+
+
+struct DocCmpInfo
+{
+	HWND		view;
+	section_t	section;
+
+	int			blockDiffMask;
+};
+
+
+struct CompareInfo
+{
+	// Input data
+	DocCmpInfo				doc1;
+	DocCmpInfo				doc2;
+
+	// Output data - filled by the compare engine
+	std::vector<diff_info>	diffBlocks;
+};
+
+
+struct Word
+{
+	charType type;
+
+	int line;
+	int pos;
+	int length;
+
+	uint64_t hash;
+
+	inline bool operator==(const Word& rhs) const
+	{
+		return (hash == rhs.hash);
+	}
+
+	inline bool operator!=(const Word& rhs) const
+	{
+		return (hash != rhs.hash);
+	}
+
+	inline bool operator==(uint64_t rhs) const
+	{
+		return (hash == rhs);
+	}
+
+	inline bool operator!=(uint64_t rhs) const
+	{
+		return (hash != rhs);
+	}
+};
+
 
 struct chunk_info
 {
@@ -49,8 +108,24 @@ struct chunk_info
 };
 
 
-std::vector<unsigned int> computeLineHashes(DocCmpInfo& doc, const UserSettings& settings)
+const uint64_t cHashSeed = 0x84222325;
+
+inline uint64_t Hash(uint64_t hval, char letter)
 {
+	hval ^= static_cast<uint64_t>(letter);
+
+	hval += (hval << 1) + (hval << 4) + (hval << 5) + (hval << 7) + (hval << 8) + (hval << 40);
+
+	return hval;
+}
+
+
+std::vector<uint64_t> computeLineHashes(DocCmpInfo& doc, const UserSettings& settings)
+{
+	const int monitorCancelEveryXLine = 500;
+
+	progress_ptr& progress = ProgressDlg::Get();
+
 	int lineCount = ::SendMessage(doc.view, SCI_GETLENGTH, 0, 0);
 
 	if (lineCount)
@@ -59,14 +134,17 @@ std::vector<unsigned int> computeLineHashes(DocCmpInfo& doc, const UserSettings&
 	if ((doc.section.len <= 0) || (doc.section.off + doc.section.len > lineCount))
 		doc.section.len = lineCount - doc.section.off;
 
-	std::vector<unsigned int> lineHashes(doc.section.len);
+	std::vector<uint64_t> lineHashes(doc.section.len);
 
 	for (int lineNum = 0; lineNum < doc.section.len; ++lineNum)
 	{
+		if (progress && (lineNum % monitorCancelEveryXLine == 0) && progress->IsCancelled())
+			return std::vector<uint64_t>{};
+
 		const int lineStart = ::SendMessage(doc.view, SCI_POSITIONFROMLINE, lineNum + doc.section.off, 0);
 		const int lineEnd = ::SendMessage(doc.view, SCI_GETLINEENDPOSITION, lineNum + doc.section.off, 0);
 
-		unsigned int hash = 0;
+		uint64_t hash = cHashSeed;
 
 		if (lineEnd - lineStart)
 		{
@@ -81,7 +159,7 @@ std::vector<unsigned int> computeLineHashes(DocCmpInfo& doc, const UserSettings&
 				if (settings.IgnoreSpaces && (line[i] == ' ' || line[i] == '\t'))
 					continue;
 
-				hash = HASH(hash, line[i]);
+				hash = Hash(hash, line[i]);
 			}
 		}
 
@@ -94,17 +172,11 @@ std::vector<unsigned int> computeLineHashes(DocCmpInfo& doc, const UserSettings&
 
 charType getCharType(char letter)
 {
-	switch (letter)
-	{
-		case ' ':
-		case '\t':
+	if (letter == ' ' || letter == '\t')
 		return charType::SPACECHAR;
 
-		default:
-			if (::IsCharAlphaNumericA(letter))
-				return charType::ALPHANUMCHAR;
-		break;
-	}
+	if (::IsCharAlphaNumericA(letter) || letter == '_')
+		return charType::ALPHANUMCHAR;
 
 	return charType::OTHERCHAR;
 }
@@ -132,20 +204,19 @@ void getWords(HWND view, const UserSettings& settings, chunk_info& chunk)
 
 			Word word;
 			word.type = getCharType(line[0]);
-			word.hash = HASH(0, line[0]);
+			word.hash = Hash(cHashSeed, line[0]);
 			word.line = lineNum;
 			word.pos = 0;
 			word.length = 1;
 
 			for (int i = 1; i < lineLen; ++i)
 			{
-				const char l = line[i];
-				charType newType = getCharType(l);
+				charType newType = getCharType(line[i]);
 
 				if (newType == word.type)
 				{
 					++word.length;
-					word.hash = HASH(word.hash, l);
+					word.hash = Hash(word.hash, line[i]);
 				}
 				else
 				{
@@ -153,7 +224,7 @@ void getWords(HWND view, const UserSettings& settings, chunk_info& chunk)
 						chunk.words.push_back(word);
 
 					word.type = newType;
-					word.hash = HASH(0, l);
+					word.hash = Hash(cHashSeed, line[i]);
 					word.pos = i;
 					word.length = 1;
 				}
@@ -213,7 +284,7 @@ void compareLines(diff_info& blockDiff1, diff_info& blockDiff2, const chunk_info
 		{
 			const diff_info& ld = lineDiff[i];
 
-			if (ld.type == diff_type::DIFF_DELETE)
+			if (ld.type == diff_type::DIFF_IN_1)
 			{
 				section_t change;
 
@@ -222,7 +293,7 @@ void compareLines(diff_info& blockDiff1, diff_info& blockDiff2, const chunk_info
 
 				pBlockDiff1->changedLines.back().changes.emplace_back(change);
 			}
-			else if (ld.type == diff_type::DIFF_INSERT)
+			else if (ld.type == diff_type::DIFF_IN_2)
 			{
 				section_t change;
 
@@ -236,149 +307,6 @@ void compareLines(diff_info& blockDiff1, diff_info& blockDiff2, const chunk_info
 }
 
 
-void markSection(std::pair<HWND, HWND>& views, const diff_info& bd, const std::pair<int, int>& bdMarks,
-		const std::pair<section_t, section_t>& sections, std::pair<int*, int*>& addedBlanks, bool alignReplacements)
-{
-	const int startLine = bd.off + *addedBlanks.first + sections.first.off;
-
-	int line = startLine;
-	int lenDiff = (alignReplacements ? sections.second.len - sections.first.len : sections.second.len);
-	int endOff = sections.first.off + sections.first.len;
-
-	for (int i = sections.first.off; i < endOff; ++i, ++line)
-	{
-		const int markerMask =
-				(bd.isMoved(i) == NOT_MOVED) ? bdMarks.first :
-				(bd.isMoved(i) == MOVED) ? MARKER_MASK_MOVED : MARKER_MASK_MOVED_MULTIPLE;
-
-		::SendMessage(views.first, SCI_MARKERADDSET, line, markerMask);
-	}
-
-	if (lenDiff > 0)
-	{
-		addBlankSection(views.first, line, lenDiff);
-		*addedBlanks.first += lenDiff;
-	}
-
-	line = startLine;
-
-	if (alignReplacements)
-	{
-		lenDiff = -lenDiff;
-	}
-	else
-	{
-		lenDiff = sections.first.len;
-
-		if (lenDiff > 0)
-		{
-			addBlankSection(views.second, line, lenDiff);
-			*addedBlanks.second += lenDiff;
-			line += lenDiff;
-			lenDiff = 0;
-		}
-	}
-
-	endOff = sections.second.off + sections.second.len;
-
-	for (int i = sections.second.off; i < endOff; ++i, ++line)
-	{
-		const int markerMask =
-				(bd.matchedDiff->isMoved(i) == NOT_MOVED) ? bdMarks.second :
-				(bd.matchedDiff->isMoved(i) == MOVED) ? MARKER_MASK_MOVED : MARKER_MASK_MOVED_MULTIPLE;
-
-		::SendMessage(views.second, SCI_MARKERADDSET, line, markerMask);
-	}
-
-	if (lenDiff > 0)
-	{
-		addBlankSection(views.second, line, lenDiff);
-		*addedBlanks.second += lenDiff;
-	}
-}
-
-
-void markLineDiffs(std::pair<HWND, HWND>& views,
-		const std::pair<const diff_line&, const diff_line&> changedLines, const int line)
-{
-	int linePos = ::SendMessage(views.first, SCI_POSITIONFROMLINE, line, 0);
-
-	for (const auto& change : changedLines.first.changes)
-		markTextAsChanged(views.first, linePos + change.off, change.len);
-
-	::SendMessage(views.first, SCI_MARKERADDSET, line, MARKER_MASK_CHANGED);
-
-	linePos = ::SendMessage(views.second, SCI_POSITIONFROMLINE, line, 0);
-
-	for (const auto& change : changedLines.second.changes)
-		markTextAsChanged(views.second, linePos + change.off, change.len);
-
-	::SendMessage(views.second, SCI_MARKERADDSET, line, MARKER_MASK_CHANGED);
-}
-
-}
-
-
-// The returned bool is true if views are swapped and false otherwise
-std::pair<std::vector<diff_info>, bool>
-	compareDocs(DocCmpInfo& doc1, DocCmpInfo& doc2, const UserSettings& settings, progress_ptr& progress)
-{
-	if (progress)
-		progress->SetMaxCount(3);
-
-	const std::vector<unsigned int> lineHashes1 = computeLineHashes(doc1, settings);
-
-	if (progress && !progress->Advance())
-		return std::make_pair(std::vector<diff_info>(), false);
-
-	const std::vector<unsigned int> lineHashes2 = computeLineHashes(doc2, settings);
-
-	if (progress && !progress->Advance())
-		return std::make_pair(std::vector<diff_info>(), false);
-
-	bool viewsSwapped = false;
-
-	const std::vector<unsigned int>* pLineHashes1 = &lineHashes1;
-	const std::vector<unsigned int>* pLineHashes2 = &lineHashes2;
-
-	if (pLineHashes1->size() > pLineHashes2->size())
-	{
-		std::swap(doc1, doc2);
-		std::swap(pLineHashes1, pLineHashes2);
-		viewsSwapped = true;
-	}
-
-	const detect_moves_type detectMoves = !settings.DetectMoves ? DONT_DETECT :
-			settings.DetectMovesLineMode ? ELEMENT_BASED : BLOCK_BASED;
-
-	std::pair<std::vector<diff_info>, bool> cmpResults =
-			std::make_pair(DiffCalc<unsigned int>(*pLineHashes1, *pLineHashes2, detectMoves)(), viewsSwapped);
-
-	std::vector<diff_info>& blockDiff = cmpResults.first;
-
-	const int startOff = (doc1.section.off > doc2.section.off) ? doc1.section.off : doc2.section.off;
-
-	if (startOff)
-	{
-		for (auto& bd : blockDiff)
-			bd.off += startOff;
-	}
-
-	const int offMisalignment = doc1.section.off - doc2.section.off;
-
-	// Align views if comparison start offsets differ
-	if (offMisalignment)
-	{
-		if (offMisalignment > 0)
-			addBlankSection(doc2.view, doc2.section.off, offMisalignment);
-		else
-			addBlankSection(doc1.view, doc1.section.off, -offMisalignment);
-	}
-
-	return std::move(cmpResults);
-}
-
-
 bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSettings& settings,
 		diff_info& blockDiff1, diff_info& blockDiff2)
 {
@@ -388,16 +316,16 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 	getWords(doc1.view, settings, chunk1);
 	getWords(doc2.view, settings, chunk2);
 
-	chunk_info* pChunk1 = &chunk1;
-	chunk_info* pChunk2 = &chunk2;
-
 	diff_info* pBlockDiff1 = &blockDiff1;
 	diff_info* pBlockDiff2 = &blockDiff2;
 
-	if (pChunk1->words.size() > pChunk2->words.size())
+	chunk_info* pChunk1 = &chunk1;
+	chunk_info* pChunk2 = &chunk2;
+
+	if (chunk1.words.size() > chunk2.words.size())
 	{
-		std::swap(pBlockDiff1, pBlockDiff2);
 		std::swap(pChunk1, pChunk2);
+		std::swap(pBlockDiff1, pBlockDiff2);
 	}
 
 	// Compare the two chunks
@@ -408,71 +336,92 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 	if (chunkDiffSize == 0)
 		return false;
 
-	std::vector<std::vector<int>> linesConvergence(pChunk1->lineCount, std::vector<int>(pChunk2->lineCount, 0));
+	std::vector<std::vector<int>> lineWordsMatch(pChunk1->lineCount, std::vector<int>(pChunk2->lineCount, 0));
 
-	// Use the MATCH results to synchronize line numbers (count the match length of each line)
-	int wordOffset = 0;
-	for (int i = 0; i < chunkDiffSize; ++i)
+	// Use the MATCH results to synchronize line numbers (count the matching words of each line)
+	for (int i = 0, wordOffset = 0; i < chunkDiffSize; ++i)
 	{
 		const diff_info& cd = chunkDiff[i];
 
-		if (cd.type == diff_type::DIFF_DELETE)
+		if (cd.type == diff_type::DIFF_IN_1)
 		{
 			wordOffset -= cd.len;
 		}
-		else if (cd.type == diff_type::DIFF_INSERT)
+		else if (cd.type == diff_type::DIFF_IN_2)
 		{
 			wordOffset += cd.len;
 		}
-		else // diff_type::DIFF_MATCH
+		else if (cd.type == diff_type::DIFF_MATCH)
 		{
 			for (int wordIdx = cd.off; wordIdx < (cd.off + cd.len); ++wordIdx)
 			{
 				const Word& word1 = pChunk1->words[wordIdx];
-				const Word& word2 = pChunk2->words[wordIdx + wordOffset];
 
-				if (word1.type != charType::SPACECHAR)
-					linesConvergence[word1.line][word2.line] += word1.length;
+				if (word1.type == charType::ALPHANUMCHAR)
+				{
+					const Word& word2 = pChunk2->words[wordIdx + wordOffset];
+
+					++lineWordsMatch[word1.line][word2.line];
+				}
 			}
 		}
 	}
 
-	// Select the line with the most matches (as length)
+	int bestMatchingLine2 = 0;
+
+	// Select the line with the most word matches
 	for (int line1 = 0; line1 < pChunk1->lineCount; ++line1)
 	{
 		if (pBlockDiff1->isMoved(line1))
 			continue;
 
 		int maxConvergence = 0;
-		int line2 = 0;
+		int maxLine2Len = 0;
 
-		for (int i = 0; i < pChunk2->lineCount; ++i)
+		for (int line2 = bestMatchingLine2; line2 < pChunk2->lineCount; ++line2)
 		{
-			if (!pBlockDiff2->isMoved(i) && linesConvergence[line1][i] > maxConvergence)
+			if (lineWordsMatch[line1][line2] == 0 || pBlockDiff2->isMoved(line2))
+				continue;
+
+			int line2Len = 0;
+
+			for (int i = pChunk2->lineStartWordIdx[line2]; i < pChunk2->lineEndWordIdx[line2]; ++i)
 			{
-				line2 = i;
-				maxConvergence = linesConvergence[line1][i];
+				if (pChunk2->words[i].type == charType::ALPHANUMCHAR)
+					++line2Len;
+			}
+
+			if (line2Len == 0)
+				continue;
+
+			int shortestLineLen = 0;
+
+			for (int i = pChunk1->lineStartWordIdx[line1]; i < pChunk1->lineEndWordIdx[line1]; ++i)
+			{
+				if (pChunk1->words[i].type == charType::ALPHANUMCHAR)
+					++shortestLineLen;
+			}
+
+			if (shortestLineLen == 0 || shortestLineLen > line2Len)
+				shortestLineLen = line2Len;
+
+			const int lineConvergence = (lineWordsMatch[line1][line2] * 100) / shortestLineLen;
+
+			if (lineConvergence > maxConvergence ||
+				(lineConvergence == maxConvergence && line2Len > maxLine2Len))
+			{
+				maxConvergence = lineConvergence;
+				maxLine2Len = line2Len;
+				bestMatchingLine2 = line2;
 			}
 		}
 
-		// Make sure that the line is matched and the other line is not already matched
-		if (maxConvergence == 0 || pChunk2->lineMappings[line2] != -1)
-			continue;
-
-		int line1Size = 0;
-		for (int i = pChunk1->lineStartWordIdx[line1]; i < pChunk1->lineEndWordIdx[line1]; ++i)
+		// Do lines match enough to consider this a change instead of replacement?
+		if (maxConvergence >= 50)
 		{
-			const Word& word1 = pChunk1->words[i];
-
-			if (word1.type != charType::SPACECHAR)
-				line1Size += word1.length;
-		}
-
-		// Is enough portion of the line matched to be significant?
-		if (line1Size && maxConvergence > (line1Size / 3))
-		{
-			pChunk1->lineMappings[line1] = line2;
-			pChunk2->lineMappings[line2] = line1;
+			pChunk1->lineMappings[line1]				= bestMatchingLine2;
+			pChunk2->lineMappings[bestMatchingLine2]	= line1;
+			++bestMatchingLine2;
 		}
 	}
 
@@ -482,90 +431,183 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 }
 
 
-// Mark all line differences
-bool showDiffs(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSettings& settings,
-		const std::pair<std::vector<diff_info>, bool>& cmpResults, progress_ptr& progress)
+void markSection(const diff_info& bd, const DocCmpInfo& doc)
 {
-	const std::vector<diff_info>& blockDiff = cmpResults.first;
+	const int endOff = doc.section.off + doc.section.len;
 
-	const int deletedMark	= cmpResults.second ? MARKER_MASK_ADDED : MARKER_MASK_REMOVED;
-	const int addedMark		= cmpResults.second ? MARKER_MASK_REMOVED : MARKER_MASK_ADDED;
+	for (int i = doc.section.off, line = bd.off + doc.section.off; i < endOff; ++i, ++line)
+	{
+		const int markerMask =
+				(bd.isMoved(i) == NOT_MOVED) ? doc.blockDiffMask :
+				(bd.isMoved(i) == MOVED) ? MARKER_MASK_MOVED : MARKER_MASK_MOVED_MULTIPLE;
 
-	const int blockDiffSize = static_cast<int>(blockDiff.size());
+		::SendMessage(doc.view, SCI_MARKERADDSET, line, markerMask);
+	}
+}
+
+
+void markLineDiffs(HWND view1, HWND view2, const diff_info& bd, int lineIdx)
+{
+	int line = bd.off + bd.changedLines[lineIdx].line;
+	int linePos = ::SendMessage(view1, SCI_POSITIONFROMLINE, line, 0);
+
+	for (const auto& change : bd.changedLines[lineIdx].changes)
+		markTextAsChanged(view1, linePos + change.off, change.len);
+
+	::SendMessage(view1, SCI_MARKERADDSET, line, MARKER_MASK_CHANGED);
+
+	line = bd.matchedDiff->off + bd.matchedDiff->changedLines[lineIdx].line;
+	linePos = ::SendMessage(view2, SCI_POSITIONFROMLINE, line, 0);
+
+	for (const auto& change : bd.matchedDiff->changedLines[lineIdx].changes)
+		markTextAsChanged(view2, linePos + change.off, change.len);
+
+	::SendMessage(view2, SCI_MARKERADDSET, line, MARKER_MASK_CHANGED);
+}
+
+
+bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
+{
+	progress_ptr& progress = ProgressDlg::Get();
+
+	alignmentInfo.clear();
+
+	const int blockDiffSize = static_cast<int>(cmpInfo.diffBlocks.size());
 
 	if (progress)
 		progress->SetMaxCount(blockDiffSize);
 
-	int addedBlanks1 = 0;
-	int addedBlanks2 = 0;
+	AlignmentPair alignPair;
+
+	AlignmentViewData* pMainAlignData	= &alignPair.main;
+	AlignmentViewData* pSubAlignData	= &alignPair.sub;
+
+	// Make sure pMainAlignData is linked to doc1
+	if (cmpInfo.doc1.view == nppData._scintillaSecondHandle)
+		std::swap(pMainAlignData, pSubAlignData);
+
+	pMainAlignData->line	= cmpInfo.doc1.section.off;
+	pSubAlignData->line		= cmpInfo.doc2.section.off;
 
 	for (int i = 0; i < blockDiffSize; ++i)
 	{
-		const diff_info& bd = blockDiff[i];
+		const diff_info& bd = cmpInfo.diffBlocks[i];
 
-		if (bd.type != diff_type::DIFF_MATCH)
+		if (bd.type == diff_type::DIFF_MATCH)
 		{
-			std::pair<HWND, HWND> views;
-			std::pair<int*, int*> addedBlanks;
-			std::pair<int, int> bdMarks;
+			pMainAlignData->diffMask	= 0;
+			pSubAlignData->diffMask		= 0;
 
-			if (bd.type == diff_type::DIFF_DELETE)
-			{
-				addedBlanks.first	= &addedBlanks1;
-				addedBlanks.second	= &addedBlanks2;
-				views.first			= doc1.view;
-				views.second		= doc2.view;
-				bdMarks.first		= deletedMark;
-				bdMarks.second		= addedMark;
-			}
-			else // diff_type::DIFF_INSERT
-			{
-				addedBlanks.first	= &addedBlanks2;
-				addedBlanks.second	= &addedBlanks1;
-				views.first			= doc2.view;
-				views.second		= doc1.view;
-				bdMarks.first		= addedMark;
-				bdMarks.second		= deletedMark;
-			}
+			alignmentInfo.push_back(alignPair);
 
-			std::pair<section_t, section_t> sections( { 0, 0 }, { 0, 0 } );
+			pMainAlignData->line	+= bd.len;
+			pSubAlignData->line		+= bd.len;
+		}
+		else if (bd.type == diff_type::DIFF_IN_2)
+		{
+			cmpInfo.doc2.section.off = 0;
+			cmpInfo.doc2.section.len = bd.len;
+			markSection(bd, cmpInfo.doc2);
 
-			const int changedLinesCount = static_cast<int>(bd.changedLines.size());
+			pMainAlignData->diffMask	= 0;
+			pSubAlignData->diffMask		= cmpInfo.doc2.blockDiffMask;
 
-			for (int j = 0; j < changedLinesCount; ++j)
-			{
-				const std::pair<const diff_line&, const diff_line&>
-						changedLines(bd.changedLines[j], bd.matchedDiff->changedLines[j]);
+			alignmentInfo.push_back(alignPair);
 
-				if (sections.first.off != changedLines.first.line ||
-					sections.second.off != changedLines.second.line)
-				{
-					sections.first.len = changedLines.first.line - sections.first.off;
-					sections.second.len = changedLines.second.line - sections.second.off;
-
-					markSection(views, bd, bdMarks, sections, addedBlanks, settings.AlignReplacements);
-				}
-
-				markLineDiffs(views, changedLines, bd.off + *addedBlanks.first + changedLines.first.line);
-
-				sections.first.off = changedLines.first.line + 1;
-				sections.second.off = changedLines.second.line + 1;
-			}
-
-			sections.first.len = bd.len - sections.first.off;
-
+			pSubAlignData->line += bd.len;
+		}
+		else if (bd.type == diff_type::DIFF_IN_1)
+		{
 			if (bd.matchedDiff)
 			{
-				sections.second.len = bd.matchedDiff->len - sections.second.off;
+				const int changedLinesCount = static_cast<int>(bd.changedLines.size());
+
+				cmpInfo.doc1.section.off = 0;
+				cmpInfo.doc2.section.off = 0;
+
+				for (int j = 0; j < changedLinesCount; ++j)
+				{
+					cmpInfo.doc1.section.len = bd.changedLines[j].line - cmpInfo.doc1.section.off;
+					cmpInfo.doc2.section.len = bd.matchedDiff->changedLines[j].line - cmpInfo.doc2.section.off;
+
+					if (cmpInfo.doc1.section.len || cmpInfo.doc2.section.len)
+					{
+						pMainAlignData->diffMask	= cmpInfo.doc1.blockDiffMask;
+						pSubAlignData->diffMask		= cmpInfo.doc2.blockDiffMask;
+
+						alignmentInfo.push_back(alignPair);
+					}
+
+					if (cmpInfo.doc1.section.len)
+					{
+						markSection(bd, cmpInfo.doc1);
+						pMainAlignData->line += cmpInfo.doc1.section.len;
+					}
+
+					if (cmpInfo.doc2.section.len)
+					{
+						markSection(*bd.matchedDiff, cmpInfo.doc2);
+						pSubAlignData->line += cmpInfo.doc2.section.len;
+					}
+
+					pMainAlignData->diffMask	= MARKER_MASK_CHANGED;
+					pSubAlignData->diffMask		= MARKER_MASK_CHANGED;
+
+					alignmentInfo.push_back(alignPair);
+
+					markLineDiffs(cmpInfo.doc1.view, cmpInfo.doc2.view, bd, j);
+
+					cmpInfo.doc1.section.off = bd.changedLines[j].line + 1;
+					cmpInfo.doc2.section.off = bd.matchedDiff->changedLines[j].line + 1;
+
+					++pMainAlignData->line;
+					++pSubAlignData->line;
+				}
+
+				cmpInfo.doc1.section.len = bd.len - cmpInfo.doc1.section.off;
+				cmpInfo.doc2.section.len = bd.matchedDiff->len - cmpInfo.doc2.section.off;
+
+				if (cmpInfo.doc1.section.len || cmpInfo.doc2.section.len)
+				{
+					pMainAlignData->diffMask	= cmpInfo.doc1.blockDiffMask;
+					pSubAlignData->diffMask		= cmpInfo.doc2.blockDiffMask;
+
+					alignmentInfo.push_back(alignPair);
+				}
+
+				if (cmpInfo.doc1.section.len)
+				{
+					markSection(bd, cmpInfo.doc1);
+					pMainAlignData->line += cmpInfo.doc1.section.len;
+				}
+
+				if (cmpInfo.doc2.section.len)
+				{
+					markSection(*bd.matchedDiff, cmpInfo.doc2);
+					pSubAlignData->line += cmpInfo.doc2.section.len;
+				}
+
 				++i;
 			}
 			else
 			{
-				sections.second.len = 0;
-			}
+				cmpInfo.doc1.section.off = 0;
+				cmpInfo.doc1.section.len = bd.len;
+				markSection(bd, cmpInfo.doc1);
 
-			markSection(views, bd, bdMarks, sections, addedBlanks, settings.AlignReplacements);
+				pMainAlignData->diffMask	= cmpInfo.doc1.blockDiffMask;
+				pSubAlignData->diffMask		= 0;
+
+				alignmentInfo.push_back(alignPair);
+
+				pMainAlignData->line += bd.len;
+			}
 		}
+
+		pMainAlignData->diffMask	= 0;
+		pSubAlignData->diffMask		= 0;
+
+		alignmentInfo.push_back(alignPair);
 
 		if (progress && !progress->Advance())
 			return false;
@@ -575,4 +617,169 @@ bool showDiffs(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSetting
 		return false;
 
 	return true;
+}
+
+
+CompareResult runCompare(const section_t& mainViewSection, const section_t& subViewSection,
+		const UserSettings& settings, AlignmentInfo_t& alignmentInfo)
+{
+	progress_ptr& progress = ProgressDlg::Get();
+
+	CompareInfo cmpInfo;
+
+	cmpInfo.doc1.view		= nppData._scintillaMainHandle;
+	cmpInfo.doc1.section	= mainViewSection;
+	cmpInfo.doc2.view		= nppData._scintillaSecondHandle;
+	cmpInfo.doc2.section	= subViewSection;
+
+	if (settings.OldFileViewId == MAIN_VIEW)
+	{
+		cmpInfo.doc1.blockDiffMask = MARKER_MASK_REMOVED;
+		cmpInfo.doc2.blockDiffMask = MARKER_MASK_ADDED;
+	}
+	else
+	{
+		cmpInfo.doc1.blockDiffMask = MARKER_MASK_ADDED;
+		cmpInfo.doc2.blockDiffMask = MARKER_MASK_REMOVED;
+	}
+
+	if (progress)
+		progress->SetMaxCount(3);
+
+	const std::vector<uint64_t> doc1LineHashes = computeLineHashes(cmpInfo.doc1, settings);
+
+	if (progress && !progress->Advance())
+		return CompareResult::COMPARE_CANCELLED;
+
+	const std::vector<uint64_t> doc2LineHashes = computeLineHashes(cmpInfo.doc2, settings);
+
+	if (progress && !progress->Advance())
+		return CompareResult::COMPARE_CANCELLED;
+
+	const std::vector<uint64_t>* pLineHashes1 = &doc1LineHashes;
+	const std::vector<uint64_t>* pLineHashes2 = &doc2LineHashes;
+
+	if (pLineHashes1->size() > pLineHashes2->size())
+	{
+		std::swap(pLineHashes1, pLineHashes2);
+		std::swap(cmpInfo.doc1, cmpInfo.doc2);
+	}
+
+	const detect_moves_type detectMoves = !settings.DetectMoves ? DONT_DETECT :
+			settings.DetectMovesLineMode ? ELEMENT_BASED : BLOCK_BASED;
+
+	cmpInfo.diffBlocks = DiffCalc<uint64_t>(*pLineHashes1, *pLineHashes2, detectMoves, cHashSeed)();
+
+	const int blockDiffSize = static_cast<int>(cmpInfo.diffBlocks.size());
+
+	if (blockDiffSize == 0)
+		return CompareResult::COMPARE_MATCH;
+
+	// Currently it is impossible to set Sci annotation in the beginning of the doc so if there is a diff in the
+	// beginning (alignment via annotation will probably be necessary) we insert blank line in each doc's beginning.
+	// This is a workaround until it becomes possible to insert Sci annotation in the beginning of the doc.
+	if ((cmpInfo.diffBlocks[0].type != diff_type::DIFF_MATCH) &&
+			(!cmpInfo.doc1.section.off || !cmpInfo.doc2.section.off))
+	{
+		const BOOL doc1Modified = (BOOL)::SendMessage(cmpInfo.doc1.view, SCI_GETMODIFY, 0, 0);
+		const BOOL doc2Modified = (BOOL)::SendMessage(cmpInfo.doc2.view, SCI_GETMODIFY, 0, 0);
+
+		ScopedViewWriteEnabler writeEn1(cmpInfo.doc1.view);
+		ScopedViewWriteEnabler writeEn2(cmpInfo.doc2.view);
+
+		::SendMessage(cmpInfo.doc1.view, SCI_INSERTTEXT, 0,	(LPARAM)"\n");
+		if (!doc1Modified)
+			::SendMessage(cmpInfo.doc1.view, SCI_SETSAVEPOINT, 0, 0);
+
+		::SendMessage(cmpInfo.doc2.view, SCI_INSERTTEXT, 0,	(LPARAM)"\n");
+		if (!doc2Modified)
+			::SendMessage(cmpInfo.doc2.view, SCI_SETSAVEPOINT, 0, 0);
+
+		++cmpInfo.doc1.section.off;
+		++cmpInfo.doc2.section.off;
+	}
+
+	if (cmpInfo.doc1.section.off || cmpInfo.doc2.section.off)
+	{
+		for (auto& bd : cmpInfo.diffBlocks)
+		{
+			if (bd.type == diff_type::DIFF_IN_1 || bd.type == diff_type::DIFF_MATCH)
+				bd.off += cmpInfo.doc1.section.off;
+			else if (bd.type == diff_type::DIFF_IN_2)
+				bd.off += cmpInfo.doc2.section.off;
+		}
+	}
+
+	if (progress && !progress->NextPhase())
+		return CompareResult::COMPARE_CANCELLED;
+
+	if (progress)
+		progress->SetMaxCount(blockDiffSize);
+
+	// Do block compares
+	for (int i = 0; i < blockDiffSize; ++i)
+	{
+		if (cmpInfo.diffBlocks[i].type == diff_type::DIFF_IN_2)
+		{
+			if (i > 0) // Should always be the case but check it anyway for safety
+			{
+				diff_info& blockDiff1 = cmpInfo.diffBlocks[i - 1];
+				diff_info& blockDiff2 = cmpInfo.diffBlocks[i];
+
+				// Check if the NEW_IN_1 / NEW_IN_2 pair includes changed lines or it's a completely replaced block
+				if (blockDiff1.type == diff_type::DIFF_IN_1)
+				{
+					blockDiff1.matchedDiff = &blockDiff2;
+					blockDiff2.matchedDiff = &blockDiff1;
+
+					compareBlocks(cmpInfo.doc1, cmpInfo.doc2, settings, blockDiff1, blockDiff2);
+				}
+			}
+		}
+
+		if (progress && !progress->Advance())
+			return CompareResult::COMPARE_CANCELLED;
+	}
+
+	if (progress && !progress->NextPhase())
+		return CompareResult::COMPARE_CANCELLED;
+
+	if (!markAllDiffs(cmpInfo, alignmentInfo))
+		return CompareResult::COMPARE_CANCELLED;
+
+	return CompareResult::COMPARE_MISMATCH;
+}
+
+}
+
+
+CompareResult compareViews(const section_t& mainViewSection, const section_t& subViewSection,
+		const UserSettings& settings, const TCHAR* progressInfo, AlignmentInfo_t& alignmentInfo)
+{
+	CompareResult result = CompareResult::COMPARE_ERROR;
+
+	if (progressInfo)
+		ProgressDlg::Open(progressInfo);
+
+	try
+	{
+		result = runCompare(mainViewSection, subViewSection, settings, alignmentInfo);
+		ProgressDlg::Close();
+	}
+	catch (std::exception& e)
+	{
+		ProgressDlg::Close();
+
+		char msg[128];
+		_snprintf_s(msg, _countof(msg), _TRUNCATE, "Exception occurred: %s", e.what());
+		MessageBoxA(nppData._nppHandle, msg, "Compare Plugin", MB_OK | MB_ICONWARNING);
+	}
+	catch (...)
+	{
+		ProgressDlg::Close();
+
+		MessageBoxA(nppData._nppHandle, "Unknown exception occurred.", "Compare Plugin", MB_OK | MB_ICONWARNING);
+	}
+
+	return result;
 }

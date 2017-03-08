@@ -27,6 +27,10 @@ if (UNIX OR MINGW)
 		-D_WIN32_WINNT=0x0501 -DWIN32_LEAN_AND_MEAN -DNOCOMM -DNDEBUG
 	)
 
+	if (DLOG)
+		set (defs ${defs} -DDLOG)
+	endif ()
+
 	set (CMAKE_CXX_FLAGS
 		"-std=c++11 -O3 -mwindows -mthreads -municode -Wall -Wno-unknown-pragmas"
 	)
@@ -61,6 +65,7 @@ set (project_sources
     src/ProgressDlg/ProgressDlg.cpp
     src/Engine/Engine.cpp
     src/Tools.cpp
+    src/UserSettings.cpp
     src/Compare.cpp
     src/LibGit2/LibGit2Helper.cpp
     src/NppHelpers.cpp

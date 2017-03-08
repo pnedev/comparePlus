@@ -1,6 +1,7 @@
 /*
  * This file is part of Compare plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
+ * Copyright (C)2017 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,185 +18,95 @@
  */
 
 #include <cstdlib>
-#include <exception>
 #include <vector>
 #include <memory>
 
 #include <windows.h>
 #include <tchar.h>
 #include <shlwapi.h>
+#include <commctrl.h>
+#include <commdlg.h>
 
 #include "Tools.h"
 #include "Compare.h"
+#include "UserSettings.h"
 #include "NppHelpers.h"
 #include "LibHelpers.h"
-#include "ProgressDlg.h"
 #include "AboutDialog.h"
 #include "SettingsDialog.h"
 #include "NavDialog.h"
 #include "Engine.h"
 #include "NppInternalDefines.h"
+#include "resource.h"
+
+
+#ifdef DLOG
+	#include <string>
+
+	#define LOGD(STR) \
+		do { \
+			const DWORD time_ms = ::GetTickCount(); \
+			TCHAR file[MAX_PATH]; \
+			char fileA[MAX_PATH]; \
+			::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, _countof(file), (LPARAM)file); \
+			::WideCharToMultiByte(CP_ACP, 0, file, -1, fileA, sizeof(fileA), NULL, NULL); \
+			if (dLogTime_ms) dLog += "+ "; \
+			else dLogTime_ms = time_ms; \
+			std::string tmp_str { std::to_string(time_ms - dLogTime_ms) }; \
+			dLog += tmp_str; \
+			if (tmp_str.size() < 3) dLog += " ms\t\t- "; \
+			else dLog += " ms\t- "; \
+			tmp_str = fileA; \
+			dLog += tmp_str; \
+			if (tmp_str.size() < 4) dLog += " -\t\t\t\t"; \
+			else if (tmp_str.size() < 8) dLog += " -\t\t\t"; \
+			else if (tmp_str.size() < 12) dLog += " -\t\t"; \
+			else dLog += " -\t"; \
+			dLog += (STR); \
+			dLogTime_ms = ::GetTickCount(); \
+		} while (0)
+
+	#define LOGDB(BUFFID, STR) \
+		do { \
+			const DWORD time_ms = ::GetTickCount(); \
+			TCHAR file[MAX_PATH]; \
+			char fileA[MAX_PATH]; \
+			::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, BUFFID, (LPARAM)file); \
+			::WideCharToMultiByte(CP_ACP, 0, ::PathFindFileName(file), -1, fileA, sizeof(fileA), NULL, NULL); \
+			if (dLogTime_ms) dLog += "+ "; \
+			else dLogTime_ms = time_ms; \
+			std::string tmp_str { std::to_string(time_ms - dLogTime_ms) }; \
+			dLog += tmp_str; \
+			if (tmp_str.size() < 3) dLog += " ms\t\t- "; \
+			else dLog += " ms\t- "; \
+			tmp_str = fileA; \
+			dLog += tmp_str; \
+			if (tmp_str.size() < 4) dLog += " -\t\t\t\t"; \
+			else if (tmp_str.size() < 8) dLog += " -\t\t\t"; \
+			else if (tmp_str.size() < 12) dLog += " -\t\t"; \
+			else dLog += " -\t"; \
+			dLog += (STR); \
+			dLogTime_ms = ::GetTickCount(); \
+		} while (0)
+#else
+	#define LOGD(STR)
+	#define LOGDB(BUFFID, STR)
+#endif
 
 
 NppData nppData;
-UserSettings Settings;
-
-
-const TCHAR UserSettings::mainSection[]					= TEXT("Main");
-
-const TCHAR UserSettings::oldIsFirstSetting[]			= TEXT("Old is First");
-const TCHAR UserSettings::oldFileOnLeftSetting[]		= TEXT("Old on Left");
-const TCHAR UserSettings::compareToPrevSetting[]		= TEXT("Default Compare is to Prev");
-
-const TCHAR UserSettings::detectMovesLineModeSetting[]	= TEXT("Detect Moves Line Mode");
-
-const TCHAR UserSettings::encodingsCheckSetting[]		= TEXT("Check Encodings");
-const TCHAR UserSettings::promptCloseOnMatchSetting[]	= TEXT("Prompt to Close on Match");
-const TCHAR UserSettings::alignReplacementsSetting[]	= TEXT("Align Replacements");
-const TCHAR UserSettings::wrapAroundSetting[]			= TEXT("Wrap Around");
-const TCHAR UserSettings::reCompareOnSaveSetting[]		= TEXT("Re-Compare on Save");
-const TCHAR UserSettings::gotoFirstDiffSetting[]		= TEXT("Go to First Diff");
-const TCHAR UserSettings::updateOnChangeSetting[]		= TEXT("Update on Change");
-const TCHAR UserSettings::compactNavBarSetting[]		= TEXT("Compact NavBar");
-
-const TCHAR UserSettings::ignoreSpacesSetting[]			= TEXT("Ignore Spaces");
-const TCHAR UserSettings::ignoreCaseSetting[]			= TEXT("Ignore Case");
-const TCHAR UserSettings::detectMovesSetting[]			= TEXT("Detect Moves");
-const TCHAR UserSettings::navBarSetting[]				= TEXT("Navigation Bar");
-
-const TCHAR UserSettings::colorsSection[]				= TEXT("Colors");
-
-const TCHAR UserSettings::addedColorSetting[]			= TEXT("Added");
-const TCHAR UserSettings::removedColorSetting[]			= TEXT("Removed");
-const TCHAR UserSettings::changedColorSetting[]			= TEXT("Changed");
-const TCHAR UserSettings::movedColorSetting[]			= TEXT("Moved");
-const TCHAR UserSettings::highlightColorSetting[]		= TEXT("Highlight");
-const TCHAR UserSettings::highlightAlphaSetting[]		= TEXT("Alpha");
-
-
-void UserSettings::load()
-{
-	TCHAR iniFile[MAX_PATH];
-
-	::SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, (WPARAM)_countof(iniFile), (LPARAM)iniFile);
-
-	::PathAppend(iniFile, TEXT("ComparePlugin.ini"));
-
-	OldFileIsFirst			= ::GetPrivateProfileInt(mainSection, oldIsFirstSetting,
-			DEFAULT_OLD_IS_FIRST, iniFile) == 1;
-	OldFileViewId			= ::GetPrivateProfileInt(mainSection, oldFileOnLeftSetting,
-			DEFAULT_OLD_ON_LEFT, iniFile) == 1 ? MAIN_VIEW : SUB_VIEW;
-	CompareToPrev			= ::GetPrivateProfileInt(mainSection, compareToPrevSetting,
-			DEFAULT_COMPARE_TO_PREV, iniFile) == 1;
-	DetectMovesLineMode		= ::GetPrivateProfileInt(mainSection, detectMovesLineModeSetting,
-			DEFAULT_DETECT_MOVE_LINE_MODE, iniFile) == 1;
-	EncodingsCheck			= ::GetPrivateProfileInt(mainSection, encodingsCheckSetting,
-			DEFAULT_ENCODINGS_CHECK, iniFile) == 1;
-	PromptToCloseOnMatch	= ::GetPrivateProfileInt(mainSection, promptCloseOnMatchSetting,
-			DEFAULT_PROMPT_CLOSE_ON_MATCH, iniFile) == 1;
-	AlignReplacements		= ::GetPrivateProfileInt(mainSection, alignReplacementsSetting,
-			DEFAULT_ALIGN_REPLACEMENTS, iniFile) == 1;
-	WrapAround				= ::GetPrivateProfileInt(mainSection, wrapAroundSetting,
-			DEFAULT_WRAP_AROUND, iniFile) == 1;
-	RecompareOnSave			= ::GetPrivateProfileInt(mainSection, reCompareOnSaveSetting,
-			DEFAULT_RECOMPARE_ON_SAVE, iniFile) == 1;
-	GotoFirstDiff			= ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting,
-			DEFAULT_GOTO_FIRST_DIFF, iniFile) == 1;
-	UpdateOnChange			= ::GetPrivateProfileInt(mainSection, updateOnChangeSetting,
-			DEFAULT_UPDATE_ON_CHANGE, iniFile) == 1;
-	CompactNavBar			= ::GetPrivateProfileInt(mainSection, compactNavBarSetting,
-			DEFAULT_COMPACT_NAVBAR, iniFile) == 1;
-
-	IgnoreSpaces	= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,	1, iniFile) == 1;
-	IgnoreCase		= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,	0, iniFile) == 1;
-	DetectMoves		= ::GetPrivateProfileInt(mainSection, detectMovesSetting,	1, iniFile) == 1;
-	UseNavBar		= ::GetPrivateProfileInt(mainSection, navBarSetting,		1, iniFile) == 1;
-
-	colors.added		= ::GetPrivateProfileInt(colorsSection, addedColorSetting,
-			DEFAULT_ADDED_COLOR, iniFile);
-	colors.deleted		= ::GetPrivateProfileInt(colorsSection, removedColorSetting,
-			DEFAULT_DELETED_COLOR, iniFile);
-	colors.changed		= ::GetPrivateProfileInt(colorsSection, changedColorSetting,
-			DEFAULT_CHANGED_COLOR, iniFile);
-	colors.moved		= ::GetPrivateProfileInt(colorsSection, movedColorSetting,
-			DEFAULT_MOVED_COLOR, iniFile);
-	colors.highlight	= ::GetPrivateProfileInt(colorsSection, highlightColorSetting,
-			DEFAULT_HIGHLIGHT_COLOR, iniFile);
-	colors.alpha		= ::GetPrivateProfileInt(colorsSection, highlightAlphaSetting,
-			DEFAULT_HIGHLIGHT_ALPHA, iniFile);
-
-	dirty = false;
-}
-
-
-void UserSettings::save()
-{
-	if (!dirty)
-		return;
-
-	TCHAR iniFile[MAX_PATH];
-
-	::SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, (WPARAM)_countof(iniFile), (LPARAM)iniFile);
-	::PathAppend(iniFile, TEXT("ComparePlugin.ini"));
-
-	::WritePrivateProfileString(mainSection, oldIsFirstSetting,
-			OldFileIsFirst ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, oldFileOnLeftSetting,
-			OldFileViewId == MAIN_VIEW ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, compareToPrevSetting,
-			CompareToPrev ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, detectMovesLineModeSetting,
-			DetectMovesLineMode ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, encodingsCheckSetting,
-			EncodingsCheck ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, promptCloseOnMatchSetting,
-			PromptToCloseOnMatch ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, alignReplacementsSetting,
-			AlignReplacements ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, wrapAroundSetting,
-			WrapAround ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, reCompareOnSaveSetting,
-			RecompareOnSave ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, gotoFirstDiffSetting,
-			GotoFirstDiff ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, updateOnChangeSetting,
-			UpdateOnChange ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, compactNavBarSetting,
-			CompactNavBar ? TEXT("1") : TEXT("0"), iniFile);
-
-	::WritePrivateProfileString(mainSection, ignoreSpacesSetting,	IgnoreSpaces	? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, ignoreCaseSetting,	    IgnoreCase		? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, detectMovesSetting,	DetectMoves		? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, navBarSetting,			UseNavBar		? TEXT("1") : TEXT("0"), iniFile);
-
-	TCHAR buffer[64];
-
-	_itot_s(colors.added, buffer, 64, 10);
-	::WritePrivateProfileString(colorsSection, addedColorSetting, buffer, iniFile);
-
-	_itot_s(colors.deleted, buffer, 64, 10);
-	::WritePrivateProfileString(colorsSection, removedColorSetting, buffer, iniFile);
-
-	_itot_s(colors.changed, buffer, 64, 10);
-	::WritePrivateProfileString(colorsSection, changedColorSetting, buffer, iniFile);
-
-	_itot_s(colors.moved, buffer, 64, 10);
-	::WritePrivateProfileString(colorsSection, movedColorSetting, buffer, iniFile);
-
-	_itot_s(colors.highlight, buffer, 64, 10);
-	::WritePrivateProfileString(colorsSection, highlightColorSetting, buffer, iniFile);
-
-	_itot_s(colors.alpha, buffer, 64, 10);
-	::WritePrivateProfileString(colorsSection, highlightAlphaSetting, buffer, iniFile);
-
-	dirty = false;
-}
 
 
 namespace // anonymous namespace
 {
 
 const TCHAR PLUGIN_NAME[] = TEXT("Compare");
+
+#ifdef DLOG
+std::string	dLog("Compare Plugin debug log\n\n");
+LRESULT		dLogBuf = -1;
+DWORD		dLogTime_ms = 0;
+#endif
 
 
 /**
@@ -389,10 +300,6 @@ public:
 	void restore() const;
 	bool isOpen() const;
 
-    inline void removeAndStoreBlanks();
-    inline void restoreBlanks();
-    inline void clearStoredBlanks();
-
 	Temp_t	isTemp;
 	bool	isNew;
 
@@ -405,9 +312,6 @@ public:
 	TCHAR	name[MAX_PATH];
 
 	DeletedSectionsList deletedSections;
-
-private:
-	BlankSections_t     blankSections;
 };
 
 
@@ -437,6 +341,8 @@ public:
 	bool			SpacesIgnored;
 	bool			CaseIgnored;
 	bool			MovesDetected;
+
+	AlignmentInfo_t	alignmentInfo;
 };
 
 
@@ -460,12 +366,17 @@ private:
 using CompareList_t = std::vector<ComparedPair>;
 
 
-enum class CompareResult
+/**
+ *  \class
+ *  \brief
+ */
+class DelayedAlign : public DelayedWork
 {
-	COMPARE_ERROR,
-	COMPARE_CANCELLED,
-	COMPARE_MATCH,
-	COMPARE_MISMATCH
+public:
+	DelayedAlign() : DelayedWork() {}
+	virtual void operator()();
+
+	HWND currentView;
 };
 
 
@@ -541,11 +452,14 @@ static const TempMark_t tempMark[] =
 };
 
 
+UserSettings Settings;
+
 CompareList_t compareList;
 std::unique_ptr<NewCompare> newCompare;
 
 volatile unsigned notificationsLock = 0;
 
+DelayedAlign	delayedAlignment;
 DelayedActivate	delayedActivation;
 DelayedClose	delayedClosure;
 DelayedUpdate	delayedUpdate;
@@ -569,8 +483,8 @@ FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
 
 // Declare local functions that appear before they are defined
 void First();
-void onBufferActivated(LRESULT buffId, bool delay = true);
-void forceViewsSync(HWND focalView, bool syncCurrentLine = true);
+void onBufferActivated(LRESULT buffId);
+void syncViews(HWND biasView);
 
 
 void NppSettings::enableClearCommands(bool enable) const
@@ -582,6 +496,8 @@ void NppSettings::enableClearCommands(bool enable) const
 
 	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ALL]._cmdID,
 			MF_BYCOMMAND | ((!enable && compareList.empty()) ? (MF_DISABLED | MF_GRAYED) : MF_ENABLED));
+
+	::DrawMenuBar(nppData._nppHandle);
 
 	HWND hNppToolbar = NppToolbarHandleGetter::get();
 	if (hNppToolbar)
@@ -596,6 +512,8 @@ void NppSettings::enableNppScrollCommands(bool enable) const
 
 	::EnableMenuItem(hMenu, IDM_VIEW_SYNSCROLLH, flag);
 	::EnableMenuItem(hMenu, IDM_VIEW_SYNSCROLLV, flag);
+
+	::DrawMenuBar(nppData._nppHandle);
 
 	HWND hNppToolbar = NppToolbarHandleGetter::get();
 	if (hNppToolbar)
@@ -624,6 +542,8 @@ void NppSettings::updatePluginMenu()
 	::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, flag);
+
+	::DrawMenuBar(nppData._nppHandle);
 
 	HWND hNppToolbar = NppToolbarHandleGetter::get();
 	if (hNppToolbar)
@@ -831,7 +751,9 @@ void ComparedFile::updateFromCurrent()
 		if (hNppTabBar)
 		{
 			TCHAR tabName[MAX_PATH];
+
 			_tcscpy_s(tabName, _countof(tabName), ::PathFindFileName(name));
+			::PathRemoveExtension(tabName);
 
 			int i = _tcslen(tabName) - 1 - _tcslen(tempMark[isTemp].fileMark);
 			for (; i > 0 && tabName[i] != TEXT('_'); --i);
@@ -883,7 +805,7 @@ void ComparedFile::onBeforeClose() const
 	clearWindow(view);
 
 	if (isTemp)
-		::SendMessage(view, SCI_SETSAVEPOINT, true, 0);
+		::SendMessage(view, SCI_SETSAVEPOINT, 0, 0);
 }
 
 
@@ -941,25 +863,6 @@ void ComparedFile::restore() const
 bool ComparedFile::isOpen() const
 {
 	return (::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (LPARAM)NULL) >= 0);
-}
-
-
-void ComparedFile::removeAndStoreBlanks()
-{
-    blankSections = removeBlankLines(getView(viewIdFromBuffId(buffId)), true);
-}
-
-
-void ComparedFile::restoreBlanks()
-{
-    if (!blankSections.empty())
-        addBlankLines(getView(viewIdFromBuffId(buffId)), blankSections);
-}
-
-
-void ComparedFile::clearStoredBlanks()
-{
-    blankSections.clear();
 }
 
 
@@ -1088,21 +991,16 @@ void ComparedPair::restoreFiles(int currentBuffId = -1)
 
 void ComparedPair::setStatus()
 {
-	HWND hNppStatusBar = NppStatusBarHandleGetter::get();
+	TCHAR msg[512];
 
-	if (hNppStatusBar)
-	{
-		TCHAR msg[512];
+	_sntprintf_s(msg, _countof(msg), _TRUNCATE,
+			TEXT("Compare (%s)    Ignore Spaces (%s)    Ignore Case (%s)    Detect Moves (%s)"),
+			isFullCompare	? TEXT("Full")	: TEXT("Sel"),
+			SpacesIgnored	? TEXT("Y")	: TEXT("N"),
+			CaseIgnored		? TEXT("Y")	: TEXT("N"),
+			MovesDetected	? TEXT("Y")	: TEXT("N"));
 
-		_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-				TEXT("Compare (%s)    Ignore Spaces (%s)    Ignore Case (%s)    Detect Moves (%s)"),
-				isFullCompare	? TEXT("Full")	: TEXT("Sel"),
-				SpacesIgnored	? TEXT("Y")	: TEXT("N"),
-				CaseIgnored		? TEXT("Y")	: TEXT("N"),
-				MovesDetected	? TEXT("Y")	: TEXT("N"));
-
-		::SendMessage(hNppStatusBar, SB_SETTEXT, 0, static_cast<LPARAM>((LONG_PTR)msg));
-	}
+	::SendMessageW(nppData._nppHandle, NPPM_SETSTATUSBAR, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)msg));
 }
 
 
@@ -1197,23 +1095,69 @@ void resetCompareView(HWND view)
 
 	CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(view));
 	if (cmpPair != compareList.end())
-		setCompareView(view);
+		setCompareView(view, Settings.colors.blank);
 }
 
 
-void updateWrap()
+void alignDiffs()
 {
-	if (::SendMessage(nppData._scintillaMainHandle, SCI_GETWRAPMODE, 0, 0) == SC_WRAP_NONE)
+	CompareList_t::iterator cmpPair = getCompare(getCurrentBuffId());
+	if (cmpPair == compareList.end())
 		return;
 
-	ScopedIncrementer incr(notificationsLock);
+	if (cmpPair->alignmentInfo.empty())
+		return;
 
-	::UpdateWindow(nppData._nppHandle);
+	const AlignmentInfo_t& alignmentInfo = cmpPair->alignmentInfo;
 
-	adjustBlanksWrap();
+	::SendMessage(nppData._scintillaMainHandle, SCI_ANNOTATIONCLEARALL, 0, 0);
+	::SendMessage(nppData._scintillaSecondHandle, SCI_ANNOTATIONCLEARALL, 0, 0);
 
-	::UpdateWindow(nppData._scintillaMainHandle);
-	::UpdateWindow(nppData._scintillaSecondHandle);
+	::SendMessage(nppData._scintillaMainHandle, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
+	::SendMessage(nppData._scintillaSecondHandle, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
+
+	const int mainEndLine = ::SendMessage(nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0) - 1;
+	const int subEndLine = ::SendMessage(nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0) - 1;
+
+	const int maxSize = static_cast<int>(alignmentInfo.size());
+
+	// Align diffs
+	for (int i = 0; i < maxSize &&
+			alignmentInfo[i].main.line <= mainEndLine && alignmentInfo[i].sub.line <= subEndLine; ++i)
+	{
+		int mismatchLen =
+				::SendMessage(nppData._scintillaMainHandle, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) -
+				::SendMessage(nppData._scintillaSecondHandle, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0);
+
+		if (mismatchLen > 0)
+		{
+			if (i && (alignmentInfo[i].sub.line == alignmentInfo[i - 1].sub.line))
+				mismatchLen += ::SendMessage(nppData._scintillaSecondHandle, SCI_ANNOTATIONGETLINES,
+						alignmentInfo[i].sub.line - 1, 0);
+
+			addBlankSection(nppData._scintillaSecondHandle, alignmentInfo[i].sub.line, mismatchLen);
+		}
+		else if (mismatchLen < 0)
+		{
+			if (i && (alignmentInfo[i].main.line == alignmentInfo[i - 1].main.line))
+				mismatchLen -= ::SendMessage(nppData._scintillaMainHandle, SCI_ANNOTATIONGETLINES,
+						alignmentInfo[i].main.line - 1, 0);
+
+			addBlankSection(nppData._scintillaMainHandle, alignmentInfo[i].main.line, -mismatchLen);
+		}
+	}
+
+	// Align last lines
+	const int mismatchLen =
+			::SendMessage(nppData._scintillaMainHandle, SCI_VISIBLEFROMDOCLINE, mainEndLine, 0) +
+			::SendMessage(nppData._scintillaMainHandle, SCI_WRAPCOUNT, mainEndLine, 0) -
+			::SendMessage(nppData._scintillaSecondHandle, SCI_VISIBLEFROMDOCLINE, subEndLine, 0) -
+			::SendMessage(nppData._scintillaSecondHandle, SCI_WRAPCOUNT, subEndLine, 0);
+
+	if (mismatchLen > 0)
+		addBlankSection(nppData._scintillaSecondHandle, subEndLine + 1, mismatchLen);
+	else if (mismatchLen < 0)
+		addBlankSection(nppData._scintillaMainHandle, mainEndLine + 1, -mismatchLen);
 }
 
 
@@ -1221,7 +1165,6 @@ void showNavBar()
 {
 	NavDlg.SetConfig(Settings);
 	NavDlg.Show();
-	updateWrap();
 }
 
 
@@ -1277,10 +1220,6 @@ bool areSelectionsValid(LRESULT currentBuffId = -1, LRESULT otherBuffId = -1)
 
 	std::pair<int, int> viewSel = getSelectionLines(view2);
 	bool valid = !(viewSel.first < 0);
-	bool notOnlyBlanks = true;
-
-	if (valid && (currentBuffId == otherBuffId))
-		valid = notOnlyBlanks = !areOnlyBlanks(view2, viewSel);
 
 	if (view1 == view2)
 		activateBufferID(currentBuffId);
@@ -1289,20 +1228,11 @@ bool areSelectionsValid(LRESULT currentBuffId = -1, LRESULT otherBuffId = -1)
 	{
 		viewSel = getSelectionLines(view1);
 		valid = !(viewSel.first < 0);
-
-		if (valid && (currentBuffId == otherBuffId))
-			valid = notOnlyBlanks = !areOnlyBlanks(view1, viewSel);
 	}
 
 	if (!valid)
-	{
-		if (notOnlyBlanks)
-			::MessageBox(nppData._nppHandle, TEXT("No selected lines to compare - operation ignored."),
-					TEXT("Compare Plugin"), MB_OK);
-		else
-			::MessageBox(nppData._nppHandle, TEXT("Only blank lines selected - operation ignored."),
-					TEXT("Compare Plugin"), MB_OK);
-	}
+		::MessageBox(nppData._nppHandle, TEXT("No selected lines to compare - operation ignored."),
+				TEXT("Compare Plugin"), MB_OK);
 
 	return valid;
 }
@@ -1332,11 +1262,11 @@ void setContent(const char* content)
 	ScopedViewWriteEnabler writeEn(view);
 
 	::SendMessage(view, SCI_SETTEXT, 0, (LPARAM)content);
-	::SendMessage(view, SCI_SETSAVEPOINT, true, 0);
+	::SendMessage(view, SCI_SETSAVEPOINT, 0, 0);
 }
 
 
-bool createTempFile(const TCHAR *file, Temp_t tempType)
+bool checkFileExists(const TCHAR *file)
 {
 	if (::PathFileExists(file) == FALSE)
 	{
@@ -1345,6 +1275,12 @@ bool createTempFile(const TCHAR *file, Temp_t tempType)
 		return false;
 	}
 
+	return true;
+}
+
+
+bool createTempFile(const TCHAR *file, Temp_t tempType)
+{
 	if (!setFirst(true))
 		return false;
 
@@ -1352,10 +1288,13 @@ bool createTempFile(const TCHAR *file, Temp_t tempType)
 
 	if (::GetTempPath(_countof(tempFile), tempFile))
 	{
-		const TCHAR* fileName = ::PathFindFileName(newCompare->pair.file[0].name);
+		const TCHAR* fileName	= ::PathFindFileName(newCompare->pair.file[0].name);
+		const TCHAR* fileExt	= ::PathFindExtension(newCompare->pair.file[0].name);
 
 		if (::PathAppend(tempFile, fileName))
 		{
+			::PathRemoveExtension(tempFile);
+
 			_tcscat_s(tempFile, _countof(tempFile), tempMark[tempType].fileMark);
 
 			unsigned idxPos = _tcslen(tempFile);
@@ -1374,6 +1313,7 @@ bool createTempFile(const TCHAR *file, Temp_t tempType)
 				}
 
 				_tcscat_s(tempFile, _countof(tempFile), idx);
+				_tcscat_s(tempFile, _countof(tempFile), fileExt);
 
 				if (!::PathFileExists(tempFile))
 					break;
@@ -1426,11 +1366,11 @@ void clearComparePair(LRESULT buffId)
 
 	compareList.erase(cmpPair);
 
-	onBufferActivated(getCurrentBuffId(), false);
+	onBufferActivated(getCurrentBuffId());
 }
 
 
-void closeComparePair(CompareList_t::iterator& cmpPair)
+void closeComparePair(CompareList_t::iterator cmpPair)
 {
 	HWND currentView = getCurrentView();
 
@@ -1446,7 +1386,7 @@ void closeComparePair(CompareList_t::iterator& cmpPair)
 	if (::IsWindowVisible(currentView))
 		::SetFocus(currentView);
 
-	onBufferActivated(getCurrentBuffId(), false);
+	onBufferActivated(getCurrentBuffId());
 }
 
 
@@ -1505,76 +1445,7 @@ CompareList_t::iterator addComparePair()
 }
 
 
-CompareResult compareViews(progress_ptr& progress, section_t mainViewSection, section_t subViewSection)
-{
-	DocCmpInfo doc1;
-	DocCmpInfo doc2;
-
-	if (Settings.OldFileViewId == MAIN_VIEW)
-	{
-		doc1.view		= nppData._scintillaMainHandle;
-		doc1.section	= mainViewSection;
-		doc2.view		= nppData._scintillaSecondHandle;
-		doc2.section	= subViewSection;
-	}
-	else
-	{
-		doc2.view		= nppData._scintillaMainHandle;
-		doc2.section	= mainViewSection;
-		doc1.view		= nppData._scintillaSecondHandle;
-		doc1.section	= subViewSection;
-	}
-
-	std::pair<std::vector<diff_info>, bool> cmpResults = compareDocs(doc1, doc2, Settings, progress);
-	std::vector<diff_info>& blockDiff = cmpResults.first;
-
-	if (progress && !progress->NextPhase())
-		return CompareResult::COMPARE_CANCELLED;
-
-	const int blockDiffSize = static_cast<int>(blockDiff.size());
-
-	if (blockDiffSize == 0)
-		return CompareResult::COMPARE_MATCH;
-
-	if (progress)
-		progress->SetMaxCount(blockDiffSize);
-
-	// Do block compares
-	for (int i = 0; i < blockDiffSize; ++i)
-	{
-		if (blockDiff[i].type == diff_type::DIFF_INSERT)
-		{
-			if (i > 0) // Should always be the case but check it anyway for safety
-			{
-				diff_info& blockDiff1 = blockDiff[i - 1];
-				diff_info& blockDiff2 = blockDiff[i];
-
-				// Check if the DELETE/INSERT pair includes changed lines or it's a completely new block
-				if (blockDiff1.type == diff_type::DIFF_DELETE)
-				{
-					blockDiff1.matchedDiff = &blockDiff2;
-					blockDiff2.matchedDiff = &blockDiff1;
-
-					compareBlocks(doc1, doc2, Settings, blockDiff1, blockDiff2);
-				}
-			}
-		}
-
-		if (progress && !progress->Advance())
-			return CompareResult::COMPARE_CANCELLED;
-	}
-
-	if (progress && !progress->NextPhase())
-		return CompareResult::COMPARE_CANCELLED;
-
-	if (!showDiffs(doc1, doc2, Settings, cmpResults, progress))
-		return CompareResult::COMPARE_CANCELLED;
-
-	return CompareResult::COMPARE_MISMATCH;
-}
-
-
-CompareResult runCompare(CompareList_t::iterator& cmpPair, bool selectionCompare)
+CompareResult runCompare(CompareList_t::iterator cmpPair, bool selectionCompare)
 {
 	cmpPair->positionFiles();
 
@@ -1595,44 +1466,15 @@ CompareResult runCompare(CompareList_t::iterator& cmpPair, bool selectionCompare
 
 	setStyles(Settings);
 
-	CompareResult result = CompareResult::COMPARE_ERROR;
+	const TCHAR* newName = ::PathFindFileName(cmpPair->getNewFile().name);
+	const TCHAR* oldName = ::PathFindFileName(cmpPair->getOldFile().name);
 
-	progress_ptr& progress = ProgressDlg::Open();
+	TCHAR progressInfo[MAX_PATH];
+	_sntprintf_s(progressInfo, _countof(progressInfo), _TRUNCATE, selectionCompare ?
+			TEXT("Comparing selected lines in \"%s\" vs. selected lines in \"%s\"...") :
+			TEXT("Comparing \"%s\" vs. \"%s\"..."), newName, oldName);
 
-	if (progress)
-	{
-		const TCHAR* newName = ::PathFindFileName(cmpPair->getNewFile().name);
-		const TCHAR* oldName = ::PathFindFileName(cmpPair->getOldFile().name);
-
-		TCHAR msg[MAX_PATH];
-		_sntprintf_s(msg, _countof(msg), _TRUNCATE, selectionCompare ?
-				TEXT("Comparing selected lines in \"%s\" vs. selected lines in \"%s\"...") :
-				TEXT("Comparing \"%s\" vs. \"%s\"..."), newName, oldName);
-
-		progress->SetInfo(msg);
-	}
-
-	try
-	{
-		result = compareViews(progress, mainViewSection, subViewSection);
-		progress.reset();
-	}
-	catch (std::exception& e)
-	{
-		progress.reset();
-
-		char msg[128];
-		_snprintf_s(msg, _countof(msg), _TRUNCATE, "Exception occurred: %s", e.what());
-		MessageBoxA(nppData._nppHandle, msg, "Compare Plugin", MB_OK | MB_ICONWARNING);
-	}
-	catch (...)
-	{
-		progress.reset();
-
-		MessageBoxA(nppData._nppHandle, "Unknown exception occurred.", "Compare Plugin", MB_OK | MB_ICONWARNING);
-	}
-
-	return result;
+	return compareViews(mainViewSection, subViewSection, Settings, progressInfo, cmpPair->alignmentInfo);
 }
 
 
@@ -1693,7 +1535,7 @@ void compare(bool selectionCompare = false)
 		}
 	}
 
-	CompareResult cmpResult = runCompare(cmpPair, selectionCompare);
+	const CompareResult cmpResult = runCompare(cmpPair, selectionCompare);
 
 	switch (cmpResult)
 	{
@@ -1707,18 +1549,18 @@ void compare(bool selectionCompare = false)
 			cmpPair->setStatus();
 
 			NppSettings::get().setCompareMode(true);
-
-			setCompareView(nppData._scintillaMainHandle);
-			setCompareView(nppData._scintillaSecondHandle);
-
 			NppSettings::get().toSingleLineTab();
+
+			setCompareView(nppData._scintillaMainHandle, Settings.colors.blank);
+			setCompareView(nppData._scintillaSecondHandle, Settings.colors.blank);
 
 			if (Settings.UseNavBar)
 				showNavBar();
-			else
-				updateWrap();
 
-			if (!Settings.GotoFirstDiff && recompare)
+			alignDiffs();
+			syncViews(getCurrentView());
+
+			if (recompare && !Settings.GotoFirstDiff)
 			{
 				location.restore();
 			}
@@ -1733,8 +1575,7 @@ void compare(bool selectionCompare = false)
 			if (selectionCompare)
 				clearSelection(getOtherView());
 
-			// Synchronize views
-			forceViewsSync(getCurrentView());
+			LOGD("Compare shown\n");
 		}
 		break;
 
@@ -1861,6 +1702,9 @@ void LastSaveDiff()
 
 	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
 
+	if (!checkFileExists(file))
+		return;
+
 	if (createTempFile(file, LAST_SAVED_TEMP))
 		compare();
 }
@@ -1872,6 +1716,9 @@ void SvnDiff()
 	TCHAR svnFile[MAX_PATH];
 
 	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
+
+	if (!checkFileExists(file))
+		return;
 
 	if (!GetSvnFile(file, svnFile, _countof(svnFile)))
 		return;
@@ -1886,6 +1733,9 @@ void GitDiff()
 	TCHAR file[MAX_PATH];
 
 	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
+
+	if (!checkFileExists(file))
+		return;
 
 	std::vector<char> content = GetGitFileContent(file);
 
@@ -1968,7 +1818,6 @@ void OpenSettingsDlg(void)
 		if (!compareList.empty())
 		{
 			setStyles(Settings);
-
 			NavDlg.SetConfig(Settings);
 		}
 	}
@@ -1977,7 +1826,44 @@ void OpenSettingsDlg(void)
 
 void OpenAboutDlg()
 {
+#ifdef DLOG
+
+	if (dLogBuf == -1)
+	{
+		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_NEW);
+
+		dLogBuf = getCurrentBuffId();
+
+		HWND hNppTabBar = NppTabHandleGetter::get(getCurrentViewId());
+
+		if (hNppTabBar)
+		{
+			TCHAR name[] = { TEXT("CP_debug_log") };
+
+			TCITEM tab;
+			tab.mask = TCIF_TEXT;
+			tab.pszText = name;
+
+			TabCtrl_SetItem(hNppTabBar, posFromBuffId(dLogBuf), &tab);
+		}
+	}
+	else
+	{
+		activateBufferID(dLogBuf);
+	}
+
+	HWND view = getCurrentView();
+
+	::SendMessage(view, SCI_APPENDTEXT, dLog.size(), (LPARAM)dLog.c_str());
+	::SendMessage(view, SCI_SETSAVEPOINT, 0, 0);
+
+	dLog.clear();
+
+#else
+
 	AboutDlg.doDialog();
+
+#endif
 }
 
 
@@ -2016,7 +1902,7 @@ void createMenu()
 	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_key 		= 'X';
 
 	_tcscpy_s(funcItem[CMD_CLEAR_ALL]._itemName, nbChar, TEXT("Clear All Compares"));
-	funcItem[CMD_CLEAR_ALL]._pFunc 				= ClearAllCompares;
+	funcItem[CMD_CLEAR_ALL]._pFunc	= ClearAllCompares;
 
 	_tcscpy_s(funcItem[CMD_LAST_SAVE_DIFF]._itemName, nbChar, TEXT("Diff since last Save"));
 	funcItem[CMD_LAST_SAVE_DIFF]._pFunc				= LastSaveDiff;
@@ -2134,67 +2020,35 @@ void deinitPlugin()
 
 	// Deallocate shortcut
 	for (int i = 0; i < NB_MENU_COMMANDS; i++)
+	{
 		if (funcItem[i]._pShKey != NULL)
         {
 			delete funcItem[i]._pShKey;
             funcItem[i]._pShKey = NULL;
         }
+	}
 }
 
 
-void forceViewsSync(HWND focalView, bool syncCurrentLine)
+void syncViews(HWND biasView)
 {
-	HWND otherView = getOtherView(focalView);
+	HWND otherView = getOtherView(biasView);
 
-	const int activeLine = getCurrentLine(focalView);
-	const int firstVisibleLine1 = ::SendMessage(focalView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	const int firstVisibleLine1 = ::SendMessage(biasView, SCI_GETFIRSTVISIBLELINE, 0, 0);
 
-	if (syncCurrentLine)
+	if (firstVisibleLine1 != ::SendMessage(otherView, SCI_GETFIRSTVISIBLELINE, 0, 0))
 	{
-		const int visibleLine = ::SendMessage(focalView, SCI_VISIBLEFROMDOCLINE, activeLine, 0);
-		// If current line is not visible then sync views on the first visible line
-		syncCurrentLine = (visibleLine >= firstVisibleLine1) &&
-				(visibleLine <= firstVisibleLine1 + ::SendMessage(focalView, SCI_LINESONSCREEN, 0, 0));
+		LOGD("Syncing views - bias " + std::string(biasView == nppData._scintillaMainHandle ? "MAIN" : "SUB") + "\n");
+
+		ScopedIncrementer incr(notificationsLock);
+
+		::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine1, 0);
 	}
-
-	const int line = syncCurrentLine ? activeLine :
-			::SendMessage(focalView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine1, 0);
-	const int offset =
-			::SendMessage(focalView, SCI_VISIBLEFROMDOCLINE, syncCurrentLine ? line : line + 1, 0) - firstVisibleLine1;
-
-	ScopedIncrementer incr(notificationsLock);
-
-	::SendMessage(otherView, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
-	int firstVisibleLine2 =
-		::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, syncCurrentLine ? line : line + 1, 0) - offset;
-
-	if (!syncCurrentLine && (line != ::SendMessage(otherView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine2, 0) ||
-			firstVisibleLine1 == ::SendMessage(focalView, SCI_VISIBLEFROMDOCLINE, line, 0)))
-		firstVisibleLine2 = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, line, 0);
-
-	if ((activeLine != getCurrentLine(otherView)) && !isSelection(otherView))
-	{
-		int pos = ::SendMessage(focalView, SCI_GETCURRENTPOS, 0, 0) -
-				::SendMessage(focalView, SCI_POSITIONFROMLINE, activeLine, 0);
-		pos += ::SendMessage(otherView, SCI_POSITIONFROMLINE, activeLine, 0);
-
-		const int lineEndPos = ::SendMessage(otherView, SCI_GETLINEENDPOSITION, activeLine, 0);
-		if (lineEndPos < pos)
-			pos = lineEndPos;
-
-		::SendMessage(otherView, SCI_SETSEL, pos, pos);
-	}
-
-	::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine2, 0);
-
-	::UpdateWindow(otherView);
 }
 
 
-void comparedFileActivated(const ComparedFile& cmpFile)
+void comparedFileActivated()
 {
-	HWND syncView = getCurrentView();
-
 	if (!NppSettings::get().compareMode)
 	{
 		NppSettings::get().setCompareMode();
@@ -2203,13 +2057,11 @@ void comparedFileActivated(const ComparedFile& cmpFile)
 			showNavBar();
 	}
 
-	if (cmpFile.originalViewId != cmpFile.compareViewId)
-		syncView = getOtherView(syncView);
+	setCompareView(nppData._scintillaMainHandle, Settings.colors.blank);
+	setCompareView(nppData._scintillaSecondHandle, Settings.colors.blank);
 
-	setCompareView(nppData._scintillaMainHandle);
-	setCompareView(nppData._scintillaSecondHandle);
-
-	forceViewsSync(syncView);
+	delayedAlignment.currentView = getCurrentView();
+	delayedAlignment();
 }
 
 
@@ -2283,10 +2135,52 @@ void onNppReady()
 }
 
 
-void onSciUpdateUI(SCNotification *notifyCode)
+void DelayedAlign::operator()()
 {
-	if (notifyCode->updated & (SC_UPDATE_SELECTION | SC_UPDATE_V_SCROLL))
-		forceViewsSync((HWND)notifyCode->nmhdr.hwndFrom);
+	int endLine1 = ::SendMessage(nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0) - 1;
+	int endLine2 = ::SendMessage(nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0) - 1;
+
+	endLine1 = ::SendMessage(nppData._scintillaMainHandle, SCI_VISIBLEFROMDOCLINE, endLine1, 0) +
+			::SendMessage(nppData._scintillaMainHandle, SCI_WRAPCOUNT, endLine1, 0) +
+			::SendMessage(nppData._scintillaMainHandle, SCI_ANNOTATIONGETLINES, endLine1, 0);
+
+	endLine2 = ::SendMessage(nppData._scintillaSecondHandle, SCI_VISIBLEFROMDOCLINE, endLine2, 0) +
+			::SendMessage(nppData._scintillaSecondHandle, SCI_WRAPCOUNT, endLine2, 0) +
+			::SendMessage(nppData._scintillaSecondHandle, SCI_ANNOTATIONGETLINES, endLine2, 0);
+
+	ScopedIncrementer incr(notificationsLock);
+
+	if (endLine1 != endLine2)
+	{
+		LOGD("Aligning diffs\n");
+
+		ViewLocation location(getCurrentBuffId());
+
+		alignDiffs();
+
+		location.restore();
+	}
+
+	syncViews(currentView);
+	NavDlg.Update();
+}
+
+
+void onSciPaint(HWND view)
+{
+	if (!delayedAlignment.isPending())
+		delayedAlignment.currentView = view;
+
+	delayedAlignment.post(10);
+}
+
+
+void onSciUpdateUI(HWND view)
+{
+	ScopedIncrementer incr(notificationsLock);
+
+	syncViews(view);
+	NavDlg.Update();
 }
 
 
@@ -2334,24 +2228,19 @@ void DelayedUpdate::operator()()
 		changeViewSec.len += endOff;
 		otherViewSec.len += endOff;
 
-		mainViewSec.len -= clearMarksAndBlanks(nppData._scintillaMainHandle, mainViewSec.off, mainViewSec.len);
-		subViewSec.len -= clearMarksAndBlanks(nppData._scintillaSecondHandle, subViewSec.off, subViewSec.len);
+		clearMarksAndBlanks(nppData._scintillaMainHandle, mainViewSec.off, mainViewSec.len);
+		clearMarksAndBlanks(nppData._scintillaSecondHandle, subViewSec.off, subViewSec.len);
 
-		progress_ptr& progress = ProgressDlg::Open();
-
-		if (progress)
-			progress->SetInfo(TEXT("Re-comparing changes..."));
-
-		compareViews(progress, mainViewSec, subViewSec);
-		progress.reset();
+		AlignmentInfo_t alignmentInfo;
+		compareViews(mainViewSec, subViewSec, Settings, TEXT("Re-comparing changes..."), alignmentInfo);
 	}
 	else
 	{
 		clearMarks(nppData._scintillaMainHandle, mainViewSec.off, mainViewSec.len);
 		clearMarks(nppData._scintillaSecondHandle, subViewSec.off, subViewSec.len);
 
-		progress_ptr progress;
-		compareViews(progress, mainViewSec, subViewSec);
+		AlignmentInfo_t alignmentInfo;
+		compareViews(mainViewSec, subViewSec, Settings, nullptr, alignmentInfo);
 	}
 
 	linesAdded = 0;
@@ -2362,11 +2251,11 @@ void DelayedUpdate::operator()()
 		NavDlg.Show();
 
 	// Synchronize views
-	forceViewsSync(changeView);
+	syncViews(changeView);
 }
 
 
-void onSciModified(SCNotification *notifyCode)
+void onSciModified(SCNotification* notifyCode)
 {
 	const LRESULT buffId = getCurrentBuffId();
 
@@ -2405,7 +2294,7 @@ void onSciModified(SCNotification *notifyCode)
 }
 
 
-void onSciModifiedUpdate(SCNotification *notifyCode)
+void onSciModifiedUpdate(SCNotification* notifyCode)
 {
 	const LRESULT buffId = getCurrentBuffId();
 
@@ -2475,6 +2364,8 @@ void DelayedActivate::operator()()
 	if (cmpPair == compareList.end())
 		return;
 
+	LOGDB(buffId, "Activate\n");
+
 	const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
 
 	// When compared file is activated make sure its corresponding pair file is also active in the other view
@@ -2488,12 +2379,13 @@ void DelayedActivate::operator()()
 
 	cmpPair->setStatus();
 
-	comparedFileActivated(cmpPair->getFileByBuffId(buffId));
+	comparedFileActivated();
 }
 
 
-void onBufferActivated(LRESULT buffId, bool delay)
+void onBufferActivated(LRESULT buffId)
 {
+	delayedAlignment.cancel();
 	delayedActivation.cancel();
 
 	CompareList_t::iterator cmpPair = getCompare(buffId);
@@ -2505,30 +2397,10 @@ void onBufferActivated(LRESULT buffId, bool delay)
 	}
 	else
 	{
-		const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
+		LOGDB(buffId, "onBufferActivated() - post for activation\n");
 
-		// The other compared file is active in the other view - perhaps we are simply switching between views
-		if (getDocId(getOtherView()) == otherFile.sciDoc)
-		{
-			cmpPair->setStatus();
-
-			comparedFileActivated(cmpPair->getFileByBuffId(buffId));
-		}
-		// The other compared file is not active in the other view - we must activate it but let's wait because
-		// if the view is also switched this might not be the user activated buffer
-		// (it might be intermediate buffer activation notification)
-		else
-		{
-			if (delay)
-			{
-				delayedActivation.buffId = buffId;
-				delayedActivation.post(30);
-			}
-			else
-			{
-				delayedActivation(buffId);
-			}
-		}
+		delayedActivation.buffId = buffId;
+		delayedActivation.post(30);
 	}
 }
 
@@ -2577,7 +2449,7 @@ void DelayedClose::operator()()
 	closedBuffs.clear();
 
 	activateBufferID(currentBuffId);
-	onBufferActivated(currentBuffId, false);
+	onBufferActivated(currentBuffId);
 
 	// If it is the last file and it is not in the main view - move it there
 	if (getNumberOfFiles() == 1 && getCurrentViewId() == SUB_VIEW)
@@ -2600,6 +2472,9 @@ void onFileBeforeClose(LRESULT buffId)
 	if (cmpPair == compareList.end())
 		return;
 
+	LOGDB(buffId, "onFileBeforeClose() - post for delayed closure\n");
+
+	delayedAlignment.cancel();
 	delayedUpdate.cancel();
 	delayedActivation.cancel();
 
@@ -2635,34 +2510,12 @@ void onFileBeforeClose(LRESULT buffId)
 }
 
 
-void onFileBeforeSave(LRESULT buffId)
-{
-	CompareList_t::iterator cmpPair = getCompare(buffId);
-	if (cmpPair == compareList.end())
-		return;
-
-    ComparedFile& savedFile = cmpPair->getFileByBuffId(buffId);
-    const LRESULT currentBuffId = getCurrentBuffId();
-
-	ScopedIncrementer incr(notificationsLock);
-
-    if (currentBuffId != buffId)
-        activateBufferID(buffId);
-
-    savedFile.removeAndStoreBlanks();
-
-    if (currentBuffId != buffId)
-        activateBufferID(currentBuffId);
-}
-
-
 void onFileSaved(LRESULT buffId)
 {
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
 		return;
 
-    ComparedFile& savedFile = cmpPair->getFileByBuffId(buffId);
     const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
 
     const LRESULT currentBuffId = getCurrentBuffId();
@@ -2675,16 +2528,13 @@ void onFileSaved(LRESULT buffId)
 
     if (pairIsActive && Settings.RecompareOnSave)
     {
+        delayedAlignment.cancel();
         delayedUpdate.cancel();
+
         delayedUpdate.fullCompare = true;
+
         delayedUpdate.post(30);
     }
-    else
-    {
-        savedFile.restoreBlanks();
-    }
-
-    savedFile.clearStoredBlanks();
 
     if (otherFile.isTemp == LAST_SAVED_TEMP)
     {
@@ -2711,7 +2561,7 @@ void onFileSaved(LRESULT buffId)
     if (!pairIsActive)
     {
         activateBufferID(currentBuffId);
-        onBufferActivated(currentBuffId, false);
+        onBufferActivated(currentBuffId);
     }
 }
 
@@ -2728,16 +2578,9 @@ void ViewNavigationBar()
 	if (NppSettings::get().compareMode)
 	{
 		if (Settings.UseNavBar)
-		{
 			showNavBar();
-		}
 		else
-		{
 			NavDlg.Hide();
-			updateWrap();
-		}
-
-		forceViewsSync(getCurrentView());
 	}
 }
 
@@ -2790,14 +2633,14 @@ extern "C" __declspec(dllexport) const TCHAR * getName()
 }
 
 
-extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF)
+extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int* nbF)
 {
 	*nbF = NB_MENU_COMMANDS;
 	return funcItem;
 }
 
 
-extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
+extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 {
 	switch (notifyCode->nmhdr.code)
 	{
@@ -2805,35 +2648,34 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		case SCN_PAINTED:
 			if (NppSettings::get().compareMode && !notificationsLock &&
 					!delayedActivation.isPending() && !delayedClosure.isPending() && !delayedUpdate.isPending())
-				NavDlg.Update();
+				onSciPaint((HWND)notifyCode->nmhdr.hwndFrom);
 		break;
 
-		// Emulate word-wrap aware vertical scroll sync
+		// Vertical scroll sync
 		case SCN_UPDATEUI:
 			if (NppSettings::get().compareMode && !notificationsLock &&
 					!delayedActivation.isPending() && !delayedClosure.isPending() && !delayedUpdate.isPending())
-				onSciUpdateUI(notifyCode);
+				onSciUpdateUI((HWND)notifyCode->nmhdr.hwndFrom);
 		break;
 
 		case NPPN_BUFFERACTIVATED:
-			if (!notificationsLock && !compareList.empty() && !delayedClosure.isPending())
+			if (!compareList.empty() && !notificationsLock && !delayedClosure.isPending())
 				onBufferActivated(notifyCode->nmhdr.idFrom);
 		break;
 
 		case NPPN_FILEBEFORECLOSE:
 			if (newCompare && (newCompare->pair.file[0].buffId == static_cast<LRESULT>(notifyCode->nmhdr.idFrom)))
 				newCompare.reset();
-			else if (!notificationsLock && !compareList.empty())
+#ifdef DLOG
+			else if (dLogBuf == static_cast<LRESULT>(notifyCode->nmhdr.idFrom))
+				dLogBuf = -1;
+#endif
+			else if (!compareList.empty() && !notificationsLock)
 				onFileBeforeClose(notifyCode->nmhdr.idFrom);
 		break;
 
-		case NPPN_FILEBEFORESAVE:
-			if (!compareList.empty())
-				onFileBeforeSave(notifyCode->nmhdr.idFrom);
-		break;
-
 		case NPPN_FILESAVED:
-			if (!notificationsLock && !compareList.empty())
+			if (!compareList.empty() && !notificationsLock)
 				onFileSaved(notifyCode->nmhdr.idFrom);
 		break;
 
@@ -2857,6 +2699,8 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 
 		case NPPN_WORDSTYLESUPDATED:
 			setStyles(Settings);
+			delayedAlignment.currentView = getCurrentView();
+			delayedAlignment();
 			NavDlg.SetConfig(Settings);
 		break;
 

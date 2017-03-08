@@ -1,6 +1,7 @@
 /*
  * This file is part of Compare plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
+ * Copyright (C)2017 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,62 +22,44 @@
 #include <windows.h>
 #include <vector>
 #include <utility>
+
+#include "Compare.h"
 #include "NppHelpers.h"
-#include "diff.h"
-#include "ProgressDlg.h"
 
 
-enum class charType
+enum class CompareResult
 {
-	SPACECHAR,
-	ALPHANUMCHAR,
-	OTHERCHAR
+	COMPARE_ERROR,
+	COMPARE_CANCELLED,
+	COMPARE_MATCH,
+	COMPARE_MISMATCH
 };
 
 
-struct DocCmpInfo
+struct section_t
 {
-	HWND		view;
-	section_t	section;
+	int off;
+	int len;
 };
 
 
-struct Word
+struct AlignmentViewData
 {
-	charType type;
-
-	int line;
-	int pos;
-	int length;
-
-	unsigned int hash;
-
-	inline bool operator==(const Word& rhs) const
-	{
-		return (hash == rhs.hash);
-	}
-
-	inline bool operator!=(const Word& rhs) const
-	{
-		return (hash != rhs.hash);
-	}
-
-	inline bool operator==(unsigned int rhs) const
-	{
-		return (hash == rhs);
-	}
-
-	inline bool operator!=(unsigned int rhs) const
-	{
-		return (hash != rhs);
-	}
+	int					line {0};
+	int					diffMask {0};
+	// std::vector<int>	movedLinesOffsets;
 };
 
 
-// The returned bool is true if views are swapped and false otherwise
-std::pair<std::vector<diff_info>, bool>
-		compareDocs(DocCmpInfo& doc1, DocCmpInfo& doc2, const UserSettings& settings, progress_ptr& progress);
-bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSettings& settings,
-		diff_info& blockDiff1, diff_info& blockDiff2);
-bool showDiffs(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSettings& settings,
-		const std::pair<std::vector<diff_info>, bool>& cmpResults, progress_ptr& progress);
+struct AlignmentPair
+{
+	AlignmentViewData main;
+	AlignmentViewData sub;
+};
+
+
+using AlignmentInfo_t = std::vector<AlignmentPair>;
+
+
+CompareResult compareViews(const section_t& mainViewSection, const section_t& subViewSection,
+		const UserSettings& settings, const TCHAR* progressInfo, AlignmentInfo_t& alignmentInfo);

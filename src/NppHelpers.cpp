@@ -1,6 +1,7 @@
 /*
  * This file is part of Compare plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
+ * Copyright (C)2017 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,8 +23,8 @@
 
 #include <stdlib.h>
 #include <vector>
+#include <algorithm>
 
-#include "Compare.h"
 #include "NppHelpers.h"
 #include "NppInternalDefines.h"
 
@@ -34,18 +35,8 @@
 #include "icon_moved_multiple_16.h"
 
 
-// don't use "INDIC_CONTAINER + 1" since it conflicts with DSpellCheck plugin
+// Don't use "INDIC_CONTAINER + 1" since it conflicts with DSpellCheck plugin
 #define INDIC_HIGHLIGHT		INDIC_CONTAINER + 7
-
-
-static const char EOLstr[3][3] =
-{
-	"\r\n",
-	"\r",
-	"\n"
-};
-
-static const short EOLlen[3] = { 2, 1, 1 };
 
 
 HWND NppToolbarHandleGetter::hNppToolbar = NULL;
@@ -69,34 +60,6 @@ BOOL CALLBACK NppToolbarHandleGetter::enumWindowsCB(HWND hwnd, LPARAM )
 	if (!_tcscmp(winClassName, TOOLBARCLASSNAME))
 	{
 		hNppToolbar = hwnd;
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
-
-HWND NppStatusBarHandleGetter::hNppStatusBar = NULL;
-
-
-HWND NppStatusBarHandleGetter::get()
-{
-	if (hNppStatusBar == NULL)
-		::EnumChildWindows(nppData._nppHandle, enumWindowsCB, 0);
-
-	return hNppStatusBar;
-}
-
-
-BOOL CALLBACK NppStatusBarHandleGetter::enumWindowsCB(HWND hwnd, LPARAM )
-{
-	TCHAR winClassName[64];
-
-	::GetClassName(hwnd, winClassName, _countof(winClassName));
-
-	if (!_tcscmp(winClassName, STATUSCLASSNAME))
-	{
-		hNppStatusBar = hwnd;
 		return FALSE;
 	}
 
@@ -150,8 +113,14 @@ void ViewLocation::save(LRESULT buffId)
 
 	HWND view = getView(viewIdFromBuffId(_buffId));
 
-	_firstVisibleLine = ::SendMessage(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
-	_pos = ::SendMessage(view, SCI_GETCURRENTPOS, 0, 0);
+	_pos		= ::SendMessage(view, SCI_GETCURRENTPOS, 0, 0);
+	_selStart	= ::SendMessage(view, SCI_GETSELECTIONSTART, 0, 0);
+	_selEnd		= ::SendMessage(view, SCI_GETSELECTIONEND, 0, 0);
+
+	const int line = ::SendMessage(view, SCI_LINEFROMPOSITION, _pos, 0);
+
+	_visibleLineOffset = ::SendMessage(view, SCI_VISIBLEFROMDOCLINE, line, 0) -
+			::SendMessage(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
 }
 
 
@@ -164,9 +133,64 @@ void ViewLocation::restore()
 	const int line = ::SendMessage(view, SCI_LINEFROMPOSITION, _pos, 0);
 
 	::SendMessage(view, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
-	::SendMessage(view, SCI_SETSEL, _pos, _pos);
-	::SendMessage(view, SCI_SETFIRSTVISIBLELINE, _firstVisibleLine, 0);
+	::SendMessage(view, SCI_SETSEL, _selStart, _selEnd);
+	::SendMessage(view, SCI_SETFIRSTVISIBLELINE,
+			::SendMessage(view, SCI_VISIBLEFROMDOCLINE, line, 0) - _visibleLineOffset, 0);
 }
+
+
+namespace // anonymous namespace
+{
+
+int blankStyle[2] = { 0, 0 };
+
+
+void defineColor(int type, int color)
+{
+	::SendMessage(nppData._scintillaMainHandle, SCI_MARKERDEFINE,	type, (LPARAM)SC_MARK_BACKGROUND);
+	::SendMessage(nppData._scintillaMainHandle, SCI_MARKERSETBACK,	type, (LPARAM)color);
+	::SendMessage(nppData._scintillaMainHandle, SCI_MARKERSETFORE,	type, 0);
+
+	::SendMessage(nppData._scintillaSecondHandle, SCI_MARKERDEFINE,		type, (LPARAM)SC_MARK_BACKGROUND);
+	::SendMessage(nppData._scintillaSecondHandle, SCI_MARKERSETBACK,	type, (LPARAM)color);
+	::SendMessage(nppData._scintillaSecondHandle, SCI_MARKERSETFORE,	type, 0);
+}
+
+
+void defineXpmSymbol(int type, const char **xpm)
+{
+	::SendMessage(nppData._scintillaMainHandle, SCI_MARKERDEFINEPIXMAP, type, (LPARAM)xpm);
+
+	::SendMessage(nppData._scintillaSecondHandle, SCI_MARKERDEFINEPIXMAP, type, (LPARAM)xpm);
+}
+
+
+void setTextStyle(const ColorSettings& settings)
+{
+	::SendMessage(nppData._scintillaMainHandle, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT, (LPARAM)INDIC_ROUNDBOX);
+	::SendMessage(nppData._scintillaMainHandle, SCI_INDICSETFORE,	INDIC_HIGHLIGHT, (LPARAM)settings.highlight);
+	::SendMessage(nppData._scintillaMainHandle, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT, (LPARAM)settings.alpha);
+
+	::SendMessage(nppData._scintillaSecondHandle, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT, (LPARAM)INDIC_ROUNDBOX);
+	::SendMessage(nppData._scintillaSecondHandle, SCI_INDICSETFORE,		INDIC_HIGHLIGHT, (LPARAM)settings.highlight);
+	::SendMessage(nppData._scintillaSecondHandle, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT, (LPARAM)settings.alpha);
+}
+
+
+void setBlanksStyle(HWND view, int blankColor)
+{
+	const int blankIdx = (view == nppData._scintillaMainHandle) ? 0 : 1;
+
+	if (blankStyle[blankIdx] == 0)
+		blankStyle[blankIdx] = ::SendMessage(view, SCI_ALLOCATEEXTENDEDSTYLES, 1, 0);
+
+	::SendMessage(view, SCI_ANNOTATIONSETSTYLEOFFSET,	blankStyle[blankIdx], 0);
+	::SendMessage(view, SCI_STYLESETEOLFILLED,			blankStyle[blankIdx], 1);
+	::SendMessage(view, SCI_STYLESETBACK,				blankStyle[blankIdx], blankColor);
+	::SendMessage(view, SCI_ANNOTATIONSETVISIBLE, ANNOTATION_STANDARD, 0);
+}
+
+} // anonymous namespace
 
 
 void activateBufferID(LRESULT buffId)
@@ -196,69 +220,14 @@ std::pair<int, int> getSelectionLines(HWND view)
 }
 
 
-bool areOnlyBlanks(HWND view, const std::pair<int, int> linesRange)
+void centerAt(HWND view, int line)
 {
-	for (int line = linesRange.first; line <= linesRange.second; ++line)
-	{
-		if (!(::SendMessage(view, SCI_MARKERGET, line, 0) & MARKER_MASK_BLANK))
-			return false;
-	}
+	const int linesOnScreen = ::SendMessage(view, SCI_LINESONSCREEN, 0, 0);
+	const int firstVisible = ::SendMessage(view, SCI_VISIBLEFROMDOCLINE, line, 0) - linesOnScreen / 2;
 
-	return true;
-}
-
-
-void defineColor(int type, int color)
-{
-	::SendMessage(nppData._scintillaMainHandle, SCI_MARKERDEFINE,type, (LPARAM)SC_MARK_BACKGROUND);
-	::SendMessage(nppData._scintillaMainHandle, SCI_MARKERSETBACK,type, (LPARAM)color);
-	::SendMessage(nppData._scintillaMainHandle, SCI_MARKERSETFORE,type, 0);
-	::SendMessage(nppData._scintillaSecondHandle, SCI_MARKERDEFINE,type, (LPARAM)SC_MARK_BACKGROUND);
-	::SendMessage(nppData._scintillaSecondHandle, SCI_MARKERSETBACK,type, (LPARAM)color);
-	::SendMessage(nppData._scintillaSecondHandle, SCI_MARKERSETFORE,type, 0);
-}
-
-
-void defineSymbol(int type, int symbol)
-{
-	::SendMessage(nppData._scintillaMainHandle, SCI_MARKERDEFINE, type, (LPARAM)symbol);
-	::SendMessage(nppData._scintillaSecondHandle, SCI_MARKERDEFINE, type, (LPARAM)symbol);
-}
-
-
-static void setChangedStyle(HWND view, const ColorSettings& settings)
-{
-	::SendMessage(view, SCI_INDICSETSTYLE, INDIC_HIGHLIGHT, (LPARAM)INDIC_ROUNDBOX);
-	::SendMessage(view, SCI_INDICSETFORE, INDIC_HIGHLIGHT, (LPARAM)settings.highlight);
-	::SendMessage(view, SCI_INDICSETALPHA, INDIC_HIGHLIGHT, (LPARAM)settings.alpha);
-}
-
-
-static void setTextStyle(HWND view, const ColorSettings& settings)
-{
-	setChangedStyle(view, settings);
-}
-
-
-static void setTextStyles(const ColorSettings& settings)
-{
-	setTextStyle(nppData._scintillaMainHandle, settings);
-	setTextStyle(nppData._scintillaSecondHandle, settings);
-}
-
-
-void setBlank(HWND view, int color)
-{
-	::SendMessage(view, SCI_MARKERDEFINE, MARKER_BLANK_LINE, (LPARAM)SC_MARK_BACKGROUND);
-	::SendMessage(view, SCI_MARKERSETBACK, MARKER_BLANK_LINE, (LPARAM)color);
-	::SendMessage(view, SCI_MARKERSETFORE, MARKER_BLANK_LINE, (LPARAM)color);
-}
-
-
-static void DefineXpmSymbol(int type, const char **xpm)
-{
-	::SendMessage(nppData._scintillaMainHandle, SCI_MARKERDEFINEPIXMAP, type, (LPARAM)xpm);
-	::SendMessage(nppData._scintillaSecondHandle, SCI_MARKERDEFINEPIXMAP, type, (LPARAM)xpm);
+	::SendMessage(view, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
+	::SendMessage(view, SCI_SETFIRSTVISIBLELINE, firstVisible, 0);
+	::SendMessage(view, SCI_GOTOLINE, line, 0);
 }
 
 
@@ -271,12 +240,15 @@ void setNormalView(HWND view)
 }
 
 
-void setCompareView(HWND view)
+void setCompareView(HWND view, int blankColor)
 {
 	::SendMessage(view, SCI_SETMARGINMASKN, 4, (LPARAM)MARKER_MASK_SYMBOL);
 	::SendMessage(view, SCI_SETMARGINWIDTHN, 4, 16);
 
 	::SendMessage(view, SCI_SETCARETLINEBACKALPHA, 96, 0);
+
+	// For some reason the annotation blank styling is lost on Sci doc switch thus we need to reapply it
+	setBlanksStyle(view, blankColor);
 }
 
 
@@ -302,21 +274,18 @@ void setStyles(UserSettings& settings)
 
 	settings.colors.blank = r | (g << 8) | (b << 16);
 
-	setBlank(nppData._scintillaMainHandle,   settings.colors.blank);
-	setBlank(nppData._scintillaSecondHandle, settings.colors.blank);
-
-	defineColor(MARKER_ADDED_LINE,   settings.colors.added);
 	defineColor(MARKER_CHANGED_LINE, settings.colors.changed);
-	defineColor(MARKER_MOVED_LINE,   settings.colors.moved);
+	defineColor(MARKER_ADDED_LINE,   settings.colors.added);
 	defineColor(MARKER_REMOVED_LINE, settings.colors.deleted);
+	defineColor(MARKER_MOVED_LINE,   settings.colors.moved);
 
-	DefineXpmSymbol(MARKER_ADDED_SYMBOL,   			icon_add_16_xpm);
-	DefineXpmSymbol(MARKER_REMOVED_SYMBOL, 			icon_sub_16_xpm);
-	DefineXpmSymbol(MARKER_CHANGED_SYMBOL, 			icon_diff_16_xpm);
-	DefineXpmSymbol(MARKER_MOVED_SYMBOL,   			icon_moved_16_xpm);
-	DefineXpmSymbol(MARKER_MOVED_MULTIPLE_SYMBOL,	icon_moved_multiple_16_xpm);
+	defineXpmSymbol(MARKER_CHANGED_SYMBOL, 			icon_diff_16_xpm);
+	defineXpmSymbol(MARKER_ADDED_SYMBOL,   			icon_add_16_xpm);
+	defineXpmSymbol(MARKER_REMOVED_SYMBOL, 			icon_sub_16_xpm);
+	defineXpmSymbol(MARKER_MOVED_SYMBOL,   			icon_moved_16_xpm);
+	defineXpmSymbol(MARKER_MOVED_MULTIPLE_SYMBOL,	icon_moved_multiple_16_xpm);
 
-	setTextStyles(settings.colors);
+	setTextStyle(settings.colors);
 }
 
 
@@ -346,88 +315,156 @@ void clearChangedIndicator(HWND view, int start, int length)
 
 void jumpToFirstChange()
 {
-	HWND currView = getCurrentView();
+	HWND currentView = getCurrentView();
+	HWND otherView = getOtherView(currentView);
 
-	const int nextLine = ::SendMessage(currView, SCI_MARKERNEXT, 0, MARKER_MASK_LINE);
+	int nextLine = ::SendMessage(currentView, SCI_MARKERNEXT, 0, MARKER_MASK_LINE);
+	const int otherLine = ::SendMessage(otherView, SCI_MARKERNEXT, 0, MARKER_MASK_LINE);
 
 	if (nextLine < 0)
-		return;
+	{
+		if (otherLine < 0)
+			return;
 
-	::SendMessage(currView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
-	::SendMessage(currView, SCI_GOTOLINE, nextLine, 0);
+		nextLine = otherViewMatchingLine(otherView, otherLine);
+	}
+	else if (otherLine >= 0)
+	{
+		int otherVisible = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0);
+
+		if (otherVisible < ::SendMessage(currentView, SCI_VISIBLEFROMDOCLINE, nextLine, 0))
+			nextLine = ::SendMessage(currentView, SCI_DOCLINEFROMVISIBLE, otherVisible, 0);
+	}
+
+	centerAt(currentView, nextLine);
 }
 
 
 void jumpToLastChange()
 {
-	HWND currView = getCurrentView();
+	HWND currentView = getCurrentView();
+	HWND otherView = getOtherView(currentView);
 
-	const int lineCount = ::SendMessage(currView, SCI_GETLINECOUNT, 0, 0);
-	const int nextLine = ::SendMessage(currView, SCI_MARKERPREVIOUS, lineCount, MARKER_MASK_LINE);
+	const int lineCount = ::SendMessage(currentView, SCI_GETLINECOUNT, 0, 0);
+	int nextLine = ::SendMessage(currentView, SCI_MARKERPREVIOUS, lineCount, MARKER_MASK_LINE);
+
+	const int otherLineCount = ::SendMessage(otherView, SCI_GETLINECOUNT, 0, 0);
+	const int otherLine = ::SendMessage(otherView, SCI_MARKERPREVIOUS, otherLineCount, MARKER_MASK_LINE);
 
 	if (nextLine < 0)
-		return;
+	{
+		if (otherLine < 0)
+			return;
 
-	::SendMessage(currView, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
-	::SendMessage(currView, SCI_GOTOLINE, nextLine, 0);
+		nextLine = otherViewMatchingLine(otherView, otherLine);
+	}
+	else if (otherLine >= 0)
+	{
+		int otherVisible = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0);
+
+		if (otherVisible > ::SendMessage(currentView, SCI_VISIBLEFROMDOCLINE, nextLine, 0))
+			nextLine = ::SendMessage(currentView, SCI_DOCLINEFROMVISIBLE, otherVisible, 0);
+	}
+
+	centerAt(currentView, nextLine);
 }
 
 
 void jumpToNextChange(bool down, bool wrapAround)
 {
-	HWND view = getCurrentView();
+	HWND currentView = getCurrentView();
+	HWND otherView = getOtherView(currentView);
 
-	const int sci_marker_direction = down ? SCI_MARKERNEXT : SCI_MARKERPREVIOUS;
+	const int sci_next_marker = down ? SCI_MARKERNEXT : SCI_MARKERPREVIOUS;
 
-	int currentLine = getCurrentLine(view);
+	const int startingLine = getCurrentLine(currentView);
 
-	const int lineCount = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0);
-	const int prevLine = currentLine;
-	int nextLine = currentLine;
+	int nextLine = startingLine;
+	int otherLine;
 
-	while (nextLine == currentLine)
+	int lineCount = ::SendMessage(currentView, SCI_GETLINECOUNT, 0, 0);
+
+	if (down)
+		for (; (::SendMessage(currentView, SCI_MARKERGET, nextLine, 0) & MARKER_MASK_LINE) &&
+				(nextLine < lineCount); ++nextLine);
+	else
+		for (; (::SendMessage(currentView, SCI_MARKERGET, nextLine, 0) & MARKER_MASK_LINE) &&
+				(nextLine > -1); --nextLine);
+
+	if (nextLine > -1 && nextLine < lineCount)
 	{
-		if (down)
-		{
-			while ((::SendMessage(view, SCI_MARKERGET, currentLine, 0) & MARKER_MASK_LINE) && (currentLine < lineCount))
-				++currentLine;
-		}
-		else
-		{
-			while ((::SendMessage(view, SCI_MARKERGET, currentLine, 0) & MARKER_MASK_LINE) && (currentLine > -1))
-				--currentLine;
-		}
+		otherLine = ::SendMessage(otherView, sci_next_marker, otherViewMatchingLine(currentView, nextLine),
+				MARKER_MASK_LINE);
+		nextLine = ::SendMessage(currentView, sci_next_marker, nextLine, MARKER_MASK_LINE);
+	}
+	else
+	{
+		nextLine = -1;
+		otherLine = -1;
+	}
 
-		nextLine = ::SendMessage(view, sci_marker_direction, currentLine, MARKER_MASK_LINE);
+	int matchingLine = (otherLine >= 0) ? otherViewMatchingLine(otherView, otherLine) : -1;
+
+	if (down && matchingLine == startingLine)
+	{
+		lineCount = ::SendMessage(otherView, SCI_GETLINECOUNT, 0, 0);
+
+		for (; (::SendMessage(otherView, SCI_MARKERGET, otherLine, 0) & MARKER_MASK_LINE) &&
+				(otherLine < lineCount); ++otherLine);
+
+		if (otherLine < lineCount)
+			otherLine = ::SendMessage(otherView, sci_next_marker, otherLine, MARKER_MASK_LINE);
+		else
+			otherLine = -1;
+
+		if (otherLine >= 0)
+			matchingLine = otherViewMatchingLine(otherView, otherLine);
+		else
+			matchingLine = -1;
+	}
+
+	if (nextLine < 0)
+	{
+		nextLine = matchingLine;
 
 		if (nextLine < 0)
 		{
-			if (!wrapAround)
-				return;
+			if (wrapAround)
+			{
+				if (down)
+					jumpToFirstChange();
+				else
+					jumpToLastChange();
 
-			currentLine = down ? 0 : lineCount;
-			nextLine = ::SendMessage(view, sci_marker_direction, currentLine, MARKER_MASK_LINE);
+				FLASHWINFO flashInfo;
+				flashInfo.cbSize = sizeof(flashInfo);
+				flashInfo.hwnd = nppData._nppHandle;
+				flashInfo.uCount = 2;
+				flashInfo.dwTimeout = 100;
+				flashInfo.dwFlags = FLASHW_ALL;
+				::FlashWindowEx(&flashInfo);
+			}
 
-			if (nextLine < 0)
-				return;
-			else
-				break;
+			return;
+		}
+	}
+	else if (matchingLine >= 0)
+	{
+		const int otherVisible = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0);
+
+		if (down)
+		{
+			if (otherVisible < ::SendMessage(currentView, SCI_VISIBLEFROMDOCLINE, nextLine, 0))
+				nextLine = matchingLine;
+		}
+		else
+		{
+			if (otherVisible > ::SendMessage(currentView, SCI_VISIBLEFROMDOCLINE, nextLine, 0))
+				nextLine = matchingLine;
 		}
 	}
 
-	if ((down && (nextLine < prevLine)) || (!down && (nextLine > prevLine)))
-	{
-		FLASHWINFO flashInfo;
-		flashInfo.cbSize = sizeof(flashInfo);
-		flashInfo.hwnd = nppData._nppHandle;
-		flashInfo.uCount = 2;
-		flashInfo.dwTimeout = 100;
-		flashInfo.dwFlags = FLASHW_ALL;
-		::FlashWindowEx(&flashInfo);
-	}
-
-	::SendMessage(view, SCI_ENSUREVISIBLEENFORCEPOLICY, nextLine, 0);
-	::SendMessage(view, SCI_GOTOLINE, nextLine, 0);
+	centerAt(currentView, nextLine);
 }
 
 
@@ -472,13 +509,12 @@ void toLowerCase(std::vector<char>& text)
 
 void clearWindow(HWND view)
 {
-	removeBlankLines(view);
+	::SendMessage(view, SCI_ANNOTATIONCLEARALL, 0, 0);
 
 	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_CHANGED_LINE, 0);
 	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_ADDED_LINE, 0);
 	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_REMOVED_LINE, 0);
 	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_MOVED_LINE, 0);
-	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_BLANK_LINE, 0);
 	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_CHANGED_SYMBOL, 0);
 	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_ADDED_SYMBOL, 0);
 	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_REMOVED_SYMBOL, 0);
@@ -487,9 +523,7 @@ void clearWindow(HWND view)
 
 	clearChangedIndicator(view, 0, ::SendMessage(view, SCI_GETLENGTH, 0, 0));
 
-	// reset syntax highlighting:
 	::SendMessage(view, SCI_COLOURISE, 0, -1);
-	::SendMessage(view, SCN_UPDATEUI, 0, 0);
 
 	setNormalView(view);
 }
@@ -497,11 +531,10 @@ void clearWindow(HWND view)
 
 void clearMarks(HWND view, int line)
 {
-	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_BLANK_LINE);
-	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_MOVED_LINE);
 	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_CHANGED_LINE);
 	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_ADDED_LINE);
 	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_REMOVED_LINE);
+	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_MOVED_LINE);
 	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_CHANGED_SYMBOL);
 	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_ADDED_SYMBOL);
 	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_REMOVED_SYMBOL);
@@ -523,52 +556,15 @@ void clearMarks(HWND view, int startLine, int linesCount)
 }
 
 
-int clearMarksAndBlanks(HWND view, int startLine, int linesCount)
+void clearMarksAndBlanks(HWND view, int startLine, int linesCount)
 {
-	int deletedLines = 0;
+	clearMarks(view, startLine, linesCount);
 
-	const int eolLen = EOLlen[::SendMessage(view, SCI_GETEOLMODE, 0, 0)];
-
-	const int startPos = ::SendMessage(view, SCI_POSITIONFROMLINE, startLine, 0);
-	const int len = ::SendMessage(view, SCI_GETLINEENDPOSITION, startLine + linesCount - 1, 0) - startPos;
-
-	clearChangedIndicator(view, startPos, len);
-
-	for (int line = ::SendMessage(view, SCI_MARKERPREVIOUS, startLine + linesCount - 1, MARKER_MASK_LINE);
-			line >= startLine; line = ::SendMessage(view, SCI_MARKERPREVIOUS, line - 1, MARKER_MASK_LINE))
+	for (int line = startLine; line < linesCount; ++line)
 	{
-		int deletePos = 0;
-		int deleteLen = 0;
-
-		if (::SendMessage(view, SCI_MARKERGET, line, 0) & MARKER_MASK_BLANK)
-		{
-			deletePos = ::SendMessage(view, SCI_POSITIONFROMLINE, line, 0);
-			deleteLen = ::SendMessage(view, SCI_GETLINEENDPOSITION, line, 0) - deletePos + eolLen;
-
-			if (deletePos != 0)
-				deletePos -= eolLen;
-
-			const int lineIndent = ::SendMessage(view, SCI_GETLINEINDENTATION, line, 0);
-
-			// Don't delete a line that is not blank
-			if (deleteLen != lineIndent + eolLen)
-				deleteLen = 0;
-		}
-
-		clearMarks(view, line);
-
-		if (deleteLen > 0)
-		{
-			ScopedViewUndoCollectionBlocker undoBlock(view);
-			ScopedViewWriteEnabler writeEn(view);
-
-			::SendMessage(view, SCI_DELETERANGE, deletePos, deleteLen);
-
-			++deletedLines;
-		}
+		if (::SendMessage(view, SCI_ANNOTATIONGETLINES, line, 0))
+			::SendMessage(view, SCI_ANNOTATIONSETTEXT, line, (LPARAM)NULL);
 	}
-
-	return deletedLines;
 }
 
 
@@ -595,186 +591,13 @@ int getNextUnmarkedLine(HWND view, int startLine, int markMask)
 }
 
 
-static void adjustLineIndent(HWND view, int line)
-{
-	HWND otherView = getOtherView(view);
-
-	const int otherWrap = ::SendMessage(otherView, SCI_WRAPCOUNT, line, 0);
-
-	int indent = ::SendMessage(otherView, SCI_GETLINEENDPOSITION, line, 0) -
-			::SendMessage(otherView, SCI_POSITIONFROMLINE, line, 0);
-
-	::SendMessage(view, SCI_SETLINEINDENTATION, line, indent);
-
-	int wrap = ::SendMessage(view, SCI_WRAPCOUNT, line, 0);
-
-	while (otherWrap != wrap)
-	{
-		const int averageWrapLen = (otherWrap > wrap) ? (indent / otherWrap) : (indent / wrap);
-		indent += averageWrapLen * (otherWrap - wrap);
-
-		::SendMessage(view, SCI_SETLINEINDENTATION, line, indent);
-		wrap = ::SendMessage(view, SCI_WRAPCOUNT, line, 0);
-	}
-}
-
-
-void adjustBlanksWrap(HWND view)
-{
-	std::vector<HWND> views = (view != NULL) ? std::vector<HWND>{ view } :
-			std::vector<HWND>{ nppData._scintillaMainHandle, nppData._scintillaSecondHandle };
-
-	for (int i = 0; i < static_cast<int>(views.size()); ++i)
-	{
-		int line = ::SendMessage(views[i], SCI_MARKERNEXT, 0, MARKER_MASK_BLANK);
-
-		if (line < 0)
-			continue;
-
-		ScopedViewUndoCollectionBlocker undoBlock(views[i]);
-		ScopedViewWriteEnabler writeEn(views[i]);
-
-		for (; line >= 0; line = ::SendMessage(views[i], SCI_MARKERNEXT, line + 1, MARKER_MASK_BLANK))
-		{
-			const int lineIndent	= ::SendMessage(views[i], SCI_GETLINEINDENTATION, line, 0);
-			const int lineLen		= ::SendMessage(views[i], SCI_GETLINEENDPOSITION, line, 0) -
-					::SendMessage(views[i], SCI_POSITIONFROMLINE, line, 0);
-
-			// Skip the line if it is not blank
-			if (lineLen > lineIndent)
-				continue;
-
-			adjustLineIndent(views[i], line);
-		}
-	}
-}
-
-
-static int deleteBlankSection(HWND view, int line)
-{
-	const int eolLen = EOLlen[::SendMessage(view, SCI_GETEOLMODE, 0, 0)];
-	const int lastLine = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0) - 1;
-
-	int deleteStartPos = ::SendMessage(view, SCI_POSITIONFROMLINE, line, 0);
-	int deleteLen = 0;
-	int deletedLines = 0;
-
-	while ((line <= lastLine) && (::SendMessage(view, SCI_MARKERGET, line, 0) & MARKER_MASK_BLANK))
-	{
-		::SendMessage(view, SCI_MARKERDELETE, line, MARKER_BLANK_LINE);
-
-		const int lineLen		= ::SendMessage(view, SCI_LINELENGTH, line, 0);
-		const int lineIndent	= ::SendMessage(view, SCI_GETLINEINDENTATION, line, 0);
-
-		// Don't delete a line that is not blank
-		if ((line < lastLine && lineLen > lineIndent + eolLen) || (line == lastLine && lineLen > lineIndent))
-			break;
-
-		++deletedLines;
-		deleteLen += lineLen;
-		++line;
-	}
-
-	// Document's last line is blank but it doesn't have EOL to delete.
-	// Thus, we delete the EOL from the previous line
-	if (line > lastLine)
-	{
-		deleteStartPos -= eolLen;
-		deleteLen += eolLen;
-	}
-
-	if (deleteLen > 0)
-	{
-		ScopedViewUndoCollectionBlocker undoBlock(view);
-		ScopedViewWriteEnabler writeEn(view);
-
-		::SendMessage(view, SCI_DELETERANGE, deleteStartPos, deleteLen);
-	}
-
-	return deletedLines;
-}
-
-
 void addBlankSection(HWND view, int line, int length)
 {
 	if (length <= 0)
 		return;
 
-	const UINT EOLtype = ::SendMessage(view, SCI_GETEOLMODE, 0, 0);
-	const int lineCount = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0);
+	std::vector<char> blank(length - 1, '\n');
+	blank.push_back('\0');
 
-	std::vector<char> buff(EOLlen[EOLtype] * length + 1);
-
-	for (int j = 0; j < length; ++j)
-	{
-		int i = j * EOLlen[EOLtype];
-		for (const char* eol = EOLstr[EOLtype]; *eol; ++eol)
-			buff[i++] = *eol;
-	}
-
-	// SCI_INSERTTEXT needs \0 terminated string
-	buff.back() = 0;
-
-	ScopedViewUndoCollectionBlocker undoBlock(view);
-	ScopedViewWriteEnabler writeEn(view);
-
-	if (line < lineCount)
-	{
-		const int posAdd = ::SendMessage(view, SCI_POSITIONFROMLINE, line, 0);
-		::SendMessage(view, SCI_INSERTTEXT, posAdd, (LPARAM)buff.data());
-	}
-	else
-	{
-		line = lineCount - 1;
-
-		const int marker = ::SendMessage(view, SCI_MARKERGET, line, 0);
-
-		if (marker)
-			::SendMessage(view, SCI_MARKERDELETE, line, -1);
-
-		::SendMessage(view, SCI_APPENDTEXT, (WPARAM)buff.size() - 1, (LPARAM)buff.data());
-
-		if (marker)
-			::SendMessage(view, SCI_MARKERADDSET, line, marker);
-
-		line = lineCount;
-	}
-
-	for (int i = 0; i < length; ++i)
-	{
-		adjustLineIndent(view, line + i);
-
-		::SendMessage(view, SCI_MARKERADD, line + i, MARKER_BLANK_LINE);
-	}
-}
-
-
-void addBlankLines(HWND view, const BlankSections_t& blanks)
-{
-	if (blanks.empty())
-		return;
-
-	const int size = static_cast<int>(blanks.size());
-	for (int i = 0; i < size; ++i)
-		addBlankSection(view, blanks[i].startLine, blanks[i].length);
-}
-
-
-BlankSections_t removeBlankLines(HWND view, bool saveBlanks)
-{
-	BlankSections_t blanks;
-
-	int deletedLines = 0;
-	for (int line = ::SendMessage(view, SCI_MARKERNEXT, 0, MARKER_MASK_BLANK); line >= 0;
-			line = ::SendMessage(view, SCI_MARKERNEXT, line, MARKER_MASK_BLANK))
-	{
-		const int len = deleteBlankSection(view, line);
-		if (len > 0 && saveBlanks)
-		{
-			blanks.emplace_back(line + deletedLines, len);
-			deletedLines += len;
-		}
-	}
-
-	return blanks;
+	::SendMessage(view, SCI_ANNOTATIONSETTEXT, line - 1, (LPARAM)blank.data());
 }

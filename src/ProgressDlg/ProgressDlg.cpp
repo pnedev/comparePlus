@@ -1,10 +1,28 @@
+/*
+ * This file is part of Compare Plugin for Notepad++
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #pragma comment (lib, "comctl32")
 
 
-#include "ProgressDlg.h"
-#include "Compare.h"
 #include <windowsx.h>
 #include <cstdlib>
+
+#include "Compare.h"
+#include "ProgressDlg.h"
 
 
 const TCHAR ProgressDlg::cClassName[]     = TEXT("CompareProgressClass");
@@ -26,20 +44,27 @@ const int ProgressDlg::cPhases[] = {
 progress_ptr ProgressDlg::Inst;
 
 
-progress_ptr& ProgressDlg::Open()
+progress_ptr& ProgressDlg::Open(const TCHAR* info)
 {
 	if (Inst)
 		return Inst;
 
 	Inst.reset(new ProgressDlg);
 
-	if (Inst->create() == NULL)
+	if (Inst)
 	{
-		Inst.reset();
-		return Inst;
-	}
+		if (Inst->create() == NULL)
+		{
+			Inst.reset();
+		}
+		else
+		{
+			::EnableWindow(nppData._nppHandle, FALSE);
 
-	::EnableWindow(nppData._nppHandle, FALSE);
+			if (info)
+				Inst->SetInfo(info);
+		}
+	}
 
 	return Inst;
 }
@@ -144,13 +169,13 @@ ProgressDlg::ProgressDlg() : _hwnd(NULL),  _hKeyHook(NULL),
 
 ProgressDlg::~ProgressDlg()
 {
-	::EnableWindow(nppData._nppHandle, TRUE);
-	::SetForegroundWindow(nppData._nppHandle);
-
     if (_hKeyHook)
         ::UnhookWindowsHookEx(_hKeyHook);
 
     destroy();
+
+	::EnableWindow(nppData._nppHandle, TRUE);
+	::SetForegroundWindow(nppData._nppHandle);
 
 	::UnregisterClass(cClassName, _hInst);
 }

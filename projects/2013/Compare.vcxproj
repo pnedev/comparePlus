@@ -239,6 +239,7 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlugin"</Command>
     <ClCompile Include="..\..\src\SettingsDlg\ColorPopup.cpp" />
     <ClCompile Include="..\..\src\SettingsDlg\SettingsDialog.cpp" />
     <ClCompile Include="..\..\src\Tools.cpp" />
+    <ClCompile Include="..\..\src\UserSettings.cpp" />
     <ClCompile Include="..\..\src\Compare.cpp" />
     <ClCompile Include="..\..\src\Engine\Engine.cpp" />
     <ClCompile Include="..\..\src\LibGit2\LibGit2Helper.cpp" />
@@ -256,6 +257,7 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlugin"</Command>
     <ClInclude Include="..\..\src\SettingsDlg\ColorPopup.h" />
     <ClInclude Include="..\..\src\SettingsDlg\SettingsDialog.h" />
     <ClInclude Include="..\..\src\Tools.h" />
+    <ClInclude Include="..\..\src\UserSettings.h" />
     <ClInclude Include="..\..\src\Compare.h" />
     <ClInclude Include="..\..\src\Engine\Engine.h" />
     <ClInclude Include="..\..\src\LibGit2\LibGit2Helper.h" />

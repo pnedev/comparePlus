@@ -20,11 +20,17 @@
 #pragma comment (lib, "msimg32")
 
 
+#include "Compare.h"
 #include "NavDialog.h"
 #include "NppHelpers.h"
 #include "resource.h"
+
 #include <windowsx.h>
 #include <commctrl.h>
+
+
+#define _MIN(a, b)	((a) < (b) ? (a) : (b))
+#define _MAX(a, b)	((a) > (b) ? (a) : (b))
 
 
 const int NavDialog::cSpace = 2;
@@ -116,8 +122,7 @@ void NavDialog::NavView::create(const ColorSettings& colors, int reductionRatio)
 		if (!marker && !reductionRatio)
 			continue;
 
-		if      (marker & MARKER_MASK_BLANK)	marker = colors.blank;
-		else if (marker & MARKER_MASK_CHANGED)	marker = colors.changed;
+		if (marker & MARKER_MASK_CHANGED)		marker = colors.changed;
 		else if (marker & MARKER_MASK_ADDED)	marker = colors.added;
 		else if (marker & MARKER_MASK_REMOVED)	marker = colors.deleted;
 		else if (marker & MARKER_MASK_MOVED)	marker = colors.moved;
@@ -298,8 +303,7 @@ void NavDialog::doDialog()
 
 void NavDialog::SetConfig(const UserSettings& settings)
 {
-	m_clr		= settings.colors;
-	m_compact	= settings.CompactNavBar;
+	m_clr = settings.colors;
 
 	if (isVisible())
 		CreateBitmap();
@@ -372,7 +376,7 @@ void NavDialog::CreateBitmap()
 	const int maxLines	= _MAX(m_view[0].m_lines, m_view[1].m_lines);
 	const int maxHeight	= (r.bottom - r.top) - 2 * cSpace - 2;
 
-	int reductionRatio = m_compact ? maxLines / maxHeight : 0;
+	int reductionRatio = maxLines / maxHeight;
 
 	if (reductionRatio && (maxLines % maxHeight))
 		++reductionRatio;
@@ -462,7 +466,7 @@ void NavDialog::setPos(int x, int y)
 	if (y < 0 || x < cSpace || x > (2 * m_navViewWidth + 2 * cSpace + 4))
 		return;
 
-	NavView* currView;
+	NavView* currentView;
 
 	const int scrollOffset = (m_hScroll && ::IsWindowVisible(m_hScroll)) ? ::GetScrollPos(m_hScroll, SB_CTL) : 0;
 
@@ -470,25 +474,20 @@ void NavDialog::setPos(int x, int y)
 	{
 		if (y > _MIN((m_view[0].maxBmpLines() - scrollOffset) * m_pixelsPerLine, m_navHeight))
 			return;
-		currView = &m_view[0];
+		currentView = &m_view[0];
 	}
 	else
 	{
 		if (y > _MIN((m_view[1].maxBmpLines() - scrollOffset) * m_pixelsPerLine, m_navHeight))
 			return;
-		currView = &m_view[1];
+		currentView = &m_view[1];
 	}
 
-	::SetFocus(currView->m_hView);
+	::SetFocus(currentView->m_hView);
 
-	const int currLine = currView->bmpToDocLine((y + scrollOffset) / m_pixelsPerLine);
+	const int currentLine = currentView->bmpToDocLine((y + scrollOffset) / m_pixelsPerLine);
 
-	const int linesOnScreen = ::SendMessage(currView->m_hView, SCI_LINESONSCREEN, 0, 0);
-	const int firstVisible = ::SendMessage(currView->m_hView, SCI_VISIBLEFROMDOCLINE, currLine, 0) - linesOnScreen / 2;
-
-	::SendMessage(currView->m_hView, SCI_ENSUREVISIBLEENFORCEPOLICY, currLine, 0);
-	::SendMessage(currView->m_hView, SCI_SETFIRSTVISIBLELINE, firstVisible, 0);
-	::SendMessage(currView->m_hView, SCI_GOTOLINE, currLine, 0);
+	centerAt(currentView->m_hView, currentLine);
 }
 
 

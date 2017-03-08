@@ -1,6 +1,7 @@
 /*
  * This file is part of Compare plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
+ * Copyright (C)2017 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,13 +21,14 @@
 
 #include <vector>
 #include <utility>
+
 #include "Compare.h"
+#include "UserSettings.h"
 
 
 enum Marker_t
 {
-	MARKER_BLANK_LINE = 0,
-	MARKER_CHANGED_LINE,
+	MARKER_CHANGED_LINE = 0,
 	MARKER_ADDED_LINE,
 	MARKER_REMOVED_LINE,
 	MARKER_MOVED_LINE,
@@ -38,26 +40,24 @@ enum Marker_t
 };
 
 
-const int MARKER_MASK_BLANK				= (1 << MARKER_BLANK_LINE);
 const int MARKER_MASK_CHANGED			= (1 << MARKER_CHANGED_LINE)	| (1 << MARKER_CHANGED_SYMBOL);
 const int MARKER_MASK_ADDED				= (1 << MARKER_ADDED_LINE)		| (1 << MARKER_ADDED_SYMBOL);
 const int MARKER_MASK_REMOVED			= (1 << MARKER_REMOVED_LINE)	| (1 << MARKER_REMOVED_SYMBOL);
 const int MARKER_MASK_MOVED				= (1 << MARKER_MOVED_LINE)		| (1 << MARKER_MOVED_SYMBOL);
 const int MARKER_MASK_MOVED_MULTIPLE	= (1 << MARKER_MOVED_LINE)		| (1 << MARKER_MOVED_MULTIPLE_SYMBOL);
 
-const int MARKER_MASK_LINE = (1 << MARKER_BLANK_LINE) |
-							(1 << MARKER_CHANGED_LINE) |
-							(1 << MARKER_ADDED_LINE) |
-							(1 << MARKER_REMOVED_LINE) |
-							(1 << MARKER_MOVED_LINE);
+const int MARKER_MASK_LINE =	(1 << MARKER_CHANGED_LINE) |
+								(1 << MARKER_ADDED_LINE) |
+								(1 << MARKER_REMOVED_LINE) |
+								(1 << MARKER_MOVED_LINE);
 
-const int MARKER_MASK_SYMBOL = (1 << MARKER_CHANGED_SYMBOL) |
+const int MARKER_MASK_SYMBOL =	(1 << MARKER_CHANGED_SYMBOL) |
 								(1 << MARKER_ADDED_SYMBOL) |
 								(1 << MARKER_REMOVED_SYMBOL) |
 								(1 << MARKER_MOVED_SYMBOL) |
 								(1 << MARKER_MOVED_MULTIPLE_SYMBOL);
 
-const int MARKER_MASK_ALL = MARKER_MASK_LINE | MARKER_MASK_SYMBOL;
+const int MARKER_MASK_ALL =	MARKER_MASK_LINE | MARKER_MASK_SYMBOL;
 
 
 /**
@@ -71,22 +71,6 @@ public:
 
 private:
 	static HWND	hNppToolbar;
-
-	static BOOL CALLBACK enumWindowsCB(HWND hwnd, LPARAM lParam);
-};
-
-
-/**
- *  \class
- *  \brief
- */
-class NppStatusBarHandleGetter
-{
-public:
-	static HWND get();
-
-private:
-	static HWND	hNppStatusBar;
 
 	static BOOL CALLBACK enumWindowsCB(HWND hwnd, LPARAM lParam);
 };
@@ -185,21 +169,11 @@ struct ViewLocation
 
 private:
 	LRESULT	_buffId;
-	int	_firstVisibleLine;
-	int	_pos;
+	int		_visibleLineOffset;
+	int		_pos;
+	int		_selStart;
+	int		_selEnd;
 };
-
-
-struct BlankSection
-{
-	BlankSection(int line, int len) : startLine(line), length(len) {}
-
-	int startLine;
-	int length;
-};
-
-
-using BlankSections_t = std::vector<BlankSection>;
 
 
 inline bool isSingleView()
@@ -305,6 +279,13 @@ inline int getCurrentLine(HWND view)
 }
 
 
+inline int otherViewMatchingLine(HWND view, int line)
+{
+	return ::SendMessage(getOtherView(view), SCI_DOCLINEFROMVISIBLE,
+					::SendMessage(view, SCI_VISIBLEFROMDOCLINE, line, 0), 0);
+}
+
+
 inline bool isSelection(HWND view)
 {
 	return (::SendMessage(view, SCI_GETSELECTIONEND, 0, 0) - ::SendMessage(view, SCI_GETSELECTIONSTART, 0, 0) != 0);
@@ -333,7 +314,8 @@ inline void clearSelection(HWND view)
 
 void activateBufferID(LRESULT buffId);
 std::pair<int, int> getSelectionLines(HWND view);
-bool areOnlyBlanks(HWND view, const std::pair<int, int> linesRange);
+
+void centerAt(HWND view, int line);
 
 void markTextAsChanged(HWND view, int start, int length);
 void clearChangedIndicator(HWND view, int start, int length);
@@ -343,28 +325,18 @@ void jumpToLastChange();
 void jumpToNextChange(bool down, bool wrapAround);
 
 void setNormalView(HWND view);
-void setCompareView(HWND view);
+void setCompareView(HWND view, int blankColor);
 
 void setStyles(UserSettings& settings);
-
-void setBlank(HWND view, int color);
-
-void defineSymbol(int type, int symbol);
-void defineColor(int type, int color);
 
 void clearWindow(HWND view);
 void clearMarks(HWND view, int line);
 void clearMarks(HWND view, int startLine, int linesCount);
-int clearMarksAndBlanks(HWND view, int startLine, int linesCount);
+void clearMarksAndBlanks(HWND view, int startLine, int linesCount);
 int getPrevUnmarkedLine(HWND view, int startLine, int markMask);
 int getNextUnmarkedLine(HWND view, int startLine, int markMask);
 
 std::vector<char> getText(HWND view, int startPos, int endPos);
 void toLowerCase(std::vector<char>& text);
 
-void adjustBlanksWrap(HWND view = NULL);
-
 void addBlankSection(HWND view, int line, int length);
-
-void addBlankLines(HWND view, const BlankSections_t& blanks);
-BlankSections_t removeBlankLines(HWND view, bool saveBlanks = false);
