@@ -565,6 +565,9 @@ void DiffCalc<Elem>::_find_moves()
 			if (matchInfo.matches.empty())
 				continue;
 
+			int aMatchesCount = 1;
+			int bMatchesCount = static_cast<int>(matchInfo.matches.size());
+
 			diff_info* best_match_adiff = &adiff;
 
 			// Search for the same a element in different deleted block - potential better match or multiple move
@@ -595,6 +598,9 @@ void DiffCalc<Elem>::_find_moves()
 						matchInfo = alt_matchInfo;
 						best_match_adiff = &alt_adiff;
 
+						aMatchesCount = 1;
+						bMatchesCount = static_cast<int>(alt_matchInfo.matches.size());
+
 						alt_aidx = alt_matchInfo.asec.off + alt_matchInfo.asec.len - 1;
 					}
 					// Both matching blocks are of equal size - check if those are actually one and the same block
@@ -612,13 +618,15 @@ void DiffCalc<Elem>::_find_moves()
 							// Blocks are identical - a multi-move detected
 							matchInfo.matches.emplace_back(&alt_adiff, alt_matchInfo.asec.off);
 
+							++aMatchesCount;
+
 							alt_aidx = alt_matchInfo.asec.off + alt_matchInfo.asec.len - 1;
 						}
 					}
 				}
 			}
 
-			const moved_type moveType = (matchInfo.matches.size() == 1) ? MOVED : MOVED_MULTIPLE;
+			const moved_type moveType = (aMatchesCount == bMatchesCount) ? MOVED : MOVED_MULTIPLE;
 
 			// Move found - initialize move vectors
 			if (best_match_adiff->moved.empty())
