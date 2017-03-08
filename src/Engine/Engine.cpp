@@ -191,7 +191,7 @@ void compareLines(diff_info& blockDiff1, diff_info& blockDiff2, const chunk_info
 		const int* pLine1 = &line1;
 		const int* pLine2 = &line2;
 
-		if (words1.size() > words2.size())
+		if (pWords1->size() > pWords2->size())
 		{
 			std::swap(pBlockDiff1, pBlockDiff2);
 			std::swap(pWords1, pWords2);
@@ -341,7 +341,7 @@ std::pair<std::vector<diff_info>, bool>
 	const std::vector<unsigned int>* pLineHashes1 = &lineHashes1;
 	const std::vector<unsigned int>* pLineHashes2 = &lineHashes2;
 
-	if (lineHashes1.size() > lineHashes2.size())
+	if (pLineHashes1->size() > pLineHashes2->size())
 	{
 		std::swap(doc1, doc2);
 		std::swap(pLineHashes1, pLineHashes2);
@@ -394,7 +394,7 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 	diff_info* pBlockDiff1 = &blockDiff1;
 	diff_info* pBlockDiff2 = &blockDiff2;
 
-	if (chunk1.words.size() > chunk2.words.size())
+	if (pChunk1->words.size() > pChunk2->words.size())
 	{
 		std::swap(pBlockDiff1, pBlockDiff2);
 		std::swap(pChunk1, pChunk2);
