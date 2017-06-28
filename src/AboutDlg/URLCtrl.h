@@ -26,8 +26,8 @@
 class URLCtrl : public Window
 {
 public:
-	URLCtrl():_hfUnderlined(0),_hCursor(0), _oldproc(NULL), \
-		_linkColor(), _visitedColor(), _clicking(false) {_URL[0] = '\0';};
+	URLCtrl():_hfUnderlined(0),_hCursor(0), _oldproc(NULL),
+		_linkColor(), _visitedColor(), _clicking(false) { _URL[0] = '\0'; };
 
 	void create(HWND itemHandle, const TCHAR* link, COLORREF linkColor = RGB(0, 0, 255));
 

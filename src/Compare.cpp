@@ -338,9 +338,9 @@ public:
 	int				relativePos;
 
 	bool			isFullCompare;
-	bool			SpacesIgnored;
-	bool			CaseIgnored;
-	bool			MovesDetected;
+	bool			spacesIgnored;
+	bool			caseIgnored;
+	bool			movesDetected;
 
 	AlignmentInfo_t	alignmentInfo;
 };
@@ -374,6 +374,8 @@ class DelayedAlign : public DelayedWork
 {
 public:
 	DelayedAlign() : DelayedWork() {}
+	virtual ~DelayedAlign() = default;
+
 	virtual void operator()();
 
 	HWND currentView;
@@ -388,6 +390,8 @@ class DelayedActivate : public DelayedWork
 {
 public:
 	DelayedActivate() : DelayedWork() {}
+	virtual ~DelayedActivate() = default;
+
 	virtual void operator()();
 
 	inline void operator()(LRESULT buff)
@@ -408,6 +412,8 @@ class DelayedClose : public DelayedWork
 {
 public:
 	DelayedClose() : DelayedWork() {}
+	virtual ~DelayedClose() = default;
+
 	virtual void operator()();
 
 	std::vector<LRESULT> closedBuffs;
@@ -422,6 +428,8 @@ class DelayedUpdate : public DelayedWork
 {
 public:
 	DelayedUpdate() : DelayedWork(), linesAdded(0), linesDeleted(0), fullCompare(false) {}
+	virtual ~DelayedUpdate() = default;
+
 	virtual void operator()();
 
 	int		changePos;
@@ -996,9 +1004,9 @@ void ComparedPair::setStatus()
 	_sntprintf_s(msg, _countof(msg), _TRUNCATE,
 			TEXT("Compare (%s)    Ignore Spaces (%s)    Ignore Case (%s)    Detect Moves (%s)"),
 			isFullCompare	? TEXT("Full")	: TEXT("Sel"),
-			SpacesIgnored	? TEXT("Y")	: TEXT("N"),
-			CaseIgnored		? TEXT("Y")	: TEXT("N"),
-			MovesDetected	? TEXT("Y")	: TEXT("N"));
+			spacesIgnored	? TEXT("Y")	: TEXT("N"),
+			caseIgnored		? TEXT("Y")	: TEXT("N"),
+			movesDetected	? TEXT("Y")	: TEXT("N"));
 
 	::SendMessageW(nppData._nppHandle, NPPM_SETSTATUSBAR, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)msg));
 }
@@ -1542,11 +1550,9 @@ void compare(bool selectionCompare = false)
 		case CompareResult::COMPARE_MISMATCH:
 		{
 			cmpPair->isFullCompare	= !selectionCompare;
-			cmpPair->SpacesIgnored	= Settings.IgnoreSpaces;
-			cmpPair->CaseIgnored	= Settings.IgnoreCase;
-			cmpPair->MovesDetected	= Settings.DetectMoves;
-
-			cmpPair->setStatus();
+			cmpPair->spacesIgnored	= Settings.IgnoreSpaces;
+			cmpPair->caseIgnored	= Settings.IgnoreCase;
+			cmpPair->movesDetected	= Settings.DetectMoves;
 
 			NppSettings::get().setCompareMode(true);
 			NppSettings::get().toSingleLineTab();
@@ -1559,6 +1565,8 @@ void compare(bool selectionCompare = false)
 
 			alignDiffs();
 			syncViews(getCurrentView());
+
+			cmpPair->setStatus();
 
 			if (recompare && !Settings.GotoFirstDiff)
 			{
