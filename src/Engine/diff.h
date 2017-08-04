@@ -110,8 +110,10 @@ class DiffCalc
 {
 public:
 	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
-			detect_moves_type findMoves = DONT_DETECT, const Elem& blankVal = Elem(), int max = INT_MAX) :
-		_a(v1), _b(v2), _findMoves(findMoves), _blankVal(blankVal), _dmax(max) {}
+			detect_moves_type findMoves = DONT_DETECT, const Elem& blankVal = Elem(), int max = INT_MAX);
+
+	DiffCalc(const Elem v1[], int v1_size, const Elem v2[], int v2_size,
+			detect_moves_type findMoves = DONT_DETECT, const Elem& blankVal = Elem(), int max = INT_MAX);
 
 	std::vector<diff_info> operator()();
 
@@ -130,8 +132,7 @@ private:
 		std::vector<std::pair<diff_info*, int>>	matches;
 	};
 
-	inline void _setv(int k, int r, int val);
-	inline int _v(int k, int r);
+	inline int& _v(int k, int r);
 	void _edit(diff_type type, int off, int len);
 	int _find_middle_snake(int aoff, int aend, int boff, int bend, middle_snake* ms);
 	int _ses(int aoff, int aend, int boff, int bend);
@@ -139,8 +140,10 @@ private:
 	void _find_b_matches(const diff_info& adiff, int aidx, move_match_info& matchInfo);
 	void _find_moves();
 
-	const std::vector<Elem>&	_a;
-	const std::vector<Elem>&	_b;
+	const Elem*	_a;
+	const int	_a_size;
+	const Elem*	_b;
+	const int	_b_size;
 
 	std::vector<diff_info> _diff;
 
@@ -152,19 +155,28 @@ private:
 
 
 template <typename Elem>
-inline void DiffCalc<Elem>::_setv(int k, int r, int val)
+DiffCalc<Elem>::DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
+		detect_moves_type findMoves, const Elem& blankVal, int max) :
+	_a(v1.data()), _a_size(v1.size()), _b(v2.data()), _b_size(v2.size()),
+	_findMoves(findMoves), _blankVal(blankVal), _dmax(max)
 {
-	/* Pack -N to N into 0 to N * 2 */
-	int j = (k <= 0) ? (-k * 4 + r) : (k * 4 + (r - 2));
-
-	_buf.get(j) = val;
 }
 
 
 template <typename Elem>
-inline int DiffCalc<Elem>::_v(int k, int r)
+DiffCalc<Elem>::DiffCalc(const Elem v1[], int v1_size, const Elem v2[], int v2_size,
+		detect_moves_type findMoves, const Elem& blankVal, int max) :
+	_a(v1), _a_size(v1_size), _b(v2), _b_size(v2_size),
+	_findMoves(findMoves), _blankVal(blankVal), _dmax(max)
 {
-	int j = (k <= 0) ? (-k * 4 + r) : (k * 4 + (r - 2));
+}
+
+
+template <typename Elem>
+inline int& DiffCalc<Elem>::_v(int k, int r)
+{
+	/* Pack -N to N into 0 to N * 2 */
+	const int j = (k <= 0) ? (-k * 4 + r) : (k * 4 + (r - 2));
 
 	return _buf.get(j);
 }
@@ -205,8 +217,8 @@ int DiffCalc<Elem>::_find_middle_snake(int aoff, int aend, int boff, int bend, m
 	const int odd = delta & 1;
 	const int mid = (aend + bend) / 2 + odd;
 
-	_setv(1, 0, 0);
-	_setv(delta - 1, 1, aend);
+	_v(1, 0) = 0;
+	_v(delta - 1, 1) = aend;
 
 	for (int d = 0; d <= mid; d++)
 	{
@@ -233,7 +245,7 @@ int DiffCalc<Elem>::_find_middle_snake(int aoff, int aend, int boff, int bend, m
 				++y;
 			}
 
-			_setv(k, 0, x);
+			_v(k, 0) = x;
 
 			if (odd && k >= (delta - (d - 1)) && k <= (delta + (d - 1)))
 			{
@@ -270,7 +282,7 @@ int DiffCalc<Elem>::_find_middle_snake(int aoff, int aend, int boff, int bend, m
 				--y;
 			}
 
-			_setv(kr, 1, x);
+			_v(kr, 1) = x;
 
 			if (!odd && kr >= -d && kr <= d)
 			{
@@ -392,14 +404,12 @@ int DiffCalc<Elem>::_ses(int aoff, int aend, int boff, int bend)
 template <typename Elem>
 void DiffCalc<Elem>::_shift_boundries()
 {
-	const int asize = static_cast<int>(_a.size());
-	const int bsize = static_cast<int>(_b.size());
 	int diff_size = static_cast<int>(_diff.size());
 
 	for (int i = 0; i < diff_size; ++i)
 	{
-		int amax = asize;
-		int bmax = bsize;
+		int amax = _a_size;
+		int bmax = _b_size;
 		int offset = 0;
 
 		if (_diff[i].type != diff_type::DIFF_MATCH)
@@ -426,7 +436,7 @@ void DiffCalc<Elem>::_shift_boundries()
 					diff_info& adiff = _diff[i];
 					diff_info& bdiff = _diff[i + 1];
 
-					bmax = bsize;
+					bmax = _b_size;
 
 					for (int j = i + 2; j < diff_size; ++j)
 					{
@@ -718,8 +728,8 @@ std::vector<diff_info> DiffCalc<Elem>::operator()()
 	 */
 	int x = 0, y = 0;
 
-	int asize = static_cast<int>(_a.size());
-	int bsize = static_cast<int>(_b.size());
+	int asize = _a_size;
+	int bsize = _b_size;
 
 	while (x < asize && y < bsize && _a[x] == _b[y])
 	{
