@@ -134,7 +134,7 @@ private:
 
 	inline int& _v(int k, int r);
 	void _edit(diff_type type, int off, int len);
-	int _find_middle_snake(int aoff, int aend, int boff, int bend, middle_snake* ms);
+	int _find_middle_snake(int aoff, int aend, int boff, int bend, middle_snake& ms);
 	int _ses(int aoff, int aend, int boff, int bend);
 	void _shift_boundries();
 	void _find_b_matches(const diff_info& adiff, int aidx, move_match_info& matchInfo);
@@ -191,7 +191,7 @@ void DiffCalc<Elem>::_edit(diff_type type, int off, int len)
 	bool add_elem = _diff.empty();
 
 	if (!add_elem)
-		add_elem = (_diff.rbegin()->type != type);
+		add_elem = (_diff.back().type != type);
 
 	if (add_elem)
 	{
@@ -205,13 +205,13 @@ void DiffCalc<Elem>::_edit(diff_type type, int off, int len)
 	}
 	else
 	{
-		_diff.rbegin()->len += len;
+		_diff.back().len += len;
 	}
 }
 
 
 template <typename Elem>
-int DiffCalc<Elem>::_find_middle_snake(int aoff, int aend, int boff, int bend, middle_snake* ms)
+int DiffCalc<Elem>::_find_middle_snake(int aoff, int aend, int boff, int bend, middle_snake& ms)
 {
 	const int delta = aend - bend;
 	const int odd = delta & 1;
@@ -220,7 +220,7 @@ int DiffCalc<Elem>::_find_middle_snake(int aoff, int aend, int boff, int bend, m
 	_v(1, 0) = 0;
 	_v(delta - 1, 1) = aend;
 
-	for (int d = 0; d <= mid; d++)
+	for (int d = 0; d <= mid; ++d)
 	{
 		int k, x, y;
 
@@ -236,8 +236,8 @@ int DiffCalc<Elem>::_find_middle_snake(int aoff, int aend, int boff, int bend, m
 
 			y = x - k;
 
-			ms->x = x;
-			ms->y = y;
+			ms.x = x;
+			ms.y = y;
 
 			while (x < aend && y < bend &&  _a[aoff + x] == _b[boff + y])
 			{
@@ -251,8 +251,8 @@ int DiffCalc<Elem>::_find_middle_snake(int aoff, int aend, int boff, int bend, m
 			{
 				if (x >= _v(k, 1))
 				{
-					ms->u = x;
-					ms->v = y;
+					ms.u = x;
+					ms.v = y;
 					return 2 * d - 1;
 				}
 			}
@@ -273,8 +273,8 @@ int DiffCalc<Elem>::_find_middle_snake(int aoff, int aend, int boff, int bend, m
 
 			y = x - kr;
 
-			ms->u = x;
-			ms->v = y;
+			ms.u = x;
+			ms.v = y;
 
 			while (x > 0 && y > 0 &&  _a[aoff + x - 1] == _b[boff + y - 1])
 			{
@@ -288,8 +288,8 @@ int DiffCalc<Elem>::_find_middle_snake(int aoff, int aend, int boff, int bend, m
 			{
 				if (x <= _v(kr, 0))
 				{
-					ms->x = x;
-					ms->y = y;
+					ms.x = x;
+					ms.y = y;
 
 					return 2 * d;
 				}
@@ -322,7 +322,7 @@ int DiffCalc<Elem>::_ses(int aoff, int aend, int boff, int bend)
 		/* Find the middle "snake" around which we
 		 * recursively solve the sub-problems.
 		 */
-		d = _find_middle_snake(aoff, aend, boff, bend, &ms);
+		d = _find_middle_snake(aoff, aend, boff, bend, ms);
 		if (d == -1)
 			return -1;
 
