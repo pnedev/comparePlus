@@ -35,8 +35,10 @@ const int ProgressDlg::cBTNheight         = 25;
 
 // Different compare phases progress end positions
 const int ProgressDlg::cPhases[] = {
-	15,		// Docs diff
-	45,		// Blocks diff
+	10,		// Docs1 hashes
+	20,		// Docs2 hashes
+	25,		// Docs diff
+	65,		// Blocks diff
 	100,	// Results colorization and presentation
 };
 

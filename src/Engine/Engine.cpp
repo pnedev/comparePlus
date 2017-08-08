@@ -131,11 +131,14 @@ std::vector<uint64_t> computeLineHashes(DocCmpInfo& doc, const UserSettings& set
 	if ((doc.section.len <= 0) || (doc.section.off + doc.section.len > lineCount))
 		doc.section.len = lineCount - doc.section.off;
 
+	if (progress)
+		progress->SetMaxCount((doc.section.len / monitorCancelEveryXLine) + 1);
+
 	std::vector<uint64_t> lineHashes(doc.section.len, cHashSeed);
 
 	for (int lineNum = 0; lineNum < doc.section.len; ++lineNum)
 	{
-		if (progress && (lineNum % monitorCancelEveryXLine == 0) && progress->IsCancelled())
+		if (progress && (lineNum % monitorCancelEveryXLine == 0) && !progress->Advance())
 			return std::vector<uint64_t>{};
 
 		const int lineStart = ::SendMessage(doc.view, SCI_POSITIONFROMLINE, lineNum + doc.section.off, 0);
@@ -258,13 +261,13 @@ void compareLines(diff_info& blockDiff1, diff_info& blockDiff2, const chunk_info
 		const int* pLine1 = &line1;
 		const int* pLine2 = &line2;
 
-		// if (line1Size < line2Size)
-		// {
-			// std::swap(pBlockDiff1, pBlockDiff2);
-			// std::swap(pWords1, pWords2);
-			// std::swap(line1Size, line2Size);
-			// std::swap(pLine1, pLine2);
-		// }
+		if (line1Size < line2Size)
+		{
+			std::swap(pBlockDiff1, pBlockDiff2);
+			std::swap(pWords1, pWords2);
+			std::swap(line1Size, line2Size);
+			std::swap(pLine1, pLine2);
+		}
 
 		// Compare the two lines
 		const std::vector<diff_info> lineDiff = DiffCalc<Word>(pWords1, line1Size, pWords2, line2Size)();
@@ -349,10 +352,8 @@ int findBestMatchingSubBlockOffset(const chunk_info& chunk1, const chunk_info& c
 	const chunk_info* pChunk1 = &chunk1;
 	const chunk_info* pChunk2 = &chunk2;
 
-	// if (pChunk1->words.size() < pChunk2->words.size())
-	// {
-		// std::swap(pChunk1, pChunk2);
-	// }
+	if (pChunk1->words.size() < pChunk2->words.size())
+		std::swap(pChunk1, pChunk2);
 
 	// Compare the two chunks
 	std::vector<diff_info> chunkDiff = DiffCalc<Word>(pChunk1->words, pChunk2->words)();
@@ -393,11 +394,11 @@ int findBestMatchingSubBlockOffset(const chunk_info& chunk1, const chunk_info& c
 		const Word* pSubChunk2	= chunk2.words.data() + chunk2.lineStartWordIdx[currentOffset];
 		int subChunk2Size		= chunk2.words.size() - chunk2.lineStartWordIdx[currentOffset];
 
-		// if (subChunk1Size < subChunk2Size)
-		// {
-			// std::swap(pSubChunk1, pSubChunk2);
-			// std::swap(subChunk1Size, subChunk2Size);
-		// }
+		if (subChunk1Size < subChunk2Size)
+		{
+			std::swap(pSubChunk1, pSubChunk2);
+			std::swap(subChunk1Size, subChunk2Size);
+		}
 
 		// Compare the two sub-chunks
 		chunkDiff = DiffCalc<Word>(pSubChunk1, subChunk1Size, pSubChunk2, subChunk2Size)();
@@ -435,13 +436,6 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 	diff_info* pBlockDiff1 = &blockDiff1;
 	diff_info* pBlockDiff2 = &blockDiff2;
 
-	// if (pChunk1->words.size() < pChunk2->words.size())
-	// if (pChunk1->lineCount < pChunk2->lineCount)
-	// {
-		// std::swap(pChunk1, pChunk2);
-		// std::swap(pBlockDiff1, pBlockDiff2);
-	// }
-
 	const int lineOffset = 0;//findBestMatchingSubBlockOffset(*pChunk1, *pChunk2);
 	if (lineOffset < 0)
 		return false;
@@ -451,13 +445,13 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 	const Word* pSubChunk2	= pChunk2->words.data() + pChunk2->lineStartWordIdx[lineOffset];
 	int subChunk2Size		= pChunk2->words.size() - pChunk2->lineStartWordIdx[lineOffset];
 
-	// if (subChunk1Size < subChunk2Size)
-	// {
-		// std::swap(pSubChunk1, pSubChunk2);
-		// std::swap(subChunk1Size, subChunk2Size);
-		// std::swap(pChunk1, pChunk2);
-		// std::swap(pBlockDiff1, pBlockDiff2);
-	// }
+	if (subChunk1Size < subChunk2Size)
+	{
+		std::swap(pSubChunk1, pSubChunk2);
+		std::swap(subChunk1Size, subChunk2Size);
+		std::swap(pChunk1, pChunk2);
+		std::swap(pBlockDiff1, pBlockDiff2);
+	}
 
 	// Compare the two sub-chunks
 	const std::vector<diff_info> chunkDiff = DiffCalc<Word>(pSubChunk1, subChunk1Size, pSubChunk2, subChunk2Size)();
@@ -543,7 +537,7 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 		}
 
 		// Do lines match enough to consider this a change instead of replacement?
-		if (maxConvergence >= 50)
+		if (maxConvergence > 50)
 		{
 			pChunk1->lineMappings[line1]				= bestMatchingLine2;
 			pChunk2->lineMappings[bestMatchingLine2]	= line1;
@@ -769,17 +763,14 @@ CompareResult runCompare(const section_t& mainViewSection, const section_t& subV
 		cmpInfo.doc2.blockDiffMask = MARKER_MASK_REMOVED;
 	}
 
-	if (progress)
-		progress->SetMaxCount(3);
-
 	const std::vector<uint64_t> doc1LineHashes = computeLineHashes(cmpInfo.doc1, settings);
 
-	if (progress && !progress->Advance())
+	if (progress && !progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
 	const std::vector<uint64_t> doc2LineHashes = computeLineHashes(cmpInfo.doc2, settings);
 
-	if (progress && !progress->Advance())
+	if (progress && !progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
 	const std::vector<uint64_t>* pLineHashes1 = &doc1LineHashes;
