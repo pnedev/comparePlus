@@ -271,7 +271,7 @@ void compareLines(diff_info& blockDiff1, diff_info& blockDiff2, const chunk_info
 
 		// Compare the two lines
 		const std::vector<diff_info> lineDiff = DiffCalc<Word>(pWords1, line1Size, pWords2, line2Size)();
-		if (lineDiff.size() == 0)
+		if (lineDiff.size() == 1 && lineDiff[0].type == diff_type::DIFF_MATCH)
 			continue;
 
 		pBlockDiff1->changedLines.emplace_back(*pLine1);
@@ -357,7 +357,7 @@ int findBestMatchingSubBlockOffset(const chunk_info& chunk1, const chunk_info& c
 
 	// Compare the two chunks
 	std::vector<diff_info> chunkDiff = DiffCalc<Word>(pChunk1->words, pChunk2->words)();
-	if (chunkDiff.size() == 0)
+	if (chunkDiff.size() == 1 && chunkDiff[0].type == diff_type::DIFF_MATCH)
 		return -1;
 
 	// Count the words diffs
@@ -402,7 +402,7 @@ int findBestMatchingSubBlockOffset(const chunk_info& chunk1, const chunk_info& c
 
 		// Compare the two sub-chunks
 		chunkDiff = DiffCalc<Word>(pSubChunk1, subChunk1Size, pSubChunk2, subChunk2Size)();
-		if (chunkDiff.size() == 0)
+		if (chunkDiff.size() == 1 && chunkDiff[0].type == diff_type::DIFF_MATCH)
 			return -1;
 
 		const std::pair<int, int> subDiffsCount = countDiffs(chunkDiff, pSubChunk2, subChunk2Size);
@@ -789,7 +789,7 @@ CompareResult runCompare(const section_t& mainViewSection, const section_t& subV
 
 	const int blockDiffSize = static_cast<int>(cmpInfo.diffBlocks.size());
 
-	if (blockDiffSize == 0)
+	if (blockDiffSize == 1 && cmpInfo.diffBlocks[0].type == diff_type::DIFF_MATCH)
 		return CompareResult::COMPARE_MATCH;
 
 	// Currently it is impossible to set Sci annotation in the beginning of the doc so if there is a diff in the

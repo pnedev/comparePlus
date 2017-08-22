@@ -737,10 +737,10 @@ std::vector<diff_info> DiffCalc<Elem>::operator()()
 		++y;
 	}
 
+	_edit(diff_type::DIFF_MATCH, 0, x);
+
 	if (asize == bsize && x == asize)
 		return _diff;
-
-	_edit(diff_type::DIFF_MATCH, 0, x);
 
 	asize -= x;
 	bsize -= y;
