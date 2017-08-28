@@ -94,7 +94,6 @@ struct chunk_info
 {
 	chunk_info(int line_offset, int line_count, HWND view, const UserSettings& settings);
 
-	int lineStart;
 	int lineCount;
 
 	std::vector<int> lineStartWordIdx;
@@ -184,14 +183,14 @@ charType getCharType(char letter)
 
 
 chunk_info::chunk_info(int line_offset, int line_count, HWND view, const UserSettings& settings) :
-	lineStart(line_offset), lineCount(line_count),
+	lineCount(line_count),
 	lineStartWordIdx(line_count), lineEndWordIdx(line_count)
 {
 	for (int lineNum = 0; lineNum < lineCount; ++lineNum)
 	{
 		lineStartWordIdx[lineNum] = static_cast<int>(words.size());
 
-		const int docLineNum = lineNum + lineStart;
+		const int docLineNum = lineNum + line_offset;
 		const int docLineStart = ::SendMessage(view, SCI_POSITIONFROMLINE, docLineNum, 0);
 		const int docLineEnd = ::SendMessage(view, SCI_GETLINEENDPOSITION, docLineNum, 0);
 
@@ -294,196 +293,157 @@ void compareLines(diff_info& blockDiff1, diff_info& blockDiff2, const chunk_info
 }
 
 
-std::pair<int, int> countDiffs(const std::vector<diff_info>& chunkDiff, const Word* chunk2, int chunk2Size)
-{
-	std::pair<int, int> diffsCount(0, 0);
-
-	std::vector<int> lineMatches(chunk2[chunk2Size - 1].line - chunk2->line + 1, 0);
-
-	int wordOffset = 0;
-
-	// Use the MATCH results to synchronize line numbers (count the matching words of each line)
-	for (const auto& cd : chunkDiff)
-	{
-		if (cd.type == diff_type::DIFF_IN_1)
-		{
-			wordOffset -= cd.len;
-		}
-		else if (cd.type == diff_type::DIFF_IN_2)
-		{
-			wordOffset += cd.len;
-		}
-		else if (cd.type == diff_type::DIFF_MATCH)
-		{
-			for (int wordIdx = cd.off; wordIdx < (cd.off + cd.len); ++wordIdx)
-			{
-				const Word& word = chunk2[wordIdx + wordOffset];
-
-				// if (word.type == charType::ALPHANUMCHAR)
-					++lineMatches[word.line - chunk2->line];
-			}
-		}
-	}
-
-	const int lineMatchesCount = static_cast<int>(lineMatches.size());
-
-	for (int i = 0; i < lineMatchesCount; ++i)
-	{
-		if (lineMatches[i])
-		{
-			diffsCount.first += lineMatches[i];
-		}
-	}
-
-	return diffsCount;
-}
-
-
-int findBestMatchingSubBlockOffset(const chunk_info& chunk1, const chunk_info& chunk2)
-{
-	const chunk_info* pChunk1 = &chunk1;
-	const chunk_info* pChunk2 = &chunk2;
-
-	if (chunk1.lineCount >= chunk2.lineCount)
-		return 0;
-
-	if (pChunk1->words.size() < pChunk2->words.size())
-		std::swap(pChunk1, pChunk2);
-
-	// Compare the two chunks
-	std::vector<diff_info> chunkDiff = DiffCalc<Word>(pChunk1->words, pChunk2->words)();
-	if (chunkDiff.size() == 1 && chunkDiff[0].type == diff_type::DIFF_MATCH)
-		return -1;
-
-	// Count the words diffs
-	const std::pair<int, int> diffsCount = countDiffs(chunkDiff, pChunk2->words.data(), pChunk2->words.size());
-	if (diffsCount.first == 0) // no matches?
-		return 0;
-
-	int bestMatchOffset = 0;
-	int wordOffset = 0;
-
-	// Find the starting line
-	for (const auto& cd : chunkDiff)
-	{
-		if (cd.type == diff_type::DIFF_IN_1)
-		{
-			wordOffset -= cd.len;
-		}
-		else if (cd.type == diff_type::DIFF_IN_2)
-		{
-			wordOffset += cd.len;
-		}
-		else if (cd.type == diff_type::DIFF_MATCH)
-		{
-			bestMatchOffset = pChunk2->words[cd.off + wordOffset].line;
-			break;
-		}
-	}
-
-	for (int adjustment = (chunk2.lineCount - chunk1.lineCount - bestMatchOffset) / 2, currentOffset = adjustment;
-			adjustment > 0; )
-	{
-		const Word* pSubChunk1	= chunk1.words.data();
-		int subChunk1Size		= chunk1.words.size();
-		const Word* pSubChunk2	= chunk2.words.data() + chunk2.lineStartWordIdx[currentOffset];
-		int subChunk2Size		= chunk2.words.size() - chunk2.lineStartWordIdx[currentOffset];
-
-		if (subChunk1Size < subChunk2Size)
-		{
-			std::swap(pSubChunk1, pSubChunk2);
-			std::swap(subChunk1Size, subChunk2Size);
-		}
-
-		// Compare the two sub-chunks
-		chunkDiff = DiffCalc<Word>(pSubChunk1, subChunk1Size, pSubChunk2, subChunk2Size)();
-		if (chunkDiff.size() == 1 && chunkDiff[0].type == diff_type::DIFF_MATCH)
-			return -1;
-
-		const std::pair<int, int> subDiffsCount = countDiffs(chunkDiff, pSubChunk2, subChunk2Size);
-
-		adjustment = (adjustment == 1) ? 0 : adjustment / 2 + adjustment % 2;
-
-		if (subDiffsCount.first < diffsCount.first)
-		{
-			currentOffset -= adjustment;
-		}
-		else
-		{
-			bestMatchOffset = currentOffset;
-			currentOffset += adjustment;
-		}
-	}
-
-	return bestMatchOffset;
-}
-
-
-bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSettings& settings,
+void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSettings& settings,
 		diff_info& blockDiff1, diff_info& blockDiff2)
 {
 	chunk_info chunk1(blockDiff1.off, blockDiff1.len, doc1.view, settings);
 	chunk_info chunk2(blockDiff2.off, blockDiff2.len, doc2.view, settings);
 
-	const int lineOffset = 0;//findBestMatchingSubBlockOffset(chunk1, chunk2);
-	// if (lineOffset < 0)
-		// return false;
+	std::vector<diff_info> bestMatchDiff;
+	std::vector<std::vector<int>> bestLineWordsMatch;
+	int bestMatchOffset = 0;
+	int bestMatchedWords = 0;
+	int bestMatchedLines = 0;
 
+	chunk_info* pChunk1;
+	chunk_info* pChunk2;
 
-	chunk_info* pChunk1 = &chunk1;
-	chunk_info* pChunk2 = &chunk2;
+	diff_info* pBlockDiff1;
+	diff_info* pBlockDiff2;
 
-	diff_info* pBlockDiff1 = &blockDiff1;
-	diff_info* pBlockDiff2 = &blockDiff2;
+	int adjustment = chunk1.lineCount - chunk2.lineCount;
+	if (adjustment < 0)
+		adjustment = -adjustment;
 
-	const Word* pSubChunk1	= pChunk1->words.data();
-	int subChunk1Size		= pChunk1->words.size();
-	const Word* pSubChunk2	= pChunk2->words.data() + pChunk2->lineStartWordIdx[lineOffset];
-	int subChunk2Size		= pChunk2->words.size() - pChunk2->lineStartWordIdx[lineOffset];
+	int currentOffset = 0;
+
+	do
+	{
+		pChunk1 = &chunk1;
+		pChunk2 = &chunk2;
+
+		pBlockDiff1 = &blockDiff1;
+		pBlockDiff2 = &blockDiff2;
+
+		Word* pSubChunk1	= chunk1.words.data();
+		int subChunk1Size	= chunk1.words.size();
+		Word* pSubChunk2	= chunk2.words.data();
+		int subChunk2Size	= chunk2.words.size();
+
+		if (chunk1.lineCount >= chunk2.lineCount)
+		{
+			pSubChunk1		+= chunk1.lineStartWordIdx[currentOffset];
+			subChunk1Size	-= chunk1.lineStartWordIdx[currentOffset];
+		}
+		else
+		{
+			pSubChunk2		+= chunk2.lineStartWordIdx[currentOffset];
+			subChunk2Size	-= chunk2.lineStartWordIdx[currentOffset];
+		}
+
+		if (subChunk1Size < subChunk2Size)
+		{
+			std::swap(pSubChunk1, pSubChunk2);
+			std::swap(subChunk1Size, subChunk2Size);
+			std::swap(pChunk1, pChunk2);
+			std::swap(pBlockDiff1, pBlockDiff2);
+		}
+
+		// Compare the two sub-chunks
+		std::vector<diff_info> currentDiff = DiffCalc<Word>(pSubChunk1, subChunk1Size, pSubChunk2, subChunk2Size)();
+
+		std::vector<std::vector<int>> lineWordsMatch(pChunk1->lineCount, std::vector<int>(pChunk2->lineCount, 0));
+
+		int matchedWords = 0;
+		int matchedLines = 0;
+
+		int wordOffset = 0;
+
+		// Use the MATCH results to synchronize line numbers (count the matching words of each line)
+		for (const auto& cd : currentDiff)
+		{
+			if (cd.type == diff_type::DIFF_IN_1)
+			{
+				wordOffset -= cd.len;
+			}
+			else if (cd.type == diff_type::DIFF_IN_2)
+			{
+				wordOffset += cd.len;
+			}
+			else if (cd.type == diff_type::DIFF_MATCH)
+			{
+				for (int wordIdx = cd.off; wordIdx < (cd.off + cd.len); ++wordIdx)
+				{
+					const Word& word1 = pChunk1->words[wordIdx];
+
+					if (word1.type == charType::ALPHANUMCHAR)
+					{
+						const Word& word2 = pChunk2->words[wordIdx + wordOffset +
+								pChunk2->lineStartWordIdx[currentOffset]];
+
+						++matchedWords;
+						if (lineWordsMatch[word1.line][word2.line] == 0)
+							++matchedLines;
+
+						++lineWordsMatch[word1.line][word2.line];
+					}
+				}
+			}
+		}
+
+		adjustment = (adjustment == 1) ? 0 : adjustment / 2 + adjustment % 2;
+
+		if (matchedWords < bestMatchedWords)
+		{
+			currentOffset -= adjustment;
+		}
+		else
+		{
+			if (matchedLines < bestMatchedLines || bestMatchedLines == 0)
+			{
+				bestMatchDiff		= std::move(currentDiff);
+				bestLineWordsMatch	= std::move(lineWordsMatch);
+				bestMatchOffset		= currentOffset;
+				bestMatchedWords	= matchedWords;
+				bestMatchedLines	= matchedLines;
+				currentOffset		+= adjustment;
+			}
+			else if (matchedLines > bestMatchedLines)
+			{
+				currentOffset -= adjustment;
+			}
+			else
+			{
+				currentOffset += adjustment;
+			}
+		}
+	} while (adjustment);
+
+	// No matched lines
+	if (bestMatchedWords == 0)
+		return;
+
+	pChunk1 = &chunk1;
+	pChunk2 = &chunk2;
+
+	pBlockDiff1 = &blockDiff1;
+	pBlockDiff2 = &blockDiff2;
+
+	int subChunk1Size = chunk1.words.size();
+	int subChunk2Size = chunk2.words.size();
+
+	if (chunk1.lineCount >= chunk2.lineCount)
+		subChunk1Size -= chunk1.lineStartWordIdx[bestMatchOffset];
+	else
+		subChunk2Size -= chunk2.lineStartWordIdx[bestMatchOffset];
 
 	if (subChunk1Size < subChunk2Size)
 	{
-		std::swap(pSubChunk1, pSubChunk2);
-		std::swap(subChunk1Size, subChunk2Size);
 		std::swap(pChunk1, pChunk2);
 		std::swap(pBlockDiff1, pBlockDiff2);
 	}
 
-	// Compare the two sub-chunks
-	const std::vector<diff_info> chunkDiff = DiffCalc<Word>(pSubChunk1, subChunk1Size, pSubChunk2, subChunk2Size)();
-
-	std::vector<std::vector<int>> lineWordsMatch(pChunk1->lineCount, std::vector<int>(pChunk2->lineCount, 0));
-
-	int wordOffset = 0;
-
-	// Use the MATCH results to synchronize line numbers (count the matching words of each line)
-	for (const auto& cd : chunkDiff)
-	{
-		if (cd.type == diff_type::DIFF_IN_1)
-		{
-			wordOffset -= cd.len;
-		}
-		else if (cd.type == diff_type::DIFF_IN_2)
-		{
-			wordOffset += cd.len;
-		}
-		else if (cd.type == diff_type::DIFF_MATCH)
-		{
-			for (int wordIdx = cd.off; wordIdx < (cd.off + cd.len); ++wordIdx)
-			{
-				const Word& word1 = pChunk1->words[wordIdx];
-
-				if (word1.type == charType::ALPHANUMCHAR)
-				{
-					const Word& word2 = pChunk2->words[wordIdx + wordOffset + pChunk2->lineStartWordIdx[lineOffset]];
-
-					++lineWordsMatch[word1.line][word2.line];
-				}
-			}
-		}
-	}
-
-	int bestMatchingLine2 = lineOffset;
+	int bestMatchingLine2 = bestMatchOffset;
 
 	std::vector<std::pair<int, int>> lineMappings;
 
@@ -498,7 +458,7 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 
 		for (int line2 = bestMatchingLine2; line2 < pChunk2->lineCount; ++line2)
 		{
-			if (lineWordsMatch[line1][line2] == 0 || pBlockDiff2->isMoved(line2))
+			if (bestLineWordsMatch[line1][line2] == 0 || pBlockDiff2->isMoved(line2))
 				continue;
 
 			int line2Len = 0;
@@ -523,14 +483,14 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 			if (shortestLineLen == 0 || shortestLineLen > line2Len)
 				shortestLineLen = line2Len;
 
-			const int lineConvergence = (lineWordsMatch[line1][line2] * 100) / shortestLineLen;
+			const int lineConvergence = (bestLineWordsMatch[line1][line2] * 100) / shortestLineLen;
 
 			if (lineConvergence > maxConvergence ||
 				(lineConvergence == maxConvergence && line2Len > maxLine2Len))
 			{
-				maxConvergence = lineConvergence;
-				maxLine2Len = line2Len;
-				bestMatchingLine2 = line2;
+				maxConvergence		= lineConvergence;
+				maxLine2Len			= line2Len;
+				bestMatchingLine2	= line2;
 			}
 		}
 
@@ -545,7 +505,7 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 	if (!lineMappings.empty())
 		compareLines(*pBlockDiff1, *pBlockDiff2, *pChunk1, *pChunk2, lineMappings);
 
-	return true;
+	return;
 }
 
 
