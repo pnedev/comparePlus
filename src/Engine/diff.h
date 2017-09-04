@@ -540,7 +540,7 @@ void DiffCalc<Elem>::_find_b_matches(const diff_info& adiff, int aidx, move_matc
 	matchInfo.a_len = 0;
 	matchInfo.matches.clear();
 
-	for (diff_info& bdiff : _diff)
+	for (diff_info& bdiff: _diff)
 	{
 		// Is it bdiff?
 		if (bdiff.type != diff_type::DIFF_IN_2)
@@ -695,7 +695,7 @@ void DiffCalc<Elem>::_find_moves()
 			for (int k = matchInfo.a_off; k <= end; ++k)
 				best_match_adiff->moved[k] = moveType;
 
-			for (auto& match : matchInfo.matches)
+			for (auto& match: matchInfo.matches)
 			{
 				diff_info*	match_di	= match.first;
 				int 		off			= match.second;

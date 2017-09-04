@@ -20,6 +20,8 @@
 #include <climits>
 #include <exception>
 #include <cstdint>
+#include <utility>
+#include <map>
 
 #include <windows.h>
 
@@ -226,31 +228,42 @@ std::vector<std::vector<Word>> getWords(int line_offset, int line_count, HWND vi
 
 void compareLines(diff_info& blockDiff1, diff_info& blockDiff2,
 		const std::vector<std::vector<Word>>& chunk1, const std::vector<std::vector<Word>>& chunk2,
-		std::vector<std::pair<int, int>>& lineMappings)
+		const std::map<int, int>& lineMappings)
 {
-	for (auto& lineMap : lineMappings)
+	int lastLine2 = -1;
+
+	for (const auto& lm: lineMappings)
 	{
 		diff_info* pBlockDiff1 = &blockDiff1;
 		diff_info* pBlockDiff2 = &blockDiff2;
 
-		const std::vector<Word>* pLine1 = &chunk1[lineMap.first];
-		const std::vector<Word>* pLine2 = &chunk2[lineMap.second];
+		// lines1 are stored in ascending order and to have a match lines2 must also be in ascending order
+		if (lm.second <= lastLine2)
+			continue;
+
+		int line1 = lm.first;
+		int line2 = lm.second;
+
+		lastLine2 = line2;
+
+		const std::vector<Word>* pLine1 = &chunk1[line1];
+		const std::vector<Word>* pLine2 = &chunk2[line2];
 
 		if (pLine1->size() < pLine2->size())
 		{
 			std::swap(pBlockDiff1, pBlockDiff2);
 			std::swap(pLine1, pLine2);
-			std::swap(lineMap.first, lineMap.second);
+			std::swap(line1, line2);
 		}
 
 		const std::vector<diff_info> linesDiff = DiffCalc<Word>(*pLine1, *pLine2)();
 		if (linesDiff.size() == 1 && linesDiff[0].type == diff_type::DIFF_MATCH)
 			continue;
 
-		pBlockDiff1->changedLines.emplace_back(lineMap.first);
-		pBlockDiff2->changedLines.emplace_back(lineMap.second);
+		pBlockDiff1->changedLines.emplace_back(line1);
+		pBlockDiff2->changedLines.emplace_back(line2);
 
-		for (const auto& ld : linesDiff)
+		for (const auto& ld: linesDiff)
 		{
 			if (ld.type == diff_type::DIFF_IN_1)
 			{
@@ -288,12 +301,12 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 
 	for (int line1 = 0; line1 < linesCount1; ++line1)
 	{
-		if (blockDiff1.isMoved(line1))
+		if (blockDiff1.isMoved(line1) || chunk1[line1].empty())
 			continue;
 
 		for (int line2 = 0; line2 < linesCount2; ++line2)
 		{
-			if (blockDiff2.isMoved(line2))
+			if (blockDiff2.isMoved(line2) || chunk2[line2].empty())
 				continue;
 
 			const std::vector<Word>* pLine1 = &chunk1[line1];
@@ -304,7 +317,7 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 
 			const std::vector<diff_info> linesDiff = DiffCalc<Word>(*pLine1, *pLine2)();
 
-			for (const auto& ld : linesDiff)
+			for (const auto& ld: linesDiff)
 			{
 				if (ld.type == diff_type::DIFF_MATCH)
 					linesConvergence[line1][line2] += ld.len;
@@ -316,28 +329,46 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 		}
 	}
 
-	std::vector<std::pair<int, int>> lineMappings;
-
-	int lastMatchedLine2 = 0;
+	std::map<int, std::pair<int, int>> orderedConvergence;
 
 	for (int line1 = 0; line1 < linesCount1; ++line1)
 	{
-		int maxConvergence = 0;
-		int bestLine2Match = lastMatchedLine2;
-
-		for (int line2 = lastMatchedLine2; line2 < linesCount2; ++line2)
+		for (int line2 = 0; line2 < linesCount2; ++line2)
 		{
-			if (linesConvergence[line1][line2] > maxConvergence)
+			if (linesConvergence[line1][line2] > 50)
 			{
-				maxConvergence = linesConvergence[line1][line2];
-				bestLine2Match = line2;
+				int currentConvergence = linesConvergence[line1][line2];
+
+				for (auto res = orderedConvergence.emplace(currentConvergence, std::pair<int, int>(line1, line2));
+						!res.second;
+						res = orderedConvergence.emplace(currentConvergence, std::pair<int, int>(line1, line2)))
+					--currentConvergence;
 			}
 		}
+	}
 
-		if (maxConvergence > 50)
+	std::map<int, int> lineMappings;
+
+	std::vector<bool> mappedLines1(linesCount1, false);
+	std::vector<bool> mappedLines2(linesCount2, false);
+
+	int mappedLinesCount1 = 0;
+	int mappedLinesCount2 = 0;
+
+	for (auto ocItr = orderedConvergence.rbegin(); ocItr != orderedConvergence.rend(); ++ocItr)
+	{
+		const int line1 = ocItr->second.first;
+		const int line2 = ocItr->second.second;
+
+		if (!mappedLines1[line1] && !mappedLines2[line2])
 		{
-			lastMatchedLine2 = bestLine2Match + 1;
-			lineMappings.emplace_back(std::pair<int, int>(line1, bestLine2Match));
+			lineMappings.emplace(line1, line2);
+
+			if ((++mappedLinesCount1 == linesCount1) || (++mappedLinesCount2 == linesCount2))
+				break;
+
+			mappedLines1[line1] = true;
+			mappedLines2[line2] = true;
 		}
 	}
 
@@ -368,7 +399,7 @@ void markLineDiffs(HWND view1, HWND view2, const diff_info& bd, int lineIdx)
 	int line = bd.off + bd.changedLines[lineIdx].line;
 	int linePos = ::SendMessage(view1, SCI_POSITIONFROMLINE, line, 0);
 
-	for (const auto& change : bd.changedLines[lineIdx].changes)
+	for (const auto& change: bd.changedLines[lineIdx].changes)
 		markTextAsChanged(view1, linePos + change.off, change.len);
 
 	::SendMessage(view1, SCI_MARKERADDSET, line, MARKER_MASK_CHANGED);
@@ -376,7 +407,7 @@ void markLineDiffs(HWND view1, HWND view2, const diff_info& bd, int lineIdx)
 	line = bd.matchedDiff->off + bd.matchedDiff->changedLines[lineIdx].line;
 	linePos = ::SendMessage(view2, SCI_POSITIONFROMLINE, line, 0);
 
-	for (const auto& change : bd.matchedDiff->changedLines[lineIdx].changes)
+	for (const auto& change: bd.matchedDiff->changedLines[lineIdx].changes)
 		markTextAsChanged(view2, linePos + change.off, change.len);
 
 	::SendMessage(view2, SCI_MARKERADDSET, line, MARKER_MASK_CHANGED);
@@ -615,7 +646,7 @@ CompareResult runCompare(const section_t& mainViewSection, const section_t& subV
 
 	if (cmpInfo.doc1.section.off || cmpInfo.doc2.section.off)
 	{
-		for (auto& bd : cmpInfo.diffBlocks)
+		for (auto& bd: cmpInfo.diffBlocks)
 		{
 			if (bd.type == diff_type::DIFF_IN_1 || bd.type == diff_type::DIFF_MATCH)
 				bd.off += cmpInfo.doc1.section.off;
