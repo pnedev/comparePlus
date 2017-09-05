@@ -342,6 +342,8 @@ public:
 	bool			caseIgnored;
 	bool			movesDetected;
 
+	std::pair<std::pair<int, int>, std::pair<int, int>>	selections;
+
 	AlignmentInfo_t	alignmentInfo;
 };
 
@@ -999,11 +1001,19 @@ void ComparedPair::restoreFiles(int currentBuffId = -1)
 
 void ComparedPair::setStatus()
 {
+	TCHAR cmpType[128];
+
+	if (isFullCompare)
+		_tcscpy_s(cmpType, _countof(cmpType), TEXT("Full"));
+	else
+		_sntprintf_s(cmpType, _countof(cmpType), _TRUNCATE, TEXT("Sel: %d-%d vs. %d-%d"),
+				selections.first.first + 1, selections.first.second + 1,
+				selections.second.first + 1, selections.second.second + 1);
+
 	TCHAR msg[512];
 
 	_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-			TEXT("Compare (%s)    Ignore Spaces (%s)    Ignore Case (%s)    Detect Moves (%s)"),
-			isFullCompare	? TEXT("Full")	: TEXT("Sel"),
+			TEXT("Compare (%s)    Ignore Spaces (%s)    Ignore Case (%s)    Detect Moves (%s)"), cmpType,
 			spacesIgnored	? TEXT("Y")	: TEXT("N"),
 			caseIgnored		? TEXT("Y")	: TEXT("N"),
 			movesDetected	? TEXT("Y")	: TEXT("N"));
@@ -1462,14 +1472,14 @@ CompareResult runCompare(CompareList_t::iterator cmpPair, bool selectionCompare)
 
 	if (selectionCompare)
 	{
-		const std::pair<int, int> mainViewSel = getSelectionLines(nppData._scintillaMainHandle);
-		const std::pair<int, int> subViewSel = getSelectionLines(nppData._scintillaSecondHandle);
+		cmpPair->selections.first	= getSelectionLines(nppData._scintillaMainHandle);
+		cmpPair->selections.second	= getSelectionLines(nppData._scintillaSecondHandle);
 
-		mainViewSection.off = mainViewSel.first;
-		mainViewSection.len = mainViewSel.second - mainViewSel.first + 1;
+		mainViewSection.off = cmpPair->selections.first.first;
+		mainViewSection.len = cmpPair->selections.first.second - cmpPair->selections.first.first + 1;
 
-		subViewSection.off = subViewSel.first;
-		subViewSection.len = subViewSel.second - subViewSel.first + 1;
+		subViewSection.off = cmpPair->selections.second.first;
+		subViewSection.len = cmpPair->selections.second.second - cmpPair->selections.second.first + 1;
 	}
 
 	setStyles(Settings);
