@@ -1574,11 +1574,10 @@ void compare(bool selectionCompare = false)
 				showNavBar();
 
 			alignDiffs();
-			syncViews(getCurrentView());
 
 			cmpPair->setStatus();
 
-			if (recompare && !Settings.GotoFirstDiff)
+			if (recompare && !Settings.GotoFirstDiff && !selectionCompare)
 			{
 				location.restore();
 			}
@@ -1587,11 +1586,13 @@ void compare(bool selectionCompare = false)
 				if (!doubleView)
 					activateBufferID(cmpPair->getNewFile().buffId);
 
+				if (selectionCompare)
+					clearSelection(getOtherView());
+
 				First();
 			}
 
-			if (selectionCompare)
-				clearSelection(getOtherView());
+			syncViews(getCurrentView());
 
 			LOGD("Compare shown\n");
 		}
