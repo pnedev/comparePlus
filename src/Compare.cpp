@@ -426,6 +426,24 @@ public:
  *  \class
  *  \brief
  */
+template <typename T>
+class DelayedDecrement : public DelayedWork
+{
+public:
+	DelayedDecrement(T& value) : DelayedWork(), _val(value) {}
+	virtual ~DelayedDecrement() = default;
+
+	virtual void operator()();
+
+private:
+	T& _val;
+};
+
+
+/**
+ *  \class
+ *  \brief
+ */
 class DelayedUpdate : public DelayedWork
 {
 public:
@@ -469,10 +487,14 @@ std::unique_ptr<NewCompare> newCompare;
 
 volatile unsigned notificationsLock = 0;
 
+bool NppMinimized = false;
+
 DelayedAlign	delayedAlignment;
 DelayedActivate	delayedActivation;
 DelayedClose	delayedClosure;
 DelayedUpdate	delayedUpdate;
+
+DelayedDecrement<volatile unsigned>	delayedUnlock(notificationsLock);
 
 AboutDialog   	AboutDlg;
 SettingsDialog	SettingsDlg;
@@ -1559,6 +1581,8 @@ void compare(bool selectionCompare = false)
 	{
 		case CompareResult::COMPARE_MISMATCH:
 		{
+			LOGD("Compare done\n");
+
 			cmpPair->isFullCompare	= !selectionCompare;
 			cmpPair->spacesIgnored	= Settings.IgnoreSpaces;
 			cmpPair->caseIgnored	= Settings.IgnoreCase;
@@ -1572,8 +1596,6 @@ void compare(bool selectionCompare = false)
 
 			if (Settings.UseNavBar)
 				showNavBar();
-
-			alignDiffs();
 
 			cmpPair->setStatus();
 
@@ -1592,9 +1614,7 @@ void compare(bool selectionCompare = false)
 				First();
 			}
 
-			syncViews(getCurrentView());
-
-			LOGD("Compare shown\n");
+			LOGD("Compare result shown\n");
 		}
 		break;
 
@@ -2062,6 +2082,8 @@ void syncViews(HWND biasView)
 		ScopedIncrementer incr(notificationsLock);
 
 		::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine1, 0);
+
+		NavDlg.Update();
 	}
 }
 
@@ -2181,7 +2203,6 @@ void DelayedAlign::operator()()
 	}
 
 	syncViews(currentView);
-	NavDlg.Update();
 }
 
 
@@ -2199,7 +2220,6 @@ void onSciUpdateUI(HWND view)
 	ScopedIncrementer incr(notificationsLock);
 
 	syncViews(view);
-	NavDlg.Update();
 }
 
 
@@ -2268,9 +2288,6 @@ void DelayedUpdate::operator()()
 	// Force NavBar redraw
 	if (NavDlg.isVisible())
 		NavDlg.Show();
-
-	// Synchronize views
-	syncViews(changeView);
 }
 
 
@@ -2584,6 +2601,14 @@ void onFileSaved(LRESULT buffId)
     }
 }
 
+
+template <typename T>
+void DelayedDecrement<T>::operator()()
+{
+	if (_val)
+		--_val;
+}
+
 } // anonymous namespace
 
 
@@ -2743,8 +2768,29 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 }
 
 
-extern "C" __declspec(dllexport) LRESULT messageProc(UINT, WPARAM, LPARAM)
+extern "C" __declspec(dllexport) LRESULT messageProc(UINT msg, WPARAM wParam, LPARAM)
 {
+	if ((msg == WM_SIZE))
+	{
+		if ((wParam == SIZE_MINIMIZED) && NppSettings::get().compareMode && !NppMinimized)
+		{
+			LOGD("Notepad++ minimized\n");
+
+			NppMinimized = true;
+		}
+		else if (wParam == SIZE_MAXIMIZED && NppSettings::get().compareMode && NppMinimized)
+		{
+			LOGD("Notepad++ restored\n");
+
+			NppMinimized = false;
+
+			if (!delayedUnlock.isPending())
+				++notificationsLock;
+
+			delayedUnlock.post(100);
+		}
+	}
+
 	return TRUE;
 }
 
