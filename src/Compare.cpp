@@ -487,8 +487,6 @@ std::unique_ptr<NewCompare> newCompare;
 
 volatile unsigned notificationsLock = 0;
 
-bool NppMinimized = false;
-
 DelayedAlign	delayedAlignment;
 DelayedActivate	delayedActivation;
 DelayedClose	delayedClosure;
@@ -2772,20 +2770,15 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT msg, WPARAM wParam, LP
 {
 	if ((msg == WM_SIZE))
 	{
-		if ((wParam == SIZE_MINIMIZED) && NppSettings::get().compareMode && !NppMinimized)
+		if ((wParam == SIZE_MINIMIZED) && !notificationsLock)
 		{
 			LOGD("Notepad++ minimized\n");
 
-			NppMinimized = true;
+			++notificationsLock;
 		}
-		else if (wParam == SIZE_MAXIMIZED && NppSettings::get().compareMode && NppMinimized)
+		else if (wParam == SIZE_MAXIMIZED && notificationsLock)
 		{
 			LOGD("Notepad++ restored\n");
-
-			NppMinimized = false;
-
-			if (!delayedUnlock.isPending())
-				++notificationsLock;
 
 			delayedUnlock.post(100);
 		}
