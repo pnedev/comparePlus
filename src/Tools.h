@@ -63,6 +63,9 @@ public:
 
 protected:
 	DelayedWork() : _timerId(0) {}
+	DelayedWork(const DelayedWork&) = delete;
+	DelayedWork& operator=(const DelayedWork&) = delete;
+
 	virtual ~DelayedWork()
 	{
 		cancel();
