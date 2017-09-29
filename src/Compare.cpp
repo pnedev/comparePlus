@@ -1137,17 +1137,8 @@ void resetCompareView(HWND view)
 }
 
 
-void alignDiffs()
+void alignDiffs(const AlignmentInfo_t& alignmentInfo)
 {
-	CompareList_t::iterator cmpPair = getCompare(getCurrentBuffId());
-	if (cmpPair == compareList.end())
-		return;
-
-	if (cmpPair->alignmentInfo.empty())
-		return;
-
-	const AlignmentInfo_t& alignmentInfo = cmpPair->alignmentInfo;
-
 	::SendMessage(nppData._scintillaMainHandle, SCI_ANNOTATIONCLEARALL, 0, 0);
 	::SendMessage(nppData._scintillaSecondHandle, SCI_ANNOTATIONCLEARALL, 0, 0);
 
@@ -2176,26 +2167,43 @@ void onNppReady()
 
 void DelayedAlign::operator()()
 {
-	int endLine1 = ::SendMessage(nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0) - 1;
-	int endLine2 = ::SendMessage(nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0) - 1;
+	const LRESULT			currentBuffId	= getCurrentBuffId();
+	CompareList_t::iterator	cmpPair			= getCompare(currentBuffId);
 
-	endLine1 = ::SendMessage(nppData._scintillaMainHandle, SCI_VISIBLEFROMDOCLINE, endLine1, 0) +
-			::SendMessage(nppData._scintillaMainHandle, SCI_WRAPCOUNT, endLine1, 0) +
-			::SendMessage(nppData._scintillaMainHandle, SCI_ANNOTATIONGETLINES, endLine1, 0);
+	if (cmpPair == compareList.end())
+		return;
 
-	endLine2 = ::SendMessage(nppData._scintillaSecondHandle, SCI_VISIBLEFROMDOCLINE, endLine2, 0) +
-			::SendMessage(nppData._scintillaSecondHandle, SCI_WRAPCOUNT, endLine2, 0) +
-			::SendMessage(nppData._scintillaSecondHandle, SCI_ANNOTATIONGETLINES, endLine2, 0);
+	const AlignmentInfo_t& alignmentInfo = cmpPair->alignmentInfo;
+	if (alignmentInfo.empty())
+		return;
+
+	int lastLineOnScreen1 = ::SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0) +
+			::SendMessage(nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0);
+	lastLineOnScreen1 = ::SendMessage(nppData._scintillaMainHandle, SCI_DOCLINEFROMVISIBLE, lastLineOnScreen1, 0);
+
+	bool realign = false;
+
+	for (auto& alignment : alignmentInfo)
+	{
+		if (alignment.main.line >= lastLineOnScreen1)
+		{
+			if (::SendMessage(nppData._scintillaMainHandle, SCI_VISIBLEFROMDOCLINE, alignment.main.line, 0) !=
+					::SendMessage(nppData._scintillaSecondHandle, SCI_VISIBLEFROMDOCLINE, alignment.sub.line, 0))
+				realign = true;
+
+			break;
+		}
+	}
 
 	ScopedIncrementer incr(notificationsLock);
 
-	if (endLine1 != endLine2)
+	if (realign)
 	{
 		LOGD("Aligning diffs\n");
 
-		ViewLocation location(getCurrentBuffId());
+		ViewLocation location(currentBuffId);
 
-		alignDiffs();
+		alignDiffs(alignmentInfo);
 
 		location.restore();
 	}
