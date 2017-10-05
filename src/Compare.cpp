@@ -2177,22 +2177,29 @@ void DelayedAlign::operator()()
 	if (alignmentInfo.empty())
 		return;
 
-	int lastLineOnScreen1 = ::SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0) +
-			::SendMessage(nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0);
-	lastLineOnScreen1 = ::SendMessage(nppData._scintillaMainHandle, SCI_DOCLINEFROMVISIBLE, lastLineOnScreen1, 0);
+	int mainFirstLine = ::SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	int mainLastLine = mainFirstLine + ::SendMessage(nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0);
+
+	mainFirstLine = ::SendMessage(nppData._scintillaMainHandle, SCI_DOCLINEFROMVISIBLE, mainFirstLine, 0);
+	mainLastLine = ::SendMessage(nppData._scintillaMainHandle, SCI_DOCLINEFROMVISIBLE, mainLastLine, 0);
 
 	bool realign = false;
 
-	for (auto& alignment : alignmentInfo)
+	for (const auto& alignment : alignmentInfo)
 	{
-		if (alignment.main.line >= lastLineOnScreen1)
+		if (alignment.main.line >= mainFirstLine)
 		{
-			if (::SendMessage(nppData._scintillaMainHandle, SCI_VISIBLEFROMDOCLINE, alignment.main.line, 0) !=
-					::SendMessage(nppData._scintillaSecondHandle, SCI_VISIBLEFROMDOCLINE, alignment.sub.line, 0))
+			if ((alignment.main.diffMask == alignment.sub.diffMask) &&
+				(::SendMessage(nppData._scintillaMainHandle, SCI_VISIBLEFROMDOCLINE, alignment.main.line, 0) !=
+				::SendMessage(nppData._scintillaSecondHandle, SCI_VISIBLEFROMDOCLINE, alignment.sub.line, 0)))
+			{
 				realign = true;
-
-			break;
+				break;
+			}
 		}
+
+		if (alignment.main.line > mainLastLine)
+			break;
 	}
 
 	ScopedIncrementer incr(notificationsLock);

@@ -484,18 +484,18 @@ bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
 						pSubAlignData->diffMask		= cmpInfo.doc2.blockDiffMask;
 
 						alignmentInfo.push_back(alignPair);
-					}
 
-					if (cmpInfo.doc1.section.len)
-					{
-						markSection(bd, cmpInfo.doc1);
-						pMainAlignData->line += cmpInfo.doc1.section.len;
-					}
+						if (cmpInfo.doc1.section.len)
+						{
+							markSection(bd, cmpInfo.doc1);
+							pMainAlignData->line += cmpInfo.doc1.section.len;
+						}
 
-					if (cmpInfo.doc2.section.len)
-					{
-						markSection(*bd.matchedDiff, cmpInfo.doc2);
-						pSubAlignData->line += cmpInfo.doc2.section.len;
+						if (cmpInfo.doc2.section.len)
+						{
+							markSection(*bd.matchedDiff, cmpInfo.doc2);
+							pSubAlignData->line += cmpInfo.doc2.section.len;
+						}
 					}
 
 					pMainAlignData->diffMask	= MARKER_MASK_CHANGED;
@@ -508,8 +508,8 @@ bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
 					cmpInfo.doc1.section.off = bd.changedLines[j].line + 1;
 					cmpInfo.doc2.section.off = bd.matchedDiff->changedLines[j].line + 1;
 
-					++pMainAlignData->line;
-					++pSubAlignData->line;
+					++(pMainAlignData->line);
+					++(pSubAlignData->line);
 				}
 
 				cmpInfo.doc1.section.len = bd.len - cmpInfo.doc1.section.off;
@@ -521,18 +521,18 @@ bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
 					pSubAlignData->diffMask		= cmpInfo.doc2.blockDiffMask;
 
 					alignmentInfo.push_back(alignPair);
-				}
 
-				if (cmpInfo.doc1.section.len)
-				{
-					markSection(bd, cmpInfo.doc1);
-					pMainAlignData->line += cmpInfo.doc1.section.len;
-				}
+					if (cmpInfo.doc1.section.len)
+					{
+						markSection(bd, cmpInfo.doc1);
+						pMainAlignData->line += cmpInfo.doc1.section.len;
+					}
 
-				if (cmpInfo.doc2.section.len)
-				{
-					markSection(*bd.matchedDiff, cmpInfo.doc2);
-					pSubAlignData->line += cmpInfo.doc2.section.len;
+					if (cmpInfo.doc2.section.len)
+					{
+						markSection(*bd.matchedDiff, cmpInfo.doc2);
+						pSubAlignData->line += cmpInfo.doc2.section.len;
+					}
 				}
 
 				++i;
@@ -552,14 +552,14 @@ bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
 			}
 		}
 
-		pMainAlignData->diffMask	= 0;
-		pSubAlignData->diffMask		= 0;
-
-		alignmentInfo.push_back(alignPair);
-
 		if (progress && !progress->Advance())
 			return false;
 	}
+
+	pMainAlignData->diffMask	= 0;
+	pSubAlignData->diffMask		= 0;
+
+	alignmentInfo.push_back(alignPair);
 
 	if (progress && !progress->NextPhase())
 		return false;
