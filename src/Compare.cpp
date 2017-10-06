@@ -1998,7 +1998,11 @@ void createMenu()
 	_tcscpy_s(funcItem[CMD_SETTINGS]._itemName, nbChar, TEXT("Settings..."));
 	funcItem[CMD_SETTINGS]._pFunc = OpenSettingsDlg;
 
+#ifdef DLOG
+	_tcscpy_s(funcItem[CMD_ABOUT]._itemName, nbChar, TEXT("Show debug log"));
+#else
 	_tcscpy_s(funcItem[CMD_ABOUT]._itemName, nbChar, TEXT("Help / About..."));
+#endif
 	funcItem[CMD_ABOUT]._pFunc = OpenAboutDlg;
 }
 
