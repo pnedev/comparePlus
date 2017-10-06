@@ -426,17 +426,13 @@ public:
  *  \class
  *  \brief
  */
-template <typename T>
-class DelayedDecrement : public DelayedWork
+class DelayedMaximize : public DelayedWork
 {
 public:
-	DelayedDecrement(T& value) : DelayedWork(), _val(value) {}
-	virtual ~DelayedDecrement() = default;
+	DelayedMaximize() : DelayedWork() {}
+	virtual ~DelayedMaximize() = default;
 
 	virtual void operator()();
-
-private:
-	T& _val;
 };
 
 
@@ -491,8 +487,7 @@ DelayedAlign	delayedAlignment;
 DelayedActivate	delayedActivation;
 DelayedClose	delayedClosure;
 DelayedUpdate	delayedUpdate;
-
-DelayedDecrement<volatile unsigned>	delayedUnlock(notificationsLock);
+DelayedMaximize	delayedMaximize;
 
 AboutDialog   	AboutDlg;
 SettingsDialog	SettingsDlg;
@@ -2221,7 +2216,7 @@ void DelayedAlign::operator()()
 
 void onSciPaint(HWND view)
 {
-	if (!delayedAlignment.isPending())
+	if (!delayedAlignment)
 		delayedAlignment.currentView = view;
 
 	delayedAlignment.post(10);
@@ -2370,16 +2365,16 @@ void onSciModifiedUpdate(SCNotification* notifyCode)
 	{
 		if (!delayedUpdate.fullCompare)
 		{
-			if (delayedUpdate.isPending())
+			if (!delayedUpdate)
+			{
+				delayedUpdate.changePos = notifyCode->position;
+			}
+			else
 			{
 				delayedUpdate.cancel();
 
 				if (delayedUpdate.changePos > notifyCode->position)
 					delayedUpdate.changePos = notifyCode->position;
-			}
-			else
-			{
-				delayedUpdate.changePos = notifyCode->position;
 			}
 
 			if (notifyCode->modificationType & SC_MOD_INSERTTEXT)
@@ -2615,11 +2610,12 @@ void onFileSaved(LRESULT buffId)
 }
 
 
-template <typename T>
-void DelayedDecrement<T>::operator()()
+void DelayedMaximize::operator()()
 {
-	if (_val)
-		--_val;
+	if (notificationsLock)
+		--notificationsLock;
+
+	NavDlg.Update();
 }
 
 } // anonymous namespace
@@ -2704,19 +2700,19 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 		// Handle wrap refresh
 		case SCN_PAINTED:
 			if (NppSettings::get().compareMode && !notificationsLock &&
-					!delayedActivation.isPending() && !delayedClosure.isPending() && !delayedUpdate.isPending())
+					!delayedActivation && !delayedClosure && !delayedUpdate)
 				onSciPaint((HWND)notifyCode->nmhdr.hwndFrom);
 		break;
 
 		// Vertical scroll sync
 		case SCN_UPDATEUI:
 			if (NppSettings::get().compareMode && !notificationsLock &&
-					!delayedActivation.isPending() && !delayedClosure.isPending() && !delayedUpdate.isPending())
+					!delayedActivation && !delayedClosure && !delayedUpdate)
 				onSciUpdateUI((HWND)notifyCode->nmhdr.hwndFrom);
 		break;
 
 		case NPPN_BUFFERACTIVATED:
-			if (!compareList.empty() && !notificationsLock && !delayedClosure.isPending())
+			if (!compareList.empty() && !notificationsLock && !delayedClosure)
 				onBufferActivated(notifyCode->nmhdr.idFrom);
 		break;
 
@@ -2795,7 +2791,7 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT msg, WPARAM wParam, LP
 		{
 			LOGD("Notepad++ restored\n");
 
-			delayedUnlock.post(100);
+			delayedMaximize.post(100);
 		}
 	}
 

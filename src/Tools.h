@@ -53,13 +53,23 @@ private:
 class DelayedWork
 {
 public:
-	bool isPending()
+	bool post(UINT delay_ms);
+	void cancel();
+
+	bool isPending() const
 	{
 		return (_timerId != 0);
 	}
 
-	bool post(UINT delay_ms);
-	void cancel();
+	explicit operator bool() const
+	{
+		return (_timerId != 0);
+	}
+
+	bool operator!() const
+	{
+		return (_timerId == 0);
+	}
 
 protected:
 	DelayedWork() : _timerId(0) {}
