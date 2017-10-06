@@ -1,6 +1,7 @@
 /*
  * This file is part of Compare Plugin for Notepad++
- * Copyright (C) 2009
+ * Copyright (C)2009
+ * Copyright (C)2017 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -84,71 +85,6 @@ void NavDialog::NavView::reset()
 	{
 		::DeleteObject(m_hSelBMP);
 		m_hSelBMP = NULL;
-	}
-}
-
-
-void NavDialog::NavView::create(const ColorSettings& colors, int reductionRatio)
-{
-	RECT bmpRect = { 0 };
-
-	bmpRect.right = 1;
-	bmpRect.bottom = 1;
-
-	HBRUSH hBrush = ::CreateSolidBrush(colors._default ^ 0xFFFFFF);
-
-	::FillRect(m_hSelDC, &bmpRect, hBrush);
-
-	::DeleteObject(hBrush);
-
-	bmpRect.right = 1;
-	bmpRect.bottom = m_lines;
-
-	hBrush = ::CreateSolidBrush(colors._default);
-
-	::FillRect(m_hViewDC, &bmpRect, hBrush);
-
-	::DeleteObject(hBrush);
-
-	m_lineMap.clear();
-
-	int skipLine = reductionRatio;
-	int prevMarker = colors._default;
-	int bmpLine = 0;
-
-	for (int i = 0; i < m_lines; ++i)
-	{
-		int marker = ::SendMessage(m_hView, SCI_MARKERGET, i, 0);
-		if (!marker && !reductionRatio)
-			continue;
-
-		if (marker & MARKER_MASK_CHANGED)		marker = colors.changed;
-		else if (marker & MARKER_MASK_ADDED)	marker = colors.added;
-		else if (marker & MARKER_MASK_REMOVED)	marker = colors.deleted;
-		else if (marker & MARKER_MASK_MOVED)	marker = colors.moved;
-		else if (reductionRatio)				marker = colors._default;
-		else
-			continue;
-
-		if (reductionRatio)
-		{
-			if (prevMarker == marker)
-				--skipLine;
-
-			if (prevMarker != marker || !skipLine)
-			{
-				skipLine = reductionRatio;
-				prevMarker = marker;
-
-				m_lineMap.push_back(i);
-
-				::SetPixel(m_hViewDC, 0, bmpLine++, marker);
-			}
-		}
-		else
-		{
-			::SetPixel(m_hViewDC, 0, i, marker);
-		}
 	}
 }
 
@@ -381,8 +317,110 @@ void NavDialog::CreateBitmap()
 	if (reductionRatio && (maxLines % maxHeight))
 		++reductionRatio;
 
-	m_view[0].create(m_clr, reductionRatio);
-	m_view[1].create(m_clr, reductionRatio);
+	{
+		RECT bmpRect = { 0 };
+
+		bmpRect.right = 1;
+		bmpRect.bottom = 1;
+
+		HBRUSH hBrush = ::CreateSolidBrush(m_clr._default ^ 0xFFFFFF);
+
+		::FillRect(m_view[0].m_hSelDC, &bmpRect, hBrush);
+		::FillRect(m_view[1].m_hSelDC, &bmpRect, hBrush);
+
+		::DeleteObject(hBrush);
+
+		hBrush = ::CreateSolidBrush(m_clr._default);
+
+		bmpRect.bottom = m_view[0].m_lines;
+		::FillRect(m_view[0].m_hViewDC, &bmpRect, hBrush);
+
+		bmpRect.bottom = m_view[1].m_lines;
+		::FillRect(m_view[1].m_hViewDC, &bmpRect, hBrush);
+
+		::DeleteObject(hBrush);
+
+		m_view[0].m_lineMap.clear();
+		m_view[1].m_lineMap.clear();
+
+		int skipLine = reductionRatio;
+		int prevMarker = m_clr._default;
+		int bmpLine = 0;
+
+		for (int i = 0; i < m_view[0].m_lines; ++i)
+		{
+			int marker = ::SendMessage(m_view[0].m_hView, SCI_MARKERGET, i, 0);
+			if (!marker && !reductionRatio)
+				continue;
+
+			if (marker & MARKER_MASK_CHANGED)		marker = m_clr.changed;
+			else if (marker & MARKER_MASK_ADDED)	marker = m_clr.added;
+			else if (marker & MARKER_MASK_REMOVED)	marker = m_clr.deleted;
+			else if (marker & MARKER_MASK_MOVED)	marker = m_clr.moved;
+			else if (reductionRatio)				marker = m_clr._default;
+			else
+				continue;
+
+			if (reductionRatio)
+			{
+				if (prevMarker == marker)
+					--skipLine;
+
+				if (prevMarker != marker || !skipLine)
+				{
+					skipLine = reductionRatio;
+					prevMarker = marker;
+
+					m_view[0].m_lineMap.push_back(i);
+
+					::SetPixel(m_view[0].m_hViewDC, 0, bmpLine++, marker);
+				}
+			}
+			else
+			{
+				::SetPixel(m_view[0].m_hViewDC, 0, i, marker);
+			}
+		}
+
+		skipLine = reductionRatio;
+		prevMarker = m_clr._default;
+		bmpLine = 0;
+
+		for (int i = 0; i < m_view[1].m_lines; ++i)
+		{
+			int marker = ::SendMessage(m_view[1].m_hView, SCI_MARKERGET, i, 0);
+			if (!marker && !reductionRatio)
+				continue;
+
+			if (marker & MARKER_MASK_CHANGED)		marker = m_clr.changed;
+			else if (marker & MARKER_MASK_ADDED)	marker = m_clr.added;
+			else if (marker & MARKER_MASK_REMOVED)	marker = m_clr.deleted;
+			else if (marker & MARKER_MASK_MOVED)	marker = m_clr.moved;
+			else if (reductionRatio)				marker = m_clr._default;
+			else
+				continue;
+
+			if (reductionRatio)
+			{
+				if (prevMarker == marker)
+					--skipLine;
+
+				if (prevMarker != marker || !skipLine)
+				{
+					skipLine = reductionRatio;
+					prevMarker = marker;
+
+					m_view[1].m_lineMap.push_back(i);
+
+					::SetPixel(m_view[1].m_hViewDC, 0, bmpLine++, marker);
+				}
+			}
+			else
+			{
+				::SetPixel(m_view[1].m_hViewDC, 0, i, marker);
+			}
+		}
+	}
 
 	SetScalingFactor();
 }

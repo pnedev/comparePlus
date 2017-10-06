@@ -1,6 +1,6 @@
 /*
- * This file is part of Plugin Template Plugin for Notepad++
- * Copyright (C)2009
+ * This file is part of Compare plugin for Notepad++
+ * Copyright (C)2017 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -64,7 +64,6 @@ private:
 
 		void init(HDC hDC);
 		void reset();
-		void create(const ColorSettings& colors, int reductionRatio = 0);
 		void paint(HDC hDC, int xPos, int yPos, int width, int height, int hScale, int hOffset);
 
 		bool updateFirstVisible();

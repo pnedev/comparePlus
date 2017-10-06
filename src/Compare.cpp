@@ -2066,9 +2066,9 @@ void syncViews(HWND biasView)
 		ScopedIncrementer incr(notificationsLock);
 
 		::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine1, 0);
-
-		NavDlg.Update();
 	}
+
+	NavDlg.Update();
 }
 
 
