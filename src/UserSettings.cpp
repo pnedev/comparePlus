@@ -18,6 +18,7 @@
 #include "UserSettings.h"
 
 #include <shlwapi.h>
+#include <cstdlib>
 
 
 const TCHAR UserSettings::mainSection[]					= TEXT("Main");
@@ -114,8 +115,17 @@ void UserSettings::save()
 	::SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, (WPARAM)_countof(iniFile), (LPARAM)iniFile);
 	::PathAppend(iniFile, TEXT("ComparePlugin.ini"));
 
-	::WritePrivateProfileString(mainSection, oldIsFirstSetting,
-			OldFileIsFirst ? TEXT("1") : TEXT("0"), iniFile);
+	if (!::WritePrivateProfileString(mainSection, oldIsFirstSetting,
+			OldFileIsFirst ? TEXT("1") : TEXT("0"), iniFile))
+	{
+		TCHAR msg[MAX_PATH + 64];
+
+		_sntprintf_s(msg, _countof(msg), _TRUNCATE, TEXT("Failed to write the\n'%s'\nconfiguration file."), iniFile);
+		::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"), MB_OK | MB_ICONWARNING);
+
+		return;
+	}
+
 	::WritePrivateProfileString(mainSection, oldFileOnLeftSetting,
 			OldFileViewId == MAIN_VIEW ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, compareToPrevSetting,

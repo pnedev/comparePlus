@@ -42,7 +42,6 @@ public:
 	void Show();
 	void Hide();
 
-
 	void SetColors(const ColorSettings& colors)
 	{
 		m_clr = colors;
@@ -50,7 +49,6 @@ public:
 		if (isVisible())
 			Show();
 	}
-
 
 	void Update();
 
@@ -78,7 +76,6 @@ private:
 		void reset();
 		void paint(HDC hDC, int xPos, int yPos, int width, int height, int hScale, int hOffset);
 
-
 		void updateFirstVisible()
 		{
 			m_firstVisible = ::SendMessage(m_hView, SCI_GETFIRSTVISIBLELINE, 0, 0);
@@ -90,13 +87,11 @@ private:
 			return (m_lineMap.empty() ? m_lines : static_cast<int>(m_lineMap.size()));
 		}
 
-
 		int bmpToDocLine(int bmpLine)
 		{
 			return (m_lineMap.empty() ? bmpLine :
 				(static_cast<int>(m_lineMap.size()) > bmpLine) ? m_lineMap[bmpLine] : m_lineMap.back());
 		}
-
 
 		int docToBmpLine(int docLine);
 
