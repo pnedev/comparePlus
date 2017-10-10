@@ -146,26 +146,6 @@ void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int heigh
 }
 
 
-bool NavDialog::NavView::updateFirstVisible()
-{
-	const int firstVisible = ::SendMessage(m_hView, SCI_GETFIRSTVISIBLELINE, 0, 0);
-
-	if (firstVisible != m_firstVisible)
-	{
-		m_firstVisible = firstVisible;
-		return true;
-	}
-
-	return false;
-}
-
-
-int NavDialog::NavView::maxBmpLines()
-{
-	return (m_lineMap.empty() ? m_lines : static_cast<int>(m_lineMap.size()));
-}
-
-
 int NavDialog::NavView::docToBmpLine(int docLine)
 {
 	if (m_lineMap.empty())
@@ -181,13 +161,6 @@ int NavDialog::NavView::docToBmpLine(int docLine)
 		return max;
 
 	return --i;
-}
-
-
-int NavDialog::NavView::bmpToDocLine(int bmpLine)
-{
-	return (m_lineMap.empty() ? bmpLine :
-		(static_cast<int>(m_lineMap.size()) > bmpLine) ? m_lineMap[bmpLine] : m_lineMap.back());
 }
 
 
@@ -237,15 +210,6 @@ void NavDialog::doDialog()
 }
 
 
-void NavDialog::SetConfig(const UserSettings& settings)
-{
-	m_clr = settings.colors;
-
-	if (isVisible())
-		CreateBitmap();
-}
-
-
 void NavDialog::Update()
 {
 	if (!isVisible())
@@ -287,7 +251,7 @@ void NavDialog::Show()
 	// Release DC
 	::ReleaseDC(_hSelf, hDC);
 
-	CreateBitmap();
+	createBitmap();
 
 	display(true);
 
@@ -304,7 +268,7 @@ void NavDialog::Hide()
 }
 
 
-void NavDialog::CreateBitmap()
+void NavDialog::createBitmap()
 {
 	RECT r;
 	::GetClientRect(_hSelf, &r);
@@ -422,11 +386,11 @@ void NavDialog::CreateBitmap()
 		}
 	}
 
-	SetScalingFactor();
+	setScalingFactor();
 }
 
 
-void NavDialog::ShowScroller(RECT& r)
+void NavDialog::showScroller(RECT& r)
 {
 	const int x = r.right - cSpace - cScrollerWidth;
 	const int y = cSpace;
@@ -454,7 +418,7 @@ void NavDialog::ShowScroller(RECT& r)
 }
 
 
-void NavDialog::SetScalingFactor()
+void NavDialog::setScalingFactor()
 {
 	m_view[0].m_lines = ::SendMessage(m_view[0].m_hView, SCI_GETLINECOUNT, 0, 0);
 	m_view[1].m_lines = ::SendMessage(m_view[1].m_hView, SCI_GETLINECOUNT, 0, 0);
@@ -477,7 +441,7 @@ void NavDialog::SetScalingFactor()
 	{
 		m_pixelsPerLine = 1;
 
-		ShowScroller(r);
+		showScroller(r);
 	}
 	else
 	{
@@ -703,7 +667,7 @@ INT_PTR CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lPar
 		case WM_SIZE:
 		case WM_MOVE:
 			if (isVisible())
-				SetScalingFactor();
+				setScalingFactor();
 		break;
 
 		case WM_NOTIFY:
@@ -717,7 +681,7 @@ INT_PTR CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lPar
 			else if ((pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_FLOAT) ||
 					(pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_DOCK))
 			{
-				SetScalingFactor();
+				setScalingFactor();
 				::SetFocus(m_syncView->m_hView);
 			}
 		}

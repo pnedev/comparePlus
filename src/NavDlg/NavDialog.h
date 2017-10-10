@@ -33,13 +33,25 @@ public:
 	NavDialog();
 	~NavDialog();
 
+	NavDialog(const NavDialog&) = delete;
+	NavDialog& operator=(const NavDialog&) = delete;
+
 	void init(HINSTANCE hInst);
 	void destroy() {};
 
 	void Show();
 	void Hide();
 
-	void SetConfig(const UserSettings& settings);
+
+	void SetColors(const ColorSettings& colors)
+	{
+		m_clr = colors;
+
+		if (isVisible())
+			Show();
+	}
+
+
 	void Update();
 
 protected:
@@ -66,11 +78,27 @@ private:
 		void reset();
 		void paint(HDC hDC, int xPos, int yPos, int width, int height, int hScale, int hOffset);
 
-		bool updateFirstVisible();
 
-		int maxBmpLines();
+		void updateFirstVisible()
+		{
+			m_firstVisible = ::SendMessage(m_hView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+		}
+
+
+		int maxBmpLines()
+		{
+			return (m_lineMap.empty() ? m_lines : static_cast<int>(m_lineMap.size()));
+		}
+
+
+		int bmpToDocLine(int bmpLine)
+		{
+			return (m_lineMap.empty() ? bmpLine :
+				(static_cast<int>(m_lineMap.size()) > bmpLine) ? m_lineMap[bmpLine] : m_lineMap.back());
+		}
+
+
 		int docToBmpLine(int docLine);
-		int bmpToDocLine(int bmpLine);
 
 		HWND	m_hView;
 
@@ -88,11 +116,10 @@ private:
 
 	void doDialog();
 
-	void CreateBitmap();
-	void ShowScroller(RECT& r);
+	void createBitmap();
+	void showScroller(RECT& r);
 
-	void SetScalingFactor();
-	void FillViewBitmap(HWND view, HDC hDC);
+	void setScalingFactor();
 
 	void setPos(int x, int y);
 	void onMouseWheel(int rolls);

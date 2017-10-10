@@ -1187,7 +1187,7 @@ void alignDiffs(const AlignmentInfo_t& alignmentInfo)
 
 void showNavBar()
 {
-	NavDlg.SetConfig(Settings);
+	NavDlg.SetColors(Settings.colors);
 	NavDlg.Show();
 }
 
@@ -1841,7 +1841,7 @@ void OpenSettingsDlg(void)
 		if (!compareList.empty())
 		{
 			setStyles(Settings);
-			NavDlg.SetConfig(Settings);
+			NavDlg.SetColors(Settings.colors);
 		}
 	}
 }
@@ -2758,7 +2758,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 			setStyles(Settings);
 			delayedAlignment.currentView = getCurrentView();
 			delayedAlignment();
-			NavDlg.SetConfig(Settings);
+			NavDlg.SetColors(Settings.colors);
 		break;
 
 		case NPPN_TBMODIFICATION:
