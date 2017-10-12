@@ -26,6 +26,68 @@
 #include "PluginInterface.h"
 
 
+#ifdef DLOG
+
+	#include <string>
+	#include <shlwapi.h>
+
+	#define LOGD(STR) \
+		do { \
+			const DWORD time_ms = ::GetTickCount(); \
+			TCHAR file[MAX_PATH]; \
+			char fileA[MAX_PATH]; \
+			::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, _countof(file), (LPARAM)file); \
+			::WideCharToMultiByte(CP_ACP, 0, file, -1, fileA, sizeof(fileA), NULL, NULL); \
+			if (dLogTime_ms) dLog += "+ "; \
+			else dLogTime_ms = time_ms; \
+			std::string tmp_str { std::to_string(time_ms - dLogTime_ms) }; \
+			dLog += tmp_str; \
+			if (tmp_str.size() < 3) dLog += " ms\t\t- "; \
+			else dLog += " ms\t- "; \
+			tmp_str = fileA; \
+			dLog += tmp_str; \
+			if (tmp_str.size() < 4) dLog += " -\t\t\t\t"; \
+			else if (tmp_str.size() < 8) dLog += " -\t\t\t"; \
+			else if (tmp_str.size() < 12) dLog += " -\t\t"; \
+			else dLog += " -\t"; \
+			dLog += (STR); \
+			dLogTime_ms = ::GetTickCount(); \
+		} while (0)
+
+	#define LOGDB(BUFFID, STR) \
+		do { \
+			const DWORD time_ms = ::GetTickCount(); \
+			TCHAR file[MAX_PATH]; \
+			char fileA[MAX_PATH]; \
+			::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, BUFFID, (LPARAM)file); \
+			::WideCharToMultiByte(CP_ACP, 0, ::PathFindFileName(file), -1, fileA, sizeof(fileA), NULL, NULL); \
+			if (dLogTime_ms) dLog += "+ "; \
+			else dLogTime_ms = time_ms; \
+			std::string tmp_str { std::to_string(time_ms - dLogTime_ms) }; \
+			dLog += tmp_str; \
+			if (tmp_str.size() < 3) dLog += " ms\t\t- "; \
+			else dLog += " ms\t- "; \
+			tmp_str = fileA; \
+			dLog += tmp_str; \
+			if (tmp_str.size() < 4) dLog += " -\t\t\t\t"; \
+			else if (tmp_str.size() < 8) dLog += " -\t\t\t"; \
+			else if (tmp_str.size() < 12) dLog += " -\t\t"; \
+			else dLog += " -\t"; \
+			dLog += (STR); \
+			dLogTime_ms = ::GetTickCount(); \
+		} while (0)
+
+	extern std::string	dLog;
+	extern DWORD		dLogTime_ms;
+
+#else
+
+	#define LOGD(STR)
+	#define LOGDB(BUFFID, STR)
+
+#endif
+
+
 enum MENU_COMMANDS
 {
 	CMD_SET_FIRST = 0,

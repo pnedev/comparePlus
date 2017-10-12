@@ -136,6 +136,9 @@ void ViewLocation::restore()
 	::SendMessage(view, SCI_SETSEL, _selStart, _selEnd);
 	::SendMessage(view, SCI_SETFIRSTVISIBLELINE,
 			::SendMessage(view, SCI_VISIBLEFROMDOCLINE, line, 0) - _visibleLineOffset, 0);
+
+	LOGDB(_buffId, "Restore view location, doc line: " + std::to_string(line) +
+			", first visible line offset: " + std::to_string(_visibleLineOffset) + "\n");
 }
 
 

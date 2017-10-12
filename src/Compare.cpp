@@ -40,73 +40,21 @@
 #include "resource.h"
 
 
-#ifdef DLOG
-	#include <string>
-
-	#define LOGD(STR) \
-		do { \
-			const DWORD time_ms = ::GetTickCount(); \
-			TCHAR file[MAX_PATH]; \
-			char fileA[MAX_PATH]; \
-			::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, _countof(file), (LPARAM)file); \
-			::WideCharToMultiByte(CP_ACP, 0, file, -1, fileA, sizeof(fileA), NULL, NULL); \
-			if (dLogTime_ms) dLog += "+ "; \
-			else dLogTime_ms = time_ms; \
-			std::string tmp_str { std::to_string(time_ms - dLogTime_ms) }; \
-			dLog += tmp_str; \
-			if (tmp_str.size() < 3) dLog += " ms\t\t- "; \
-			else dLog += " ms\t- "; \
-			tmp_str = fileA; \
-			dLog += tmp_str; \
-			if (tmp_str.size() < 4) dLog += " -\t\t\t\t"; \
-			else if (tmp_str.size() < 8) dLog += " -\t\t\t"; \
-			else if (tmp_str.size() < 12) dLog += " -\t\t"; \
-			else dLog += " -\t"; \
-			dLog += (STR); \
-			dLogTime_ms = ::GetTickCount(); \
-		} while (0)
-
-	#define LOGDB(BUFFID, STR) \
-		do { \
-			const DWORD time_ms = ::GetTickCount(); \
-			TCHAR file[MAX_PATH]; \
-			char fileA[MAX_PATH]; \
-			::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, BUFFID, (LPARAM)file); \
-			::WideCharToMultiByte(CP_ACP, 0, ::PathFindFileName(file), -1, fileA, sizeof(fileA), NULL, NULL); \
-			if (dLogTime_ms) dLog += "+ "; \
-			else dLogTime_ms = time_ms; \
-			std::string tmp_str { std::to_string(time_ms - dLogTime_ms) }; \
-			dLog += tmp_str; \
-			if (tmp_str.size() < 3) dLog += " ms\t\t- "; \
-			else dLog += " ms\t- "; \
-			tmp_str = fileA; \
-			dLog += tmp_str; \
-			if (tmp_str.size() < 4) dLog += " -\t\t\t\t"; \
-			else if (tmp_str.size() < 8) dLog += " -\t\t\t"; \
-			else if (tmp_str.size() < 12) dLog += " -\t\t"; \
-			else dLog += " -\t"; \
-			dLog += (STR); \
-			dLogTime_ms = ::GetTickCount(); \
-		} while (0)
-#else
-	#define LOGD(STR)
-	#define LOGDB(BUFFID, STR)
-#endif
-
-
 NppData nppData;
+
+#ifdef DLOG
+
+std::string		dLog("Compare Plugin debug log\n\n");
+DWORD			dLogTime_ms = 0;
+static LRESULT	dLogBuf = -1;
+
+#endif
 
 
 namespace // anonymous namespace
 {
 
 const TCHAR PLUGIN_NAME[] = TEXT("Compare");
-
-#ifdef DLOG
-std::string	dLog("Compare Plugin debug log\n\n");
-LRESULT		dLogBuf = -1;
-DWORD		dLogTime_ms = 0;
-#endif
 
 
 /**
@@ -379,8 +327,6 @@ public:
 	virtual ~DelayedAlign() = default;
 
 	virtual void operator()();
-
-	HWND currentView;
 };
 
 
@@ -482,6 +428,8 @@ CompareList_t compareList;
 std::unique_ptr<NewCompare> newCompare;
 
 volatile unsigned notificationsLock = 0;
+
+std::unique_ptr<ViewLocation> storedLocation;
 
 DelayedAlign	delayedAlignment;
 DelayedActivate	delayedActivation;
@@ -1511,8 +1459,6 @@ void compare(bool selectionCompare = false)
 	CompareList_t::iterator	cmpPair			= getCompare(currentBuffId);
 	const bool				recompare		= (cmpPair != compareList.end());
 
-	ViewLocation location;
-
 	if (recompare)
 	{
 		newCompare.reset();
@@ -1520,7 +1466,7 @@ void compare(bool selectionCompare = false)
 		if (selectionCompare && !areSelectionsValid())
 			return;
 
-		location.save(currentBuffId);
+		storedLocation.reset(new ViewLocation(currentBuffId));
 
 		cmpPair->getOldFile().clear();
 		cmpPair->getNewFile().clear();
@@ -1565,8 +1511,6 @@ void compare(bool selectionCompare = false)
 	{
 		case CompareResult::COMPARE_MISMATCH:
 		{
-			LOGD("Compare done\n");
-
 			cmpPair->isFullCompare	= !selectionCompare;
 			cmpPair->spacesIgnored	= Settings.IgnoreSpaces;
 			cmpPair->caseIgnored	= Settings.IgnoreCase;
@@ -1581,13 +1525,7 @@ void compare(bool selectionCompare = false)
 			if (Settings.UseNavBar)
 				showNavBar();
 
-			cmpPair->setStatus();
-
-			if (recompare && !Settings.GotoFirstDiff && !selectionCompare)
-			{
-				location.restore();
-			}
-			else
+			if (!recompare || Settings.GotoFirstDiff || selectionCompare)
 			{
 				if (!doubleView)
 					activateBufferID(cmpPair->getNewFile().buffId);
@@ -1596,11 +1534,13 @@ void compare(bool selectionCompare = false)
 					clearSelection(getOtherView());
 
 				First();
+
+				storedLocation.reset(new ViewLocation(getCurrentBuffId()));
 			}
 
-			LOGD("Compare result shown\n");
+			LOGD("Compare ready\n");
 		}
-		break;
+		return;
 
 		case CompareResult::COMPARE_MATCH:
 		{
@@ -1659,6 +1599,8 @@ void compare(bool selectionCompare = false)
 		default:
 			clearComparePair(getCurrentBuffId());
 	}
+
+	storedLocation.reset();
 }
 
 
@@ -2089,8 +2031,9 @@ void comparedFileActivated()
 	setCompareView(nppData._scintillaMainHandle, Settings.colors.blank);
 	setCompareView(nppData._scintillaSecondHandle, Settings.colors.blank);
 
-	delayedAlignment.currentView = getCurrentView();
-	delayedAlignment();
+	storedLocation.reset(new ViewLocation(getCurrentBuffId()));
+
+	// delayedAlignment();
 }
 
 
@@ -2207,22 +2150,26 @@ void DelayedAlign::operator()()
 	{
 		LOGD("Aligning diffs\n");
 
-		ViewLocation location(currentBuffId);
+		if (!storedLocation)
+			storedLocation.reset(new ViewLocation(currentBuffId));
 
 		alignDiffs(alignmentInfo);
-
-		location.restore();
 	}
 
-	syncViews(currentView);
+	if (storedLocation)
+	{
+		storedLocation->restore();
+		storedLocation.reset();
+
+		syncViews(getCurrentView());
+
+		cmpPair->setStatus();
+	}
 }
 
 
-void onSciPaint(HWND view)
+inline void onSciPaint(HWND view)
 {
-	if (!delayedAlignment)
-		delayedAlignment.currentView = view;
-
 	delayedAlignment.post(10);
 }
 
@@ -2425,8 +2372,6 @@ void DelayedActivate::operator()()
 		activateBufferID(buffId);
 	}
 
-	cmpPair->setStatus();
-
 	comparedFileActivated();
 }
 
@@ -2445,8 +2390,6 @@ void onBufferActivated(LRESULT buffId)
 	}
 	else
 	{
-		LOGDB(buffId, "onBufferActivated() - post for activation\n");
-
 		delayedActivation.buffId = buffId;
 		delayedActivation.post(30);
 	}
@@ -2481,9 +2424,15 @@ void DelayedClose::operator()()
 		if (otherFile.isTemp)
 		{
 			if (otherFile.isOpen())
+			{
+				LOGDB(otherFile.buffId, "Close\n");
+
 				otherFile.close();
+			}
 			else
+			{
 				otherFile.onClose();
+			}
 		}
 		else
 		{
@@ -2519,8 +2468,6 @@ void onFileBeforeClose(LRESULT buffId)
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
 		return;
-
-	LOGDB(buffId, "onFileBeforeClose() - post for delayed closure\n");
 
 	delayedAlignment.cancel();
 	delayedUpdate.cancel();
@@ -2710,7 +2657,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 
 		// Vertical scroll sync
 		case SCN_UPDATEUI:
-			if (NppSettings::get().compareMode && !notificationsLock &&
+			if (NppSettings::get().compareMode && !notificationsLock && !storedLocation &&
 					!delayedActivation && !delayedClosure && !delayedUpdate)
 				onSciUpdateUI((HWND)notifyCode->nmhdr.hwndFrom);
 		break;
@@ -2756,7 +2703,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 
 		case NPPN_WORDSTYLESUPDATED:
 			setStyles(Settings);
-			delayedAlignment.currentView = getCurrentView();
 			delayedAlignment();
 			NavDlg.SetColors(Settings.colors);
 		break;
