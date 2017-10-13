@@ -198,8 +198,11 @@ void setBlanksStyle(HWND view, int blankColor)
 
 void activateBufferID(LRESULT buffId)
 {
-	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);
-	::SendMessage(nppData._nppHandle, NPPM_ACTIVATEDOC, index >> 30, index & 0x3FFFFFFF);
+	if (buffId != getCurrentBuffId())
+	{
+		LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);
+		::SendMessage(nppData._nppHandle, NPPM_ACTIVATEDOC, index >> 30, index & 0x3FFFFFFF);
+	}
 }
 
 
@@ -329,7 +332,7 @@ void jumpToFirstChange()
 		if (otherLine < 0)
 			return;
 
-		nextLine = otherViewMatchingLine(otherView, otherLine);
+		centerAt(otherView, otherLine);
 	}
 	else if (otherLine >= 0)
 	{
@@ -337,9 +340,9 @@ void jumpToFirstChange()
 
 		if (otherVisible < ::SendMessage(currentView, SCI_VISIBLEFROMDOCLINE, nextLine, 0))
 			nextLine = ::SendMessage(currentView, SCI_DOCLINEFROMVISIBLE, otherVisible, 0);
-	}
 
-	centerAt(currentView, nextLine);
+		centerAt(currentView, nextLine);
+	}
 }
 
 
@@ -359,7 +362,7 @@ void jumpToLastChange()
 		if (otherLine < 0)
 			return;
 
-		nextLine = otherViewMatchingLine(otherView, otherLine);
+		centerAt(otherView, otherLine);
 	}
 	else if (otherLine >= 0)
 	{
@@ -367,9 +370,9 @@ void jumpToLastChange()
 
 		if (otherVisible > ::SendMessage(currentView, SCI_VISIBLEFROMDOCLINE, nextLine, 0))
 			nextLine = ::SendMessage(currentView, SCI_DOCLINEFROMVISIBLE, otherVisible, 0);
-	}
 
-	centerAt(currentView, nextLine);
+		centerAt(currentView, nextLine);
+	}
 }
 
 

@@ -771,8 +771,7 @@ void ComparedFile::clear(const section_t& section)
 
 void ComparedFile::onBeforeClose() const
 {
-	if (buffId != getCurrentBuffId())
-		activateBufferID(buffId);
+	activateBufferID(buffId);
 
 	HWND view = getCurrentView();
 	clearWindow(view);
@@ -810,8 +809,7 @@ void ComparedFile::restore() const
 		return;
 	}
 
-	if (buffId != getCurrentBuffId())
-		activateBufferID(buffId);
+	activateBufferID(buffId);
 
 	clearWindow(getCurrentView());
 
@@ -895,16 +893,14 @@ void ComparedPair::positionFiles()
 
 	if (viewIdFromBuffId(oldFile.buffId) != oldFile.compareViewId)
 	{
-		if (oldFile.buffId != getCurrentBuffId())
-			activateBufferID(oldFile.buffId);
+		activateBufferID(oldFile.buffId);
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
 		oldFile.updateFromCurrent();
 	}
 
 	if (viewIdFromBuffId(newFile.buffId) != newFile.compareViewId)
 	{
-		if (newFile.buffId != getCurrentBuffId())
-			activateBufferID(newFile.buffId);
+		activateBufferID(newFile.buffId);
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
 		newFile.updateFromCurrent();
 	}
@@ -2032,8 +2028,6 @@ void comparedFileActivated()
 	setCompareView(nppData._scintillaSecondHandle, Settings.colors.blank);
 
 	storedLocation.reset(new ViewLocation(getCurrentBuffId()));
-
-	// delayedAlignment();
 }
 
 
@@ -2703,7 +2697,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 
 		case NPPN_WORDSTYLESUPDATED:
 			setStyles(Settings);
-			delayedAlignment();
 			NavDlg.SetColors(Settings.colors);
 		break;
 
