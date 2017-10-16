@@ -430,6 +430,7 @@ std::unique_ptr<NewCompare> newCompare;
 volatile unsigned notificationsLock = 0;
 
 std::unique_ptr<ViewLocation> storedLocation;
+bool goToFirst = false;
 
 DelayedAlign	delayedAlignment;
 DelayedActivate	delayedActivation;
@@ -455,7 +456,6 @@ HINSTANCE hInstance;
 FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
 
 // Declare local functions that appear before they are defined
-void First();
 void onBufferActivated(LRESULT buffId);
 void syncViews(HWND biasView);
 
@@ -1462,7 +1462,8 @@ void compare(bool selectionCompare = false)
 		if (selectionCompare && !areSelectionsValid())
 			return;
 
-		storedLocation.reset(new ViewLocation(currentBuffId));
+		if (cmpPair->isFullCompare)
+			storedLocation.reset(new ViewLocation(currentBuffId));
 
 		cmpPair->getOldFile().clear();
 		cmpPair->getNewFile().clear();
@@ -1521,7 +1522,7 @@ void compare(bool selectionCompare = false)
 			if (Settings.UseNavBar)
 				showNavBar();
 
-			if (!recompare || Settings.GotoFirstDiff || selectionCompare)
+			if (!storedLocation || Settings.GotoFirstDiff || selectionCompare)
 			{
 				if (!doubleView)
 					activateBufferID(cmpPair->getNewFile().buffId);
@@ -1529,9 +1530,7 @@ void compare(bool selectionCompare = false)
 				if (selectionCompare)
 					clearSelection(getOtherView());
 
-				First();
-
-				storedLocation.reset(new ViewLocation(getCurrentBuffId()));
+				goToFirst = true;
 			}
 
 			LOGD("Compare ready\n");
@@ -2119,23 +2118,26 @@ void DelayedAlign::operator()()
 	mainFirstLine = ::SendMessage(nppData._scintillaMainHandle, SCI_DOCLINEFROMVISIBLE, mainFirstLine, 0);
 	mainLastLine = ::SendMessage(nppData._scintillaMainHandle, SCI_DOCLINEFROMVISIBLE, mainLastLine, 0);
 
-	bool realign = false;
+	bool realign = goToFirst;
 
-	for (const auto& alignment : alignmentInfo)
+	if (!realign)
 	{
-		if (alignment.main.line >= mainFirstLine)
+		for (const auto& alignment : alignmentInfo)
 		{
-			if ((alignment.main.diffMask == alignment.sub.diffMask) &&
-				(::SendMessage(nppData._scintillaMainHandle, SCI_VISIBLEFROMDOCLINE, alignment.main.line, 0) !=
-				::SendMessage(nppData._scintillaSecondHandle, SCI_VISIBLEFROMDOCLINE, alignment.sub.line, 0)))
+			if (alignment.main.line >= mainFirstLine)
 			{
-				realign = true;
-				break;
+				if ((alignment.main.diffMask == alignment.sub.diffMask) &&
+					(::SendMessage(nppData._scintillaMainHandle, SCI_VISIBLEFROMDOCLINE, alignment.main.line, 0) !=
+					::SendMessage(nppData._scintillaSecondHandle, SCI_VISIBLEFROMDOCLINE, alignment.sub.line, 0)))
+				{
+					realign = true;
+					break;
+				}
 			}
-		}
 
-		if (alignment.main.line > mainLastLine)
-			break;
+			if (alignment.main.line > mainLastLine)
+				break;
+		}
 	}
 
 	ScopedIncrementer incr(notificationsLock);
@@ -2144,7 +2146,7 @@ void DelayedAlign::operator()()
 	{
 		LOGD("Aligning diffs\n");
 
-		if (!storedLocation)
+		if (!storedLocation && !goToFirst)
 			storedLocation.reset(new ViewLocation(currentBuffId));
 
 		alignDiffs(alignmentInfo);
@@ -2159,10 +2161,15 @@ void DelayedAlign::operator()()
 
 		cmpPair->setStatus();
 	}
+	else if (goToFirst)
+	{
+		goToFirst = false;
+		jumpToFirstChange();
+	}
 }
 
 
-inline void onSciPaint(HWND view)
+inline void onSciPaint()
 {
 	delayedAlignment.post(10);
 }
@@ -2646,12 +2653,12 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 		case SCN_PAINTED:
 			if (NppSettings::get().compareMode && !notificationsLock &&
 					!delayedActivation && !delayedClosure && !delayedUpdate)
-				onSciPaint((HWND)notifyCode->nmhdr.hwndFrom);
+				onSciPaint();
 		break;
 
 		// Vertical scroll sync
 		case SCN_UPDATEUI:
-			if (NppSettings::get().compareMode && !notificationsLock && !storedLocation &&
+			if (NppSettings::get().compareMode && !notificationsLock && !storedLocation && !goToFirst &&
 					!delayedActivation && !delayedClosure && !delayedUpdate)
 				onSciUpdateUI((HWND)notifyCode->nmhdr.hwndFrom);
 		break;

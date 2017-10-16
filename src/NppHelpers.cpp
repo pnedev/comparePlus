@@ -332,7 +332,7 @@ void jumpToFirstChange()
 		if (otherLine < 0)
 			return;
 
-		centerAt(otherView, otherLine);
+		nextLine = otherViewMatchingLine(otherView, otherLine);
 	}
 	else if (otherLine >= 0)
 	{
@@ -340,9 +340,9 @@ void jumpToFirstChange()
 
 		if (otherVisible < ::SendMessage(currentView, SCI_VISIBLEFROMDOCLINE, nextLine, 0))
 			nextLine = ::SendMessage(currentView, SCI_DOCLINEFROMVISIBLE, otherVisible, 0);
-
-		centerAt(currentView, nextLine);
 	}
+
+	centerAt(currentView, nextLine);
 }
 
 
@@ -362,7 +362,7 @@ void jumpToLastChange()
 		if (otherLine < 0)
 			return;
 
-		centerAt(otherView, otherLine);
+		nextLine = otherViewMatchingLine(otherView, otherLine);
 	}
 	else if (otherLine >= 0)
 	{
@@ -370,9 +370,9 @@ void jumpToLastChange()
 
 		if (otherVisible > ::SendMessage(currentView, SCI_VISIBLEFROMDOCLINE, nextLine, 0))
 			nextLine = ::SendMessage(currentView, SCI_DOCLINEFROMVISIBLE, otherVisible, 0);
-
-		centerAt(currentView, nextLine);
 	}
+
+	centerAt(currentView, nextLine);
 }
 
 
