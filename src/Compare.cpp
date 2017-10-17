@@ -74,7 +74,7 @@ public:
 	void enableNppScrollCommands(bool enable) const;
 	void updatePluginMenu();
 	void save();
-	void setNormalMode();
+	void setNormalMode(bool forceUpdate = false);
 	void setCompareMode(bool clearHorizontalScroll = false);
 	void toSingleLineTab();
 	void restoreMultilineTab();
@@ -539,32 +539,36 @@ void NppSettings::save()
 }
 
 
-void NppSettings::setNormalMode()
+void NppSettings::setNormalMode(bool forceUpdate)
 {
-	if (compareMode == false)
-		return;
-
-	compareMode = false;
-
-	if (NavDlg.isVisible())
-		NavDlg.Hide();
-
-	if (!isSingleView())
+	if (compareMode)
 	{
-		enableNppScrollCommands(true);
+		compareMode = false;
 
-		HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
+		if (NavDlg.isVisible())
+			NavDlg.Hide();
 
-		bool syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
-		if (syncScroll != _syncVScroll)
-			::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLV);
+		if (!isSingleView())
+		{
+			enableNppScrollCommands(true);
 
-		syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
-		if (syncScroll != _syncHScroll)
-			::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLH);
+			HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
+
+			bool syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
+			if (syncScroll != _syncVScroll)
+				::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLV);
+
+			syncScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
+			if (syncScroll != _syncHScroll)
+				::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLH);
+		}
+
+		updatePluginMenu();
 	}
-
-	updatePluginMenu();
+	else if (forceUpdate)
+	{
+		updatePluginMenu();
+	}
 }
 
 
@@ -1647,7 +1651,7 @@ void ClearAllCompares()
 
 	compareList.clear();
 
-	NppSettings::get().setNormalMode();
+	NppSettings::get().setNormalMode(true);
 
 	if (!isSingleView())
 		activateBufferID(otherBuffId);
