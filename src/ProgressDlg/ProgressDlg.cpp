@@ -314,7 +314,7 @@ BOOL ProgressDlg::createProgressWindow()
 		::SendMessage(_hBtn, WM_SETFONT, (WPARAM)hf, MAKELPARAM(TRUE, 0));
 	}
 
-    _hKeyHook = ::SetWindowsHookEx(WH_KEYBOARD, keyHookProc, NULL, GetCurrentThreadId());
+    _hKeyHook = ::SetWindowsHookEx(WH_KEYBOARD, keyHookProc, _hInst, GetCurrentThreadId());
 
     ::ShowWindow(_hwnd, SW_SHOWNORMAL);
     ::UpdateWindow(_hwnd);
