@@ -18,7 +18,11 @@
 
 #pragma once
 
+#include <cstdlib>
+#include <cassert>
+
 #include <windows.h>
+#include <tchar.h>
 
 #include "Notepad_plus_msgs.h"
 #include "Scintilla.h"
@@ -117,7 +121,19 @@ enum MENU_COMMANDS
 };
 
 
-extern NppData nppData;
+extern const TCHAR PLUGIN_NAME[];
+
+extern NppData		nppData;
+extern SciFnDirect	sciFunc;
+extern sptr_t		sciPtr[2];
+
+
+inline LRESULT CallScintilla(int viewNum, unsigned int uMsg, uptr_t wParam, sptr_t lParam)
+{
+	assert(viewNum > 0 && viewNum < static_cast<int>(_countof(sciPtr)));
+
+	return sciFunc(sciPtr[viewNum], uMsg, wParam, lParam);
+}
 
 
 void ViewNavigationBar();

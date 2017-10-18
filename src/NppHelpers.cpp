@@ -111,16 +111,16 @@ void ViewLocation::save(LRESULT buffId)
 {
 	_buffId = buffId;
 
-	HWND view = getView(viewIdFromBuffId(_buffId));
+	int view = viewIdFromBuffId(_buffId);
 
-	_pos		= ::SendMessage(view, SCI_GETCURRENTPOS, 0, 0);
-	_selStart	= ::SendMessage(view, SCI_GETSELECTIONSTART, 0, 0);
-	_selEnd		= ::SendMessage(view, SCI_GETSELECTIONEND, 0, 0);
+	_pos		= CallScintilla(view, SCI_GETCURRENTPOS, 0, 0);
+	_selStart	= CallScintilla(view, SCI_GETSELECTIONSTART, 0, 0);
+	_selEnd		= CallScintilla(view, SCI_GETSELECTIONEND, 0, 0);
 
-	const int line = ::SendMessage(view, SCI_LINEFROMPOSITION, _pos, 0);
+	const int line = CallScintilla(view, SCI_LINEFROMPOSITION, _pos, 0);
 
-	_visibleLineOffset = ::SendMessage(view, SCI_VISIBLEFROMDOCLINE, line, 0) -
-			::SendMessage(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	_visibleLineOffset = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) -
+			CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
 }
 
 
@@ -128,14 +128,14 @@ void ViewLocation::restore()
 {
 	activateBufferID(_buffId);
 
-	HWND view = getView(viewIdFromBuffId(_buffId));
+	int view = viewIdFromBuffId(_buffId);
 
-	const int line = ::SendMessage(view, SCI_LINEFROMPOSITION, _pos, 0);
+	const int line = CallScintilla(view, SCI_LINEFROMPOSITION, _pos, 0);
 
-	::SendMessage(view, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
-	::SendMessage(view, SCI_SETSEL, _selStart, _selEnd);
-	::SendMessage(view, SCI_SETFIRSTVISIBLELINE,
-			::SendMessage(view, SCI_VISIBLEFROMDOCLINE, line, 0) - _visibleLineOffset, 0);
+	CallScintilla(view, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
+	CallScintilla(view, SCI_SETSEL, _selStart, _selEnd);
+	CallScintilla(view, SCI_SETFIRSTVISIBLELINE,
+			CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - _visibleLineOffset, 0);
 
 	LOGDB(_buffId, "Restore view location, doc line: " + std::to_string(line) +
 			", first visible line offset: " + std::to_string(_visibleLineOffset) + "\n");
@@ -150,47 +150,44 @@ int blankStyle[2] = { 0, 0 };
 
 void defineColor(int type, int color)
 {
-	::SendMessage(nppData._scintillaMainHandle, SCI_MARKERDEFINE,	type, (LPARAM)SC_MARK_BACKGROUND);
-	::SendMessage(nppData._scintillaMainHandle, SCI_MARKERSETBACK,	type, (LPARAM)color);
-	::SendMessage(nppData._scintillaMainHandle, SCI_MARKERSETFORE,	type, 0);
+	CallScintilla(MAIN_VIEW, SCI_MARKERDEFINE,	type, (LPARAM)SC_MARK_BACKGROUND);
+	CallScintilla(MAIN_VIEW, SCI_MARKERSETBACK,	type, (LPARAM)color);
+	CallScintilla(MAIN_VIEW, SCI_MARKERSETFORE,	type, 0);
 
-	::SendMessage(nppData._scintillaSecondHandle, SCI_MARKERDEFINE,		type, (LPARAM)SC_MARK_BACKGROUND);
-	::SendMessage(nppData._scintillaSecondHandle, SCI_MARKERSETBACK,	type, (LPARAM)color);
-	::SendMessage(nppData._scintillaSecondHandle, SCI_MARKERSETFORE,	type, 0);
+	CallScintilla(SUB_VIEW, SCI_MARKERDEFINE,	type, (LPARAM)SC_MARK_BACKGROUND);
+	CallScintilla(SUB_VIEW, SCI_MARKERSETBACK,	type, (LPARAM)color);
+	CallScintilla(SUB_VIEW, SCI_MARKERSETFORE,	type, 0);
 }
 
 
 void defineXpmSymbol(int type, const char **xpm)
 {
-	::SendMessage(nppData._scintillaMainHandle, SCI_MARKERDEFINEPIXMAP, type, (LPARAM)xpm);
-
-	::SendMessage(nppData._scintillaSecondHandle, SCI_MARKERDEFINEPIXMAP, type, (LPARAM)xpm);
+	CallScintilla(MAIN_VIEW,	SCI_MARKERDEFINEPIXMAP, type, (LPARAM)xpm);
+	CallScintilla(SUB_VIEW,		SCI_MARKERDEFINEPIXMAP, type, (LPARAM)xpm);
 }
 
 
 void setTextStyle(const ColorSettings& settings)
 {
-	::SendMessage(nppData._scintillaMainHandle, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT, (LPARAM)INDIC_ROUNDBOX);
-	::SendMessage(nppData._scintillaMainHandle, SCI_INDICSETFORE,	INDIC_HIGHLIGHT, (LPARAM)settings.highlight);
-	::SendMessage(nppData._scintillaMainHandle, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT, (LPARAM)settings.alpha);
+	CallScintilla(MAIN_VIEW, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT, (LPARAM)INDIC_ROUNDBOX);
+	CallScintilla(MAIN_VIEW, SCI_INDICSETFORE,	INDIC_HIGHLIGHT, (LPARAM)settings.highlight);
+	CallScintilla(MAIN_VIEW, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT, (LPARAM)settings.alpha);
 
-	::SendMessage(nppData._scintillaSecondHandle, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT, (LPARAM)INDIC_ROUNDBOX);
-	::SendMessage(nppData._scintillaSecondHandle, SCI_INDICSETFORE,		INDIC_HIGHLIGHT, (LPARAM)settings.highlight);
-	::SendMessage(nppData._scintillaSecondHandle, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT, (LPARAM)settings.alpha);
+	CallScintilla(SUB_VIEW, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT, (LPARAM)INDIC_ROUNDBOX);
+	CallScintilla(SUB_VIEW, SCI_INDICSETFORE,	INDIC_HIGHLIGHT, (LPARAM)settings.highlight);
+	CallScintilla(SUB_VIEW, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT, (LPARAM)settings.alpha);
 }
 
 
-void setBlanksStyle(HWND view, int blankColor)
+void setBlanksStyle(int view, int blankColor)
 {
-	const int blankIdx = (view == nppData._scintillaMainHandle) ? 0 : 1;
+	if (blankStyle[view] == 0)
+		blankStyle[view] = CallScintilla(view, SCI_ALLOCATEEXTENDEDSTYLES, 1, 0);
 
-	if (blankStyle[blankIdx] == 0)
-		blankStyle[blankIdx] = ::SendMessage(view, SCI_ALLOCATEEXTENDEDSTYLES, 1, 0);
-
-	::SendMessage(view, SCI_ANNOTATIONSETSTYLEOFFSET,	blankStyle[blankIdx], 0);
-	::SendMessage(view, SCI_STYLESETEOLFILLED,			blankStyle[blankIdx], 1);
-	::SendMessage(view, SCI_STYLESETBACK,				blankStyle[blankIdx], blankColor);
-	::SendMessage(view, SCI_ANNOTATIONSETVISIBLE, ANNOTATION_STANDARD, 0);
+	CallScintilla(view, SCI_ANNOTATIONSETSTYLEOFFSET,	blankStyle[view], 0);
+	CallScintilla(view, SCI_STYLESETEOLFILLED,			blankStyle[view], 1);
+	CallScintilla(view, SCI_STYLESETBACK,				blankStyle[view], blankColor);
+	CallScintilla(view, SCI_ANNOTATIONSETVISIBLE, ANNOTATION_STANDARD, 0);
 }
 
 } // anonymous namespace
@@ -206,52 +203,52 @@ void activateBufferID(LRESULT buffId)
 }
 
 
-std::pair<int, int> getSelectionLines(HWND view)
+std::pair<int, int> getSelectionLines(int view)
 {
 	if (isSelectionVertical(view))
 		return std::make_pair(-1, -1);
 
-	const int selectionStart = ::SendMessage(view, SCI_GETSELECTIONSTART, 0, 0);
-	const int selectionEnd = ::SendMessage(view, SCI_GETSELECTIONEND, 0, 0);
+	const int selectionStart = CallScintilla(view, SCI_GETSELECTIONSTART, 0, 0);
+	const int selectionEnd = CallScintilla(view, SCI_GETSELECTIONEND, 0, 0);
 
 	if (selectionEnd - selectionStart == 0)
 		return std::make_pair(-1, -1);
 
-	int endLine = ::SendMessage(view, SCI_LINEFROMPOSITION, selectionEnd, 0);
+	int endLine = CallScintilla(view, SCI_LINEFROMPOSITION, selectionEnd, 0);
 
-	if (selectionEnd == ::SendMessage(view, SCI_POSITIONFROMLINE, endLine, 0))
+	if (selectionEnd == CallScintilla(view, SCI_POSITIONFROMLINE, endLine, 0))
 		--endLine;
 
-	return std::make_pair(::SendMessage(view, SCI_LINEFROMPOSITION, selectionStart, 0), endLine);
+	return std::make_pair(CallScintilla(view, SCI_LINEFROMPOSITION, selectionStart, 0), endLine);
 }
 
 
-void centerAt(HWND view, int line)
+void centerAt(int view, int line)
 {
-	const int linesOnScreen = ::SendMessage(view, SCI_LINESONSCREEN, 0, 0);
-	const int firstVisible = ::SendMessage(view, SCI_VISIBLEFROMDOCLINE, line, 0) - linesOnScreen / 2;
+	const int linesOnScreen = CallScintilla(view, SCI_LINESONSCREEN, 0, 0);
+	const int firstVisible = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - linesOnScreen / 2;
 
-	::SendMessage(view, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
-	::SendMessage(view, SCI_SETFIRSTVISIBLELINE, firstVisible, 0);
-	::SendMessage(view, SCI_GOTOLINE, line, 0);
+	CallScintilla(view, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
+	CallScintilla(view, SCI_SETFIRSTVISIBLELINE, firstVisible, 0);
+	CallScintilla(view, SCI_GOTOLINE, line, 0);
 }
 
 
-void setNormalView(HWND view)
+void setNormalView(int view)
 {
-	::SendMessage(view, SCI_SETMARGINMASKN, 4, 0);
-	::SendMessage(view, SCI_SETMARGINWIDTHN, 4, 0);
+	CallScintilla(view, SCI_SETMARGINMASKN, 4, 0);
+	CallScintilla(view, SCI_SETMARGINWIDTHN, 4, 0);
 
-	::SendMessage(view, SCI_SETCARETLINEBACKALPHA, SC_ALPHA_NOALPHA, 0);
+	CallScintilla(view, SCI_SETCARETLINEBACKALPHA, SC_ALPHA_NOALPHA, 0);
 }
 
 
-void setCompareView(HWND view, int blankColor)
+void setCompareView(int view, int blankColor)
 {
-	::SendMessage(view, SCI_SETMARGINMASKN, 4, (LPARAM)MARKER_MASK_SYMBOL);
-	::SendMessage(view, SCI_SETMARGINWIDTHN, 4, 16);
+	CallScintilla(view, SCI_SETMARGINMASKN, 4, (LPARAM)MARKER_MASK_SYMBOL);
+	CallScintilla(view, SCI_SETMARGINWIDTHN, 4, 16);
 
-	::SendMessage(view, SCI_SETCARETLINEBACKALPHA, 96, 0);
+	CallScintilla(view, SCI_SETCARETLINEBACKALPHA, 96, 0);
 
 	// For some reason the annotation blank styling is lost on Sci doc switch thus we need to reapply it
 	setBlanksStyle(view, blankColor);
@@ -295,37 +292,37 @@ void setStyles(UserSettings& settings)
 }
 
 
-void markTextAsChanged(HWND view, int start, int length)
+void markTextAsChanged(int view, int start, int length)
 {
 	if (length != 0)
 	{
-		int curIndic = ::SendMessage(view, SCI_GETINDICATORCURRENT, 0, 0);
-		::SendMessage(view, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
-		::SendMessage(view, SCI_INDICATORFILLRANGE, start, length);
-		::SendMessage(view, SCI_SETINDICATORCURRENT, curIndic, 0);
+		int curIndic = CallScintilla(view, SCI_GETINDICATORCURRENT, 0, 0);
+		CallScintilla(view, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
+		CallScintilla(view, SCI_INDICATORFILLRANGE, start, length);
+		CallScintilla(view, SCI_SETINDICATORCURRENT, curIndic, 0);
 	}
 }
 
 
-void clearChangedIndicator(HWND view, int start, int length)
+void clearChangedIndicator(int view, int start, int length)
 {
 	if (length != 0)
 	{
-		int curIndic = ::SendMessage(view, SCI_GETINDICATORCURRENT, 0, 0);
-		::SendMessage(view, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
-		::SendMessage(view, SCI_INDICATORCLEARRANGE, start, length);
-		::SendMessage(view, SCI_SETINDICATORCURRENT, curIndic, 0);
+		int curIndic = CallScintilla(view, SCI_GETINDICATORCURRENT, 0, 0);
+		CallScintilla(view, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
+		CallScintilla(view, SCI_INDICATORCLEARRANGE, start, length);
+		CallScintilla(view, SCI_SETINDICATORCURRENT, curIndic, 0);
 	}
 }
 
 
 void jumpToFirstChange()
 {
-	HWND currentView = getCurrentView();
-	HWND otherView = getOtherView(currentView);
+	int currentView	= getCurrentViewId();
+	int otherView	= getOtherViewId(currentView);
 
-	int nextLine = ::SendMessage(currentView, SCI_MARKERNEXT, 0, MARKER_MASK_LINE);
-	const int otherLine = ::SendMessage(otherView, SCI_MARKERNEXT, 0, MARKER_MASK_LINE);
+	int nextLine = CallScintilla(currentView, SCI_MARKERNEXT, 0, MARKER_MASK_LINE);
+	const int otherLine = CallScintilla(otherView, SCI_MARKERNEXT, 0, MARKER_MASK_LINE);
 
 	if (nextLine < 0)
 	{
@@ -336,10 +333,10 @@ void jumpToFirstChange()
 	}
 	else if (otherLine >= 0)
 	{
-		int otherVisible = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0);
+		int otherVisible = CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0);
 
-		if (otherVisible < ::SendMessage(currentView, SCI_VISIBLEFROMDOCLINE, nextLine, 0))
-			nextLine = ::SendMessage(currentView, SCI_DOCLINEFROMVISIBLE, otherVisible, 0);
+		if (otherVisible < CallScintilla(currentView, SCI_VISIBLEFROMDOCLINE, nextLine, 0))
+			nextLine = CallScintilla(currentView, SCI_DOCLINEFROMVISIBLE, otherVisible, 0);
 	}
 
 	centerAt(currentView, nextLine);
@@ -348,14 +345,14 @@ void jumpToFirstChange()
 
 void jumpToLastChange()
 {
-	HWND currentView = getCurrentView();
-	HWND otherView = getOtherView(currentView);
+	int currentView = getCurrentViewId();
+	int otherView = getOtherViewId(currentView);
 
-	const int lineCount = ::SendMessage(currentView, SCI_GETLINECOUNT, 0, 0);
-	int nextLine = ::SendMessage(currentView, SCI_MARKERPREVIOUS, lineCount, MARKER_MASK_LINE);
+	const int lineCount = CallScintilla(currentView, SCI_GETLINECOUNT, 0, 0);
+	int nextLine = CallScintilla(currentView, SCI_MARKERPREVIOUS, lineCount, MARKER_MASK_LINE);
 
-	const int otherLineCount = ::SendMessage(otherView, SCI_GETLINECOUNT, 0, 0);
-	const int otherLine = ::SendMessage(otherView, SCI_MARKERPREVIOUS, otherLineCount, MARKER_MASK_LINE);
+	const int otherLineCount = CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0);
+	const int otherLine = CallScintilla(otherView, SCI_MARKERPREVIOUS, otherLineCount, MARKER_MASK_LINE);
 
 	if (nextLine < 0)
 	{
@@ -366,10 +363,10 @@ void jumpToLastChange()
 	}
 	else if (otherLine >= 0)
 	{
-		int otherVisible = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0);
+		int otherVisible = CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0);
 
-		if (otherVisible > ::SendMessage(currentView, SCI_VISIBLEFROMDOCLINE, nextLine, 0))
-			nextLine = ::SendMessage(currentView, SCI_DOCLINEFROMVISIBLE, otherVisible, 0);
+		if (otherVisible > CallScintilla(currentView, SCI_VISIBLEFROMDOCLINE, nextLine, 0))
+			nextLine = CallScintilla(currentView, SCI_DOCLINEFROMVISIBLE, otherVisible, 0);
 	}
 
 	centerAt(currentView, nextLine);
@@ -378,8 +375,8 @@ void jumpToLastChange()
 
 void jumpToNextChange(bool down, bool wrapAround)
 {
-	HWND currentView = getCurrentView();
-	HWND otherView = getOtherView(currentView);
+	int currentView = getCurrentViewId();
+	int otherView = getOtherViewId(currentView);
 
 	const int sci_next_marker = down ? SCI_MARKERNEXT : SCI_MARKERPREVIOUS;
 
@@ -388,20 +385,20 @@ void jumpToNextChange(bool down, bool wrapAround)
 	int nextLine = startingLine;
 	int otherLine;
 
-	int lineCount = ::SendMessage(currentView, SCI_GETLINECOUNT, 0, 0);
+	int lineCount = CallScintilla(currentView, SCI_GETLINECOUNT, 0, 0);
 
 	if (down)
-		for (; (::SendMessage(currentView, SCI_MARKERGET, nextLine, 0) & MARKER_MASK_LINE) &&
+		for (; (CallScintilla(currentView, SCI_MARKERGET, nextLine, 0) & MARKER_MASK_LINE) &&
 				(nextLine < lineCount); ++nextLine);
 	else
-		for (; (::SendMessage(currentView, SCI_MARKERGET, nextLine, 0) & MARKER_MASK_LINE) &&
+		for (; (CallScintilla(currentView, SCI_MARKERGET, nextLine, 0) & MARKER_MASK_LINE) &&
 				(nextLine > -1); --nextLine);
 
 	if (nextLine > -1 && nextLine < lineCount)
 	{
-		otherLine = ::SendMessage(otherView, sci_next_marker, otherViewMatchingLine(currentView, nextLine),
+		otherLine = CallScintilla(otherView, sci_next_marker, otherViewMatchingLine(currentView, nextLine),
 				MARKER_MASK_LINE);
-		nextLine = ::SendMessage(currentView, sci_next_marker, nextLine, MARKER_MASK_LINE);
+		nextLine = CallScintilla(currentView, sci_next_marker, nextLine, MARKER_MASK_LINE);
 	}
 	else
 	{
@@ -413,13 +410,13 @@ void jumpToNextChange(bool down, bool wrapAround)
 
 	if (down && matchingLine == startingLine)
 	{
-		lineCount = ::SendMessage(otherView, SCI_GETLINECOUNT, 0, 0);
+		lineCount = CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0);
 
-		for (; (::SendMessage(otherView, SCI_MARKERGET, otherLine, 0) & MARKER_MASK_LINE) &&
+		for (; (CallScintilla(otherView, SCI_MARKERGET, otherLine, 0) & MARKER_MASK_LINE) &&
 				(otherLine < lineCount); ++otherLine);
 
 		if (otherLine < lineCount)
-			otherLine = ::SendMessage(otherView, sci_next_marker, otherLine, MARKER_MASK_LINE);
+			otherLine = CallScintilla(otherView, sci_next_marker, otherLine, MARKER_MASK_LINE);
 		else
 			otherLine = -1;
 
@@ -456,16 +453,16 @@ void jumpToNextChange(bool down, bool wrapAround)
 	}
 	else if (matchingLine >= 0)
 	{
-		const int otherVisible = ::SendMessage(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0);
+		const int otherVisible = CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0);
 
 		if (down)
 		{
-			if (otherVisible < ::SendMessage(currentView, SCI_VISIBLEFROMDOCLINE, nextLine, 0))
+			if (otherVisible < CallScintilla(currentView, SCI_VISIBLEFROMDOCLINE, nextLine, 0))
 				nextLine = matchingLine;
 		}
 		else
 		{
-			if (otherVisible > ::SendMessage(currentView, SCI_VISIBLEFROMDOCLINE, nextLine, 0))
+			if (otherVisible > CallScintilla(currentView, SCI_VISIBLEFROMDOCLINE, nextLine, 0))
 				nextLine = matchingLine;
 		}
 	}
@@ -474,7 +471,7 @@ void jumpToNextChange(bool down, bool wrapAround)
 }
 
 
-std::vector<char> getText(HWND view, int startPos, int endPos)
+std::vector<char> getText(int view, int startPos, int endPos)
 {
 	const int lineLength = endPos - startPos;
 
@@ -488,7 +485,7 @@ std::vector<char> getText(HWND view, int startPos, int endPos)
 	tr.chrg.cpMax = endPos;
 	tr.lpstrText = text.data();
 
-	::SendMessage(view, SCI_GETTEXTRANGE, 0, (LPARAM)&tr);
+	CallScintilla(view, SCI_GETTEXTRANGE, 0, (LPARAM)&tr);
 
 	return text;
 }
@@ -513,91 +510,91 @@ void toLowerCase(std::vector<char>& text)
 }
 
 
-void clearWindow(HWND view)
+void clearWindow(int view)
 {
-	::SendMessage(view, SCI_ANNOTATIONCLEARALL, 0, 0);
+	CallScintilla(view, SCI_ANNOTATIONCLEARALL, 0, 0);
 
-	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_CHANGED_LINE, 0);
-	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_ADDED_LINE, 0);
-	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_REMOVED_LINE, 0);
-	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_MOVED_LINE, 0);
-	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_CHANGED_SYMBOL, 0);
-	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_ADDED_SYMBOL, 0);
-	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_REMOVED_SYMBOL, 0);
-	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_MOVED_SYMBOL, 0);
-	::SendMessage(view, SCI_MARKERDELETEALL, MARKER_MOVED_MULTIPLE_SYMBOL, 0);
+	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_CHANGED_LINE, 0);
+	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_ADDED_LINE, 0);
+	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_REMOVED_LINE, 0);
+	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_MOVED_LINE, 0);
+	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_CHANGED_SYMBOL, 0);
+	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_ADDED_SYMBOL, 0);
+	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_REMOVED_SYMBOL, 0);
+	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_MOVED_SYMBOL, 0);
+	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_MOVED_MULTIPLE_SYMBOL, 0);
 
-	clearChangedIndicator(view, 0, ::SendMessage(view, SCI_GETLENGTH, 0, 0));
+	clearChangedIndicator(view, 0, CallScintilla(view, SCI_GETLENGTH, 0, 0));
 
-	::SendMessage(view, SCI_COLOURISE, 0, -1);
+	CallScintilla(view, SCI_COLOURISE, 0, -1);
 
 	setNormalView(view);
 }
 
 
-void clearMarks(HWND view, int line)
+void clearMarks(int view, int line)
 {
-	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_CHANGED_LINE);
-	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_ADDED_LINE);
-	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_REMOVED_LINE);
-	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_MOVED_LINE);
-	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_CHANGED_SYMBOL);
-	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_ADDED_SYMBOL);
-	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_REMOVED_SYMBOL);
-	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_MOVED_SYMBOL);
-	::SendMessage(view, SCI_MARKERDELETE, line, MARKER_MOVED_MULTIPLE_SYMBOL);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_CHANGED_LINE);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_ADDED_LINE);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_REMOVED_LINE);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_LINE);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_CHANGED_SYMBOL);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_ADDED_SYMBOL);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_REMOVED_SYMBOL);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_SYMBOL);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_MULTIPLE_SYMBOL);
 }
 
 
-void clearMarks(HWND view, int startLine, int linesCount)
+void clearMarks(int view, int startLine, int linesCount)
 {
-	const int startPos = ::SendMessage(view, SCI_POSITIONFROMLINE, startLine, 0);
-	const int len = ::SendMessage(view, SCI_GETLINEENDPOSITION, startLine + linesCount - 1, 0) - startPos;
+	const int startPos = CallScintilla(view, SCI_POSITIONFROMLINE, startLine, 0);
+	const int len = CallScintilla(view, SCI_GETLINEENDPOSITION, startLine + linesCount - 1, 0) - startPos;
 
 	clearChangedIndicator(view, startPos, len);
 
-	for (int line = ::SendMessage(view, SCI_MARKERPREVIOUS, startLine + linesCount - 1, MARKER_MASK_LINE);
-			line >= startLine; line = ::SendMessage(view, SCI_MARKERPREVIOUS, line - 1, MARKER_MASK_LINE))
+	for (int line = CallScintilla(view, SCI_MARKERPREVIOUS, startLine + linesCount - 1, MARKER_MASK_LINE);
+			line >= startLine; line = CallScintilla(view, SCI_MARKERPREVIOUS, line - 1, MARKER_MASK_LINE))
 		clearMarks(view, line);
 }
 
 
-void clearMarksAndBlanks(HWND view, int startLine, int linesCount)
+void clearMarksAndBlanks(int view, int startLine, int linesCount)
 {
 	clearMarks(view, startLine, linesCount);
 
 	for (int line = startLine; line < linesCount; ++line)
 	{
-		if (::SendMessage(view, SCI_ANNOTATIONGETLINES, line, 0))
-			::SendMessage(view, SCI_ANNOTATIONSETTEXT, line, (LPARAM)NULL);
+		if (CallScintilla(view, SCI_ANNOTATIONGETLINES, line, 0))
+			CallScintilla(view, SCI_ANNOTATIONSETTEXT, line, (LPARAM)NULL);
 	}
 }
 
 
-int getPrevUnmarkedLine(HWND view, int startLine, int markMask)
+int getPrevUnmarkedLine(int view, int startLine, int markMask)
 {
 	int prevUnmarkedLine = startLine;
 
 	for (; (prevUnmarkedLine > 0) &&
-			(::SendMessage(view, SCI_MARKERGET, prevUnmarkedLine, 0) & markMask); --prevUnmarkedLine);
+			(CallScintilla(view, SCI_MARKERGET, prevUnmarkedLine, 0) & markMask); --prevUnmarkedLine);
 
 	return prevUnmarkedLine;
 }
 
 
-int getNextUnmarkedLine(HWND view, int startLine, int markMask)
+int getNextUnmarkedLine(int view, int startLine, int markMask)
 {
-	const int endLine = ::SendMessage(view, SCI_GETLINECOUNT, 0, 0) - 1;
+	const int endLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
 	int nextUnmarkedLine = startLine;
 
 	for (; (nextUnmarkedLine < endLine) &&
-			(::SendMessage(view, SCI_MARKERGET, nextUnmarkedLine, 0) & markMask); ++nextUnmarkedLine);
+			(CallScintilla(view, SCI_MARKERGET, nextUnmarkedLine, 0) & markMask); ++nextUnmarkedLine);
 
 	return nextUnmarkedLine;
 }
 
 
-void addBlankSection(HWND view, int line, int length)
+void addBlankSection(int view, int line, int length)
 {
 	if (length <= 0)
 		return;
@@ -605,5 +602,5 @@ void addBlankSection(HWND view, int line, int length)
 	std::vector<char> blank(length - 1, '\n');
 	blank.push_back('\0');
 
-	::SendMessage(view, SCI_ANNOTATIONSETTEXT, line - 1, (LPARAM)blank.data());
+	CallScintilla(view, SCI_ANNOTATIONSETTEXT, line - 1, (LPARAM)blank.data());
 }

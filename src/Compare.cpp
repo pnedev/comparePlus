@@ -40,7 +40,11 @@
 #include "resource.h"
 
 
-NppData nppData;
+const TCHAR PLUGIN_NAME[] = TEXT("Compare");
+
+NppData		nppData;
+SciFnDirect	sciFunc;
+sptr_t		sciPtr[2];
 
 #ifdef DLOG
 
@@ -53,9 +57,6 @@ static LRESULT	dLogBuf = -1;
 
 namespace // anonymous namespace
 {
-
-const TCHAR PLUGIN_NAME[] = TEXT("Compare");
-
 
 /**
  *  \class
@@ -155,16 +156,16 @@ void DeletedSectionsList::push(int currAction, int startLine, int endLine)
 
 	DeletedSection delSection(currAction, startLine, endLine - startLine + 1);
 
-	HWND currentView = getCurrentView();
+	int currentView = getCurrentViewId();
 
-	const int startPos = ::SendMessage(currentView, SCI_POSITIONFROMLINE, startLine, 0);
+	const int startPos = CallScintilla(currentView, SCI_POSITIONFROMLINE, startLine, 0);
 	clearChangedIndicator(currentView,
-			startPos, ::SendMessage(currentView, SCI_POSITIONFROMLINE, endLine, 0) - startPos);
+			startPos, CallScintilla(currentView, SCI_POSITIONFROMLINE, endLine, 0) - startPos);
 
-	for (int line = ::SendMessage(currentView, SCI_MARKERPREVIOUS, endLine, MARKER_MASK_LINE);
-			line >= startLine; line = ::SendMessage(currentView, SCI_MARKERPREVIOUS, line - 1, MARKER_MASK_LINE))
+	for (int line = CallScintilla(currentView, SCI_MARKERPREVIOUS, endLine, MARKER_MASK_LINE);
+			line >= startLine; line = CallScintilla(currentView, SCI_MARKERPREVIOUS, line - 1, MARKER_MASK_LINE))
 	{
-		delSection.markers[line - startLine] = ::SendMessage(currentView, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL;
+		delSection.markers[line - startLine] = CallScintilla(currentView, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL;
 		if (line != endLine)
 			clearMarks(currentView, line);
 	}
@@ -199,20 +200,20 @@ void DeletedSectionsList::pop(int currAction, int startLine)
 	if (last.startLine != startLine)
 		return;
 
-	HWND currentView = getCurrentView();
+	int currentView = getCurrentViewId();
 
 	const int linesCount = static_cast<int>(last.markers.size());
 
-	const int startPos = ::SendMessage(currentView, SCI_POSITIONFROMLINE, last.startLine, 0);
+	const int startPos = CallScintilla(currentView, SCI_POSITIONFROMLINE, last.startLine, 0);
 	clearChangedIndicator(currentView,
-			startPos, ::SendMessage(currentView, SCI_POSITIONFROMLINE, last.startLine + linesCount, 0) - startPos);
+			startPos, CallScintilla(currentView, SCI_POSITIONFROMLINE, last.startLine + linesCount, 0) - startPos);
 
 	for (int i = 0; i < linesCount; ++i)
 	{
 		clearMarks(currentView, last.startLine + i);
 
 		if (last.markers[i])
-			::SendMessage(currentView, SCI_MARKERADDSET, last.startLine + i, last.markers[i]);
+			CallScintilla(currentView, SCI_MARKERADDSET, last.startLine + i, last.markers[i]);
 	}
 
 	sections.pop_back();
@@ -457,7 +458,7 @@ FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
 
 // Declare local functions that appear before they are defined
 void onBufferActivated(LRESULT buffId);
-void syncViews(HWND biasView);
+void syncViews(int biasView);
 
 
 void NppSettings::enableClearCommands(bool enable) const
@@ -583,13 +584,11 @@ void NppSettings::setCompareMode(bool clearHorizontalScroll)
 
 	if (clearHorizontalScroll)
 	{
-		int pos = ::SendMessage(nppData._scintillaMainHandle, SCI_POSITIONFROMLINE,
-				getCurrentLine(nppData._scintillaMainHandle), 0);
-		::SendMessage(nppData._scintillaMainHandle, SCI_SETSEL, pos, pos);
+		int pos = CallScintilla(MAIN_VIEW, SCI_POSITIONFROMLINE, getCurrentLine(MAIN_VIEW), 0);
+		CallScintilla(MAIN_VIEW, SCI_SETSEL, pos, pos);
 
-		pos = ::SendMessage(nppData._scintillaSecondHandle, SCI_POSITIONFROMLINE,
-				getCurrentLine(nppData._scintillaSecondHandle), 0);
-		::SendMessage(nppData._scintillaSecondHandle, SCI_SETSEL, pos, pos);
+		pos = CallScintilla(SUB_VIEW, SCI_POSITIONFROMLINE, getCurrentLine(SUB_VIEW), 0);
+		CallScintilla(SUB_VIEW, SCI_SETSEL, pos, pos);
 	}
 
 	// Disable N++ vertical scroll - we handle it manually because of the Word Wrap
@@ -601,8 +600,8 @@ void NppSettings::setCompareMode(bool clearHorizontalScroll)
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLH);
 
 	// synchronize zoom levels
-	int zoom = ::SendMessage(getCurrentView(), SCI_GETZOOM, 0, 0);
-	::SendMessage(getOtherView(), SCI_SETZOOM, zoom, 0);
+	int zoom = CallScintilla(getCurrentViewId(), SCI_GETZOOM, 0, 0);
+	CallScintilla(getOtherViewId(), SCI_SETZOOM, zoom, 0);
 
 	enableNppScrollCommands(false);
 	updatePluginMenu();
@@ -719,7 +718,7 @@ void ComparedFile::initFromCurrent(bool currFileIsNew)
 
 void ComparedFile::updateFromCurrent()
 {
-	sciDoc = getDocId(getCurrentView());
+	sciDoc = getDocId(getCurrentViewId());
 
 	if (isTemp)
 	{
@@ -759,7 +758,7 @@ void ComparedFile::updateView()
 
 void ComparedFile::clear()
 {
-	clearWindow(getView(viewIdFromBuffId(buffId)));
+	clearWindow(viewIdFromBuffId(buffId));
 
 	deletedSections.clear();
 }
@@ -767,7 +766,7 @@ void ComparedFile::clear()
 
 void ComparedFile::clear(const section_t& section)
 {
-	clearMarksAndBlanks(getView(viewIdFromBuffId(buffId)), section.off, section.len);
+	clearMarksAndBlanks(viewIdFromBuffId(buffId), section.off, section.len);
 
 	deletedSections.clear();
 }
@@ -777,11 +776,11 @@ void ComparedFile::onBeforeClose() const
 {
 	activateBufferID(buffId);
 
-	HWND view = getCurrentView();
+	int view = getCurrentViewId();
 	clearWindow(view);
 
 	if (isTemp)
-		::SendMessage(view, SCI_SETSAVEPOINT, 0, 0);
+		CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
 }
 
 
@@ -815,7 +814,7 @@ void ComparedFile::restore() const
 
 	activateBufferID(buffId);
 
-	clearWindow(getCurrentView());
+	clearWindow(getCurrentViewId());
 
 	if (viewIdFromBuffId(buffId) != originalViewId)
 	{
@@ -880,8 +879,8 @@ ComparedFile& ComparedPair::getNewFile()
 void ComparedPair::positionFiles()
 {
 	// sync both views zoom
-	const int zoom = ::SendMessage(getCurrentView(), SCI_GETZOOM, 0, 0);
-	::SendMessage(getOtherView(), SCI_SETZOOM, zoom, 0);
+	const int zoom = CallScintilla(getCurrentViewId(), SCI_GETZOOM, 0, 0);
+	CallScintilla(getOtherViewId(), SCI_SETZOOM, zoom, 0);
 
 	const LRESULT currentBuffId = getCurrentBuffId();
 
@@ -909,10 +908,10 @@ void ComparedPair::positionFiles()
 		newFile.updateFromCurrent();
 	}
 
-	if (oldFile.sciDoc != getDocId(getView(oldFile.compareViewId)))
+	if (oldFile.sciDoc != getDocId(oldFile.compareViewId))
 		activateBufferID(oldFile.buffId);
 
-	if (newFile.sciDoc != getDocId(getView(newFile.compareViewId)))
+	if (newFile.sciDoc != getDocId(newFile.compareViewId))
 		activateBufferID(newFile.buffId);
 
 	activateBufferID(currentBuffId);
@@ -1069,9 +1068,9 @@ CompareList_t::iterator getCompareBySciDoc(int sciDoc)
 }
 
 
-void resetCompareView(HWND view)
+void resetCompareView(int view)
 {
-	if (!::IsWindowVisible(view))
+	if (!::IsWindowVisible(getView(view)))
 		return;
 
 	CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(view));
@@ -1082,14 +1081,14 @@ void resetCompareView(HWND view)
 
 void alignDiffs(const AlignmentInfo_t& alignmentInfo)
 {
-	::SendMessage(nppData._scintillaMainHandle, SCI_ANNOTATIONCLEARALL, 0, 0);
-	::SendMessage(nppData._scintillaSecondHandle, SCI_ANNOTATIONCLEARALL, 0, 0);
+	CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
+	CallScintilla(SUB_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
 
-	::SendMessage(nppData._scintillaMainHandle, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
-	::SendMessage(nppData._scintillaSecondHandle, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
+	CallScintilla(MAIN_VIEW, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
+	CallScintilla(SUB_VIEW, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
 
-	const int mainEndLine = ::SendMessage(nppData._scintillaMainHandle, SCI_GETLINECOUNT, 0, 0) - 1;
-	const int subEndLine = ::SendMessage(nppData._scintillaSecondHandle, SCI_GETLINECOUNT, 0, 0) - 1;
+	const int mainEndLine = CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
+	const int subEndLine = CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
 
 	const int maxSize = static_cast<int>(alignmentInfo.size());
 
@@ -1098,38 +1097,36 @@ void alignDiffs(const AlignmentInfo_t& alignmentInfo)
 			alignmentInfo[i].main.line <= mainEndLine && alignmentInfo[i].sub.line <= subEndLine; ++i)
 	{
 		int mismatchLen =
-				::SendMessage(nppData._scintillaMainHandle, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) -
-				::SendMessage(nppData._scintillaSecondHandle, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0);
+				CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) -
+				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0);
 
 		if (mismatchLen > 0)
 		{
 			if (i && (alignmentInfo[i].sub.line == alignmentInfo[i - 1].sub.line))
-				mismatchLen += ::SendMessage(nppData._scintillaSecondHandle, SCI_ANNOTATIONGETLINES,
-						alignmentInfo[i].sub.line - 1, 0);
+				mismatchLen += CallScintilla(SUB_VIEW, SCI_ANNOTATIONGETLINES, alignmentInfo[i].sub.line - 1, 0);
 
-			addBlankSection(nppData._scintillaSecondHandle, alignmentInfo[i].sub.line, mismatchLen);
+			addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, mismatchLen);
 		}
 		else if (mismatchLen < 0)
 		{
 			if (i && (alignmentInfo[i].main.line == alignmentInfo[i - 1].main.line))
-				mismatchLen -= ::SendMessage(nppData._scintillaMainHandle, SCI_ANNOTATIONGETLINES,
-						alignmentInfo[i].main.line - 1, 0);
+				mismatchLen -= CallScintilla(MAIN_VIEW, SCI_ANNOTATIONGETLINES, alignmentInfo[i].main.line - 1, 0);
 
-			addBlankSection(nppData._scintillaMainHandle, alignmentInfo[i].main.line, -mismatchLen);
+			addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, -mismatchLen);
 		}
 	}
 
 	// Align last lines
 	const int mismatchLen =
-			::SendMessage(nppData._scintillaMainHandle, SCI_VISIBLEFROMDOCLINE, mainEndLine, 0) +
-			::SendMessage(nppData._scintillaMainHandle, SCI_WRAPCOUNT, mainEndLine, 0) -
-			::SendMessage(nppData._scintillaSecondHandle, SCI_VISIBLEFROMDOCLINE, subEndLine, 0) -
-			::SendMessage(nppData._scintillaSecondHandle, SCI_WRAPCOUNT, subEndLine, 0);
+			CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, mainEndLine, 0) +
+			CallScintilla(MAIN_VIEW, SCI_WRAPCOUNT, mainEndLine, 0) -
+			CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subEndLine, 0) -
+			CallScintilla(SUB_VIEW, SCI_WRAPCOUNT, subEndLine, 0);
 
 	if (mismatchLen > 0)
-		addBlankSection(nppData._scintillaSecondHandle, subEndLine + 1, mismatchLen);
+		addBlankSection(SUB_VIEW, subEndLine + 1, mismatchLen);
 	else if (mismatchLen < 0)
-		addBlankSection(nppData._scintillaMainHandle, mainEndLine + 1, -mismatchLen);
+		addBlankSection(MAIN_VIEW, mainEndLine + 1, -mismatchLen);
 }
 
 
@@ -1140,7 +1137,7 @@ void showNavBar()
 }
 
 
-bool isFileCompared(HWND view)
+bool isFileCompared(int view)
 {
 	const int sciDoc = getDocId(view);
 
@@ -1152,7 +1149,7 @@ bool isFileCompared(HWND view)
 		TCHAR msg[MAX_PATH];
 		_sntprintf_s(msg, _countof(msg), _TRUNCATE,
 				TEXT("File \"%s\" is already compared - operation ignored."), fname);
-		::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"), MB_OK);
+		::MessageBox(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK);
 
 		return true;
 	}
@@ -1169,7 +1166,7 @@ bool isEncodingOK(const ComparedPair& cmpPair)
 		if (::MessageBox(nppData._nppHandle,
 			TEXT("Trying to compare files with different encodings - \n")
 			TEXT("the result might be inaccurate and misleading.\n\n")
-			TEXT("Compare anyway?"), TEXT("Compare Plugin"), MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES)
+			TEXT("Compare anyway?"), PLUGIN_NAME, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES)
 		{
 			return false;
 		}
@@ -1182,10 +1179,8 @@ bool isEncodingOK(const ComparedPair& cmpPair)
 // Call it with no arguments when re-comparing (the files are active in both views)
 bool areSelectionsValid(LRESULT currentBuffId = -1, LRESULT otherBuffId = -1)
 {
-	HWND view1 = (currentBuffId == otherBuffId) ?
-			nppData._scintillaMainHandle : getView(viewIdFromBuffId(currentBuffId));
-	HWND view2 = (currentBuffId == otherBuffId) ?
-			nppData._scintillaSecondHandle : getView(viewIdFromBuffId(otherBuffId));
+	int view1 = (currentBuffId == otherBuffId) ? MAIN_VIEW : viewIdFromBuffId(currentBuffId);
+	int view2 = (currentBuffId == otherBuffId) ? SUB_VIEW : viewIdFromBuffId(otherBuffId);
 
 	if (view1 == view2)
 		activateBufferID(otherBuffId);
@@ -1204,7 +1199,7 @@ bool areSelectionsValid(LRESULT currentBuffId = -1, LRESULT otherBuffId = -1)
 
 	if (!valid)
 		::MessageBox(nppData._nppHandle, TEXT("No selected lines to compare - operation ignored."),
-				TEXT("Compare Plugin"), MB_OK);
+				PLUGIN_NAME, MB_OK);
 
 	return valid;
 }
@@ -1212,9 +1207,7 @@ bool areSelectionsValid(LRESULT currentBuffId = -1, LRESULT otherBuffId = -1)
 
 bool setFirst(bool currFileIsNew, bool markName = false)
 {
-	HWND view = getCurrentView();
-
-	if (isFileCompared(view))
+	if (isFileCompared(getCurrentViewId()))
 		return false;
 
 	// Done on purpose: First wipe the std::unique_ptr so ~NewCompare is called before the new object constructor.
@@ -1228,13 +1221,13 @@ bool setFirst(bool currFileIsNew, bool markName = false)
 
 void setContent(const char* content)
 {
-	HWND view = getCurrentView();
+	int view = getCurrentViewId();
 
 	ScopedViewUndoCollectionBlocker undoBlock(view);
 	ScopedViewWriteEnabler writeEn(view);
 
-	::SendMessage(view, SCI_SETTEXT, 0, (LPARAM)content);
-	::SendMessage(view, SCI_SETSAVEPOINT, 0, 0);
+	CallScintilla(view, SCI_SETTEXT, 0, (LPARAM)content);
+	CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
 }
 
 
@@ -1243,7 +1236,7 @@ bool checkFileExists(const TCHAR *file)
 	if (::PathFileExists(file) == FALSE)
 	{
 		::MessageBox(nppData._nppHandle, TEXT("File is not written to disk - operation ignored."),
-				TEXT("Compare Plugin"), MB_OK);
+				PLUGIN_NAME, MB_OK);
 		return false;
 	}
 
@@ -1317,8 +1310,7 @@ bool createTempFile(const TCHAR *file, Temp_t tempType)
 		}
 	}
 
-	::MessageBox(nppData._nppHandle, TEXT("Creating temp file failed - operation aborted."),
-			TEXT("Compare Plugin"), MB_OK);
+	::MessageBox(nppData._nppHandle, TEXT("Creating temp file failed - operation aborted."), PLUGIN_NAME, MB_OK);
 
 	newCompare.reset();
 
@@ -1383,7 +1375,7 @@ bool initNewCompare()
 			if (getNumberOfFiles(getCurrentViewId()) < 2)
 			{
 				::MessageBox(nppData._nppHandle, TEXT("Only one file opened - operation ignored."),
-						TEXT("Compare Plugin"), MB_OK);
+						PLUGIN_NAME, MB_OK);
 				return false;
 			}
 
@@ -1392,10 +1384,8 @@ bool initNewCompare()
 		}
 		else
 		{
-			HWND otherView = getOtherView();
-
 			// Check if the file in the other view is compared already
-			if (isFileCompared(otherView))
+			if (isFileCompared(getOtherViewId()))
 				return false;
 
 			::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SWITCHTO_OTHER_VIEW);
@@ -1426,8 +1416,8 @@ CompareResult runCompare(CompareList_t::iterator cmpPair, bool selectionCompare)
 
 	if (selectionCompare)
 	{
-		cmpPair->selections.first	= getSelectionLines(nppData._scintillaMainHandle);
-		cmpPair->selections.second	= getSelectionLines(nppData._scintillaSecondHandle);
+		cmpPair->selections.first	= getSelectionLines(MAIN_VIEW);
+		cmpPair->selections.second	= getSelectionLines(SUB_VIEW);
 
 		mainViewSection.off = cmpPair->selections.first.first;
 		mainViewSection.len = cmpPair->selections.first.second - cmpPair->selections.first.first + 1;
@@ -1520,8 +1510,8 @@ void compare(bool selectionCompare = false)
 			NppSettings::get().setCompareMode(true);
 			NppSettings::get().toSingleLineTab();
 
-			setCompareView(nppData._scintillaMainHandle, Settings.colors.blank);
-			setCompareView(nppData._scintillaSecondHandle, Settings.colors.blank);
+			setCompareView(MAIN_VIEW, Settings.colors.blank);
+			setCompareView(SUB_VIEW, Settings.colors.blank);
 
 			if (Settings.UseNavBar)
 				showNavBar();
@@ -1532,7 +1522,7 @@ void compare(bool selectionCompare = false)
 					activateBufferID(cmpPair->getNewFile().buffId);
 
 				if (selectionCompare)
-					clearSelection(getOtherView());
+					clearSelection(getOtherViewId());
 
 				goToFirst = true;
 			}
@@ -1571,7 +1561,7 @@ void compare(bool selectionCompare = false)
 								oldFile.isTemp == GIT_TEMP ? TEXT("Git") : TEXT("SVN"));
 				}
 
-				::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"), MB_OK);
+				::MessageBox(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK);
 			}
 			else
 			{
@@ -1582,10 +1572,10 @@ void compare(bool selectionCompare = false)
 						Settings.PromptToCloseOnMatch ? TEXT("\n\nClose compared files?") : TEXT(""));
 
 				if (Settings.PromptToCloseOnMatch)
-					choice = ::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"),
+					choice = ::MessageBox(nppData._nppHandle, msg, PLUGIN_NAME,
 							MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON1);
 				else
-					::MessageBox(nppData._nppHandle, msg, TEXT("Compare Plugin"), MB_OK);
+					::MessageBox(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK);
 			}
 
 			if (choice == IDYES)
@@ -1816,10 +1806,10 @@ void OpenAboutDlg()
 		activateBufferID(dLogBuf);
 	}
 
-	HWND view = getCurrentView();
+	int view = getCurrentViewId();
 
-	::SendMessage(view, SCI_APPENDTEXT, dLog.size(), (LPARAM)dLog.c_str());
-	::SendMessage(view, SCI_SETSAVEPOINT, 0, 0);
+	CallScintilla(view, SCI_APPENDTEXT, dLog.size(), (LPARAM)dLog.c_str());
+	CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
 
 	dLog.clear();
 
@@ -1998,19 +1988,19 @@ void deinitPlugin()
 }
 
 
-void syncViews(HWND biasView)
+void syncViews(int biasView)
 {
-	HWND otherView = getOtherView(biasView);
+	int otherView = getOtherViewId(biasView);
 
-	const int firstVisibleLine1 = ::SendMessage(biasView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	const int firstVisibleLine1 = CallScintilla(biasView, SCI_GETFIRSTVISIBLELINE, 0, 0);
 
-	if (firstVisibleLine1 != ::SendMessage(otherView, SCI_GETFIRSTVISIBLELINE, 0, 0))
+	if (firstVisibleLine1 != CallScintilla(otherView, SCI_GETFIRSTVISIBLELINE, 0, 0))
 	{
-		LOGD("Syncing views - bias " + std::string(biasView == nppData._scintillaMainHandle ? "MAIN" : "SUB") + "\n");
+		LOGD("Syncing views - bias " + std::string(biasView == MAIN_VIEW ? "MAIN" : "SUB") + "\n");
 
 		ScopedIncrementer incr(notificationsLock);
 
-		::SendMessage(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine1, 0);
+		CallScintilla(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine1, 0);
 	}
 
 	NavDlg.Update();
@@ -2027,8 +2017,8 @@ void comparedFileActivated()
 			showNavBar();
 	}
 
-	setCompareView(nppData._scintillaMainHandle, Settings.colors.blank);
-	setCompareView(nppData._scintillaSecondHandle, Settings.colors.blank);
+	setCompareView(MAIN_VIEW, Settings.colors.blank);
+	setCompareView(SUB_VIEW, Settings.colors.blank);
 
 	storedLocation.reset(new ViewLocation(getCurrentBuffId()));
 }
@@ -2116,11 +2106,11 @@ void DelayedAlign::operator()()
 	if (alignmentInfo.empty())
 		return;
 
-	int mainFirstLine = ::SendMessage(nppData._scintillaMainHandle, SCI_GETFIRSTVISIBLELINE, 0, 0);
-	int mainLastLine = mainFirstLine + ::SendMessage(nppData._scintillaMainHandle, SCI_LINESONSCREEN, 0, 0);
+	int mainFirstLine = CallScintilla(MAIN_VIEW, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	int mainLastLine = mainFirstLine + CallScintilla(MAIN_VIEW, SCI_LINESONSCREEN, 0, 0);
 
-	mainFirstLine = ::SendMessage(nppData._scintillaMainHandle, SCI_DOCLINEFROMVISIBLE, mainFirstLine, 0);
-	mainLastLine = ::SendMessage(nppData._scintillaMainHandle, SCI_DOCLINEFROMVISIBLE, mainLastLine, 0);
+	mainFirstLine = CallScintilla(MAIN_VIEW, SCI_DOCLINEFROMVISIBLE, mainFirstLine, 0);
+	mainLastLine = CallScintilla(MAIN_VIEW, SCI_DOCLINEFROMVISIBLE, mainLastLine, 0);
 
 	bool realign = goToFirst;
 
@@ -2131,8 +2121,8 @@ void DelayedAlign::operator()()
 			if (alignment.main.line >= mainFirstLine)
 			{
 				if ((alignment.main.diffMask == alignment.sub.diffMask) &&
-					(::SendMessage(nppData._scintillaMainHandle, SCI_VISIBLEFROMDOCLINE, alignment.main.line, 0) !=
-					::SendMessage(nppData._scintillaSecondHandle, SCI_VISIBLEFROMDOCLINE, alignment.sub.line, 0)))
+					(CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignment.main.line, 0) !=
+					CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignment.sub.line, 0)))
 				{
 					realign = true;
 					break;
@@ -2161,7 +2151,7 @@ void DelayedAlign::operator()()
 		storedLocation->restore();
 		storedLocation.reset();
 
-		syncViews(getCurrentView());
+		syncViews(getCurrentViewId());
 
 		cmpPair->setStatus();
 	}
@@ -2183,7 +2173,7 @@ void onSciUpdateUI(HWND view)
 {
 	ScopedIncrementer incr(notificationsLock);
 
-	syncViews(view);
+	syncViews(getViewId(view));
 }
 
 
@@ -2200,9 +2190,9 @@ void DelayedUpdate::operator()()
 		return;
 	}
 
-	HWND changeView = getCurrentView();
+	int changeView = getCurrentViewId();
 
-	const int startLine = ::SendMessage(changeView, SCI_LINEFROMPOSITION, changePos, 0);
+	const int startLine = CallScintilla(changeView, SCI_LINEFROMPOSITION, changePos, 0);
 
 	section_t mainViewSec = { startLine, 1 };
 	section_t subViewSec = { startLine, 1 };
@@ -2212,10 +2202,10 @@ void DelayedUpdate::operator()()
 	// Adjust views re-compare range
 	if (linesAdded || linesDeleted)
 	{
-		HWND otherView = getOtherView();
+		int otherView = getOtherViewId();
 
-		section_t& changeViewSec = (changeView == nppData._scintillaMainHandle) ? mainViewSec : subViewSec;
-		section_t& otherViewSec = (changeView == nppData._scintillaMainHandle) ? subViewSec : mainViewSec;
+		section_t& changeViewSec = (changeView == MAIN_VIEW) ? mainViewSec : subViewSec;
+		section_t& otherViewSec = (changeView == SUB_VIEW) ? subViewSec : mainViewSec;
 
 		const int startOff = startLine - getPrevUnmarkedLine(otherView, startLine, MARKER_MASK_LINE);
 
@@ -2231,16 +2221,16 @@ void DelayedUpdate::operator()()
 		changeViewSec.len += endOff;
 		otherViewSec.len += endOff;
 
-		clearMarksAndBlanks(nppData._scintillaMainHandle, mainViewSec.off, mainViewSec.len);
-		clearMarksAndBlanks(nppData._scintillaSecondHandle, subViewSec.off, subViewSec.len);
+		clearMarksAndBlanks(MAIN_VIEW, mainViewSec.off, mainViewSec.len);
+		clearMarksAndBlanks(SUB_VIEW, subViewSec.off, subViewSec.len);
 
 		AlignmentInfo_t alignmentInfo;
 		compareViews(mainViewSec, subViewSec, Settings, TEXT("Re-comparing changes..."), alignmentInfo);
 	}
 	else
 	{
-		clearMarks(nppData._scintillaMainHandle, mainViewSec.off, mainViewSec.len);
-		clearMarks(nppData._scintillaSecondHandle, subViewSec.off, subViewSec.len);
+		clearMarks(MAIN_VIEW, mainViewSec.off, mainViewSec.len);
+		clearMarks(SUB_VIEW, subViewSec.off, subViewSec.len);
 
 		AlignmentInfo_t alignmentInfo;
 		compareViews(mainViewSec, subViewSec, Settings, nullptr, alignmentInfo);
@@ -2265,11 +2255,11 @@ void onSciModified(SCNotification* notifyCode)
 
 	if (notifyCode->modificationType & SC_MOD_BEFOREDELETE)
 	{
-		HWND currentView = getCurrentView();
+		int currentView = getCurrentViewId();
 
-		const int startLine = ::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+		const int startLine = CallScintilla(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 		const int endLine =
-			::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position + notifyCode->length, 0);
+			CallScintilla(currentView, SCI_LINEFROMPOSITION, notifyCode->position + notifyCode->length, 0);
 
 		// Change is on single line?
 		if (endLine <= startLine)
@@ -2282,9 +2272,9 @@ void onSciModified(SCNotification* notifyCode)
 	}
 	else if ((notifyCode->modificationType & SC_MOD_INSERTTEXT) && notifyCode->linesAdded)
 	{
-		HWND currentView = getCurrentView();
+		int currentView = getCurrentViewId();
 
-		const int startLine = ::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+		const int startLine = CallScintilla(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 
 		const int currAction =
 			notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
@@ -2304,11 +2294,11 @@ void onSciModifiedUpdate(SCNotification* notifyCode)
 
 	if (notifyCode->modificationType & SC_MOD_BEFOREDELETE)
 	{
-		HWND currentView = getCurrentView();
+		int currentView = getCurrentViewId();
 
-		const int startLine = ::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+		const int startLine = CallScintilla(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 		const int endLine =
-			::SendMessage(currentView, SCI_LINEFROMPOSITION, notifyCode->position + notifyCode->length, 0);
+			CallScintilla(currentView, SCI_LINEFROMPOSITION, notifyCode->position + notifyCode->length, 0);
 
 		if (endLine > startLine)
 		{
@@ -2353,8 +2343,8 @@ void onSciZoom()
 	ScopedIncrementer incr(notificationsLock);
 
 	// sync both views zoom
-	const int zoom = ::SendMessage(getCurrentView(), SCI_GETZOOM, 0, 0);
-	::SendMessage(getOtherView(), SCI_SETZOOM, zoom, 0);
+	const int zoom = CallScintilla(getCurrentViewId(), SCI_GETZOOM, 0, 0);
+	CallScintilla(getOtherViewId(), SCI_SETZOOM, zoom, 0);
 }
 
 
@@ -2369,7 +2359,7 @@ void DelayedActivate::operator()()
 	const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
 
 	// When compared file is activated make sure its corresponding pair file is also active in the other view
-	if (getDocId(getOtherView()) != otherFile.sciDoc)
+	if (getDocId(getOtherViewId()) != otherFile.sciDoc)
 	{
 		ScopedIncrementer incr(notificationsLock);
 
@@ -2390,8 +2380,8 @@ void onBufferActivated(LRESULT buffId)
 	if (cmpPair == compareList.end())
 	{
 		NppSettings::get().setNormalMode();
-		setNormalView(getCurrentView());
-		resetCompareView(getOtherView());
+		setNormalView(getCurrentViewId());
+		resetCompareView(getOtherViewId());
 	}
 	else
 	{
@@ -2626,7 +2616,19 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID)
 
 extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 {
-	nppData = notpadPlusData;
+	nppData		= notpadPlusData;
+	sciFunc		= (SciFnDirect)::SendMessage(notpadPlusData._scintillaMainHandle, SCI_GETDIRECTFUNCTION, 0, 0);
+	sciPtr[0]	= (sptr_t)::SendMessage(notpadPlusData._scintillaMainHandle, SCI_GETDIRECTPOINTER, 0, 0);
+	sciPtr[1]	= (sptr_t)::SendMessage(notpadPlusData._scintillaSecondHandle, SCI_GETDIRECTPOINTER, 0, 0);
+
+	if (!sciFunc || !sciPtr[0] || !sciPtr[1])
+	{
+		::MessageBox(notpadPlusData._nppHandle,
+				TEXT("Error getting direct Scintilla call pointers, plugin init failed!"),
+				PLUGIN_NAME, MB_OK | MB_ICONERROR);
+
+		exit(EXIT_FAILURE);
+	}
 
 	Settings.load();
 

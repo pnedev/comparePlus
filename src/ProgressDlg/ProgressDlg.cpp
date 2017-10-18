@@ -277,7 +277,7 @@ BOOL ProgressDlg::createProgressWindow()
 {
 	_hwnd = ::CreateWindowEx(
 		WS_EX_APPWINDOW | WS_EX_TOOLWINDOW | WS_EX_OVERLAPPEDWINDOW,
-            cClassName, TEXT("Compare Plugin"), WS_POPUP | WS_CAPTION,
+            cClassName, PLUGIN_NAME, WS_POPUP | WS_CAPTION,
             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
             NULL, NULL, _hInst, (LPVOID)this);
     if (!_hwnd)

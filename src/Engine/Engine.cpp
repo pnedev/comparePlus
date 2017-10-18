@@ -42,7 +42,7 @@ enum class charType
 
 struct DocCmpInfo
 {
-	HWND		view;
+	int			view;
 	section_t	section;
 
 	int			blockDiffMask;
@@ -110,10 +110,10 @@ std::vector<uint64_t> computeLineHashes(DocCmpInfo& doc, const UserSettings& set
 
 	progress_ptr& progress = ProgressDlg::Get();
 
-	int lineCount = ::SendMessage(doc.view, SCI_GETLENGTH, 0, 0);
+	int lineCount = CallScintilla(doc.view, SCI_GETLENGTH, 0, 0);
 
 	if (lineCount)
-		lineCount = ::SendMessage(doc.view, SCI_GETLINECOUNT, 0, 0);
+		lineCount = CallScintilla(doc.view, SCI_GETLINECOUNT, 0, 0);
 
 	if ((doc.section.len <= 0) || (doc.section.off + doc.section.len > lineCount))
 		doc.section.len = lineCount - doc.section.off;
@@ -128,8 +128,8 @@ std::vector<uint64_t> computeLineHashes(DocCmpInfo& doc, const UserSettings& set
 		if (progress && (lineNum % monitorCancelEveryXLine == 0) && !progress->Advance())
 			return std::vector<uint64_t>{};
 
-		const int lineStart = ::SendMessage(doc.view, SCI_POSITIONFROMLINE, lineNum + doc.section.off, 0);
-		const int lineEnd = ::SendMessage(doc.view, SCI_GETLINEENDPOSITION, lineNum + doc.section.off, 0);
+		const int lineStart = CallScintilla(doc.view, SCI_POSITIONFROMLINE, lineNum + doc.section.off, 0);
+		const int lineEnd = CallScintilla(doc.view, SCI_GETLINEENDPOSITION, lineNum + doc.section.off, 0);
 
 		if (lineEnd - lineStart)
 		{
@@ -171,15 +171,15 @@ charType getCharType(char letter)
 }
 
 
-std::vector<std::vector<Word>> getWords(int line_offset, int line_count, HWND view, const UserSettings& settings)
+std::vector<std::vector<Word>> getWords(int line_offset, int line_count, int view, const UserSettings& settings)
 {
 	std::vector<std::vector<Word>> words(line_count);
 
 	for (int lineNum = 0; lineNum < line_count; ++lineNum)
 	{
 		const int docLineNum = lineNum + line_offset;
-		const int docLineStart = ::SendMessage(view, SCI_POSITIONFROMLINE, docLineNum, 0);
-		const int docLineEnd = ::SendMessage(view, SCI_GETLINEENDPOSITION, docLineNum, 0);
+		const int docLineStart = CallScintilla(view, SCI_POSITIONFROMLINE, docLineNum, 0);
+		const int docLineEnd = CallScintilla(view, SCI_GETLINEENDPOSITION, docLineNum, 0);
 
 		std::vector<char> line = getText(view, docLineStart, docLineEnd);
 		const int lineLen = static_cast<int>(line.size()) - 1;
@@ -389,28 +389,28 @@ void markSection(const diff_info& bd, const DocCmpInfo& doc)
 				(bd.isMoved(i) == NOT_MOVED) ? doc.blockDiffMask :
 				(bd.isMoved(i) == MOVED) ? MARKER_MASK_MOVED : MARKER_MASK_MOVED_MULTIPLE;
 
-		::SendMessage(doc.view, SCI_MARKERADDSET, line, markerMask);
+		CallScintilla(doc.view, SCI_MARKERADDSET, line, markerMask);
 	}
 }
 
 
-void markLineDiffs(HWND view1, HWND view2, const diff_info& bd, int lineIdx)
+void markLineDiffs(int view1, int view2, const diff_info& bd, int lineIdx)
 {
 	int line = bd.off + bd.changedLines[lineIdx].line;
-	int linePos = ::SendMessage(view1, SCI_POSITIONFROMLINE, line, 0);
+	int linePos = CallScintilla(view1, SCI_POSITIONFROMLINE, line, 0);
 
 	for (const auto& change: bd.changedLines[lineIdx].changes)
 		markTextAsChanged(view1, linePos + change.off, change.len);
 
-	::SendMessage(view1, SCI_MARKERADDSET, line, MARKER_MASK_CHANGED);
+	CallScintilla(view1, SCI_MARKERADDSET, line, MARKER_MASK_CHANGED);
 
 	line = bd.matchedDiff->off + bd.matchedDiff->changedLines[lineIdx].line;
-	linePos = ::SendMessage(view2, SCI_POSITIONFROMLINE, line, 0);
+	linePos = CallScintilla(view2, SCI_POSITIONFROMLINE, line, 0);
 
 	for (const auto& change: bd.matchedDiff->changedLines[lineIdx].changes)
 		markTextAsChanged(view2, linePos + change.off, change.len);
 
-	::SendMessage(view2, SCI_MARKERADDSET, line, MARKER_MASK_CHANGED);
+	CallScintilla(view2, SCI_MARKERADDSET, line, MARKER_MASK_CHANGED);
 }
 
 
@@ -431,7 +431,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
 	AlignmentViewData* pSubAlignData	= &alignPair.sub;
 
 	// Make sure pMainAlignData is linked to doc1
-	if (cmpInfo.doc1.view == nppData._scintillaSecondHandle)
+	if (cmpInfo.doc1.view == SUB_VIEW)
 		std::swap(pMainAlignData, pSubAlignData);
 
 	pMainAlignData->line	= cmpInfo.doc1.section.off;
@@ -575,9 +575,9 @@ CompareResult runCompare(const section_t& mainViewSection, const section_t& subV
 
 	CompareInfo cmpInfo;
 
-	cmpInfo.doc1.view		= nppData._scintillaMainHandle;
+	cmpInfo.doc1.view		= MAIN_VIEW;
 	cmpInfo.doc1.section	= mainViewSection;
-	cmpInfo.doc2.view		= nppData._scintillaSecondHandle;
+	cmpInfo.doc2.view		= SUB_VIEW;
 	cmpInfo.doc2.section	= subViewSection;
 
 	if (settings.OldFileViewId == MAIN_VIEW)
@@ -626,19 +626,19 @@ CompareResult runCompare(const section_t& mainViewSection, const section_t& subV
 	if ((cmpInfo.diffBlocks[0].type != diff_type::DIFF_MATCH) &&
 			(!cmpInfo.doc1.section.off || !cmpInfo.doc2.section.off))
 	{
-		const BOOL doc1Modified = (BOOL)::SendMessage(cmpInfo.doc1.view, SCI_GETMODIFY, 0, 0);
-		const BOOL doc2Modified = (BOOL)::SendMessage(cmpInfo.doc2.view, SCI_GETMODIFY, 0, 0);
+		const BOOL doc1Modified = (BOOL)CallScintilla(cmpInfo.doc1.view, SCI_GETMODIFY, 0, 0);
+		const BOOL doc2Modified = (BOOL)CallScintilla(cmpInfo.doc2.view, SCI_GETMODIFY, 0, 0);
 
 		ScopedViewWriteEnabler writeEn1(cmpInfo.doc1.view);
 		ScopedViewWriteEnabler writeEn2(cmpInfo.doc2.view);
 
-		::SendMessage(cmpInfo.doc1.view, SCI_INSERTTEXT, 0,	(LPARAM)"\n");
+		CallScintilla(cmpInfo.doc1.view, SCI_INSERTTEXT, 0,	(LPARAM)"\n");
 		if (!doc1Modified)
-			::SendMessage(cmpInfo.doc1.view, SCI_SETSAVEPOINT, 0, 0);
+			CallScintilla(cmpInfo.doc1.view, SCI_SETSAVEPOINT, 0, 0);
 
-		::SendMessage(cmpInfo.doc2.view, SCI_INSERTTEXT, 0,	(LPARAM)"\n");
+		CallScintilla(cmpInfo.doc2.view, SCI_INSERTTEXT, 0,	(LPARAM)"\n");
 		if (!doc2Modified)
-			::SendMessage(cmpInfo.doc2.view, SCI_SETSAVEPOINT, 0, 0);
+			CallScintilla(cmpInfo.doc2.view, SCI_SETSAVEPOINT, 0, 0);
 
 		++cmpInfo.doc1.section.off;
 		++cmpInfo.doc2.section.off;
@@ -717,13 +717,13 @@ CompareResult compareViews(const section_t& mainViewSection, const section_t& su
 
 		char msg[128];
 		_snprintf_s(msg, _countof(msg), _TRUNCATE, "Exception occurred: %s", e.what());
-		MessageBoxA(nppData._nppHandle, msg, "Compare Plugin", MB_OK | MB_ICONWARNING);
+		::MessageBoxA(nppData._nppHandle, msg, "Compare", MB_OK | MB_ICONWARNING);
 	}
 	catch (...)
 	{
 		ProgressDlg::Close();
 
-		MessageBoxA(nppData._nppHandle, "Unknown exception occurred.", "Compare Plugin", MB_OK | MB_ICONWARNING);
+		::MessageBoxA(nppData._nppHandle, "Unknown exception occurred.", "Compare", MB_OK | MB_ICONWARNING);
 	}
 
 	return result;

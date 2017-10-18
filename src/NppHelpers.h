@@ -95,55 +95,55 @@ private:
 /**
  *  \struct
  *  \brief
- *  \warning  Don't use that helper struct if somewhere in its scope the hView document is changed!!!
+ *  \warning  Don't use that helper struct if somewhere in its scope the view document is changed!!!
  */
 struct ScopedViewWriteEnabler
 {
-	ScopedViewWriteEnabler(HWND hView) : _hView(hView)
+	ScopedViewWriteEnabler(int view) : _view(view)
 	{
-		_isRO = ::SendMessage(_hView, SCI_GETREADONLY, 0, 0);
+		_isRO = CallScintilla(_view, SCI_GETREADONLY, 0, 0);
 		if (_isRO)
-			::SendMessage(_hView, SCI_SETREADONLY, false, 0);
+			CallScintilla(_view, SCI_SETREADONLY, false, 0);
 	}
 
 	~ScopedViewWriteEnabler()
 	{
 		if (_isRO)
-			::SendMessage(_hView, SCI_SETREADONLY, true, 0);
+			CallScintilla(_view, SCI_SETREADONLY, true, 0);
 	}
 
 private:
-	HWND	_hView;
-	int		_isRO;
+	int	_view;
+	int	_isRO;
 };
 
 
 /**
  *  \struct
  *  \brief
- *  \warning  Don't use that helper struct if somewhere in its scope the hView document is changed!!!
+ *  \warning  Don't use that helper struct if somewhere in its scope the view document is changed!!!
  */
 struct ScopedViewUndoCollectionBlocker
 {
-	ScopedViewUndoCollectionBlocker(HWND hView) : _hView(hView)
+	ScopedViewUndoCollectionBlocker(int view) : _view(view)
 	{
-		_isUndoOn = ::SendMessage(_hView, SCI_GETUNDOCOLLECTION, 0, 0);
+		_isUndoOn = CallScintilla(_view, SCI_GETUNDOCOLLECTION, 0, 0);
 		if (_isUndoOn)
 		{
-			::SendMessage(_hView, SCI_SETUNDOCOLLECTION, false, 0);
-			::SendMessage(_hView, SCI_EMPTYUNDOBUFFER, 0, 0);
+			CallScintilla(_view, SCI_SETUNDOCOLLECTION, false, 0);
+			CallScintilla(_view, SCI_EMPTYUNDOBUFFER, 0, 0);
 		}
 	}
 
 	~ScopedViewUndoCollectionBlocker()
 	{
 		if (_isUndoOn)
-			::SendMessage(_hView, SCI_SETUNDOCOLLECTION, true, 0);
+			CallScintilla(_view, SCI_SETUNDOCOLLECTION, true, 0);
 	}
 
 private:
-	HWND	_hView;
-	int		_isUndoOn;
+	int	_view;
+	int	_isUndoOn;
 };
 
 
@@ -182,9 +182,9 @@ inline bool isSingleView()
 }
 
 
-inline bool isFileEmpty(HWND view)
+inline bool isFileEmpty(int view)
 {
-	return (::SendMessage(view, SCI_GETLENGTH, 0, 0) == 0);
+	return (CallScintilla(view, SCI_GETLENGTH, 0, 0) == 0);
 }
 
 
@@ -209,6 +209,12 @@ inline HWND getView(int viewId)
 }
 
 
+inline int getViewId(HWND view)
+{
+	return (view == nppData._scintillaMainHandle) ? MAIN_VIEW : SUB_VIEW;
+}
+
+
 inline int getCurrentViewId()
 {
 	return ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0);
@@ -225,6 +231,12 @@ inline HWND getCurrentView()
 inline int getOtherViewId()
 {
 	return (::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0) == MAIN_VIEW) ? SUB_VIEW : MAIN_VIEW;
+}
+
+
+inline int getOtherViewId(int view)
+{
+	return (view == MAIN_VIEW) ? SUB_VIEW : MAIN_VIEW;
 }
 
 
@@ -267,76 +279,76 @@ inline int getEncoding(LRESULT buffId)
 }
 
 
-inline int getDocId(HWND view)
+inline int getDocId(int view)
 {
-	return ::SendMessage(view, SCI_GETDOCPOINTER, 0, 0);
+	return CallScintilla(view, SCI_GETDOCPOINTER, 0, 0);
 }
 
 
-inline int getCurrentLine(HWND view)
+inline int getCurrentLine(int view)
 {
-	return ::SendMessage(view, SCI_LINEFROMPOSITION, ::SendMessage(view, SCI_GETCURRENTPOS, 0, 0), 0);
+	return CallScintilla(view, SCI_LINEFROMPOSITION, CallScintilla(view, SCI_GETCURRENTPOS, 0, 0), 0);
 }
 
 
-inline int otherViewMatchingLine(HWND view, int line)
+inline int otherViewMatchingLine(int view, int line)
 {
-	return ::SendMessage(getOtherView(view), SCI_DOCLINEFROMVISIBLE,
-					::SendMessage(view, SCI_VISIBLEFROMDOCLINE, line, 0), 0);
+	return CallScintilla(getOtherViewId(view), SCI_DOCLINEFROMVISIBLE,
+					CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0), 0);
 }
 
 
-inline bool isSelection(HWND view)
+inline bool isSelection(int view)
 {
-	return (::SendMessage(view, SCI_GETSELECTIONEND, 0, 0) - ::SendMessage(view, SCI_GETSELECTIONSTART, 0, 0) != 0);
+	return (CallScintilla(view, SCI_GETSELECTIONEND, 0, 0) - CallScintilla(view, SCI_GETSELECTIONSTART, 0, 0) != 0);
 }
 
 
-inline int isSelectionVertical(HWND view)
+inline int isSelectionVertical(int view)
 {
-	return SendMessage(view, SCI_SELECTIONISRECTANGLE, 0, 0);
+	return CallScintilla(view, SCI_SELECTIONISRECTANGLE, 0, 0);
 }
 
 
-inline std::pair<int, int> getSelection(HWND view)
+inline std::pair<int, int> getSelection(int view)
 {
-	return std::make_pair(::SendMessage(view, SCI_GETSELECTIONSTART, 0, 0),
-			::SendMessage(view, SCI_GETSELECTIONEND, 0, 0));
+	return std::make_pair(CallScintilla(view, SCI_GETSELECTIONSTART, 0, 0),
+			CallScintilla(view, SCI_GETSELECTIONEND, 0, 0));
 }
 
 
-inline void clearSelection(HWND view)
+inline void clearSelection(int view)
 {
-	const int currentPos = ::SendMessage(view, SCI_GETCURRENTPOS, 0, 0);
-	::SendMessage(view, SCI_SETSEL, currentPos, currentPos);
+	const int currentPos = CallScintilla(view, SCI_GETCURRENTPOS, 0, 0);
+	CallScintilla(view, SCI_SETSEL, currentPos, currentPos);
 }
 
 
 void activateBufferID(LRESULT buffId);
-std::pair<int, int> getSelectionLines(HWND view);
+std::pair<int, int> getSelectionLines(int view);
 
-void centerAt(HWND view, int line);
+void centerAt(int view, int line);
 
-void markTextAsChanged(HWND view, int start, int length);
-void clearChangedIndicator(HWND view, int start, int length);
+void markTextAsChanged(int view, int start, int length);
+void clearChangedIndicator(int view, int start, int length);
 
 void jumpToFirstChange();
 void jumpToLastChange();
 void jumpToNextChange(bool down, bool wrapAround);
 
-void setNormalView(HWND view);
-void setCompareView(HWND view, int blankColor);
+void setNormalView(int view);
+void setCompareView(int view, int blankColor);
 
 void setStyles(UserSettings& settings);
 
-void clearWindow(HWND view);
-void clearMarks(HWND view, int line);
-void clearMarks(HWND view, int startLine, int linesCount);
-void clearMarksAndBlanks(HWND view, int startLine, int linesCount);
-int getPrevUnmarkedLine(HWND view, int startLine, int markMask);
-int getNextUnmarkedLine(HWND view, int startLine, int markMask);
+void clearWindow(int view);
+void clearMarks(int view, int line);
+void clearMarks(int view, int startLine, int linesCount);
+void clearMarksAndBlanks(int view, int startLine, int linesCount);
+int getPrevUnmarkedLine(int view, int startLine, int markMask);
+int getNextUnmarkedLine(int view, int startLine, int markMask);
 
-std::vector<char> getText(HWND view, int startPos, int endPos);
+std::vector<char> getText(int view, int startPos, int endPos);
 void toLowerCase(std::vector<char>& text);
 
-void addBlankSection(HWND view, int line, int length);
+void addBlankSection(int view, int line, int length);

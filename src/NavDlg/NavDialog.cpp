@@ -44,7 +44,7 @@ void NavDialog::NavView::init(HDC hDC)
 	m_hViewDC	= ::CreateCompatibleDC(hDC);
 	m_hSelDC	= ::CreateCompatibleDC(hDC);
 
-	m_lines	= ::SendMessage(m_hView, SCI_GETLINECOUNT, 0, 0);
+	m_lines	= CallScintilla(m_view, SCI_GETLINECOUNT, 0, 0);
 
 	m_hViewBMP	= ::CreateCompatibleBitmap(hDC, 1, m_lines);
 	m_hSelBMP	= ::CreateCompatibleBitmap(hDC, 1, 1);
@@ -107,10 +107,10 @@ void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int heigh
 	// Fill view
 	::StretchBlt(hDC, r.left + 1, r.top + 1, width, height, m_hViewDC, 0, hOffset, 1, height / hScale, SRCCOPY);
 
-	int firstVisible	= ::SendMessage(m_hView, SCI_DOCLINEFROMVISIBLE, m_firstVisible, 0);
-	int lastVisible		= m_firstVisible + ::SendMessage(m_hView, SCI_LINESONSCREEN, 0, 0);
+	int firstVisible	= CallScintilla(m_view, SCI_DOCLINEFROMVISIBLE, m_firstVisible, 0);
+	int lastVisible		= m_firstVisible + CallScintilla(m_view, SCI_LINESONSCREEN, 0, 0);
 
-	lastVisible = ::SendMessage(m_hView, SCI_DOCLINEFROMVISIBLE, lastVisible, 0);
+	lastVisible = CallScintilla(m_view, SCI_DOCLINEFROMVISIBLE, lastVisible, 0);
 
 	if (firstVisible == lastVisible)
 		++lastVisible;
@@ -186,8 +186,8 @@ void NavDialog::init(HINSTANCE hInst)
 
 	DockingDlgInterface::init(hInst, nppData._nppHandle);
 
-	m_view[0].m_hView = nppData._scintillaMainHandle;
-	m_view[1].m_hView = nppData._scintillaSecondHandle;
+	m_view[0].m_view = MAIN_VIEW;
+	m_view[1].m_view = SUB_VIEW;
 }
 
 
@@ -216,8 +216,8 @@ void NavDialog::Update()
 		return;
 
 	// Bitmap needs to be recreated
-	if ((m_view[0].m_lines != ::SendMessage(m_view[0].m_hView, SCI_GETLINECOUNT, 0, 0)) ||
-		(m_view[1].m_lines != ::SendMessage(m_view[1].m_hView, SCI_GETLINECOUNT, 0, 0)))
+	if ((m_view[0].m_lines != CallScintilla(m_view[0].m_view, SCI_GETLINECOUNT, 0, 0)) ||
+		(m_view[1].m_lines != CallScintilla(m_view[1].m_view, SCI_GETLINECOUNT, 0, 0)))
 	{
 		Show();
 	}
@@ -313,7 +313,7 @@ void NavDialog::createBitmap()
 
 		for (int i = 0; i < m_view[0].m_lines; ++i)
 		{
-			int marker = ::SendMessage(m_view[0].m_hView, SCI_MARKERGET, i, 0);
+			int marker = CallScintilla(m_view[0].m_view, SCI_MARKERGET, i, 0);
 			if (!marker && !reductionRatio)
 				continue;
 
@@ -352,7 +352,7 @@ void NavDialog::createBitmap()
 
 		for (int i = 0; i < m_view[1].m_lines; ++i)
 		{
-			int marker = ::SendMessage(m_view[1].m_hView, SCI_MARKERGET, i, 0);
+			int marker = CallScintilla(m_view[1].m_view, SCI_MARKERGET, i, 0);
 			if (!marker && !reductionRatio)
 				continue;
 
@@ -420,11 +420,11 @@ void NavDialog::showScroller(RECT& r)
 
 void NavDialog::setScalingFactor()
 {
-	m_view[0].m_lines = ::SendMessage(m_view[0].m_hView, SCI_GETLINECOUNT, 0, 0);
-	m_view[1].m_lines = ::SendMessage(m_view[1].m_hView, SCI_GETLINECOUNT, 0, 0);
+	m_view[0].m_lines = CallScintilla(m_view[0].m_view, SCI_GETLINECOUNT, 0, 0);
+	m_view[1].m_lines = CallScintilla(m_view[1].m_view, SCI_GETLINECOUNT, 0, 0);
 
-	m_view[0].m_firstVisible = ::SendMessage(m_view[0].m_hView, SCI_GETFIRSTVISIBLELINE, 0, 0);
-	m_view[1].m_firstVisible = ::SendMessage(m_view[1].m_hView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	m_view[0].m_firstVisible = CallScintilla(m_view[0].m_view, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	m_view[1].m_firstVisible = CallScintilla(m_view[1].m_view, SCI_GETFIRSTVISIBLELINE, 0, 0);
 
 	m_maxBmpLines = _MAX(m_view[0].maxBmpLines(), m_view[1].maxBmpLines());
 	m_syncView = (m_maxBmpLines == m_view[0].maxBmpLines()) ? &m_view[0] : &m_view[1];
@@ -485,18 +485,18 @@ void NavDialog::setPos(int x, int y)
 		currentView = &m_view[1];
 	}
 
-	::SetFocus(currentView->m_hView);
+	::SetFocus(getView(currentView->m_view));
 
 	const int currentLine = currentView->bmpToDocLine((y + scrollOffset) / m_pixelsPerLine);
 
-	centerAt(currentView->m_hView, currentLine);
+	centerAt(currentView->m_view, currentLine);
 }
 
 
 void NavDialog::onMouseWheel(int rolls)
 {
-	const int linesOnScreen	= ::SendMessage(m_syncView->m_hView, SCI_LINESONSCREEN, 0, 0);
-	const int lastVisible	= ::SendMessage(m_syncView->m_hView, SCI_VISIBLEFROMDOCLINE, m_syncView->m_lines, 0);
+	const int linesOnScreen	= CallScintilla(m_syncView->m_view, SCI_LINESONSCREEN, 0, 0);
+	const int lastVisible	= CallScintilla(m_syncView->m_view, SCI_VISIBLEFROMDOCLINE, m_syncView->m_lines, 0);
 
 	int firstVisible = m_syncView->m_firstVisible - rolls * linesOnScreen;
 
@@ -505,7 +505,7 @@ void NavDialog::onMouseWheel(int rolls)
 	else if (firstVisible > lastVisible - linesOnScreen)
 		firstVisible = lastVisible - linesOnScreen;
 
-	::SendMessage(m_syncView->m_hView, SCI_SETFIRSTVISIBLELINE, firstVisible, 0);
+	CallScintilla(m_syncView->m_view, SCI_SETFIRSTVISIBLELINE, firstVisible, 0);
 }
 
 
@@ -514,10 +514,10 @@ int NavDialog::updateScroll()
 	if (m_hScroll && ::IsWindowVisible(m_hScroll))
 	{
 		const int firstVisible =
-				::SendMessage(m_syncView->m_hView, SCI_DOCLINEFROMVISIBLE, m_syncView->m_firstVisible, 0);
-		int lastVisible	= m_syncView->m_firstVisible + ::SendMessage(m_syncView->m_hView, SCI_LINESONSCREEN, 0, 0);
+				CallScintilla(m_syncView->m_view, SCI_DOCLINEFROMVISIBLE, m_syncView->m_firstVisible, 0);
+		int lastVisible	= m_syncView->m_firstVisible + CallScintilla(m_syncView->m_view, SCI_LINESONSCREEN, 0, 0);
 
-		lastVisible = ::SendMessage(m_syncView->m_hView, SCI_DOCLINEFROMVISIBLE, lastVisible, 0);
+		lastVisible = CallScintilla(m_syncView->m_view, SCI_DOCLINEFROMVISIBLE, lastVisible, 0);
 
 		int currentScroll = ::GetScrollPos(m_hScroll, SB_CTL);
 
@@ -682,7 +682,7 @@ INT_PTR CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lPar
 					(pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_DOCK))
 			{
 				setScalingFactor();
-				::SetFocus(m_syncView->m_hView);
+				::SetFocus(getView(m_syncView->m_view));
 			}
 		}
 		break;

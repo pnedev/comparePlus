@@ -153,7 +153,7 @@ bool GetSvnFile(const TCHAR* fullFilePath, TCHAR* svnFile, unsigned svnFileSize)
 			if (!InitSQLite())
 			{
 				::MessageBox(nppData._nppHandle, TEXT("Failed to initialize SQLite - operation aborted."),
-						TEXT("Compare Plugin"), MB_OK);
+						PLUGIN_NAME, MB_OK);
 				return false;
 			}
 
@@ -222,7 +222,7 @@ bool GetSvnFile(const TCHAR* fullFilePath, TCHAR* svnFile, unsigned svnFileSize)
 	}
 
 	if (!ret)
-		::MessageBox(nppData._nppHandle, TEXT("No SVN data found."), TEXT("Compare Plugin"), MB_OK);
+		::MessageBox(nppData._nppHandle, TEXT("No SVN data found."), PLUGIN_NAME, MB_OK);
 
 	return ret;
 }
@@ -236,7 +236,7 @@ std::vector<char> GetGitFileContent(const TCHAR* fullFilePath)
 	if (!gitLib)
 	{
 		::MessageBox(nppData._nppHandle, TEXT("Failed to initialize LibGit2 - operation aborted."),
-				TEXT("Compare Plugin"), MB_OK);
+				PLUGIN_NAME, MB_OK);
 		return gitFileContent;
 	}
 
@@ -296,7 +296,7 @@ std::vector<char> GetGitFileContent(const TCHAR* fullFilePath)
 	}
 
 	if (gitFileContent.empty())
-		::MessageBox(nppData._nppHandle, TEXT("No Git data found."), TEXT("Compare Plugin"), MB_OK);
+		::MessageBox(nppData._nppHandle, TEXT("No Git data found."), PLUGIN_NAME, MB_OK);
 
 	return gitFileContent;
 }

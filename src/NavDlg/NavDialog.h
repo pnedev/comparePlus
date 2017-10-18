@@ -65,7 +65,7 @@ private:
 	 */
 	struct NavView
 	{
-		NavView() : m_hView(NULL), m_hViewDC(NULL), m_hSelDC(NULL), m_hViewBMP(NULL), m_hSelBMP(NULL) {}
+		NavView() : m_view(0), m_hViewDC(NULL), m_hSelDC(NULL), m_hViewBMP(NULL), m_hSelBMP(NULL) {}
 
 		~NavView()
 		{
@@ -78,7 +78,7 @@ private:
 
 		void updateFirstVisible()
 		{
-			m_firstVisible = ::SendMessage(m_hView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+			m_firstVisible = CallScintilla(m_view, SCI_GETFIRSTVISIBLELINE, 0, 0);
 		}
 
 
@@ -95,7 +95,7 @@ private:
 
 		int docToBmpLine(int docLine);
 
-		HWND	m_hView;
+		int		m_view;
 
 		HDC		m_hViewDC;
 		HDC		m_hSelDC;
