@@ -171,13 +171,13 @@ charType getCharType(char letter)
 }
 
 
-std::vector<std::vector<Word>> getWords(int line_offset, int line_count, int view, const UserSettings& settings)
+std::vector<std::vector<Word>> getWords(int lineOffset, int lineCount, int view, const UserSettings& settings)
 {
-	std::vector<std::vector<Word>> words(line_count);
+	std::vector<std::vector<Word>> words(lineCount);
 
-	for (int lineNum = 0; lineNum < line_count; ++lineNum)
+	for (int lineNum = 0; lineNum < lineCount; ++lineNum)
 	{
-		const int docLineNum = lineNum + line_offset;
+		const int docLineNum = lineNum + lineOffset;
 		const int docLineStart = CallScintilla(view, SCI_POSITIONFROMLINE, docLineNum, 0);
 		const int docLineEnd = CallScintilla(view, SCI_GETLINEENDPOSITION, docLineNum, 0);
 
@@ -306,7 +306,8 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 
 		for (int line2 = 0; line2 < linesCount2; ++line2)
 		{
-			if (blockDiff2.isMoved(line2) || chunk2[line2].empty())
+			if (blockDiff2.isMoved(line2) || chunk2[line2].empty() ||
+				((chunk1[line1].size() / chunk2[line2].size()) > 1))
 				continue;
 
 			const std::vector<Word>* pLine1 = &chunk1[line1];
