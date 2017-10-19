@@ -111,7 +111,7 @@ void ViewLocation::save(LRESULT buffId)
 {
 	_buffId = buffId;
 
-	int view = viewIdFromBuffId(_buffId);
+	const int view = viewIdFromBuffId(_buffId);
 
 	_pos		= CallScintilla(view, SCI_GETCURRENTPOS, 0, 0);
 	_selStart	= CallScintilla(view, SCI_GETSELECTIONSTART, 0, 0);
@@ -128,17 +128,17 @@ void ViewLocation::restore()
 {
 	activateBufferID(_buffId);
 
-	int view = viewIdFromBuffId(_buffId);
+	const int view = viewIdFromBuffId(_buffId);
 
-	const int line = CallScintilla(view, SCI_LINEFROMPOSITION, _pos, 0);
+	const int caretLine = CallScintilla(view, SCI_LINEFROMPOSITION, _pos, 0);
+	const int firstVisibleLine = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, caretLine, 0) - _visibleLineOffset;
 
-	CallScintilla(view, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
+	CallScintilla(view, SCI_ENSUREVISIBLEENFORCEPOLICY, caretLine, 0);
 	CallScintilla(view, SCI_SETSEL, _selStart, _selEnd);
-	CallScintilla(view, SCI_SETFIRSTVISIBLELINE,
-			CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - _visibleLineOffset, 0);
+	CallScintilla(view, SCI_SETFIRSTVISIBLELINE, firstVisibleLine, 0);
 
-	LOGDB(_buffId, "Restore view location, doc line: " + std::to_string(line) +
-			", first visible line offset: " + std::to_string(_visibleLineOffset) + "\n");
+	LOGDB(_buffId, "Restore view location, caret doc line: " + std::to_string(caretLine) + ", visible doc line: " +
+			std::to_string(CallScintilla(view, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0)) + "\n");
 }
 
 
@@ -318,8 +318,8 @@ void clearChangedIndicator(int view, int start, int length)
 
 void jumpToFirstChange()
 {
-	int currentView	= getCurrentViewId();
-	int otherView	= getOtherViewId(currentView);
+	const int currentView	= getCurrentViewId();
+	const int otherView		= getOtherViewId(currentView);
 
 	int nextLine = CallScintilla(currentView, SCI_MARKERNEXT, 0, MARKER_MASK_LINE);
 	const int otherLine = CallScintilla(otherView, SCI_MARKERNEXT, 0, MARKER_MASK_LINE);
@@ -345,8 +345,8 @@ void jumpToFirstChange()
 
 void jumpToLastChange()
 {
-	int currentView = getCurrentViewId();
-	int otherView = getOtherViewId(currentView);
+	const int currentView	= getCurrentViewId();
+	const int otherView		= getOtherViewId(currentView);
 
 	const int lineCount = CallScintilla(currentView, SCI_GETLINECOUNT, 0, 0);
 	int nextLine = CallScintilla(currentView, SCI_MARKERPREVIOUS, lineCount, MARKER_MASK_LINE);
@@ -375,8 +375,8 @@ void jumpToLastChange()
 
 void jumpToNextChange(bool down, bool wrapAround)
 {
-	int currentView = getCurrentViewId();
-	int otherView = getOtherViewId(currentView);
+	const int currentView	= getCurrentViewId();
+	const int otherView		= getOtherViewId(currentView);
 
 	const int sci_next_marker = down ? SCI_MARKERNEXT : SCI_MARKERPREVIOUS;
 

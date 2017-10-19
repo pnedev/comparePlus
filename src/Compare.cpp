@@ -156,7 +156,7 @@ void DeletedSectionsList::push(int currAction, int startLine, int endLine)
 
 	DeletedSection delSection(currAction, startLine, endLine - startLine + 1);
 
-	int currentView = getCurrentViewId();
+	const int currentView = getCurrentViewId();
 
 	const int startPos = CallScintilla(currentView, SCI_POSITIONFROMLINE, startLine, 0);
 	clearChangedIndicator(currentView,
@@ -200,7 +200,7 @@ void DeletedSectionsList::pop(int currAction, int startLine)
 	if (last.startLine != startLine)
 		return;
 
-	int currentView = getCurrentViewId();
+	const int currentView = getCurrentViewId();
 
 	const int linesCount = static_cast<int>(last.markers.size());
 
@@ -776,7 +776,7 @@ void ComparedFile::onBeforeClose() const
 {
 	activateBufferID(buffId);
 
-	int view = getCurrentViewId();
+	const int view = getCurrentViewId();
 	clearWindow(view);
 
 	if (isTemp)
@@ -1079,6 +1079,39 @@ void resetCompareView(int view)
 }
 
 
+bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
+{
+	const AlignmentViewData AlignmentPair::*pView = (view == MAIN_VIEW) ? &AlignmentPair::main : &AlignmentPair::sub;
+
+	int firstLine = CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	int lastLine = firstLine + CallScintilla(view, SCI_LINESONSCREEN, 0, 0);
+
+	firstLine = CallScintilla(view, SCI_DOCLINEFROMVISIBLE, firstLine, 0);
+	lastLine = CallScintilla(view, SCI_DOCLINEFROMVISIBLE, lastLine, 0);
+
+	bool realign = false;
+
+	for (const auto& alignment : alignmentInfo)
+	{
+		if ((alignment.*pView).line >= firstLine)
+		{
+			if ((alignment.main.diffMask == alignment.sub.diffMask) &&
+				(CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignment.main.line, 0) !=
+				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignment.sub.line, 0)))
+			{
+				realign = true;
+				break;
+			}
+		}
+
+		if ((alignment.*pView).line > lastLine)
+			break;
+	}
+
+	return realign;
+}
+
+
 void alignDiffs(const AlignmentInfo_t& alignmentInfo)
 {
 	CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
@@ -1221,7 +1254,7 @@ bool setFirst(bool currFileIsNew, bool markName = false)
 
 void setContent(const char* content)
 {
-	int view = getCurrentViewId();
+	const int view = getCurrentViewId();
 
 	ScopedViewUndoCollectionBlocker undoBlock(view);
 	ScopedViewWriteEnabler writeEn(view);
@@ -1527,7 +1560,7 @@ void compare(bool selectionCompare = false)
 				goToFirst = true;
 			}
 
-			LOGD("Compare ready\n");
+			LOGD("COMPARE READY\n");
 		}
 		return;
 
@@ -1806,7 +1839,7 @@ void OpenAboutDlg()
 		activateBufferID(dLogBuf);
 	}
 
-	int view = getCurrentViewId();
+	const int view = getCurrentViewId();
 
 	CallScintilla(view, SCI_APPENDTEXT, dLog.size(), (LPARAM)dLog.c_str());
 	CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
@@ -1990,17 +2023,18 @@ void deinitPlugin()
 
 void syncViews(int biasView)
 {
-	int otherView = getOtherViewId(biasView);
+	const int otherView = getOtherViewId(biasView);
 
-	const int firstVisibleLine1 = CallScintilla(biasView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	const int firstVisibleLine = CallScintilla(biasView, SCI_GETFIRSTVISIBLELINE, 0, 0);
 
-	if (firstVisibleLine1 != CallScintilla(otherView, SCI_GETFIRSTVISIBLELINE, 0, 0))
+	if (firstVisibleLine != CallScintilla(otherView, SCI_GETFIRSTVISIBLELINE, 0, 0))
 	{
-		LOGD("Syncing views - bias " + std::string(biasView == MAIN_VIEW ? "MAIN" : "SUB") + "\n");
+		LOGD("Syncing views - bias " + std::string(biasView == MAIN_VIEW ? "MAIN" : "SUB") + ", visible doc line: " +
+				std::to_string(CallScintilla(biasView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0)) + "\n");
 
 		ScopedIncrementer incr(notificationsLock);
 
-		CallScintilla(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine1, 0);
+		CallScintilla(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine, 0);
 	}
 
 	NavDlg.Update();
@@ -2106,32 +2140,14 @@ void DelayedAlign::operator()()
 	if (alignmentInfo.empty())
 		return;
 
-	int mainFirstLine = CallScintilla(MAIN_VIEW, SCI_GETFIRSTVISIBLELINE, 0, 0);
-	int mainLastLine = mainFirstLine + CallScintilla(MAIN_VIEW, SCI_LINESONSCREEN, 0, 0);
-
-	mainFirstLine = CallScintilla(MAIN_VIEW, SCI_DOCLINEFROMVISIBLE, mainFirstLine, 0);
-	mainLastLine = CallScintilla(MAIN_VIEW, SCI_DOCLINEFROMVISIBLE, mainLastLine, 0);
-
 	bool realign = goToFirst;
 
 	if (!realign)
 	{
-		for (const auto& alignment : alignmentInfo)
-		{
-			if (alignment.main.line >= mainFirstLine)
-			{
-				if ((alignment.main.diffMask == alignment.sub.diffMask) &&
-					(CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignment.main.line, 0) !=
-					CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignment.sub.line, 0)))
-				{
-					realign = true;
-					break;
-				}
-			}
+		realign = isAlignmentNeeded(MAIN_VIEW, alignmentInfo);
 
-			if (alignment.main.line > mainLastLine)
-				break;
-		}
+		if (!realign)
+			realign = isAlignmentNeeded(SUB_VIEW, alignmentInfo);
 	}
 
 	ScopedIncrementer incr(notificationsLock);
@@ -2190,7 +2206,7 @@ void DelayedUpdate::operator()()
 		return;
 	}
 
-	int changeView = getCurrentViewId();
+	const int changeView = getCurrentViewId();
 
 	const int startLine = CallScintilla(changeView, SCI_LINEFROMPOSITION, changePos, 0);
 
@@ -2202,7 +2218,7 @@ void DelayedUpdate::operator()()
 	// Adjust views re-compare range
 	if (linesAdded || linesDeleted)
 	{
-		int otherView = getOtherViewId();
+		const int otherView = getOtherViewId();
 
 		section_t& changeViewSec = (changeView == MAIN_VIEW) ? mainViewSec : subViewSec;
 		section_t& otherViewSec = (changeView == SUB_VIEW) ? subViewSec : mainViewSec;
@@ -2255,7 +2271,7 @@ void onSciModified(SCNotification* notifyCode)
 
 	if (notifyCode->modificationType & SC_MOD_BEFOREDELETE)
 	{
-		int currentView = getCurrentViewId();
+		const int currentView = getCurrentViewId();
 
 		const int startLine = CallScintilla(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 		const int endLine =
@@ -2272,7 +2288,7 @@ void onSciModified(SCNotification* notifyCode)
 	}
 	else if ((notifyCode->modificationType & SC_MOD_INSERTTEXT) && notifyCode->linesAdded)
 	{
-		int currentView = getCurrentViewId();
+		const int currentView = getCurrentViewId();
 
 		const int startLine = CallScintilla(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 
@@ -2294,7 +2310,7 @@ void onSciModifiedUpdate(SCNotification* notifyCode)
 
 	if (notifyCode->modificationType & SC_MOD_BEFOREDELETE)
 	{
-		int currentView = getCurrentViewId();
+		const int currentView = getCurrentViewId();
 
 		const int startLine = CallScintilla(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 		const int endLine =
