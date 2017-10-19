@@ -1114,9 +1114,6 @@ bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
 
 void alignDiffs(const AlignmentInfo_t& alignmentInfo)
 {
-	CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
-	CallScintilla(SUB_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
-
 	CallScintilla(MAIN_VIEW, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
 	CallScintilla(SUB_VIEW, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
 
@@ -1129,37 +1126,27 @@ void alignDiffs(const AlignmentInfo_t& alignmentInfo)
 	for (int i = 0; i < maxSize &&
 			alignmentInfo[i].main.line <= mainEndLine && alignmentInfo[i].sub.line <= subEndLine; ++i)
 	{
-		int mismatchLen =
+		const int mismatchLen =
 				CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) -
-				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0);
+				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0) +
+				CallScintilla(SUB_VIEW, SCI_ANNOTATIONGETLINES, alignmentInfo[i].sub.line - 1, 0) -
+				CallScintilla(MAIN_VIEW, SCI_ANNOTATIONGETLINES, alignmentInfo[i].main.line - 1, 0);
 
 		if (mismatchLen > 0)
 		{
-			if (i && (alignmentInfo[i].sub.line == alignmentInfo[i - 1].sub.line))
-				mismatchLen += CallScintilla(SUB_VIEW, SCI_ANNOTATIONGETLINES, alignmentInfo[i].sub.line - 1, 0);
+			if ((i + 1 < maxSize) && (alignmentInfo[i].sub.line == alignmentInfo[i + 1].sub.line))
+				continue;
 
 			addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, mismatchLen);
 		}
 		else if (mismatchLen < 0)
 		{
-			if (i && (alignmentInfo[i].main.line == alignmentInfo[i - 1].main.line))
-				mismatchLen -= CallScintilla(MAIN_VIEW, SCI_ANNOTATIONGETLINES, alignmentInfo[i].main.line - 1, 0);
+			if ((i + 1 < maxSize) && (alignmentInfo[i].main.line == alignmentInfo[i + 1].main.line))
+				continue;
 
 			addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, -mismatchLen);
 		}
 	}
-
-	// Align last lines
-	const int mismatchLen =
-			CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, mainEndLine, 0) +
-			CallScintilla(MAIN_VIEW, SCI_WRAPCOUNT, mainEndLine, 0) -
-			CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subEndLine, 0) -
-			CallScintilla(SUB_VIEW, SCI_WRAPCOUNT, subEndLine, 0);
-
-	if (mismatchLen > 0)
-		addBlankSection(SUB_VIEW, subEndLine + 1, mismatchLen);
-	else if (mismatchLen < 0)
-		addBlankSection(MAIN_VIEW, mainEndLine + 1, -mismatchLen);
 }
 
 
