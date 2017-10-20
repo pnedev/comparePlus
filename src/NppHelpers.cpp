@@ -230,6 +230,12 @@ void centerAt(int view, int line)
 
 	CallScintilla(view, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
 	CallScintilla(view, SCI_SETFIRSTVISIBLELINE, firstVisible, 0);
+}
+
+
+void centerCaretAt(int view, int line)
+{
+	centerAt(view, line);
 	CallScintilla(view, SCI_GOTOLINE, line, 0);
 }
 
@@ -318,119 +324,116 @@ void clearChangedIndicator(int view, int start, int length)
 
 void jumpToFirstChange()
 {
-	const int currentView	= getCurrentViewId();
-	const int otherView		= getOtherViewId(currentView);
+	const int subLine	= CallScintilla(SUB_VIEW, SCI_MARKERNEXT, 0, MARKER_MASK_LINE);
+	int line			= CallScintilla(MAIN_VIEW, SCI_MARKERNEXT, 0, MARKER_MASK_LINE);
 
-	int nextLine = CallScintilla(currentView, SCI_MARKERNEXT, 0, MARKER_MASK_LINE);
-	const int otherLine = CallScintilla(otherView, SCI_MARKERNEXT, 0, MARKER_MASK_LINE);
+	int view = MAIN_VIEW;
 
-	if (nextLine < 0)
+	if (line < 0)
 	{
-		if (otherLine < 0)
+		if (subLine < 0)
 			return;
 
-		nextLine = otherViewMatchingLine(otherView, otherLine);
+		view = SUB_VIEW;
+		line = subLine;
 	}
-	else if (otherLine >= 0)
+	else if (subLine >= 0)
 	{
-		int otherVisible = CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0);
-
-		if (otherVisible < CallScintilla(currentView, SCI_VISIBLEFROMDOCLINE, nextLine, 0))
-			nextLine = CallScintilla(currentView, SCI_DOCLINEFROMVISIBLE, otherVisible, 0);
+		if (CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subLine, 0) <
+			CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, line, 0))
+		{
+			view = SUB_VIEW;
+			line = subLine;
+		}
 	}
 
-	centerAt(currentView, nextLine);
+	centerAt(view, line);
 }
 
 
 void jumpToLastChange()
 {
-	const int currentView	= getCurrentViewId();
-	const int otherView		= getOtherViewId(currentView);
+	const int subLine	= CallScintilla(SUB_VIEW, SCI_MARKERPREVIOUS,
+								CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0), MARKER_MASK_LINE);
+	int line			= CallScintilla(MAIN_VIEW, SCI_MARKERPREVIOUS,
+								CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0), MARKER_MASK_LINE);
 
-	const int lineCount = CallScintilla(currentView, SCI_GETLINECOUNT, 0, 0);
-	int nextLine = CallScintilla(currentView, SCI_MARKERPREVIOUS, lineCount, MARKER_MASK_LINE);
+	int view = MAIN_VIEW;
 
-	const int otherLineCount = CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0);
-	const int otherLine = CallScintilla(otherView, SCI_MARKERPREVIOUS, otherLineCount, MARKER_MASK_LINE);
-
-	if (nextLine < 0)
+	if (line < 0)
 	{
-		if (otherLine < 0)
+		if (subLine < 0)
 			return;
 
-		nextLine = otherViewMatchingLine(otherView, otherLine);
+		view = SUB_VIEW;
+		line = subLine;
 	}
-	else if (otherLine >= 0)
+	else if (subLine >= 0)
 	{
-		int otherVisible = CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0);
-
-		if (otherVisible > CallScintilla(currentView, SCI_VISIBLEFROMDOCLINE, nextLine, 0))
-			nextLine = CallScintilla(currentView, SCI_DOCLINEFROMVISIBLE, otherVisible, 0);
+		if (CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subLine, 0) >
+			CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, line, 0))
+		{
+			view = SUB_VIEW;
+			line = subLine;
+		}
 	}
 
-	centerAt(currentView, nextLine);
+	centerAt(view, line);
 }
 
 
 void jumpToNextChange(bool down, bool wrapAround)
 {
-	const int currentView	= getCurrentViewId();
-	const int otherView		= getOtherViewId(currentView);
+	const int sci_next_marker	= down ? SCI_MARKERNEXT : SCI_MARKERPREVIOUS;
+	const int startingLine		= down ? getLastLine(MAIN_VIEW) + 1 : getFirstLine(MAIN_VIEW) - 1;
 
-	const int sci_next_marker = down ? SCI_MARKERNEXT : SCI_MARKERPREVIOUS;
+	int view = MAIN_VIEW;
+	int line = startingLine;
+	int subLine;
 
-	const int startingLine = getCurrentLine(currentView);
-
-	int nextLine = startingLine;
-	int otherLine;
-
-	int lineCount = CallScintilla(currentView, SCI_GETLINECOUNT, 0, 0);
+	int lineCount = CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0);
 
 	if (down)
-		for (; (CallScintilla(currentView, SCI_MARKERGET, nextLine, 0) & MARKER_MASK_LINE) &&
-				(nextLine < lineCount); ++nextLine);
+		for (; (CallScintilla(MAIN_VIEW, SCI_MARKERGET, line, 0) & MARKER_MASK_LINE) && (line < lineCount); ++line);
 	else
-		for (; (CallScintilla(currentView, SCI_MARKERGET, nextLine, 0) & MARKER_MASK_LINE) &&
-				(nextLine > -1); --nextLine);
+		for (; (CallScintilla(MAIN_VIEW, SCI_MARKERGET, line, 0) & MARKER_MASK_LINE) && (line > -1); --line);
 
-	if (nextLine > -1 && nextLine < lineCount)
+	if (line > -1 && line < lineCount)
 	{
-		otherLine = CallScintilla(otherView, sci_next_marker, otherViewMatchingLine(currentView, nextLine),
-				MARKER_MASK_LINE);
-		nextLine = CallScintilla(currentView, sci_next_marker, nextLine, MARKER_MASK_LINE);
+		subLine	= CallScintilla(SUB_VIEW, sci_next_marker, otherViewMatchingLine(MAIN_VIEW, line), MARKER_MASK_LINE);
+		line	= CallScintilla(MAIN_VIEW, sci_next_marker, line, MARKER_MASK_LINE);
 	}
 	else
 	{
-		nextLine = -1;
-		otherLine = -1;
+		line = -1;
+		subLine = -1;
 	}
 
-	int matchingLine = (otherLine >= 0) ? otherViewMatchingLine(otherView, otherLine) : -1;
+	int matchingLine = (subLine >= 0) ? otherViewMatchingLine(SUB_VIEW, subLine) : -1;
 
 	if (down && matchingLine == startingLine)
 	{
-		lineCount = CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0);
+		lineCount = CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0);
 
-		for (; (CallScintilla(otherView, SCI_MARKERGET, otherLine, 0) & MARKER_MASK_LINE) &&
-				(otherLine < lineCount); ++otherLine);
+		for (; (CallScintilla(SUB_VIEW, SCI_MARKERGET, subLine, 0) & MARKER_MASK_LINE) &&
+				(subLine < lineCount); ++subLine);
 
-		if (otherLine < lineCount)
-			otherLine = CallScintilla(otherView, sci_next_marker, otherLine, MARKER_MASK_LINE);
+		if (subLine < lineCount)
+			subLine = CallScintilla(SUB_VIEW, sci_next_marker, subLine, MARKER_MASK_LINE);
 		else
-			otherLine = -1;
+			subLine = -1;
 
-		if (otherLine >= 0)
-			matchingLine = otherViewMatchingLine(otherView, otherLine);
+		if (subLine >= 0)
+			matchingLine = otherViewMatchingLine(SUB_VIEW, subLine);
 		else
 			matchingLine = -1;
 	}
 
-	if (nextLine < 0)
+	if (line < 0)
 	{
-		nextLine = matchingLine;
+		line = matchingLine;
 
-		if (nextLine < 0)
+		if (line < 0)
 		{
 			if (wrapAround)
 			{
@@ -453,21 +456,21 @@ void jumpToNextChange(bool down, bool wrapAround)
 	}
 	else if (matchingLine >= 0)
 	{
-		const int otherVisible = CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0);
+		const int subVisible = CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subLine, 0);
 
 		if (down)
 		{
-			if (otherVisible < CallScintilla(currentView, SCI_VISIBLEFROMDOCLINE, nextLine, 0))
-				nextLine = matchingLine;
+			if (subVisible < CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, line, 0))
+				line = matchingLine;
 		}
 		else
 		{
-			if (otherVisible > CallScintilla(currentView, SCI_VISIBLEFROMDOCLINE, nextLine, 0))
-				nextLine = matchingLine;
+			if (subVisible > CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, line, 0))
+				line = matchingLine;
 		}
 	}
 
-	centerAt(currentView, nextLine);
+	centerAt(view, line);
 }
 
 

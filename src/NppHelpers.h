@@ -299,6 +299,19 @@ inline int getCurrentLine(int view)
 }
 
 
+inline int getFirstLine(int view)
+{
+	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE, CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0), 0);
+}
+
+
+inline int getLastLine(int view)
+{
+	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE,
+			CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0) + CallScintilla(view, SCI_LINESONSCREEN, 0, 0) - 1, 0);
+}
+
+
 inline int otherViewMatchingLine(int view, int line)
 {
 	return CallScintilla(getOtherViewId(view), SCI_DOCLINEFROMVISIBLE,
@@ -336,6 +349,7 @@ void activateBufferID(LRESULT buffId);
 std::pair<int, int> getSelectionLines(int view);
 
 void centerAt(int view, int line);
+void centerCaretAt(int view, int line);
 
 void markTextAsChanged(int view, int start, int length);
 void clearChangedIndicator(int view, int start, int length);
