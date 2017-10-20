@@ -286,12 +286,14 @@ public:
 	ComparedFile	file[2];
 	int				relativePos;
 
+	bool			wrapModeOn;
+
 	bool			isFullCompare;
 	bool			spacesIgnored;
 	bool			caseIgnored;
 	bool			movesDetected;
 
-	std::pair<std::pair<int, int>, std::pair<int, int>>	selections;
+	std::pair<int, int>	selections[2];
 
 	AlignmentInfo_t	alignmentInfo;
 };
@@ -969,8 +971,8 @@ void ComparedPair::setStatus()
 		_tcscpy_s(cmpType, _countof(cmpType), TEXT("Full"));
 	else
 		_sntprintf_s(cmpType, _countof(cmpType), _TRUNCATE, TEXT("Sel: %d-%d vs. %d-%d"),
-				selections.first.first + 1, selections.first.second + 1,
-				selections.second.first + 1, selections.second.second + 1);
+				selections[MAIN_VIEW].first + 1, selections[MAIN_VIEW].second + 1,
+				selections[SUB_VIEW].first + 1, selections[SUB_VIEW].second + 1);
 
 	TCHAR msg[512];
 
@@ -1436,14 +1438,14 @@ CompareResult runCompare(CompareList_t::iterator cmpPair, bool selectionCompare)
 
 	if (selectionCompare)
 	{
-		cmpPair->selections.first	= getSelectionLines(MAIN_VIEW);
-		cmpPair->selections.second	= getSelectionLines(SUB_VIEW);
+		cmpPair->selections[MAIN_VIEW]	= getSelectionLines(MAIN_VIEW);
+		cmpPair->selections[SUB_VIEW]	= getSelectionLines(SUB_VIEW);
 
-		mainViewSection.off = cmpPair->selections.first.first;
-		mainViewSection.len = cmpPair->selections.first.second - cmpPair->selections.first.first + 1;
+		mainViewSection.off = cmpPair->selections[MAIN_VIEW].first;
+		mainViewSection.len = cmpPair->selections[MAIN_VIEW].second - cmpPair->selections[MAIN_VIEW].first + 1;
 
-		subViewSection.off = cmpPair->selections.second.first;
-		subViewSection.len = cmpPair->selections.second.second - cmpPair->selections.second.first + 1;
+		subViewSection.off = cmpPair->selections[SUB_VIEW].first;
+		subViewSection.len = cmpPair->selections[SUB_VIEW].second - cmpPair->selections[SUB_VIEW].first + 1;
 	}
 
 	setStyles(Settings);
@@ -1522,6 +1524,8 @@ void compare(bool selectionCompare = false)
 	{
 		case CompareResult::COMPARE_MISMATCH:
 		{
+			cmpPair->wrapModeOn		= getWrapMode();
+
 			cmpPair->isFullCompare	= !selectionCompare;
 			cmpPair->spacesIgnored	= Settings.IgnoreSpaces;
 			cmpPair->caseIgnored	= Settings.IgnoreCase;
@@ -2146,6 +2150,19 @@ void DelayedAlign::operator()()
 		if (!storedLocation && !goToFirst)
 			storedLocation.reset(new ViewLocation(currentBuffId));
 
+		const bool currentWrap = getWrapMode();
+
+		// Notepad++ WordWrap has changed - complete realignment needed
+		if (cmpPair->wrapModeOn != currentWrap)
+		{
+			LOGD("Wrap mode change - complete realign needed\n");
+
+			CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
+			CallScintilla(SUB_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
+
+			cmpPair->wrapModeOn = currentWrap;
+		}
+
 		alignDiffs(alignmentInfo);
 	}
 
@@ -2743,6 +2760,9 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT msg, WPARAM wParam, LP
 		if ((wParam == SIZE_MINIMIZED) && !notificationsLock)
 		{
 			LOGD("Notepad++ minimized\n");
+
+			// On rare occasions Alignment is posted (Sci paint event is received) before minimize event is received
+			delayedAlignment.cancel();
 
 			++notificationsLock;
 		}

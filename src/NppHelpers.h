@@ -188,6 +188,14 @@ inline bool isFileEmpty(int view)
 }
 
 
+inline bool getWrapMode()
+{
+	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
+
+	return (::GetMenuState(hMenu, IDM_VIEW_WRAP, MF_BYCOMMAND) & MF_CHECKED) != 0;
+}
+
+
 inline int getNumberOfFiles()
 {
 	return ((::IsWindowVisible(nppData._scintillaMainHandle) ?

@@ -557,11 +557,6 @@ bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
 			return false;
 	}
 
-	pMainAlignData->diffMask	= 0;
-	pSubAlignData->diffMask		= 0;
-
-	alignmentInfo.push_back(alignPair);
-
 	if (progress && !progress->NextPhase())
 		return false;
 
