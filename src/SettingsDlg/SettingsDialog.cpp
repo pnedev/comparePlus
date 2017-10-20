@@ -86,7 +86,6 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					settings.DetectMovesLineMode	= (bool) DEFAULT_DETECT_MOVE_LINE_MODE;
 					settings.EncodingsCheck			= (bool) DEFAULT_ENCODINGS_CHECK;
 					settings.PromptToCloseOnMatch	= (bool) DEFAULT_PROMPT_CLOSE_ON_MATCH;
-					settings.AlignReplacements		= (bool) DEFAULT_ALIGN_REPLACEMENTS;
 					settings.WrapAround				= (bool) DEFAULT_WRAP_AROUND;
 					settings.RecompareOnSave		= (bool) DEFAULT_RECOMPARE_ON_SAVE;
 					settings.GotoFirstDiff			= (bool) DEFAULT_GOTO_FIRST_DIFF;
@@ -157,8 +156,6 @@ void SettingsDialog::SetParams(UserSettings* settings)
 			settings->EncodingsCheck ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_PROMPT_CLOSE_ON_MATCH),
 			settings->PromptToCloseOnMatch ? BST_CHECKED : BST_UNCHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ALIGN_REPLACEMENTS),
-			settings->AlignReplacements ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_WRAP_AROUND),
 			settings->WrapAround ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_RECOMPARE_ON_SAVE),
@@ -189,7 +186,6 @@ void SettingsDialog::GetParams()
 	_Settings->DetectMovesLineMode	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_MOVE_LINE_BASED)) == BST_CHECKED);
 	_Settings->EncodingsCheck		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_ENCODING_CHECK)) == BST_CHECKED);
 	_Settings->PromptToCloseOnMatch	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_PROMPT_CLOSE_ON_MATCH)) == BST_CHECKED);
-	_Settings->AlignReplacements	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ALIGN_REPLACEMENTS)) == BST_CHECKED);
 	_Settings->WrapAround			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_WRAP_AROUND)) == BST_CHECKED);
 	_Settings->RecompareOnSave		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_RECOMPARE_ON_SAVE)) == BST_CHECKED);
 	_Settings->GotoFirstDiff		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_GOTO_FIRST_DIFF)) == BST_CHECKED);

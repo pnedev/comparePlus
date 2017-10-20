@@ -31,7 +31,6 @@ const TCHAR UserSettings::detectMovesLineModeSetting[]	= TEXT("Detect Moves Line
 
 const TCHAR UserSettings::encodingsCheckSetting[]		= TEXT("Check Encodings");
 const TCHAR UserSettings::promptCloseOnMatchSetting[]	= TEXT("Prompt to Close on Match");
-const TCHAR UserSettings::alignReplacementsSetting[]	= TEXT("Align Replacements");
 const TCHAR UserSettings::wrapAroundSetting[]			= TEXT("Wrap Around");
 const TCHAR UserSettings::reCompareOnSaveSetting[]		= TEXT("Re-Compare on Save");
 const TCHAR UserSettings::gotoFirstDiffSetting[]		= TEXT("Go to First Diff");
@@ -72,8 +71,6 @@ void UserSettings::load()
 			DEFAULT_ENCODINGS_CHECK, iniFile) == 1;
 	PromptToCloseOnMatch	= ::GetPrivateProfileInt(mainSection, promptCloseOnMatchSetting,
 			DEFAULT_PROMPT_CLOSE_ON_MATCH, iniFile) == 1;
-	AlignReplacements		= ::GetPrivateProfileInt(mainSection, alignReplacementsSetting,
-			DEFAULT_ALIGN_REPLACEMENTS, iniFile) == 1;
 	WrapAround				= ::GetPrivateProfileInt(mainSection, wrapAroundSetting,
 			DEFAULT_WRAP_AROUND, iniFile) == 1;
 	RecompareOnSave			= ::GetPrivateProfileInt(mainSection, reCompareOnSaveSetting,
@@ -136,8 +133,6 @@ void UserSettings::save()
 			EncodingsCheck ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, promptCloseOnMatchSetting,
 			PromptToCloseOnMatch ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, alignReplacementsSetting,
-			AlignReplacements ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, wrapAroundSetting,
 			WrapAround ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, reCompareOnSaveSetting,

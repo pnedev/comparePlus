@@ -33,7 +33,6 @@
 
 #define DEFAULT_ENCODINGS_CHECK			1
 #define DEFAULT_PROMPT_CLOSE_ON_MATCH	0
-#define DEFAULT_ALIGN_REPLACEMENTS		1
 #define DEFAULT_WRAP_AROUND				0
 #define DEFAULT_RECOMPARE_ON_SAVE		1
 #define DEFAULT_GOTO_FIRST_DIFF			0
@@ -79,7 +78,6 @@ public:
 	static const TCHAR detectMovesLineModeSetting[];
 	static const TCHAR encodingsCheckSetting[];
 	static const TCHAR promptCloseOnMatchSetting[];
-	static const TCHAR alignReplacementsSetting[];
 	static const TCHAR wrapAroundSetting[];
 	static const TCHAR reCompareOnSaveSetting[];
 	static const TCHAR gotoFirstDiffSetting[];
@@ -105,7 +103,6 @@ public:
 	bool           	DetectMovesLineMode;
 	bool           	EncodingsCheck;
 	bool           	PromptToCloseOnMatch;
-	bool           	AlignReplacements;
 	bool           	WrapAround;
 	bool           	RecompareOnSave;
 	bool           	GotoFirstDiff;
