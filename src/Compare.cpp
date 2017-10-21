@@ -286,8 +286,6 @@ public:
 	ComparedFile	file[2];
 	int				relativePos;
 
-	bool			wrapModeOn;
-
 	bool			isFullCompare;
 	bool			spacesIgnored;
 	bool			caseIgnored;
@@ -1128,11 +1126,17 @@ void alignDiffs(const AlignmentInfo_t& alignmentInfo)
 	for (int i = 0; i < maxSize &&
 			alignmentInfo[i].main.line <= mainEndLine && alignmentInfo[i].sub.line <= subEndLine; ++i)
 	{
+		if (alignmentInfo[i].main.line &&
+				CallScintilla(MAIN_VIEW, SCI_ANNOTATIONGETLINES, alignmentInfo[i].main.line - 1, 0))
+			CallScintilla(MAIN_VIEW, SCI_ANNOTATIONSETTEXT, alignmentInfo[i].main.line - 1, (LPARAM)NULL);
+
+		if (alignmentInfo[i].sub.line &&
+				CallScintilla(SUB_VIEW, SCI_ANNOTATIONGETLINES, alignmentInfo[i].sub.line - 1, 0))
+			CallScintilla(SUB_VIEW, SCI_ANNOTATIONSETTEXT, alignmentInfo[i].sub.line - 1, (LPARAM)NULL);
+
 		const int mismatchLen =
 				CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) -
-				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0) +
-				CallScintilla(SUB_VIEW, SCI_ANNOTATIONGETLINES, alignmentInfo[i].sub.line - 1, 0) -
-				CallScintilla(MAIN_VIEW, SCI_ANNOTATIONGETLINES, alignmentInfo[i].main.line - 1, 0);
+				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0);
 
 		if (mismatchLen > 0)
 		{
@@ -1524,8 +1528,6 @@ void compare(bool selectionCompare = false)
 	{
 		case CompareResult::COMPARE_MISMATCH:
 		{
-			cmpPair->wrapModeOn		= getWrapMode();
-
 			cmpPair->isFullCompare	= !selectionCompare;
 			cmpPair->spacesIgnored	= Settings.IgnoreSpaces;
 			cmpPair->caseIgnored	= Settings.IgnoreCase;
@@ -2149,19 +2151,6 @@ void DelayedAlign::operator()()
 
 		if (!storedLocation && !goToFirst)
 			storedLocation.reset(new ViewLocation(currentBuffId));
-
-		const bool currentWrap = getWrapMode();
-
-		// Notepad++ WordWrap has changed - complete realignment needed
-		if (cmpPair->wrapModeOn != currentWrap)
-		{
-			LOGD("Wrap mode change - complete realign needed\n");
-
-			CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
-			CallScintilla(SUB_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
-
-			cmpPair->wrapModeOn = currentWrap;
-		}
 
 		alignDiffs(alignmentInfo);
 	}
