@@ -24,7 +24,6 @@
 #include "UserSettings.h"
 #include "ColorCombo.h"
 
-#include <vector>
 #include <string>
 
 

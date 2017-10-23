@@ -2417,16 +2417,14 @@ void DelayedClose::operator()()
 
 	ScopedIncrementer incr(notificationsLock);
 
-	for (int i = static_cast<int>(closedBuffs.size()); i; --i)
+	for (int i = static_cast<int>(closedBuffs.size()) - 1; i >= 0; --i)
 	{
-		const LRESULT buffId = closedBuffs[i - 1];
-
-		CompareList_t::iterator cmpPair = getCompare(buffId);
+		CompareList_t::iterator cmpPair = getCompare(closedBuffs[i]);
 		if (cmpPair == compareList.end())
 			continue;
 
-		ComparedFile& closedFile = cmpPair->getFileByBuffId(buffId);
-		ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
+		ComparedFile& closedFile = cmpPair->getFileByBuffId(closedBuffs[i]);
+		ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(closedBuffs[i]);
 
 		if (closedFile.isTemp)
 		{
