@@ -280,6 +280,7 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlugin"</Command>
     <ClInclude Include="..\..\src\NppAPI\Window.h" />
     <ClInclude Include="..\..\src\NppAPI\NppInternalDefines.h" />
     <ClInclude Include="..\..\src\Engine\diff.h" />
+    <ClInclude Include="..\..\src\Engine\types.h" />
     <ClInclude Include="..\..\src\Engine\varray.h" />
     <ClInclude Include="..\..\src\LibHelpers.h" />
     <ClInclude Include="..\..\src\SQLite\SqliteHelper.h" />

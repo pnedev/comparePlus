@@ -75,6 +75,9 @@
     <ClInclude Include="..\..\src\Engine\diff.h">
       <Filter>src\Engine</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\Engine\types.h">
+      <Filter>src\Engine</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\Engine\varray.h">
       <Filter>src\Engine</Filter>
     </ClInclude>

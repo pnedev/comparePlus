@@ -23,6 +23,7 @@
 #include <vector>
 #include <utility>
 
+#include "types.h"
 #include "Compare.h"
 #include "NppHelpers.h"
 
@@ -33,13 +34,6 @@ enum class CompareResult
 	COMPARE_CANCELLED,
 	COMPARE_MATCH,
 	COMPARE_MISMATCH
-};
-
-
-struct section_t
-{
-	int off;
-	int len;
 };
 
 

@@ -44,6 +44,7 @@
 #include <utility>
 
 #include "varray.h"
+#include "types.h"
 
 
 enum class diff_type
@@ -68,9 +69,6 @@ enum moved_type
 	MOVED,
 	MOVED_MULTIPLE
 };
-
-
-struct section_t;
 
 
 struct diff_line
