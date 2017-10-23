@@ -1542,13 +1542,19 @@ void compare(bool selectionCompare = false)
 			if (Settings.UseNavBar)
 				showNavBar();
 
-			if (!storedLocation || Settings.GotoFirstDiff || selectionCompare)
+			if (Settings.GotoFirstDiff || selectionCompare)
+				storedLocation.reset();
+
+			if (!storedLocation)
 			{
 				if (!doubleView)
 					activateBufferID(cmpPair->getNewFile().buffId);
 
 				if (selectionCompare)
+				{
+					clearSelection(getCurrentViewId());
 					clearSelection(getOtherViewId());
+				}
 
 				goToFirst = true;
 			}
@@ -2155,7 +2161,17 @@ void DelayedAlign::operator()()
 		alignDiffs(alignmentInfo);
 	}
 
-	if (storedLocation)
+	if (goToFirst)
+	{
+		goToFirst = false;
+
+		jumpToFirstChange();
+
+		syncViews(getCurrentViewId());
+
+		cmpPair->setStatus();
+	}
+	else if (storedLocation)
 	{
 		storedLocation->restore();
 		storedLocation.reset();
@@ -2163,11 +2179,6 @@ void DelayedAlign::operator()()
 		syncViews(getCurrentViewId());
 
 		cmpPair->setStatus();
-	}
-	else if (goToFirst)
-	{
-		goToFirst = false;
-		jumpToFirstChange();
 	}
 }
 
