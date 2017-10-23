@@ -24,8 +24,12 @@ project (Compare)
 if (UNIX OR MINGW)
 	set (defs
 		-DUNICODE -D_UNICODE -DMINGW_HAS_SECURE_API=1 -D_WIN32 -DWIN32
-		-D_WIN32_WINNT=0x0501 -DWIN32_LEAN_AND_MEAN -DNOCOMM -DNDEBUG
+		-D_WIN32_WINNT=0x0501 -DWIN32_LEAN_AND_MEAN -DNOCOMM
 	)
+
+	if (NOT DEBUG)
+		set (defs ${defs} -DNDEBUG)
+	endif ()
 
 	if (DLOG)
 		set (defs ${defs} -DDLOG)
