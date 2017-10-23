@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include <cstdlib>
 #include <cassert>
 
 #include <windows.h>
@@ -130,7 +129,7 @@ extern sptr_t		sciPtr[2];
 
 inline LRESULT CallScintilla(int viewNum, unsigned int uMsg, uptr_t wParam, sptr_t lParam)
 {
-	assert(viewNum >= 0 && viewNum < static_cast<int>(_countof(sciPtr)));
+	assert(viewNum >= 0 && viewNum < 2);
 
 	return sciFunc(sciPtr[viewNum], uMsg, wParam, lParam);
 }
