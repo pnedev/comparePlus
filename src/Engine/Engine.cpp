@@ -55,6 +55,8 @@ struct CompareInfo
 	DocCmpInfo				doc1;
 	DocCmpInfo				doc2;
 
+	bool					selectionCompare;
+
 	// Output data - filled by the compare engine
 	std::vector<diff_info>	diffBlocks;
 };
@@ -557,6 +559,14 @@ bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
 			return false;
 	}
 
+	if (cmpInfo.selectionCompare)
+	{
+		pMainAlignData->diffMask	= 0;
+		pSubAlignData->diffMask		= 0;
+
+		alignmentInfo.push_back(alignPair);
+	}
+
 	if (progress && !progress->NextPhase())
 		return false;
 
@@ -571,10 +581,12 @@ CompareResult runCompare(const section_t& mainViewSection, const section_t& subV
 
 	CompareInfo cmpInfo;
 
-	cmpInfo.doc1.view		= MAIN_VIEW;
-	cmpInfo.doc1.section	= mainViewSection;
-	cmpInfo.doc2.view		= SUB_VIEW;
-	cmpInfo.doc2.section	= subViewSection;
+	cmpInfo.doc1.view			= MAIN_VIEW;
+	cmpInfo.doc1.section		= mainViewSection;
+	cmpInfo.doc2.view			= SUB_VIEW;
+	cmpInfo.doc2.section		= subViewSection;
+
+	cmpInfo.selectionCompare	= (cmpInfo.doc1.section.len || cmpInfo.doc2.section.len);
 
 	if (settings.OldFileViewId == MAIN_VIEW)
 	{
