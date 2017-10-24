@@ -90,7 +90,7 @@ private:
 		int bmpToDocLine(int bmpLine)
 		{
 			return (m_lineMap.empty() ? bmpLine :
-				(static_cast<int>(m_lineMap.size()) > bmpLine) ? m_lineMap[bmpLine] : m_lineMap.back());
+				(bmpLine < static_cast<int>(m_lineMap.size())) ? m_lineMap[bmpLine] : m_lineMap.back());
 		}
 
 		int docToBmpLine(int docLine);

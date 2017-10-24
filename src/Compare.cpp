@@ -1533,8 +1533,8 @@ void compare(bool selectionCompare = false)
 			cmpPair->caseIgnored	= Settings.IgnoreCase;
 			cmpPair->movesDetected	= Settings.DetectMoves;
 
-			NppSettings::get().setCompareMode(true);
 			NppSettings::get().toSingleLineTab();
+			NppSettings::get().setCompareMode(true);
 
 			setCompareView(MAIN_VIEW, Settings.colors.blank);
 			setCompareView(SUB_VIEW, Settings.colors.blank);
