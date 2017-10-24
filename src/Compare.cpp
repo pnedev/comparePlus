@@ -77,15 +77,14 @@ public:
 	void save();
 	void setNormalMode(bool forceUpdate = false);
 	void setCompareMode(bool clearHorizontalScroll = false);
-	void toSingleLineTab();
-	void restoreMultilineTab();
 
 	bool	compareMode;
 
 private:
 	NppSettings() : compareMode(false), _restoreMultilineTab(false) {}
 
-	void refreshTabBar(HWND hTabBar);
+	void toSingleLineTab();
+	void restoreMultilineTab();
 	void refreshTabBars();
 
 	bool	_restoreMultilineTab;
@@ -509,9 +508,6 @@ void NppSettings::updatePluginMenu()
 	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ALL]._cmdID,
 			MF_BYCOMMAND | ((compareList.empty() && !newCompare) ? (MF_DISABLED | MF_GRAYED) : MF_ENABLED));
 
-	if (compareList.empty())
-		restoreMultilineTab();
-
 	::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, flag);
@@ -546,6 +542,8 @@ void NppSettings::setNormalMode(bool forceUpdate)
 	{
 		compareMode = false;
 
+		restoreMultilineTab();
+
 		if (NavDlg.isVisible())
 			NavDlg.Hide();
 
@@ -568,6 +566,8 @@ void NppSettings::setNormalMode(bool forceUpdate)
 	}
 	else if (forceUpdate)
 	{
+		restoreMultilineTab();
+
 		updatePluginMenu();
 	}
 }
@@ -581,6 +581,8 @@ void NppSettings::setCompareMode(bool clearHorizontalScroll)
 	compareMode = true;
 
 	save();
+
+	toSingleLineTab();
 
 	if (clearHorizontalScroll)
 	{
@@ -608,33 +610,10 @@ void NppSettings::setCompareMode(bool clearHorizontalScroll)
 }
 
 
-void NppSettings::refreshTabBar(HWND hTabBar)
-{
-	if (::IsWindowVisible(hTabBar) && (TabCtrl_GetItemCount(hTabBar) > 1))
-	{
-		const int currentTabIdx = TabCtrl_GetCurSel(hTabBar);
-
-		TabCtrl_SetCurFocus(hTabBar, (currentTabIdx) ? 0 : 1);
-		TabCtrl_SetCurFocus(hTabBar, currentTabIdx);
-	}
-}
-
-
 void NppSettings::refreshTabBars()
 {
-	HWND currentView = getCurrentView();
-
-	HWND hNppTabBar = NppTabHandleGetter::get(SUB_VIEW);
-
-	if (hNppTabBar)
-		refreshTabBar(hNppTabBar);
-
-	hNppTabBar = NppTabHandleGetter::get(MAIN_VIEW);
-
-	if (hNppTabBar)
-		refreshTabBar(hNppTabBar);
-
-	::SetFocus(currentView);
+	::SendMessage(nppData._nppHandle, NPPM_HIDETABBAR, 0, TRUE);
+	::SendMessage(nppData._nppHandle, NPPM_HIDETABBAR, 0, FALSE);
 }
 
 
@@ -1533,7 +1512,6 @@ void compare(bool selectionCompare = false)
 			cmpPair->caseIgnored	= Settings.IgnoreCase;
 			cmpPair->movesDetected	= Settings.DetectMoves;
 
-			NppSettings::get().toSingleLineTab();
 			NppSettings::get().setCompareMode(true);
 
 			setCompareView(MAIN_VIEW, Settings.colors.blank);
