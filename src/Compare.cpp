@@ -1557,13 +1557,13 @@ void compare(bool selectionCompare = false)
 			cmpPair->caseIgnored	= Settings.IgnoreCase;
 			cmpPair->movesDetected	= Settings.DetectMoves;
 
+			if (Settings.UseNavBar)
+				showNavBar();
+
 			NppSettings::get().setCompareMode(true);
 
 			setCompareView(MAIN_VIEW, Settings.colors.blank);
 			setCompareView(SUB_VIEW, Settings.colors.blank);
-
-			if (Settings.UseNavBar)
-				showNavBar();
 
 			if (Settings.GotoFirstDiff || selectionCompare)
 				storedLocation.reset();
@@ -2067,10 +2067,10 @@ void comparedFileActivated()
 {
 	if (!NppSettings::get().compareMode)
 	{
-		NppSettings::get().setCompareMode();
-
 		if (Settings.UseNavBar && !NavDlg.isVisible())
 			showNavBar();
+
+		NppSettings::get().setCompareMode();
 	}
 
 	setCompareView(MAIN_VIEW, Settings.colors.blank);
