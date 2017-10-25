@@ -85,6 +85,7 @@ private:
 
 	void toSingleLineTab();
 	void restoreMultilineTab();
+	void refreshTabBar(HWND hTabBar);
 	void refreshTabBars();
 
 	bool	_restoreMultilineTab;
@@ -610,10 +611,33 @@ void NppSettings::setCompareMode(bool clearHorizontalScroll)
 }
 
 
+void NppSettings::refreshTabBar(HWND hTabBar)
+{
+	if (::IsWindowVisible(hTabBar) && (TabCtrl_GetItemCount(hTabBar) > 1))
+		{
+		const int currentTabIdx = TabCtrl_GetCurSel(hTabBar);
+
+		TabCtrl_SetCurFocus(hTabBar, (currentTabIdx) ? 0 : 1);
+		TabCtrl_SetCurFocus(hTabBar, currentTabIdx);
+	}
+}
+
+
 void NppSettings::refreshTabBars()
 {
-	::SendMessage(nppData._nppHandle, NPPM_HIDETABBAR, 0, TRUE);
-	::SendMessage(nppData._nppHandle, NPPM_HIDETABBAR, 0, FALSE);
+	HWND currentView = getCurrentView();
+
+	HWND hNppTabBar = NppTabHandleGetter::get(SUB_VIEW);
+
+	if (hNppTabBar)
+		refreshTabBar(hNppTabBar);
+
+	hNppTabBar = NppTabHandleGetter::get(MAIN_VIEW);
+
+	if (hNppTabBar)
+		refreshTabBar(hNppTabBar);
+
+	::SetFocus(currentView);
 }
 
 
@@ -640,6 +664,8 @@ void NppSettings::toSingleLineTab()
 
 				if ((tabStyle & TCS_MULTILINE) && !(tabStyle & TCS_VERTICAL))
 				{
+					::SendMessage(nppData._nppHandle, NPPM_HIDETABBAR, 0, TRUE);
+
 					::SetWindowLongPtr(hNppMainTabBar, GWL_STYLE, tabStyle & ~TCS_MULTILINE);
 					::SendMessage(hNppMainTabBar, WM_TABSETSTYLE, 0, 0);
 
@@ -647,6 +673,9 @@ void NppSettings::toSingleLineTab()
 					::SetWindowLongPtr(hNppSubTabBar, GWL_STYLE, tabStyle & ~TCS_MULTILINE);
 					::SendMessage(hNppSubTabBar, WM_TABSETSTYLE, 0, 0);
 
+					::SendMessage(nppData._nppHandle, NPPM_HIDETABBAR, 0, FALSE);
+
+					// Scroll current tab into view
 					refreshTabBars();
 
 					_restoreMultilineTab = true;
@@ -669,6 +698,9 @@ void NppSettings::restoreMultilineTab()
 		if (hNppMainTabBar && hNppSubTabBar)
 		{
 			LONG_PTR tabStyle = ::GetWindowLongPtr(hNppMainTabBar, GWL_STYLE);
+
+			::SendMessage(nppData._nppHandle, NPPM_HIDETABBAR, 0, TRUE);
+
 			::SetWindowLongPtr(hNppMainTabBar, GWL_STYLE, tabStyle | TCS_MULTILINE);
 			::SendMessage(hNppMainTabBar, WM_TABSETSTYLE, 0, 0);
 
@@ -676,7 +708,7 @@ void NppSettings::restoreMultilineTab()
 			::SetWindowLongPtr(hNppSubTabBar, GWL_STYLE, tabStyle | TCS_MULTILINE);
 			::SendMessage(hNppSubTabBar, WM_TABSETSTYLE, 0, 0);
 
-			refreshTabBars();
+			::SendMessage(nppData._nppHandle, NPPM_HIDETABBAR, 0, FALSE);
 		}
 	}
 }
@@ -705,6 +737,8 @@ void ComparedFile::updateFromCurrent()
 
 		if (hNppTabBar)
 		{
+			const TCHAR* fileExt = ::PathFindExtension(name);
+
 			TCHAR tabName[MAX_PATH];
 
 			_tcscpy_s(tabName, _countof(tabName), ::PathFindFileName(name));
@@ -716,13 +750,18 @@ void ComparedFile::updateFromCurrent()
 			if (i > 0)
 			{
 				tabName[i] = 0;
+				_tcscat_s(tabName, _countof(tabName), fileExt);
 				_tcscat_s(tabName, _countof(tabName), tempMark[isTemp].tabMark);
 
 				TCITEM tab;
 				tab.mask = TCIF_TEXT;
 				tab.pszText = tabName;
 
+				::SendMessage(nppData._nppHandle, NPPM_HIDETABBAR, 0, TRUE);
+
 				TabCtrl_SetItem(hNppTabBar, posFromBuffId(buffId), &tab);
+
+				::SendMessage(nppData._nppHandle, NPPM_HIDETABBAR, 0, FALSE);
 			}
 		}
 	}
@@ -991,7 +1030,11 @@ NewCompare::NewCompare(bool currFileIsNew, bool markFirstName)
 			_sntprintf_s(tabText, _countof(tabText), _TRUNCATE, TEXT("%s ** %s to Compare"),
 					_firstTabText, Settings.OldFileIsFirst ? TEXT("Old") : TEXT("New"));
 
+			::SendMessage(nppData._nppHandle, NPPM_HIDETABBAR, 0, TRUE);
+
 			TabCtrl_SetItem(hNppTabBar, pair.file[0].originalPos, &tab);
+
+			::SendMessage(nppData._nppHandle, NPPM_HIDETABBAR, 0, FALSE);
 		}
 	}
 }
@@ -1012,9 +1055,11 @@ NewCompare::~NewCompare()
 			tab.mask = TCIF_TEXT;
 			tab.pszText = _firstTabText;
 
+			::SendMessage(nppData._nppHandle, NPPM_HIDETABBAR, 0, TRUE);
+
 			TabCtrl_SetItem(hNppTabBar, posFromBuffId(pair.file[0].buffId), &tab);
 
-			::UpdateWindow(hNppTabBar);
+			::SendMessage(nppData._nppHandle, NPPM_HIDETABBAR, 0, FALSE);
 		}
 	}
 
@@ -2540,7 +2585,11 @@ void onFileSaved(LRESULT buffId)
 
             _tcscat_s(tabText, _countof(tabText), TEXT(" - Outdated"));
 
+			::SendMessage(nppData._nppHandle, NPPM_HIDETABBAR, 0, TRUE);
+
             TabCtrl_SetItem(hNppTabBar, tabPos, &tab);
+
+			::SendMessage(nppData._nppHandle, NPPM_HIDETABBAR, 0, FALSE);
         }
     }
 
