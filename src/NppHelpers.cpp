@@ -167,6 +167,13 @@ void defineXpmSymbol(int type, const char **xpm)
 }
 
 
+void defineRgbaSymbol(int type, const unsigned char *rgba)
+{
+	CallScintilla(MAIN_VIEW,	SCI_MARKERDEFINERGBAIMAGE, type, (LPARAM)rgba);
+	CallScintilla(SUB_VIEW,		SCI_MARKERDEFINERGBAIMAGE, type, (LPARAM)rgba);
+}
+
+
 void setTextStyle(const ColorSettings& settings)
 {
 	CallScintilla(MAIN_VIEW, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT, (LPARAM)INDIC_ROUNDBOX);
@@ -283,15 +290,16 @@ void setStyles(UserSettings& settings)
 
 	settings.colors.blank = r | (g << 8) | (b << 16);
 
-	defineColor(MARKER_CHANGED_LINE, settings.colors.changed);
-	defineColor(MARKER_ADDED_LINE,   settings.colors.added);
-	defineColor(MARKER_REMOVED_LINE, settings.colors.deleted);
-	defineColor(MARKER_MOVED_LINE,   settings.colors.moved);
+	defineColor(MARKER_CHANGED_LINE,	settings.colors.changed);
+	defineColor(MARKER_ADDED_LINE,		settings.colors.added);
+	defineColor(MARKER_REMOVED_LINE,	settings.colors.deleted);
+	defineColor(MARKER_MOVED_LINE,		settings.colors.moved);
 
-	defineXpmSymbol(MARKER_CHANGED_SYMBOL, 			icon_diff_16_xpm);
-	defineXpmSymbol(MARKER_ADDED_SYMBOL,   			icon_add_16_xpm);
-	defineXpmSymbol(MARKER_REMOVED_SYMBOL, 			icon_sub_16_xpm);
-	defineXpmSymbol(MARKER_MOVED_SYMBOL,   			icon_moved_16_xpm);
+	defineRgbaSymbol(MARKER_CHANGED_SYMBOL,			icon_diff_16_rgba);
+	defineRgbaSymbol(MARKER_ADDED_SYMBOL,			icon_add_16_rgba);
+	defineRgbaSymbol(MARKER_REMOVED_SYMBOL,			icon_sub_16_rgba);
+	defineRgbaSymbol(MARKER_MOVED_SYMBOL,			icon_moved_16_rgba);
+
 	defineXpmSymbol(MARKER_MOVED_MULTIPLE_SYMBOL,	icon_moved_multiple_16_xpm);
 
 	setTextStyle(settings.colors);

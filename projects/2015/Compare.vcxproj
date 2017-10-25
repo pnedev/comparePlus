@@ -96,7 +96,7 @@
       <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/ProgressDlg;../../src/XpmIcons;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/ProgressDlg;../../src/Icons;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0501;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -129,7 +129,7 @@ copy "..\..\libs\x86\*.dll" "$(OutDir)ComparePlugin"</Command>
       <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/ProgressDlg;../../src/XpmIcons;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/ProgressDlg;../../src/Icons;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN64;_WIN32_WINNT=0x0501;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -163,7 +163,7 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlugin"</Command>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/ProgressDlg;../../src/XpmIcons;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/ProgressDlg;../../src/Icons;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0501;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -200,7 +200,7 @@ copy "..\..\libs\x86\*.dll" "$(OutDir)ComparePlugin"</Command>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/ProgressDlg;../../src/XpmIcons;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/ProgressDlg;../../src/Icons;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN64;_WIN32_WINNT=0x0501;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -261,10 +261,10 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlugin"</Command>
     <ClInclude Include="..\..\src\Compare.h" />
     <ClInclude Include="..\..\src\Engine\Engine.h" />
     <ClInclude Include="..\..\src\LibGit2\LibGit2Helper.h" />
-    <ClInclude Include="..\..\src\XpmIcons\icon_add_16.h" />
-    <ClInclude Include="..\..\src\XpmIcons\icon_moved_16.h" />
-    <ClInclude Include="..\..\src\XpmIcons\icon_sub_16.h" />
-    <ClInclude Include="..\..\src\XpmIcons\icon_diff_16.h" />
+    <ClInclude Include="..\..\src\Icons\icon_add_16.h" />
+    <ClInclude Include="..\..\src\Icons\icon_moved_16.h" />
+    <ClInclude Include="..\..\src\Icons\icon_sub_16.h" />
+    <ClInclude Include="..\..\src\Icons\icon_diff_16.h" />
     <ClInclude Include="..\..\src\NavDlg\NavDialog.h" />
     <ClInclude Include="..\..\src\NppHelpers.h" />
     <ClInclude Include="..\..\src\ProgressDlg\ProgressDlg.h" />

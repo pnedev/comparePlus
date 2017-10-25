@@ -81,7 +81,7 @@ include_directories (
 	${win32_inc_dir}
 	src/
 	src/NppAPI/
-	src/XpmIcons/
+	src/Icons/
 	src/Engine/
 	src/AboutDlg/
 	src/SettingsDlg/

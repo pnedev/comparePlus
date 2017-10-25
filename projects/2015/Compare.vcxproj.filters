@@ -135,17 +135,17 @@
     <ClInclude Include="..\..\src\ProgressDlg\ProgressDlg.h">
       <Filter>src\ProgressDlg</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\XpmIcons\icon_add_16.h">
-      <Filter>src\XpmIcons</Filter>
+    <ClInclude Include="..\..\src\Icons\icon_add_16.h">
+      <Filter>src\Icons</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\XpmIcons\icon_moved_16.h">
-      <Filter>src\XpmIcons</Filter>
+    <ClInclude Include="..\..\src\Icons\icon_moved_16.h">
+      <Filter>src\Icons</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\XpmIcons\icon_sub_16.h">
-      <Filter>src\XpmIcons</Filter>
+    <ClInclude Include="..\..\src\Icons\icon_sub_16.h">
+      <Filter>src\Icons</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\XpmIcons\icon_diff_16.h">
-      <Filter>src\XpmIcons</Filter>
+    <ClInclude Include="..\..\src\Icons\icon_diff_16.h">
+      <Filter>src\Icons</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Engine\Engine.h">
       <Filter>src\Engine</Filter>
@@ -217,7 +217,7 @@
     <Filter Include="src\ProgressDlg">
       <UniqueIdentifier>{5e43c310-53c0-4d62-b631-9a59e44601a0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\XpmIcons">
+    <Filter Include="src\Icons">
       <UniqueIdentifier>{bf99986e-d174-4d7b-ab9d-719272ac8db5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
