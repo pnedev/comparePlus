@@ -197,6 +197,68 @@ void setBlanksStyle(int view, int blankColor)
 	CallScintilla(view, SCI_ANNOTATIONSETVISIBLE, ANNOTATION_STANDARD, 0);
 }
 
+
+bool jumpToNextChange(int mainStartLine, int subStartLine)
+{
+	int line			= CallScintilla(MAIN_VIEW, SCI_MARKERNEXT, mainStartLine, MARKER_MASK_LINE);
+	const int subLine	= CallScintilla(SUB_VIEW, SCI_MARKERNEXT, subStartLine, MARKER_MASK_LINE);
+
+	int view = MAIN_VIEW;
+
+	if (line < 0)
+	{
+		if (subLine < 0)
+			return false;
+
+		view = SUB_VIEW;
+		line = subLine;
+	}
+	else if (subLine >= 0)
+	{
+		if (CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subLine, 0) <
+			CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, line, 0))
+		{
+			view = SUB_VIEW;
+			line = subLine;
+		}
+	}
+
+	centerAt(view, line);
+
+	return true;
+}
+
+
+bool jumpToPrevChange(int mainStartLine, int subStartLine)
+{
+	int line			= CallScintilla(MAIN_VIEW, SCI_MARKERPREVIOUS, mainStartLine, MARKER_MASK_LINE);
+	const int subLine	= CallScintilla(SUB_VIEW, SCI_MARKERPREVIOUS, subStartLine, MARKER_MASK_LINE);
+
+	int view = MAIN_VIEW;
+
+	if (line < 0)
+	{
+		if (subLine < 0)
+			return false;
+
+		view = SUB_VIEW;
+		line = subLine;
+	}
+	else if (subLine >= 0)
+	{
+		if (CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subLine, 0) >
+			CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, line, 0))
+		{
+			view = SUB_VIEW;
+			line = subLine;
+		}
+	}
+
+	centerAt(view, line);
+
+	return true;
+}
+
 } // anonymous namespace
 
 
@@ -332,153 +394,46 @@ void clearChangedIndicator(int view, int start, int length)
 
 void jumpToFirstChange()
 {
-	const int subLine	= CallScintilla(SUB_VIEW, SCI_MARKERNEXT, 0, MARKER_MASK_LINE);
-	int line			= CallScintilla(MAIN_VIEW, SCI_MARKERNEXT, 0, MARKER_MASK_LINE);
-
-	int view = MAIN_VIEW;
-
-	if (line < 0)
-	{
-		if (subLine < 0)
-			return;
-
-		view = SUB_VIEW;
-		line = subLine;
-	}
-	else if (subLine >= 0)
-	{
-		if (CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subLine, 0) <
-			CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, line, 0))
-		{
-			view = SUB_VIEW;
-			line = subLine;
-		}
-	}
-
-	centerAt(view, line);
+	jumpToNextChange(0, 0);
 }
 
 
 void jumpToLastChange()
 {
-	const int subLine	= CallScintilla(SUB_VIEW, SCI_MARKERPREVIOUS,
-								CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0), MARKER_MASK_LINE);
-	int line			= CallScintilla(MAIN_VIEW, SCI_MARKERPREVIOUS,
-								CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0), MARKER_MASK_LINE);
-
-	int view = MAIN_VIEW;
-
-	if (line < 0)
-	{
-		if (subLine < 0)
-			return;
-
-		view = SUB_VIEW;
-		line = subLine;
-	}
-	else if (subLine >= 0)
-	{
-		if (CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subLine, 0) >
-			CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, line, 0))
-		{
-			view = SUB_VIEW;
-			line = subLine;
-		}
-	}
-
-	centerAt(view, line);
+	jumpToPrevChange(CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0),
+			CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0));
 }
 
 
 void jumpToNextChange(bool down, bool wrapAround)
 {
-	const int sci_next_marker	= down ? SCI_MARKERNEXT : SCI_MARKERPREVIOUS;
-	const int startingLine		= down ? getLastLine(MAIN_VIEW) + 1 : getFirstLine(MAIN_VIEW) - 1;
-
-	int view = MAIN_VIEW;
-	int line = startingLine;
-	int subLine;
-
-	int lineCount = CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0);
+	bool success;
 
 	if (down)
-		for (; (CallScintilla(MAIN_VIEW, SCI_MARKERGET, line, 0) & MARKER_MASK_LINE) && (line < lineCount); ++line);
+		success = jumpToNextChange(getNextUnmarkedLine(MAIN_VIEW, getLastLine(MAIN_VIEW), MARKER_MASK_LINE),
+				getNextUnmarkedLine(SUB_VIEW, getLastLine(SUB_VIEW), MARKER_MASK_LINE));
 	else
-		for (; (CallScintilla(MAIN_VIEW, SCI_MARKERGET, line, 0) & MARKER_MASK_LINE) && (line > -1); --line);
+		success = jumpToPrevChange(getPrevUnmarkedLine(MAIN_VIEW, getFirstLine(MAIN_VIEW), MARKER_MASK_LINE),
+				getPrevUnmarkedLine(SUB_VIEW, getFirstLine(SUB_VIEW), MARKER_MASK_LINE));
 
-	if (line > -1 && line < lineCount)
+	if (!success)
 	{
-		subLine	= CallScintilla(SUB_VIEW, sci_next_marker, otherViewMatchingLine(MAIN_VIEW, line), MARKER_MASK_LINE);
-		line	= CallScintilla(MAIN_VIEW, sci_next_marker, line, MARKER_MASK_LINE);
-	}
-	else
-	{
-		line = -1;
-		subLine = -1;
-	}
-
-	int matchingLine = (subLine >= 0) ? otherViewMatchingLine(SUB_VIEW, subLine) : -1;
-
-	if (down && matchingLine == startingLine)
-	{
-		lineCount = CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0);
-
-		for (; (CallScintilla(SUB_VIEW, SCI_MARKERGET, subLine, 0) & MARKER_MASK_LINE) &&
-				(subLine < lineCount); ++subLine);
-
-		if (subLine < lineCount)
-			subLine = CallScintilla(SUB_VIEW, sci_next_marker, subLine, MARKER_MASK_LINE);
-		else
-			subLine = -1;
-
-		if (subLine >= 0)
-			matchingLine = otherViewMatchingLine(SUB_VIEW, subLine);
-		else
-			matchingLine = -1;
-	}
-
-	if (line < 0)
-	{
-		line = matchingLine;
-
-		if (line < 0)
+		if (wrapAround)
 		{
-			if (wrapAround)
-			{
-				if (down)
-					jumpToFirstChange();
-				else
-					jumpToLastChange();
+			if (down)
+				jumpToFirstChange();
+			else
+				jumpToLastChange();
 
-				FLASHWINFO flashInfo;
-				flashInfo.cbSize = sizeof(flashInfo);
-				flashInfo.hwnd = nppData._nppHandle;
-				flashInfo.uCount = 2;
-				flashInfo.dwTimeout = 100;
-				flashInfo.dwFlags = FLASHW_ALL;
-				::FlashWindowEx(&flashInfo);
-			}
-
-			return;
+			FLASHWINFO flashInfo;
+			flashInfo.cbSize = sizeof(flashInfo);
+			flashInfo.hwnd = nppData._nppHandle;
+			flashInfo.uCount = 2;
+			flashInfo.dwTimeout = 100;
+			flashInfo.dwFlags = FLASHW_ALL;
+			::FlashWindowEx(&flashInfo);
 		}
 	}
-	else if (matchingLine >= 0)
-	{
-		const int subVisible = CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subLine, 0);
-
-		if (down)
-		{
-			if (subVisible < CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, line, 0))
-				line = matchingLine;
-		}
-		else
-		{
-			if (subVisible > CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, line, 0))
-				line = matchingLine;
-		}
-	}
-
-	centerAt(view, line);
 }
 
 
