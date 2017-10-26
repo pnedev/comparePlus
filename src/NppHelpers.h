@@ -154,21 +154,16 @@ private:
 struct ViewLocation
 {
 	ViewLocation() {}
-	ViewLocation(LRESULT buffId)
+	ViewLocation(int view)
 	{
-		save(buffId);
+		save(view);
 	}
 
-	void save(LRESULT buffId);
+	void save(int view);
 	void restore();
 
-	inline LRESULT getBuffId()
-	{
-		return _buffId;
-	}
-
 private:
-	LRESULT	_buffId;
+	int		_view;
 	int		_visibleLineOffset;
 	int		_pos;
 	int		_selStart;
@@ -347,6 +342,7 @@ inline void clearSelection(int view)
 
 void activateBufferID(LRESULT buffId);
 std::pair<int, int> getSelectionLines(int view);
+void blinkRange(int view, int startPos, int endPos);
 
 void centerAt(int view, int line);
 void centerCaretAt(int view, int line);

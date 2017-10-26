@@ -107,12 +107,9 @@ BOOL CALLBACK NppTabHandleGetter::enumWindowsCB(HWND hwnd, LPARAM lParam)
 }
 
 
-void ViewLocation::save(LRESULT buffId)
+void ViewLocation::save(int view)
 {
-	_buffId = buffId;
-
-	const int view = viewIdFromBuffId(_buffId);
-
+	_view		= view;
 	_pos		= CallScintilla(view, SCI_GETCURRENTPOS, 0, 0);
 	_selStart	= CallScintilla(view, SCI_GETSELECTIONSTART, 0, 0);
 	_selEnd		= CallScintilla(view, SCI_GETSELECTIONEND, 0, 0);
@@ -126,19 +123,16 @@ void ViewLocation::save(LRESULT buffId)
 
 void ViewLocation::restore()
 {
-	activateBufferID(_buffId);
+	const int caretLine = CallScintilla(_view, SCI_LINEFROMPOSITION, _pos, 0);
+	const int firstVisibleLine = CallScintilla(_view, SCI_VISIBLEFROMDOCLINE, caretLine, 0) - _visibleLineOffset;
 
-	const int view = viewIdFromBuffId(_buffId);
+	CallScintilla(_view, SCI_ENSUREVISIBLEENFORCEPOLICY, caretLine, 0);
+	CallScintilla(_view, SCI_SETSEL, _selStart, _selEnd);
+	CallScintilla(_view, SCI_SETFIRSTVISIBLELINE, firstVisibleLine, 0);
 
-	const int caretLine = CallScintilla(view, SCI_LINEFROMPOSITION, _pos, 0);
-	const int firstVisibleLine = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, caretLine, 0) - _visibleLineOffset;
-
-	CallScintilla(view, SCI_ENSUREVISIBLEENFORCEPOLICY, caretLine, 0);
-	CallScintilla(view, SCI_SETSEL, _selStart, _selEnd);
-	CallScintilla(view, SCI_SETFIRSTVISIBLELINE, firstVisibleLine, 0);
-
-	LOGDB(_buffId, "Restore view location, caret doc line: " + std::to_string(caretLine) + ", visible doc line: " +
-			std::to_string(CallScintilla(view, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0)) + "\n");
+	LOGD("Restore " + std::string(_view == MAIN_VIEW ? "MAIN" : "SUB") +
+			" view location, caret doc line: " + std::to_string(caretLine) + ", visible doc line: " +
+			std::to_string(CallScintilla(_view, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0)) + "\n");
 }
 
 
@@ -292,6 +286,21 @@ std::pair<int, int> getSelectionLines(int view)
 }
 
 
+void blinkRange(int view, int startPos, int endPos)
+{
+	ViewLocation loc(view);
+
+	for (int i = 2; i; --i)
+	{
+		CallScintilla(view, SCI_SETSEL, startPos, endPos);
+		::Sleep(50);
+		CallScintilla(view, SCI_SETSEL, endPos, endPos);
+	}
+
+	loc.restore();
+}
+
+
 void centerAt(int view, int line)
 {
 	const int linesOnScreen = CallScintilla(view, SCI_LINESONSCREEN, 0, 0);
@@ -432,6 +441,22 @@ void jumpToNextChange(bool down, bool wrapAround)
 			flashInfo.dwTimeout = 100;
 			flashInfo.dwFlags = FLASHW_ALL;
 			::FlashWindowEx(&flashInfo);
+		}
+		else
+		{
+			const int currentView = getCurrentViewId();
+
+			int line;
+
+			if (down)
+				// line = CallScintilla(currentView, SCI_MARKERNEXT, getFirstLine(currentView), MARKER_MASK_LINE);
+				line = getLastLine(currentView);
+			else
+				// line = CallScintilla(currentView, SCI_MARKERPREVIOUS, getLastLine(currentView), MARKER_MASK_LINE);
+				line = getFirstLine(currentView);
+
+			blinkRange(currentView, CallScintilla(currentView, SCI_POSITIONFROMLINE, line, 0),
+					CallScintilla(currentView, SCI_GETLINEENDPOSITION, line, 0));
 		}
 	}
 }

@@ -1507,7 +1507,7 @@ void compare(bool selectionCompare = false)
 			return;
 
 		if (cmpPair->isFullCompare)
-			storedLocation.reset(new ViewLocation(currentBuffId));
+			storedLocation.reset(new ViewLocation(getCurrentViewId()));
 
 		cmpPair->getOldFile().clear();
 		cmpPair->getNewFile().clear();
@@ -2076,7 +2076,7 @@ void comparedFileActivated()
 	setCompareView(MAIN_VIEW, Settings.colors.blank);
 	setCompareView(SUB_VIEW, Settings.colors.blank);
 
-	storedLocation.reset(new ViewLocation(getCurrentBuffId()));
+	storedLocation.reset(new ViewLocation(getCurrentViewId()));
 }
 
 
@@ -2172,6 +2172,8 @@ void DelayedAlign::operator()()
 			realign = isAlignmentNeeded(SUB_VIEW, alignmentInfo);
 	}
 
+	const int currentView = getCurrentViewId();
+
 	ScopedIncrementer incr(notificationsLock);
 
 	if (realign)
@@ -2179,7 +2181,7 @@ void DelayedAlign::operator()()
 		LOGD("Aligning diffs\n");
 
 		if (!storedLocation && !goToFirst)
-			storedLocation.reset(new ViewLocation(currentBuffId));
+			storedLocation.reset(new ViewLocation(currentView));
 
 		alignDiffs(alignmentInfo);
 	}
@@ -2190,7 +2192,7 @@ void DelayedAlign::operator()()
 
 		jumpToFirstChange();
 
-		syncViews(getCurrentViewId());
+		syncViews(currentView);
 
 		cmpPair->setStatus();
 	}
@@ -2199,7 +2201,7 @@ void DelayedAlign::operator()()
 		storedLocation->restore();
 		storedLocation.reset();
 
-		syncViews(getCurrentViewId());
+		syncViews(currentView);
 
 		cmpPair->setStatus();
 	}
