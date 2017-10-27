@@ -2051,7 +2051,7 @@ void syncViews(int biasView)
 
 	if (firstVisibleLine != CallScintilla(otherView, SCI_GETFIRSTVISIBLELINE, 0, 0))
 	{
-		LOGD("Syncing views - bias " + std::string(biasView == MAIN_VIEW ? "MAIN" : "SUB") + ", visible doc line: " +
+		LOGD("Syncing to " + std::string(biasView == MAIN_VIEW ? "MAIN" : "SUB") + " view, visible doc line: " +
 				std::to_string(CallScintilla(biasView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0)) + "\n");
 
 		ScopedIncrementer incr(notificationsLock);
