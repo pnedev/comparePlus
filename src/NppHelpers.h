@@ -32,6 +32,7 @@ enum Marker_t
 	MARKER_ADDED_LINE,
 	MARKER_REMOVED_LINE,
 	MARKER_MOVED_LINE,
+	MARKER_BLANK,
 	MARKER_CHANGED_SYMBOL,
 	MARKER_ADDED_SYMBOL,
 	MARKER_REMOVED_SYMBOL,
@@ -45,6 +46,7 @@ const int MARKER_MASK_ADDED				= (1 << MARKER_ADDED_LINE)		| (1 << MARKER_ADDED_
 const int MARKER_MASK_REMOVED			= (1 << MARKER_REMOVED_LINE)	| (1 << MARKER_REMOVED_SYMBOL);
 const int MARKER_MASK_MOVED				= (1 << MARKER_MOVED_LINE)		| (1 << MARKER_MOVED_SYMBOL);
 const int MARKER_MASK_MOVED_MULTIPLE	= (1 << MARKER_MOVED_LINE)		| (1 << MARKER_MOVED_MULTIPLE_SYMBOL);
+const int MARKER_MASK_BLANK				= (1 << MARKER_BLANK);
 
 const int MARKER_MASK_LINE =	(1 << MARKER_CHANGED_LINE) |
 								(1 << MARKER_ADDED_LINE) |
@@ -342,6 +344,8 @@ inline void clearSelection(int view)
 
 void activateBufferID(LRESULT buffId);
 std::pair<int, int> getSelectionLines(int view);
+
+void blinkLine(int view, int line);
 void blinkRange(int view, int startPos, int endPos);
 
 void centerAt(int view, int line);

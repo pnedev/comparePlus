@@ -139,6 +139,9 @@ void ViewLocation::restore()
 namespace // anonymous namespace
 {
 
+const int cBlinkCount		= 2;
+const int cBlinkInterval_ms	= 100;
+
 int blankStyle[2] = { 0, 0 };
 
 
@@ -217,7 +220,18 @@ bool jumpToNextChange(int mainStartLine, int subStartLine)
 		}
 	}
 
+	const int firstVisible = CallScintilla(view, SCI_GETLINEVISIBLE, 0, 0) ?
+			CallScintilla(view, SCI_GETFIRSTVISIBLELINE, line, 0) : -1;
+
 	centerAt(view, line);
+
+	if (firstVisible != -1 && firstVisible == CallScintilla(view, SCI_GETFIRSTVISIBLELINE, line, 0))
+	{
+		if (line)
+			--line;
+
+		blinkLine(view, line);
+	}
 
 	return true;
 }
@@ -248,7 +262,17 @@ bool jumpToPrevChange(int mainStartLine, int subStartLine)
 		}
 	}
 
+	const int firstVisible = CallScintilla(view, SCI_GETLINEVISIBLE, 0, 0) ?
+			CallScintilla(view, SCI_GETFIRSTVISIBLELINE, line, 0) : -1;
+
 	centerAt(view, line);
+
+	if (firstVisible != -1 && firstVisible == CallScintilla(view, SCI_GETFIRSTVISIBLELINE, line, 0))
+	{
+		if (line < CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1)
+			++line;
+		blinkLine(view, line);
+	}
 
 	return true;
 }
@@ -286,15 +310,43 @@ std::pair<int, int> getSelectionLines(int view)
 }
 
 
+void blinkLine(int view, int line)
+{
+	HWND hView = getView(view);
+
+	for (int i = cBlinkCount; ;)
+	{
+		CallScintilla(view, SCI_MARKERADDSET, line, MARKER_MASK_BLANK);
+		::UpdateWindow(hView);
+		::Sleep(cBlinkInterval_ms);
+
+		CallScintilla(view, SCI_MARKERDELETE, line, MARKER_BLANK);
+		::UpdateWindow(hView);
+
+		if (--i == 0)
+			break;
+
+		::Sleep(cBlinkInterval_ms);
+	}
+}
+
+
 void blinkRange(int view, int startPos, int endPos)
 {
 	ViewLocation loc(view);
 
-	for (int i = 2; i; --i)
+	for (int i = cBlinkCount; ;)
 	{
 		CallScintilla(view, SCI_SETSEL, startPos, endPos);
-		::Sleep(50);
-		CallScintilla(view, SCI_SETSEL, endPos, endPos);
+		::UpdateWindow(getView(view));
+		::Sleep(cBlinkInterval_ms);
+
+		if (--i == 0)
+			break;
+
+		CallScintilla(view, SCI_SETSEL, startPos, startPos);
+		::UpdateWindow(getView(view));
+		::Sleep(cBlinkInterval_ms);
 	}
 
 	loc.restore();
@@ -365,6 +417,7 @@ void setStyles(UserSettings& settings)
 	defineColor(MARKER_ADDED_LINE,		settings.colors.added);
 	defineColor(MARKER_REMOVED_LINE,	settings.colors.deleted);
 	defineColor(MARKER_MOVED_LINE,		settings.colors.moved);
+	defineColor(MARKER_BLANK,			settings.colors.blank);
 
 	defineRgbaSymbol(MARKER_CHANGED_SYMBOL,			icon_diff_16_rgba);
 	defineRgbaSymbol(MARKER_ADDED_SYMBOL,			icon_add_16_rgba);
@@ -381,7 +434,7 @@ void markTextAsChanged(int view, int start, int length)
 {
 	if (length != 0)
 	{
-		int curIndic = CallScintilla(view, SCI_GETINDICATORCURRENT, 0, 0);
+		const int curIndic = CallScintilla(view, SCI_GETINDICATORCURRENT, 0, 0);
 		CallScintilla(view, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
 		CallScintilla(view, SCI_INDICATORFILLRANGE, start, length);
 		CallScintilla(view, SCI_SETINDICATORCURRENT, curIndic, 0);
@@ -393,7 +446,7 @@ void clearChangedIndicator(int view, int start, int length)
 {
 	if (length != 0)
 	{
-		int curIndic = CallScintilla(view, SCI_GETINDICATORCURRENT, 0, 0);
+		const int curIndic = CallScintilla(view, SCI_GETINDICATORCURRENT, 0, 0);
 		CallScintilla(view, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
 		CallScintilla(view, SCI_INDICATORCLEARRANGE, start, length);
 		CallScintilla(view, SCI_SETINDICATORCURRENT, curIndic, 0);
@@ -435,28 +488,19 @@ void jumpToNextChange(bool down, bool wrapAround)
 				jumpToLastChange();
 
 			FLASHWINFO flashInfo;
-			flashInfo.cbSize = sizeof(flashInfo);
-			flashInfo.hwnd = nppData._nppHandle;
-			flashInfo.uCount = 2;
-			flashInfo.dwTimeout = 100;
-			flashInfo.dwFlags = FLASHW_ALL;
+			flashInfo.cbSize	= sizeof(flashInfo);
+			flashInfo.hwnd		= nppData._nppHandle;
+			flashInfo.uCount	= cBlinkCount;
+			flashInfo.dwTimeout	= cBlinkInterval_ms;
+			flashInfo.dwFlags	= FLASHW_ALL;
 			::FlashWindowEx(&flashInfo);
 		}
 		else
 		{
-			const int currentView = getCurrentViewId();
-
-			int line;
-
 			if (down)
-				// line = CallScintilla(currentView, SCI_MARKERNEXT, getFirstLine(currentView), MARKER_MASK_LINE);
-				line = getLastLine(currentView);
+				jumpToLastChange();
 			else
-				// line = CallScintilla(currentView, SCI_MARKERPREVIOUS, getLastLine(currentView), MARKER_MASK_LINE);
-				line = getFirstLine(currentView);
-
-			blinkRange(currentView, CallScintilla(currentView, SCI_POSITIONFROMLINE, line, 0),
-					CallScintilla(currentView, SCI_GETLINEENDPOSITION, line, 0));
+				jumpToFirstChange();
 		}
 	}
 }
