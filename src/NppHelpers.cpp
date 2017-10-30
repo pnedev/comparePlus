@@ -197,26 +197,30 @@ void setBlanksStyle(int view, int blankColor)
 
 bool jumpToNextChange(int mainStartLine, int subStartLine)
 {
-	int line			= CallScintilla(MAIN_VIEW, SCI_MARKERNEXT, mainStartLine, MARKER_MASK_LINE);
+	const int mainLine	= CallScintilla(MAIN_VIEW, SCI_MARKERNEXT, mainStartLine, MARKER_MASK_LINE);
 	const int subLine	= CallScintilla(SUB_VIEW, SCI_MARKERNEXT, subStartLine, MARKER_MASK_LINE);
 
-	int view = MAIN_VIEW;
+	int view		= getCurrentViewId();
+	int otherView	= getOtherViewId(view);
+
+	int line		= (view == MAIN_VIEW) ? mainLine : subLine;
+	int otherLine	= (view == SUB_VIEW) ? mainLine : subLine;
 
 	if (line < 0)
 	{
-		if (subLine < 0)
+		if (otherLine < 0)
 			return false;
 
-		view = SUB_VIEW;
-		line = subLine;
+		view = otherView;
+		line = otherLine;
 	}
-	else if (subLine >= 0)
+	else if (otherLine >= 0)
 	{
-		if (CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subLine, 0) <
-			CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, line, 0))
+		if (CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0) <
+			CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0))
 		{
-			view = SUB_VIEW;
-			line = subLine;
+			view = otherView;
+			line = otherLine;
 		}
 	}
 
@@ -234,26 +238,30 @@ bool jumpToNextChange(int mainStartLine, int subStartLine)
 
 bool jumpToPrevChange(int mainStartLine, int subStartLine)
 {
-	int line			= CallScintilla(MAIN_VIEW, SCI_MARKERPREVIOUS, mainStartLine, MARKER_MASK_LINE);
+	const int mainLine	= CallScintilla(MAIN_VIEW, SCI_MARKERPREVIOUS, mainStartLine, MARKER_MASK_LINE);
 	const int subLine	= CallScintilla(SUB_VIEW, SCI_MARKERPREVIOUS, subStartLine, MARKER_MASK_LINE);
 
-	int view = MAIN_VIEW;
+	int view		= getCurrentViewId();
+	int otherView	= getOtherViewId(view);
+
+	int line		= (view == MAIN_VIEW) ? mainLine : subLine;
+	int otherLine	= (view == SUB_VIEW) ? mainLine : subLine;
 
 	if (line < 0)
 	{
-		if (subLine < 0)
+		if (otherLine < 0)
 			return false;
 
-		view = SUB_VIEW;
-		line = subLine;
+		view = otherView;
+		line = otherLine;
 	}
-	else if (subLine >= 0)
+	else if (otherLine >= 0)
 	{
-		if (CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subLine, 0) >
-			CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, line, 0))
+		if (CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0) >
+			CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0))
 		{
-			view = SUB_VIEW;
-			line = subLine;
+			view = otherView;
+			line = otherLine;
 		}
 	}
 
