@@ -139,7 +139,7 @@ void ViewLocation::restore()
 namespace // anonymous namespace
 {
 
-const int cBlinkCount		= 2;
+const int cBlinkCount		= 3;
 const int cBlinkInterval_ms	= 100;
 
 int blankStyle[2] = { 0, 0 };
