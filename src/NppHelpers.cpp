@@ -226,12 +226,7 @@ bool jumpToNextChange(int mainStartLine, int subStartLine)
 	centerAt(view, line);
 
 	if (firstVisible != -1 && firstVisible == CallScintilla(view, SCI_GETFIRSTVISIBLELINE, line, 0))
-	{
-		if (line)
-			--line;
-
-		blinkLine(view, line);
-	}
+		blinkMarkedLine(view, line);
 
 	return true;
 }
@@ -268,11 +263,7 @@ bool jumpToPrevChange(int mainStartLine, int subStartLine)
 	centerAt(view, line);
 
 	if (firstVisible != -1 && firstVisible == CallScintilla(view, SCI_GETFIRSTVISIBLELINE, line, 0))
-	{
-		if (line < CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1)
-			++line;
-		blinkLine(view, line);
-	}
+		blinkMarkedLine(view, line);
 
 	return true;
 }
@@ -307,6 +298,29 @@ std::pair<int, int> getSelectionLines(int view)
 		--endLine;
 
 	return std::make_pair(CallScintilla(view, SCI_LINEFROMPOSITION, selectionStart, 0), endLine);
+}
+
+
+void blinkMarkedLine(int view, int line)
+{
+	const int marker = CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL;
+	HWND hView = getView(view);
+
+	for (int i = cBlinkCount; ;)
+	{
+		clearMarks(view, line);
+
+		::UpdateWindow(hView);
+		::Sleep(cBlinkInterval_ms);
+
+		CallScintilla(view, SCI_MARKERADDSET, line, marker);
+		::UpdateWindow(hView);
+
+		if (--i == 0)
+			break;
+
+		::Sleep(cBlinkInterval_ms);
+	}
 }
 
 

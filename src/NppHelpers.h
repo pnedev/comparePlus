@@ -345,6 +345,7 @@ inline void clearSelection(int view)
 void activateBufferID(LRESULT buffId);
 std::pair<int, int> getSelectionLines(int view);
 
+void blinkMarkedLine(int view, int line);
 void blinkLine(int view, int line);
 void blinkRange(int view, int startPos, int endPos);
 
