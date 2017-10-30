@@ -224,13 +224,10 @@ bool jumpToNextChange(int mainStartLine, int subStartLine)
 		}
 	}
 
-	const int firstVisible = CallScintilla(view, SCI_GETLINEVISIBLE, 0, 0) ?
-			CallScintilla(view, SCI_GETFIRSTVISIBLELINE, line, 0) : -1;
-
-	centerAt(view, line);
-
-	if (firstVisible != -1 && firstVisible == CallScintilla(view, SCI_GETFIRSTVISIBLELINE, line, 0))
+	if (line >= getFirstLine(view) && line <= getLastLine(view))
 		blinkMarkedLine(view, line);
+	else
+		centerAt(view, line);
 
 	return true;
 }
@@ -265,13 +262,10 @@ bool jumpToPrevChange(int mainStartLine, int subStartLine)
 		}
 	}
 
-	const int firstVisible = CallScintilla(view, SCI_GETLINEVISIBLE, 0, 0) ?
-			CallScintilla(view, SCI_GETFIRSTVISIBLELINE, line, 0) : -1;
-
-	centerAt(view, line);
-
-	if (firstVisible != -1 && firstVisible == CallScintilla(view, SCI_GETFIRSTVISIBLELINE, line, 0))
+	if (line >= getFirstLine(view) && line <= getLastLine(view))
 		blinkMarkedLine(view, line);
+	else
+		centerAt(view, line);
 
 	return true;
 }
@@ -489,7 +483,7 @@ void jumpToLastChange()
 }
 
 
-void jumpToNextChange(bool down, bool wrapAround)
+void jumpToChange(bool down, bool wrapAround)
 {
 	bool success;
 

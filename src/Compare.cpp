@@ -1791,14 +1791,14 @@ void DetectMoves()
 void Prev()
 {
 	if (NppSettings::get().compareMode)
-		jumpToNextChange(false, Settings.WrapAround);
+		jumpToChange(false, Settings.WrapAround);
 }
 
 
 void Next()
 {
 	if (NppSettings::get().compareMode)
-		jumpToNextChange(true, Settings.WrapAround);
+		jumpToChange(true, Settings.WrapAround);
 }
 
 

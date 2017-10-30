@@ -357,7 +357,7 @@ void clearChangedIndicator(int view, int start, int length);
 
 void jumpToFirstChange();
 void jumpToLastChange();
-void jumpToNextChange(bool down, bool wrapAround);
+void jumpToChange(bool down, bool wrapAround);
 
 void setNormalView(int view);
 void setCompareView(int view, int blankColor);
