@@ -1499,6 +1499,10 @@ void compare(bool selectionCompare = false)
 	CompareList_t::iterator	cmpPair			= getCompare(currentBuffId);
 	const bool				recompare		= (cmpPair != compareList.end());
 
+	// Just to be sure any old state is cleared
+	storedLocation.reset();
+	goToFirst = false;
+
 	if (recompare)
 	{
 		newCompare.reset();
@@ -1506,7 +1510,7 @@ void compare(bool selectionCompare = false)
 		if (selectionCompare && !areSelectionsValid())
 			return;
 
-		if (cmpPair->isFullCompare)
+		if (cmpPair->isFullCompare && !Settings.GotoFirstDiff && !selectionCompare)
 			storedLocation.reset(new ViewLocation(getCurrentViewId()));
 
 		cmpPair->getOldFile().clear();
@@ -1564,9 +1568,6 @@ void compare(bool selectionCompare = false)
 
 			setCompareView(MAIN_VIEW, Settings.colors.blank);
 			setCompareView(SUB_VIEW, Settings.colors.blank);
-
-			if (Settings.GotoFirstDiff || selectionCompare)
-				storedLocation.reset();
 
 			if (!storedLocation)
 			{
@@ -2188,11 +2189,11 @@ void DelayedAlign::operator()()
 
 	if (goToFirst)
 	{
+		LOGD("Go to first diff\n");
+
 		goToFirst = false;
 
-		jumpToFirstChange();
-
-		syncViews(currentView);
+		jumpToFirstChange(true);
 
 		cmpPair->setStatus();
 	}

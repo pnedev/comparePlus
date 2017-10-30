@@ -118,6 +118,8 @@ void ViewLocation::save(int view)
 
 	_visibleLineOffset = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) -
 			CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
+
+	LOGD("Store " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") + " view location\n");
 }
 
 
@@ -195,7 +197,7 @@ void setBlanksStyle(int view, int blankColor)
 }
 
 
-bool jumpToNextChange(int mainStartLine, int subStartLine)
+bool jumpToNextChange(int mainStartLine, int subStartLine, bool doNotBlink = false)
 {
 	const int mainLine	= CallScintilla(MAIN_VIEW, SCI_MARKERNEXT, mainStartLine, MARKER_MASK_LINE);
 	const int subLine	= CallScintilla(SUB_VIEW, SCI_MARKERNEXT, subStartLine, MARKER_MASK_LINE);
@@ -204,7 +206,7 @@ bool jumpToNextChange(int mainStartLine, int subStartLine)
 	int otherView	= getOtherViewId(view);
 
 	int line		= (view == MAIN_VIEW) ? mainLine : subLine;
-	int otherLine	= (view == SUB_VIEW) ? mainLine : subLine;
+	int otherLine	= (view == MAIN_VIEW) ? subLine : mainLine;
 
 	if (line < 0)
 	{
@@ -225,15 +227,23 @@ bool jumpToNextChange(int mainStartLine, int subStartLine)
 	}
 
 	if (line >= getFirstLine(view) && line <= getLastLine(view))
-		blinkMarkedLine(view, line);
+	{
+		if (!doNotBlink)
+			blinkMarkedLine(view, line);
+	}
 	else
+	{
+		LOGD("Jump to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
+				" view, center doc line: " + std::to_string(line) + "\n");
+
 		centerAt(view, line);
+	}
 
 	return true;
 }
 
 
-bool jumpToPrevChange(int mainStartLine, int subStartLine)
+bool jumpToPrevChange(int mainStartLine, int subStartLine, bool doNotBlink = false)
 {
 	const int mainLine	= CallScintilla(MAIN_VIEW, SCI_MARKERPREVIOUS, mainStartLine, MARKER_MASK_LINE);
 	const int subLine	= CallScintilla(SUB_VIEW, SCI_MARKERPREVIOUS, subStartLine, MARKER_MASK_LINE);
@@ -242,7 +252,7 @@ bool jumpToPrevChange(int mainStartLine, int subStartLine)
 	int otherView	= getOtherViewId(view);
 
 	int line		= (view == MAIN_VIEW) ? mainLine : subLine;
-	int otherLine	= (view == SUB_VIEW) ? mainLine : subLine;
+	int otherLine	= (view == MAIN_VIEW) ? subLine : mainLine;
 
 	if (line < 0)
 	{
@@ -263,9 +273,17 @@ bool jumpToPrevChange(int mainStartLine, int subStartLine)
 	}
 
 	if (line >= getFirstLine(view) && line <= getLastLine(view))
-		blinkMarkedLine(view, line);
+	{
+		if (!doNotBlink)
+			blinkMarkedLine(view, line);
+	}
 	else
+	{
+		LOGD("Jump to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
+				" view, center doc line: " + std::to_string(line) + "\n");
+
 		centerAt(view, line);
+	}
 
 	return true;
 }
@@ -470,9 +488,9 @@ void clearChangedIndicator(int view, int start, int length)
 }
 
 
-void jumpToFirstChange()
+void jumpToFirstChange(bool doNotBlink)
 {
-	jumpToNextChange(0, 0);
+	jumpToNextChange(0, 0, doNotBlink);
 }
 
 

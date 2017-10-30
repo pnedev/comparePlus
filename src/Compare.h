@@ -35,7 +35,7 @@
 	#include <shlwapi.h>
 
 	#define LOGD(STR) \
-		do { \
+		for (;;) { \
 			const DWORD time_ms = ::GetTickCount(); \
 			TCHAR file[MAX_PATH]; \
 			char fileA[MAX_PATH]; \
@@ -55,10 +55,11 @@
 			else dLog += " -\t"; \
 			dLog += (STR); \
 			dLogTime_ms = ::GetTickCount(); \
-		} while (0)
+			break; \
+		}
 
 	#define LOGDB(BUFFID, STR) \
-		do { \
+		for (;;) { \
 			const DWORD time_ms = ::GetTickCount(); \
 			TCHAR file[MAX_PATH]; \
 			char fileA[MAX_PATH]; \
@@ -78,7 +79,8 @@
 			else dLog += " -\t"; \
 			dLog += (STR); \
 			dLogTime_ms = ::GetTickCount(); \
-		} while (0)
+			break; \
+		}
 
 	extern std::string	dLog;
 	extern DWORD		dLogTime_ms;

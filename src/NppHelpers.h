@@ -161,6 +161,15 @@ struct ViewLocation
 		save(view);
 	}
 
+#ifdef DLOG
+
+	~ViewLocation()
+	{
+		LOGD("Clear view location\n");
+	}
+
+#endif
+
 	void save(int view);
 	void restore();
 
@@ -355,7 +364,7 @@ void centerCaretAt(int view, int line);
 void markTextAsChanged(int view, int start, int length);
 void clearChangedIndicator(int view, int start, int length);
 
-void jumpToFirstChange();
+void jumpToFirstChange(bool doNotBlink = false);
 void jumpToLastChange();
 void jumpToChange(bool down, bool wrapAround);
 
