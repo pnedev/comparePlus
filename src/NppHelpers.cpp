@@ -197,7 +197,7 @@ void setBlanksStyle(int view, int blankColor)
 }
 
 
-bool jumpToNextChange(int mainStartLine, int subStartLine, bool doNotBlink = false)
+std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool doNotBlink = false)
 {
 	const int mainLine	= CallScintilla(MAIN_VIEW, SCI_MARKERNEXT, mainStartLine, MARKER_MASK_LINE);
 	const int subLine	= CallScintilla(SUB_VIEW, SCI_MARKERNEXT, subStartLine, MARKER_MASK_LINE);
@@ -211,7 +211,7 @@ bool jumpToNextChange(int mainStartLine, int subStartLine, bool doNotBlink = fal
 	if (line < 0)
 	{
 		if (otherLine < 0)
-			return false;
+			return std::make_pair(-1, -1);
 
 		view = otherView;
 		line = otherLine;
@@ -239,11 +239,11 @@ bool jumpToNextChange(int mainStartLine, int subStartLine, bool doNotBlink = fal
 		centerAt(view, line);
 	}
 
-	return true;
+	return std::make_pair(view, line);
 }
 
 
-bool jumpToPrevChange(int mainStartLine, int subStartLine, bool doNotBlink = false)
+std::pair<int, int> jumpToPrevChange(int mainStartLine, int subStartLine, bool doNotBlink = false)
 {
 	const int mainLine	= CallScintilla(MAIN_VIEW, SCI_MARKERPREVIOUS, mainStartLine, MARKER_MASK_LINE);
 	const int subLine	= CallScintilla(SUB_VIEW, SCI_MARKERPREVIOUS, subStartLine, MARKER_MASK_LINE);
@@ -257,7 +257,7 @@ bool jumpToPrevChange(int mainStartLine, int subStartLine, bool doNotBlink = fal
 	if (line < 0)
 	{
 		if (otherLine < 0)
-			return false;
+			return std::make_pair(-1, -1);
 
 		view = otherView;
 		line = otherLine;
@@ -285,7 +285,7 @@ bool jumpToPrevChange(int mainStartLine, int subStartLine, bool doNotBlink = fal
 		centerAt(view, line);
 	}
 
-	return true;
+	return std::make_pair(view, line);
 }
 
 } // anonymous namespace
@@ -488,38 +488,38 @@ void clearChangedIndicator(int view, int start, int length)
 }
 
 
-void jumpToFirstChange(bool doNotBlink)
+std::pair<int, int> jumpToFirstChange(bool doNotBlink)
 {
-	jumpToNextChange(0, 0, doNotBlink);
+	return jumpToNextChange(0, 0, doNotBlink);
 }
 
 
-void jumpToLastChange()
+std::pair<int, int> jumpToLastChange(bool doNotBlink)
 {
-	jumpToPrevChange(CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0),
-			CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0));
+	return jumpToPrevChange(CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0),
+			CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0), doNotBlink);
 }
 
 
-void jumpToChange(bool down, bool wrapAround)
+std::pair<int, int> jumpToChange(bool down, bool wrapAround)
 {
-	bool success;
+	std::pair<int, int> viewLoc;
 
 	if (down)
-		success = jumpToNextChange(getNextUnmarkedLine(MAIN_VIEW, getLastLine(MAIN_VIEW), MARKER_MASK_LINE),
+		viewLoc = jumpToNextChange(getNextUnmarkedLine(MAIN_VIEW, getLastLine(MAIN_VIEW), MARKER_MASK_LINE),
 				getNextUnmarkedLine(SUB_VIEW, getLastLine(SUB_VIEW), MARKER_MASK_LINE));
 	else
-		success = jumpToPrevChange(getPrevUnmarkedLine(MAIN_VIEW, getFirstLine(MAIN_VIEW), MARKER_MASK_LINE),
+		viewLoc = jumpToPrevChange(getPrevUnmarkedLine(MAIN_VIEW, getFirstLine(MAIN_VIEW), MARKER_MASK_LINE),
 				getPrevUnmarkedLine(SUB_VIEW, getFirstLine(SUB_VIEW), MARKER_MASK_LINE));
 
-	if (!success)
+	if (viewLoc.first < 0)
 	{
 		if (wrapAround)
 		{
 			if (down)
-				jumpToFirstChange();
+				viewLoc = jumpToFirstChange(true);
 			else
-				jumpToLastChange();
+				viewLoc = jumpToLastChange(true);
 
 			FLASHWINFO flashInfo;
 			flashInfo.cbSize	= sizeof(flashInfo);
@@ -532,11 +532,13 @@ void jumpToChange(bool down, bool wrapAround)
 		else
 		{
 			if (down)
-				jumpToLastChange();
+				viewLoc = jumpToLastChange();
 			else
-				jumpToFirstChange();
+				viewLoc = jumpToFirstChange();
 		}
 	}
+
+	return viewLoc;
 }
 
 

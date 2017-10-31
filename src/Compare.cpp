@@ -1581,6 +1581,16 @@ void compare(bool selectionCompare = false)
 				}
 
 				goToFirst = true;
+
+				for (const AlignmentPair& alignment : cmpPair->alignmentInfo)
+				{
+					if (alignment.main.diffMask)
+					{
+						centerAt(MAIN_VIEW,	alignment.main.line);
+						centerAt(SUB_VIEW,	alignment.sub.line);
+						break;
+					}
+				}
 			}
 
 			LOGD("COMPARE READY\n");
@@ -2173,8 +2183,6 @@ void DelayedAlign::operator()()
 			realign = isAlignmentNeeded(SUB_VIEW, alignmentInfo);
 	}
 
-	const int currentView = getCurrentViewId();
-
 	ScopedIncrementer incr(notificationsLock);
 
 	if (realign)
@@ -2182,7 +2190,7 @@ void DelayedAlign::operator()()
 		LOGD("Aligning diffs\n");
 
 		if (!storedLocation && !goToFirst)
-			storedLocation.reset(new ViewLocation(currentView));
+			storedLocation.reset(new ViewLocation(getCurrentViewId()));
 
 		alignDiffs(alignmentInfo);
 	}
@@ -2193,16 +2201,21 @@ void DelayedAlign::operator()()
 
 		goToFirst = false;
 
-		jumpToFirstChange(true);
+		std::pair<int, int> viewLoc = jumpToFirstChange(true);
+
+		if (viewLoc.first >= 0)
+			syncViews(viewLoc.first);
 
 		cmpPair->setStatus();
 	}
 	else if (storedLocation)
 	{
+		const int view = storedLocation->getView();
+
 		storedLocation->restore();
 		storedLocation.reset();
 
-		syncViews(currentView);
+		syncViews(view);
 
 		cmpPair->setStatus();
 	}

@@ -173,6 +173,11 @@ struct ViewLocation
 	void save(int view);
 	void restore();
 
+	inline int getView()
+	{
+		return _view;
+	}
+
 private:
 	int		_view;
 	int		_visibleLineOffset;
@@ -364,9 +369,9 @@ void centerCaretAt(int view, int line);
 void markTextAsChanged(int view, int start, int length);
 void clearChangedIndicator(int view, int start, int length);
 
-void jumpToFirstChange(bool doNotBlink = false);
-void jumpToLastChange();
-void jumpToChange(bool down, bool wrapAround);
+std::pair<int, int> jumpToFirstChange(bool doNotBlink = false);
+std::pair<int, int> jumpToLastChange(bool doNotBlink = false);
+std::pair<int, int> jumpToChange(bool down, bool wrapAround);
 
 void setNormalView(int view);
 void setCompareView(int view, int blankColor);
