@@ -1582,6 +1582,8 @@ void compare(bool selectionCompare = false)
 
 				goToFirst = true;
 
+				// Move the view so the Notepad++ line number area width is updated now and we avoid getting
+				// second alignment request on scintilla paint notification
 				for (const AlignmentPair& alignment : cmpPair->alignmentInfo)
 				{
 					if (alignment.main.diffMask)

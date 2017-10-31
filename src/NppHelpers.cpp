@@ -197,12 +197,62 @@ void setBlanksStyle(int view, int blankColor)
 }
 
 
+void blinkAnnotations(int view)
+{
+	const int nppBgColor = ::SendMessage(nppData._nppHandle, NPPM_GETEDITORDEFAULTBACKGROUNDCOLOR, 0, 0);
+	const int annotationsColor = CallScintilla(view, SCI_STYLEGETBACK, blankStyle[view], 0);
+
+	HWND hView = getView(view);
+
+	for (int i = cBlinkCount; ;)
+	{
+		setBlanksStyle(view, nppBgColor);
+
+		::UpdateWindow(hView);
+		::Sleep(cBlinkInterval_ms);
+
+		setBlanksStyle(view, annotationsColor);
+		::UpdateWindow(hView);
+
+		if (--i == 0)
+			break;
+
+		::Sleep(cBlinkInterval_ms);
+	}
+}
+
+
+void blinkMarkedLine(int view, int line)
+{
+	const int marker = CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL;
+	HWND hView = getView(view);
+
+	for (int i = cBlinkCount; ;)
+	{
+		clearMarks(view, line);
+
+		::UpdateWindow(hView);
+		::Sleep(cBlinkInterval_ms);
+
+		CallScintilla(view, SCI_MARKERADDSET, line, marker);
+		::UpdateWindow(hView);
+
+		if (--i == 0)
+			break;
+
+		::Sleep(cBlinkInterval_ms);
+	}
+}
+
+
 std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool doNotBlink = false)
 {
 	const int mainLine	= CallScintilla(MAIN_VIEW, SCI_MARKERNEXT, mainStartLine, MARKER_MASK_LINE);
 	const int subLine	= CallScintilla(SUB_VIEW, SCI_MARKERNEXT, subStartLine, MARKER_MASK_LINE);
 
-	int view		= getCurrentViewId();
+	const int currentView = getCurrentViewId();
+
+	int view		= currentView;
 	int otherView	= getOtherViewId(view);
 
 	int line		= (view == MAIN_VIEW) ? mainLine : subLine;
@@ -226,17 +276,19 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 		}
 	}
 
-	if (line >= getFirstLine(view) && line <= getLastLine(view))
-	{
-		if (!doNotBlink)
-			blinkMarkedLine(view, line);
-	}
-	else
+	if (line < getFirstLine(view) || line > getLastLine(view) || doNotBlink)
 	{
 		LOGD("Jump to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
 				" view, center doc line: " + std::to_string(line) + "\n");
 
 		centerAt(view, line);
+	}
+	else
+	{
+		if (view == currentView)
+			blinkMarkedLine(view, line);
+		else
+			blinkAnnotations(currentView);
 	}
 
 	return std::make_pair(view, line);
@@ -248,7 +300,9 @@ std::pair<int, int> jumpToPrevChange(int mainStartLine, int subStartLine, bool d
 	const int mainLine	= CallScintilla(MAIN_VIEW, SCI_MARKERPREVIOUS, mainStartLine, MARKER_MASK_LINE);
 	const int subLine	= CallScintilla(SUB_VIEW, SCI_MARKERPREVIOUS, subStartLine, MARKER_MASK_LINE);
 
-	int view		= getCurrentViewId();
+	const int currentView = getCurrentViewId();
+
+	int view		= currentView;
 	int otherView	= getOtherViewId(view);
 
 	int line		= (view == MAIN_VIEW) ? mainLine : subLine;
@@ -272,17 +326,19 @@ std::pair<int, int> jumpToPrevChange(int mainStartLine, int subStartLine, bool d
 		}
 	}
 
-	if (line >= getFirstLine(view) && line <= getLastLine(view))
-	{
-		if (!doNotBlink)
-			blinkMarkedLine(view, line);
-	}
-	else
+	if (line < getFirstLine(view) || line > getLastLine(view) || doNotBlink)
 	{
 		LOGD("Jump to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
 				" view, center doc line: " + std::to_string(line) + "\n");
 
 		centerAt(view, line);
+	}
+	else
+	{
+		if (view == currentView)
+			blinkMarkedLine(view, line);
+		else
+			blinkAnnotations(currentView);
 	}
 
 	return std::make_pair(view, line);
@@ -318,29 +374,6 @@ std::pair<int, int> getSelectionLines(int view)
 		--endLine;
 
 	return std::make_pair(CallScintilla(view, SCI_LINEFROMPOSITION, selectionStart, 0), endLine);
-}
-
-
-void blinkMarkedLine(int view, int line)
-{
-	const int marker = CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL;
-	HWND hView = getView(view);
-
-	for (int i = cBlinkCount; ;)
-	{
-		clearMarks(view, line);
-
-		::UpdateWindow(hView);
-		::Sleep(cBlinkInterval_ms);
-
-		CallScintilla(view, SCI_MARKERADDSET, line, marker);
-		::UpdateWindow(hView);
-
-		if (--i == 0)
-			break;
-
-		::Sleep(cBlinkInterval_ms);
-	}
 }
 
 
