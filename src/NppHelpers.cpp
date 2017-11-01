@@ -494,7 +494,7 @@ void setCompareView(int view, int blankColor)
 	{
 		compareMode[view] = true;
 
-		endAtLastLine[view] = static_cast<bool>(CallScintilla(view, SCI_GETENDATLASTLINE, 0, 0));
+		endAtLastLine[view] = (CallScintilla(view, SCI_GETENDATLASTLINE, 0, 0) != 0);
 		CallScintilla(view, SCI_SETENDATLASTLINE, false, 0);
 
 		CallScintilla(view, SCI_SETMARGINMASKN, 4, (LPARAM)MARKER_MASK_SYMBOL);
