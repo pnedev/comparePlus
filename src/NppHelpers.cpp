@@ -144,7 +144,9 @@ namespace // anonymous namespace
 const int cBlinkCount		= 3;
 const int cBlinkInterval_ms	= 100;
 
-int blankStyle[2] = { 0, 0 };
+bool compareMode[2]		= { false, false };
+int blankStyle[2]		= { 0, 0 };
+bool endAtLastLine[2]	= { true, true };
 
 
 void defineColor(int type, int color)
@@ -245,6 +247,39 @@ void blinkMarkedLine(int view, int line)
 }
 
 
+void blinkOtherView(int view, int line, bool nextLine)
+{
+	line = otherViewMatchingLine(view, line);
+	view = getOtherViewId(view);
+
+	const int firstLine	= getFirstLine(view);
+	const int lastLine	= getLastLine(view);
+
+	if (firstLine == lastLine)
+	{
+		blinkAnnotations(view);
+	}
+	else
+	{
+		if (nextLine)
+		{
+			if (++line > lastLine)
+				--line;
+		}
+		else
+		{
+			if (line < firstLine)
+				++line;
+		}
+
+		if (CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL)
+			blinkMarkedLine(view, line);
+		else
+			blinkLine(view, line);
+	}
+}
+
+
 std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool doNotBlink = false)
 {
 	const int mainLine	= CallScintilla(MAIN_VIEW, SCI_MARKERNEXT, mainStartLine, MARKER_MASK_LINE);
@@ -288,7 +323,7 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 		if (view == currentView)
 			blinkMarkedLine(view, line);
 		else
-			blinkAnnotations(currentView);
+			blinkOtherView(view, line, false);
 	}
 
 	return std::make_pair(view, line);
@@ -338,7 +373,7 @@ std::pair<int, int> jumpToPrevChange(int mainStartLine, int subStartLine, bool d
 		if (view == currentView)
 			blinkMarkedLine(view, line);
 		else
-			blinkAnnotations(currentView);
+			blinkOtherView(view, line, true);
 	}
 
 	return std::make_pair(view, line);
@@ -439,22 +474,37 @@ void centerCaretAt(int view, int line)
 
 void setNormalView(int view)
 {
-	CallScintilla(view, SCI_SETMARGINMASKN, 4, 0);
-	CallScintilla(view, SCI_SETMARGINWIDTHN, 4, 0);
+	if (compareMode[view])
+	{
+		compareMode[view] = false;
 
-	CallScintilla(view, SCI_SETCARETLINEBACKALPHA, SC_ALPHA_NOALPHA, 0);
+		CallScintilla(view, SCI_SETENDATLASTLINE, endAtLastLine[view], 0);
+
+		CallScintilla(view, SCI_SETMARGINMASKN, 4, 0);
+		CallScintilla(view, SCI_SETMARGINWIDTHN, 4, 0);
+
+		CallScintilla(view, SCI_SETCARETLINEBACKALPHA, SC_ALPHA_NOALPHA, 0);
+	}
 }
 
 
 void setCompareView(int view, int blankColor)
 {
-	CallScintilla(view, SCI_SETMARGINMASKN, 4, (LPARAM)MARKER_MASK_SYMBOL);
-	CallScintilla(view, SCI_SETMARGINWIDTHN, 4, 16);
+	if (!compareMode[view])
+	{
+		compareMode[view] = true;
 
-	CallScintilla(view, SCI_SETCARETLINEBACKALPHA, 96, 0);
+		endAtLastLine[view] = CallScintilla(view, SCI_GETENDATLASTLINE, 0, 0);
+		CallScintilla(view, SCI_SETENDATLASTLINE, false, 0);
 
-	// For some reason the annotation blank styling is lost on Sci doc switch thus we need to reapply it
-	setBlanksStyle(view, blankColor);
+		CallScintilla(view, SCI_SETMARGINMASKN, 4, (LPARAM)MARKER_MASK_SYMBOL);
+		CallScintilla(view, SCI_SETMARGINWIDTHN, 4, 16);
+
+		CallScintilla(view, SCI_SETCARETLINEBACKALPHA, 96, 0);
+
+		// For some reason the annotation blank styling is lost on Sci doc switch thus we need to reapply it
+		setBlanksStyle(view, blankColor);
+	}
 }
 
 
