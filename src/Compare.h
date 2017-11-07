@@ -137,4 +137,5 @@ inline LRESULT CallScintilla(int viewNum, unsigned int uMsg, uptr_t wParam, sptr
 }
 
 
+void SetLocation(int view, int line);
 void ViewNavigationBar();

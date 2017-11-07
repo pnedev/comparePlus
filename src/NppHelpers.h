@@ -155,7 +155,13 @@ private:
  */
 struct ViewLocation
 {
-	ViewLocation() {}
+	ViewLocation() : _view(-1) {}
+
+	ViewLocation(int view, int centerLine)
+	{
+		save(view, centerLine);
+	}
+
 	ViewLocation(int view)
 	{
 		save(view);
@@ -170,7 +176,7 @@ struct ViewLocation
 
 #endif
 
-	void save(int view);
+	void save(int view, int centerLine = -1);
 	void restore();
 
 	inline int getView()
@@ -180,6 +186,7 @@ struct ViewLocation
 
 private:
 	int		_view;
+	int		_centerLine;
 	int		_visibleLineOffset;
 	int		_pos;
 	int		_selStart;

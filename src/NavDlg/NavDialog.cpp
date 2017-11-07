@@ -488,11 +488,10 @@ void NavDialog::setPos(int x, int y)
 		currentView = &m_view[1];
 	}
 
-	::SetFocus(getView(currentView->m_view));
-
 	const int currentLine = currentView->bmpToDocLine((y + scrollOffset) / m_pixelsPerLine);
 
 	centerAt(currentView->m_view, currentLine);
+	SetLocation(currentView->m_view, currentLine);
 }
 
 

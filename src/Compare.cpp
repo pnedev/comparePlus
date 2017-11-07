@@ -324,10 +324,13 @@ using CompareList_t = std::vector<ComparedPair>;
 class DelayedAlign : public DelayedWork
 {
 public:
-	DelayedAlign() : DelayedWork() {}
+	DelayedAlign() : DelayedWork(), _consecutiveAligns(0) {}
 	virtual ~DelayedAlign() = default;
 
 	virtual void operator()();
+
+private:
+	unsigned _consecutiveAligns; // Used as alignment oscillation filter in some corner cases
 };
 
 
@@ -1804,28 +1807,40 @@ void DetectMoves()
 void Prev()
 {
 	if (NppSettings::get().compareMode)
-		jumpToChange(false, Settings.WrapAround);
+	{
+		std::pair<int, int> viewLoc = jumpToChange(false, Settings.WrapAround);
+		storedLocation.reset(new ViewLocation(viewLoc.first, viewLoc.second));
+	}
 }
 
 
 void Next()
 {
 	if (NppSettings::get().compareMode)
-		jumpToChange(true, Settings.WrapAround);
+	{
+		std::pair<int, int> viewLoc = jumpToChange(true, Settings.WrapAround);
+		storedLocation.reset(new ViewLocation(viewLoc.first, viewLoc.second));
+	}
 }
 
 
 void First()
 {
 	if (NppSettings::get().compareMode)
-		jumpToFirstChange();
+	{
+		std::pair<int, int> viewLoc = jumpToFirstChange();
+		storedLocation.reset(new ViewLocation(viewLoc.first, viewLoc.second));
+	}
 }
 
 
 void Last()
 {
 	if (NppSettings::get().compareMode)
-		jumpToLastChange();
+	{
+		std::pair<int, int> viewLoc = jumpToLastChange();
+		storedLocation.reset(new ViewLocation(viewLoc.first, viewLoc.second));
+	}
 }
 
 
@@ -2088,8 +2103,6 @@ void comparedFileActivated()
 
 	setCompareView(MAIN_VIEW, Settings.colors.blank);
 	setCompareView(SUB_VIEW, Settings.colors.blank);
-
-	storedLocation.reset(new ViewLocation(getCurrentViewId()));
 }
 
 
@@ -2215,9 +2228,22 @@ void DelayedAlign::operator()()
 		const int view = storedLocation->getView();
 
 		storedLocation->restore();
-		storedLocation.reset();
 
 		syncViews(view);
+
+		if (realign)
+			++_consecutiveAligns;
+		else
+			_consecutiveAligns = 0;
+
+		if (_consecutiveAligns > 1)
+			_consecutiveAligns = 0;
+
+		// Retry re-alignment one more time - might be needed in case line number margin width has changed
+		if (_consecutiveAligns)
+			post(10);
+		else
+			storedLocation.reset();
 
 		cmpPair->setStatus();
 	}
@@ -2416,6 +2442,8 @@ void DelayedActivate::operator()()
 		return;
 
 	LOGDB(buffId, "Activate\n");
+
+	storedLocation.reset(new ViewLocation(viewIdFromBuffId(buffId)));
 
 	const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
 
@@ -2628,6 +2656,12 @@ void DelayedMaximize::operator()()
 }
 
 } // anonymous namespace
+
+
+void SetLocation(int view, int line)
+{
+	storedLocation.reset(new ViewLocation(view, line));
+}
 
 
 void ViewNavigationBar()

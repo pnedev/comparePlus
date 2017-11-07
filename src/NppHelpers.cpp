@@ -107,17 +107,22 @@ BOOL CALLBACK NppTabHandleGetter::enumWindowsCB(HWND hwnd, LPARAM lParam)
 }
 
 
-void ViewLocation::save(int view)
+void ViewLocation::save(int view, int centerLine)
 {
 	_view		= view;
-	_pos		= CallScintilla(view, SCI_GETCURRENTPOS, 0, 0);
-	_selStart	= CallScintilla(view, SCI_GETSELECTIONSTART, 0, 0);
-	_selEnd		= CallScintilla(view, SCI_GETSELECTIONEND, 0, 0);
+	_centerLine	= centerLine;
 
-	const int line = CallScintilla(view, SCI_LINEFROMPOSITION, _pos, 0);
+	if (_centerLine < 0)
+	{
+		_pos		= CallScintilla(view, SCI_GETCURRENTPOS, 0, 0);
+		_selStart	= CallScintilla(view, SCI_GETSELECTIONSTART, 0, 0);
+		_selEnd		= CallScintilla(view, SCI_GETSELECTIONEND, 0, 0);
 
-	_visibleLineOffset = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) -
-			CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
+		const int line = CallScintilla(view, SCI_LINEFROMPOSITION, _pos, 0);
+
+		_visibleLineOffset = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) -
+				CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	}
 
 	LOGD("Store " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") + " view location\n");
 }
@@ -125,16 +130,29 @@ void ViewLocation::save(int view)
 
 void ViewLocation::restore()
 {
-	const int caretLine = CallScintilla(_view, SCI_LINEFROMPOSITION, _pos, 0);
-	const int firstVisibleLine = CallScintilla(_view, SCI_VISIBLEFROMDOCLINE, caretLine, 0) - _visibleLineOffset;
+	if (_view < 0)
+		return;
 
-	CallScintilla(_view, SCI_ENSUREVISIBLEENFORCEPOLICY, caretLine, 0);
-	CallScintilla(_view, SCI_SETSEL, _selStart, _selEnd);
-	CallScintilla(_view, SCI_SETFIRSTVISIBLELINE, firstVisibleLine, 0);
+	if (_centerLine < 0)
+	{
+		const int caretLine = CallScintilla(_view, SCI_LINEFROMPOSITION, _pos, 0);
+		const int firstVisibleLine = CallScintilla(_view, SCI_VISIBLEFROMDOCLINE, caretLine, 0) - _visibleLineOffset;
 
-	LOGD("Restore " + std::string(_view == MAIN_VIEW ? "MAIN" : "SUB") +
-			" view location, caret doc line: " + std::to_string(caretLine) + ", visible doc line: " +
-			std::to_string(CallScintilla(_view, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0)) + "\n");
+		CallScintilla(_view, SCI_ENSUREVISIBLEENFORCEPOLICY, caretLine, 0);
+		CallScintilla(_view, SCI_SETSEL, _selStart, _selEnd);
+		CallScintilla(_view, SCI_SETFIRSTVISIBLELINE, firstVisibleLine, 0);
+
+		LOGD("Restore " + std::string(_view == MAIN_VIEW ? "MAIN" : "SUB") +
+				" view location, caret doc line: " + std::to_string(caretLine) + ", visible doc line: " +
+				std::to_string(CallScintilla(_view, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0)) + "\n");
+	}
+	else
+	{
+		centerAt(_view, _centerLine);
+
+		LOGD("Restore " + std::string(_view == MAIN_VIEW ? "MAIN" : "SUB") +
+				" view location, center doc line: " + std::to_string(_centerLine) + "\n");
+	}
 }
 
 
@@ -457,11 +475,15 @@ void blinkRange(int view, int startPos, int endPos)
 
 void centerAt(int view, int line)
 {
-	const int linesOnScreen = CallScintilla(view, SCI_LINESONSCREEN, 0, 0);
-	const int firstVisible = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - linesOnScreen / 2;
-
 	CallScintilla(view, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
-	CallScintilla(view, SCI_SETFIRSTVISIBLELINE, firstVisible, 0);
+
+	if (line < getFirstLine(view) || line > getLastLine(view))
+	{
+		const int linesOnScreen = CallScintilla(view, SCI_LINESONSCREEN, 0, 0);
+		const int firstVisible = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - linesOnScreen / 2;
+
+		CallScintilla(view, SCI_SETFIRSTVISIBLELINE, firstVisible, 0);
+	}
 }
 
 
