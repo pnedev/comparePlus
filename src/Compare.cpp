@@ -2241,11 +2241,14 @@ void DelayedAlign::operator()()
 
 		// Retry re-alignment one more time - might be needed in case line number margin width has changed
 		if (_consecutiveAligns)
+		{
 			post(10);
+		}
 		else
+		{
 			storedLocation.reset();
-
-		cmpPair->setStatus();
+			cmpPair->setStatus();
+		}
 	}
 }
 
