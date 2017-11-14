@@ -4,7 +4,7 @@ Compare plugin for Notepad++
 A very useful diff plugin to show the difference between:
 -  2 files (side by side)
 -  Diff against Git (with the help of [libgit2](https://github.com/libgit2/libgit2) )
--  Diff against SVN (with the help of [sqlite](https://sqlite.org/releaselog/3_17_0.html) )
+-  Diff against SVN (with the help of [sqlite](https://sqlite.org/releaselog/3_21_0.html) )
 -  Diff since last Save
 
 Build Status
