@@ -217,31 +217,6 @@ void setBlanksStyle(int view, int blankColor)
 }
 
 
-void blinkAnnotations(int view)
-{
-	const int nppBgColor = ::SendMessage(nppData._nppHandle, NPPM_GETEDITORDEFAULTBACKGROUNDCOLOR, 0, 0);
-	const int annotationsColor = CallScintilla(view, SCI_STYLEGETBACK, blankStyle[view], 0);
-
-	HWND hView = getView(view);
-
-	for (int i = cBlinkCount; ;)
-	{
-		setBlanksStyle(view, nppBgColor);
-
-		::UpdateWindow(hView);
-		::Sleep(cBlinkInterval_ms);
-
-		setBlanksStyle(view, annotationsColor);
-		::UpdateWindow(hView);
-
-		if (--i == 0)
-			break;
-
-		::Sleep(cBlinkInterval_ms);
-	}
-}
-
-
 void blinkMarkedLine(int view, int line)
 {
 	const int marker = CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL;
@@ -270,31 +245,24 @@ void blinkOtherView(int view, int line, bool nextLine)
 	line = otherViewMatchingLine(view, line);
 	view = getOtherViewId(view);
 
-	const int firstLine	= getFirstLine(view);
-	const int lastLine	= getLastLine(view);
-
-	if (firstLine == lastLine)
+	if (nextLine)
 	{
-		blinkAnnotations(view);
+		if (++line > getLastLine(view))
+			--line;
+
+		if (line == CallScintilla(view, SCI_GETLINECOUNT, 0, 0))
+			--line;
 	}
 	else
 	{
-		if (nextLine)
-		{
-			if (++line > lastLine)
-				--line;
-		}
-		else
-		{
-			if (line < firstLine)
-				++line;
-		}
-
-		if (CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL)
-			blinkMarkedLine(view, line);
-		else
-			blinkLine(view, line);
+		if (line < getFirstLine(view))
+			++line;
 	}
+
+	if (CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL)
+		blinkMarkedLine(view, line);
+	else
+		blinkLine(view, line);
 }
 
 

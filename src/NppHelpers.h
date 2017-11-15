@@ -332,8 +332,12 @@ inline int getLastLine(int view)
 
 inline int otherViewMatchingLine(int view, int line)
 {
-	return CallScintilla(getOtherViewId(view), SCI_DOCLINEFROMVISIBLE,
-					CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0), 0);
+	const int otherView = getOtherViewId(view);
+
+	line = CallScintilla(otherView, SCI_DOCLINEFROMVISIBLE,
+			CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0), 0);
+
+	return (line == CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0)) ? line - 1 : line;
 }
 
 
