@@ -2075,16 +2075,37 @@ void syncViews(int biasView)
 {
 	const int otherView = getOtherViewId(biasView);
 
-	const int firstVisibleLine = CallScintilla(biasView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	const int firstVisible = CallScintilla(biasView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	const int otherFirstVisible = CallScintilla(otherView, SCI_GETFIRSTVISIBLELINE, 0, 0);
 
-	if (firstVisibleLine != CallScintilla(otherView, SCI_GETFIRSTVISIBLELINE, 0, 0))
+	const int firstLine = CallScintilla(biasView, SCI_DOCLINEFROMVISIBLE, firstVisible, 0);
+
+	int otherLine = -1;
+
+	if (firstLine < CallScintilla(biasView, SCI_GETLINECOUNT, 0, 0) - 1)
 	{
-		LOGD("Syncing to " + std::string(biasView == MAIN_VIEW ? "MAIN" : "SUB") + " view, visible doc line: " +
-				std::to_string(CallScintilla(biasView, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0)) + "\n");
+		if (firstVisible != otherFirstVisible)
+		{
+			LOGD("Syncing to " + std::string(biasView == MAIN_VIEW ? "MAIN" : "SUB") + " view, visible doc line: " +
+					std::to_string(firstLine) + "\n");
 
+			const int otherLastVisible = CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE,
+					CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0) - 1, 0);
+
+			otherLine = (firstVisible > otherLastVisible) ? otherLastVisible : firstVisible;
+
+		}
+	}
+	else if (firstVisible > otherFirstVisible)
+	{
+		otherLine = firstVisible;
+	}
+
+	if (otherLine >= 0)
+	{
 		ScopedIncrementer incr(notificationsLock);
 
-		CallScintilla(otherView, SCI_SETFIRSTVISIBLELINE, firstVisibleLine, 0);
+		CallScintilla(otherView, SCI_SETFIRSTVISIBLELINE, otherLine, 0);
 	}
 
 	NavDlg.Update();
