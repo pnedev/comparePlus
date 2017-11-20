@@ -39,9 +39,8 @@ enum class CompareResult
 
 struct AlignmentViewData
 {
-	int					line {0};
-	int					diffMask {0};
-	// std::vector<int>	movedLinesOffsets;
+	int	line {0};
+	int	diffMask {0};
 };
 
 
@@ -56,4 +55,4 @@ using AlignmentInfo_t = std::vector<AlignmentPair>;
 
 
 CompareResult compareViews(const section_t& mainViewSection, const section_t& subViewSection,
-		const UserSettings& settings, const TCHAR* progressInfo, AlignmentInfo_t& alignmentInfo);
+		const UserSettings& settings, const TCHAR* progressInfo, AlignmentInfo_t& alignmentInfo, bool findUniqueMode);

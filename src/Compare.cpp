@@ -1460,7 +1460,7 @@ CompareList_t::iterator addComparePair()
 }
 
 
-CompareResult runCompare(CompareList_t::iterator cmpPair, bool selectionCompare)
+CompareResult runCompare(CompareList_t::iterator cmpPair, bool selectionCompare, bool findUniqueMode)
 {
 	cmpPair->positionFiles();
 
@@ -1489,11 +1489,11 @@ CompareResult runCompare(CompareList_t::iterator cmpPair, bool selectionCompare)
 			TEXT("Comparing selected lines in \"%s\" vs. selected lines in \"%s\"...") :
 			TEXT("Comparing \"%s\" vs. \"%s\"..."), newName, oldName);
 
-	return compareViews(mainViewSection, subViewSection, Settings, progressInfo, cmpPair->alignmentInfo);
+	return compareViews(mainViewSection, subViewSection, Settings, progressInfo, cmpPair->alignmentInfo, findUniqueMode);
 }
 
 
-void compare(bool selectionCompare = false)
+void compare(bool selectionCompare = false, bool findUniqueMode = false)
 {
 	ScopedIncrementer incr(notificationsLock);
 
@@ -1553,7 +1553,7 @@ void compare(bool selectionCompare = false)
 		}
 	}
 
-	const CompareResult cmpResult = runCompare(cmpPair, selectionCompare);
+	const CompareResult cmpResult = runCompare(cmpPair, selectionCompare, findUniqueMode);
 
 	switch (cmpResult)
 	{
@@ -1680,6 +1680,18 @@ void CompareWhole()
 void CompareSelectedLines()
 {
 	compare(true);
+}
+
+
+void FindUnique()
+{
+	compare(false, true);
+}
+
+
+void FindSelectedUnique()
+{
+	compare(true, true);
 }
 
 
@@ -1929,6 +1941,22 @@ void createMenu()
 	funcItem[CMD_COMPARE_LINES]._pShKey->_isCtrl	= true;
 	funcItem[CMD_COMPARE_LINES]._pShKey->_isShift	= false;
 	funcItem[CMD_COMPARE_LINES]._pShKey->_key		= 'N';
+
+	_tcscpy_s(funcItem[CMD_FIND_UNIQUE]._itemName, nbChar, TEXT("Find Unique Lines"));
+	funcItem[CMD_FIND_UNIQUE]._pFunc			= FindUnique;
+	funcItem[CMD_FIND_UNIQUE]._pShKey			= new ShortcutKey;
+	funcItem[CMD_FIND_UNIQUE]._pShKey->_isAlt	= true;
+	funcItem[CMD_FIND_UNIQUE]._pShKey->_isCtrl	= true;
+	funcItem[CMD_FIND_UNIQUE]._pShKey->_isShift	= true;
+	funcItem[CMD_FIND_UNIQUE]._pShKey->_key		= 'C';
+
+	_tcscpy_s(funcItem[CMD_FIND_SEL_UNIQUE]._itemName, nbChar, TEXT("Find Selected Unique Lines"));
+	funcItem[CMD_FIND_SEL_UNIQUE]._pFunc			= FindSelectedUnique;
+	funcItem[CMD_FIND_SEL_UNIQUE]._pShKey			= new ShortcutKey;
+	funcItem[CMD_FIND_SEL_UNIQUE]._pShKey->_isAlt	= true;
+	funcItem[CMD_FIND_SEL_UNIQUE]._pShKey->_isCtrl	= true;
+	funcItem[CMD_FIND_SEL_UNIQUE]._pShKey->_isShift	= true;
+	funcItem[CMD_FIND_SEL_UNIQUE]._pShKey->_key		= 'N';
 
 	_tcscpy_s(funcItem[CMD_CLEAR_ACTIVE]._itemName, nbChar, TEXT("Clear Active Compare"));
 	funcItem[CMD_CLEAR_ACTIVE]._pFunc				= ClearActiveCompare;
@@ -2336,7 +2364,7 @@ void DelayedUpdate::operator()()
 		clearMarksAndBlanks(SUB_VIEW, subViewSec.off, subViewSec.len);
 
 		AlignmentInfo_t alignmentInfo;
-		compareViews(mainViewSec, subViewSec, Settings, TEXT("Re-comparing changes..."), alignmentInfo);
+		compareViews(mainViewSec, subViewSec, Settings, TEXT("Re-comparing changes..."), alignmentInfo, false);
 	}
 	else
 	{
@@ -2344,7 +2372,7 @@ void DelayedUpdate::operator()()
 		clearMarks(SUB_VIEW, subViewSec.off, subViewSec.len);
 
 		AlignmentInfo_t alignmentInfo;
-		compareViews(mainViewSec, subViewSec, Settings, nullptr, alignmentInfo);
+		compareViews(mainViewSec, subViewSec, Settings, nullptr, alignmentInfo, false);
 	}
 
 	linesAdded = 0;

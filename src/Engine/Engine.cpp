@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <utility>
 #include <map>
+#include <unordered_map>
 
 #include <windows.h>
 
@@ -703,11 +704,113 @@ CompareResult runCompare(const section_t& mainViewSection, const section_t& subV
 	return CompareResult::COMPARE_MISMATCH;
 }
 
+
+CompareResult runFindUnique(const section_t& mainViewSection, const section_t& subViewSection,
+		const UserSettings& settings)
+{
+	progress_ptr& progress = ProgressDlg::Get();
+
+	DocCmpInfo doc1;
+	DocCmpInfo doc2;
+
+	doc1.view		= MAIN_VIEW;
+	doc1.section	= mainViewSection;
+	doc2.view		= SUB_VIEW;
+	doc2.section	= subViewSection;
+
+	if (settings.OldFileViewId == MAIN_VIEW)
+	{
+		doc1.blockDiffMask = MARKER_MASK_REMOVED;
+		doc2.blockDiffMask = MARKER_MASK_ADDED;
+	}
+	else
+	{
+		doc1.blockDiffMask = MARKER_MASK_ADDED;
+		doc2.blockDiffMask = MARKER_MASK_REMOVED;
+	}
+
+	std::vector<uint64_t> doc1LineHashes = computeLineHashes(doc1, settings);
+
+	if (progress && !progress->NextPhase())
+		return CompareResult::COMPARE_CANCELLED;
+
+	std::vector<uint64_t> doc2LineHashes = computeLineHashes(doc2, settings);
+
+	if (progress && !progress->NextPhase())
+		return CompareResult::COMPARE_CANCELLED;
+
+	std::unordered_map<uint64_t, std::vector<int>> doc1UniqueLines;
+
+	int docHashesSize = static_cast<int>(doc1LineHashes.size());
+
+	for (int i = 0; i < docHashesSize; ++i)
+	{
+		auto insertPair = doc1UniqueLines.emplace(doc1LineHashes[i], std::vector<int>{i});
+		if (!insertPair.second)
+			insertPair.first->second.emplace_back(i);
+	}
+
+	doc1LineHashes.clear();
+
+	if (progress && !progress->NextPhase())
+		return CompareResult::COMPARE_CANCELLED;
+
+	std::unordered_map<uint64_t, std::vector<int>> doc2UniqueLines;
+
+	docHashesSize = static_cast<int>(doc2LineHashes.size());
+
+	for (int i = 0; i < docHashesSize; ++i)
+	{
+		auto insertPair = doc2UniqueLines.emplace(doc2LineHashes[i], std::vector<int>{i});
+		if (!insertPair.second)
+			insertPair.first->second.emplace_back(i);
+	}
+
+	doc2LineHashes.clear();
+
+	if (progress && !progress->NextPhase())
+		return CompareResult::COMPARE_CANCELLED;
+
+	int doc1UniqueLinesCount = 0;
+
+	for (std::unordered_map<uint64_t, std::vector<int>>::iterator doc1it = doc1UniqueLines.begin();
+		doc1it != doc1UniqueLines.end(); ++doc1it)
+	{
+		std::unordered_map<uint64_t, std::vector<int>>::iterator doc2it = doc2UniqueLines.find(doc1it->first);
+
+		if (doc2it != doc2UniqueLines.end())
+		{
+			doc2UniqueLines.erase(doc2it);
+		}
+		else
+		{
+			for (const auto& line : doc1it->second)
+			{
+				CallScintilla(doc1.view, SCI_MARKERADDSET, line + doc1.section.off, doc1.blockDiffMask);
+				++doc1UniqueLinesCount;
+			}
+		}
+	}
+
+	if (doc1UniqueLinesCount == 0 && doc2UniqueLines.empty())
+		return CompareResult::COMPARE_MATCH;
+
+	for (const auto& uniqueLine : doc2UniqueLines)
+	{
+		for (const auto& line : uniqueLine.second)
+		{
+			CallScintilla(doc2.view, SCI_MARKERADDSET, line + doc2.section.off, doc2.blockDiffMask);
+		}
+	}
+
+	return CompareResult::COMPARE_MISMATCH;
+}
+
 }
 
 
 CompareResult compareViews(const section_t& mainViewSection, const section_t& subViewSection,
-		const UserSettings& settings, const TCHAR* progressInfo, AlignmentInfo_t& alignmentInfo)
+		const UserSettings& settings, const TCHAR* progressInfo, AlignmentInfo_t& alignmentInfo, bool findUniqueMode)
 {
 	CompareResult result = CompareResult::COMPARE_ERROR;
 
@@ -716,7 +819,16 @@ CompareResult compareViews(const section_t& mainViewSection, const section_t& su
 
 	try
 	{
-		result = runCompare(mainViewSection, subViewSection, settings, alignmentInfo);
+		if (findUniqueMode)
+		{
+			alignmentInfo.clear();
+			result = runFindUnique(mainViewSection, subViewSection, settings);
+		}
+		else
+		{
+			result = runCompare(mainViewSection, subViewSection, settings, alignmentInfo);
+		}
+
 		ProgressDlg::Close();
 	}
 	catch (std::exception& e)
