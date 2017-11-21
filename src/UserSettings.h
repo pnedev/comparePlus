@@ -21,8 +21,6 @@
 #include <windows.h>
 #include <tchar.h>
 
-#include "Compare.h"
-
 
 // Those are interpreted as bool values
 #define DEFAULT_OLD_IS_FIRST			1
@@ -36,7 +34,7 @@
 #define DEFAULT_WRAP_AROUND				0
 #define DEFAULT_RECOMPARE_ON_SAVE		1
 #define DEFAULT_GOTO_FIRST_DIFF			0
-#define DEFAULT_UPDATE_ON_CHANGE		0
+#define DEFAULT_FOLLOWING_CARET			0
 
 #define DEFAULT_ADDED_COLOR				0xC6FFC6
 #define DEFAULT_DELETED_COLOR			0xC6C6FF
@@ -81,7 +79,7 @@ public:
 	static const TCHAR wrapAroundSetting[];
 	static const TCHAR reCompareOnSaveSetting[];
 	static const TCHAR gotoFirstDiffSetting[];
-	static const TCHAR updateOnChangeSetting[];
+	static const TCHAR followingCaretSetting[];
 
 	static const TCHAR ignoreSpacesSetting[];
 	static const TCHAR ignoreCaseSetting[];
@@ -106,7 +104,7 @@ public:
 	bool           	WrapAround;
 	bool           	RecompareOnSave;
 	bool           	GotoFirstDiff;
-	bool           	UpdateOnChange;
+	bool           	FollowingCaret;
 
 	bool           	IgnoreSpaces;
 	bool           	IgnoreCase;

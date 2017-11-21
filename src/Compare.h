@@ -27,6 +27,7 @@
 #include "Scintilla.h"
 #include "menuCmdID.h"
 #include "PluginInterface.h"
+#include "UserSettings.h"
 
 
 #ifdef DLOG
@@ -129,6 +130,8 @@ extern const TCHAR PLUGIN_NAME[];
 extern NppData		nppData;
 extern SciFnDirect	sciFunc;
 extern sptr_t		sciPtr[2];
+
+extern UserSettings	Settings;
 
 
 inline LRESULT CallScintilla(int viewNum, unsigned int uMsg, uptr_t wParam, sptr_t lParam)

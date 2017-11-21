@@ -15,6 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "Compare.h"
 #include "UserSettings.h"
 
 #include <shlwapi.h>
@@ -34,7 +35,7 @@ const TCHAR UserSettings::promptCloseOnMatchSetting[]	= TEXT("Prompt to Close on
 const TCHAR UserSettings::wrapAroundSetting[]			= TEXT("Wrap Around");
 const TCHAR UserSettings::reCompareOnSaveSetting[]		= TEXT("Re-Compare on Save");
 const TCHAR UserSettings::gotoFirstDiffSetting[]		= TEXT("Go to First Diff");
-const TCHAR UserSettings::updateOnChangeSetting[]		= TEXT("Update on Change");
+const TCHAR UserSettings::followingCaretSetting[]		= TEXT("Following Caret");
 
 const TCHAR UserSettings::ignoreSpacesSetting[]			= TEXT("Ignore Spaces");
 const TCHAR UserSettings::ignoreCaseSetting[]			= TEXT("Ignore Case");
@@ -77,8 +78,8 @@ void UserSettings::load()
 			DEFAULT_RECOMPARE_ON_SAVE, iniFile) == 1;
 	GotoFirstDiff			= ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting,
 			DEFAULT_GOTO_FIRST_DIFF, iniFile) == 1;
-	UpdateOnChange			= ::GetPrivateProfileInt(mainSection, updateOnChangeSetting,
-			DEFAULT_UPDATE_ON_CHANGE, iniFile) == 1;
+	FollowingCaret			= ::GetPrivateProfileInt(mainSection, followingCaretSetting,
+			DEFAULT_FOLLOWING_CARET, iniFile) == 1;
 
 	IgnoreSpaces	= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,	1, iniFile) == 1;
 	IgnoreCase		= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,	0, iniFile) == 1;
@@ -139,8 +140,8 @@ void UserSettings::save()
 			RecompareOnSave ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, gotoFirstDiffSetting,
 			GotoFirstDiff ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, updateOnChangeSetting,
-			UpdateOnChange ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, followingCaretSetting,
+			FollowingCaret ? TEXT("1") : TEXT("0"), iniFile);
 
 	::WritePrivateProfileString(mainSection, ignoreSpacesSetting,	IgnoreSpaces	? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreCaseSetting,	    IgnoreCase		? TEXT("1") : TEXT("0"), iniFile);

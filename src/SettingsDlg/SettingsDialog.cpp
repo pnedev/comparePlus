@@ -89,7 +89,7 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					settings.WrapAround				= (bool) DEFAULT_WRAP_AROUND;
 					settings.RecompareOnSave		= (bool) DEFAULT_RECOMPARE_ON_SAVE;
 					settings.GotoFirstDiff			= (bool) DEFAULT_GOTO_FIRST_DIFF;
-					settings.UpdateOnChange			= (bool) DEFAULT_UPDATE_ON_CHANGE;
+					settings.FollowingCaret			= (bool) DEFAULT_FOLLOWING_CARET;
 
 					settings.colors.added     	= DEFAULT_ADDED_COLOR;
 					settings.colors.changed   	= DEFAULT_CHANGED_COLOR;
@@ -162,8 +162,8 @@ void SettingsDialog::SetParams(UserSettings* settings)
 			settings->RecompareOnSave ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_GOTO_FIRST_DIFF),
 			settings->GotoFirstDiff ? BST_CHECKED : BST_UNCHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, IDC_UPDATE_ON_CHANGE),
-			settings->UpdateOnChange ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_FOLLOWING_CARET),
+			settings->FollowingCaret ? BST_CHECKED : BST_UNCHECKED);
 
 	// Set current colors configured in option dialog
 	_ColorComboAdded.setColor(settings->colors.added);
@@ -189,7 +189,7 @@ void SettingsDialog::GetParams()
 	_Settings->WrapAround			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_WRAP_AROUND)) == BST_CHECKED);
 	_Settings->RecompareOnSave		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_RECOMPARE_ON_SAVE)) == BST_CHECKED);
 	_Settings->GotoFirstDiff		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_GOTO_FIRST_DIFF)) == BST_CHECKED);
-	_Settings->UpdateOnChange		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_UPDATE_ON_CHANGE)) == BST_CHECKED);
+	_Settings->FollowingCaret		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_FOLLOWING_CARET)) == BST_CHECKED);
 
 	// Get color chosen in dialog
 	_ColorComboAdded.getColor((LPCOLORREF)&_Settings->colors.added);

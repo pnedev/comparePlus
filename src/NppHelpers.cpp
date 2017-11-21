@@ -452,13 +452,9 @@ void centerAt(int view, int line)
 
 		CallScintilla(view, SCI_SETFIRSTVISIBLELINE, firstVisible, 0);
 	}
-}
 
-
-void centerCaretAt(int view, int line)
-{
-	centerAt(view, line);
-	CallScintilla(view, SCI_GOTOLINE, line, 0);
+	if (Settings.FollowingCaret)
+		CallScintilla(view, SCI_GOTOLINE, line, 0);
 }
 
 

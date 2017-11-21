@@ -20,7 +20,6 @@
 #pragma once
 
 #include "Compare.h"
-#include "UserSettings.h"
 #include "Window.h"
 #include "DockingDlgInterface.h"
 

@@ -492,6 +492,9 @@ void NavDialog::setPos(int x, int y)
 
 	centerAt(currentView->m_view, currentLine);
 	SetLocation(currentView->m_view, currentLine);
+
+	if (Settings.FollowingCaret)
+		::SetFocus(getView(currentView->m_view));
 }
 
 

@@ -29,7 +29,6 @@
 
 #include "Tools.h"
 #include "Compare.h"
-#include "UserSettings.h"
 #include "NppHelpers.h"
 #include "LibHelpers.h"
 #include "AboutDialog.h"
@@ -42,9 +41,11 @@
 
 const TCHAR PLUGIN_NAME[] = TEXT("Compare");
 
-NppData		nppData;
-SciFnDirect	sciFunc;
-sptr_t		sciPtr[2];
+NppData			nppData;
+SciFnDirect		sciFunc;
+sptr_t			sciPtr[2];
+
+UserSettings	Settings;
 
 #ifdef DLOG
 
@@ -395,17 +396,12 @@ public:
 class DelayedUpdate : public DelayedWork
 {
 public:
-	DelayedUpdate() : DelayedWork(), linesAdded(0), linesDeleted(0), fullCompare(false), findUniqueMode(false) {}
+	DelayedUpdate() : DelayedWork(), findUniqueMode(false) {}
 	virtual ~DelayedUpdate() = default;
 
 	virtual void operator()();
 
-	int		changePos;
-	int		linesAdded;
-	int		linesDeleted;
-
-	bool	fullCompare;
-	bool	findUniqueMode;
+	bool findUniqueMode;
 };
 
 
@@ -428,8 +424,6 @@ static const TempMark_t tempMark[] =
 	{ TEXT("_Git"),			TEXT(" ** Git") }
 };
 
-
-UserSettings Settings;
 
 CompareList_t compareList;
 std::unique_ptr<NewCompare> newCompare;
@@ -2328,70 +2322,7 @@ void onSciUpdateUI(HWND view)
 
 void DelayedUpdate::operator()()
 {
-	if (fullCompare)
-	{
-		linesAdded = 0;
-		linesDeleted = 0;
-		fullCompare = false;
-
-		compare(false, findUniqueMode);
-
-		return;
-	}
-
-	const int changeView = getCurrentViewId();
-
-	const int startLine = CallScintilla(changeView, SCI_LINEFROMPOSITION, changePos, 0);
-
-	section_t mainViewSec = { startLine, 1 };
-	section_t subViewSec = { startLine, 1 };
-
-	ScopedIncrementer incr(notificationsLock);
-
-	// Adjust views re-compare range
-	if (linesAdded || linesDeleted)
-	{
-		const int otherView = getOtherViewId();
-
-		section_t& changeViewSec = (changeView == MAIN_VIEW) ? mainViewSec : subViewSec;
-		section_t& otherViewSec = (changeView == SUB_VIEW) ? subViewSec : mainViewSec;
-
-		const int startOff = startLine - getPrevUnmarkedLine(otherView, startLine, MARKER_MASK_LINE);
-
-		changeViewSec.off -= startOff;
-		otherViewSec.off -= startOff;
-
-		changeViewSec.len += (startOff + linesAdded);
-		otherViewSec.len += (startOff + linesDeleted);
-
-		const int endLine = otherViewSec.off + otherViewSec.len - 1;
-		const int endOff = getNextUnmarkedLine(otherView, endLine, MARKER_MASK_LINE) - endLine;
-
-		changeViewSec.len += endOff;
-		otherViewSec.len += endOff;
-
-		clearMarksAndBlanks(MAIN_VIEW, mainViewSec.off, mainViewSec.len);
-		clearMarksAndBlanks(SUB_VIEW, subViewSec.off, subViewSec.len);
-
-		AlignmentInfo_t alignmentInfo;
-		compareViews(mainViewSec, subViewSec, findUniqueMode, Settings, TEXT("Re-comparing changes..."),
-				alignmentInfo);
-	}
-	else
-	{
-		clearMarks(MAIN_VIEW, mainViewSec.off, mainViewSec.len);
-		clearMarks(SUB_VIEW, subViewSec.off, subViewSec.len);
-
-		AlignmentInfo_t alignmentInfo;
-		compareViews(mainViewSec, subViewSec, findUniqueMode, Settings, nullptr, alignmentInfo);
-	}
-
-	linesAdded = 0;
-	linesDeleted = 0;
-
-	// Force NavBar redraw
-	if (NavDlg.isVisible())
-		NavDlg.Show();
+	compare(false, findUniqueMode);
 }
 
 
@@ -2430,56 +2361,6 @@ void onSciModified(SCNotification* notifyCode)
 			notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
 
 		cmpPair->getFileByBuffId(buffId).deletedSections.pop(currAction, startLine);
-	}
-}
-
-
-void onSciModifiedUpdate(SCNotification* notifyCode)
-{
-	const LRESULT buffId = getCurrentBuffId();
-
-	CompareList_t::iterator cmpPair = getCompare(buffId);
-	if (cmpPair == compareList.end())
-		return;
-
-	if (notifyCode->modificationType & SC_MOD_BEFOREDELETE)
-	{
-		const int currentView = getCurrentViewId();
-
-		const int startLine = CallScintilla(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
-		const int endLine =
-			CallScintilla(currentView, SCI_LINEFROMPOSITION, notifyCode->position + notifyCode->length, 0);
-
-		if (endLine > startLine)
-		{
-			ScopedIncrementer incr(notificationsLock);
-
-			clearMarks(currentView, startLine, endLine - startLine + 1);
-		}
-	}
-	else if (notifyCode->modificationType & (SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT))
-	{
-		if (!delayedUpdate.fullCompare)
-		{
-			if (!delayedUpdate)
-			{
-				delayedUpdate.changePos = notifyCode->position;
-			}
-			else
-			{
-				delayedUpdate.cancel();
-
-				if (delayedUpdate.changePos > notifyCode->position)
-					delayedUpdate.changePos = notifyCode->position;
-			}
-
-			if (notifyCode->modificationType & SC_MOD_INSERTTEXT)
-				delayedUpdate.linesAdded += notifyCode->linesAdded;
-			else
-				delayedUpdate.linesDeleted += (-notifyCode->linesAdded);
-
-			delayedUpdate.post(10);
-		}
 	}
 }
 
@@ -2671,8 +2552,7 @@ void onFileSaved(LRESULT buffId)
         delayedAlignment.cancel();
         delayedUpdate.cancel();
 
-        delayedUpdate.fullCompare		= true;
-        delayedUpdate.findUniqueMode	= cmpPair->findUniqueMode;
+        delayedUpdate.findUniqueMode = cmpPair->findUniqueMode;
 
         delayedUpdate.post(30);
     }
@@ -2851,17 +2731,10 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 				onFileSaved(notifyCode->nmhdr.idFrom);
 		break;
 
-		// This is used to monitor either:
-		// - text change to automatically update results or
-		// - deletion of lines to properly clear their compare markings
+		// This is used to monitor deletion of lines to properly clear their compare markings
 		case SCN_MODIFIED:
 			if (NppSettings::get().compareMode && !notificationsLock)
-			{
-				if (Settings.UpdateOnChange)
-					onSciModifiedUpdate(notifyCode);
-				else
-					onSciModified(notifyCode);
-			}
+				onSciModified(notifyCode);
 		break;
 
 		case SCN_ZOOM:

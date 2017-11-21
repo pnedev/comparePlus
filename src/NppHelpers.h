@@ -23,7 +23,6 @@
 #include <utility>
 
 #include "Compare.h"
-#include "UserSettings.h"
 
 
 enum Marker_t
@@ -374,7 +373,6 @@ void blinkLine(int view, int line);
 void blinkRange(int view, int startPos, int endPos);
 
 void centerAt(int view, int line);
-void centerCaretAt(int view, int line);
 
 void markTextAsChanged(int view, int start, int length);
 void clearChangedIndicator(int view, int start, int length);
