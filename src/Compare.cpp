@@ -434,7 +434,8 @@ UserSettings Settings;
 CompareList_t compareList;
 std::unique_ptr<NewCompare> newCompare;
 
-volatile unsigned notificationsLock = 0;
+volatile unsigned	notificationsLock = 0;
+bool				isNppMinimized = false;
 
 std::unique_ptr<ViewLocation> storedLocation;
 bool goToFirst = false;
@@ -2300,7 +2301,7 @@ void DelayedAlign::operator()()
 		// Retry re-alignment one more time - might be needed in case line number margin width has changed
 		if (_consecutiveAligns)
 		{
-			post(10);
+			post(30);
 		}
 		else
 		{
@@ -2313,7 +2314,7 @@ void DelayedAlign::operator()()
 
 inline void onSciPaint()
 {
-	delayedAlignment.post(10);
+	delayedAlignment.post(30);
 }
 
 
@@ -2897,20 +2898,27 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT msg, WPARAM wParam, LP
 {
 	if ((msg == WM_SIZE))
 	{
-		if ((wParam == SIZE_MINIMIZED) && !notificationsLock)
+		if (NppSettings::get().compareMode)
 		{
-			LOGD("Notepad++ minimized\n");
+			if ((wParam == SIZE_MINIMIZED) && !isNppMinimized)
+			{
+				LOGD("Notepad++ minimized\n");
 
-			// On rare occasions Alignment is posted (Sci paint event is received) before minimize event is received
-			delayedAlignment.cancel();
+				// On rare occasions Alignment is posted (Sci paint event is received)
+				// before minimize event is received
+				delayedAlignment.cancel();
 
-			++notificationsLock;
-		}
-		else if (wParam == SIZE_MAXIMIZED && notificationsLock)
-		{
-			LOGD("Notepad++ restored\n");
+				isNppMinimized = true;
+				++notificationsLock;
+			}
+			else if ((wParam == SIZE_MAXIMIZED || wParam == SIZE_RESTORED) && isNppMinimized)
+			{
+				LOGD("Notepad++ restored\n");
 
-			delayedMaximize.post(100);
+				isNppMinimized = false;
+
+				delayedMaximize.post(1000);
+			}
 		}
 	}
 
