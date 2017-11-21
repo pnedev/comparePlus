@@ -706,9 +706,11 @@ CompareResult runCompare(const section_t& mainViewSection, const section_t& subV
 
 
 CompareResult runFindUnique(const section_t& mainViewSection, const section_t& subViewSection,
-		const UserSettings& settings)
+		const UserSettings& settings, AlignmentInfo_t& alignmentInfo)
 {
 	progress_ptr& progress = ProgressDlg::Get();
+
+	alignmentInfo.clear();
 
 	DocCmpInfo doc1;
 	DocCmpInfo doc2;
@@ -803,6 +805,12 @@ CompareResult runFindUnique(const section_t& mainViewSection, const section_t& s
 		}
 	}
 
+	AlignmentPair align;
+	align.main.line	= 1;
+	align.sub.line	= 1;
+
+	alignmentInfo.push_back(align);
+
 	return CompareResult::COMPARE_MISMATCH;
 }
 
@@ -820,14 +828,9 @@ CompareResult compareViews(const section_t& mainViewSection, const section_t& su
 	try
 	{
 		if (findUniqueMode)
-		{
-			alignmentInfo.clear();
-			result = runFindUnique(mainViewSection, subViewSection, settings);
-		}
+			result = runFindUnique(mainViewSection, subViewSection, settings, alignmentInfo);
 		else
-		{
 			result = runCompare(mainViewSection, subViewSection, settings, alignmentInfo);
-		}
 
 		ProgressDlg::Close();
 	}
