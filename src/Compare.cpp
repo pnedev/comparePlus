@@ -287,6 +287,8 @@ public:
 	int				relativePos;
 
 	bool			isFullCompare;
+	bool			findUniqueMode;
+
 	bool			spacesIgnored;
 	bool			caseIgnored;
 	bool			movesDetected;
@@ -393,7 +395,7 @@ public:
 class DelayedUpdate : public DelayedWork
 {
 public:
-	DelayedUpdate() : DelayedWork(), linesAdded(0), linesDeleted(0), fullCompare(false) {}
+	DelayedUpdate() : DelayedWork(), linesAdded(0), linesDeleted(0), fullCompare(false), findUniqueMode(false) {}
 	virtual ~DelayedUpdate() = default;
 
 	virtual void operator()();
@@ -403,6 +405,7 @@ public:
 	int		linesDeleted;
 
 	bool	fullCompare;
+	bool	findUniqueMode;
 };
 
 
@@ -448,7 +451,7 @@ NavDialog     	NavDlg;
 
 toolbarIcons  tbSetFirst;
 toolbarIcons  tbCompare;
-toolbarIcons  tbCompareLines;
+toolbarIcons  tbCompareSel;
 toolbarIcons  tbClearCompare;
 toolbarIcons  tbFirst;
 toolbarIcons  tbPrev;
@@ -996,7 +999,8 @@ void ComparedPair::setStatus()
 	TCHAR msg[512];
 
 	_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-			TEXT("Compare (%s)    Ignore Spaces (%s)    Ignore Case (%s)    Detect Moves (%s)"), cmpType,
+			TEXT("%s (%s)    Ignore Spaces (%s)    Ignore Case (%s)    Detect Moves (%s)"),
+			findUniqueMode	? TEXT("Find Unique") : TEXT("Compare"), cmpType,
 			spacesIgnored	? TEXT("Y")	: TEXT("N"),
 			caseIgnored		? TEXT("Y")	: TEXT("N"),
 			movesDetected	? TEXT("Y")	: TEXT("N"));
@@ -1489,7 +1493,8 @@ CompareResult runCompare(CompareList_t::iterator cmpPair, bool selectionCompare,
 			TEXT("Comparing selected lines in \"%s\" vs. selected lines in \"%s\"...") :
 			TEXT("Comparing \"%s\" vs. \"%s\"..."), newName, oldName);
 
-	return compareViews(mainViewSection, subViewSection, Settings, progressInfo, cmpPair->alignmentInfo, findUniqueMode);
+	return compareViews(mainViewSection, subViewSection, findUniqueMode, Settings, progressInfo,
+			cmpPair->alignmentInfo);
 }
 
 
@@ -1560,6 +1565,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false)
 		case CompareResult::COMPARE_MISMATCH:
 		{
 			cmpPair->isFullCompare	= !selectionCompare;
+			cmpPair->findUniqueMode	= findUniqueMode;
+
 			cmpPair->spacesIgnored	= Settings.IgnoreSpaces;
 			cmpPair->caseIgnored	= Settings.IgnoreCase;
 			cmpPair->movesDetected	= Settings.DetectMoves;
@@ -1632,7 +1639,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false)
 								oldFile.isTemp == GIT_TEMP ? TEXT("Git") : TEXT("SVN"));
 				}
 
-				::MessageBox(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK);
+				::MessageBox(nppData._nppHandle, msg, findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"), MB_OK);
 			}
 			else
 			{
@@ -1643,10 +1650,12 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false)
 						Settings.PromptToCloseOnMatch ? TEXT("\n\nClose compared files?") : TEXT(""));
 
 				if (Settings.PromptToCloseOnMatch)
-					choice = ::MessageBox(nppData._nppHandle, msg, PLUGIN_NAME,
+					choice = ::MessageBox(nppData._nppHandle, msg,
+							findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"),
 							MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON1);
 				else
-					::MessageBox(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK);
+					::MessageBox(nppData._nppHandle, msg,
+							findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"), MB_OK);
 			}
 
 			if (choice == IDYES)
@@ -1673,13 +1682,13 @@ void SetAsFirst()
 
 void CompareWhole()
 {
-	compare();
+	compare(false, false);
 }
 
 
-void CompareSelectedLines()
+void CompareSelections()
 {
-	compare(true);
+	compare(true, false);
 }
 
 
@@ -1689,7 +1698,7 @@ void FindUnique()
 }
 
 
-void FindSelectedUnique()
+void FindSelectionsUnique()
 {
 	compare(true, true);
 }
@@ -1743,7 +1752,7 @@ void LastSaveDiff()
 		return;
 
 	if (createTempFile(file, LAST_SAVED_TEMP))
-		compare();
+		compare(false, false);
 }
 
 
@@ -1761,7 +1770,7 @@ void SvnDiff()
 		return;
 
 	if (createTempFile(svnFile, SVN_TEMP))
-		compare();
+		compare(false, false);
 }
 
 
@@ -1785,7 +1794,7 @@ void GitDiff()
 	setContent(content.data());
 	content.clear();
 
-	compare();
+	compare(false, false);
 }
 
 
@@ -1919,44 +1928,44 @@ void OpenAboutDlg()
 void createMenu()
 {
 	_tcscpy_s(funcItem[CMD_SET_FIRST]._itemName, nbChar, TEXT("Set as First to Compare"));
-	funcItem[CMD_SET_FIRST]._pFunc				= SetAsFirst;
-	funcItem[CMD_SET_FIRST]._pShKey				= new ShortcutKey;
-	funcItem[CMD_SET_FIRST]._pShKey->_isAlt		= true;
-	funcItem[CMD_SET_FIRST]._pShKey->_isCtrl	= true;
-	funcItem[CMD_SET_FIRST]._pShKey->_isShift	= false;
-	funcItem[CMD_SET_FIRST]._pShKey->_key		= '1';
+	funcItem[CMD_SET_FIRST]._pFunc					= SetAsFirst;
+	funcItem[CMD_SET_FIRST]._pShKey					= new ShortcutKey;
+	funcItem[CMD_SET_FIRST]._pShKey->_isAlt			= true;
+	funcItem[CMD_SET_FIRST]._pShKey->_isCtrl		= true;
+	funcItem[CMD_SET_FIRST]._pShKey->_isShift		= false;
+	funcItem[CMD_SET_FIRST]._pShKey->_key			= '1';
 
 	_tcscpy_s(funcItem[CMD_COMPARE]._itemName, nbChar, TEXT("Compare"));
-	funcItem[CMD_COMPARE]._pFunc			= CompareWhole;
-	funcItem[CMD_COMPARE]._pShKey			= new ShortcutKey;
-	funcItem[CMD_COMPARE]._pShKey->_isAlt	= true;
-	funcItem[CMD_COMPARE]._pShKey->_isCtrl	= true;
-	funcItem[CMD_COMPARE]._pShKey->_isShift	= false;
-	funcItem[CMD_COMPARE]._pShKey->_key		= 'C';
+	funcItem[CMD_COMPARE]._pFunc					= CompareWhole;
+	funcItem[CMD_COMPARE]._pShKey					= new ShortcutKey;
+	funcItem[CMD_COMPARE]._pShKey->_isAlt			= true;
+	funcItem[CMD_COMPARE]._pShKey->_isCtrl			= true;
+	funcItem[CMD_COMPARE]._pShKey->_isShift			= false;
+	funcItem[CMD_COMPARE]._pShKey->_key				= 'C';
 
-	_tcscpy_s(funcItem[CMD_COMPARE_LINES]._itemName, nbChar, TEXT("Compare Selected Lines"));
-	funcItem[CMD_COMPARE_LINES]._pFunc				= CompareSelectedLines;
-	funcItem[CMD_COMPARE_LINES]._pShKey				= new ShortcutKey;
-	funcItem[CMD_COMPARE_LINES]._pShKey->_isAlt		= true;
-	funcItem[CMD_COMPARE_LINES]._pShKey->_isCtrl	= true;
-	funcItem[CMD_COMPARE_LINES]._pShKey->_isShift	= false;
-	funcItem[CMD_COMPARE_LINES]._pShKey->_key		= 'N';
+	_tcscpy_s(funcItem[CMD_COMPARE_SEL]._itemName, nbChar, TEXT("Compare Selections"));
+	funcItem[CMD_COMPARE_SEL]._pFunc				= CompareSelections;
+	funcItem[CMD_COMPARE_SEL]._pShKey				= new ShortcutKey;
+	funcItem[CMD_COMPARE_SEL]._pShKey->_isAlt		= true;
+	funcItem[CMD_COMPARE_SEL]._pShKey->_isCtrl		= true;
+	funcItem[CMD_COMPARE_SEL]._pShKey->_isShift		= false;
+	funcItem[CMD_COMPARE_SEL]._pShKey->_key			= 'N';
 
 	_tcscpy_s(funcItem[CMD_FIND_UNIQUE]._itemName, nbChar, TEXT("Find Unique Lines"));
-	funcItem[CMD_FIND_UNIQUE]._pFunc			= FindUnique;
-	funcItem[CMD_FIND_UNIQUE]._pShKey			= new ShortcutKey;
-	funcItem[CMD_FIND_UNIQUE]._pShKey->_isAlt	= true;
-	funcItem[CMD_FIND_UNIQUE]._pShKey->_isCtrl	= true;
-	funcItem[CMD_FIND_UNIQUE]._pShKey->_isShift	= true;
-	funcItem[CMD_FIND_UNIQUE]._pShKey->_key		= 'C';
+	funcItem[CMD_FIND_UNIQUE]._pFunc				= FindUnique;
+	funcItem[CMD_FIND_UNIQUE]._pShKey				= new ShortcutKey;
+	funcItem[CMD_FIND_UNIQUE]._pShKey->_isAlt		= true;
+	funcItem[CMD_FIND_UNIQUE]._pShKey->_isCtrl		= true;
+	funcItem[CMD_FIND_UNIQUE]._pShKey->_isShift		= true;
+	funcItem[CMD_FIND_UNIQUE]._pShKey->_key			= 'C';
 
-	_tcscpy_s(funcItem[CMD_FIND_SEL_UNIQUE]._itemName, nbChar, TEXT("Find Selected Unique Lines"));
-	funcItem[CMD_FIND_SEL_UNIQUE]._pFunc			= FindSelectedUnique;
-	funcItem[CMD_FIND_SEL_UNIQUE]._pShKey			= new ShortcutKey;
-	funcItem[CMD_FIND_SEL_UNIQUE]._pShKey->_isAlt	= true;
-	funcItem[CMD_FIND_SEL_UNIQUE]._pShKey->_isCtrl	= true;
-	funcItem[CMD_FIND_SEL_UNIQUE]._pShKey->_isShift	= true;
-	funcItem[CMD_FIND_SEL_UNIQUE]._pShKey->_key		= 'N';
+	_tcscpy_s(funcItem[CMD_FIND_UNIQUE_SEL]._itemName, nbChar, TEXT("Find Unique Lines in Selections"));
+	funcItem[CMD_FIND_UNIQUE_SEL]._pFunc			= FindSelectionsUnique;
+	funcItem[CMD_FIND_UNIQUE_SEL]._pShKey			= new ShortcutKey;
+	funcItem[CMD_FIND_UNIQUE_SEL]._pShKey->_isAlt	= true;
+	funcItem[CMD_FIND_UNIQUE_SEL]._pShKey->_isCtrl	= true;
+	funcItem[CMD_FIND_UNIQUE_SEL]._pShKey->_isShift	= true;
+	funcItem[CMD_FIND_UNIQUE_SEL]._pShKey->_key		= 'N';
 
 	_tcscpy_s(funcItem[CMD_CLEAR_ACTIVE]._itemName, nbChar, TEXT("Clear Active Compare"));
 	funcItem[CMD_CLEAR_ACTIVE]._pFunc				= ClearActiveCompare;
@@ -1978,20 +1987,20 @@ void createMenu()
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey->_key 		= 'D';
 
 	_tcscpy_s(funcItem[CMD_SVN_DIFF]._itemName, nbChar, TEXT("SVN Diff"));
-	funcItem[CMD_SVN_DIFF]._pFunc 				= SvnDiff;
-	funcItem[CMD_SVN_DIFF]._pShKey 				= new ShortcutKey;
-	funcItem[CMD_SVN_DIFF]._pShKey->_isAlt 		= true;
-	funcItem[CMD_SVN_DIFF]._pShKey->_isCtrl 	= true;
-	funcItem[CMD_SVN_DIFF]._pShKey->_isShift	= false;
-	funcItem[CMD_SVN_DIFF]._pShKey->_key 		= 'V';
+	funcItem[CMD_SVN_DIFF]._pFunc 					= SvnDiff;
+	funcItem[CMD_SVN_DIFF]._pShKey 					= new ShortcutKey;
+	funcItem[CMD_SVN_DIFF]._pShKey->_isAlt 			= true;
+	funcItem[CMD_SVN_DIFF]._pShKey->_isCtrl 		= true;
+	funcItem[CMD_SVN_DIFF]._pShKey->_isShift		= false;
+	funcItem[CMD_SVN_DIFF]._pShKey->_key 			= 'V';
 
 	_tcscpy_s(funcItem[CMD_GIT_DIFF]._itemName, nbChar, TEXT("Git Diff"));
-	funcItem[CMD_GIT_DIFF]._pFunc 				= GitDiff;
-	funcItem[CMD_GIT_DIFF]._pShKey 				= new ShortcutKey;
-	funcItem[CMD_GIT_DIFF]._pShKey->_isAlt 		= true;
-	funcItem[CMD_GIT_DIFF]._pShKey->_isCtrl 	= true;
-	funcItem[CMD_GIT_DIFF]._pShKey->_isShift	= false;
-	funcItem[CMD_GIT_DIFF]._pShKey->_key 		= 'G';
+	funcItem[CMD_GIT_DIFF]._pFunc 					= GitDiff;
+	funcItem[CMD_GIT_DIFF]._pShKey 					= new ShortcutKey;
+	funcItem[CMD_GIT_DIFF]._pShKey->_isAlt 			= true;
+	funcItem[CMD_GIT_DIFF]._pShKey->_isCtrl 		= true;
+	funcItem[CMD_GIT_DIFF]._pShKey->_isShift		= false;
+	funcItem[CMD_GIT_DIFF]._pShKey->_key 			= 'G';
 
 	_tcscpy_s(funcItem[CMD_IGNORE_SPACES]._itemName, nbChar, TEXT("Ignore Spaces"));
 	funcItem[CMD_IGNORE_SPACES]._pFunc = IgnoreSpaces;
@@ -2062,8 +2071,8 @@ void deinitPlugin()
 	if (tbCompare.hToolbarBmp)
 		::DeleteObject(tbCompare.hToolbarBmp);
 
-	if (tbCompareLines.hToolbarBmp)
-		::DeleteObject(tbCompareLines.hToolbarBmp);
+	if (tbCompareSel.hToolbarBmp)
+		::DeleteObject(tbCompareSel.hToolbarBmp);
 
 	if (tbClearCompare.hToolbarBmp)
 		::DeleteObject(tbClearCompare.hToolbarBmp);
@@ -2170,7 +2179,7 @@ void onToolBarReady()
 
 	tbCompare.hToolbarBmp =
 			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_COMPARE), IMAGE_BITMAP, 0, 0, style);
-	tbCompareLines.hToolbarBmp =
+	tbCompareSel.hToolbarBmp =
 			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_COMPARE_LINES), IMAGE_BITMAP, 0, 0, style);
 	tbClearCompare.hToolbarBmp =
 			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_CLEARCOMPARE), IMAGE_BITMAP, 0, 0, style);
@@ -2190,7 +2199,7 @@ void onToolBarReady()
 	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
 			(WPARAM)funcItem[CMD_COMPARE]._cmdID,			(LPARAM)&tbCompare);
 	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
-			(WPARAM)funcItem[CMD_COMPARE_LINES]._cmdID,		(LPARAM)&tbCompareLines);
+			(WPARAM)funcItem[CMD_COMPARE_SEL]._cmdID,		(LPARAM)&tbCompareSel);
 	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
 			(WPARAM)funcItem[CMD_CLEAR_ACTIVE]._cmdID,		(LPARAM)&tbClearCompare);
 	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
@@ -2324,7 +2333,7 @@ void DelayedUpdate::operator()()
 		linesDeleted = 0;
 		fullCompare = false;
 
-		compare();
+		compare(false, findUniqueMode);
 
 		return;
 	}
@@ -2364,7 +2373,8 @@ void DelayedUpdate::operator()()
 		clearMarksAndBlanks(SUB_VIEW, subViewSec.off, subViewSec.len);
 
 		AlignmentInfo_t alignmentInfo;
-		compareViews(mainViewSec, subViewSec, Settings, TEXT("Re-comparing changes..."), alignmentInfo, false);
+		compareViews(mainViewSec, subViewSec, findUniqueMode, Settings, TEXT("Re-comparing changes..."),
+				alignmentInfo);
 	}
 	else
 	{
@@ -2372,7 +2382,7 @@ void DelayedUpdate::operator()()
 		clearMarks(SUB_VIEW, subViewSec.off, subViewSec.len);
 
 		AlignmentInfo_t alignmentInfo;
-		compareViews(mainViewSec, subViewSec, Settings, nullptr, alignmentInfo, false);
+		compareViews(mainViewSec, subViewSec, findUniqueMode, Settings, nullptr, alignmentInfo);
 	}
 
 	linesAdded = 0;
@@ -2660,7 +2670,8 @@ void onFileSaved(LRESULT buffId)
         delayedAlignment.cancel();
         delayedUpdate.cancel();
 
-        delayedUpdate.fullCompare = true;
+        delayedUpdate.fullCompare		= true;
+        delayedUpdate.findUniqueMode	= cmpPair->findUniqueMode;
 
         delayedUpdate.post(30);
     }

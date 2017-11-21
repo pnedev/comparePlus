@@ -54,5 +54,5 @@ struct AlignmentPair
 using AlignmentInfo_t = std::vector<AlignmentPair>;
 
 
-CompareResult compareViews(const section_t& mainViewSection, const section_t& subViewSection,
-		const UserSettings& settings, const TCHAR* progressInfo, AlignmentInfo_t& alignmentInfo, bool findUniqueMode);
+CompareResult compareViews(const section_t& mainViewSection, const section_t& subViewSection, bool findUniqueMode,
+		const UserSettings& settings, const TCHAR* progressInfo, AlignmentInfo_t& alignmentInfo);
