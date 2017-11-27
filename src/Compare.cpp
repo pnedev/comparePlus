@@ -1598,6 +1598,15 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false)
 						break;
 					}
 				}
+
+				const int wrap = CallScintilla(MAIN_VIEW, SCI_GETWRAPMODE, 0, 0);
+				if (wrap != SC_WRAP_NONE)
+				{
+					CallScintilla(MAIN_VIEW, SCI_SETWRAPMODE, SC_WRAP_NONE, 0);
+					CallScintilla(SUB_VIEW, SCI_SETWRAPMODE, SC_WRAP_NONE, 0);
+					CallScintilla(MAIN_VIEW, SCI_SETWRAPMODE, wrap, 0);
+					CallScintilla(SUB_VIEW, SCI_SETWRAPMODE, wrap, 0);
+				}
 			}
 
 			LOGD("COMPARE READY\n");
