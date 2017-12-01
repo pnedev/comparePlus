@@ -370,16 +370,14 @@ void activateBufferID(LRESULT buffId);
 std::pair<int, int> getSelectionLines(int view);
 
 void blinkLine(int view, int line);
+void blinkMarkedLine(int view, int line);
+void blinkOtherView(int view, int line, bool nextLine);
 void blinkRange(int view, int startPos, int endPos);
 
 void centerAt(int view, int line);
 
 void markTextAsChanged(int view, int start, int length);
 void clearChangedIndicator(int view, int start, int length);
-
-std::pair<int, int> jumpToFirstChange(bool doNotBlink = false);
-std::pair<int, int> jumpToLastChange(bool doNotBlink = false);
-std::pair<int, int> jumpToChange(bool down, bool wrapAround);
 
 void setNormalView(int view);
 void setCompareView(int view, int blankColor);

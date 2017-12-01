@@ -216,155 +216,6 @@ void setBlanksStyle(int view, int blankColor)
 	CallScintilla(view, SCI_ANNOTATIONSETVISIBLE, ANNOTATION_STANDARD, 0);
 }
 
-
-void blinkMarkedLine(int view, int line)
-{
-	const int marker = CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL;
-	HWND hView = getView(view);
-
-	for (int i = cBlinkCount; ;)
-	{
-		clearMarks(view, line);
-
-		::UpdateWindow(hView);
-		::Sleep(cBlinkInterval_ms);
-
-		CallScintilla(view, SCI_MARKERADDSET, line, marker);
-		::UpdateWindow(hView);
-
-		if (--i == 0)
-			break;
-
-		::Sleep(cBlinkInterval_ms);
-	}
-}
-
-
-void blinkOtherView(int view, int line, bool nextLine)
-{
-	line = otherViewMatchingLine(view, line);
-	view = getOtherViewId(view);
-
-	if (nextLine)
-	{
-		if (++line > getLastLine(view))
-			--line;
-
-		if (line == CallScintilla(view, SCI_GETLINECOUNT, 0, 0))
-			--line;
-	}
-	else
-	{
-		if (line < getFirstLine(view))
-			++line;
-	}
-
-	if (CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL)
-		blinkMarkedLine(view, line);
-	else
-		blinkLine(view, line);
-}
-
-
-std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool doNotBlink = false)
-{
-	const int mainLine	= CallScintilla(MAIN_VIEW, SCI_MARKERNEXT, mainStartLine, MARKER_MASK_LINE);
-	const int subLine	= CallScintilla(SUB_VIEW, SCI_MARKERNEXT, subStartLine, MARKER_MASK_LINE);
-
-	const int currentView = getCurrentViewId();
-
-	int view		= currentView;
-	int otherView	= getOtherViewId(view);
-
-	int line		= (view == MAIN_VIEW) ? mainLine : subLine;
-	int otherLine	= (view == MAIN_VIEW) ? subLine : mainLine;
-
-	if (line < 0)
-	{
-		if (otherLine < 0)
-			return std::make_pair(-1, -1);
-
-		view = otherView;
-		line = otherLine;
-	}
-	else if (otherLine >= 0)
-	{
-		if (CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0) <
-			CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0))
-		{
-			view = otherView;
-			line = otherLine;
-		}
-	}
-
-	if (line < getFirstLine(view) || line > getLastLine(view) || doNotBlink)
-	{
-		LOGD("Jump to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
-				" view, center doc line: " + std::to_string(line) + "\n");
-
-		centerAt(view, line);
-	}
-	else
-	{
-		if (view == currentView)
-			blinkMarkedLine(view, line);
-		else
-			blinkOtherView(view, line, false);
-	}
-
-	return std::make_pair(view, line);
-}
-
-
-std::pair<int, int> jumpToPrevChange(int mainStartLine, int subStartLine, bool doNotBlink = false)
-{
-	const int mainLine	= CallScintilla(MAIN_VIEW, SCI_MARKERPREVIOUS, mainStartLine, MARKER_MASK_LINE);
-	const int subLine	= CallScintilla(SUB_VIEW, SCI_MARKERPREVIOUS, subStartLine, MARKER_MASK_LINE);
-
-	const int currentView = getCurrentViewId();
-
-	int view		= currentView;
-	int otherView	= getOtherViewId(view);
-
-	int line		= (view == MAIN_VIEW) ? mainLine : subLine;
-	int otherLine	= (view == MAIN_VIEW) ? subLine : mainLine;
-
-	if (line < 0)
-	{
-		if (otherLine < 0)
-			return std::make_pair(-1, -1);
-
-		view = otherView;
-		line = otherLine;
-	}
-	else if (otherLine >= 0)
-	{
-		if (CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0) >
-			CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0))
-		{
-			view = otherView;
-			line = otherLine;
-		}
-	}
-
-	if (line < getFirstLine(view) || line > getLastLine(view) || doNotBlink)
-	{
-		LOGD("Jump to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
-				" view, center doc line: " + std::to_string(line) + "\n");
-
-		centerAt(view, line);
-	}
-	else
-	{
-		if (view == currentView)
-			blinkMarkedLine(view, line);
-		else
-			blinkOtherView(view, line, true);
-	}
-
-	return std::make_pair(view, line);
-}
-
 } // anonymous namespace
 
 
@@ -416,6 +267,55 @@ void blinkLine(int view, int line)
 
 		::Sleep(cBlinkInterval_ms);
 	}
+}
+
+
+void blinkMarkedLine(int view, int line)
+{
+	const int marker = CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL;
+	HWND hView = getView(view);
+
+	for (int i = cBlinkCount; ;)
+	{
+		clearMarks(view, line);
+
+		::UpdateWindow(hView);
+		::Sleep(cBlinkInterval_ms);
+
+		CallScintilla(view, SCI_MARKERADDSET, line, marker);
+		::UpdateWindow(hView);
+
+		if (--i == 0)
+			break;
+
+		::Sleep(cBlinkInterval_ms);
+	}
+}
+
+
+void blinkOtherView(int view, int line, bool nextLine)
+{
+	line = otherViewMatchingLine(view, line);
+	view = getOtherViewId(view);
+
+	if (nextLine)
+	{
+		if (++line > getLastLine(view))
+			--line;
+
+		if (line == CallScintilla(view, SCI_GETLINECOUNT, 0, 0))
+			--line;
+	}
+	else
+	{
+		if (line < getFirstLine(view))
+			++line;
+	}
+
+	if (CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL)
+		blinkMarkedLine(view, line);
+	else
+		blinkLine(view, line);
 }
 
 
@@ -554,60 +454,6 @@ void clearChangedIndicator(int view, int start, int length)
 		CallScintilla(view, SCI_INDICATORCLEARRANGE, start, length);
 		CallScintilla(view, SCI_SETINDICATORCURRENT, curIndic, 0);
 	}
-}
-
-
-std::pair<int, int> jumpToFirstChange(bool doNotBlink)
-{
-	return jumpToNextChange(0, 0, doNotBlink);
-}
-
-
-std::pair<int, int> jumpToLastChange(bool doNotBlink)
-{
-	return jumpToPrevChange(CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0),
-			CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0), doNotBlink);
-}
-
-
-std::pair<int, int> jumpToChange(bool down, bool wrapAround)
-{
-	std::pair<int, int> viewLoc;
-
-	if (down)
-		viewLoc = jumpToNextChange(getNextUnmarkedLine(MAIN_VIEW, getLastLine(MAIN_VIEW), MARKER_MASK_LINE),
-				getNextUnmarkedLine(SUB_VIEW, getLastLine(SUB_VIEW), MARKER_MASK_LINE));
-	else
-		viewLoc = jumpToPrevChange(getPrevUnmarkedLine(MAIN_VIEW, getFirstLine(MAIN_VIEW), MARKER_MASK_LINE),
-				getPrevUnmarkedLine(SUB_VIEW, getFirstLine(SUB_VIEW), MARKER_MASK_LINE));
-
-	if (viewLoc.first < 0)
-	{
-		if (wrapAround)
-		{
-			if (down)
-				viewLoc = jumpToFirstChange(true);
-			else
-				viewLoc = jumpToLastChange(true);
-
-			FLASHWINFO flashInfo;
-			flashInfo.cbSize	= sizeof(flashInfo);
-			flashInfo.hwnd		= nppData._nppHandle;
-			flashInfo.uCount	= cBlinkCount;
-			flashInfo.dwTimeout	= cBlinkInterval_ms;
-			flashInfo.dwFlags	= FLASHW_ALL;
-			::FlashWindowEx(&flashInfo);
-		}
-		else
-		{
-			if (down)
-				viewLoc = jumpToLastChange();
-			else
-				viewLoc = jumpToFirstChange();
-		}
-	}
-
-	return viewLoc;
 }
 
 
