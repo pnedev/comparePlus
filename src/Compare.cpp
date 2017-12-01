@@ -1271,20 +1271,33 @@ bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
 
 	bool realign = false;
 
-	for (const auto& alignment : alignmentInfo)
+	const int maxSize = static_cast<int>(alignmentInfo.size());
+	int i;
+
+	for (i = 0; i < maxSize; ++i)
 	{
-		if ((alignment.*pView).line >= firstLine)
+		if ((alignmentInfo[i].*pView).line >= firstLine)
+			break;
+	}
+
+	if (i == maxSize)
+		return false;
+
+	if (i)
+		--i;
+
+
+	for (; i < maxSize; ++i)
+	{
+		if ((alignmentInfo[i].main.diffMask == alignmentInfo[i].sub.diffMask) &&
+			(CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) !=
+			CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0)))
 		{
-			if ((alignment.main.diffMask == alignment.sub.diffMask) &&
-				(CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignment.main.line, 0) !=
-				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignment.sub.line, 0)))
-			{
-				realign = true;
-				break;
-			}
+			realign = true;
+			break;
 		}
 
-		if ((alignment.*pView).line > lastLine)
+		if ((alignmentInfo[i].*pView).line > lastLine)
 			break;
 	}
 
