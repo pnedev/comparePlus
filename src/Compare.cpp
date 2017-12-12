@@ -75,15 +75,15 @@ public:
 	void enableClearCommands(bool enable) const;
 	void enableNppScrollCommands(bool enable) const;
 	void updatePluginMenu();
-	void save();
 	void setNormalMode(bool forceUpdate = false);
 	void setCompareMode(bool clearHorizontalScroll = false);
 
 	bool	compareMode;
 
 private:
-	NppSettings() : compareMode(false), _restoreMultilineTab(false) {}
+	NppSettings() : compareMode(false), _restoreMultilineTab(false) , _compareZoom(0) {}
 
+	void save();
 	void toSingleLineTab();
 	void restoreMultilineTab();
 	void refreshTabBar(HWND hTabBar);
@@ -93,6 +93,10 @@ private:
 
 	bool	_syncVScroll;
 	bool	_syncHScroll;
+
+	int		_mainZoom;
+	int		_subZoom;
+	int		_compareZoom;
 };
 
 
@@ -535,6 +539,9 @@ void NppSettings::save()
 
 	_syncVScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
 	_syncHScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
+
+	_mainZoom	= CallScintilla(MAIN_VIEW, SCI_GETZOOM, 0, 0);
+	_subZoom	= CallScintilla(SUB_VIEW, SCI_GETZOOM, 0, 0);
 }
 
 
@@ -543,6 +550,8 @@ void NppSettings::setNormalMode(bool forceUpdate)
 	if (compareMode)
 	{
 		compareMode = false;
+
+		_compareZoom = CallScintilla(MAIN_VIEW, SCI_GETZOOM, 0, 0);
 
 		restoreMultilineTab();
 
@@ -564,11 +573,17 @@ void NppSettings::setNormalMode(bool forceUpdate)
 				::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLH);
 		}
 
+		CallScintilla(MAIN_VIEW, SCI_SETZOOM, _mainZoom, 0);
+		CallScintilla(SUB_VIEW, SCI_SETZOOM, _subZoom, 0);
+
 		updatePluginMenu();
 	}
 	else if (forceUpdate)
 	{
 		restoreMultilineTab();
+
+		CallScintilla(MAIN_VIEW, SCI_SETZOOM, _mainZoom, 0);
+		CallScintilla(SUB_VIEW, SCI_SETZOOM, _subZoom, 0);
 
 		updatePluginMenu();
 	}
@@ -577,7 +592,7 @@ void NppSettings::setNormalMode(bool forceUpdate)
 
 void NppSettings::setCompareMode(bool clearHorizontalScroll)
 {
-	if (compareMode == true)
+	if (compareMode)
 		return;
 
 	compareMode = true;
@@ -604,8 +619,16 @@ void NppSettings::setCompareMode(bool clearHorizontalScroll)
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLH);
 
 	// synchronize zoom levels
-	int zoom = CallScintilla(getCurrentViewId(), SCI_GETZOOM, 0, 0);
-	CallScintilla(getOtherViewId(), SCI_SETZOOM, zoom, 0);
+	if (_compareZoom == 0)
+	{
+		_compareZoom = CallScintilla(getCurrentViewId(), SCI_GETZOOM, 0, 0);
+		CallScintilla(getOtherViewId(), SCI_SETZOOM, _compareZoom, 0);
+	}
+	else
+	{
+		CallScintilla(MAIN_VIEW, SCI_SETZOOM, _compareZoom, 0);
+		CallScintilla(SUB_VIEW, SCI_SETZOOM, _compareZoom, 0);
+	}
 
 	enableNppScrollCommands(false);
 	updatePluginMenu();
