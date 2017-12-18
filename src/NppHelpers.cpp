@@ -387,10 +387,10 @@ void setCompareView(int view, int blankColor)
 		CallScintilla(view, SCI_SETMARGINWIDTHN, 4, 16);
 
 		CallScintilla(view, SCI_SETCARETLINEBACKALPHA, 96, 0);
-
-		// For some reason the annotation blank styling is lost on Sci doc switch thus we need to reapply it
-		setBlanksStyle(view, blankColor);
 	}
+
+	// For some reason the annotation blank styling is lost on Sci doc switch thus we need to reapply it
+	setBlanksStyle(view, blankColor);
 }
 
 
