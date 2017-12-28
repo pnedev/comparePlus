@@ -78,10 +78,25 @@ public:
 	void setNormalMode(bool forceUpdate = false);
 	void setCompareMode(bool clearHorizontalScroll = false);
 
+	void setMainZoom(int zoom)
+	{
+		_mainZoom = zoom;
+	}
+
+	void setSubZoom(int zoom)
+	{
+		_subZoom = zoom;
+	}
+
+	void setCompareZoom(int zoom)
+	{
+		_compareZoom = zoom;
+	}
+
 	bool	compareMode;
 
 private:
-	NppSettings() : compareMode(false), _restoreMultilineTab(false) , _compareZoom(0) {}
+	NppSettings() : compareMode(false), _restoreMultilineTab(false), _mainZoom(0), _subZoom(0), _compareZoom(0) {}
 
 	void save();
 	void toSingleLineTab();
@@ -540,8 +555,11 @@ void NppSettings::save()
 	_syncVScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
 	_syncHScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
 
-	_mainZoom	= CallScintilla(MAIN_VIEW, SCI_GETZOOM, 0, 0);
-	_subZoom	= CallScintilla(SUB_VIEW, SCI_GETZOOM, 0, 0);
+	if (_mainZoom == 0)
+		_mainZoom	= CallScintilla(MAIN_VIEW, SCI_GETZOOM, 0, 0);
+
+	if (_subZoom == 0)
+		_subZoom	= CallScintilla(SUB_VIEW, SCI_GETZOOM, 0, 0);
 }
 
 
@@ -550,8 +568,6 @@ void NppSettings::setNormalMode(bool forceUpdate)
 	if (compareMode)
 	{
 		compareMode = false;
-
-		_compareZoom = CallScintilla(MAIN_VIEW, SCI_GETZOOM, 0, 0);
 
 		restoreMultilineTab();
 
@@ -920,10 +936,6 @@ ComparedFile& ComparedPair::getNewFile()
 
 void ComparedPair::positionFiles()
 {
-	// sync both views zoom
-	const int zoom = CallScintilla(getCurrentViewId(), SCI_GETZOOM, 0, 0);
-	CallScintilla(getOtherViewId(), SCI_SETZOOM, zoom, 0);
-
 	const LRESULT currentBuffId = getCurrentBuffId();
 
 	ComparedFile& oldFile = getOldFile();
@@ -2350,6 +2362,8 @@ void comparedFileActivated()
 		if (Settings.UseNavBar && !NavDlg.isVisible())
 			showNavBar();
 
+		ScopedIncrementer incr(notificationsLock);
+
 		NppSettings::get().setCompareMode();
 	}
 
@@ -2575,6 +2589,8 @@ void onSciZoom()
 	// sync both views zoom
 	const int zoom = CallScintilla(getCurrentViewId(), SCI_GETZOOM, 0, 0);
 	CallScintilla(getOtherViewId(), SCI_SETZOOM, zoom, 0);
+
+	NppSettings::get().setCompareZoom(zoom);
 }
 
 
@@ -2937,8 +2953,18 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 		break;
 
 		case SCN_ZOOM:
-			if (NppSettings::get().compareMode && !notificationsLock)
-				onSciZoom();
+			if (!notificationsLock)
+			{
+				if (NppSettings::get().compareMode)
+				{
+					onSciZoom();
+				}
+				else
+				{
+					NppSettings::get().setMainZoom(CallScintilla(MAIN_VIEW, SCI_GETZOOM, 0, 0));
+					NppSettings::get().setSubZoom(CallScintilla(SUB_VIEW, SCI_GETZOOM, 0, 0));
+				}
+			}
 		break;
 
 		case NPPN_WORDSTYLESUPDATED:
