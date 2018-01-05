@@ -1105,101 +1105,75 @@ NewCompare::~NewCompare()
 }
 
 
-std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool doNotBlink = false)
+std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool down, bool doNotBlink = false)
 {
-	const int mainLine	= CallScintilla(MAIN_VIEW, SCI_MARKERNEXT, mainStartLine, MARKER_MASK_LINE);
-	const int subLine	= CallScintilla(SUB_VIEW, SCI_MARKERNEXT, subStartLine, MARKER_MASK_LINE);
+	const int nextMarker = down ? SCI_MARKERNEXT : SCI_MARKERPREVIOUS;
 
-	const int currentView = getCurrentViewId();
+	mainStartLine	= CallScintilla(MAIN_VIEW, nextMarker, mainStartLine, MARKER_MASK_LINE);
+	subStartLine	= CallScintilla(SUB_VIEW, nextMarker, subStartLine, MARKER_MASK_LINE);
 
-	int view		= currentView;
-	int otherView	= getOtherViewId(view);
+	const int view		= getCurrentViewId();
+	const int otherView	= getOtherViewId(view);
 
-	int line		= (view == MAIN_VIEW) ? mainLine : subLine;
-	int otherLine	= (view == MAIN_VIEW) ? subLine : mainLine;
+	int line			= (view == MAIN_VIEW) ? mainStartLine : subStartLine;
+	const int otherLine	= (view == MAIN_VIEW) ? subStartLine : mainStartLine;
 
 	if (line < 0)
 	{
+		// End of doc reached - wrap around
 		if (otherLine < 0)
 			return std::make_pair(-1, -1);
 
-		view = otherView;
-		line = otherLine;
+		line = otherViewMatchingLine(otherView, otherLine);
 	}
 	else if (otherLine >= 0)
 	{
-		if (CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0) <
-			CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0))
+		const int visibleLine		= CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0);
+		const int otherVisibleLine	= CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0);
+
+		if (down)
 		{
-			view = otherView;
-			line = otherLine;
+			if (otherVisibleLine < visibleLine)
+				line = otherViewMatchingLine(otherView, otherLine);
+		}
+		else
+		{
+			if (otherVisibleLine > visibleLine)
+				line = otherViewMatchingLine(otherView, otherLine);
 		}
 	}
 
-	if (line < getFirstLine(view) || line > getLastLine(view) || doNotBlink)
+	// Line is not visible - scroll into view
+	if (!isLineVisible(view, line))
 	{
 		LOGD("Jump to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
 				" view, center doc line: " + std::to_string(line) + "\n");
 
 		centerAt(view, line);
+		doNotBlink = true;
 	}
-	else
+
+	if (Settings.FollowingCaret && line != getCurrentLine(view))
 	{
-		if (view == currentView)
-			blinkMarkedLine(view, line);
+		LOGD("Move caret to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
+				" view, doc line: " + std::to_string(line) + "\n");
+
+		int pos;
+
+		if (down && (CallScintilla(view, SCI_ANNOTATIONGETLINES, line, 0) > 0) &&
+				(CallScintilla(view, SCI_WRAPCOUNT, line, 0) > 1))
+			pos = CallScintilla(view, SCI_GETLINEENDPOSITION, line, 0);
 		else
-			blinkOtherView(view, line, false);
+			pos = CallScintilla(view, SCI_POSITIONFROMLINE, line, 0);
+
+		CallScintilla(view, SCI_GOTOPOS, pos, 0);
+
+		doNotBlink = true;
+		line = -1;
 	}
 
-	return std::make_pair(view, line);
-}
-
-
-std::pair<int, int> jumpToPrevChange(int mainStartLine, int subStartLine, bool doNotBlink = false)
-{
-	const int mainLine	= CallScintilla(MAIN_VIEW, SCI_MARKERPREVIOUS, mainStartLine, MARKER_MASK_LINE);
-	const int subLine	= CallScintilla(SUB_VIEW, SCI_MARKERPREVIOUS, subStartLine, MARKER_MASK_LINE);
-
-	const int currentView = getCurrentViewId();
-
-	int view		= currentView;
-	int otherView	= getOtherViewId(view);
-
-	int line		= (view == MAIN_VIEW) ? mainLine : subLine;
-	int otherLine	= (view == MAIN_VIEW) ? subLine : mainLine;
-
-	if (line < 0)
-	{
-		if (otherLine < 0)
-			return std::make_pair(-1, -1);
-
-		view = otherView;
-		line = otherLine;
-	}
-	else if (otherLine >= 0)
-	{
-		if (CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0) >
-			CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0))
-		{
-			view = otherView;
-			line = otherLine;
-		}
-	}
-
-	if (line < getFirstLine(view) || line > getLastLine(view) || doNotBlink)
-	{
-		LOGD("Jump to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
-				" view, center doc line: " + std::to_string(line) + "\n");
-
-		centerAt(view, line);
-	}
-	else
-	{
-		if (view == currentView)
-			blinkMarkedLine(view, line);
-		else
-			blinkOtherView(view, line, true);
-	}
+	if (!doNotBlink)
+		blinkLine(view, line);
 
 	return std::make_pair(view, line);
 }
@@ -1207,14 +1181,14 @@ std::pair<int, int> jumpToPrevChange(int mainStartLine, int subStartLine, bool d
 
 inline std::pair<int, int> jumpToFirstChange(bool doNotBlink = false)
 {
-	return jumpToNextChange(0, 0, doNotBlink);
+	return jumpToNextChange(0, 0, true, doNotBlink);
 }
 
 
 inline std::pair<int, int> jumpToLastChange(bool doNotBlink = false)
 {
-	return jumpToPrevChange(CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0),
-			CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0), doNotBlink);
+	return jumpToNextChange(CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0),
+			CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0), false, doNotBlink);
 }
 
 
@@ -1223,11 +1197,60 @@ std::pair<int, int> jumpToChange(bool down, bool wrapAround)
 	std::pair<int, int> viewLoc;
 
 	if (down)
-		viewLoc = jumpToNextChange(getNextUnmarkedLine(MAIN_VIEW, getLastLine(MAIN_VIEW), MARKER_MASK_LINE),
-				getNextUnmarkedLine(SUB_VIEW, getLastLine(SUB_VIEW), MARKER_MASK_LINE));
+	{
+		int mainStartLine	= 0;
+		int subStartLine	= 0;
+
+		if (!Settings.FollowingCaret)
+		{
+			mainStartLine	= getLastLine(MAIN_VIEW);
+			subStartLine	= getLastLine(SUB_VIEW);
+		}
+		else
+		{
+			const int currentView = getCurrentViewId();
+
+			int& currentLine	= (currentView == MAIN_VIEW) ? mainStartLine : subStartLine;
+			int& otherLine		= (currentView != MAIN_VIEW) ? mainStartLine : subStartLine;
+
+			currentLine = getCurrentLine(currentView);
+
+			if (CallScintilla(currentView, SCI_ANNOTATIONGETLINES, currentLine, 0) > 0)
+				++currentLine;
+
+			otherLine = otherViewMatchingLine(currentView, currentLine);
+
+			if (CallScintilla(getOtherViewId(currentView), SCI_ANNOTATIONGETLINES, otherLine, 0) > 0)
+				++otherLine;
+		}
+
+		viewLoc = jumpToNextChange(getNextUnmarkedLine(MAIN_VIEW, mainStartLine, MARKER_MASK_LINE),
+				getNextUnmarkedLine(SUB_VIEW, subStartLine, MARKER_MASK_LINE), down);
+	}
 	else
-		viewLoc = jumpToPrevChange(getPrevUnmarkedLine(MAIN_VIEW, getFirstLine(MAIN_VIEW), MARKER_MASK_LINE),
-				getPrevUnmarkedLine(SUB_VIEW, getFirstLine(SUB_VIEW), MARKER_MASK_LINE));
+	{
+		int mainStartLine	= 0;
+		int subStartLine	= 0;
+
+		if (!Settings.FollowingCaret)
+		{
+			mainStartLine	= getFirstLine(MAIN_VIEW);
+			subStartLine	= getFirstLine(SUB_VIEW);
+		}
+		else
+		{
+			const int currentView = getCurrentViewId();
+
+			int& currentLine	= (currentView == MAIN_VIEW) ? mainStartLine : subStartLine;
+			int& otherLine		= (currentView != MAIN_VIEW) ? mainStartLine : subStartLine;
+
+			currentLine = getCurrentLine(currentView);
+			otherLine = otherViewMatchingLine(currentView, currentLine);
+		}
+
+		viewLoc = jumpToNextChange(getPrevUnmarkedLine(MAIN_VIEW, mainStartLine, MARKER_MASK_LINE),
+				getPrevUnmarkedLine(SUB_VIEW, subStartLine, MARKER_MASK_LINE), down);
+	}
 
 	if (viewLoc.first < 0)
 	{
@@ -1795,8 +1818,12 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false)
 				{
 					if (alignment.main.diffMask)
 					{
-						centerAt(MAIN_VIEW,	alignment.main.line);
-						centerAt(SUB_VIEW,	alignment.sub.line);
+						if (!isLineVisible(MAIN_VIEW, alignment.main.line))
+							centerAt(MAIN_VIEW, alignment.main.line);
+
+						if (!isLineVisible(SUB_VIEW, alignment.sub.line))
+							centerAt(SUB_VIEW, alignment.sub.line);
+
 						break;
 					}
 				}

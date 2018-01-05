@@ -490,11 +490,16 @@ void NavDialog::setPos(int x, int y)
 
 	const int currentLine = currentView->bmpToDocLine((y + scrollOffset) / m_pixelsPerLine);
 
-	centerAt(currentView->m_view, currentLine);
+	if (!isLineVisible(currentView->m_view, currentLine))
+		centerAt(currentView->m_view, currentLine);
+
 	SetLocation(currentView->m_view, currentLine);
 
 	if (Settings.FollowingCaret)
+	{
 		::SetFocus(getView(currentView->m_view));
+		CallScintilla(currentView->m_view, SCI_GOTOLINE, currentLine, 0);
+	}
 }
 
 

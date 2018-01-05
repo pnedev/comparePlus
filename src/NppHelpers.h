@@ -340,6 +340,15 @@ inline int otherViewMatchingLine(int view, int line)
 }
 
 
+inline bool isLineVisible(int view, int line)
+{
+	const int firstVisibleLine = CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	line = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0);
+
+	return ((line >= firstVisibleLine) && (line < firstVisibleLine + CallScintilla(view, SCI_LINESONSCREEN, 0, 0)));
+}
+
+
 inline bool isSelection(int view)
 {
 	return (CallScintilla(view, SCI_GETSELECTIONEND, 0, 0) - CallScintilla(view, SCI_GETSELECTIONSTART, 0, 0) != 0);
@@ -370,8 +379,6 @@ void activateBufferID(LRESULT buffId);
 std::pair<int, int> getSelectionLines(int view);
 
 void blinkLine(int view, int line);
-void blinkMarkedLine(int view, int line);
-void blinkOtherView(int view, int line, bool nextLine);
 void blinkRange(int view, int startPos, int endPos);
 
 void centerAt(int view, int line);

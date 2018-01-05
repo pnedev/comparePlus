@@ -148,7 +148,8 @@ void ViewLocation::restore()
 	}
 	else
 	{
-		centerAt(_view, _centerLine);
+		if (!isLineVisible(_view, _centerLine))
+			centerAt(_view, _centerLine);
 
 		LOGD("Restore " + std::string(_view == MAIN_VIEW ? "MAIN" : "SUB") +
 				" view location, center doc line: " + std::to_string(_centerLine) + "\n");
@@ -251,38 +252,24 @@ std::pair<int, int> getSelectionLines(int view)
 
 void blinkLine(int view, int line)
 {
-	HWND hView = getView(view);
-
-	for (int i = cBlinkCount; ;)
-	{
-		CallScintilla(view, SCI_MARKERADDSET, line, MARKER_MASK_BLANK);
-		::UpdateWindow(hView);
-		::Sleep(cBlinkInterval_ms);
-
-		CallScintilla(view, SCI_MARKERDELETE, line, MARKER_BLANK);
-		::UpdateWindow(hView);
-
-		if (--i == 0)
-			break;
-
-		::Sleep(cBlinkInterval_ms);
-	}
-}
-
-
-void blinkMarkedLine(int view, int line)
-{
 	const int marker = CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL;
 	HWND hView = getView(view);
 
 	for (int i = cBlinkCount; ;)
 	{
-		clearMarks(view, line);
+		if (marker)
+			clearMarks(view, line);
+		else
+			CallScintilla(view, SCI_MARKERADDSET, line, MARKER_MASK_BLANK);
 
 		::UpdateWindow(hView);
 		::Sleep(cBlinkInterval_ms);
 
-		CallScintilla(view, SCI_MARKERADDSET, line, marker);
+		if (marker)
+			CallScintilla(view, SCI_MARKERADDSET, line, marker);
+		else
+			CallScintilla(view, SCI_MARKERDELETE, line, MARKER_BLANK);
+
 		::UpdateWindow(hView);
 
 		if (--i == 0)
@@ -290,32 +277,6 @@ void blinkMarkedLine(int view, int line)
 
 		::Sleep(cBlinkInterval_ms);
 	}
-}
-
-
-void blinkOtherView(int view, int line, bool nextLine)
-{
-	line = otherViewMatchingLine(view, line);
-	view = getOtherViewId(view);
-
-	if (nextLine)
-	{
-		if (++line > getLastLine(view))
-			--line;
-
-		if (line == CallScintilla(view, SCI_GETLINECOUNT, 0, 0))
-			--line;
-	}
-	else
-	{
-		if (line < getFirstLine(view))
-			++line;
-	}
-
-	if (CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL)
-		blinkMarkedLine(view, line);
-	else
-		blinkLine(view, line);
 }
 
 
@@ -345,16 +306,10 @@ void centerAt(int view, int line)
 {
 	CallScintilla(view, SCI_ENSUREVISIBLEENFORCEPOLICY, line, 0);
 
-	if (line < getFirstLine(view) || line > getLastLine(view))
-	{
-		const int linesOnScreen = CallScintilla(view, SCI_LINESONSCREEN, 0, 0);
-		const int firstVisible = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - linesOnScreen / 2;
+	const int linesOnScreen = CallScintilla(view, SCI_LINESONSCREEN, 0, 0);
+	const int firstVisible = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - linesOnScreen / 2;
 
-		CallScintilla(view, SCI_SETFIRSTVISIBLELINE, firstVisible, 0);
-	}
-
-	if (Settings.FollowingCaret)
-		CallScintilla(view, SCI_GOTOLINE, line, 0);
+	CallScintilla(view, SCI_SETFIRSTVISIBLELINE, firstVisible, 0);
 }
 
 
