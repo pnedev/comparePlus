@@ -1109,14 +1109,20 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 {
 	const int nextMarker = down ? SCI_MARKERNEXT : SCI_MARKERPREVIOUS;
 
-	mainStartLine	= CallScintilla(MAIN_VIEW, nextMarker, mainStartLine, MARKER_MASK_LINE);
-	subStartLine	= CallScintilla(SUB_VIEW, nextMarker, subStartLine, MARKER_MASK_LINE);
+	int mainNextLine	= CallScintilla(MAIN_VIEW, nextMarker, mainStartLine, MARKER_MASK_LINE);
+	int subNextLine		= CallScintilla(SUB_VIEW, nextMarker, subStartLine, MARKER_MASK_LINE);
+
+	if (mainNextLine == mainStartLine)
+		mainNextLine = -1;
+
+	if (subNextLine == subStartLine)
+		subNextLine = -1;
 
 	const int view		= getCurrentViewId();
 	const int otherView	= getOtherViewId(view);
 
-	int line			= (view == MAIN_VIEW) ? mainStartLine : subStartLine;
-	const int otherLine	= (view == MAIN_VIEW) ? subStartLine : mainStartLine;
+	int line			= (view == MAIN_VIEW) ? mainNextLine : subNextLine;
+	const int otherLine	= (view == MAIN_VIEW) ? subNextLine : mainNextLine;
 
 	if (line < 0)
 	{
@@ -1143,6 +1149,9 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 		}
 	}
 
+	if (!down && isLineAnnotated(view, line))
+		++line;
+
 	// Line is not visible - scroll into view
 	if (!isLineVisible(view, line))
 	{
@@ -1160,8 +1169,8 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 
 		int pos;
 
-		if (down && (CallScintilla(view, SCI_ANNOTATIONGETLINES, line, 0) > 0) &&
-				(CallScintilla(view, SCI_WRAPCOUNT, line, 0) > 1))
+		if (down && (isLineAnnotated(view, line) && isLineWrapped(view, line) &&
+				!isLineMarked(view, line, MARKER_MASK_LINE)))
 			pos = CallScintilla(view, SCI_GETLINEENDPOSITION, line, 0);
 		else
 			pos = CallScintilla(view, SCI_POSITIONFROMLINE, line, 0);
@@ -1215,12 +1224,12 @@ std::pair<int, int> jumpToChange(bool down, bool wrapAround)
 
 			currentLine = getCurrentLine(currentView);
 
-			if (CallScintilla(currentView, SCI_ANNOTATIONGETLINES, currentLine, 0) > 0)
+			if (isLineAnnotated(currentView, currentLine))
 				++currentLine;
 
 			otherLine = otherViewMatchingLine(currentView, currentLine);
 
-			if (CallScintilla(getOtherViewId(currentView), SCI_ANNOTATIONGETLINES, otherLine, 0) > 0)
+			if (isLineAnnotated(getOtherViewId(currentView), otherLine))
 				++otherLine;
 		}
 
@@ -1245,7 +1254,14 @@ std::pair<int, int> jumpToChange(bool down, bool wrapAround)
 			int& otherLine		= (currentView != MAIN_VIEW) ? mainStartLine : subStartLine;
 
 			currentLine = getCurrentLine(currentView);
+
+			if ((currentLine - 1 >= 0) && isLineAnnotated(currentView, currentLine - 1))
+				--currentLine;
+
 			otherLine = otherViewMatchingLine(currentView, currentLine);
+
+			if ((otherLine - 1 >= 0) && isLineAnnotated(getOtherViewId(currentView), otherLine - 1))
+				--otherLine;
 		}
 
 		viewLoc = jumpToNextChange(getPrevUnmarkedLine(MAIN_VIEW, mainStartLine, MARKER_MASK_LINE),
@@ -1377,12 +1393,10 @@ void alignDiffs(const AlignmentInfo_t& alignmentInfo)
 	for (int i = 0; i < maxSize &&
 			alignmentInfo[i].main.line <= mainEndLine && alignmentInfo[i].sub.line <= subEndLine; ++i)
 	{
-		if (alignmentInfo[i].main.line &&
-				CallScintilla(MAIN_VIEW, SCI_ANNOTATIONGETLINES, alignmentInfo[i].main.line - 1, 0))
+		if (alignmentInfo[i].main.line && isLineAnnotated(MAIN_VIEW, alignmentInfo[i].main.line - 1))
 			CallScintilla(MAIN_VIEW, SCI_ANNOTATIONSETTEXT, alignmentInfo[i].main.line - 1, (LPARAM)NULL);
 
-		if (alignmentInfo[i].sub.line &&
-				CallScintilla(SUB_VIEW, SCI_ANNOTATIONGETLINES, alignmentInfo[i].sub.line - 1, 0))
+		if (alignmentInfo[i].sub.line && isLineAnnotated(SUB_VIEW, alignmentInfo[i].sub.line - 1))
 			CallScintilla(SUB_VIEW, SCI_ANNOTATIONSETTEXT, alignmentInfo[i].sub.line - 1, (LPARAM)NULL);
 
 		const int mismatchLen =
@@ -2512,7 +2526,21 @@ void DelayedAlign::operator()()
 		std::pair<int, int> viewLoc = jumpToFirstChange(true);
 
 		if (viewLoc.first >= 0)
+		{
 			syncViews(viewLoc.first);
+
+			if (Settings.FollowingCaret)
+			{
+				const int otherView	= getOtherViewId(viewLoc.first);
+				const int line		= getCurrentLine(viewLoc.first);
+				int otherLine		= otherViewMatchingLine(viewLoc.first, line);
+
+				if (isLineAnnotated(viewLoc.first, line) && !isLineMarked(viewLoc.first, line, MARKER_MASK_LINE))
+					++otherLine;
+
+				CallScintilla(otherView, SCI_GOTOLINE, otherLine, 0);
+			}
+		}
 
 		cmpPair->setStatus();
 	}

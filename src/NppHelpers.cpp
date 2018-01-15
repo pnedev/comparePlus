@@ -506,7 +506,7 @@ void clearMarksAndBlanks(int view, int startLine, int linesCount)
 
 	for (int line = startLine; line < linesCount; ++line)
 	{
-		if (CallScintilla(view, SCI_ANNOTATIONGETLINES, line, 0))
+		if (isLineAnnotated(view, line))
 			CallScintilla(view, SCI_ANNOTATIONSETTEXT, line, (LPARAM)NULL);
 	}
 }
@@ -516,8 +516,7 @@ int getPrevUnmarkedLine(int view, int startLine, int markMask)
 {
 	int prevUnmarkedLine = startLine;
 
-	for (; (prevUnmarkedLine > 0) &&
-			(CallScintilla(view, SCI_MARKERGET, prevUnmarkedLine, 0) & markMask); --prevUnmarkedLine);
+	for (; (prevUnmarkedLine > 0) && isLineMarked(view, prevUnmarkedLine, markMask); --prevUnmarkedLine);
 
 	return prevUnmarkedLine;
 }
@@ -528,8 +527,7 @@ int getNextUnmarkedLine(int view, int startLine, int markMask)
 	const int endLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
 	int nextUnmarkedLine = startLine;
 
-	for (; (nextUnmarkedLine < endLine) &&
-			(CallScintilla(view, SCI_MARKERGET, nextUnmarkedLine, 0) & markMask); ++nextUnmarkedLine);
+	for (; (nextUnmarkedLine < endLine) && isLineMarked(view, nextUnmarkedLine, markMask); ++nextUnmarkedLine);
 
 	return nextUnmarkedLine;
 }

@@ -349,6 +349,24 @@ inline bool isLineVisible(int view, int line)
 }
 
 
+inline bool isLineWrapped(int view, int line)
+{
+	return (CallScintilla(view, SCI_WRAPCOUNT, line, 0) > 1);
+}
+
+
+inline bool isLineAnnotated(int view, int line)
+{
+	return (CallScintilla(view, SCI_ANNOTATIONGETLINES, line, 0) > 0);
+}
+
+
+inline bool isLineMarked(int view, int line, int markMask)
+{
+	return ((CallScintilla(view, SCI_MARKERGET, line, 0) & markMask) != 0);
+}
+
+
 inline bool isSelection(int view)
 {
 	return (CallScintilla(view, SCI_GETSELECTIONEND, 0, 0) - CallScintilla(view, SCI_GETSELECTIONSTART, 0, 0) != 0);
