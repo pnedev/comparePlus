@@ -2390,6 +2390,25 @@ void syncViews(int biasView)
 		ScopedIncrementer incr(notificationsLock);
 
 		CallScintilla(otherView, SCI_SETFIRSTVISIBLELINE, otherLine, 0);
+		::UpdateWindow(getView(otherView));
+	}
+
+	if (Settings.FollowingCaret && biasView == getCurrentViewId())
+	{
+		const int line = getCurrentLine(biasView);
+
+		otherLine = otherViewMatchingLine(biasView, line);
+
+		if (isLineAnnotated(biasView, line) && !isLineMarked(biasView, line, MARKER_MASK_LINE))
+			++otherLine;
+
+		if ((otherLine != getCurrentLine(otherView)) && !isSelection(otherView))
+		{
+			ScopedIncrementer incr(notificationsLock);
+
+			CallScintilla(otherView, SCI_GOTOLINE, otherLine, 0);
+			::UpdateWindow(getView(otherView));
+		}
 	}
 
 	NavDlg.Update();
@@ -2526,21 +2545,7 @@ void DelayedAlign::operator()()
 		std::pair<int, int> viewLoc = jumpToFirstChange(true);
 
 		if (viewLoc.first >= 0)
-		{
 			syncViews(viewLoc.first);
-
-			if (Settings.FollowingCaret)
-			{
-				const int otherView	= getOtherViewId(viewLoc.first);
-				const int line		= getCurrentLine(viewLoc.first);
-				int otherLine		= otherViewMatchingLine(viewLoc.first, line);
-
-				if (isLineAnnotated(viewLoc.first, line) && !isLineMarked(viewLoc.first, line, MARKER_MASK_LINE))
-					++otherLine;
-
-				CallScintilla(otherView, SCI_GOTOLINE, otherLine, 0);
-			}
-		}
 
 		cmpPair->setStatus();
 	}
@@ -2976,7 +2981,8 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 		// Vertical scroll sync
 		case SCN_UPDATEUI:
 			if (NppSettings::get().compareMode && !notificationsLock && !storedLocation && !goToFirst &&
-					!delayedActivation && !delayedClosure && !delayedUpdate)
+					!delayedActivation && !delayedClosure && !delayedUpdate &&
+					(notifyCode->updated & (SC_UPDATE_SELECTION | SC_UPDATE_V_SCROLL)))
 				onSciUpdateUI((HWND)notifyCode->nmhdr.hwndFrom);
 		break;
 
