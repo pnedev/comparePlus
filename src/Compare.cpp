@@ -2390,6 +2390,7 @@ void syncViews(int biasView)
 		ScopedIncrementer incr(notificationsLock);
 
 		CallScintilla(otherView, SCI_SETFIRSTVISIBLELINE, otherLine, 0);
+
 		::UpdateWindow(getView(otherView));
 	}
 
@@ -2399,14 +2400,19 @@ void syncViews(int biasView)
 
 		otherLine = otherViewMatchingLine(biasView, line);
 
-		if (isLineAnnotated(biasView, line) && !isLineMarked(biasView, line, MARKER_MASK_LINE))
-			++otherLine;
-
 		if ((otherLine != getCurrentLine(otherView)) && !isSelection(otherView))
 		{
 			ScopedIncrementer incr(notificationsLock);
 
-			CallScintilla(otherView, SCI_GOTOLINE, otherLine, 0);
+			int pos;
+
+			if (isLineAnnotated(otherView, otherLine) && isLineWrapped(otherView, otherLine))
+				pos = CallScintilla(otherView, SCI_GETLINEENDPOSITION, otherLine, 0);
+			else
+				pos = CallScintilla(otherView, SCI_POSITIONFROMLINE, otherLine, 0);
+
+			CallScintilla(otherView, SCI_GOTOPOS, pos, 0);
+
 			::UpdateWindow(getView(otherView));
 		}
 	}
