@@ -130,7 +130,7 @@ void ViewLocation::save(int view, int centerLine)
 
 void ViewLocation::restore()
 {
-	if (_view < 0)
+	if (_view != MAIN_VIEW && _view != SUB_VIEW)
 		return;
 
 	if (_centerLine < 0)
