@@ -1107,6 +1107,20 @@ NewCompare::~NewCompare()
 
 std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool down, bool doNotBlink = false)
 {
+	const int view		= getCurrentViewId();
+	const int otherView	= getOtherViewId(view);
+
+	if (Settings.FollowingCaret)
+	{
+		const int line = getCurrentLine(view);
+
+		if (!isAnnotationVisible(view, line, down))
+		{
+			centerAt(view, line);
+			return std::make_pair(view, line);
+		}
+	}
+
 	const int nextMarker = down ? SCI_MARKERNEXT : SCI_MARKERPREVIOUS;
 
 	int mainNextLine	= CallScintilla(MAIN_VIEW, nextMarker, mainStartLine, MARKER_MASK_LINE);
@@ -1117,9 +1131,6 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 
 	if (subNextLine == subStartLine)
 		subNextLine = -1;
-
-	const int view		= getCurrentViewId();
-	const int otherView	= getOtherViewId(view);
 
 	int line			= (view == MAIN_VIEW) ? mainNextLine : subNextLine;
 	const int otherLine	= (view == MAIN_VIEW) ? subNextLine : mainNextLine;
@@ -1153,7 +1164,7 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 		++line;
 
 	// Line is not visible - scroll into view
-	if (!isLineVisible(view, line))
+	if (!isAnnotationVisible(view, line, down))
 	{
 		LOGD("Jump to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
 				" view, center doc line: " + std::to_string(line) + "\n");

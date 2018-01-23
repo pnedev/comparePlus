@@ -316,9 +316,22 @@ inline int getCurrentLine(int view)
 }
 
 
+inline int getCurrentVisibleLine(int view)
+{
+	return CallScintilla(view, SCI_VISIBLEFROMDOCLINE,
+			CallScintilla(view, SCI_LINEFROMPOSITION, CallScintilla(view, SCI_GETCURRENTPOS, 0, 0), 0), 0);
+}
+
+
 inline int getFirstLine(int view)
 {
 	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE, CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0), 0);
+}
+
+
+inline int getFirstVisibleLine(int view)
+{
+	return CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
 }
 
 
@@ -326,6 +339,12 @@ inline int getLastLine(int view)
 {
 	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE,
 			CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0) + CallScintilla(view, SCI_LINESONSCREEN, 0, 0) - 1, 0);
+}
+
+
+inline int getLastVisibleLine(int view)
+{
+	return (CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0) + CallScintilla(view, SCI_LINESONSCREEN, 0, 0) - 1);
 }
 
 
@@ -415,6 +434,8 @@ void clearMarks(int view, int startLine, int linesCount);
 void clearMarksAndBlanks(int view, int startLine, int linesCount);
 int getPrevUnmarkedLine(int view, int startLine, int markMask);
 int getNextUnmarkedLine(int view, int startLine, int markMask);
+
+bool isAnnotationVisible(int view, int line, bool down);
 
 std::vector<char> getText(int view, int startPos, int endPos);
 void toLowerCase(std::vector<char>& text);
