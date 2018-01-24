@@ -90,3 +90,11 @@ private:
 
 	static std::map<UINT_PTR, DelayedWork*> workMap;
 };
+
+
+inline void flushMsgQueue()
+{
+	MSG msg;
+
+	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE));
+}
