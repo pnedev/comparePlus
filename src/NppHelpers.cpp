@@ -533,7 +533,7 @@ int getNextUnmarkedLine(int view, int startLine, int markMask)
 }
 
 
-bool isAnnotationVisible(int view, int line, bool down)
+bool isLineAndAnnotationVisible(int view, int line, bool down)
 {
 	if (!isLineVisible(view, line))
 		return false;
