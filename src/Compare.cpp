@@ -1110,7 +1110,9 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 	const int view		= getCurrentViewId();
 	const int otherView	= getOtherViewId(view);
 
-	if (Settings.FollowingCaret)
+	if (Settings.FollowingCaret && (mainStartLine || subStartLine) &&
+		((mainStartLine != CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0)) ||
+		(subStartLine != CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0))))
 	{
 		const int line = getCurrentLine(view);
 
