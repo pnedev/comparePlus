@@ -1165,21 +1165,18 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 	if (!down && isLineAnnotated(view, line))
 		++line;
 
+	LOGD("Jump to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
+			" view, center doc line: " + std::to_string(line) + "\n");
+
 	// Line is not visible - scroll into view
 	if (!isLineVisible(view, line) || !isLineAnnotationVisible(view, line, down))
 	{
-		LOGD("Jump to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
-				" view, center doc line: " + std::to_string(line) + "\n");
-
 		centerAt(view, line);
 		doNotBlink = true;
 	}
 
 	if (Settings.FollowingCaret && line != getCurrentLine(view))
 	{
-		LOGD("Move caret to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
-				" view, doc line: " + std::to_string(line) + "\n");
-
 		int pos;
 
 		if (down && (isLineAnnotated(view, line) && isLineWrapped(view, line) &&
