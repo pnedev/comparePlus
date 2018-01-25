@@ -1116,7 +1116,7 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 	{
 		const int line = getCurrentLine(view);
 
-		if (!isLineAndAnnotationVisible(view, line, down))
+		if (isLineVisible(view, line) && !isLineAnnotationVisible(view, line, down))
 		{
 			centerAt(view, line);
 			return std::make_pair(view, line);
@@ -1166,7 +1166,7 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 		++line;
 
 	// Line is not visible - scroll into view
-	if (!isLineAndAnnotationVisible(view, line, down))
+	if (!isLineVisible(view, line) || !isLineAnnotationVisible(view, line, down))
 	{
 		LOGD("Jump to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
 				" view, center doc line: " + std::to_string(line) + "\n");

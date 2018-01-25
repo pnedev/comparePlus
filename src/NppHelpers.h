@@ -435,7 +435,7 @@ void clearMarksAndBlanks(int view, int startLine, int linesCount);
 int getPrevUnmarkedLine(int view, int startLine, int markMask);
 int getNextUnmarkedLine(int view, int startLine, int markMask);
 
-bool isLineAndAnnotationVisible(int view, int line, bool down);
+bool isLineAnnotationVisible(int view, int line, bool down);
 
 std::vector<char> getText(int view, int startPos, int endPos);
 void toLowerCase(std::vector<char>& text);
