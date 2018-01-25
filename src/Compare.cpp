@@ -1188,7 +1188,7 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 		else
 			pos = CallScintilla(view, SCI_POSITIONFROMLINE, line, 0);
 
-		CallScintilla(view, SCI_GOTOPOS, pos, 0);
+		CallScintilla(view, SCI_SETEMPTYSELECTION, pos, 0);
 
 		doNotBlink = true;
 		line = -1;
@@ -2424,7 +2424,7 @@ void syncViews(int biasView)
 			else
 				pos = CallScintilla(otherView, SCI_POSITIONFROMLINE, otherLine, 0);
 
-			CallScintilla(otherView, SCI_GOTOPOS, pos, 0);
+			CallScintilla(otherView, SCI_SETEMPTYSELECTION, pos, 0);
 
 			::UpdateWindow(getView(otherView));
 		}
@@ -2570,12 +2570,6 @@ void DelayedAlign::operator()()
 	}
 	else if (storedLocation)
 	{
-		const int view = storedLocation->getView();
-
-		storedLocation->restore();
-
-		syncViews(view);
-
 		if (realign)
 			++_consecutiveAligns;
 		else
@@ -2583,6 +2577,9 @@ void DelayedAlign::operator()()
 
 		if (_consecutiveAligns > 1)
 			_consecutiveAligns = 0;
+
+		storedLocation->restore();
+		syncViews(storedLocation->getView());
 
 		// Retry re-alignment one more time - might be needed in case line number margin width has changed
 		if (_consecutiveAligns)
