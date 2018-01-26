@@ -1105,21 +1105,23 @@ NewCompare::~NewCompare()
 }
 
 
-std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool down, bool doNotBlink = false)
+std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool down,
+		bool goToEdgeDiff = false, bool doNotBlink = false)
 {
 	const int view		= getCurrentViewId();
 	const int otherView	= getOtherViewId(view);
 
-	if (Settings.FollowingCaret && (mainStartLine || subStartLine) &&
-		((mainStartLine != CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0)) ||
-		(subStartLine != CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0))))
+	// Is the caret manually positioned on a screen edge line adjacent to invisible blank diff?
+	// Make sure we don't miss it
+	if (Settings.FollowingCaret && !goToEdgeDiff)
 	{
-		const int line = getCurrentLine(view);
+		const int currentLine = getCurrentLine(view);
 
-		if (isLineVisible(view, line) && !isLineAnnotationVisible(view, line, down))
+		if (isLineVisible(view, currentLine) && !isLineMarked(view, currentLine, MARKER_MASK_LINE) &&
+			!isLineAnnotationVisible(view, currentLine, down))
 		{
-			centerAt(view, line);
-			return std::make_pair(view, line);
+			centerAt(view, currentLine);
+			return std::make_pair(view, currentLine);
 		}
 	}
 
@@ -1139,7 +1141,7 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 
 	if (line < 0)
 	{
-		// End of doc reached - wrap around
+		// End of doc reached - no more diffs
 		if (otherLine < 0)
 			return std::make_pair(-1, -1);
 
@@ -1165,11 +1167,46 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 	if (!down && isLineAnnotated(view, line))
 		++line;
 
+	const bool isEdgeDiff = (((mainStartLine == 0) && (subStartLine == 0)) ||
+			((mainStartLine == CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0)) &&
+			(subStartLine == CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0))));
+
+	// No explicit go to edge diff triggered but we are there - diffs wrap has occurred - 'up/down' notion is inverted
+	if (!goToEdgeDiff && isEdgeDiff)
+	{
+		const int edgeLine		= (down ? getLastLine(view) : getFirstLine(view));
+		const int currentLine	= (Settings.FollowingCaret ? getCurrentLine(view) : edgeLine);
+
+		bool dontChangeLine = false;
+
+		if (down)
+		{
+			if (currentLine <= line)
+				dontChangeLine = true;
+		}
+		else
+		{
+			if (currentLine >= line)
+				dontChangeLine = true;
+		}
+
+		if (dontChangeLine)
+		{
+			if (isLineVisible(view, line))
+				blinkLine(view, line);
+			else
+				blinkLine(view, edgeLine);
+
+			return std::make_pair(view, -1);
+		}
+	}
+
 	LOGD("Jump to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
 			" view, center doc line: " + std::to_string(line) + "\n");
 
 	// Line is not visible - scroll into view
-	if (!isLineVisible(view, line) || !isLineAnnotationVisible(view, line, down))
+	if (!isLineVisible(view, line) ||
+		(!isLineMarked(view, line, MARKER_MASK_LINE) && !isLineAnnotationVisible(view, line, down)))
 	{
 		centerAt(view, line);
 		doNotBlink = true;
@@ -1198,16 +1235,16 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 }
 
 
-inline std::pair<int, int> jumpToFirstChange(bool doNotBlink = false)
+inline std::pair<int, int> jumpToFirstChange(bool goToEdgeDiff = false, bool doNotBlink = false)
 {
-	return jumpToNextChange(0, 0, true, doNotBlink);
+	return jumpToNextChange(0, 0, true, goToEdgeDiff, doNotBlink);
 }
 
 
-inline std::pair<int, int> jumpToLastChange(bool doNotBlink = false)
+inline std::pair<int, int> jumpToLastChange(bool goToEdgeDiff = false, bool doNotBlink = false)
 {
 	return jumpToNextChange(CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0),
-			CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0), false, doNotBlink);
+			CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0), false, goToEdgeDiff, doNotBlink);
 }
 
 
@@ -1283,9 +1320,9 @@ std::pair<int, int> jumpToChange(bool down, bool wrapAround)
 		if (wrapAround)
 		{
 			if (down)
-				viewLoc = jumpToFirstChange(true);
+				viewLoc = jumpToFirstChange(true, true);
 			else
-				viewLoc = jumpToLastChange(true);
+				viewLoc = jumpToLastChange(true, true);
 
 			FLASHWINFO flashInfo;
 			flashInfo.cbSize	= sizeof(flashInfo);
@@ -2106,7 +2143,7 @@ void First()
 {
 	if (NppSettings::get().compareMode)
 	{
-		std::pair<int, int> viewLoc = jumpToFirstChange();
+		std::pair<int, int> viewLoc = jumpToFirstChange(true);
 		storedLocation.reset(new ViewLocation(viewLoc.first, viewLoc.second));
 	}
 }
@@ -2116,7 +2153,7 @@ void Last()
 {
 	if (NppSettings::get().compareMode)
 	{
-		std::pair<int, int> viewLoc = jumpToLastChange();
+		std::pair<int, int> viewLoc = jumpToLastChange(true);
 		storedLocation.reset(new ViewLocation(viewLoc.first, viewLoc.second));
 	}
 }
@@ -2558,7 +2595,7 @@ void DelayedAlign::operator()()
 
 		goToFirst = false;
 
-		std::pair<int, int> viewLoc = jumpToFirstChange(true);
+		std::pair<int, int> viewLoc = jumpToFirstChange(true, true);
 
 		if (viewLoc.first >= 0)
 			syncViews(viewLoc.first);
