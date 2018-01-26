@@ -2887,6 +2887,8 @@ void onFileSaved(LRESULT buffId)
 
 void DelayedMaximize::operator()()
 {
+	isNppMinimized = false;
+
 	if (notificationsLock)
 		--notificationsLock;
 
@@ -2999,10 +3001,17 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 
 		// Vertical scroll sync
 		case SCN_UPDATEUI:
-			if (NppSettings::get().compareMode && !notificationsLock && !storedLocation && !goToFirst &&
-					!delayedActivation && !delayedClosure && !delayedUpdate &&
-					(notifyCode->updated & (SC_UPDATE_SELECTION | SC_UPDATE_V_SCROLL)))
+			if (isNppMinimized)
+			{
+				delayedMaximize.cancel();
+				delayedMaximize.post(500);
+			}
+			else if (NppSettings::get().compareMode && !notificationsLock && !storedLocation && !goToFirst &&
+				!delayedActivation && !delayedClosure && !delayedUpdate &&
+				(notifyCode->updated & (SC_UPDATE_SELECTION | SC_UPDATE_V_SCROLL)))
+			{
 				onSciUpdateUI((HWND)notifyCode->nmhdr.hwndFrom);
+			}
 		break;
 
 		case NPPN_BUFFERACTIVATED:
@@ -3076,27 +3085,14 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT msg, WPARAM wParam, LP
 {
 	if ((msg == WM_SIZE))
 	{
-		if (NppSettings::get().compareMode)
+		if ((wParam == SIZE_MINIMIZED) && NppSettings::get().compareMode && !isNppMinimized)
 		{
-			if ((wParam == SIZE_MINIMIZED) && !isNppMinimized)
-			{
-				LOGD("Notepad++ minimized\n");
+			// On rare occasions Alignment is posted (Sci paint event is received)
+			// before minimize event is received
+			delayedAlignment.cancel();
 
-				// On rare occasions Alignment is posted (Sci paint event is received)
-				// before minimize event is received
-				delayedAlignment.cancel();
-
-				isNppMinimized = true;
-				++notificationsLock;
-			}
-			else if ((wParam == SIZE_MAXIMIZED || wParam == SIZE_RESTORED) && isNppMinimized)
-			{
-				LOGD("Notepad++ restored\n");
-
-				isNppMinimized = false;
-
-				delayedMaximize.post(1000);
-			}
+			isNppMinimized = true;
+			++notificationsLock;
 		}
 	}
 
