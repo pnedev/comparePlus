@@ -1278,7 +1278,7 @@ std::pair<int, int> jumpToChange(bool down, bool wrapAround)
 		currentLine = (Settings.FollowingCaret ? getCurrentLine(currentView) : getFirstLine(currentView));
 
 		if ((currentLine - 1 >= 0) && isLineAnnotated(currentView, currentLine - 1) &&
-				isLineAnnotationVisible(currentView, currentLine - 1, down))
+				isLineAnnotationVisible(currentView, currentLine, down))
 			--currentLine;
 
 		otherLine = otherViewMatchingLine(currentView, currentLine);
