@@ -498,7 +498,11 @@ void NavDialog::setPos(int x, int y)
 	if (Settings.FollowingCaret)
 	{
 		::SetFocus(getView(currentView->m_view));
-		CallScintilla(currentView->m_view, SCI_GOTOLINE, currentLine, 0);
+
+		CallScintilla(currentView->m_view, SCI_SETEMPTYSELECTION,
+				CallScintilla(currentView->m_view, SCI_POSITIONFROMLINE, currentLine, 0), 0);
+
+		::UpdateWindow(getView(currentView->m_view));
 	}
 }
 
