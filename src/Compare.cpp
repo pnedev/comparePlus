@@ -1111,11 +1111,12 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 	const int view		= getCurrentViewId();
 	const int otherView	= getOtherViewId(view);
 
-	// Is the caret manually positioned on a screen edge line adjacent to invisible blank diff?
+	// Is the bias line manually positioned on a screen edge and adjacent to invisible blank diff?
 	// Make sure we don't miss it
-	if (Settings.FollowingCaret && !goToEdgeDiff)
+	if (!goToEdgeDiff)
 	{
-		const int currentLine = getCurrentLine(view);
+		const int edgeLine		= (down ? getLastLine(view) : getFirstLine(view));
+		const int currentLine	= (Settings.FollowingCaret ? getCurrentLine(view) : edgeLine);
 
 		if (isLineVisible(view, currentLine) && !isLineMarked(view, currentLine, MARKER_MASK_LINE) &&
 			!isLineAnnotationVisible(view, currentLine, down))
@@ -1252,64 +1253,35 @@ std::pair<int, int> jumpToChange(bool down, bool wrapAround)
 {
 	std::pair<int, int> viewLoc;
 
+	int mainStartLine	= 0;
+	int subStartLine	= 0;
+
+	const int currentView = getCurrentViewId();
+
+	int& currentLine	= (currentView == MAIN_VIEW) ? mainStartLine : subStartLine;
+	int& otherLine		= (currentView != MAIN_VIEW) ? mainStartLine : subStartLine;
+
 	if (down)
 	{
-		int mainStartLine	= 0;
-		int subStartLine	= 0;
+		currentLine = (Settings.FollowingCaret ? getCurrentLine(currentView) : getLastLine(currentView));
 
-		if (!Settings.FollowingCaret)
-		{
-			mainStartLine	= getLastLine(MAIN_VIEW);
-			subStartLine	= getLastLine(SUB_VIEW);
-		}
-		else
-		{
-			const int currentView = getCurrentViewId();
+		if (isLineAnnotated(currentView, currentLine) && isLineAnnotationVisible(currentView, currentLine, down))
+			++currentLine;
 
-			int& currentLine	= (currentView == MAIN_VIEW) ? mainStartLine : subStartLine;
-			int& otherLine		= (currentView != MAIN_VIEW) ? mainStartLine : subStartLine;
-
-			currentLine = getCurrentLine(currentView);
-
-			if (isLineAnnotated(currentView, currentLine))
-				++currentLine;
-
-			otherLine = otherViewMatchingLine(currentView, currentLine);
-
-			if (isLineAnnotated(getOtherViewId(currentView), otherLine))
-				++otherLine;
-		}
+		otherLine = otherViewMatchingLine(currentView, currentLine);
 
 		viewLoc = jumpToNextChange(getNextUnmarkedLine(MAIN_VIEW, mainStartLine, MARKER_MASK_LINE),
 				getNextUnmarkedLine(SUB_VIEW, subStartLine, MARKER_MASK_LINE), down);
 	}
 	else
 	{
-		int mainStartLine	= 0;
-		int subStartLine	= 0;
+		currentLine = (Settings.FollowingCaret ? getCurrentLine(currentView) : getFirstLine(currentView));
 
-		if (!Settings.FollowingCaret)
-		{
-			mainStartLine	= getFirstLine(MAIN_VIEW);
-			subStartLine	= getFirstLine(SUB_VIEW);
-		}
-		else
-		{
-			const int currentView = getCurrentViewId();
+		if ((currentLine - 1 >= 0) && isLineAnnotated(currentView, currentLine - 1) &&
+				isLineAnnotationVisible(currentView, currentLine - 1, down))
+			--currentLine;
 
-			int& currentLine	= (currentView == MAIN_VIEW) ? mainStartLine : subStartLine;
-			int& otherLine		= (currentView != MAIN_VIEW) ? mainStartLine : subStartLine;
-
-			currentLine = getCurrentLine(currentView);
-
-			if ((currentLine - 1 >= 0) && isLineAnnotated(currentView, currentLine - 1))
-				--currentLine;
-
-			otherLine = otherViewMatchingLine(currentView, currentLine);
-
-			if ((otherLine - 1 >= 0) && isLineAnnotated(getOtherViewId(currentView), otherLine - 1))
-				--otherLine;
-		}
+		otherLine = otherViewMatchingLine(currentView, currentLine);
 
 		viewLoc = jumpToNextChange(getPrevUnmarkedLine(MAIN_VIEW, mainStartLine, MARKER_MASK_LINE),
 				getPrevUnmarkedLine(SUB_VIEW, subStartLine, MARKER_MASK_LINE), down);
