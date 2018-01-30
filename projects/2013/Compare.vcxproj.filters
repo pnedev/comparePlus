@@ -141,10 +141,16 @@
     <ClInclude Include="..\..\src\Icons\icon_moved_16.h">
       <Filter>src\Icons</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\Icons\icon_moved_multiple_16.h">
+      <Filter>src\Icons</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\Icons\icon_sub_16.h">
       <Filter>src\Icons</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Icons\icon_diff_16.h">
+      <Filter>src\Icons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Icons\icon_arrows.h">
       <Filter>src\Icons</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Engine\Engine.h">

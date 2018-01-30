@@ -36,7 +36,10 @@ enum Marker_t
 	MARKER_ADDED_SYMBOL,
 	MARKER_REMOVED_SYMBOL,
 	MARKER_MOVED_SYMBOL,
-	MARKER_MOVED_MULTIPLE_SYMBOL
+	MARKER_MOVED_MULTIPLE_SYMBOL,
+	// Marker 10 (the next in the enum) appears to be reserved or taken, 12 was also not free
+	// so use 23 (the last available) for the next symbol
+	MARKER_ARROW_SYMBOL = 23
 };
 
 
@@ -191,6 +194,12 @@ private:
 	int		_selStart;
 	int		_selEnd;
 };
+
+
+inline bool isRTLwindow(HWND hWin)
+{
+	return ((::GetWindowLongPtr(hWin, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0);
+}
 
 
 inline bool isSingleView()
@@ -426,6 +435,8 @@ inline void clearSelection(int view)
 
 void activateBufferID(LRESULT buffId);
 std::pair<int, int> getSelectionLines(int view);
+
+int showArrowSymbol(int view, int line, bool down);
 
 void blinkLine(int view, int line);
 void blinkRange(int view, int startPos, int endPos);

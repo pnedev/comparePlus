@@ -33,6 +33,7 @@
 #include "icon_diff_16.h"
 #include "icon_moved_16.h"
 #include "icon_moved_multiple_16.h"
+#include "icon_arrows.h"
 
 
 // Don't use "INDIC_CONTAINER + 1" since it conflicts with DSpellCheck plugin
@@ -170,39 +171,39 @@ bool endAtLastLine[2]	= { true, true };
 
 void defineColor(int type, int color)
 {
-	CallScintilla(MAIN_VIEW, SCI_MARKERDEFINE,	type, (LPARAM)SC_MARK_BACKGROUND);
-	CallScintilla(MAIN_VIEW, SCI_MARKERSETBACK,	type, (LPARAM)color);
-	CallScintilla(MAIN_VIEW, SCI_MARKERSETFORE,	type, 0);
+	CallScintilla(MAIN_VIEW,	SCI_MARKERDEFINE,	type, SC_MARK_BACKGROUND);
+	CallScintilla(MAIN_VIEW,	SCI_MARKERSETBACK,	type, color);
+	CallScintilla(MAIN_VIEW,	SCI_MARKERSETFORE,	type, 0);
 
-	CallScintilla(SUB_VIEW, SCI_MARKERDEFINE,	type, (LPARAM)SC_MARK_BACKGROUND);
-	CallScintilla(SUB_VIEW, SCI_MARKERSETBACK,	type, (LPARAM)color);
-	CallScintilla(SUB_VIEW, SCI_MARKERSETFORE,	type, 0);
+	CallScintilla(SUB_VIEW,		SCI_MARKERDEFINE,	type, SC_MARK_BACKGROUND);
+	CallScintilla(SUB_VIEW,		SCI_MARKERSETBACK,	type, color);
+	CallScintilla(SUB_VIEW,		SCI_MARKERSETFORE,	type, 0);
 }
 
 
-void defineXpmSymbol(int type, const char **xpm)
+void defineXpmSymbol(int type, const char** xpm)
 {
 	CallScintilla(MAIN_VIEW,	SCI_MARKERDEFINEPIXMAP, type, (LPARAM)xpm);
 	CallScintilla(SUB_VIEW,		SCI_MARKERDEFINEPIXMAP, type, (LPARAM)xpm);
 }
 
 
-void defineRgbaSymbol(int type, const unsigned char *rgba)
+void defineRgbaSymbol(int type, const unsigned char* rgba)
 {
-	CallScintilla(MAIN_VIEW,	SCI_MARKERDEFINERGBAIMAGE, type, (LPARAM)rgba);
-	CallScintilla(SUB_VIEW,		SCI_MARKERDEFINERGBAIMAGE, type, (LPARAM)rgba);
+	CallScintilla(MAIN_VIEW,	SCI_MARKERDEFINERGBAIMAGE,	type, (LPARAM)rgba);
+	CallScintilla(SUB_VIEW,		SCI_MARKERDEFINERGBAIMAGE,	type, (LPARAM)rgba);
 }
 
 
 void setTextStyle(const ColorSettings& settings)
 {
-	CallScintilla(MAIN_VIEW, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT, (LPARAM)INDIC_ROUNDBOX);
-	CallScintilla(MAIN_VIEW, SCI_INDICSETFORE,	INDIC_HIGHLIGHT, (LPARAM)settings.highlight);
-	CallScintilla(MAIN_VIEW, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT, (LPARAM)settings.alpha);
+	CallScintilla(MAIN_VIEW, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT, INDIC_ROUNDBOX);
+	CallScintilla(MAIN_VIEW, SCI_INDICSETFORE,	INDIC_HIGHLIGHT, settings.highlight);
+	CallScintilla(MAIN_VIEW, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT, settings.alpha);
 
-	CallScintilla(SUB_VIEW, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT, (LPARAM)INDIC_ROUNDBOX);
-	CallScintilla(SUB_VIEW, SCI_INDICSETFORE,	INDIC_HIGHLIGHT, (LPARAM)settings.highlight);
-	CallScintilla(SUB_VIEW, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT, (LPARAM)settings.alpha);
+	CallScintilla(SUB_VIEW, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT, INDIC_ROUNDBOX);
+	CallScintilla(SUB_VIEW, SCI_INDICSETFORE,	INDIC_HIGHLIGHT, settings.highlight);
+	CallScintilla(SUB_VIEW, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT, settings.alpha);
 }
 
 
@@ -247,6 +248,18 @@ std::pair<int, int> getSelectionLines(int view)
 		--endLine;
 
 	return std::make_pair(CallScintilla(view, SCI_LINEFROMPOSITION, selectionStart, 0), endLine);
+}
+
+
+int showArrowSymbol(int view, int line, bool down)
+{
+	const bool isRTL = isRTLwindow(getView(view));
+	const unsigned char* rgba = down ?
+			(isRTL ? icon_arrow_down_rtl : icon_arrow_down) : (isRTL ? icon_arrow_up_rtl : icon_arrow_up);
+
+	CallScintilla(view,	SCI_MARKERDEFINERGBAIMAGE,	MARKER_ARROW_SYMBOL, (LPARAM)rgba);
+
+	return CallScintilla(view, SCI_MARKERADD, line, MARKER_ARROW_SYMBOL);
 }
 
 
@@ -464,6 +477,7 @@ void clearWindow(int view)
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_REMOVED_SYMBOL, 0);
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_MOVED_SYMBOL, 0);
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_MOVED_MULTIPLE_SYMBOL, 0);
+	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_ARROW_SYMBOL, 0);
 
 	clearChangedIndicator(view, 0, CallScintilla(view, SCI_GETLENGTH, 0, 0));
 

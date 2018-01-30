@@ -425,6 +425,24 @@ public:
 
 
 /**
+ *  \class
+ *  \brief
+ */
+class LineArrowMarkTimeout : public DelayedWork
+{
+public:
+	LineArrowMarkTimeout(int view, int markerHandle) : DelayedWork(), _view(view), _markerHandle(markerHandle) {}
+	virtual ~LineArrowMarkTimeout();
+
+	virtual void operator()();
+
+private:
+	int	_view;
+	int	_markerHandle;
+};
+
+
+/**
  *  \struct
  *  \brief
  */
@@ -1105,6 +1123,55 @@ NewCompare::~NewCompare()
 }
 
 
+LineArrowMarkTimeout::~LineArrowMarkTimeout()
+{
+	(*this)();
+}
+
+
+void LineArrowMarkTimeout::operator()()
+{
+	CallScintilla(_view, SCI_MARKERDELETEHANDLE, _markerHandle, 0);
+}
+
+
+void setArrowMark(int view, int line = -1, bool down = true)
+{
+	static std::unique_ptr<LineArrowMarkTimeout> lineArrowMark;
+
+	if (view < 0 || line < 0)
+	{
+		lineArrowMark.reset();
+		return;
+	}
+
+	const int markerHandle = showArrowSymbol(view, line, down);
+
+	lineArrowMark.reset(new LineArrowMarkTimeout(view, markerHandle));
+
+	if (lineArrowMark)
+		lineArrowMark->post(1000);
+}
+
+
+void showBlankAdjacentArrowMark(int view, int line = -1, bool down = true)
+{
+	if (view < 0)
+	{
+		setArrowMark(-1);
+		return;
+	}
+
+	if (line < 0 && Settings.FollowingCaret)
+		line = getCurrentLine(view);
+
+	if (line >= 0 && !isLineMarked(view, line, MARKER_MASK_LINE) && isVisibleAdjacentAnnotation(view, line, down))
+		setArrowMark(view, line, down);
+	else
+		setArrowMark(-1);
+}
+
+
 std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool down,
 		bool goToCornerDiff = false, bool doNotBlink = false)
 {
@@ -1245,16 +1312,22 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 }
 
 
-inline std::pair<int, int> jumpToFirstChange(bool goToCornerDiff = false, bool doNotBlink = false)
+std::pair<int, int> jumpToFirstChange(bool goToCornerDiff = false, bool doNotBlink = false)
 {
-	return jumpToNextChange(0, 0, true, goToCornerDiff, doNotBlink);
+	std::pair<int, int> viewLoc = jumpToNextChange(0, 0, true, goToCornerDiff, doNotBlink);
+	showBlankAdjacentArrowMark(viewLoc.first, viewLoc.second, true);
+
+	return viewLoc;
 }
 
 
-inline std::pair<int, int> jumpToLastChange(bool goToCornerDiff = false, bool doNotBlink = false)
+std::pair<int, int> jumpToLastChange(bool goToCornerDiff = false, bool doNotBlink = false)
 {
-	return jumpToNextChange(CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0),
+	std::pair<int, int> viewLoc = jumpToNextChange(CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0),
 			CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0), false, goToCornerDiff, doNotBlink);
+	showBlankAdjacentArrowMark(viewLoc.first, viewLoc.second, false);
+
+	return viewLoc;
 }
 
 
@@ -1265,7 +1338,7 @@ std::pair<int, int> jumpToChange(bool down, bool wrapAround)
 	int mainStartLine	= 0;
 	int subStartLine	= 0;
 
-	const int currentView	= getCurrentViewId();
+	const int currentView = getCurrentViewId();
 
 	int& currentLine	= (currentView == MAIN_VIEW) ? mainStartLine : subStartLine;
 	int& otherLine		= (currentView != MAIN_VIEW) ? mainStartLine : subStartLine;
@@ -1324,6 +1397,10 @@ std::pair<int, int> jumpToChange(bool down, bool wrapAround)
 			else
 				viewLoc = jumpToFirstChange();
 		}
+	}
+	else
+	{
+		showBlankAdjacentArrowMark(viewLoc.first, viewLoc.second, down);
 	}
 
 	return viewLoc;
@@ -2464,8 +2541,11 @@ void comparedFileActivated()
 		NppSettings::get().setCompareMode();
 	}
 
-	setCompareView(MAIN_VIEW, Settings.colors.blank);
-	setCompareView(SUB_VIEW, Settings.colors.blank);
+	CallScintilla(MAIN_VIEW,	SCI_MARKERDELETEALL, MARKER_ARROW_SYMBOL, 0);
+	CallScintilla(SUB_VIEW,		SCI_MARKERDELETEALL, MARKER_ARROW_SYMBOL, 0);
+
+	setCompareView(MAIN_VIEW,	Settings.colors.blank);
+	setCompareView(SUB_VIEW,	Settings.colors.blank);
 }
 
 
@@ -2473,9 +2553,7 @@ void onToolBarReady()
 {
 	UINT style = (LR_SHARED | LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS);
 
-	const bool isRTL = ((::GetWindowLongPtr(nppData._nppHandle, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0);
-
-	if (isRTL)
+	if (isRTLwindow(nppData._nppHandle))
 		tbSetFirst.hToolbarBmp =
 				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_SETFIRST_RTL), IMAGE_BITMAP, 0, 0, style);
 	else

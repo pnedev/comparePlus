@@ -263,8 +263,10 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlugin"</Command>
     <ClInclude Include="..\..\src\LibGit2\LibGit2Helper.h" />
     <ClInclude Include="..\..\src\Icons\icon_add_16.h" />
     <ClInclude Include="..\..\src\Icons\icon_moved_16.h" />
+    <ClInclude Include="..\..\src\Icons\icon_moved_multiple_16.h" />
     <ClInclude Include="..\..\src\Icons\icon_sub_16.h" />
     <ClInclude Include="..\..\src\Icons\icon_diff_16.h" />
+    <ClInclude Include="..\..\src\Icons\icon_arrows.h" />
     <ClInclude Include="..\..\src\NavDlg\NavDialog.h" />
     <ClInclude Include="..\..\src\NppHelpers.h" />
     <ClInclude Include="..\..\src\ProgressDlg\ProgressDlg.h" />
