@@ -533,18 +533,39 @@ int getNextUnmarkedLine(int view, int startLine, int markMask)
 }
 
 
-bool isLineAnnotationVisible(int view, int line, bool down)
+bool isAdjacentAnnotation(int view, int line, bool down)
 {
 	if (down)
 	{
-		if (isLineAnnotated(view, line) &&
-				(CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) + 1 > getLastVisibleLine(view)))
+		if (isLineAnnotated(view, line))
+			return true;
+	}
+	else
+	{
+		if (line && isLineAnnotated(view, line - 1))
+			return true;
+	}
+
+	return false;
+}
+
+
+bool isVisibleAdjacentAnnotation(int view, int line, bool down)
+{
+	if (down)
+	{
+		if (!isLineAnnotated(view, line))
+			return false;
+
+		if (CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) + getWrapCount(view, line) > getLastVisibleLine(view))
 			return false;
 	}
 	else
 	{
-		if (line && isLineAnnotated(view, line - 1) &&
-				(CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - 1 < getFirstVisibleLine(view)))
+		if (!line || !isLineAnnotated(view, line - 1))
+			return false;
+
+		if (CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - 1 < getFirstVisibleLine(view))
 			return false;
 	}
 

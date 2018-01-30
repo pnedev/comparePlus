@@ -365,6 +365,12 @@ inline int otherViewMatchingLine(int view, int line)
 }
 
 
+inline int getWrapCount(int view, int line)
+{
+	return CallScintilla(view, SCI_WRAPCOUNT, line, 0);
+}
+
+
 inline bool isLineVisible(int view, int line)
 {
 	const int firstVisibleLine = CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
@@ -441,7 +447,8 @@ void clearMarksAndBlanks(int view, int startLine, int linesCount);
 int getPrevUnmarkedLine(int view, int startLine, int markMask);
 int getNextUnmarkedLine(int view, int startLine, int markMask);
 
-bool isLineAnnotationVisible(int view, int line, bool down);
+bool isAdjacentAnnotation(int view, int line, bool down);
+bool isVisibleAdjacentAnnotation(int view, int line, bool down);
 
 std::vector<char> getText(int view, int startPos, int endPos);
 void toLowerCase(std::vector<char>& text);
