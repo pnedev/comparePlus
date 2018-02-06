@@ -2896,6 +2896,8 @@ void DelayedMaximize::operator()()
 		--notificationsLock;
 
 	::SetFocus(getCurrentView());
+
+	NavDlg.Update();
 }
 
 } // anonymous namespace
