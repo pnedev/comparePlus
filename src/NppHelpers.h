@@ -259,16 +259,22 @@ inline int getOtherViewId()
 }
 
 
+inline HWND getOtherView()
+{
+	return (::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0) == MAIN_VIEW) ?
+			nppData._scintillaSecondHandle : nppData._scintillaMainHandle;
+}
+
+
 inline int getOtherViewId(int view)
 {
 	return (view == MAIN_VIEW) ? SUB_VIEW : MAIN_VIEW;
 }
 
 
-inline HWND getOtherView()
+inline HWND getOtherView(int view)
 {
-	return (::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0) == MAIN_VIEW) ?
-			nppData._scintillaSecondHandle : nppData._scintillaMainHandle;
+	return (view == MAIN_VIEW) ? nppData._scintillaSecondHandle : nppData._scintillaMainHandle;
 }
 
 

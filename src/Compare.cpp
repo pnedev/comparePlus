@@ -2396,7 +2396,6 @@ void syncViews(int biasView)
 					CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0) - 1, 0);
 
 			otherLine = (firstVisible > otherLastVisible) ? otherLastVisible : firstVisible;
-
 		}
 	}
 	else if (firstVisible > otherFirstVisible)
@@ -3088,16 +3087,24 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 
 extern "C" __declspec(dllexport) LRESULT messageProc(UINT msg, WPARAM wParam, LPARAM)
 {
-	if ((msg == WM_SIZE))
+	if (msg == WM_SIZE)
 	{
-		if ((wParam == SIZE_MINIMIZED) && NppSettings::get().compareMode && !isNppMinimized)
+		if (wParam == SIZE_MINIMIZED)
 		{
-			// On rare occasions Alignment is posted (Sci paint event is received)
-			// before minimize event is received
-			delayedAlignment.cancel();
+			if (!isNppMinimized && NppSettings::get().compareMode)
+			{
+				// On rare occasions Alignment is posted (Sci paint event is received)
+				// before minimize event is received
+				delayedAlignment.cancel();
 
-			isNppMinimized = true;
-			++notificationsLock;
+				isNppMinimized = true;
+				++notificationsLock;
+			}
+		}
+		else if (wParam == SIZE_MAXIMIZED)
+		{
+			if (isNppMinimized && !delayedMaximize)
+				delayedMaximize.post(500);
 		}
 	}
 
