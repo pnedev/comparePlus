@@ -497,6 +497,7 @@ FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
 // Declare local functions that appear before they are defined
 void onBufferActivated(LRESULT buffId);
 void syncViews(int biasView);
+void setArrowMark(int view, int line = -1, bool down = true);
 
 
 void NppSettings::enableClearCommands(bool enable) const
@@ -835,6 +836,7 @@ void ComparedFile::updateView()
 void ComparedFile::clear()
 {
 	clearWindow(viewIdFromBuffId(buffId));
+	setArrowMark(-1);
 
 	deletedSections.clear();
 }
@@ -854,6 +856,7 @@ void ComparedFile::onBeforeClose() const
 
 	const int view = getCurrentViewId();
 	clearWindow(view);
+	setArrowMark(-1);
 
 	if (isTemp)
 		CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
@@ -891,6 +894,7 @@ void ComparedFile::restore() const
 	activateBufferID(buffId);
 
 	clearWindow(getCurrentViewId());
+	setArrowMark(-1);
 
 	if (viewIdFromBuffId(buffId) != originalViewId)
 	{
@@ -1135,7 +1139,7 @@ void LineArrowMarkTimeout::operator()()
 }
 
 
-void setArrowMark(int view, int line = -1, bool down = true)
+void setArrowMark(int view, int line, bool down)
 {
 	static std::unique_ptr<LineArrowMarkTimeout> lineArrowMark;
 
@@ -1150,11 +1154,11 @@ void setArrowMark(int view, int line = -1, bool down = true)
 	lineArrowMark.reset(new LineArrowMarkTimeout(view, markerHandle));
 
 	if (lineArrowMark)
-		lineArrowMark->post(1000);
+		lineArrowMark->post(3000);
 }
 
 
-void showBlankAdjacentArrowMark(int view, int line = -1, bool down = true)
+void showBlankAdjacentArrowMark(int view, int line, bool down)
 {
 	if (view < 0)
 	{
@@ -2544,6 +2548,8 @@ void comparedFileActivated()
 	CallScintilla(MAIN_VIEW,	SCI_MARKERDELETEALL, MARKER_ARROW_SYMBOL, 0);
 	CallScintilla(SUB_VIEW,		SCI_MARKERDELETEALL, MARKER_ARROW_SYMBOL, 0);
 
+	setArrowMark(-1);
+
 	setCompareView(MAIN_VIEW,	Settings.colors.blank);
 	setCompareView(SUB_VIEW,	Settings.colors.blank);
 }
@@ -3061,6 +3067,9 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 
 		exit(EXIT_FAILURE);
 	}
+
+	// Check just in case
+	assert(MAIN_VIEW == 0 && SUB_VIEW == 1);
 
 	Settings.load();
 
