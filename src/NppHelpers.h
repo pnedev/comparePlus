@@ -37,9 +37,7 @@ enum Marker_t
 	MARKER_REMOVED_SYMBOL,
 	MARKER_MOVED_SYMBOL,
 	MARKER_MOVED_MULTIPLE_SYMBOL,
-	// Marker 10 (the next in the enum) appears to be reserved or taken, 12 was also not free
-	// so use 23 (the last available) for the next symbol
-	MARKER_ARROW_SYMBOL = 23
+	MARKER_ARROW_SYMBOL
 };
 
 
@@ -49,6 +47,7 @@ const int MARKER_MASK_REMOVED			= (1 << MARKER_REMOVED_LINE)	| (1 << MARKER_REMO
 const int MARKER_MASK_MOVED				= (1 << MARKER_MOVED_LINE)		| (1 << MARKER_MOVED_SYMBOL);
 const int MARKER_MASK_MOVED_MULTIPLE	= (1 << MARKER_MOVED_LINE)		| (1 << MARKER_MOVED_MULTIPLE_SYMBOL);
 const int MARKER_MASK_BLANK				= (1 << MARKER_BLANK);
+const int MARKER_MASK_ARROW				= (1 << MARKER_ARROW_SYMBOL);
 
 const int MARKER_MASK_LINE =	(1 << MARKER_CHANGED_LINE) |
 								(1 << MARKER_ADDED_LINE) |
