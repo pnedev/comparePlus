@@ -1984,9 +1984,10 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false)
 				if (recompare)
 				{
 					_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-							TEXT("%s \"%s\" and \"%s\" match.\n\nTemp file will be closed."), selectionCompare ?
-							TEXT("Selected lines in files") : TEXT("Files"),
-							newName, ::PathFindFileName(oldFile.name));
+							TEXT("%s \"%s\" and \"%s\" %s.\n\nTemp file will be closed."),
+							selectionCompare ? TEXT("Selections in files") : TEXT("Files"),
+							newName, ::PathFindFileName(oldFile.name),
+							findUniqueMode ? TEXT("do not contain unique lines") : TEXT("match"));
 				}
 				else
 				{
@@ -2004,9 +2005,10 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false)
 			else
 			{
 				_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-						TEXT("%s \"%s\" and \"%s\" match.%s"),
-						selectionCompare ? TEXT("Selected lines in files") : TEXT("Files"),
+						TEXT("%s \"%s\" and \"%s\" %s.%s"),
+						selectionCompare ? TEXT("Selections in files") : TEXT("Files"),
 						newName, ::PathFindFileName(oldFile.name),
+						findUniqueMode ? TEXT("do not contain unique lines") : TEXT("match"),
 						Settings.PromptToCloseOnMatch ? TEXT("\n\nClose compared files?") : TEXT(""));
 
 				if (Settings.PromptToCloseOnMatch)
