@@ -1139,6 +1139,30 @@ void LineArrowMarkTimeout::operator()()
 }
 
 
+CompareList_t::iterator getCompare(LRESULT buffId)
+{
+	for (CompareList_t::iterator it = compareList.begin(); it < compareList.end(); ++it)
+	{
+		if (it->file[0].buffId == buffId || it->file[1].buffId == buffId)
+			return it;
+	}
+
+	return compareList.end();
+}
+
+
+CompareList_t::iterator getCompareBySciDoc(int sciDoc)
+{
+	for (CompareList_t::iterator it = compareList.begin(); it < compareList.end(); ++it)
+	{
+		if (it->file[0].sciDoc == sciDoc || it->file[1].sciDoc == sciDoc)
+			return it;
+	}
+
+	return compareList.end();
+}
+
+
 void setArrowMark(int view, int line, bool down)
 {
 	static std::unique_ptr<LineArrowMarkTimeout> lineArrowMark;
@@ -1179,10 +1203,14 @@ void showBlankAdjacentArrowMark(int view, int line, bool down)
 std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool down,
 		bool goToCornerDiff = false, bool doNotBlink = false)
 {
-	const int view		= getCurrentViewId();
+	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
+	if (cmpPair == compareList.end())
+		return std::make_pair(-1, -1);
+
+	int view			= getCurrentViewId();
 	const int otherView	= getOtherViewId(view);
 
-	if (!goToCornerDiff)
+	if (!cmpPair->findUniqueMode && !goToCornerDiff)
 	{
 		const int edgeLine		= (down ? getLastLine(view) : getFirstLine(view));
 		const int currentLine	= (Settings.FollowingCaret ? getCurrentLine(view) : edgeLine);
@@ -1219,24 +1247,39 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 		if (otherLine < 0)
 			return std::make_pair(-1, -1);
 
-		line = otherViewMatchingLine(otherView, otherLine);
+		if (cmpPair->findUniqueMode)
+		{
+			view = otherView;
+			line = otherLine;
+		}
+		else
+		{
+			line = otherViewMatchingLine(otherView, otherLine);
+		}
 	}
 	else if (otherLine >= 0)
 	{
 		const int visibleLine		= CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0);
 		const int otherVisibleLine	= CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0);
 
-		if (down)
+		const bool switchViews = down ? (otherVisibleLine < visibleLine) : (otherVisibleLine > visibleLine);
+
+		if (switchViews)
 		{
-			if (otherVisibleLine < visibleLine)
+			if (cmpPair->findUniqueMode)
+			{
+				view = otherView;
+				line = otherLine;
+			}
+			else
+			{
 				line = otherViewMatchingLine(otherView, otherLine);
-		}
-		else
-		{
-			if (otherVisibleLine > visibleLine)
-				line = otherViewMatchingLine(otherView, otherLine);
+			}
 		}
 	}
+
+	if (cmpPair->findUniqueMode && Settings.FollowingCaret)
+		::SetFocus(getView(view));
 
 	if (!down && isLineAnnotated(view, line))
 		++line;
@@ -1342,7 +1385,8 @@ std::pair<int, int> jumpToChange(bool down, bool wrapAround)
 	int mainStartLine	= 0;
 	int subStartLine	= 0;
 
-	const int currentView = getCurrentViewId();
+	const int currentView	= getCurrentViewId();
+	const int otherView		= getOtherViewId(currentView);
 
 	int& currentLine	= (currentView == MAIN_VIEW) ? mainStartLine : subStartLine;
 	int& otherLine		= (currentView != MAIN_VIEW) ? mainStartLine : subStartLine;
@@ -1356,9 +1400,10 @@ std::pair<int, int> jumpToChange(bool down, bool wrapAround)
 		if (!currentLineNotAnnotated && isVisibleAdjacentAnnotation(currentView, currentLine, down))
 			++currentLine;
 
-		otherLine = otherViewMatchingLine(currentView, currentLine);
+		otherLine = (Settings.FollowingCaret ?
+				otherViewMatchingLine(currentView, currentLine) : getLastLine(otherView));
 
-		if (currentLineNotAnnotated && isLineAnnotated(getOtherViewId(currentView), otherLine))
+		if (currentLineNotAnnotated && isLineAnnotated(otherView, otherLine))
 			++otherLine;
 
 		viewLoc = jumpToNextChange(getNextUnmarkedLine(MAIN_VIEW, mainStartLine, MARKER_MASK_LINE),
@@ -1371,7 +1416,8 @@ std::pair<int, int> jumpToChange(bool down, bool wrapAround)
 		if (isVisibleAdjacentAnnotation(currentView, currentLine, down))
 			--currentLine;
 
-		otherLine = otherViewMatchingLine(currentView, currentLine);
+		otherLine = (Settings.FollowingCaret ?
+				otherViewMatchingLine(currentView, currentLine) : getFirstLine(otherView));
 
 		viewLoc = jumpToNextChange(getPrevUnmarkedLine(MAIN_VIEW, mainStartLine, MARKER_MASK_LINE),
 				getPrevUnmarkedLine(SUB_VIEW, subStartLine, MARKER_MASK_LINE), down);
@@ -1408,30 +1454,6 @@ std::pair<int, int> jumpToChange(bool down, bool wrapAround)
 	}
 
 	return viewLoc;
-}
-
-
-CompareList_t::iterator getCompare(LRESULT buffId)
-{
-	for (CompareList_t::iterator it = compareList.begin(); it < compareList.end(); ++it)
-	{
-		if (it->file[0].buffId == buffId || it->file[1].buffId == buffId)
-			return it;
-	}
-
-	return compareList.end();
-}
-
-
-CompareList_t::iterator getCompareBySciDoc(int sciDoc)
-{
-	for (CompareList_t::iterator it = compareList.begin(); it < compareList.end(); ++it)
-	{
-		if (it->file[0].sciDoc == sciDoc || it->file[1].sciDoc == sciDoc)
-			return it;
-	}
-
-	return compareList.end();
 }
 
 
