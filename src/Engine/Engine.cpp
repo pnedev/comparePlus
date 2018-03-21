@@ -231,21 +231,21 @@ std::vector<std::vector<Word>> getWords(int lineOffset, int lineCount, int view,
 
 void compareLines(diff_info& blockDiff1, diff_info& blockDiff2,
 		const std::vector<std::vector<Word>>& chunk1, const std::vector<std::vector<Word>>& chunk2,
-		const std::map<int, int>& lineMappings)
+		const std::map<int, std::pair<int, int>>& lineMappings)
 {
 	int lastLine2 = -1;
 
-	for (const auto& lm: lineMappings)
+	for (const auto& lm : lineMappings)
 	{
 		diff_info* pBlockDiff1 = &blockDiff1;
 		diff_info* pBlockDiff2 = &blockDiff2;
 
 		// lines1 are stored in ascending order and to have a match lines2 must also be in ascending order
-		if (lm.second <= lastLine2)
+		if (lm.second.second <= lastLine2)
 			continue;
 
 		int line1 = lm.first;
-		int line2 = lm.second;
+		int line2 = lm.second.second;
 
 		lastLine2 = line2;
 
@@ -351,33 +351,58 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 		}
 	}
 
-	std::map<int, int> lineMappings;
+	std::map<int, std::pair<int, int>> bestLineMappings;
+	int bestConvergence = 0;
 
-	std::vector<bool> mappedLines1(linesCount1, false);
-	std::vector<bool> mappedLines2(linesCount2, false);
-
-	int mappedLinesCount1 = 0;
-	int mappedLinesCount2 = 0;
-
-	for (auto ocItr = orderedConvergence.rbegin(); ocItr != orderedConvergence.rend(); ++ocItr)
+	for (auto startItr = orderedConvergence.rbegin(); startItr != orderedConvergence.rend(); ++startItr)
 	{
-		const int line1 = ocItr->second.first;
-		const int line2 = ocItr->second.second;
+		std::map<int, std::pair<int, int>> lineMappings;
 
-		if (!mappedLines1[line1] && !mappedLines2[line2])
+		std::vector<bool> mappedLines1(linesCount1, false);
+		std::vector<bool> mappedLines2(linesCount2, false);
+
+		int mappedLinesCount1 = 0;
+		int mappedLinesCount2 = 0;
+
+		for (auto ocItr = startItr; ocItr != orderedConvergence.rend(); ++ocItr)
 		{
-			lineMappings.emplace(line1, line2);
+			const int line1 = ocItr->second.first;
+			const int line2 = ocItr->second.second;
 
-			if ((++mappedLinesCount1 == linesCount1) || (++mappedLinesCount2 == linesCount2))
-				break;
+			if (!mappedLines1[line1] && !mappedLines2[line2])
+			{
+				lineMappings.emplace(line1, std::pair<int, int>(ocItr->first, line2));
 
-			mappedLines1[line1] = true;
-			mappedLines2[line2] = true;
+				if ((++mappedLinesCount1 == linesCount1) || (++mappedLinesCount2 == linesCount2))
+					break;
+
+				mappedLines1[line1] = true;
+				mappedLines2[line2] = true;
+			}
+		}
+
+		int currentConvergence = 0;
+		int lastLine2 = -1;
+
+		for (const auto& lm : lineMappings)
+		{
+			// lines1 are stored in ascending order and to have a match lines2 must also be in ascending order
+			if (lm.second.second <= lastLine2)
+				continue;
+
+			currentConvergence += lm.second.first;
+			lastLine2 = lm.second.second;
+		}
+
+		if (bestConvergence < currentConvergence)
+		{
+			bestConvergence = currentConvergence;
+			bestLineMappings = std::move(lineMappings);
 		}
 	}
 
-	if (!lineMappings.empty())
-		compareLines(blockDiff1, blockDiff2, chunk1, chunk2, lineMappings);
+	if (!bestLineMappings.empty())
+		compareLines(blockDiff1, blockDiff2, chunk1, chunk2, bestLineMappings);
 
 	return;
 }
