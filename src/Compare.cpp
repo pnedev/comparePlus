@@ -2718,6 +2718,10 @@ void DelayedAlign::operator()()
 			cmpPair->setStatus();
 		}
 	}
+	else if (cmpPair->findUniqueMode)
+	{
+		syncViews(getCurrentViewId());
+	}
 }
 
 

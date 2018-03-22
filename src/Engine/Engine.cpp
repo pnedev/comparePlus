@@ -832,8 +832,8 @@ CompareResult runFindUnique(const section_t& mainViewSection, const section_t& s
 	}
 
 	AlignmentPair align;
-	align.main.line	= 1;
-	align.sub.line	= 1;
+	align.main.line	= mainViewSection.off;
+	align.sub.line	= subViewSection.off;
 
 	alignmentInfo.push_back(align);
 
