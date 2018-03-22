@@ -309,8 +309,7 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 
 		for (int line2 = 0; line2 < linesCount2; ++line2)
 		{
-			if (blockDiff2.isMoved(line2) || chunk2[line2].empty() ||
-				((chunk1[line1].size() / chunk2[line2].size()) > 1))
+			if (blockDiff2.isMoved(line2) || chunk2[line2].empty())
 				continue;
 
 			const std::vector<Word>* pLine1 = &chunk1[line1];
@@ -318,6 +317,9 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 
 			if (pLine1->size() < pLine2->size())
 				std::swap(pLine1, pLine2);
+
+			if (pLine1->size() / pLine2->size() > 1)
+				continue;
 
 			const std::vector<diff_info> linesDiff = DiffCalc<Word>(*pLine1, *pLine2)();
 
@@ -328,8 +330,7 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 			}
 
 			if (linesConvergence[line1][line2])
-				linesConvergence[line1][line2] = (linesConvergence[line1][line2] * 100 /
-						(pLine1->size() < pLine2->size() ? pLine2->size() : pLine1->size()));
+				linesConvergence[line1][line2] = linesConvergence[line1][line2] * 100 / pLine1->size();
 		}
 	}
 
@@ -387,11 +388,11 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 		for (const auto& lm : lineMappings)
 		{
 			// lines1 are stored in ascending order and to have a match lines2 must also be in ascending order
-			if (lm.second.second <= lastLine2)
-				continue;
-
-			currentConvergence += lm.second.first;
-			lastLine2 = lm.second.second;
+			if (lm.second.second > lastLine2)
+			{
+				currentConvergence += lm.second.first;
+				lastLine2 = lm.second.second;
+			}
 		}
 
 		if (bestConvergence < currentConvergence)
