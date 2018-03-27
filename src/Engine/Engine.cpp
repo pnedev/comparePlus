@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <utility>
 #include <map>
+#include <set>
 #include <unordered_map>
 
 #include <windows.h>
@@ -334,28 +335,38 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 		}
 	}
 
-	std::map<int, std::pair<int, int>> orderedConvergence;
+	struct convergenceInfo
+	{
+		int convergence;
+		int line1;
+		int line2;
+
+		convergenceInfo(int c, int l1, int l2) : convergence(c), line1(l1), line2(l2)
+		{}
+
+		bool operator<(const convergenceInfo& rhs) const
+		{
+			return ((convergence > rhs.convergence) ||
+					((convergence == rhs.convergence) && ((line1 < rhs.line1) ||
+						((line1 == rhs.line1) && ((line2 < rhs.line2))))));
+		}
+	};
+
+	std::set<convergenceInfo> orderedConvergence;
 
 	for (int line1 = 0; line1 < linesCount1; ++line1)
 	{
 		for (int line2 = 0; line2 < linesCount2; ++line2)
 		{
 			if (linesConvergence[line1][line2] > 50)
-			{
-				int currentConvergence = linesConvergence[line1][line2];
-
-				for (auto res = orderedConvergence.emplace(currentConvergence, std::pair<int, int>(line1, line2));
-						!res.second;
-						res = orderedConvergence.emplace(currentConvergence, std::pair<int, int>(line1, line2)))
-					--currentConvergence;
-			}
+				orderedConvergence.emplace(convergenceInfo(linesConvergence[line1][line2], line1, line2));
 		}
 	}
 
 	std::map<int, std::pair<int, int>> bestLineMappings;
 	int bestConvergence = 0;
 
-	for (auto startItr = orderedConvergence.rbegin(); startItr != orderedConvergence.rend(); ++startItr)
+	for (auto startItr = orderedConvergence.begin(); startItr != orderedConvergence.end(); ++startItr)
 	{
 		std::map<int, std::pair<int, int>> lineMappings;
 
@@ -365,20 +376,17 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 		int mappedLinesCount1 = 0;
 		int mappedLinesCount2 = 0;
 
-		for (auto ocItr = startItr; ocItr != orderedConvergence.rend(); ++ocItr)
+		for (auto ocItr = startItr; ocItr != orderedConvergence.end(); ++ocItr)
 		{
-			const int line1 = ocItr->second.first;
-			const int line2 = ocItr->second.second;
-
-			if (!mappedLines1[line1] && !mappedLines2[line2])
+			if (!mappedLines1[ocItr->line1] && !mappedLines2[ocItr->line2])
 			{
-				lineMappings.emplace(line1, std::pair<int, int>(ocItr->first, line2));
+				lineMappings.emplace(ocItr->line1, std::pair<int, int>(ocItr->convergence, ocItr->line2));
 
 				if ((++mappedLinesCount1 == linesCount1) || (++mappedLinesCount2 == linesCount2))
 					break;
 
-				mappedLines1[line1] = true;
-				mappedLines2[line2] = true;
+				mappedLines1[ocItr->line1] = true;
+				mappedLines2[ocItr->line2] = true;
 			}
 		}
 
