@@ -27,8 +27,6 @@
 #define DEFAULT_OLD_ON_LEFT				1
 #define DEFAULT_COMPARE_TO_PREV			1
 
-#define DEFAULT_DETECT_MOVE_LINE_MODE	0
-
 #define DEFAULT_ENCODINGS_CHECK			1
 #define DEFAULT_PROMPT_CLOSE_ON_MATCH	0
 #define DEFAULT_WRAP_AROUND				0
@@ -73,7 +71,6 @@ public:
 	static const TCHAR oldIsFirstSetting[];
 	static const TCHAR oldFileOnLeftSetting[];
 	static const TCHAR compareToPrevSetting[];
-	static const TCHAR detectMovesLineModeSetting[];
 	static const TCHAR encodingsCheckSetting[];
 	static const TCHAR promptCloseOnMatchSetting[];
 	static const TCHAR wrapAroundSetting[];
@@ -98,7 +95,6 @@ public:
 	bool           	OldFileIsFirst;
 	int				OldFileViewId;
 	bool           	CompareToPrev;
-	bool           	DetectMovesLineMode;
 	bool           	EncodingsCheck;
 	bool           	PromptToCloseOnMatch;
 	bool           	WrapAround;

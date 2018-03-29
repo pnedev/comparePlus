@@ -28,8 +28,6 @@ const TCHAR UserSettings::oldIsFirstSetting[]			= TEXT("Old is First");
 const TCHAR UserSettings::oldFileOnLeftSetting[]		= TEXT("Old on Left");
 const TCHAR UserSettings::compareToPrevSetting[]		= TEXT("Default Compare is to Prev");
 
-const TCHAR UserSettings::detectMovesLineModeSetting[]	= TEXT("Detect Moves Line Mode");
-
 const TCHAR UserSettings::encodingsCheckSetting[]		= TEXT("Check Encodings");
 const TCHAR UserSettings::promptCloseOnMatchSetting[]	= TEXT("Prompt to Close on Match");
 const TCHAR UserSettings::wrapAroundSetting[]			= TEXT("Wrap Around");
@@ -66,8 +64,6 @@ void UserSettings::load()
 			DEFAULT_OLD_ON_LEFT, iniFile) == 1 ? MAIN_VIEW : SUB_VIEW;
 	CompareToPrev			= ::GetPrivateProfileInt(mainSection, compareToPrevSetting,
 			DEFAULT_COMPARE_TO_PREV, iniFile) == 1;
-	DetectMovesLineMode		= ::GetPrivateProfileInt(mainSection, detectMovesLineModeSetting,
-			DEFAULT_DETECT_MOVE_LINE_MODE, iniFile) == 1;
 	EncodingsCheck			= ::GetPrivateProfileInt(mainSection, encodingsCheckSetting,
 			DEFAULT_ENCODINGS_CHECK, iniFile) == 1;
 	PromptToCloseOnMatch	= ::GetPrivateProfileInt(mainSection, promptCloseOnMatchSetting,
@@ -128,8 +124,6 @@ void UserSettings::save()
 			OldFileViewId == MAIN_VIEW ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, compareToPrevSetting,
 			CompareToPrev ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, detectMovesLineModeSetting,
-			DetectMovesLineMode ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, encodingsCheckSetting,
 			EncodingsCheck ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, promptCloseOnMatchSetting,

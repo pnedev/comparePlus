@@ -653,10 +653,7 @@ CompareResult runCompare(const section_t& mainViewSection, const section_t& subV
 		std::swap(cmpInfo.doc1, cmpInfo.doc2);
 	}
 
-	const detect_moves_type detectMoves = !settings.DetectMoves ? DONT_DETECT :
-			settings.DetectMovesLineMode ? ELEMENT_BASED : BLOCK_BASED;
-
-	cmpInfo.diffBlocks = DiffCalc<uint64_t>(*pLineHashes1, *pLineHashes2, detectMoves, cHashSeed)();
+	cmpInfo.diffBlocks = DiffCalc<uint64_t>(*pLineHashes1, *pLineHashes2, settings.DetectMoves, cHashSeed)();
 
 	const int blockDiffSize = static_cast<int>(cmpInfo.diffBlocks.size());
 

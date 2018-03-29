@@ -83,7 +83,6 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					settings.OldFileIsFirst			= (bool) DEFAULT_OLD_IS_FIRST;
 					settings.OldFileViewId			= DEFAULT_OLD_ON_LEFT ? MAIN_VIEW : SUB_VIEW;
 					settings.CompareToPrev			= (bool) DEFAULT_COMPARE_TO_PREV;
-					settings.DetectMovesLineMode	= (bool) DEFAULT_DETECT_MOVE_LINE_MODE;
 					settings.EncodingsCheck			= (bool) DEFAULT_ENCODINGS_CHECK;
 					settings.PromptToCloseOnMatch	= (bool) DEFAULT_PROMPT_CLOSE_ON_MATCH;
 					settings.WrapAround				= (bool) DEFAULT_WRAP_AROUND;
@@ -148,10 +147,6 @@ void SettingsDialog::SetParams(UserSettings* settings)
 			BST_CHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, settings->CompareToPrev ? IDC_COMPARE_TO_NEXT : IDC_COMPARE_TO_PREV),
 			BST_UNCHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, settings->DetectMovesLineMode ? IDC_MOVE_LINE_BASED : IDC_MOVE_BLOCK_BASED),
-			BST_CHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, settings->DetectMovesLineMode ? IDC_MOVE_BLOCK_BASED : IDC_MOVE_LINE_BASED),
-			BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_ENCODING_CHECK),
 			settings->EncodingsCheck ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_PROMPT_CLOSE_ON_MATCH),
@@ -183,7 +178,6 @@ void SettingsDialog::GetParams()
 	_Settings->OldFileViewId		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_OLD_LEFT)) == BST_CHECKED) ?
 			MAIN_VIEW : SUB_VIEW;
 	_Settings->CompareToPrev		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_COMPARE_TO_PREV)) == BST_CHECKED);
-	_Settings->DetectMovesLineMode	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_MOVE_LINE_BASED)) == BST_CHECKED);
 	_Settings->EncodingsCheck		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_ENCODING_CHECK)) == BST_CHECKED);
 	_Settings->PromptToCloseOnMatch	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_PROMPT_CLOSE_ON_MATCH)) == BST_CHECKED);
 	_Settings->WrapAround			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_WRAP_AROUND)) == BST_CHECKED);
