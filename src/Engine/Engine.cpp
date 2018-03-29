@@ -421,11 +421,41 @@ void markSection(const diff_info& bd, const DocCmpInfo& doc)
 {
 	const int endOff = doc.section.off + doc.section.len;
 
+	bool movedBlockDetected = false;
+
 	for (int i = doc.section.off, line = bd.off + doc.section.off; i < endOff; ++i, ++line)
 	{
-		const int markerMask =
-				(bd.isMoved(i) == NOT_MOVED) ? doc.blockDiffMask :
-				(bd.isMoved(i) == MOVED) ? MARKER_MASK_MOVED : MARKER_MASK_MOVED_MULTIPLE;
+		int markerMask = doc.blockDiffMask;
+
+		if (bd.isMoved(i) == MOVED)
+		{
+			markerMask = (1 << MARKER_MOVED_LINE);
+
+			if (movedBlockDetected)
+			{
+				if (bd.isMoved(i + 1) != MOVED)
+				{
+					markerMask |= (1 << MARKER_MOVED_BLOCK_END_SYMBOL);
+					movedBlockDetected = false;
+				}
+				else
+				{
+					markerMask |= (1 << MARKER_MOVED_BLOCK_MID_SYMBOL);
+				}
+			}
+			else
+			{
+				if (bd.isMoved(i + 1) == MOVED)
+				{
+					markerMask |= (1 << MARKER_MOVED_BLOCK_BEGIN_SYMBOL);
+					movedBlockDetected = true;
+				}
+				else
+				{
+					markerMask |= (1 << MARKER_MOVED_LINE_SYMBOL);
+				}
+			}
+		}
 
 		CallScintilla(doc.view, SCI_MARKERADDSET, line, markerMask);
 	}

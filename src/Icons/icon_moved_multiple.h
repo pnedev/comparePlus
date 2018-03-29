@@ -1,5 +1,5 @@
 /* XPM */
-static const char * icon_moved_multiple_16_xpm[] = {
+static const char * icon_moved_multiple_xpm[] = {
 "14 14 24 1",
 " 	c None",
 "#	c #1F8FC8",

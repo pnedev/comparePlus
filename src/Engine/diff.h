@@ -87,7 +87,7 @@ struct diff_info
 
 	inline moved_type isMoved(unsigned int i) const
 	{
-		return (moved.empty() ? NOT_MOVED : moved[i]);
+		return (moved.size() <= i ? NOT_MOVED : moved[i]);
 	}
 };
 
@@ -549,7 +549,7 @@ void DiffCalc<Elem>::_find_moves()
 
 		bool operator<(const diff_key& rhs) const
 		{
-			return ((diff_len > rhs.diff_len) || ((diff_len == rhs.diff_len) && (diff_idx < rhs.diff_idx)));
+			return ((diff_len < rhs.diff_len) || ((diff_len == rhs.diff_len) && (diff_idx < rhs.diff_idx)));
 		}
 	};
 
@@ -559,10 +559,8 @@ void DiffCalc<Elem>::_find_moves()
 
 	for (int i = 0; i < diff_size; ++i)
 	{
-		if (_diff[i].type == diff_type::DIFF_MATCH)
-			continue;
-
-		orderedDiffs.emplace(diff_key(_diff[i].len, i));
+		if (_diff[i].type != diff_type::DIFF_MATCH)
+			orderedDiffs.emplace(diff_key(_diff[i].len, i));
 	}
 
 	for (auto od1 = orderedDiffs.begin(); od1 != orderedDiffs.end(); ++od1)

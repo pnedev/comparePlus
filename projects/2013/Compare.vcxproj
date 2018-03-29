@@ -261,11 +261,11 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlugin"</Command>
     <ClInclude Include="..\..\src\Compare.h" />
     <ClInclude Include="..\..\src\Engine\Engine.h" />
     <ClInclude Include="..\..\src\LibGit2\LibGit2Helper.h" />
-    <ClInclude Include="..\..\src\Icons\icon_add_16.h" />
-    <ClInclude Include="..\..\src\Icons\icon_moved_16.h" />
-    <ClInclude Include="..\..\src\Icons\icon_moved_multiple_16.h" />
-    <ClInclude Include="..\..\src\Icons\icon_sub_16.h" />
-    <ClInclude Include="..\..\src\Icons\icon_diff_16.h" />
+    <ClInclude Include="..\..\src\Icons\icon_add.h" />
+    <ClInclude Include="..\..\src\Icons\icon_moved.h" />
+    <ClInclude Include="..\..\src\Icons\icon_moved_multiple.h" />
+    <ClInclude Include="..\..\src\Icons\icon_sub.h" />
+    <ClInclude Include="..\..\src\Icons\icon_diff.h" />
     <ClInclude Include="..\..\src\Icons\icon_arrows.h" />
     <ClInclude Include="..\..\src\NavDlg\NavDialog.h" />
     <ClInclude Include="..\..\src\NppHelpers.h" />
