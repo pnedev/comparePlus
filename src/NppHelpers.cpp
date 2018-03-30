@@ -1,7 +1,7 @@
 /*
  * This file is part of Compare plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2018 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,6 @@
 #include "icon_sub.h"
 #include "icon_diff.h"
 #include "icon_moved.h"
-#include "icon_moved_multiple.h"
 #include "icon_arrows.h"
 
 
@@ -178,13 +177,6 @@ void defineColor(int type, int color)
 	CallScintilla(SUB_VIEW,		SCI_MARKERDEFINE,	type, SC_MARK_BACKGROUND);
 	CallScintilla(SUB_VIEW,		SCI_MARKERSETBACK,	type, color);
 	CallScintilla(SUB_VIEW,		SCI_MARKERSETFORE,	type, 0);
-}
-
-
-void defineXpmSymbol(int type, const char** xpm)
-{
-	CallScintilla(MAIN_VIEW,	SCI_MARKERDEFINEPIXMAP, type, (LPARAM)xpm);
-	CallScintilla(SUB_VIEW,		SCI_MARKERDEFINEPIXMAP, type, (LPARAM)xpm);
 }
 
 
@@ -398,8 +390,6 @@ void setStyles(UserSettings& settings)
 	defineRgbaSymbol(MARKER_MOVED_BLOCK_MID_SYMBOL,		icon_moved_block_middle);
 	defineRgbaSymbol(MARKER_MOVED_BLOCK_END_SYMBOL,		icon_moved_block_end);
 
-	defineXpmSymbol(MARKER_MOVED_MULTIPLE_SYMBOL,	icon_moved_multiple_xpm);
-
 	setTextStyle(settings.colors);
 }
 
@@ -482,7 +472,6 @@ void clearWindow(int view)
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_MOVED_BLOCK_BEGIN_SYMBOL, 0);
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_MOVED_BLOCK_MID_SYMBOL, 0);
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_MOVED_BLOCK_END_SYMBOL, 0);
-	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_MOVED_MULTIPLE_SYMBOL, 0);
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_ARROW_SYMBOL, 0);
 
 	clearChangedIndicator(view, 0, CallScintilla(view, SCI_GETLENGTH, 0, 0));
@@ -506,7 +495,6 @@ void clearMarks(int view, int line)
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_BLOCK_BEGIN_SYMBOL);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_BLOCK_MID_SYMBOL);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_BLOCK_END_SYMBOL);
-	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_MULTIPLE_SYMBOL);
 }
 
 

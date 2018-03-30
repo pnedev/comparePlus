@@ -26,7 +26,7 @@
  * the Hirschberg linear space refinement as described in the
  * following publication:
  *
- *   E. Myers, ``An O(ND) Difference Algorithm and Its Variations,''
+ *   E. Myers, "An O(ND) Difference Algorithm and Its Variations",
  *   Algorithmica 1, 2 (1986), 251-266.
  *   http://www.cs.arizona.edu/people/gene/PAPERS/diff.ps
  *
@@ -34,18 +34,17 @@
  */
 
 /* Modified into template class DiffCalc
- * Copyright (C) 2017  Pavel Nedev <pg.nedev@gmail.com>
+ * Copyright (C) 2017-2018  Pavel Nedev <pg.nedev@gmail.com>
  */
+
 
 #pragma once
 
 #include <cstdlib>
 #include <climits>
 #include <utility>
-#include <set>
 
 #include "varray.h"
-#include "types.h"
 
 
 enum class diff_type
@@ -56,39 +55,23 @@ enum class diff_type
 };
 
 
-enum moved_type
-{
-	NOT_MOVED = 0,
-	MOVED,
-	MOVED_MULTIPLE
-};
-
-
-struct diff_line
-{
-	diff_line(int lineNum) : line(lineNum) {}
-
-	int line;
-	std::vector<section_t> changes;
-};
-
-
+template <typename UserDataT>
 struct diff_info
 {
 	diff_type	type;
-	int			off; // off into _a if MATCH or NEW_IN_1 but into _b if NEW_IN_2
+	int			off; // off into _a if DIFF_MATCH and DIFF_IN_1 but into _b if DIFF_IN_2
 	int			len;
 
-	// added lines for Notepad++ use
-	const diff_info*	matchedDiff {nullptr};
+	UserDataT	info;
+};
 
-	std::vector<diff_line>	changedLines;
-	std::vector<moved_type>	moved;
 
-	inline moved_type isMoved(unsigned int i) const
-	{
-		return (moved.size() <= i ? NOT_MOVED : moved[i]);
-	}
+template <>
+struct diff_info<void>
+{
+	diff_type	type;
+	int			off; // off into _a if DIFF_MATCH and DIFF_IN_1 but into _b if DIFF_IN_2
+	int			len;
 };
 
 
@@ -96,17 +79,17 @@ struct diff_info
  *  \class  DiffCalc
  *  \brief  Compares and makes a differences list between two vectors (elements are template, must have operator==)
  */
-template <typename Elem>
+template <typename Elem, typename UserDataT = void>
 class DiffCalc
 {
 public:
 	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
-			bool findMoves = false, const Elem& blankVal = Elem(), int max = INT_MAX);
+			const Elem& blankVal = Elem(), int max = INT_MAX);
 
 	DiffCalc(const Elem v1[], int v1_size, const Elem v2[], int v2_size,
-			bool findMoves = false, const Elem& blankVal = Elem(), int max = INT_MAX);
+			const Elem& blankVal = Elem(), int max = INT_MAX);
 
-	std::vector<diff_info> operator()();
+	std::vector<diff_info<UserDataT>> operator()();
 
 	DiffCalc(const DiffCalc&) = delete;
 	const DiffCalc& operator=(const DiffCalc&) = delete;
@@ -121,7 +104,7 @@ private:
 	int _find_middle_snake(int aoff, int aend, int boff, int bend, middle_snake& ms);
 	int _ses(int aoff, int aend, int boff, int bend);
 	void _shift_boundries();
-	bool _blocks_match(const diff_info& di1, const diff_info& di2);
+	bool _blocks_match(const diff_info<UserDataT>& di1, const diff_info<UserDataT>& di2);
 	void _find_moves();
 
 	const Elem*	_a;
@@ -129,35 +112,32 @@ private:
 	const Elem*	_b;
 	const int	_b_size;
 
-	std::vector<diff_info>	_diff;
+	std::vector<diff_info<UserDataT>>	_diff;
 
-	const bool	_findMoves;
 	const Elem	_blankVal;
 	const int	_dmax;
 	varray<int>	_buf;
 };
 
 
-template <typename Elem>
-DiffCalc<Elem>::DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
-		bool findMoves, const Elem& blankVal, int max) :
-	_a(v1.data()), _a_size(v1.size()), _b(v2.data()), _b_size(v2.size()),
-	_findMoves(findMoves), _blankVal(blankVal), _dmax(max)
+template <typename Elem, typename UserDataT>
+DiffCalc<Elem, UserDataT>::DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
+	const Elem& blankVal, int max) :
+	_a(v1.data()), _a_size(v1.size()), _b(v2.data()), _b_size(v2.size()), _blankVal(blankVal), _dmax(max)
 {
 }
 
 
-template <typename Elem>
-DiffCalc<Elem>::DiffCalc(const Elem v1[], int v1_size, const Elem v2[], int v2_size,
-		bool findMoves, const Elem& blankVal, int max) :
-	_a(v1), _a_size(v1_size), _b(v2), _b_size(v2_size),
-	_findMoves(findMoves), _blankVal(blankVal), _dmax(max)
+template <typename Elem, typename UserDataT>
+DiffCalc<Elem, UserDataT>::DiffCalc(const Elem v1[], int v1_size, const Elem v2[], int v2_size,
+	const Elem& blankVal, int max) :
+	_a(v1), _a_size(v1_size), _b(v2), _b_size(v2_size), _blankVal(blankVal), _dmax(max)
 {
 }
 
 
-template <typename Elem>
-inline int& DiffCalc<Elem>::_v(int k, int r)
+template <typename Elem, typename UserDataT>
+inline int& DiffCalc<Elem, UserDataT>::_v(int k, int r)
 {
 	/* Pack -N to N into 0 to N * 2 */
 	const int j = (k <= 0) ? (-k * 4 + r) : (k * 4 + (r - 2));
@@ -166,8 +146,8 @@ inline int& DiffCalc<Elem>::_v(int k, int r)
 }
 
 
-template <typename Elem>
-void DiffCalc<Elem>::_edit(diff_type type, int off, int len)
+template <typename Elem, typename UserDataT>
+void DiffCalc<Elem, UserDataT>::_edit(diff_type type, int off, int len)
 {
 	if (len == 0)
 		return;
@@ -179,7 +159,7 @@ void DiffCalc<Elem>::_edit(diff_type type, int off, int len)
 
 	if (add_elem)
 	{
-		diff_info new_di;
+		diff_info<UserDataT> new_di;
 
 		new_di.type = type;
 		new_di.off = off;
@@ -194,8 +174,8 @@ void DiffCalc<Elem>::_edit(diff_type type, int off, int len)
 }
 
 
-template <typename Elem>
-int DiffCalc<Elem>::_find_middle_snake(int aoff, int aend, int boff, int bend, middle_snake& ms)
+template <typename Elem, typename UserDataT>
+int DiffCalc<Elem, UserDataT>::_find_middle_snake(int aoff, int aend, int boff, int bend, middle_snake& ms)
 {
 	const int delta = aend - bend;
 	const int odd = delta & 1;
@@ -285,8 +265,8 @@ int DiffCalc<Elem>::_find_middle_snake(int aoff, int aend, int boff, int bend, m
 }
 
 
-template <typename Elem>
-int DiffCalc<Elem>::_ses(int aoff, int aend, int boff, int bend)
+template <typename Elem, typename UserDataT>
+int DiffCalc<Elem, UserDataT>::_ses(int aoff, int aend, int boff, int bend)
 {
 	middle_snake ms = { 0 };
 	int d;
@@ -385,8 +365,8 @@ int DiffCalc<Elem>::_ses(int aoff, int aend, int boff, int bend)
 // If [] surrounds the marked differences, basically [abb]a is the same as a[bba]
 // Since most languages start with unique elem and end with repetitive elem (end, </node>, }, ], ), >, etc)
 // we shift the differences down to make results look cleaner
-template <typename Elem>
-void DiffCalc<Elem>::_shift_boundries()
+template <typename Elem, typename UserDataT>
+void DiffCalc<Elem, UserDataT>::_shift_boundries()
 {
 	int diff_size = static_cast<int>(_diff.size());
 
@@ -417,8 +397,8 @@ void DiffCalc<Elem>::_shift_boundries()
 				// need to be moved at the same time
 				if (_diff[i + 1].type == diff_type::DIFF_IN_2)
 				{
-					diff_info& adiff = _diff[i];
-					diff_info& bdiff = _diff[i + 1];
+					diff_info<UserDataT>& adiff = _diff[i];
+					diff_info<UserDataT>& bdiff = _diff[i + 1];
 
 					bmax = _b_size;
 
@@ -447,7 +427,7 @@ void DiffCalc<Elem>::_shift_boundries()
 				}
 				else
 				{
-					diff_info& adiff = _diff[i];
+					diff_info<UserDataT>& adiff = _diff[i];
 
 					int aend = adiff.off + adiff.len;
 
@@ -462,7 +442,7 @@ void DiffCalc<Elem>::_shift_boundries()
 		}
 		else if (_diff[i].type == diff_type::DIFF_IN_2)
 		{
-			diff_info& bdiff = _diff[i];
+			diff_info<UserDataT>& bdiff = _diff[i];
 
 			int bend = bdiff.off + bdiff.len;
 
@@ -479,7 +459,7 @@ void DiffCalc<Elem>::_shift_boundries()
 		{
 			if (i + 1 < diff_size)
 			{
-				diff_info& post_diff = _diff[i + 1];
+				diff_info<UserDataT>& post_diff = _diff[i + 1];
 
 				if (post_diff.len > offset)
 				{
@@ -495,14 +475,14 @@ void DiffCalc<Elem>::_shift_boundries()
 
 			if (i)
 			{
-				diff_info& pre_diff = _diff[i - 1];
+				diff_info<UserDataT>& pre_diff = _diff[i - 1];
 
 				pre_diff.len += offset;
 			}
 			// Create new match block in the beginning
 			else
 			{
-				diff_info new_di;
+				diff_info<UserDataT> new_di;
 
 				new_di.type = diff_type::DIFF_MATCH;
 				new_di.off = 0;
@@ -517,78 +497,8 @@ void DiffCalc<Elem>::_shift_boundries()
 }
 
 
-template <typename Elem>
-bool DiffCalc<Elem>::_blocks_match(const diff_info& di1, const diff_info& di2)
-{
-	if ((di1.type == di2.type) || (di1.len != di2.len))
-		return false;
-
-	const Elem* a = (di1.type == diff_type::DIFF_IN_1) ? &_a[di1.off] : &_b[di1.off];
-	const Elem* b = (di2.type == diff_type::DIFF_IN_1) ? &_a[di2.off] : &_b[di2.off];
-
-	for (int i = 0; i < di1.len; ++i)
-	{
-		if (a[i] != b[i])
-			return false;
-	}
-
-	return true;
-}
-
-
-template <typename Elem>
-void DiffCalc<Elem>::_find_moves()
-{
-	struct diff_key
-	{
-		int diff_len;
-		int diff_idx;
-
-		diff_key(int dl, int di) : diff_len(dl), diff_idx(di)
-		{}
-
-		bool operator<(const diff_key& rhs) const
-		{
-			return ((diff_len < rhs.diff_len) || ((diff_len == rhs.diff_len) && (diff_idx < rhs.diff_idx)));
-		}
-	};
-
-	std::set<diff_key> orderedDiffs;
-
-	const int diff_size = static_cast<int>(_diff.size());
-
-	for (int i = 0; i < diff_size; ++i)
-	{
-		if (_diff[i].type != diff_type::DIFF_MATCH)
-			orderedDiffs.emplace(diff_key(_diff[i].len, i));
-	}
-
-	for (auto od1 = orderedDiffs.begin(); od1 != orderedDiffs.end(); ++od1)
-	{
-		diff_info& di1 = _diff[od1->diff_idx];
-
-		if (!di1.moved.empty())
-			continue;
-
-		for (auto od2 = od1; od2 != orderedDiffs.end(); ++od2)
-		{
-			diff_info& di2 = _diff[od2->diff_idx];
-
-			if (!di2.moved.empty() || (di1.type == di2.type) || (di1.len != di2.len))
-				continue;
-
-			if (_blocks_match(di1, di2))
-			{
-				di1.moved.resize(di1.len, MOVED);
-				di2.moved.resize(di2.len, MOVED);
-			}
-		}
-	}
-}
-
-
-template <typename Elem>
-std::vector<diff_info> DiffCalc<Elem>::operator()()
+template <typename Elem, typename UserDataT>
+std::vector<diff_info<UserDataT>> DiffCalc<Elem, UserDataT>::operator()()
 {
 	/* The _ses function assumes we begin with a diff. The following ensures this is true by skipping any matches
 	 * in the beginning. This also helps to quickly process sequences that match entirely.
@@ -613,16 +523,9 @@ std::vector<diff_info> DiffCalc<Elem>::operator()()
 	bsize -= y;
 
 	if (_ses(x, asize, y, bsize) == -1)
-	{
 		_diff.clear();
-	}
 	else
-	{
 		_shift_boundries();
-
-		if (_findMoves)
-			_find_moves();
-	}
 
 	// Wipe temporal buffer to free memory
 	_buf.get().clear();

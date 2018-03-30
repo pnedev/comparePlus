@@ -263,7 +263,6 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlugin"</Command>
     <ClInclude Include="..\..\src\LibGit2\LibGit2Helper.h" />
     <ClInclude Include="..\..\src\Icons\icon_add.h" />
     <ClInclude Include="..\..\src\Icons\icon_moved.h" />
-    <ClInclude Include="..\..\src\Icons\icon_moved_multiple.h" />
     <ClInclude Include="..\..\src\Icons\icon_sub.h" />
     <ClInclude Include="..\..\src\Icons\icon_diff.h" />
     <ClInclude Include="..\..\src\Icons\icon_arrows.h" />
@@ -282,7 +281,6 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlugin"</Command>
     <ClInclude Include="..\..\src\NppAPI\Window.h" />
     <ClInclude Include="..\..\src\NppAPI\NppInternalDefines.h" />
     <ClInclude Include="..\..\src\Engine\diff.h" />
-    <ClInclude Include="..\..\src\Engine\types.h" />
     <ClInclude Include="..\..\src\Engine\varray.h" />
     <ClInclude Include="..\..\src\LibHelpers.h" />
     <ClInclude Include="..\..\src\SQLite\SqliteHelper.h" />

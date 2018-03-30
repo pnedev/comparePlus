@@ -1,7 +1,7 @@
 /*
  * This file is part of Compare plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2018 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,35 +39,37 @@ enum Marker_t
 	MARKER_MOVED_BLOCK_BEGIN_SYMBOL,
 	MARKER_MOVED_BLOCK_MID_SYMBOL,
 	MARKER_MOVED_BLOCK_END_SYMBOL,
-	MARKER_MOVED_MULTIPLE_SYMBOL,
 	MARKER_ARROW_SYMBOL
 };
 
 
-const int MARKER_MASK_CHANGED			=	(1 << MARKER_CHANGED_LINE)	|	(1 << MARKER_CHANGED_SYMBOL);
-const int MARKER_MASK_ADDED				=	(1 << MARKER_ADDED_LINE)	|	(1 << MARKER_ADDED_SYMBOL);
-const int MARKER_MASK_REMOVED			=	(1 << MARKER_REMOVED_LINE)	|	(1 << MARKER_REMOVED_SYMBOL);
-const int MARKER_MASK_MOVED				=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_LINE_SYMBOL) |
-																			(1 << MARKER_MOVED_BLOCK_BEGIN_SYMBOL) |
-																			(1 << MARKER_MOVED_BLOCK_MID_SYMBOL) |
-																			(1 << MARKER_MOVED_BLOCK_END_SYMBOL);
-const int MARKER_MASK_MOVED_MULTIPLE	= (1 << MARKER_MOVED_LINE)		|	(1 << MARKER_MOVED_MULTIPLE_SYMBOL);
-const int MARKER_MASK_BLANK				= (1 << MARKER_BLANK);
-const int MARKER_MASK_ARROW				= (1 << MARKER_ARROW_SYMBOL);
+const int MARKER_MASK_CHANGED		=	(1 << MARKER_CHANGED_LINE)	|	(1 << MARKER_CHANGED_SYMBOL);
+const int MARKER_MASK_ADDED			=	(1 << MARKER_ADDED_LINE)	|	(1 << MARKER_ADDED_SYMBOL);
+const int MARKER_MASK_REMOVED		=	(1 << MARKER_REMOVED_LINE)	|	(1 << MARKER_REMOVED_SYMBOL);
+const int MARKER_MASK_MOVED_LINE	=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_LINE_SYMBOL);
+const int MARKER_MASK_MOVED_BEGIN	=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_BLOCK_BEGIN_SYMBOL);
+const int MARKER_MASK_MOVED_MID		=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_BLOCK_MID_SYMBOL);
+const int MARKER_MASK_MOVED_END		=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_BLOCK_END_SYMBOL);
+const int MARKER_MASK_MOVED			=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_LINE_SYMBOL) |
+																		(1 << MARKER_MOVED_BLOCK_BEGIN_SYMBOL) |
+																		(1 << MARKER_MOVED_BLOCK_MID_SYMBOL) |
+																		(1 << MARKER_MOVED_BLOCK_END_SYMBOL);
 
-const int MARKER_MASK_LINE =	(1 << MARKER_CHANGED_LINE) |
-								(1 << MARKER_ADDED_LINE) |
-								(1 << MARKER_REMOVED_LINE) |
-								(1 << MARKER_MOVED_LINE);
+const int MARKER_MASK_BLANK			=	(1 << MARKER_BLANK);
+const int MARKER_MASK_ARROW			=	(1 << MARKER_ARROW_SYMBOL);
 
-const int MARKER_MASK_SYMBOL =	(1 << MARKER_CHANGED_SYMBOL) |
-								(1 << MARKER_ADDED_SYMBOL) |
-								(1 << MARKER_REMOVED_SYMBOL) |
-								(1 << MARKER_MOVED_LINE_SYMBOL) |
-								(1 << MARKER_MOVED_BLOCK_BEGIN_SYMBOL) |
-								(1 << MARKER_MOVED_BLOCK_MID_SYMBOL) |
-								(1 << MARKER_MOVED_BLOCK_END_SYMBOL) |
-								(1 << MARKER_MOVED_MULTIPLE_SYMBOL);
+const int MARKER_MASK_LINE			=	(1 << MARKER_CHANGED_LINE) |
+										(1 << MARKER_ADDED_LINE) |
+										(1 << MARKER_REMOVED_LINE) |
+										(1 << MARKER_MOVED_LINE);
+
+const int MARKER_MASK_SYMBOL		=	(1 << MARKER_CHANGED_SYMBOL) |
+										(1 << MARKER_ADDED_SYMBOL) |
+										(1 << MARKER_REMOVED_SYMBOL) |
+										(1 << MARKER_MOVED_LINE_SYMBOL) |
+										(1 << MARKER_MOVED_BLOCK_BEGIN_SYMBOL) |
+										(1 << MARKER_MOVED_BLOCK_MID_SYMBOL) |
+										(1 << MARKER_MOVED_BLOCK_END_SYMBOL);
 
 const int MARKER_MASK_ALL =	MARKER_MASK_LINE | MARKER_MASK_SYMBOL;
 
