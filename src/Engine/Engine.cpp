@@ -275,21 +275,39 @@ void findMoves(CompareInfo& cmpInfo)
 
 		bool operator<(const diff_key& rhs) const
 		{
-			return ((diff_len < rhs.diff_len) || ((diff_len == rhs.diff_len) && (diff_idx < rhs.diff_idx)));
+			return ((diff_len > rhs.diff_len) || ((diff_len == rhs.diff_len) && (diff_idx < rhs.diff_idx)));
 		}
 	};
 
-	std::set<diff_key> orderedDiffs1;
-	std::set<diff_key> orderedDiffs2;
+	std::set<diff_key> orderedDiffs;
 
 	const int diffSize = static_cast<int>(cmpInfo.blockDiffs.size());
 
 	for (int i = 0; i < diffSize; ++i)
 	{
-		if (cmpInfo.blockDiffs[i].type == diff_type::DIFF_IN_1)
-			orderedDiffs1.emplace(diff_key(cmpInfo.blockDiffs[i].len, i));
-		else if (cmpInfo.blockDiffs[i].type == diff_type::DIFF_IN_2)
-			orderedDiffs2.emplace(diff_key(cmpInfo.blockDiffs[i].len, i));
+		if (cmpInfo.blockDiffs[i].type != diff_type::DIFF_MATCH)
+			orderedDiffs.emplace(diff_key(cmpInfo.blockDiffs[i].len, i));
+	}
+
+	auto itr1 = orderedDiffs.begin();
+
+	for (++itr1; itr1 != orderedDiffs.end(); ++itr1)
+	{
+		diffInfo& bd1 = cmpInfo.blockDiffs[itr1->diff_idx];
+
+		auto itr2 = itr1;
+
+		do
+		{
+			--itr2;
+
+			diffInfo& bd2 = cmpInfo.blockDiffs[itr2->diff_idx];
+
+			if (bd2.type == bd1.type)
+				continue;
+
+
+		} while (itr2 != orderedDiffs.begin());
 	}
 }
 
