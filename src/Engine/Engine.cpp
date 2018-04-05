@@ -365,7 +365,24 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 	const int linesCount1 = static_cast<int>(chunk1.size());
 	const int linesCount2 = static_cast<int>(chunk2.size());
 
-	std::vector<std::vector<int>> linesConvergence(linesCount1, std::vector<int>(linesCount2, 0));
+	struct conv_key
+	{
+		int convergence;
+		int line1;
+		int line2;
+
+		conv_key(int c, int l1, int l2) : convergence(c), line1(l1), line2(l2)
+		{}
+
+		bool operator<(const conv_key& rhs) const
+		{
+			return ((convergence > rhs.convergence) ||
+					((convergence == rhs.convergence) && ((line1 < rhs.line1) ||
+						((line1 == rhs.line1) && ((line2 < rhs.line2))))));
+		}
+	};
+
+	std::set<conv_key> orderedLinesConvergence;
 
 	for (int line1 = 0; line1 < linesCount1; ++line1)
 	{
@@ -399,54 +416,30 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 			if (pLine1->size() < pLine2->size())
 				std::swap(pLine1, pLine2);
 
-			if (pLine1->size() / pLine2->size() > 1)
+			if (pLine1->size() > 2 * pLine2->size())
 				continue;
 
 			const std::vector<diff_info<void>> linesDiff = DiffCalc<Word>(*pLine1, *pLine2)();
 
+			int linesConvergence = 0;
+
 			for (const auto& ld: linesDiff)
 			{
 				if (ld.type == diff_type::DIFF_MATCH)
-					linesConvergence[line1][line2] += ld.len;
+					linesConvergence += ld.len;
 			}
 
-			if (linesConvergence[line1][line2])
-				linesConvergence[line1][line2] = linesConvergence[line1][line2] * 100 / pLine1->size();
-		}
-	}
+			linesConvergence = linesConvergence * 100 / pLine1->size();
 
-	struct convergenceInfo
-	{
-		int convergence;
-		int line1;
-		int line2;
-
-		convergenceInfo(int c, int l1, int l2) : convergence(c), line1(l1), line2(l2)
-		{}
-
-		bool operator<(const convergenceInfo& rhs) const
-		{
-			return ((convergence > rhs.convergence) ||
-					((convergence == rhs.convergence) && ((line1 < rhs.line1) ||
-						((line1 == rhs.line1) && ((line2 < rhs.line2))))));
-		}
-	};
-
-	std::set<convergenceInfo> orderedConvergence;
-
-	for (int line1 = 0; line1 < linesCount1; ++line1)
-	{
-		for (int line2 = 0; line2 < linesCount2; ++line2)
-		{
-			if (linesConvergence[line1][line2] > 50)
-				orderedConvergence.emplace(convergenceInfo(linesConvergence[line1][line2], line1, line2));
+			if (linesConvergence >= 50)
+				orderedLinesConvergence.emplace(conv_key(linesConvergence, line1, line2));
 		}
 	}
 
 	std::map<int, std::pair<int, int>> bestLineMappings;
-	int bestConvergence = 0;
+	int bestBlockConvergence = 0;
 
-	for (auto startItr = orderedConvergence.begin(); startItr != orderedConvergence.end(); ++startItr)
+	for (auto startItr = orderedLinesConvergence.begin(); startItr != orderedLinesConvergence.end(); ++startItr)
 	{
 		std::map<int, std::pair<int, int>> lineMappings;
 
@@ -456,7 +449,7 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 		int mappedLinesCount1 = 0;
 		int mappedLinesCount2 = 0;
 
-		for (auto ocItr = startItr; ocItr != orderedConvergence.end(); ++ocItr)
+		for (auto ocItr = startItr; ocItr != orderedLinesConvergence.end(); ++ocItr)
 		{
 			if (!mappedLines1[ocItr->line1] && !mappedLines2[ocItr->line2])
 			{
@@ -470,7 +463,7 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 			}
 		}
 
-		int currentConvergence = 0;
+		int currentBlockConvergence = 0;
 		int lastLine2 = -1;
 
 		for (const auto& lm: lineMappings)
@@ -478,14 +471,14 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 			// lines1 are stored in ascending order and to have a match lines2 must also be in ascending order
 			if (lm.second.second > lastLine2)
 			{
-				currentConvergence += lm.second.first;
+				currentBlockConvergence += lm.second.first;
 				lastLine2 = lm.second.second;
 			}
 		}
 
-		if (bestConvergence < currentConvergence)
+		if (bestBlockConvergence < currentBlockConvergence)
 		{
-			bestConvergence = currentConvergence;
+			bestBlockConvergence = currentBlockConvergence;
 			bestLineMappings = std::move(lineMappings);
 		}
 	}
