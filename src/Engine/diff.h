@@ -83,11 +83,8 @@ template <typename Elem, typename UserDataT = void>
 class DiffCalc
 {
 public:
-	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
-			const Elem& blankVal = Elem(), int max = INT_MAX);
-
-	DiffCalc(const Elem v1[], int v1_size, const Elem v2[], int v2_size,
-			const Elem& blankVal = Elem(), int max = INT_MAX);
+	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2, int max = INT_MAX);
+	DiffCalc(const Elem v1[], int v1_size, const Elem v2[], int v2_size, int max = INT_MAX);
 
 	std::vector<diff_info<UserDataT>> operator()();
 
@@ -114,24 +111,21 @@ private:
 
 	std::vector<diff_info<UserDataT>>	_diff;
 
-	const Elem	_blankVal;
 	const int	_dmax;
 	varray<int>	_buf;
 };
 
 
 template <typename Elem, typename UserDataT>
-DiffCalc<Elem, UserDataT>::DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
-	const Elem& blankVal, int max) :
-	_a(v1.data()), _a_size(v1.size()), _b(v2.data()), _b_size(v2.size()), _blankVal(blankVal), _dmax(max)
+DiffCalc<Elem, UserDataT>::DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2, int max) :
+	_a(v1.data()), _a_size(v1.size()), _b(v2.data()), _b_size(v2.size()), _dmax(max)
 {
 }
 
 
 template <typename Elem, typename UserDataT>
-DiffCalc<Elem, UserDataT>::DiffCalc(const Elem v1[], int v1_size, const Elem v2[], int v2_size,
-	const Elem& blankVal, int max) :
-	_a(v1), _a_size(v1_size), _b(v2), _b_size(v2_size), _blankVal(blankVal), _dmax(max)
+DiffCalc<Elem, UserDataT>::DiffCalc(const Elem v1[], int v1_size, const Elem v2[], int v2_size, int max) :
+	_a(v1), _a_size(v1_size), _b(v2), _b_size(v2_size), _dmax(max)
 {
 }
 
@@ -361,7 +355,7 @@ int DiffCalc<Elem, UserDataT>::_ses(int aoff, int aend, int boff, int bend)
 
 
 // Algorithm borrowed from WinMerge
-// If the Elem after the diff_in_1 is the same as the first Elem of the diff_in_1, shift differences down:
+// If the Elem after the DIFF_IN_1 is the same as the first Elem of the DIFF_IN_1, shift differences down:
 // If [] surrounds the marked differences, basically [abb]a is the same as a[bba]
 // Since most languages start with unique elem and end with repetitive elem (end, </node>, }, ], ), >, etc)
 // we shift the differences down to make results look cleaner
@@ -393,7 +387,7 @@ void DiffCalc<Elem, UserDataT>::_shift_boundries()
 		{
 			if (i + 1 < diff_size)
 			{
-				// If there is a diff_in_2 after a diff_in_1, there is a potential match, so both blocks
+				// If there is a DIFF_IN_2 after a DIFF_IN_1, there is a potential match, so both blocks
 				// need to be moved at the same time
 				if (_diff[i + 1].type == diff_type::DIFF_IN_2)
 				{

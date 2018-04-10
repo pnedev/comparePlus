@@ -38,6 +38,9 @@ enum class CompareResult
 
 struct section_t
 {
+	section_t() {}
+	section_t(int o, int l) : off(o), len(l) {}
+
 	int off;
 	int len;
 };

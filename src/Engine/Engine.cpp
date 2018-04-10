@@ -263,7 +263,8 @@ std::vector<std::vector<Word>> getWords(int lineOffset, int lineCount, int view,
 }
 
 
-void findMoves(CompareInfo& cmpInfo)
+void findMoves(CompareInfo& cmpInfo,
+		const std::vector<uint64_t>& lineHashes1, const std::vector<uint64_t>& lineHashes2)
 {
 	struct diff_key
 	{
@@ -306,7 +307,42 @@ void findMoves(CompareInfo& cmpInfo)
 			if (bd2.type == bd1.type)
 				continue;
 
+			const std::vector<uint64_t>* pLineHashes1 = &lineHashes1;
+			const std::vector<uint64_t>* pLineHashes2 = &lineHashes2;
 
+			if (bd1.type == diff_type::DIFF_IN_2)
+				std::swap(pLineHashes1, pLineHashes2);
+
+			for (int i = 0; i <= bd2.len - bd1.len; ++i)
+			{
+				const int movedLen = bd2.info.movedSection(i);
+
+				if (movedLen)
+				{
+					i += movedLen - 1;
+				}
+				else
+				{
+					bool insignificantMatch = true;
+					int j = 0;
+
+					for (; j < bd1.len; ++j)
+					{
+						if ((*pLineHashes1)[bd1.off + j] != (*pLineHashes2)[bd2.off + i + j])
+							break;
+						if (insignificantMatch && (*pLineHashes1)[bd1.off + j] != cHashSeed)
+							insignificantMatch = false;
+					}
+
+					if (j == bd1.len && !insignificantMatch)
+					{
+						bd1.info.moves.emplace_back(0, j);
+						bd2.info.moves.emplace_back(i, j);
+						itr2 = orderedDiffs.begin();
+						break;
+					}
+				}
+			}
 		} while (itr2 != orderedDiffs.begin());
 	}
 }
@@ -753,7 +789,7 @@ CompareResult runCompare(const section_t& mainViewSection, const section_t& subV
 		std::swap(cmpInfo.doc1, cmpInfo.doc2);
 	}
 
-	cmpInfo.blockDiffs = DiffCalc<uint64_t, blockDiffInfo>(*pLineHashes1, *pLineHashes2, cHashSeed)();
+	cmpInfo.blockDiffs = DiffCalc<uint64_t, blockDiffInfo>(*pLineHashes1, *pLineHashes2)();
 
 	const int blockDiffSize = static_cast<int>(cmpInfo.blockDiffs.size());
 
@@ -761,7 +797,7 @@ CompareResult runCompare(const section_t& mainViewSection, const section_t& subV
 		return CompareResult::COMPARE_MATCH;
 
 	if (settings.DetectMoves)
-		findMoves(cmpInfo);
+		findMoves(cmpInfo, *pLineHashes1, *pLineHashes2);
 
 	// Currently it is impossible to set Sci annotation in the beginning of the doc so if there is a diff in the
 	// beginning (alignment via annotation will probably be necessary) we insert blank line in each doc's beginning.
