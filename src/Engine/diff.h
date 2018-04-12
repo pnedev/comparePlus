@@ -366,84 +366,92 @@ void DiffCalc<Elem, UserDataT>::_shift_boundries()
 
 	for (int i = 0; i < diff_size; ++i)
 	{
-		int amax = _a_size;
-		int bmax = _b_size;
-		int offset = 0;
+		if (_diff[i].type == diff_type::DIFF_MATCH)
+			continue;
 
-		if (_diff[i].type != diff_type::DIFF_MATCH)
+		const Elem*	data	= nullptr;
+		int max_len			= 0;
+		int offset			= 0;
+		int i_off			= 0;
+
+		if ((i + 1 < diff_size) && (_diff[i].type == _diff[i + 1].type))
 		{
-			for (int j = i + 1; j < diff_size; ++j)
-			{
-				if (_diff[i].type == _diff[j].type)
-				{
-					amax = _diff[j].off;
-					bmax = _diff[j].off;
-					break;
-				}
-			}
+			_diff[i].len += _diff[i + 1].len;
+			_diff.erase(_diff.begin() + (i + 1));
+			--diff_size;
 		}
 
 		if (_diff[i].type == diff_type::DIFF_IN_1)
 		{
-			if (i + 1 < diff_size)
+			// If there is a DIFF_IN_2 after a DIFF_IN_1, there is a potential match, so both blocks
+			// need to be moved at the same time
+			if ((i + 1 < diff_size) && (_diff[i + 1].type == diff_type::DIFF_IN_2))
 			{
-				// If there is a DIFF_IN_2 after a DIFF_IN_1, there is a potential match, so both blocks
-				// need to be moved at the same time
-				if (_diff[i + 1].type == diff_type::DIFF_IN_2)
+				diff_info<UserDataT>& adiff = _diff[i];
+				diff_info<UserDataT>& bdiff = _diff[i + 1];
+
+				int match_aoff = adiff.off + adiff.len;
+				int match_boff = bdiff.off + bdiff.len;
+
+				int j = i + 2;
+
+				while (j < diff_size && adiff.type != _diff[j].type)
+					++j;
+
+				max_len = ((j < diff_size) ? _diff[j].off : _a_size) - match_aoff;
+
+				if (adiff.len < max_len)
+					max_len = adiff.len;
+
+				if (bdiff.len < max_len)
+					max_len = bdiff.len;
+
+				while (offset < max_len && _a[adiff.off] == _a[match_aoff] && _b[bdiff.off] == _b[match_boff])
 				{
-					diff_info<UserDataT>& adiff = _diff[i];
-					diff_info<UserDataT>& bdiff = _diff[i + 1];
-
-					bmax = _b_size;
-
-					for (int j = i + 2; j < diff_size; ++j)
-					{
-						if (bdiff.type == _diff[j].type)
-						{
-							bmax = _diff[j].off;
-							break;
-						}
-					}
-
-					int aend = adiff.off + adiff.len;
-					int bend = bdiff.off + bdiff.len;
-
-					while (aend < amax && bend < bmax && _a[adiff.off] == _a[aend] && _b[bdiff.off] == _b[bend])
-					{
-						++aend;
-						++bend;
-						++(adiff.off);
-						++(bdiff.off);
-						++offset;
-					}
-
-					++i;
+					++(adiff.off);
+					++(bdiff.off);
+					++match_aoff;
+					++match_boff;
+					++offset;
 				}
-				else
-				{
-					diff_info<UserDataT>& adiff = _diff[i];
 
-					int aend = adiff.off + adiff.len;
-
-					while (aend < amax && _a[adiff.off] == _a[aend])
-					{
-						++aend;
-						++(adiff.off);
-						++offset;
-					}
-				}
+				i_off = 1;
+			}
+			else
+			{
+				data	= _a;
+				max_len	= _a_size;
 			}
 		}
-		else if (_diff[i].type == diff_type::DIFF_IN_2)
+		else
 		{
-			diff_info<UserDataT>& bdiff = _diff[i];
+			data	= _b;
+			max_len	= _b_size;
+		}
 
-			int bend = bdiff.off + bdiff.len;
+		if (data)
+		{
+			diff_info<UserDataT>& diff = _diff[i];
 
-			while (bend < bmax && _b[bdiff.off] == _b[bend])
+			int j = i + 1;
+
+			while (j < diff_size && diff.type != _diff[j].type)
+				++j;
+
+			if (j < diff_size)
+				max_len = _diff[j].off;
+
+			int match_off = diff.off + diff.len;
+
+			max_len -= match_off;
+
+			if (diff.len < max_len)
+				max_len = diff.len;
+
+			while (offset < max_len && data[diff.off] == data[match_off])
 			{
-				++bend;
-				++(bdiff.off);
+				++(diff.off);
+				++match_off;
 				++offset;
 			}
 		}
@@ -451,22 +459,6 @@ void DiffCalc<Elem, UserDataT>::_shift_boundries()
 		// Diff block shifted - we need to adjust the surrounding match blocks accordingly
 		if (offset)
 		{
-			if (i + 1 < diff_size)
-			{
-				diff_info<UserDataT>& post_diff = _diff[i + 1];
-
-				if (post_diff.len > offset)
-				{
-					post_diff.off += offset;
-					post_diff.len -= offset;
-				}
-				else
-				{
-					_diff.erase(_diff.begin() + (i + 1));
-					--diff_size;
-				}
-			}
-
 			if (i)
 			{
 				diff_info<UserDataT>& pre_diff = _diff[i - 1];
@@ -486,6 +478,25 @@ void DiffCalc<Elem, UserDataT>::_shift_boundries()
 				++diff_size;
 				++i;
 			}
+
+			if (i + i_off + 1 < diff_size)
+			{
+				diff_info<UserDataT>& post_diff = _diff[i + i_off + 1];
+
+				if (post_diff.len > offset)
+				{
+					post_diff.off += offset;
+					post_diff.len -= offset;
+				}
+				else
+				{
+					_diff.erase(_diff.begin() + (i + i_off + 1));
+					--diff_size;
+					i_off = -1;
+				}
+			}
+
+			i += i_off;
 		}
 	}
 }
