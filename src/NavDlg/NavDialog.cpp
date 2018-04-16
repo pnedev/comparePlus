@@ -21,6 +21,8 @@
 #pragma comment (lib, "msimg32")
 
 
+#define NOMINMAX
+
 #include "Compare.h"
 #include "NavDialog.h"
 #include "NppHelpers.h"
