@@ -28,10 +28,7 @@
 
 #include <windowsx.h>
 #include <commctrl.h>
-
-
-#define _MIN(a, b)	((a) < (b) ? (a) : (b))
-#define _MAX(a, b)	((a) > (b) ? (a) : (b))
+#include <algorithm>
 
 
 const int NavDialog::cSpace = 2;
@@ -91,7 +88,7 @@ void NavDialog::NavView::reset()
 
 void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int height, int hScale, int hOffset)
 {
-	height = _MIN((maxBmpLines() - hOffset) * hScale, height);
+	height = std::min((maxBmpLines() - hOffset) * hScale, height);
 	if (height <= 0)
 		return;
 
@@ -191,6 +188,9 @@ void NavDialog::init(HINSTANCE hInst)
 
 	m_view[0].m_view = MAIN_VIEW;
 	m_view[1].m_view = SUB_VIEW;
+
+	if (isRTLwindow(nppData._nppHandle))
+		std::swap(m_view[0].m_view, m_view[1].m_view);
 }
 
 
@@ -276,7 +276,7 @@ void NavDialog::createBitmap()
 	RECT r;
 	::GetClientRect(_hSelf, &r);
 
-	const int maxLines	= _MAX(m_view[0].m_lines, m_view[1].m_lines);
+	const int maxLines	= std::max(m_view[0].m_lines, m_view[1].m_lines);
 	const int maxHeight	= (r.bottom - r.top) - 2 * cSpace - 2;
 
 	int reductionRatio = maxLines / maxHeight;
@@ -429,7 +429,7 @@ void NavDialog::setScalingFactor()
 	m_view[0].m_firstVisible = CallScintilla(m_view[0].m_view, SCI_GETFIRSTVISIBLELINE, 0, 0);
 	m_view[1].m_firstVisible = CallScintilla(m_view[1].m_view, SCI_GETFIRSTVISIBLELINE, 0, 0);
 
-	m_maxBmpLines = _MAX(m_view[0].maxBmpLines(), m_view[1].maxBmpLines());
+	m_maxBmpLines = std::max(m_view[0].maxBmpLines(), m_view[1].maxBmpLines());
 	m_syncView = (m_maxBmpLines == m_view[0].maxBmpLines()) ? &m_view[0] : &m_view[1];
 
 	RECT r;
@@ -477,13 +477,13 @@ void NavDialog::setPos(int x, int y)
 
 	if (x < m_navViewWidth + cSpace + 2)
 	{
-		if (y > _MIN((m_view[0].maxBmpLines() - scrollOffset) * m_pixelsPerLine, m_navHeight))
+		if (y > std::min((m_view[0].maxBmpLines() - scrollOffset) * m_pixelsPerLine, m_navHeight))
 			return;
 		currentView = &m_view[0];
 	}
 	else
 	{
-		if (y > _MIN((m_view[1].maxBmpLines() - scrollOffset) * m_pixelsPerLine, m_navHeight))
+		if (y > std::min((m_view[1].maxBmpLines() - scrollOffset) * m_pixelsPerLine, m_navHeight))
 			return;
 		currentView = &m_view[1];
 	}
