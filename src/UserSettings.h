@@ -24,7 +24,7 @@
 
 // Those are interpreted as bool values
 #define DEFAULT_OLD_IS_FIRST			1
-#define DEFAULT_OLD_ON_LEFT				1
+#define DEFAULT_OLD_IN_SUB_VIEW			0
 #define DEFAULT_COMPARE_TO_PREV			1
 
 #define DEFAULT_ENCODINGS_CHECK			1
@@ -69,7 +69,7 @@ public:
 	static const TCHAR mainSection[];
 
 	static const TCHAR oldIsFirstSetting[];
-	static const TCHAR oldFileOnLeftSetting[];
+	static const TCHAR oldFileViewSetting[];
 	static const TCHAR compareToPrevSetting[];
 	static const TCHAR encodingsCheckSetting[];
 	static const TCHAR promptCloseOnMatchSetting[];

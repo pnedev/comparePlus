@@ -22,6 +22,8 @@
 #include <shlobj.h>
 #include <uxtheme.h>
 
+#include "NppHelpers.h"
+
 
 typedef HRESULT (WINAPI *ETDTProc) (HWND, DWORD);
 
@@ -58,6 +60,12 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 			HWND hUpDown = ::GetDlgItem(_hSelf, IDC_SPIN_CTL);
 			::SendMessage(hUpDown, UDM_SETRANGE, 0L, MAKELONG(100, 0));
 
+			if (isRTLwindow(nppData._nppHandle))
+			{
+				SetDlgItemText(_hSelf, IDC_OLD_MAIN, TEXT("Right/Top"));
+				SetDlgItemText(_hSelf, IDC_OLD_SUB, TEXT("Left/Bottom"));
+			}
+
 			SetParams();
 		}
 		break;
@@ -81,7 +89,7 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					UserSettings settings;
 
 					settings.OldFileIsFirst			= (bool) DEFAULT_OLD_IS_FIRST;
-					settings.OldFileViewId			= DEFAULT_OLD_ON_LEFT ? MAIN_VIEW : SUB_VIEW;
+					settings.OldFileViewId			= DEFAULT_OLD_IN_SUB_VIEW ? SUB_VIEW : MAIN_VIEW;
 					settings.CompareToPrev			= (bool) DEFAULT_COMPARE_TO_PREV;
 					settings.EncodingsCheck			= (bool) DEFAULT_ENCODINGS_CHECK;
 					settings.PromptToCloseOnMatch	= (bool) DEFAULT_PROMPT_CLOSE_ON_MATCH;
@@ -139,9 +147,9 @@ void SettingsDialog::SetParams(UserSettings* settings)
 
 	Button_SetCheck(::GetDlgItem(_hSelf, settings->OldFileIsFirst ? IDC_FIRST_OLD : IDC_FIRST_NEW), BST_CHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, settings->OldFileIsFirst ? IDC_FIRST_NEW : IDC_FIRST_OLD), BST_UNCHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, settings->OldFileViewId == MAIN_VIEW ? IDC_OLD_LEFT : IDC_OLD_RIGHT),
+	Button_SetCheck(::GetDlgItem(_hSelf, settings->OldFileViewId == MAIN_VIEW ? IDC_OLD_MAIN : IDC_OLD_SUB),
 			BST_CHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, settings->OldFileViewId == MAIN_VIEW ? IDC_OLD_RIGHT : IDC_OLD_LEFT),
+	Button_SetCheck(::GetDlgItem(_hSelf, settings->OldFileViewId == MAIN_VIEW ? IDC_OLD_SUB : IDC_OLD_MAIN),
 			BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, settings->CompareToPrev ? IDC_COMPARE_TO_PREV : IDC_COMPARE_TO_NEXT),
 			BST_CHECKED);
@@ -175,7 +183,7 @@ void SettingsDialog::SetParams(UserSettings* settings)
 void SettingsDialog::GetParams()
 {
 	_Settings->OldFileIsFirst		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_FIRST_OLD)) == BST_CHECKED);
-	_Settings->OldFileViewId		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_OLD_LEFT)) == BST_CHECKED) ?
+	_Settings->OldFileViewId		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_OLD_MAIN)) == BST_CHECKED) ?
 			MAIN_VIEW : SUB_VIEW;
 	_Settings->CompareToPrev		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_COMPARE_TO_PREV)) == BST_CHECKED);
 	_Settings->EncodingsCheck		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_ENCODING_CHECK)) == BST_CHECKED);

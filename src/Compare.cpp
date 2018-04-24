@@ -477,8 +477,6 @@ DelayedClose	delayedClosure;
 DelayedUpdate	delayedUpdate;
 DelayedMaximize	delayedMaximize;
 
-AboutDialog   	AboutDlg;
-SettingsDialog	SettingsDlg;
 NavDialog     	NavDlg;
 
 toolbarIcons  tbSetFirst;
@@ -2251,6 +2249,10 @@ void Last()
 
 void OpenSettingsDlg(void)
 {
+	SettingsDialog SettingsDlg;
+
+	SettingsDlg.init(hInstance, nppData);
+
 	if (SettingsDlg.doDialog(&Settings) == IDOK)
 	{
 		Settings.save();
@@ -2263,6 +2265,8 @@ void OpenSettingsDlg(void)
 			NavDlg.SetColors(Settings.colors);
 		}
 	}
+
+	SettingsDlg.destroy();
 }
 
 
@@ -2303,8 +2307,12 @@ void OpenAboutDlg()
 
 #else
 
-	AboutDlg.doDialog();
+	AboutDialog AboutDlg;
 
+	AboutDlg.doDialog();
+	AboutDlg.init(hInstance, nppData);
+
+	AboutDlg.destroy();
 #endif
 }
 
@@ -2476,8 +2484,6 @@ void deinitPlugin()
 	if (tbNavBar.hToolbarBmp)
 		::DeleteObject(tbNavBar.hToolbarBmp);
 
-	SettingsDlg.destroy();
-	AboutDlg.destroy();
 	NavDlg.destroy();
 
 	// Deallocate shortcut
@@ -3101,8 +3107,6 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 
 	Settings.load();
 
-	AboutDlg.init(hInstance, nppData);
-	SettingsDlg.init(hInstance, nppData);
 	NavDlg.init(hInstance);
 }
 

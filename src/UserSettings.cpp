@@ -25,7 +25,7 @@
 const TCHAR UserSettings::mainSection[]					= TEXT("Main");
 
 const TCHAR UserSettings::oldIsFirstSetting[]			= TEXT("Old is First");
-const TCHAR UserSettings::oldFileOnLeftSetting[]		= TEXT("Old on Left");
+const TCHAR UserSettings::oldFileViewSetting[]			= TEXT("Old in Sub View");
 const TCHAR UserSettings::compareToPrevSetting[]		= TEXT("Default Compare is to Prev");
 
 const TCHAR UserSettings::encodingsCheckSetting[]		= TEXT("Check Encodings");
@@ -60,8 +60,8 @@ void UserSettings::load()
 
 	OldFileIsFirst			= ::GetPrivateProfileInt(mainSection, oldIsFirstSetting,
 			DEFAULT_OLD_IS_FIRST, iniFile) == 1;
-	OldFileViewId			= ::GetPrivateProfileInt(mainSection, oldFileOnLeftSetting,
-			DEFAULT_OLD_ON_LEFT, iniFile) == 1 ? MAIN_VIEW : SUB_VIEW;
+	OldFileViewId			= ::GetPrivateProfileInt(mainSection, oldFileViewSetting,
+			DEFAULT_OLD_IN_SUB_VIEW, iniFile) == 0 ? MAIN_VIEW : SUB_VIEW;
 	CompareToPrev			= ::GetPrivateProfileInt(mainSection, compareToPrevSetting,
 			DEFAULT_COMPARE_TO_PREV, iniFile) == 1;
 	EncodingsCheck			= ::GetPrivateProfileInt(mainSection, encodingsCheckSetting,
@@ -120,8 +120,8 @@ void UserSettings::save()
 		return;
 	}
 
-	::WritePrivateProfileString(mainSection, oldFileOnLeftSetting,
-			OldFileViewId == MAIN_VIEW ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, oldFileViewSetting,
+			OldFileViewId == SUB_VIEW ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, compareToPrevSetting,
 			CompareToPrev ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, encodingsCheckSetting,
