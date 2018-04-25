@@ -451,6 +451,10 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 			continue;
 		}
 
+		int line1Len = 0;
+		for (const auto& word: chunk1[line1])
+			line1Len += word.length;
+
 		for (int line2 = 0; line2 < linesCount2; ++line2)
 		{
 			if (chunk2[line2].empty())
@@ -475,15 +479,33 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 
 			const std::vector<diff_info<void>> linesDiff = DiffCalc<Word>(*pLine1, *pLine2)();
 
-			int linesConvergence = 0;
+			int line2Len = 0;
+			for (const auto& word: chunk2[line2])
+				line2Len += word.length;
+
+			if (line1Len < line2Len)
+				line1Len = line2Len;
+
+			int linesConvergence = 0;		// Convergence by words count
+			int linesLenConvergence = 0;	// Convergence by length (symbols/chars count)
 
 			for (const auto& ld: linesDiff)
 			{
 				if (ld.type == diff_type::DIFF_MATCH)
+				{
 					linesConvergence += ld.len;
+
+					for (int i = 0; i < ld.len; ++i)
+						linesLenConvergence += (*pLine1)[ld.off + i].length;
+				}
 			}
 
 			linesConvergence = linesConvergence * 100 / pLine1->size();
+			linesLenConvergence = linesLenConvergence * 100 / line1Len;
+
+			// Take the better convergence of the two
+			if (linesConvergence < linesLenConvergence)
+				linesConvergence = linesLenConvergence;
 
 			if (linesConvergence >= 50)
 				orderedLinesConvergence.emplace(conv_key(linesConvergence, line1, line2));
