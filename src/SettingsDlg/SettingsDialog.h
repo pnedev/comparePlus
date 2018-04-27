@@ -34,13 +34,16 @@ class SettingsDialog : public StaticDialog
 {
 
 public:
-	SettingsDialog() : StaticDialog() {};
-
-	void init(HINSTANCE hInst, NppData nppDataParam)
+	SettingsDialog(HINSTANCE hInst, NppData nppDataParam) : StaticDialog()
 	{
 		_nppData = nppDataParam;
 		Window::init(hInst, nppDataParam._nppHandle);
 	};
+
+	~SettingsDialog()
+	{
+		destroy();
+	}
 
 	UINT doDialog(UserSettings* settings);
 

@@ -2249,9 +2249,7 @@ void Last()
 
 void OpenSettingsDlg(void)
 {
-	SettingsDialog SettingsDlg;
-
-	SettingsDlg.init(hInstance, nppData);
+	SettingsDialog SettingsDlg(hInstance, nppData);
 
 	if (SettingsDlg.doDialog(&Settings) == IDOK)
 	{
@@ -2265,8 +2263,6 @@ void OpenSettingsDlg(void)
 			NavDlg.SetColors(Settings.colors);
 		}
 	}
-
-	SettingsDlg.destroy();
 }
 
 
@@ -2307,12 +2303,8 @@ void OpenAboutDlg()
 
 #else
 
-	AboutDialog AboutDlg;
-
+	AboutDialog AboutDlg(hInstance, nppData);
 	AboutDlg.doDialog();
-	AboutDlg.init(hInstance, nppData);
-
-	AboutDlg.destroy();
 #endif
 }
 

@@ -27,14 +27,17 @@ class AboutDialog : public StaticDialog
 {
 
 public:
-	AboutDialog() : StaticDialog() {};
-
-	void init(HINSTANCE hInst, NppData nppDataParam)
+	AboutDialog(HINSTANCE hInst, NppData nppDataParam) : StaticDialog()
 	{
 		Window::init(hInst, nppDataParam._nppHandle);
 	};
 
-	void doDialog();
+	~AboutDialog()
+	{
+		destroy();
+	}
+
+	UINT doDialog();
 
 	virtual void destroy() {
 		_emailLinkJSL.destroy();

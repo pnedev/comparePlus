@@ -28,10 +28,10 @@ static const TCHAR cDonate_URL[]	= TEXT("https://www.paypal.me/pnedev");
 static const TCHAR cHelp_URL[]		= TEXT("https://github.com/pnedev/compare-plugin/blob/master/Help.md");
 
 
-void AboutDialog::doDialog()
+UINT AboutDialog::doDialog()
 {
-	if (!isCreated()) create(IDD_ABOUT_DIALOG);
-	goToCenter();
+	return (UINT)::DialogBoxParam(_hInst, MAKEINTRESOURCE(IDD_ABOUT_DIALOG), _hParent,
+			(DLGPROC)dlgProc, (LPARAM)this);
 }
 
 INT_PTR CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*lParam*/)
@@ -40,6 +40,8 @@ INT_PTR CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*
 	{
 		case WM_INITDIALOG :
 		{
+			goToCenter();
+
 			_emailLinkJSL.init(_hInst, _hSelf);
 			_emailLinkJSL.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK_JSL), TEXT("mailto:jean.sebastien.leroy@gmail.com"));
 			_emailLinkPND.init(_hInst, _hSelf);
@@ -59,7 +61,7 @@ INT_PTR CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*
 			{
 				case IDC_ABOUT_CLOSE_BUTTON :
 				case IDCANCEL :
-					display(FALSE);
+					::EndDialog(_hSelf, 0);
 				return TRUE;
 
 				case IDC_DONATE_BUTTON :
