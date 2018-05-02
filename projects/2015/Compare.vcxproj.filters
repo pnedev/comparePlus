@@ -132,16 +132,16 @@
     <ClInclude Include="..\..\src\ProgressDlg\ProgressDlg.h">
       <Filter>src\ProgressDlg</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Icons\icon_add.h">
+    <ClInclude Include="..\..\src\Icons\icon_added.h">
       <Filter>src\Icons</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Icons\icon_moved.h">
       <Filter>src\Icons</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Icons\icon_sub.h">
+    <ClInclude Include="..\..\src\Icons\icon_removed.h">
       <Filter>src\Icons</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Icons\icon_diff.h">
+    <ClInclude Include="..\..\src\Icons\icon_changed.h">
       <Filter>src\Icons</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Icons\icon_arrows.h">

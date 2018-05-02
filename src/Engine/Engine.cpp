@@ -65,15 +65,21 @@ struct blockDiffInfo
 {
 	const diff_info<blockDiffInfo>*	matchBlock {nullptr};
 
-	std::vector<diffLine>	changedLines;
-	std::vector<section_t>	moves;
+	std::vector<diffLine>					changedLines;
 
-	inline int movedSection(int line) const
+	// If the section is moved (matched equal times in both files) the bool is true
+	std::vector<std::pair<section_t, bool>>	matches;
+
+	inline int matchedSection(int line, bool& isMoved) const
 	{
-		for (const auto& move: moves)
+		for (const auto& match: matches)
 		{
-			if (line >= move.off && line <= move.off + move.len - 1)
-				return move.len;
+			if (line >= match.first.off && line <= match.first.off + match.first.len - 1)
+			{
+				isMoved = match.second;
+
+				return match.first.len;
+			}
 		}
 
 		return 0;
@@ -94,6 +100,14 @@ struct CompareInfo
 
 	// Output data - filled by the compare engine
 	std::vector<diffInfo>	blockDiffs;
+};
+
+
+struct MatchInfo
+{
+	section_t								sec;
+	std::vector<std::pair<diffInfo*, int>>	matchesIn1;
+	std::vector<std::pair<diffInfo*, int>>	matchesIn2;
 };
 
 
@@ -263,87 +277,204 @@ std::vector<std::vector<Word>> getWords(int lineOffset, int lineCount, int view,
 }
 
 
+// Scan for best matching blocks in 2 (containing ei1 element).
+void findMatches(CompareInfo& cmpInfo,
+		const std::vector<uint64_t>& lineHashes1, const std::vector<uint64_t>& lineHashes2,
+		const diffInfo& diff1, const int ei1, MatchInfo& mi)
+{
+	mi.sec.len = 0;
+	mi.matchesIn1.clear();
+	mi.matchesIn2.clear();
+
+	int minMatchLen = 1;
+
+	for (diffInfo& diff2: cmpInfo.blockDiffs)
+	{
+		if (diff2.type != diff_type::DIFF_IN_2)
+			continue;
+
+		for (int ei2 = 0; diff2.len - ei2 >= minMatchLen; ++ei2)
+		{
+			if (lineHashes1[diff1.off + ei1] != lineHashes2[diff2.off + ei2])
+				continue;
+
+			bool isMoved;
+			int matchedLen = diff2.info.matchedSection(ei2, isMoved);
+
+			if (matchedLen)
+			{
+				ei2 += (matchedLen - 1);
+				continue;
+			}
+
+			int start1	= ei1 - 1;
+			int end1	= ei1 + 1;
+			int start2	= ei2 - 1;
+
+			// Check for the beginning of the matched block (containing ei1 element).
+			for (; start1 >= 0 && start2 >= 0 && !diff2.info.matchedSection(start2, isMoved) &&
+					lineHashes1[diff1.off + start1] == lineHashes2[diff2.off + start2]; --start1, --start2);
+
+			// Check for the end of the matched block (containing ei1 element).
+			for (int end2 = ei2 + 1; end1 < diff1.len && end2 < diff2.len &&
+					!diff2.info.matchedSection(end2, isMoved) &&
+					lineHashes1[diff1.off + end1] == lineHashes2[diff2.off + end2]; ++end1, ++end2);
+
+			++start1;
+			++start2;
+			--end1;
+
+			const int matchLen = end1 - start1 + 1;
+
+			if (mi.sec.len > matchLen)
+				continue;
+
+			if (mi.sec.len < matchLen)
+			{
+				mi.sec.off = start1;
+				mi.sec.len = matchLen;
+				mi.matchesIn2.clear();
+				minMatchLen = matchLen;
+			}
+
+			if (mi.sec.len == matchLen)
+			{
+				mi.matchesIn2.emplace_back(&diff2, start2);
+				ei2 = start2 + matchLen - 1;
+			}
+		}
+	}
+}
+
+
+// Scan for better matching sub-block in 1 (containing ei element).
+void findBetterMatch(CompareInfo& cmpInfo,
+		const std::vector<uint64_t>& lineHashes1, const std::vector<uint64_t>& lineHashes2,
+		diffInfo& diff, int& ei, diffInfo*& bestMatchDiff, MatchInfo& best_mi)
+{
+	if (!bestMatchDiff)
+		return;
+
+	int i = (&diff == bestMatchDiff) ? best_mi.sec.off + best_mi.sec.len : 0;
+
+	for (; diff.len - i >= best_mi.sec.len; ++i)
+	{
+		// Skip to the first matching element
+		if (lineHashes1[diff.off + i] != lineHashes1[bestMatchDiff->off + ei])
+			continue;
+
+		bool isMoved;
+		int matchedLen = diff.info.matchedSection(i, isMoved);
+
+		// Skip already detected matches
+		if (matchedLen)
+		{
+			i += (matchedLen - 1);
+			continue;
+		}
+
+		MatchInfo mi;
+
+		findMatches(cmpInfo, lineHashes1, lineHashes2, diff, i, mi);
+
+		if (mi.sec.len == 0)
+			continue;
+
+		// The alternative match is actually better - the length of the matching block is bigger
+		if (best_mi.sec.len < mi.sec.len)
+		{
+			bestMatchDiff = &diff;
+			best_mi = mi;
+			ei = i;
+			i = mi.sec.off + mi.sec.len - 1;
+		}
+		// Both matching blocks are of equal size - check if those are actually one and the same block
+		else if (best_mi.sec.len == mi.sec.len)
+		{
+			int k = 0;
+
+			for (; k < mi.sec.len &&
+					lineHashes1[bestMatchDiff->off + best_mi.sec.off + k] ==
+					lineHashes1[diff.off + mi.sec.off + k]; ++k);
+
+			if (k == mi.sec.len)
+			{
+				best_mi.matchesIn1.emplace_back(&diff, mi.sec.off);
+				i = mi.sec.off + mi.sec.len - 1;
+			}
+		}
+	}
+}
+
+
 void findMoves(CompareInfo& cmpInfo,
 		const std::vector<uint64_t>& lineHashes1, const std::vector<uint64_t>& lineHashes2)
 {
-	struct diff_key
-	{
-		int diff_len;
-		int diff_idx;
-
-		diff_key(int dl, int di) : diff_len(dl), diff_idx(di)
-		{}
-
-		bool operator<(const diff_key& rhs) const
-		{
-			return ((diff_len > rhs.diff_len) || ((diff_len == rhs.diff_len) && (diff_idx < rhs.diff_idx)));
-		}
-	};
-
-	std::set<diff_key> orderedDiffs;
-
 	const int diffSize = static_cast<int>(cmpInfo.blockDiffs.size());
 
-	for (int i = 0; i < diffSize; ++i)
+	for (int di1 = 0; di1 < diffSize; ++di1)
 	{
-		if (cmpInfo.blockDiffs[i].type != diff_type::DIFF_MATCH)
-			orderedDiffs.emplace(diff_key(cmpInfo.blockDiffs[i].len, i));
-	}
+		if (cmpInfo.blockDiffs[di1].type != diff_type::DIFF_IN_1)
+			continue;
 
-	auto itr1 = orderedDiffs.begin();
-
-	for (++itr1; itr1 != orderedDiffs.end(); ++itr1)
-	{
-		diffInfo& bd1 = cmpInfo.blockDiffs[itr1->diff_idx];
-
-		auto itr2 = itr1;
-
-		do
+		// Go through all diff1's elements and check if each is matched
+		for (int ei1 = 0; ei1 < cmpInfo.blockDiffs[di1].len; ++ei1)
 		{
-			--itr2;
+			bool isMoved;
+			int matchedLen = cmpInfo.blockDiffs[di1].info.matchedSection(ei1, isMoved);
 
-			diffInfo& bd2 = cmpInfo.blockDiffs[itr2->diff_idx];
+			// Skip already detected matches
+			if (matchedLen)
+			{
+				ei1 += (matchedLen - 1);
+				continue;
+			}
 
-			if (bd2.type == bd1.type)
+			// Skip blanks
+			if (lineHashes1[cmpInfo.blockDiffs[di1].off + ei1] == cHashSeed)
 				continue;
 
-			const std::vector<uint64_t>* pLineHashes1 = &lineHashes1;
-			const std::vector<uint64_t>* pLineHashes2 = &lineHashes2;
+			diffInfo*	bestMatchDiff = &(cmpInfo.blockDiffs[di1]);
+			MatchInfo	best_mi;
 
-			if (bd1.type == diff_type::DIFF_IN_2)
-				std::swap(pLineHashes1, pLineHashes2);
+			findMatches(cmpInfo, lineHashes1, lineHashes2, *bestMatchDiff, ei1, best_mi);
 
-			for (int i = 0; i <= bd2.len - bd1.len; ++i)
+			if (best_mi.sec.len == 0)
+				continue;
+
+			int bmi = ei1;
+
+			// Search for the same element in the same block - potential better or equal match
+			findBetterMatch(cmpInfo, lineHashes1, lineHashes2, *bestMatchDiff, bmi, bestMatchDiff, best_mi);
+
+			// Search for the same element in different diff1 block - potential better match
+			for (int di2 = di1 + 1; di2 < diffSize; ++di2)
 			{
-				const int movedLen = bd2.info.movedSection(i);
-
-				if (movedLen)
-				{
-					i += movedLen - 1;
-				}
-				else
-				{
-					bool insignificantMatch = true;
-					int j = 0;
-
-					for (; j < bd1.len; ++j)
-					{
-						if ((*pLineHashes1)[bd1.off + j] != (*pLineHashes2)[bd2.off + i + j])
-							break;
-						if (insignificantMatch && (*pLineHashes1)[bd1.off + j] != cHashSeed)
-							insignificantMatch = false;
-					}
-
-					if (j == bd1.len && !insignificantMatch)
-					{
-						bd1.info.moves.emplace_back(0, j);
-						bd2.info.moves.emplace_back(i, j);
-						itr2 = orderedDiffs.begin();
-						break;
-					}
-				}
+				if (cmpInfo.blockDiffs[di2].type == diff_type::DIFF_IN_1)
+					findBetterMatch(cmpInfo, lineHashes1, lineHashes2, cmpInfo.blockDiffs[di2], bmi,
+							bestMatchDiff, best_mi);
 			}
-		} while (itr2 != orderedDiffs.begin());
+
+			isMoved = (best_mi.matchesIn1.size() + 1 == best_mi.matchesIn2.size());
+
+			bestMatchDiff->info.matches.emplace_back(
+					std::make_pair(section_t(best_mi.sec.off, best_mi.sec.len), isMoved));
+
+			for (auto& match: best_mi.matchesIn1)
+				match.first->info.matches.emplace_back(
+						std::make_pair(section_t(match.second, best_mi.sec.len), isMoved));
+
+			for (auto& match: best_mi.matchesIn2)
+				match.first->info.matches.emplace_back(
+						std::make_pair(section_t(match.second, best_mi.sec.len), isMoved));
+
+			// If the best element matching block is the current then skip checks to the end of the match block
+			if ((bestMatchDiff == &(cmpInfo.blockDiffs[di1])) && (bmi == ei1))
+				ei1 = best_mi.sec.off + best_mi.sec.len - 1;
+			// Otherwise the current element is still not matched - recheck it
+			else
+				--ei1;
+		}
 	}
 }
 
@@ -443,11 +574,12 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 		if (chunk1[line1].empty())
 			continue;
 
-		int movedLen = blockDiff1.info.movedSection(line1);
+		bool isMoved;
+		int matchedLen = blockDiff1.info.matchedSection(line1, isMoved);
 
-		if (movedLen)
+		if (matchedLen)
 		{
-			line1 += (movedLen - 1);
+			line1 += (matchedLen - 1);
 			continue;
 		}
 
@@ -460,11 +592,11 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 			if (chunk2[line2].empty())
 				continue;
 
-			movedLen = blockDiff2.info.movedSection(line2);
+			matchedLen = blockDiff2.info.matchedSection(line2, isMoved);
 
-			if (movedLen)
+			if (matchedLen)
 			{
-				line2 += (movedLen - 1);
+				line2 += (matchedLen - 1);
 				continue;
 			}
 
@@ -572,27 +704,42 @@ void markSection(const diffInfo& bd, const DocCmpInfo& doc)
 
 	for (int i = doc.section.off, line = bd.off + doc.section.off; i < endOff; ++i, ++line)
 	{
-		int movedLen = bd.info.movedSection(i);
+		bool isMoved;
+		int matchedLen = bd.info.matchedSection(i, isMoved);
 
-		if (movedLen == 0)
+		if (matchedLen == 0)
 		{
 			CallScintilla(doc.view, SCI_MARKERADDSET, line, doc.blockDiffMask);
 		}
-		else if (movedLen == 1)
-		{
-			CallScintilla(doc.view, SCI_MARKERADDSET, line, MARKER_MASK_MOVED_LINE);
-		}
 		else
 		{
-			CallScintilla(doc.view, SCI_MARKERADDSET, line, MARKER_MASK_MOVED_BEGIN);
-			++line;
-			--movedLen;
+			if (!isMoved)
+			{
+				const int mark =
+					(doc.blockDiffMask == MARKER_MASK_ADDED) ? MARKER_MASK_ADDED_LOCAL : MARKER_MASK_REMOVED_LOCAL;
 
-			for (int j = 1; j < movedLen; ++j, ++line)
-				CallScintilla(doc.view, SCI_MARKERADDSET, line, MARKER_MASK_MOVED_MID);
+				for (int j = 0; j < matchedLen; ++j, ++line)
+					CallScintilla(doc.view, SCI_MARKERADDSET, line, mark);
 
-			CallScintilla(doc.view, SCI_MARKERADDSET, line, MARKER_MASK_MOVED_END);
-			i += movedLen;
+				--line;
+				i += (matchedLen - 1);
+			}
+			else if (matchedLen == 1)
+			{
+				CallScintilla(doc.view, SCI_MARKERADDSET, line, MARKER_MASK_MOVED_LINE);
+			}
+			else
+			{
+				CallScintilla(doc.view, SCI_MARKERADDSET, line, MARKER_MASK_MOVED_BEGIN);
+				++line;
+				--matchedLen;
+
+				for (int j = 1; j < matchedLen; ++j, ++line)
+					CallScintilla(doc.view, SCI_MARKERADDSET, line, MARKER_MASK_MOVED_MID);
+
+				CallScintilla(doc.view, SCI_MARKERADDSET, line, MARKER_MASK_MOVED_END);
+				i += matchedLen;
+			}
 		}
 	}
 }

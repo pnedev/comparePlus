@@ -28,9 +28,9 @@
 #include "NppHelpers.h"
 #include "NppInternalDefines.h"
 
-#include "icon_add.h"
-#include "icon_sub.h"
-#include "icon_diff.h"
+#include "icon_added.h"
+#include "icon_removed.h"
+#include "icon_changed.h"
 #include "icon_moved.h"
 #include "icon_arrows.h"
 
@@ -382,9 +382,11 @@ void setStyles(UserSettings& settings)
 	defineColor(MARKER_MOVED_LINE,		settings.colors.moved);
 	defineColor(MARKER_BLANK,			settings.colors.blank);
 
-	defineRgbaSymbol(MARKER_CHANGED_SYMBOL,				icon_diff_rgba);
-	defineRgbaSymbol(MARKER_ADDED_SYMBOL,				icon_add_rgba);
-	defineRgbaSymbol(MARKER_REMOVED_SYMBOL,				icon_sub_rgba);
+	defineRgbaSymbol(MARKER_CHANGED_SYMBOL,				icon_changed);
+	defineRgbaSymbol(MARKER_ADDED_SYMBOL,				icon_added);
+	defineRgbaSymbol(MARKER_ADDED_LOCAL_SYMBOL,			icon_added_local);
+	defineRgbaSymbol(MARKER_REMOVED_SYMBOL,				icon_removed);
+	defineRgbaSymbol(MARKER_REMOVED_LOCAL_SYMBOL,		icon_removed_local);
 	defineRgbaSymbol(MARKER_MOVED_LINE_SYMBOL,			icon_moved_line);
 	defineRgbaSymbol(MARKER_MOVED_BLOCK_BEGIN_SYMBOL,	icon_moved_block_start);
 	defineRgbaSymbol(MARKER_MOVED_BLOCK_MID_SYMBOL,		icon_moved_block_middle);
@@ -467,7 +469,9 @@ void clearWindow(int view)
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_MOVED_LINE, 0);
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_CHANGED_SYMBOL, 0);
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_ADDED_SYMBOL, 0);
+	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_ADDED_LOCAL_SYMBOL, 0);
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_REMOVED_SYMBOL, 0);
+	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_REMOVED_LOCAL_SYMBOL, 0);
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_MOVED_LINE_SYMBOL, 0);
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_MOVED_BLOCK_BEGIN_SYMBOL, 0);
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_MOVED_BLOCK_MID_SYMBOL, 0);
@@ -490,7 +494,9 @@ void clearMarks(int view, int line)
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_LINE);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_CHANGED_SYMBOL);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_ADDED_SYMBOL);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_ADDED_LOCAL_SYMBOL);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_REMOVED_SYMBOL);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_REMOVED_LOCAL_SYMBOL);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_LINE_SYMBOL);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_BLOCK_BEGIN_SYMBOL);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_BLOCK_MID_SYMBOL);
