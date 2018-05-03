@@ -35,6 +35,10 @@ if (UNIX OR MINGW)
 		set (defs ${defs} -DDLOG)
 	endif ()
 
+	if (OTHER_MOVED_ICONS)
+		set (defs ${defs} -DOTHER_MOVED_ICONS)
+	endif ()
+
 	set (CMAKE_CXX_FLAGS
 		"-std=c++11 -O3 -mwindows -mthreads -municode -Wall -Wno-unknown-pragmas"
 	)

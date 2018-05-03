@@ -2305,6 +2305,7 @@ void OpenAboutDlg()
 
 	AboutDialog AboutDlg(hInstance, nppData);
 	AboutDlg.doDialog();
+
 #endif
 }
 
