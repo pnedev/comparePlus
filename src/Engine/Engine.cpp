@@ -578,7 +578,7 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 		bool isMoved;
 		int matchedLen = blockDiff1.info.matchedSection(line1, isMoved);
 
-		if (matchedLen)
+		if (matchedLen && isMoved)
 		{
 			line1 += (matchedLen - 1);
 			continue;
@@ -595,7 +595,7 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 
 			matchedLen = blockDiff2.info.matchedSection(line2, isMoved);
 
-			if (matchedLen)
+			if (matchedLen && isMoved)
 			{
 				line2 += (matchedLen - 1);
 				continue;
@@ -705,8 +705,11 @@ void markSection(const diffInfo& bd, const DocCmpInfo& doc)
 
 	for (int i = doc.section.off, line = bd.off + doc.section.off; i < endOff; ++i, ++line)
 	{
-		bool isMoved;
+		bool isMoved = false;
 		int matchedLen = bd.info.matchedSection(i, isMoved);
+
+		if (matchedLen > doc.section.len)
+			matchedLen = doc.section.len;
 
 		if (matchedLen == 0)
 		{
