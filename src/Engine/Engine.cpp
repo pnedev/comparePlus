@@ -455,7 +455,8 @@ void findMoves(CompareInfo& cmpInfo,
 							bestMatchDiff, best_mi);
 			}
 
-			isMoved = (best_mi.matchesIn1.size() + 1 == best_mi.matchesIn2.size());
+			isMoved = ((best_mi.matchesIn1.size() + 1 == best_mi.matchesIn2.size()) &&
+					!((best_mi.sec.len == 1) && (best_mi.matchesIn2.size() > 1)));
 
 			bestMatchDiff->info.matches.emplace_back(
 					std::make_pair(section_t(best_mi.sec.off, best_mi.sec.len), isMoved));
