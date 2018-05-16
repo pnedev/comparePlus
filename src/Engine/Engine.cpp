@@ -430,10 +430,6 @@ void findMoves(CompareInfo& cmpInfo,
 				continue;
 			}
 
-			// Skip blanks
-			if (lineHashes1[cmpInfo.blockDiffs[di1].off + ei1] == cHashSeed)
-				continue;
-
 			diffInfo*	bestMatchDiff = &(cmpInfo.blockDiffs[di1]);
 			MatchInfo	best_mi;
 
