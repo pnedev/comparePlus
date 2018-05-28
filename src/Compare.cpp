@@ -2692,6 +2692,8 @@ void DelayedAlign::operator()()
 			syncViews(viewLoc.first);
 
 		cmpPair->setStatus();
+
+		::SetFocus(getCurrentView());
 	}
 	else if (storedLocation)
 	{
@@ -2715,6 +2717,8 @@ void DelayedAlign::operator()()
 		{
 			storedLocation.reset();
 			cmpPair->setStatus();
+
+			::SetFocus(getCurrentView());
 		}
 	}
 	else if (cmpPair->findUniqueMode)

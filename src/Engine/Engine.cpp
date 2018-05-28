@@ -72,7 +72,7 @@ struct blockDiffInfo
 	{
 		for (const auto& move: moves)
 		{
-			if (line >= move.off && line <= move.off + move.len - 1)
+			if (line >= move.off && line < move.off + move.len)
 				return move.len;
 		}
 

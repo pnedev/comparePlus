@@ -240,9 +240,9 @@ void NavDialog::Update()
 
 void NavDialog::Show()
 {
-	doDialog();
-
 	HWND hwnd = ::GetFocus();
+
+	doDialog();
 
 	// Free resources if needed
 	m_view[0].reset();
@@ -266,10 +266,14 @@ void NavDialog::Show()
 
 void NavDialog::Hide()
 {
+	HWND hwnd = ::GetFocus();
+
 	display(false);
 
 	m_view[0].reset();
 	m_view[1].reset();
+
+	::SetFocus(hwnd);
 }
 
 
