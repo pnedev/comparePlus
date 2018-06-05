@@ -38,6 +38,8 @@
 // Don't use "INDIC_CONTAINER + 1" since it conflicts with DSpellCheck plugin
 #define INDIC_HIGHLIGHT		INDIC_CONTAINER + 7
 
+// constexpr int BLANK_STYLING = (STYLE_MAX - STYLE_LASTPREDEFINED) / 2;
+
 
 HWND NppToolbarHandleGetter::hNppToolbar = NULL;
 
@@ -109,6 +111,12 @@ BOOL CALLBACK NppTabHandleGetter::enumWindowsCB(HWND hwnd, LPARAM lParam)
 
 void ViewLocation::save(int view, int centerLine)
 {
+	if (view != MAIN_VIEW && view != SUB_VIEW)
+	{
+		_view = -1;
+		return;
+	}
+
 	_view		= view;
 	_centerLine	= centerLine;
 
@@ -128,10 +136,10 @@ void ViewLocation::save(int view, int centerLine)
 }
 
 
-void ViewLocation::restore()
+bool ViewLocation::restore() const
 {
-	if (_view != MAIN_VIEW && _view != SUB_VIEW)
-		return;
+	if (_view == -1)
+		return false;
 
 	if (_centerLine < 0)
 	{
@@ -154,6 +162,8 @@ void ViewLocation::restore()
 		LOGD("Restore " + std::string(_view == MAIN_VIEW ? "MAIN" : "SUB") +
 				" view location, center doc line: " + std::to_string(_centerLine) + "\n");
 	}
+
+	return true;
 }
 
 
@@ -189,13 +199,23 @@ void defineRgbaSymbol(int type, const unsigned char* rgba)
 
 void setTextStyle(const ColorSettings& settings)
 {
-	CallScintilla(MAIN_VIEW, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT, INDIC_ROUNDBOX);
-	CallScintilla(MAIN_VIEW, SCI_INDICSETFORE,	INDIC_HIGHLIGHT, settings.highlight);
-	CallScintilla(MAIN_VIEW, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT, settings.alpha);
+	CallScintilla(MAIN_VIEW, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT,	INDIC_ROUNDBOX);
+	CallScintilla(MAIN_VIEW, SCI_INDICSETFORE,	INDIC_HIGHLIGHT,	settings.highlight);
+	CallScintilla(MAIN_VIEW, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT,	settings.alpha);
 
-	CallScintilla(SUB_VIEW, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT, INDIC_ROUNDBOX);
-	CallScintilla(SUB_VIEW, SCI_INDICSETFORE,	INDIC_HIGHLIGHT, settings.highlight);
-	CallScintilla(SUB_VIEW, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT, settings.alpha);
+    // CallScintilla(MAIN_VIEW, SCI_STYLESETEOLFILLED, 	BLANK_STYLING,	1);
+    // CallScintilla(MAIN_VIEW, SCI_STYLESETBOLD, 			BLANK_STYLING,	true);
+	// CallScintilla(MAIN_VIEW, SCI_STYLESETBACK,			BLANK_STYLING,	settings.blank);
+	// CallScintilla(MAIN_VIEW, SCI_STYLESETCHANGEABLE,	BLANK_STYLING,	false);
+
+	CallScintilla(SUB_VIEW, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT,	INDIC_ROUNDBOX);
+	CallScintilla(SUB_VIEW, SCI_INDICSETFORE,	INDIC_HIGHLIGHT,	settings.highlight);
+	CallScintilla(SUB_VIEW, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT,	settings.alpha);
+
+	// CallScintilla(SUB_VIEW, SCI_STYLESETEOLFILLED,		BLANK_STYLING,	1);
+    // CallScintilla(SUB_VIEW, SCI_STYLESETBOLD, 			BLANK_STYLING,	true);
+	// CallScintilla(SUB_VIEW, SCI_STYLESETBACK,			BLANK_STYLING,	settings.blank);
+	// CallScintilla(SUB_VIEW, SCI_STYLESETCHANGEABLE,		BLANK_STYLING,	false);
 }
 
 
@@ -459,8 +479,54 @@ void toLowerCase(std::vector<char>& text)
 }
 
 
+// void applyBlankStyle(int view)
+// {
+	// LOGD("applyBlankStyle: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") + " view\n");
+
+	// CallScintilla(view, SCI_STARTSTYLING, 0, 0);
+	// CallScintilla(view, SCI_SETSTYLING, CallScintilla(view, SCI_LINELENGTH, 0, 0), BLANK_STYLING);
+// }
+
+
+void insertAlignmentFirstLine(int view)
+{
+	const BOOL modified	= (BOOL)CallScintilla(view, SCI_GETMODIFY, 0, 0);
+
+	ScopedViewWriteEnabler writeEn(view);
+
+	CallScintilla(view, SCI_INSERTTEXT, 0,
+			(LPARAM)("COMPARE ALIGNMENT BLANK LINE, DO NOT EDIT OR REMOVE!!! "
+			"ON SAVE IT WILL NOT BE SAVED AND IT WILL BE AUTOMATICALLY REMOVED WHEN COMPARE IS CLEARED!\n"));
+	if (!modified)
+		CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
+
+	CallScintilla(view, SCI_MARKERADDSET, 0, MARKER_MASK_BLANK);
+
+	// applyBlankStyle(view);
+}
+
+
+void removeAlignmentFirstLine(int view)
+{
+	if (isAlignmentFirstLineInserted(view))
+	{
+		const BOOL modified	= (BOOL)CallScintilla(view, SCI_GETMODIFY, 0, 0);
+
+		ScopedViewWriteEnabler writeEn(view);
+
+		CallScintilla(view, SCI_MARKERDELETE, 0, MARKER_BLANK);
+
+		CallScintilla(view, SCI_DELETERANGE, 0, CallScintilla(view, SCI_LINELENGTH, 0, 0));
+		if (!modified)
+			CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
+	}
+}
+
+
 void clearWindow(int view)
 {
+	removeAlignmentFirstLine(view);
+
 	CallScintilla(view, SCI_ANNOTATIONCLEARALL, 0, 0);
 
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_CHANGED_LINE, 0);
@@ -492,6 +558,7 @@ void clearMarks(int view, int line)
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_ADDED_LINE);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_REMOVED_LINE);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_LINE);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_BLANK);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_CHANGED_SYMBOL);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_ADDED_SYMBOL);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_ADDED_LOCAL_SYMBOL);
@@ -501,31 +568,6 @@ void clearMarks(int view, int line)
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_BLOCK_BEGIN_SYMBOL);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_BLOCK_MID_SYMBOL);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_BLOCK_END_SYMBOL);
-}
-
-
-void clearMarks(int view, int startLine, int linesCount)
-{
-	const int startPos = CallScintilla(view, SCI_POSITIONFROMLINE, startLine, 0);
-	const int len = CallScintilla(view, SCI_GETLINEENDPOSITION, startLine + linesCount - 1, 0) - startPos;
-
-	clearChangedIndicator(view, startPos, len);
-
-	for (int line = CallScintilla(view, SCI_MARKERPREVIOUS, startLine + linesCount - 1, MARKER_MASK_LINE);
-			line >= startLine; line = CallScintilla(view, SCI_MARKERPREVIOUS, line - 1, MARKER_MASK_LINE))
-		clearMarks(view, line);
-}
-
-
-void clearMarksAndBlanks(int view, int startLine, int linesCount)
-{
-	clearMarks(view, startLine, linesCount);
-
-	for (int line = startLine; line < linesCount; ++line)
-	{
-		if (isLineAnnotated(view, line))
-			CallScintilla(view, SCI_ANNOTATIONSETTEXT, line, (LPARAM)NULL);
-	}
 }
 
 

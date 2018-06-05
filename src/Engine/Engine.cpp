@@ -943,30 +943,6 @@ CompareResult runCompare(const section_t& mainViewSection, const section_t& subV
 	if (settings.DetectMoves)
 		findMoves(cmpInfo, *pLineHashes1, *pLineHashes2);
 
-	// Currently it is impossible to set Sci annotation in the beginning of the doc so if there is a diff in the
-	// beginning (alignment via annotation will probably be necessary) we insert blank line in each doc's beginning.
-	// This is a workaround until it becomes possible to insert Sci annotation in the beginning of the doc.
-	if ((cmpInfo.blockDiffs[0].type != diff_type::DIFF_MATCH) &&
-			(!cmpInfo.doc1.section.off || !cmpInfo.doc2.section.off))
-	{
-		const BOOL doc1Modified = (BOOL)CallScintilla(cmpInfo.doc1.view, SCI_GETMODIFY, 0, 0);
-		const BOOL doc2Modified = (BOOL)CallScintilla(cmpInfo.doc2.view, SCI_GETMODIFY, 0, 0);
-
-		ScopedViewWriteEnabler writeEn1(cmpInfo.doc1.view);
-		ScopedViewWriteEnabler writeEn2(cmpInfo.doc2.view);
-
-		CallScintilla(cmpInfo.doc1.view, SCI_INSERTTEXT, 0,	(LPARAM)"\n");
-		if (!doc1Modified)
-			CallScintilla(cmpInfo.doc1.view, SCI_SETSAVEPOINT, 0, 0);
-
-		CallScintilla(cmpInfo.doc2.view, SCI_INSERTTEXT, 0,	(LPARAM)"\n");
-		if (!doc2Modified)
-			CallScintilla(cmpInfo.doc2.view, SCI_SETSAVEPOINT, 0, 0);
-
-		++cmpInfo.doc1.section.off;
-		++cmpInfo.doc2.section.off;
-	}
-
 	if (cmpInfo.doc1.section.off || cmpInfo.doc2.section.off)
 	{
 		for (auto& bd: cmpInfo.blockDiffs)

@@ -77,7 +77,9 @@ const int MARKER_MASK_SYMBOL		=	(1 << MARKER_CHANGED_SYMBOL) |
 										(1 << MARKER_MOVED_BLOCK_MID_SYMBOL) |
 										(1 << MARKER_MOVED_BLOCK_END_SYMBOL);
 
-const int MARKER_MASK_ALL =	MARKER_MASK_LINE | MARKER_MASK_SYMBOL;
+const int MARKER_MASK_LINE_AND_BLANK	=	MARKER_MASK_LINE | MARKER_MASK_BLANK;
+
+const int MARKER_MASK_ALL =	MARKER_MASK_LINE_AND_BLANK | MARKER_MASK_SYMBOL;
 
 
 /**
@@ -195,9 +197,9 @@ struct ViewLocation
 #endif
 
 	void save(int view, int centerLine = -1);
-	void restore();
+	bool restore() const;
 
-	inline int getView()
+	inline int getView() const
 	{
 		return _view;
 	}
@@ -466,11 +468,20 @@ void setNormalView(int view);
 void setCompareView(int view, int blankColor);
 
 void setStyles(UserSettings& settings);
+// void applyBlankStyle(int view);
+
+
+inline bool isAlignmentFirstLineInserted(int view)
+{
+	return (bool)(CallScintilla(view, SCI_MARKERGET, 0, 0) & MARKER_MASK_BLANK);
+}
+
+
+void insertAlignmentFirstLine(int view);
+void removeAlignmentFirstLine(int view);
 
 void clearWindow(int view);
 void clearMarks(int view, int line);
-void clearMarks(int view, int startLine, int linesCount);
-void clearMarksAndBlanks(int view, int startLine, int linesCount);
 int getPrevUnmarkedLine(int view, int startLine, int markMask);
 int getNextUnmarkedLine(int view, int startLine, int markMask);
 

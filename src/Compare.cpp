@@ -121,7 +121,7 @@ private:
  */
 struct DeletedSection
 {
-	DeletedSection(int action, int line, int len) : startLine(line), lineReplace(false)
+	DeletedSection(int action, int line, int len) : startLine(line), lineReplace(false), onlyAlignmentBlankChange(false)
 	{
 		restoreAction = (action == SC_PERFORMED_UNDO) ? SC_PERFORMED_REDO : SC_PERFORMED_UNDO;
 
@@ -131,6 +131,7 @@ struct DeletedSection
 	int					startLine;
 	bool				lineReplace;
 	int					restoreAction;
+	bool				onlyAlignmentBlankChange;
 	std::vector<int>	markers;
 };
 
@@ -143,8 +144,13 @@ struct DeletedSectionsList
 {
 	DeletedSectionsList() : skipPush(0), lastPushTimeMark(0) {}
 
-	void push(int currAction, int startLine, int endLine);
-	void pop(int currAction, int startLine);
+	std::vector<DeletedSection>& get()
+	{
+		return sections;
+	}
+
+	void push(int view, int currAction, int startLine, int len);
+	void pop(int view, int currAction, int startLine);
 
 	void clear()
 	{
@@ -159,9 +165,9 @@ private:
 };
 
 
-void DeletedSectionsList::push(int currAction, int startLine, int endLine)
+void DeletedSectionsList::push(int view, int currAction, int startLine, int len)
 {
-	if (endLine <= startLine)
+	if (len < 1)
 		return;
 
 	if (skipPush)
@@ -174,21 +180,21 @@ void DeletedSectionsList::push(int currAction, int startLine, int endLine)
 	if (!sections.empty() && sections.back().restoreAction == currAction && sections.back().lineReplace)
 		return;
 
-	DeletedSection delSection(currAction, startLine, endLine - startLine + 1);
+	DeletedSection delSection(currAction, startLine, len);
 
-	const int currentView = getCurrentViewId();
+	const int startPos = CallScintilla(view, SCI_POSITIONFROMLINE, startLine, 0);
+	clearChangedIndicator(view, startPos, CallScintilla(view, SCI_POSITIONFROMLINE, startLine + len, 0) - startPos);
 
-	const int startPos = CallScintilla(currentView, SCI_POSITIONFROMLINE, startLine, 0);
-	clearChangedIndicator(currentView,
-			startPos, CallScintilla(currentView, SCI_POSITIONFROMLINE, endLine, 0) - startPos);
-
-	for (int line = CallScintilla(currentView, SCI_MARKERPREVIOUS, endLine, MARKER_MASK_LINE);
-			line >= startLine; line = CallScintilla(currentView, SCI_MARKERPREVIOUS, line - 1, MARKER_MASK_LINE))
+	for (int line = CallScintilla(view, SCI_MARKERPREVIOUS, startLine + len - 1, MARKER_MASK_LINE_AND_BLANK);
+			line >= startLine;
+			line = CallScintilla(view, SCI_MARKERPREVIOUS, line - 1, MARKER_MASK_LINE_AND_BLANK))
 	{
-		delSection.markers[line - startLine] = CallScintilla(currentView, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL;
-		if (line != endLine)
-			clearMarks(currentView, line);
+		delSection.markers[line - startLine] = CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL;
+		clearMarks(view, line);
 	}
+
+	if ((len == 1) && (delSection.markers[0] & MARKER_MASK_BLANK))
+		delSection.onlyAlignmentBlankChange = true;
 
 	sections.push_back(delSection);
 
@@ -196,7 +202,7 @@ void DeletedSectionsList::push(int currAction, int startLine, int endLine)
 }
 
 
-void DeletedSectionsList::pop(int currAction, int startLine)
+void DeletedSectionsList::pop(int view, int currAction, int startLine)
 {
 	if (sections.empty())
 	{
@@ -220,21 +226,22 @@ void DeletedSectionsList::pop(int currAction, int startLine)
 	if (last.startLine != startLine)
 		return;
 
-	const int currentView = getCurrentViewId();
-
 	const int linesCount = static_cast<int>(last.markers.size());
 
-	const int startPos = CallScintilla(currentView, SCI_POSITIONFROMLINE, last.startLine, 0);
-	clearChangedIndicator(currentView,
-			startPos, CallScintilla(currentView, SCI_POSITIONFROMLINE, last.startLine + linesCount, 0) - startPos);
+	const int startPos = CallScintilla(view, SCI_POSITIONFROMLINE, last.startLine, 0);
+	clearChangedIndicator(view,
+			startPos, CallScintilla(view, SCI_POSITIONFROMLINE, last.startLine + linesCount, 0) - startPos);
 
 	for (int i = 0; i < linesCount; ++i)
 	{
-		clearMarks(currentView, last.startLine + i);
+		clearMarks(view, last.startLine + i);
 
 		if (last.markers[i])
-			CallScintilla(currentView, SCI_MARKERADDSET, last.startLine + i, last.markers[i]);
+			CallScintilla(view, SCI_MARKERADDSET, last.startLine + i, last.markers[i]);
 	}
+
+	// if ((last.startLine == 0) && (last.markers[0] & MARKER_MASK_BLANK))
+		// applyBlankStyle(view);
 
 	sections.pop_back();
 }
@@ -262,11 +269,26 @@ public:
 	void updateFromCurrent();
 	void updateView();
 	void clear();
-	void clear(const section_t& section);
 	void onBeforeClose() const;
 	void close() const;
 	void restore() const;
 	bool isOpen() const;
+
+	void pushDeletedSection(int sciAction, int startLine, int len)
+	{
+		deletedSections.push(compareViewId, sciAction, startLine, len);
+	}
+
+	void popDeletedSection(int sciAction, int startLine)
+	{
+		deletedSections.pop(compareViewId, sciAction, startLine);
+	}
+
+	void redoAlignmentBlankDeletion()
+	{
+		if (!deletedSections.get().empty() && deletedSections.get().back().onlyAlignmentBlankChange)
+			::PostMessage(getView(compareViewId), SCI_UNDO, 0, 0);
+	}
 
 	Temp_t	isTemp;
 	bool	isNew;
@@ -279,6 +301,9 @@ public:
 	int		sciDoc;
 	TCHAR	name[MAX_PATH];
 
+	bool	restoreAlignmentLine {false};
+
+private:
 	DeletedSectionsList deletedSections;
 };
 
@@ -839,19 +864,12 @@ void ComparedFile::clear()
 }
 
 
-void ComparedFile::clear(const section_t& section)
-{
-	clearMarksAndBlanks(viewIdFromBuffId(buffId), section.off, section.len);
-
-	deletedSections.clear();
-}
-
-
 void ComparedFile::onBeforeClose() const
 {
 	activateBufferID(buffId);
 
 	const int view = getCurrentViewId();
+
 	clearWindow(view);
 	setArrowMark(-1);
 
@@ -1216,15 +1234,19 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 		}
 	}
 
+	const bool isCornerDiff = (((mainStartLine == 0) && (subStartLine == 0)) ||
+			((mainStartLine == CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0)) &&
+			(subStartLine == CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0))));
+
 	const int nextMarker = down ? SCI_MARKERNEXT : SCI_MARKERPREVIOUS;
 
 	int mainNextLine	= CallScintilla(MAIN_VIEW, nextMarker, mainStartLine, MARKER_MASK_LINE);
 	int subNextLine		= CallScintilla(SUB_VIEW, nextMarker, subStartLine, MARKER_MASK_LINE);
 
-	if (mainNextLine == mainStartLine)
+	if (mainNextLine == mainStartLine && (!goToCornerDiff || !isCornerDiff))
 		mainNextLine = -1;
 
-	if (subNextLine == subStartLine)
+	if (subNextLine == subStartLine && (!goToCornerDiff || !isCornerDiff))
 		subNextLine = -1;
 
 	int line			= (view == MAIN_VIEW) ? mainNextLine : subNextLine;
@@ -1272,10 +1294,6 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 
 	if (!down && isLineAnnotated(view, line))
 		++line;
-
-	const bool isCornerDiff = (((mainStartLine == 0) && (subStartLine == 0)) ||
-			((mainStartLine == CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0)) &&
-			(subStartLine == CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0))));
 
 	// No explicit go to corner diff but we are there - diffs wrap has occurred - 'up/down' notion is inverted
 	if (!goToCornerDiff && isCornerDiff)
@@ -1461,20 +1479,24 @@ bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
 {
 	const AlignmentViewData AlignmentPair::*pView = (view == MAIN_VIEW) ? &AlignmentPair::main : &AlignmentPair::sub;
 
+	const int off		= isAlignmentFirstLineInserted(MAIN_VIEW) ? 1 : 0;
+	const int subOff	= isAlignmentFirstLineInserted(SUB_VIEW) ? 1 : 0;
+
+	if (off ^ subOff)
+		return false;
+
 	int firstLine = CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
 	int lastLine = firstLine + CallScintilla(view, SCI_LINESONSCREEN, 0, 0);
 
 	firstLine = CallScintilla(view, SCI_DOCLINEFROMVISIBLE, firstLine, 0);
 	lastLine = CallScintilla(view, SCI_DOCLINEFROMVISIBLE, lastLine, 0);
 
-	bool realign = false;
-
 	const int maxSize = static_cast<int>(alignmentInfo.size());
 	int i;
 
 	for (i = 0; i < maxSize; ++i)
 	{
-		if ((alignmentInfo[i].*pView).line >= firstLine)
+		if ((alignmentInfo[i].*pView).line + off >= firstLine)
 			break;
 	}
 
@@ -1484,22 +1506,18 @@ bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
 	if (i)
 		--i;
 
-
 	for (; i < maxSize; ++i)
 	{
 		if ((alignmentInfo[i].main.diffMask == alignmentInfo[i].sub.diffMask) &&
-			(CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) !=
-			CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0)))
-		{
-			realign = true;
-			break;
-		}
+				(CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line + off, 0) !=
+				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line + off, 0)))
+			return true;
 
-		if ((alignmentInfo[i].*pView).line > lastLine)
+		if ((alignmentInfo[i].*pView).line + off > lastLine)
 			break;
 	}
 
-	return realign;
+	return false;
 }
 
 
@@ -1508,6 +1526,28 @@ void alignDiffs(const AlignmentInfo_t& alignmentInfo)
 	CallScintilla(MAIN_VIEW, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
 	CallScintilla(SUB_VIEW, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
 
+	int off = 0;
+	{
+		const bool mainAlignBlank	= isAlignmentFirstLineInserted(MAIN_VIEW);
+		const bool subAlignBlank	= isAlignmentFirstLineInserted(SUB_VIEW);
+
+		if (mainAlignBlank)
+		{
+			if (!subAlignBlank)
+				insertAlignmentFirstLine(SUB_VIEW);
+
+			off = 1;
+		}
+		else
+		{
+			if (subAlignBlank)
+			{
+				insertAlignmentFirstLine(MAIN_VIEW);
+				off = 1;
+			}
+		}
+	}
+
 	const int mainEndLine = CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
 	const int subEndLine = CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
 
@@ -1515,31 +1555,38 @@ void alignDiffs(const AlignmentInfo_t& alignmentInfo)
 
 	// Align diffs
 	for (int i = 0; i < maxSize &&
-			alignmentInfo[i].main.line <= mainEndLine && alignmentInfo[i].sub.line <= subEndLine; ++i)
+			alignmentInfo[i].main.line + off <= mainEndLine && alignmentInfo[i].sub.line + off <= subEndLine; ++i)
 	{
-		if (alignmentInfo[i].main.line && isLineAnnotated(MAIN_VIEW, alignmentInfo[i].main.line - 1))
-			CallScintilla(MAIN_VIEW, SCI_ANNOTATIONSETTEXT, alignmentInfo[i].main.line - 1, (LPARAM)NULL);
+		if (alignmentInfo[i].main.line + off && isLineAnnotated(MAIN_VIEW, alignmentInfo[i].main.line + off - 1))
+			CallScintilla(MAIN_VIEW, SCI_ANNOTATIONSETTEXT, alignmentInfo[i].main.line + off - 1, (LPARAM)NULL);
 
-		if (alignmentInfo[i].sub.line && isLineAnnotated(SUB_VIEW, alignmentInfo[i].sub.line - 1))
-			CallScintilla(SUB_VIEW, SCI_ANNOTATIONSETTEXT, alignmentInfo[i].sub.line - 1, (LPARAM)NULL);
+		if (alignmentInfo[i].sub.line + off && isLineAnnotated(SUB_VIEW, alignmentInfo[i].sub.line + off - 1))
+			CallScintilla(SUB_VIEW, SCI_ANNOTATIONSETTEXT, alignmentInfo[i].sub.line + off - 1, (LPARAM)NULL);
 
 		const int mismatchLen =
-				CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) -
-				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0);
+				CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line + off, 0) -
+				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line + off, 0);
+
+		if (off == 0 && mismatchLen != 0 && (alignmentInfo[i].main.line == 0 || alignmentInfo[i].sub.line == 0))
+		{
+			insertAlignmentFirstLine(MAIN_VIEW);
+			insertAlignmentFirstLine(SUB_VIEW);
+			off = 1;
+		}
 
 		if (mismatchLen > 0)
 		{
 			if ((i + 1 < maxSize) && (alignmentInfo[i].sub.line == alignmentInfo[i + 1].sub.line))
 				continue;
 
-			addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, mismatchLen);
+			addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line + off, mismatchLen);
 		}
 		else if (mismatchLen < 0)
 		{
 			if ((i + 1 < maxSize) && (alignmentInfo[i].main.line == alignmentInfo[i + 1].main.line))
 				continue;
 
-			addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, -mismatchLen);
+			addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line + off, -mismatchLen);
 		}
 	}
 }
@@ -2202,6 +2249,8 @@ void Prev()
 {
 	if (NppSettings::get().compareMode)
 	{
+		ScopedIncrementer incr(notificationsLock);
+
 		std::pair<int, int> viewLoc = jumpToChange(false, Settings.WrapAround);
 		storedLocation.reset(new ViewLocation(viewLoc.first, viewLoc.second));
 	}
@@ -2212,6 +2261,8 @@ void Next()
 {
 	if (NppSettings::get().compareMode)
 	{
+		ScopedIncrementer incr(notificationsLock);
+
 		std::pair<int, int> viewLoc = jumpToChange(true, Settings.WrapAround);
 		storedLocation.reset(new ViewLocation(viewLoc.first, viewLoc.second));
 	}
@@ -2222,6 +2273,8 @@ void First()
 {
 	if (NppSettings::get().compareMode)
 	{
+		ScopedIncrementer incr(notificationsLock);
+
 		std::pair<int, int> viewLoc = jumpToFirstChange(true);
 		storedLocation.reset(new ViewLocation(viewLoc.first, viewLoc.second));
 	}
@@ -2232,6 +2285,8 @@ void Last()
 {
 	if (NppSettings::get().compareMode)
 	{
+		ScopedIncrementer incr(notificationsLock);
+
 		std::pair<int, int> viewLoc = jumpToLastChange(true);
 		storedLocation.reset(new ViewLocation(viewLoc.first, viewLoc.second));
 	}
@@ -2528,14 +2583,14 @@ void syncViews(int biasView)
 
 		if ((otherLine != getCurrentLine(otherView)) && !isSelection(otherView))
 		{
-			ScopedIncrementer incr(notificationsLock);
-
 			int pos;
 
 			if (isLineAnnotated(otherView, otherLine) && isLineWrapped(otherView, otherLine))
 				pos = CallScintilla(otherView, SCI_GETLINEENDPOSITION, otherLine, 0);
 			else
 				pos = CallScintilla(otherView, SCI_POSITIONFROMLINE, otherLine, 0);
+
+			ScopedIncrementer incr(notificationsLock);
 
 			CallScintilla(otherView, SCI_SETEMPTYSELECTION, pos, 0);
 
@@ -2651,6 +2706,8 @@ void DelayedAlign::operator()()
 
 	bool realign = goToFirst;
 
+	ScopedIncrementer incr(notificationsLock);
+
 	if (!realign)
 	{
 		realign = isAlignmentNeeded(MAIN_VIEW, alignmentInfo);
@@ -2658,8 +2715,6 @@ void DelayedAlign::operator()()
 		if (!realign)
 			realign = isAlignmentNeeded(SUB_VIEW, alignmentInfo);
 	}
-
-	ScopedIncrementer incr(notificationsLock);
 
 	if (realign)
 	{
@@ -2696,8 +2751,8 @@ void DelayedAlign::operator()()
 		if (_consecutiveAligns > 1)
 			_consecutiveAligns = 0;
 
-		storedLocation->restore();
-		syncViews(storedLocation->getView());
+		if (storedLocation->restore())
+			syncViews(storedLocation->getView());
 
 		// Retry re-alignment one more time - might be needed in case line number margin width has changed
 		if (_consecutiveAligns)
@@ -2741,39 +2796,66 @@ void DelayedUpdate::operator()()
 
 void onSciModified(SCNotification* notifyCode)
 {
-	const LRESULT buffId = getCurrentBuffId();
+	static bool skipPushDeletedSection = false;
 
-	CompareList_t::iterator cmpPair = getCompare(buffId);
+	const int view = getViewId((HWND)notifyCode->nmhdr.hwndFrom);
+
+	CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(view));
 	if (cmpPair == compareList.end())
 		return;
 
 	if (notifyCode->modificationType & SC_MOD_BEFOREDELETE)
 	{
-		const int currentView = getCurrentViewId();
-
-		const int startLine = CallScintilla(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+		const int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 		const int endLine =
-			CallScintilla(currentView, SCI_LINEFROMPOSITION, notifyCode->position + notifyCode->length, 0);
+			CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position + notifyCode->length, 0);
 
 		// Change is on single line?
 		if (endLine <= startLine)
 			return;
 
-		const int currAction =
-			notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
+		if (!skipPushDeletedSection)
+		{
+			LOGD("SC_MOD_BEFOREDELETE: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
+					" view, lines range: " + std::to_string(startLine) + "-" + std::to_string(endLine - 1) + "\n");
 
-		cmpPair->getFileByBuffId(buffId).deletedSections.push(currAction, startLine, endLine);
+			const int action =
+				notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
+
+			ScopedIncrementer incr(notificationsLock);
+
+			cmpPair->getFileByViewId(view).pushDeletedSection(action, startLine, endLine - startLine);
+		}
+	}
+	else if ((notifyCode->modificationType & SC_MOD_DELETETEXT) && notifyCode->linesAdded)
+	{
+		if (!skipPushDeletedSection)
+			cmpPair->getFileByViewId(view).redoAlignmentBlankDeletion();
+		else
+			skipPushDeletedSection = false;
 	}
 	else if ((notifyCode->modificationType & SC_MOD_INSERTTEXT) && notifyCode->linesAdded)
 	{
-		const int currentView = getCurrentViewId();
+		const int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 
-		const int startLine = CallScintilla(currentView, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+		if (startLine <= CallScintilla(view, SCI_MARKERNEXT, 0, MARKER_MASK_BLANK))
+		{
+			skipPushDeletedSection = true;
+			::PostMessage(getView(view), SCI_UNDO, 0, 0);
+		}
+		else
+		{
+			const int action =
+				notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
 
-		const int currAction =
-			notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
+			LOGD("SC_MOD_INSERTTEXT: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
+					" view, lines range: " + std::to_string(startLine) + "-" +
+					std::to_string(startLine + notifyCode->linesAdded - 1) + "\n");
 
-		cmpPair->getFileByBuffId(buffId).deletedSections.pop(currAction, startLine);
+			ScopedIncrementer incr(notificationsLock);
+
+			cmpPair->getFileByViewId(view).popDeletedSection(action, startLine);
+		}
 	}
 }
 
@@ -2937,6 +3019,34 @@ void onFileBeforeClose(LRESULT buffId)
 }
 
 
+void onFileBeforeSave(LRESULT buffId)
+{
+	CompareList_t::iterator cmpPair = getCompare(buffId);
+	if (cmpPair == compareList.end())
+		return;
+
+    const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
+
+    const LRESULT currentBuffId = getCurrentBuffId();
+    const bool pairIsActive = (currentBuffId == buffId || currentBuffId == otherFile.buffId);
+
+	ScopedIncrementer incr(notificationsLock);
+
+    if (!pairIsActive)
+        activateBufferID(buffId);
+
+	const int currentView = viewIdFromBuffId(buffId);
+    ComparedFile& currentFile = cmpPair->getFileByBuffId(buffId);
+	currentFile.restoreAlignmentLine = isAlignmentFirstLineInserted(currentView);
+
+	if (currentFile.restoreAlignmentLine)
+		removeAlignmentFirstLine(currentView);
+
+    if (!pairIsActive)
+        activateBufferID(currentBuffId);
+}
+
+
 void onFileSaved(LRESULT buffId)
 {
 	CompareList_t::iterator cmpPair = getCompare(buffId);
@@ -2952,6 +3062,20 @@ void onFileSaved(LRESULT buffId)
 
     if (!pairIsActive)
         activateBufferID(buffId);
+
+    ComparedFile& currentFile = cmpPair->getFileByBuffId(buffId);
+
+	if (currentFile.restoreAlignmentLine)
+	{
+		currentFile.restoreAlignmentLine = false;
+
+		const int view = viewIdFromBuffId(buffId);
+
+		CallScintilla(view, SCI_UNDO, 0, 0);
+		CallScintilla(view, SCI_MARKERADDSET, 0, MARKER_MASK_BLANK);
+		// applyBlankStyle(view);
+		CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
+	}
 
     if (pairIsActive && Settings.RecompareOnSave)
     {
@@ -3143,6 +3267,11 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 #endif
 			else if (!compareList.empty() && !notificationsLock)
 				onFileBeforeClose(notifyCode->nmhdr.idFrom);
+		break;
+
+		case NPPN_FILEBEFORESAVE:
+			if (!compareList.empty() && !notificationsLock)
+				onFileBeforeSave(notifyCode->nmhdr.idFrom);
 		break;
 
 		case NPPN_FILESAVED:
