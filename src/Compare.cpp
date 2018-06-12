@@ -264,7 +264,6 @@ public:
 	void clear();
 	void clear(const section_t& section);
 	void onBeforeClose() const;
-	void onClose() const;
 	void close() const;
 	void restore() const;
 	bool isOpen() const;
@@ -857,14 +856,8 @@ void ComparedFile::onBeforeClose() const
 	setArrowMark(-1);
 
 	if (isTemp)
-		CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
-}
-
-
-void ComparedFile::onClose() const
-{
-	if (isTemp)
 	{
+		CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
 		::SetFileAttributes(name, FILE_ATTRIBUTE_NORMAL);
 		::DeleteFile(name);
 	}
@@ -876,8 +869,6 @@ void ComparedFile::close() const
 	onBeforeClose();
 
 	::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
-
-	onClose();
 }
 
 
@@ -2863,13 +2854,8 @@ void DelayedClose::operator()()
 		ComparedFile& closedFile = cmpPair->getFileByBuffId(closedBuffs[i]);
 		ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(closedBuffs[i]);
 
-		if (closedFile.isTemp)
-		{
-			if (closedFile.isOpen())
-				closedFile.close();
-			else
-				closedFile.onClose();
-		}
+		if (closedFile.isTemp && closedFile.isOpen())
+			closedFile.close();
 
 		if (otherFile.isTemp)
 		{
@@ -2878,10 +2864,6 @@ void DelayedClose::operator()()
 				LOGDB(otherFile.buffId, "Close\n");
 
 				otherFile.close();
-			}
-			else
-			{
-				otherFile.onClose();
 			}
 		}
 		else
