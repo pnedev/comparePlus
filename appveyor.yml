@@ -24,7 +24,7 @@ build:
     verbosity: minimal
 
 build_script:
-    - cd "%APPVEYOR_BUILD_FOLDER%"\projects\2013\
+    - cd "%APPVEYOR_BUILD_FOLDER%"\projects\2015\
     - msbuild Compare.vcxproj /p:configuration="%configuration%" /p:platform="%platform%" /p:PlatformToolset="%PlatformToolset%" /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
 after_build:
@@ -33,7 +33,7 @@ after_build:
 
         Push-AppveyorArtifact "Notepad++\plugins\ComparePlugin.dll" -FileName ComparePlugin.dll
 
-        if ($($env:APPVEYOR_REPO_TAG) -eq "true" -and $env:CONFIGURATION -eq "Release Unicode" -and $env:PLATFORMTOOLSET -eq "v120_xp") {
+        if ($($env:APPVEYOR_REPO_TAG) -eq "true" -and $env:CONFIGURATION -eq "Release Unicode" -and $env:PLATFORMTOOLSET -eq "v140_xp") {
             $ZipFileName = "ComparePlugin_$($env:APPVEYOR_REPO_TAG_NAME)_$env:PLATFORM.zip"
             Remove-Item .\Notepad++\plugins\*.pdb
             7z a $ZipFileName .\Notepad++\plugins\*
@@ -53,5 +53,5 @@ deploy:
     force_update: true
     on:
         appveyor_repo_tag: true
-        PlatformToolset: v120_xp
+        PlatformToolset: v140_xp
         configuration: Release Unicode
