@@ -38,8 +38,6 @@
 // Don't use "INDIC_CONTAINER + 1" since it conflicts with DSpellCheck plugin
 #define INDIC_HIGHLIGHT		INDIC_CONTAINER + 7
 
-// constexpr int BLANK_STYLING = (STYLE_MAX - STYLE_LASTPREDEFINED) / 2;
-
 
 HWND NppToolbarHandleGetter::hNppToolbar = NULL;
 
@@ -203,19 +201,9 @@ void setTextStyle(const ColorSettings& settings)
 	CallScintilla(MAIN_VIEW, SCI_INDICSETFORE,	INDIC_HIGHLIGHT,	settings.highlight);
 	CallScintilla(MAIN_VIEW, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT,	settings.alpha);
 
-    // CallScintilla(MAIN_VIEW, SCI_STYLESETEOLFILLED, 	BLANK_STYLING,	1);
-    // CallScintilla(MAIN_VIEW, SCI_STYLESETBOLD, 			BLANK_STYLING,	true);
-	// CallScintilla(MAIN_VIEW, SCI_STYLESETBACK,			BLANK_STYLING,	settings.blank);
-	// CallScintilla(MAIN_VIEW, SCI_STYLESETCHANGEABLE,	BLANK_STYLING,	false);
-
 	CallScintilla(SUB_VIEW, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT,	INDIC_ROUNDBOX);
 	CallScintilla(SUB_VIEW, SCI_INDICSETFORE,	INDIC_HIGHLIGHT,	settings.highlight);
 	CallScintilla(SUB_VIEW, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT,	settings.alpha);
-
-	// CallScintilla(SUB_VIEW, SCI_STYLESETEOLFILLED,		BLANK_STYLING,	1);
-    // CallScintilla(SUB_VIEW, SCI_STYLESETBOLD, 			BLANK_STYLING,	true);
-	// CallScintilla(SUB_VIEW, SCI_STYLESETBACK,			BLANK_STYLING,	settings.blank);
-	// CallScintilla(SUB_VIEW, SCI_STYLESETCHANGEABLE,		BLANK_STYLING,	false);
 }
 
 
@@ -479,15 +467,6 @@ void toLowerCase(std::vector<char>& text)
 }
 
 
-// void applyBlankStyle(int view)
-// {
-	// LOGD("applyBlankStyle: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") + " view\n");
-
-	// CallScintilla(view, SCI_STARTSTYLING, 0, 0);
-	// CallScintilla(view, SCI_SETSTYLING, CallScintilla(view, SCI_LINELENGTH, 0, 0), BLANK_STYLING);
-// }
-
-
 void insertAlignmentFirstLine(int view)
 {
 	const BOOL modified	= (BOOL)CallScintilla(view, SCI_GETMODIFY, 0, 0);
@@ -503,8 +482,6 @@ void insertAlignmentFirstLine(int view)
 		CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
 
 	CallScintilla(view, SCI_MARKERADDSET, 0, MARKER_MASK_BLANK);
-
-	// applyBlankStyle(view);
 }
 
 

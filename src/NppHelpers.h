@@ -475,7 +475,6 @@ void setNormalView(int view);
 void setCompareView(int view, int blankColor);
 
 void setStyles(UserSettings& settings);
-// void applyBlankStyle(int view);
 
 
 inline bool isAlignmentFirstLineInserted(int view)

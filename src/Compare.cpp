@@ -240,9 +240,6 @@ void DeletedSectionsList::pop(int view, int currAction, int startLine)
 			CallScintilla(view, SCI_MARKERADDSET, last.startLine + i, last.markers[i]);
 	}
 
-	// if ((last.startLine == 0) && (last.markers[0] & MARKER_MASK_BLANK))
-		// applyBlankStyle(view);
-
 	sections.pop_back();
 }
 
@@ -3075,7 +3072,6 @@ void onFileSaved(LRESULT buffId)
 
 		CallScintilla(view, SCI_UNDO, 0, 0);
 		CallScintilla(view, SCI_MARKERADDSET, 0, MARKER_MASK_BLANK);
-		// applyBlankStyle(view);
 		CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
 	}
 
