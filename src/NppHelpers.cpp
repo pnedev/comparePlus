@@ -494,10 +494,11 @@ void insertAlignmentFirstLine(int view)
 
 	ScopedViewWriteEnabler writeEn(view);
 
-	CallScintilla(view, SCI_INSERTTEXT, 0,
-			(LPARAM)("Compare Plugin: Please DO NOT delete or edit this line. "
-			"It will be automatically removed when you Clear the active Compare or close the compared file(s). "
-			"On Save it will NOT be saved.\n"));
+	// CallScintilla(view, SCI_INSERTTEXT, 0,
+			// (LPARAM)("\"Compare Plugin: Please DO NOT delete or edit this line. "
+			// "It will be automatically removed when you Clear the active Compare or close the compared file(s). "
+			// "On Save it will NOT be saved.\"\n"));
+	CallScintilla(view, SCI_INSERTTEXT, 0, (LPARAM)("\n"));
 	if (!modified)
 		CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
 

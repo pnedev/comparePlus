@@ -425,6 +425,13 @@ inline bool isLineMarked(int view, int line, int markMask)
 }
 
 
+inline bool isLineEmpty(int view, int line)
+{
+	return ((CallScintilla(view, SCI_GETLINEENDPOSITION, line, 0) -
+			CallScintilla(view, SCI_POSITIONFROMLINE, line, 0)) == 0);
+}
+
+
 inline bool isSelection(int view)
 {
 	return (CallScintilla(view, SCI_GETSELECTIONEND, 0, 0) - CallScintilla(view, SCI_GETSELECTIONSTART, 0, 0) != 0);

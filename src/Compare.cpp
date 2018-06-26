@@ -2834,16 +2834,18 @@ void onSciModified(SCNotification* notifyCode)
 		else
 			skipPushDeletedSection = false;
 	}
-	else if ((notifyCode->modificationType & SC_MOD_INSERTTEXT) && notifyCode->linesAdded)
+	else if (notifyCode->modificationType & SC_MOD_INSERTTEXT)
 	{
 		const int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 
 		if (startLine <= CallScintilla(view, SCI_MARKERNEXT, 0, MARKER_MASK_BLANK))
 		{
-			skipPushDeletedSection = true;
+			if (notifyCode->linesAdded)
+				skipPushDeletedSection = true;
+
 			::PostMessage(getView(view), SCI_UNDO, 0, 0);
 		}
-		else
+		else if (notifyCode->linesAdded)
 		{
 			const int action =
 				notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
