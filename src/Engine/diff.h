@@ -381,12 +381,18 @@ void DiffCalc<Elem, UserDataT>::_shift_boundries()
 			--diff_size;
 		}
 
+		if (_diff[i].off == 0)
+			continue;
+
 		if (_diff[i].type == diff_type::DIFF_IN_1)
 		{
 			// If there is a DIFF_IN_2 after a DIFF_IN_1, there is a potential match, so both blocks
 			// need to be moved at the same time
 			if ((i + 1 < diff_size) && (_diff[i + 1].type == diff_type::DIFF_IN_2))
 			{
+				if (_diff[i + 1].off == 0)
+					continue;
+
 				diff_info<UserDataT>& adiff = _diff[i];
 				diff_info<UserDataT>& bdiff = _diff[i + 1];
 
