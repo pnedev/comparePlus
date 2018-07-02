@@ -77,9 +77,8 @@ const int MARKER_MASK_SYMBOL		=	(1 << MARKER_CHANGED_SYMBOL) |
 										(1 << MARKER_MOVED_BLOCK_MID_SYMBOL) |
 										(1 << MARKER_MOVED_BLOCK_END_SYMBOL);
 
-const int MARKER_MASK_LINE_AND_BLANK	=	MARKER_MASK_LINE | MARKER_MASK_BLANK;
-
-const int MARKER_MASK_ALL =	MARKER_MASK_LINE_AND_BLANK | MARKER_MASK_SYMBOL;
+const int MARKER_MASK_ALL				=	MARKER_MASK_LINE | MARKER_MASK_SYMBOL;
+const int MARKER_MASK_ALL_PLUS_BLANK	=	MARKER_MASK_ALL | MARKER_MASK_BLANK;
 
 
 /**
@@ -479,7 +478,7 @@ void setStyles(UserSettings& settings);
 
 inline bool isAlignmentFirstLineInserted(int view)
 {
-	return (bool)(CallScintilla(view, SCI_MARKERGET, 0, 0) & MARKER_MASK_BLANK);
+	return isLineMarked(view, 0, MARKER_MASK_BLANK);
 }
 
 

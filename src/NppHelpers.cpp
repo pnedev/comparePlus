@@ -265,7 +265,7 @@ int showArrowSymbol(int view, int line, bool down)
 
 void blinkLine(int view, int line)
 {
-	const int marker = CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL;
+	const int marker = CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL_PLUS_BLANK;
 	HWND hView = getView(view);
 
 	for (int i = cBlinkCount; ;)

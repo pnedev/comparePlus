@@ -185,11 +185,12 @@ void DeletedSectionsList::push(int view, int currAction, int startLine, int len)
 	const int startPos = CallScintilla(view, SCI_POSITIONFROMLINE, startLine, 0);
 	clearChangedIndicator(view, startPos, CallScintilla(view, SCI_POSITIONFROMLINE, startLine + len, 0) - startPos);
 
-	for (int line = CallScintilla(view, SCI_MARKERPREVIOUS, startLine + len - 1, MARKER_MASK_LINE_AND_BLANK);
+	for (int line = CallScintilla(view, SCI_MARKERPREVIOUS, startLine + len - 1, MARKER_MASK_ALL_PLUS_BLANK);
 			line >= startLine;
-			line = CallScintilla(view, SCI_MARKERPREVIOUS, line - 1, MARKER_MASK_LINE_AND_BLANK))
+			line = CallScintilla(view, SCI_MARKERPREVIOUS, line - 1, MARKER_MASK_ALL_PLUS_BLANK))
 	{
-		delSection.markers[line - startLine] = CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL;
+		delSection.markers[line - startLine] =
+				CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL_PLUS_BLANK;
 		clearMarks(view, line);
 	}
 
