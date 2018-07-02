@@ -470,6 +470,7 @@ void toLowerCase(std::vector<char>& text)
 void insertAlignmentFirstLine(int view)
 {
 	const BOOL modified	= (BOOL)CallScintilla(view, SCI_GETMODIFY, 0, 0);
+	const BOOL canUndo	= (BOOL)CallScintilla(view, SCI_CANUNDO, 0, 0);
 
 	ScopedViewWriteEnabler writeEn(view);
 
@@ -478,6 +479,10 @@ void insertAlignmentFirstLine(int view)
 			// "It will be automatically removed when you Clear the active Compare or close the compared file(s). "
 			// "On Save it will NOT be saved.\"\n"));
 	CallScintilla(view, SCI_INSERTTEXT, 0, (LPARAM)("\n"));
+
+	if (!canUndo)
+		CallScintilla(view, SCI_EMPTYUNDOBUFFER, 0, 0);
+
 	if (!modified)
 		CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
 
@@ -490,12 +495,17 @@ void removeAlignmentFirstLine(int view)
 	if (isAlignmentFirstLineInserted(view))
 	{
 		const BOOL modified	= (BOOL)CallScintilla(view, SCI_GETMODIFY, 0, 0);
+		const BOOL canUndo	= (BOOL)CallScintilla(view, SCI_CANUNDO, 0, 0);
 
 		ScopedViewWriteEnabler writeEn(view);
 
 		CallScintilla(view, SCI_MARKERDELETE, 0, MARKER_BLANK);
 
 		CallScintilla(view, SCI_DELETERANGE, 0, CallScintilla(view, SCI_LINELENGTH, 0, 0));
+
+		if (!canUndo)
+			CallScintilla(view, SCI_EMPTYUNDOBUFFER, 0, 0);
+
 		if (!modified)
 			CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
 	}
