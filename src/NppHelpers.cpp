@@ -391,6 +391,7 @@ void setStyles(UserSettings& settings)
 	defineColor(MARKER_BLANK,			settings.colors.blank);
 
 	defineRgbaSymbol(MARKER_CHANGED_SYMBOL,				icon_changed);
+	defineRgbaSymbol(MARKER_CHANGED_LOCAL_SYMBOL,		icon_changed_local);
 	defineRgbaSymbol(MARKER_ADDED_SYMBOL,				icon_added);
 	defineRgbaSymbol(MARKER_ADDED_LOCAL_SYMBOL,			icon_added_local);
 	defineRgbaSymbol(MARKER_REMOVED_SYMBOL,				icon_removed);
@@ -523,6 +524,7 @@ void clearWindow(int view)
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_REMOVED_LINE, 0);
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_MOVED_LINE, 0);
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_CHANGED_SYMBOL, 0);
+	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_CHANGED_LOCAL_SYMBOL, 0);
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_ADDED_SYMBOL, 0);
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_ADDED_LOCAL_SYMBOL, 0);
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_REMOVED_SYMBOL, 0);
@@ -549,6 +551,7 @@ void clearMarks(int view, int line)
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_LINE);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_BLANK);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_CHANGED_SYMBOL);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_CHANGED_LOCAL_SYMBOL);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_ADDED_SYMBOL);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_ADDED_LOCAL_SYMBOL);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_REMOVED_SYMBOL);

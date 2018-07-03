@@ -21,6 +21,7 @@
 #include <exception>
 #include <cstdint>
 #include <utility>
+#include <unordered_set>
 #include <set>
 #include <unordered_map>
 #include <map>
@@ -49,6 +50,8 @@ struct DocCmpInfo
 	section_t	section;
 
 	int			blockDiffMask;
+
+	std::unordered_set<int>	nonUniqueLines;
 };
 
 
@@ -469,6 +472,45 @@ void findMoves(CompareInfo& cmpInfo,
 }
 
 
+void findUniqueLines(CompareInfo& cmpInfo,
+		const std::vector<uint64_t>& lineHashes1, const std::vector<uint64_t>& lineHashes2)
+{
+	std::unordered_map<uint64_t, std::vector<int>> doc1LinesMap;
+
+	int sectionEnd = cmpInfo.doc1.section.off + cmpInfo.doc1.section.len;
+	if (sectionEnd > static_cast<int>(lineHashes1.size()))
+		sectionEnd = static_cast<int>(lineHashes1.size());
+
+	for (int i = cmpInfo.doc1.section.off; i < sectionEnd; ++i)
+	{
+		auto insertPair = doc1LinesMap.emplace(lineHashes1[i], std::vector<int>{i});
+		if (!insertPair.second)
+			insertPair.first->second.emplace_back(i);
+	}
+
+	sectionEnd = cmpInfo.doc2.section.off + cmpInfo.doc2.section.len;
+	if (sectionEnd > static_cast<int>(lineHashes2.size()))
+		sectionEnd = static_cast<int>(lineHashes2.size());
+
+	for (int i = cmpInfo.doc2.section.off; i < sectionEnd; ++i)
+	{
+		std::unordered_map<uint64_t, std::vector<int>>::iterator doc1it = doc1LinesMap.find(lineHashes2[i]);
+
+		if (doc1it != doc1LinesMap.end())
+		{
+			cmpInfo.doc2.nonUniqueLines.emplace(i);
+
+			auto insertPair = cmpInfo.doc1.nonUniqueLines.emplace(doc1it->second[0]);
+			if (insertPair.second)
+			{
+				for (unsigned int j = 1; j < doc1it->second.size(); ++j)
+					cmpInfo.doc1.nonUniqueLines.emplace(doc1it->second[j]);
+			}
+		}
+	}
+}
+
+
 void compareLines(diffInfo& blockDiff1, diffInfo& blockDiff2,
 		const std::vector<std::vector<Word>>& chunk1, const std::vector<std::vector<Word>>& chunk2,
 		const std::map<int, std::pair<int, int>>& lineMappings)
@@ -700,7 +742,12 @@ void markSection(const diffInfo& bd, const DocCmpInfo& doc)
 
 		if (movedLen == 0)
 		{
-			CallScintilla(doc.view, SCI_MARKERADDSET, line, doc.blockDiffMask);
+			int mark = doc.blockDiffMask;
+
+			if (doc.nonUniqueLines.find(line) != doc.nonUniqueLines.end())
+				mark = (mark == MARKER_MASK_ADDED) ? MARKER_MASK_ADDED_LOCAL : MARKER_MASK_REMOVED_LOCAL;
+
+			CallScintilla(doc.view, SCI_MARKERADDSET, line, mark);
 		}
 		else if (movedLen == 1)
 		{
@@ -722,23 +769,27 @@ void markSection(const diffInfo& bd, const DocCmpInfo& doc)
 }
 
 
-void markLineDiffs(int view1, int view2, const diffInfo& bd, int lineIdx)
+void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, int lineIdx)
 {
 	int line = bd.off + bd.info.changedLines[lineIdx].line;
-	int linePos = CallScintilla(view1, SCI_POSITIONFROMLINE, line, 0);
+	int linePos = CallScintilla(cmpInfo.doc1.view, SCI_POSITIONFROMLINE, line, 0);
 
 	for (const auto& change: bd.info.changedLines[lineIdx].changes)
-		markTextAsChanged(view1, linePos + change.off, change.len);
+		markTextAsChanged(cmpInfo.doc1.view, linePos + change.off, change.len);
 
-	CallScintilla(view1, SCI_MARKERADDSET, line, MARKER_MASK_CHANGED);
+	CallScintilla(cmpInfo.doc1.view, SCI_MARKERADDSET, line,
+			cmpInfo.doc1.nonUniqueLines.find(line) == cmpInfo.doc1.nonUniqueLines.end() ?
+			MARKER_MASK_CHANGED : MARKER_MASK_CHANGED_LOCAL);
 
 	line = bd.info.matchBlock->off + bd.info.matchBlock->info.changedLines[lineIdx].line;
-	linePos = CallScintilla(view2, SCI_POSITIONFROMLINE, line, 0);
+	linePos = CallScintilla(cmpInfo.doc2.view, SCI_POSITIONFROMLINE, line, 0);
 
 	for (const auto& change: bd.info.matchBlock->info.changedLines[lineIdx].changes)
-		markTextAsChanged(view2, linePos + change.off, change.len);
+		markTextAsChanged(cmpInfo.doc2.view, linePos + change.off, change.len);
 
-	CallScintilla(view2, SCI_MARKERADDSET, line, MARKER_MASK_CHANGED);
+	CallScintilla(cmpInfo.doc2.view, SCI_MARKERADDSET, line,
+			cmpInfo.doc2.nonUniqueLines.find(line) == cmpInfo.doc2.nonUniqueLines.end() ?
+			MARKER_MASK_CHANGED : MARKER_MASK_CHANGED_LOCAL);
 }
 
 
@@ -831,7 +882,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
 
 					alignmentInfo.push_back(alignPair);
 
-					markLineDiffs(cmpInfo.doc1.view, cmpInfo.doc2.view, bd, j);
+					markLineDiffs(cmpInfo, bd, j);
 
 					cmpInfo.doc1.section.off = bd.info.changedLines[j].line + 1;
 					cmpInfo.doc2.section.off = bd.info.matchBlock->info.changedLines[j].line + 1;
@@ -941,6 +992,8 @@ CompareResult runCompare(const section_t& mainViewSection, const section_t& subV
 
 	if (blockDiffSize == 1 && cmpInfo.blockDiffs[0].type == diff_type::DIFF_MATCH)
 		return CompareResult::COMPARE_MATCH;
+
+	findUniqueLines(cmpInfo, doc1LineHashes, doc2LineHashes);
 
 	if (settings.DetectMoves)
 		findMoves(cmpInfo, *pLineHashes1, *pLineHashes2);
