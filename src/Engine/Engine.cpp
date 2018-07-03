@@ -442,11 +442,13 @@ void findMoves(CompareInfo& cmpInfo,
 							bestMatchDiff, best_mi);
 			}
 
-			const bool isMoved = ((best_mi.matchesIn1.size() + 1 == best_mi.matchesIn2.size()) &&
-					!((best_mi.sec.len == 1) && (best_mi.matchesIn2.size() > 1)));
+			const bool isMoved = ((best_mi.matchesIn1.size() == 0) && (best_mi.matchesIn2.size() == 1));
 
 			if (!isMoved)
+			{
+				ei1 += (best_mi.sec.len - 1);
 				continue;
+			}
 
 			bestMatchDiff->info.moves.emplace_back(best_mi.sec.off, best_mi.sec.len);
 
