@@ -70,12 +70,25 @@ struct blockDiffInfo
 
 	std::vector<diffLine>	changedLines;
 	std::vector<section_t>	moves;
+	std::unordered_set<int>	multipleMovesStartLines;
 
 	inline int movedSection(int line) const
 	{
 		for (const auto& move: moves)
 		{
 			if (line >= move.off && line < move.off + move.len)
+				return move.len;
+		}
+
+		return 0;
+	}
+
+	inline int singleMovedSection(int line) const
+	{
+		for (const auto& move: moves)
+		{
+			if ((line >= move.off) && (line < move.off + move.len) &&
+					(multipleMovesStartLines.find(move.off) == multipleMovesStartLines.end()))
 				return move.len;
 		}
 
@@ -445,21 +458,32 @@ void findMoves(CompareInfo& cmpInfo,
 							bestMatchDiff, best_mi);
 			}
 
-			const bool isMoved = ((best_mi.matchesIn1.size() == 0) && (best_mi.matchesIn2.size() == 1));
-
-			if (!isMoved)
-			{
-				ei1 += (best_mi.sec.len - 1);
+			// No matches
+			if (best_mi.matchesIn2.empty())
 				continue;
-			}
+
+			const bool isSingleMoved = ((best_mi.matchesIn1.size() == 0) && (best_mi.matchesIn2.size() == 1));
+
+			if (!isSingleMoved)
+				bestMatchDiff->info.multipleMovesStartLines.emplace(best_mi.sec.off);
 
 			bestMatchDiff->info.moves.emplace_back(best_mi.sec.off, best_mi.sec.len);
 
 			for (auto& match: best_mi.matchesIn1)
+			{
 				match.first->info.moves.emplace_back(match.second, best_mi.sec.len);
 
+				if (!isSingleMoved)
+					match.first->info.multipleMovesStartLines.emplace(match.second);
+			}
+
 			for (auto& match: best_mi.matchesIn2)
+			{
 				match.first->info.moves.emplace_back(match.second, best_mi.sec.len);
+
+				if (!isSingleMoved)
+					match.first->info.multipleMovesStartLines.emplace(match.second);
+			}
 
 			// If the best element matching block is the current then skip checks to the end of the match block
 			if ((bestMatchDiff == &(cmpInfo.blockDiffs[di1])) && (bmi == ei1))
@@ -606,7 +630,7 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 		if (chunk1[line1].empty())
 			continue;
 
-		int movedLen = blockDiff1.info.movedSection(line1);
+		int movedLen = blockDiff1.info.singleMovedSection(line1);
 
 		if (movedLen)
 		{
@@ -623,7 +647,7 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSet
 			if (chunk2[line2].empty())
 				continue;
 
-			movedLen = blockDiff2.info.movedSection(line2);
+			movedLen = blockDiff2.info.singleMovedSection(line2);
 
 			if (movedLen)
 			{
@@ -735,7 +759,7 @@ void markSection(const diffInfo& bd, const DocCmpInfo& doc)
 
 	for (int i = doc.section.off, line = bd.off + doc.section.off; i < endOff; ++i, ++line)
 	{
-		int movedLen = bd.info.movedSection(i);
+		int movedLen = bd.info.singleMovedSection(i);
 
 		if (movedLen > doc.section.len)
 			movedLen = doc.section.len;
@@ -755,15 +779,14 @@ void markSection(const diffInfo& bd, const DocCmpInfo& doc)
 		}
 		else
 		{
-			CallScintilla(doc.view, SCI_MARKERADDSET, line, MARKER_MASK_MOVED_BEGIN);
-			++line;
-			--movedLen;
+			i += --movedLen;
 
-			for (int j = 1; j < movedLen; ++j, ++line)
+			CallScintilla(doc.view, SCI_MARKERADDSET, line, MARKER_MASK_MOVED_BEGIN);
+
+			for (--movedLen, ++line; movedLen; --movedLen, ++line)
 				CallScintilla(doc.view, SCI_MARKERADDSET, line, MARKER_MASK_MOVED_MID);
 
 			CallScintilla(doc.view, SCI_MARKERADDSET, line, MARKER_MASK_MOVED_END);
-			i += movedLen;
 		}
 	}
 }
