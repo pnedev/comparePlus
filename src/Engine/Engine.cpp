@@ -1016,7 +1016,7 @@ CompareResult runCompare(const section_t& mainViewSection, const section_t& subV
 	if (blockDiffSize == 1 && cmpInfo.blockDiffs[0].type == diff_type::DIFF_MATCH)
 		return CompareResult::COMPARE_MATCH;
 
-	findUniqueLines(cmpInfo, doc1LineHashes, doc2LineHashes);
+	findUniqueLines(cmpInfo, *pLineHashes1, *pLineHashes2);
 
 	if (settings.DetectMoves)
 		findMoves(cmpInfo, *pLineHashes1, *pLineHashes2);
