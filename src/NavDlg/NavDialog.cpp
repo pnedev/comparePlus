@@ -90,21 +90,40 @@ void NavDialog::NavView::reset()
 
 void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int height, int hScale, int hOffset)
 {
-	height = std::min((maxBmpLines() - hOffset) * hScale, height);
-	if (height <= 0)
+	const int usefulHeight = (maxBmpLines() - hOffset) * hScale;
+	const bool emptyArea = (height - usefulHeight) > 0;
+
+	int h = emptyArea ? usefulHeight : height;
+	if (h <= 0)
 		return;
 
 	RECT r;
 	r.left		= xPos;
 	r.top		= yPos;
 	r.right		= r.left + width + 2;
-	r.bottom	= r.top + height + 2;
+	r.bottom	= r.top + h + 2;
 
 	// Draw view border
 	::Rectangle(hDC, r.left, r.top, r.right, r.bottom);
 
+	if (emptyArea)
+	{
+		HBRUSH bkBrush = ::GetSysColorBrush(COLOR_3DFACE);
+
+		RECT bkRect;
+
+		bkRect.left		= r.left;
+		bkRect.right	= r.right;
+		bkRect.top		= r.bottom;
+		bkRect.bottom	= r.top + height + 2;
+
+		::FillRect(hDC, &bkRect, bkBrush);
+
+		::DeleteObject(bkBrush);
+	}
+
 	// Fill view
-	::StretchBlt(hDC, r.left + 1, r.top + 1, width, height, m_hViewDC, 0, hOffset, 1, height / hScale, SRCCOPY);
+	::StretchBlt(hDC, r.left + 1, r.top + 1, width, h, m_hViewDC, 0, hOffset, 1, h / hScale, SRCCOPY);
 
 	int firstVisible	= CallScintilla(m_view, SCI_DOCLINEFROMVISIBLE, m_firstVisible, 0);
 	int lastVisible		= m_firstVisible + CallScintilla(m_view, SCI_LINESONSCREEN, 0, 0);
@@ -117,17 +136,17 @@ void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int heigh
 	firstVisible	= docToBmpLine(firstVisible);
 	lastVisible		= docToBmpLine(lastVisible);
 
-	height /= hScale;
+	h /= hScale;
 
 	// Selector is out of scope so don't draw it
-	if (firstVisible > hOffset + height || lastVisible < hOffset)
+	if (firstVisible > hOffset + h || lastVisible < hOffset)
 		return;
 
 	if (firstVisible < hOffset)
 		firstVisible = hOffset;
 
-	if (lastVisible > hOffset + height)
-		lastVisible = hOffset + height;
+	if (lastVisible > hOffset + h)
+		lastVisible = hOffset + h;
 
 	firstVisible	*= hScale;
 	lastVisible		*= hScale;
@@ -155,7 +174,7 @@ int NavDialog::NavView::docToBmpLine(int docLine)
 	for (int i = 0; i < max; ++i)
 	{
 		if (docLine <= m_lineMap[i])
-			return i - 1;
+			return i + 1;
 	}
 
 	return max;
@@ -577,14 +596,10 @@ void NavDialog::onPaint()
 
 	if (m_view[0].maxBmpLines() > scrollOffset)
 		m_view[0].paint(hDC, cSpace, cSpace, m_navViewWidth, m_navHeight, m_pixelsPerLine, scrollOffset);
-	else
-		ps.fErase = TRUE; // must redraw background
 
 	if (m_view[1].maxBmpLines() > scrollOffset)
 		m_view[1].paint(hDC, m_navViewWidth + 2 * cSpace + 2, cSpace,
 				m_navViewWidth, m_navHeight, m_pixelsPerLine, scrollOffset);
-	else
-		ps.fErase = TRUE; // must redraw background
 
 	::DeleteObject(hPenView);
 
