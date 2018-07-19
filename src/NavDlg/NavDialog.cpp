@@ -456,6 +456,10 @@ void NavDialog::setScalingFactor()
 	RECT r;
 	::GetClientRect(_hSelf, &r);
 
+	// Happens when minimizing N++ window because WM_SIZE notification is received but window is minimized?!?!
+	if (r.bottom - r.top == 0)
+		return;
+
 	m_navViewWidth = ((r.right - r.left) - 3 * cSpace - 4) / 2;
 	m_navHeight = (r.bottom - r.top) - 2 * cSpace - 2;
 
