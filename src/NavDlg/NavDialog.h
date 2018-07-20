@@ -80,7 +80,6 @@ private:
 			m_firstVisible = CallScintilla(m_view, SCI_GETFIRSTVISIBLELINE, 0, 0);
 		}
 
-
 		int maxBmpLines()
 		{
 			return (m_lineMap.empty() ? m_lines : static_cast<int>(m_lineMap.size()));

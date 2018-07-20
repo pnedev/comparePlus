@@ -444,21 +444,21 @@ void NavDialog::showScroller(RECT& r)
 
 void NavDialog::setScalingFactor()
 {
-	m_view[0].m_lines = CallScintilla(m_view[0].m_view, SCI_GETLINECOUNT, 0, 0);
-	m_view[1].m_lines = CallScintilla(m_view[1].m_view, SCI_GETLINECOUNT, 0, 0);
-
-	m_view[0].m_firstVisible = CallScintilla(m_view[0].m_view, SCI_GETFIRSTVISIBLELINE, 0, 0);
-	m_view[1].m_firstVisible = CallScintilla(m_view[1].m_view, SCI_GETFIRSTVISIBLELINE, 0, 0);
-
-	m_maxBmpLines = std::max(m_view[0].maxBmpLines(), m_view[1].maxBmpLines());
-	m_syncView = (m_maxBmpLines == m_view[0].maxBmpLines()) ? &m_view[0] : &m_view[1];
-
 	RECT r;
 	::GetClientRect(_hSelf, &r);
 
 	// Happens when minimizing N++ window because WM_SIZE notification is received but window is minimized?!?!
 	if (r.bottom - r.top == 0)
 		return;
+
+	m_view[0].m_lines = CallScintilla(m_view[0].m_view, SCI_GETLINECOUNT, 0, 0);
+	m_view[1].m_lines = CallScintilla(m_view[1].m_view, SCI_GETLINECOUNT, 0, 0);
+
+	m_view[0].updateFirstVisible();
+	m_view[1].updateFirstVisible();
+
+	m_maxBmpLines = std::max(m_view[0].maxBmpLines(), m_view[1].maxBmpLines());
+	m_syncView = (m_maxBmpLines == m_view[0].maxBmpLines()) ? &m_view[0] : &m_view[1];
 
 	m_navViewWidth = ((r.right - r.left) - 3 * cSpace - 4) / 2;
 	m_navHeight = (r.bottom - r.top) - 2 * cSpace - 2;
