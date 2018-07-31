@@ -43,8 +43,10 @@ LRESULT ColorCombo::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 			_pColorPopup->destroy();
 			delete _pColorPopup;
 			_pColorPopup = NULL;
+
 			return TRUE;
 		}
+
 		case WM_LBUTTONDOWN:
 		case WM_LBUTTONDBLCLK:
 		{
@@ -59,8 +61,10 @@ LRESULT ColorCombo::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 				_pColorPopup->init(_hInst, hwnd, _hNpp);
 				_pColorPopup->doDialog(pt);
 			}
+
 			return TRUE;
 		}
+
 		case COLOR_POPUP_CANCEL:
 		case WM_DESTROY:
 		{
@@ -69,17 +73,19 @@ LRESULT ColorCombo::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 				delete _pColorPopup;
 				_pColorPopup = NULL;
 			}
+
 			break;
 		}
+
 		case WM_PAINT:
 		{
 			LRESULT lpRet = ::CallWindowProc(_hDefaultComboProc, hwnd, Message, wParam, lParam);
 			DrawColor((HDC)wParam);
+
 			return lpRet;
 		}
-		default :
-			break;
 	}
+
 	return ::CallWindowProc(_hDefaultComboProc, hwnd, Message, wParam, lParam);
 }
 

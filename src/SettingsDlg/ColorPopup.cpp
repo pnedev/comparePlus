@@ -83,7 +83,6 @@ INT_PTR CALLBACK ColorPopup::dlgProc(HWND hwnd, UINT message, WPARAM wParam, LPA
 
 INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam)
 {
-
 	switch (message)
 	{
 		case WM_INITDIALOG:
@@ -94,6 +93,7 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 				::SendDlgItemMessage(_hSelf, IDC_COLOR_LIST, LB_ADDSTRING, nColor, (LPARAM)TEXT(""));
 				::SendDlgItemMessage(_hSelf, IDC_COLOR_LIST, LB_SETITEMDATA , nColor, (LPARAM)colorItems[nColor]);
 			}
+
 			return TRUE;
 		}
 
@@ -129,11 +129,12 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 							FillRect(hdc, &rc, hbrush);
 							DeleteObject(hbrush);
 							FrameRect(hdc, &rc, (HBRUSH) GetStockObject(GRAY_BRUSH));
-							break;
 					}
-					// *** FALL THROUGH ***
+					// *** Intentional FALL THROUGH ***
+
 				case ODA_SELECT:
 					rc = pdis->rcItem;
+
 					if (pdis->itemState & ODS_SELECTED)
 					{
 						rc.bottom --;
@@ -160,15 +161,16 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 						FrameRect(hdc, &rc, hbrush);
 						DeleteObject(hbrush);
 					}
+
 					break;
+
 				case ODA_FOCUS:
 					rc = pdis->rcItem;
 					InflateRect(&rc, -2, -2);
 					DrawFocusRect(hdc, &rc);
 					break;
-				default:
-					break;
 			}
+
 			return TRUE;
 		}
 
@@ -197,7 +199,7 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 
 					display(false);
 
-					if (ChooseColor(&cc)==TRUE)
+					if (ChooseColor(&cc) == TRUE)
 					{
 						::SendMessage(_hParent, COLOR_POPUP_OK, cc.rgbResult, 0);
 					}
@@ -219,21 +221,27 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 						::SendMessage(_hParent, COLOR_POPUP_OK, _color, 0);
 						return TRUE;
 					}
+
+					return FALSE;
 				}
 
-				default :
-					return FALSE;
+				case IDCANCEL :
+					::SendMessage(_hParent, COLOR_POPUP_CANCEL, 0, 0);
+					return TRUE;
 			}
+
+			return FALSE;
 
 		case WM_ACTIVATE :
 		{
 			if (LOWORD(wParam) == WA_INACTIVE)
 				if (!_isColorChooserLaunched)
 					::SendMessage(_hParent, COLOR_POPUP_CANCEL, 0, 0);
+
 			return TRUE;
 		}
-
 	}
+
 	return FALSE;
 }
 
