@@ -62,8 +62,8 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 
 			if (isRTLwindow(nppData._nppHandle))
 			{
-				SetDlgItemText(_hSelf, IDC_OLD_MAIN, TEXT("Right/Top"));
-				SetDlgItemText(_hSelf, IDC_OLD_SUB, TEXT("Left/Bottom"));
+				SetDlgItemText(_hSelf, IDC_OLD_MAIN, TEXT("Old file in right view"));
+				SetDlgItemText(_hSelf, IDC_OLD_SUB, TEXT("Old file in left view"));
 			}
 
 			SetParams();
