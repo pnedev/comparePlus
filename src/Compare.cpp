@@ -1848,6 +1848,14 @@ bool initNewCompare()
 			if (isFileCompared(getOtherViewId()))
 				return false;
 
+			// Check if comparing to cloned self
+			if (getDocId(MAIN_VIEW) == getDocId(SUB_VIEW))
+			{
+				::MessageBox(nppData._nppHandle, TEXT("Trying to compare file to its clone - operation ignored."),
+						PLUGIN_NAME, MB_OK);
+				return false;
+			}
+
 			::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SWITCHTO_OTHER_VIEW);
 		}
 	}
