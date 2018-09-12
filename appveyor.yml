@@ -4,7 +4,6 @@ image: Visual Studio 2015
 environment:
     matrix:
         - PlatformToolset: v140_xp
-        - PlatformToolset: v120_xp
 
 platform:
     - x64
