@@ -177,6 +177,8 @@ std::vector<uint64_t> computeLineHashes(DocCmpInfo& doc, const UserSettings& set
 
 	if (lineCount)
 		lineCount = CallScintilla(doc.view, SCI_GETLINECOUNT, 0, 0);
+	else
+		return std::vector<uint64_t>{};
 
 	if ((doc.section.len <= 0) || (doc.section.off + doc.section.len > lineCount))
 		doc.section.len = lineCount - doc.section.off;
@@ -970,7 +972,7 @@ CompareResult runCompare(const section_t& mainViewSection, const section_t& subV
 
 	const int blockDiffSize = static_cast<int>(cmpInfo.blockDiffs.size());
 
-	if (blockDiffSize == 1 && cmpInfo.blockDiffs[0].type == diff_type::DIFF_MATCH)
+	if (blockDiffSize == 0 || (blockDiffSize == 1 && cmpInfo.blockDiffs[0].type == diff_type::DIFF_MATCH))
 		return CompareResult::COMPARE_MATCH;
 
 	findUniqueLines(cmpInfo, *pLineHashes1, *pLineHashes2);

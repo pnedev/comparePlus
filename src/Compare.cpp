@@ -1618,6 +1618,17 @@ bool isFileCompared(int view)
 }
 
 
+bool checkIfCurrentFileEmpty()
+{
+	const bool empty = isFileEmpty(getCurrentViewId());
+
+	if (empty)
+		::MessageBox(nppData._nppHandle, TEXT("Current document is empty - operation ignored."), PLUGIN_NAME, MB_OK);
+
+	return empty;
+}
+
+
 bool isEncodingOK(const ComparedPair& cmpPair)
 {
 	// Warn about encoding mismatches as that might compromise the compare
@@ -1665,8 +1676,11 @@ bool areSelectionsValid(LRESULT currentBuffId = -1, LRESULT otherBuffId = -1)
 }
 
 
-bool setFirst(bool currFileIsNew, bool markName = false)
+bool setFirst(bool currFileIsNew, bool markName = false, bool isTemp = false)
 {
+	if (!isTemp && checkIfCurrentFileEmpty())
+		return false;
+
 	if (isFileCompared(getCurrentViewId()))
 		return false;
 
@@ -1706,7 +1720,7 @@ bool checkFileExists(const TCHAR *file)
 
 bool createTempFile(const TCHAR *file, Temp_t tempType)
 {
-	if (!setFirst(true))
+	if (!setFirst(true, false, true))
 		return false;
 
 	TCHAR tempFile[MAX_PATH];
