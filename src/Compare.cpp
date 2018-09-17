@@ -335,6 +335,8 @@ public:
 	bool			caseIgnored;
 	bool			movesDetected;
 
+	int				autoUpdateDelay = 0;
+
 	std::pair<int, int>	selections[2];
 
 	AlignmentInfo_t	alignmentInfo;
@@ -1940,10 +1942,14 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false)
 	{
 		newCompare.reset();
 
+		const bool updateCompare = (cmpPair->autoUpdateDelay != 0);
+
+		cmpPair->autoUpdateDelay = 0;
+
 		if (selectionCompare && !areSelectionsValid())
 			return;
 
-		if (cmpPair->isFullCompare && !Settings.GotoFirstDiff && !selectionCompare)
+		if (cmpPair->isFullCompare && (!Settings.GotoFirstDiff || updateCompare) && !selectionCompare)
 			storedLocation.reset(new ViewLocation(getCurrentViewId()));
 
 		cmpPair->getOldFile().clear();
@@ -2720,6 +2726,15 @@ void DelayedAlign::operator()()
 	if (cmpPair == compareList.end())
 		return;
 
+	if (cmpPair->autoUpdateDelay)
+	{
+        delayedUpdate.cancel();
+        delayedUpdate.findUniqueMode = cmpPair->findUniqueMode;
+        delayedUpdate.post(cmpPair->autoUpdateDelay);
+
+		return;
+	}
+
 	const AlignmentInfo_t& alignmentInfo = cmpPair->alignmentInfo;
 	if (alignmentInfo.empty())
 		return;
@@ -2879,6 +2894,18 @@ void onSciModified(SCNotification* notifyCode)
 			cmpPair->getFileByViewId(view).popDeletedSection(action, startLine);
 		}
 	}
+
+	if (cmpPair->isFullCompare &&
+		((notifyCode->modificationType & SC_MOD_DELETETEXT) || (notifyCode->modificationType & SC_MOD_INSERTTEXT)))
+	{
+		delayedAlignment.cancel();
+		delayedUpdate.cancel();
+
+		if (notifyCode->linesAdded)
+			cmpPair->autoUpdateDelay = 200;
+		else
+			cmpPair->autoUpdateDelay = 1000;
+	}
 }
 
 
@@ -2926,6 +2953,7 @@ void DelayedActivate::operator()()
 void onBufferActivated(LRESULT buffId)
 {
 	delayedAlignment.cancel();
+	delayedUpdate.cancel();
 	delayedActivation.cancel();
 
 	CompareList_t::iterator cmpPair = getCompare(buffId);
@@ -3098,13 +3126,11 @@ void onFileSaved(LRESULT buffId)
 		CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
 	}
 
-    if (pairIsActive && Settings.RecompareOnSave)
+    if (pairIsActive && Settings.RecompareOnSave && cmpPair->autoUpdateDelay)
     {
         delayedAlignment.cancel();
         delayedUpdate.cancel();
-
         delayedUpdate.findUniqueMode = cmpPair->findUniqueMode;
-
         delayedUpdate.post(30);
     }
 
