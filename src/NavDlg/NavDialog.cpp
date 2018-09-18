@@ -164,7 +164,7 @@ void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int heigh
 }
 
 
-int NavDialog::NavView::docToBmpLine(int docLine)
+int NavDialog::NavView::docToBmpLine(int docLine) const
 {
 	if (m_lineMap.empty())
 		return docLine;
@@ -552,23 +552,34 @@ int NavDialog::updateScroll()
 {
 	if (m_hScroll && ::IsWindowVisible(m_hScroll))
 	{
-		const int firstVisible =
-				CallScintilla(m_syncView->m_view, SCI_DOCLINEFROMVISIBLE, m_syncView->m_firstVisible, 0);
-		int lastVisible	= m_syncView->m_firstVisible + CallScintilla(m_syncView->m_view, SCI_LINESONSCREEN, 0, 0);
+		const int firstVisible1 =
+				CallScintilla(m_view[0].m_view, SCI_DOCLINEFROMVISIBLE, m_view[0].m_firstVisible, 0);
+		const int firstVisible2 =
+				CallScintilla(m_view[1].m_view, SCI_DOCLINEFROMVISIBLE, m_view[1].m_firstVisible, 0);
 
-		lastVisible = CallScintilla(m_syncView->m_view, SCI_DOCLINEFROMVISIBLE, lastVisible, 0);
+		int lastVisible1 = m_view[0].m_firstVisible + CallScintilla(m_view[0].m_view, SCI_LINESONSCREEN, 0, 0);
+		int lastVisible2 = m_view[1].m_firstVisible + CallScintilla(m_view[1].m_view, SCI_LINESONSCREEN, 0, 0);
+
+		lastVisible1 = CallScintilla(m_view[0].m_view, SCI_DOCLINEFROMVISIBLE, lastVisible1, 0);
+		lastVisible2 = CallScintilla(m_view[1].m_view, SCI_DOCLINEFROMVISIBLE, lastVisible2, 0);
+
+		const int firstVisible	= std::min(firstVisible1, firstVisible2);
+		const int lastVisible	= std::max(lastVisible1, lastVisible2);
+
+		const NavView* const firstVisibleSyncView	= (firstVisible == firstVisible1) ? &m_view[0] : &m_view[1];
+		const NavView* const lastVisibleSyncView	= (lastVisible == lastVisible1) ? &m_view[0] : &m_view[1];
 
 		int currentScroll = ::GetScrollPos(m_hScroll, SB_CTL);
 
-		if (m_syncView->bmpToDocLine(currentScroll) > firstVisible)
+		if (firstVisibleSyncView->bmpToDocLine(currentScroll) > firstVisible)
 		{
-			currentScroll = firstVisible;
+			currentScroll = firstVisibleSyncView->docToBmpLine(firstVisible);
 
 			::SetScrollPos(m_hScroll, SB_CTL, currentScroll, TRUE);
 		}
-		else if (m_syncView->bmpToDocLine(currentScroll + m_navHeight - 1) < lastVisible)
+		else if (lastVisibleSyncView->bmpToDocLine(currentScroll + m_navHeight - 1) < lastVisible)
 		{
-			currentScroll = m_syncView->docToBmpLine(lastVisible) - m_navHeight;
+			currentScroll = lastVisibleSyncView->docToBmpLine(lastVisible) - m_navHeight;
 
 			::SetScrollPos(m_hScroll, SB_CTL, currentScroll, TRUE);
 		}

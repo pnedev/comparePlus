@@ -80,12 +80,12 @@ private:
 			m_firstVisible = CallScintilla(m_view, SCI_GETFIRSTVISIBLELINE, 0, 0);
 		}
 
-		int maxBmpLines()
+		int maxBmpLines() const
 		{
 			return (m_lineMap.empty() ? m_lines : static_cast<int>(m_lineMap.size()));
 		}
 
-		int bmpToDocLine(int bmpLine)
+		int bmpToDocLine(int bmpLine) const
 		{
 			if (bmpLine < 0)
 				return 0;
@@ -97,7 +97,7 @@ private:
 			return m_lineMap.back();
 		}
 
-		int docToBmpLine(int docLine);
+		int docToBmpLine(int docLine) const;
 
 		int		m_view;
 
