@@ -94,7 +94,6 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					settings.EncodingsCheck			= (bool) DEFAULT_ENCODINGS_CHECK;
 					settings.PromptToCloseOnMatch	= (bool) DEFAULT_PROMPT_CLOSE_ON_MATCH;
 					settings.WrapAround				= (bool) DEFAULT_WRAP_AROUND;
-					settings.RecompareOnSave		= (bool) DEFAULT_RECOMPARE_ON_SAVE;
 					settings.GotoFirstDiff			= (bool) DEFAULT_GOTO_FIRST_DIFF;
 					settings.FollowingCaret			= (bool) DEFAULT_FOLLOWING_CARET;
 
@@ -161,8 +160,6 @@ void SettingsDialog::SetParams(UserSettings* settings)
 			settings->PromptToCloseOnMatch ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_WRAP_AROUND),
 			settings->WrapAround ? BST_CHECKED : BST_UNCHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, IDC_RECOMPARE_ON_SAVE),
-			settings->RecompareOnSave ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_GOTO_FIRST_DIFF),
 			settings->GotoFirstDiff ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_FOLLOWING_CARET),
@@ -189,7 +186,6 @@ void SettingsDialog::GetParams()
 	_Settings->EncodingsCheck		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_ENCODING_CHECK)) == BST_CHECKED);
 	_Settings->PromptToCloseOnMatch	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_PROMPT_CLOSE_ON_MATCH)) == BST_CHECKED);
 	_Settings->WrapAround			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_WRAP_AROUND)) == BST_CHECKED);
-	_Settings->RecompareOnSave		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_RECOMPARE_ON_SAVE)) == BST_CHECKED);
 	_Settings->GotoFirstDiff		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_GOTO_FIRST_DIFF)) == BST_CHECKED);
 	_Settings->FollowingCaret		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_FOLLOWING_CARET)) == BST_CHECKED);
 

@@ -28,11 +28,10 @@
 #define DEFAULT_COMPARE_TO_PREV			1
 
 #define DEFAULT_ENCODINGS_CHECK			1
-#define DEFAULT_PROMPT_CLOSE_ON_MATCH	0
-#define DEFAULT_WRAP_AROUND				0
-#define DEFAULT_RECOMPARE_ON_SAVE		1
-#define DEFAULT_GOTO_FIRST_DIFF			0
 #define DEFAULT_FOLLOWING_CARET			1
+#define DEFAULT_WRAP_AROUND				0
+#define DEFAULT_GOTO_FIRST_DIFF			1
+#define DEFAULT_PROMPT_CLOSE_ON_MATCH	0
 
 #define DEFAULT_ADDED_COLOR				0xC6FFC6
 #define DEFAULT_DELETED_COLOR			0xC6C6FF
@@ -72,16 +71,17 @@ public:
 	static const TCHAR oldFileViewSetting[];
 	static const TCHAR compareToPrevSetting[];
 	static const TCHAR encodingsCheckSetting[];
-	static const TCHAR promptCloseOnMatchSetting[];
-	static const TCHAR wrapAroundSetting[];
-	static const TCHAR reCompareOnSaveSetting[];
-	static const TCHAR gotoFirstDiffSetting[];
 	static const TCHAR followingCaretSetting[];
+	static const TCHAR wrapAroundSetting[];
+	static const TCHAR gotoFirstDiffSetting[];
+	static const TCHAR promptCloseOnMatchSetting[];
 
 	static const TCHAR ignoreSpacesSetting[];
 	static const TCHAR ignoreCaseSetting[];
 	static const TCHAR detectMovesSetting[];
 	static const TCHAR navBarSetting[];
+
+	static const TCHAR reCompareOnChangeSetting[];
 
 	static const TCHAR colorsSection[];
 
@@ -96,16 +96,17 @@ public:
 	int				OldFileViewId;
 	bool           	CompareToPrev;
 	bool           	EncodingsCheck;
-	bool           	PromptToCloseOnMatch;
-	bool           	WrapAround;
-	bool           	RecompareOnSave;
-	bool           	GotoFirstDiff;
 	bool           	FollowingCaret;
+	bool           	WrapAround;
+	bool           	GotoFirstDiff;
+	bool           	PromptToCloseOnMatch;
 
 	bool           	IgnoreSpaces;
 	bool           	IgnoreCase;
 	bool           	DetectMoves;
 	bool           	UseNavBar;
+
+	bool           	RecompareOnChange;
 
 	ColorSettings	colors;
 

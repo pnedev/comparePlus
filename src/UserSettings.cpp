@@ -31,7 +31,6 @@ const TCHAR UserSettings::compareToPrevSetting[]		= TEXT("Default Compare is to 
 const TCHAR UserSettings::encodingsCheckSetting[]		= TEXT("Check Encodings");
 const TCHAR UserSettings::promptCloseOnMatchSetting[]	= TEXT("Prompt to Close on Match");
 const TCHAR UserSettings::wrapAroundSetting[]			= TEXT("Wrap Around");
-const TCHAR UserSettings::reCompareOnSaveSetting[]		= TEXT("Re-Compare on Save");
 const TCHAR UserSettings::gotoFirstDiffSetting[]		= TEXT("Go to First Diff");
 const TCHAR UserSettings::followingCaretSetting[]		= TEXT("Following Caret");
 
@@ -39,6 +38,8 @@ const TCHAR UserSettings::ignoreSpacesSetting[]			= TEXT("Ignore Spaces");
 const TCHAR UserSettings::ignoreCaseSetting[]			= TEXT("Ignore Case");
 const TCHAR UserSettings::detectMovesSetting[]			= TEXT("Detect Moves");
 const TCHAR UserSettings::navBarSetting[]				= TEXT("Navigation Bar");
+
+const TCHAR UserSettings::reCompareOnChangeSetting[]	= TEXT("Re-Compare on Change");
 
 const TCHAR UserSettings::colorsSection[]				= TEXT("Colors");
 
@@ -66,21 +67,21 @@ void UserSettings::load()
 			DEFAULT_COMPARE_TO_PREV, iniFile) == 1;
 	EncodingsCheck			= ::GetPrivateProfileInt(mainSection, encodingsCheckSetting,
 			DEFAULT_ENCODINGS_CHECK, iniFile) == 1;
-	PromptToCloseOnMatch	= ::GetPrivateProfileInt(mainSection, promptCloseOnMatchSetting,
-			DEFAULT_PROMPT_CLOSE_ON_MATCH, iniFile) == 1;
-	WrapAround				= ::GetPrivateProfileInt(mainSection, wrapAroundSetting,
-			DEFAULT_WRAP_AROUND, iniFile) == 1;
-	RecompareOnSave			= ::GetPrivateProfileInt(mainSection, reCompareOnSaveSetting,
-			DEFAULT_RECOMPARE_ON_SAVE, iniFile) == 1;
-	GotoFirstDiff			= ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting,
-			DEFAULT_GOTO_FIRST_DIFF, iniFile) == 1;
 	FollowingCaret			= ::GetPrivateProfileInt(mainSection, followingCaretSetting,
 			DEFAULT_FOLLOWING_CARET, iniFile) == 1;
+	WrapAround				= ::GetPrivateProfileInt(mainSection, wrapAroundSetting,
+			DEFAULT_WRAP_AROUND, iniFile) == 1;
+	GotoFirstDiff			= ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting,
+			DEFAULT_GOTO_FIRST_DIFF, iniFile) == 1;
+	PromptToCloseOnMatch	= ::GetPrivateProfileInt(mainSection, promptCloseOnMatchSetting,
+			DEFAULT_PROMPT_CLOSE_ON_MATCH, iniFile) == 1;
 
-	IgnoreSpaces	= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,	1, iniFile) == 1;
-	IgnoreCase		= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,	0, iniFile) == 1;
-	DetectMoves		= ::GetPrivateProfileInt(mainSection, detectMovesSetting,	1, iniFile) == 1;
-	UseNavBar		= ::GetPrivateProfileInt(mainSection, navBarSetting,		1, iniFile) == 1;
+	IgnoreSpaces		= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,		1, iniFile) == 1;
+	IgnoreCase			= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,		0, iniFile) == 1;
+	DetectMoves			= ::GetPrivateProfileInt(mainSection, detectMovesSetting,		1, iniFile) == 1;
+	UseNavBar			= ::GetPrivateProfileInt(mainSection, navBarSetting,			1, iniFile) == 1;
+
+	RecompareOnChange	= ::GetPrivateProfileInt(mainSection, reCompareOnChangeSetting,	1, iniFile) == 1;
 
 	colors.added		= ::GetPrivateProfileInt(colorsSection, addedColorSetting,
 			DEFAULT_ADDED_COLOR, iniFile);
@@ -126,21 +127,22 @@ void UserSettings::save()
 			CompareToPrev ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, encodingsCheckSetting,
 			EncodingsCheck ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, promptCloseOnMatchSetting,
-			PromptToCloseOnMatch ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, wrapAroundSetting,
-			WrapAround ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, reCompareOnSaveSetting,
-			RecompareOnSave ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, gotoFirstDiffSetting,
-			GotoFirstDiff ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, followingCaretSetting,
 			FollowingCaret ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, wrapAroundSetting,
+			WrapAround ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, gotoFirstDiffSetting,
+			GotoFirstDiff ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, promptCloseOnMatchSetting,
+			PromptToCloseOnMatch ? TEXT("1") : TEXT("0"), iniFile);
 
 	::WritePrivateProfileString(mainSection, ignoreSpacesSetting,	IgnoreSpaces	? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreCaseSetting,	    IgnoreCase		? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, detectMovesSetting,	DetectMoves		? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, navBarSetting,			UseNavBar		? TEXT("1") : TEXT("0"), iniFile);
+
+	::WritePrivateProfileString(mainSection, reCompareOnChangeSetting,
+			RecompareOnChange ? TEXT("1") : TEXT("0"), iniFile);
 
 	TCHAR buffer[64];
 

@@ -2257,6 +2257,15 @@ void DetectMoves()
 }
 
 
+void AutoRecompare()
+{
+	Settings.RecompareOnChange = !Settings.RecompareOnChange;
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_AUTO_RECOMPARE]._cmdID,
+			(LPARAM)Settings.RecompareOnChange);
+	Settings.markAsDirty();
+}
+
+
 void Prev()
 {
 	if (NppSettings::get().compareMode)
@@ -2456,6 +2465,9 @@ void createMenu()
 
 	_tcscpy_s(funcItem[CMD_NAV_BAR]._itemName, nbChar, TEXT("Navigation Bar"));
 	funcItem[CMD_NAV_BAR]._pFunc = ViewNavigationBar;
+
+	_tcscpy_s(funcItem[CMD_AUTO_RECOMPARE]._itemName, nbChar, TEXT("Auto Re-Compare on Change"));
+	funcItem[CMD_AUTO_RECOMPARE]._pFunc = AutoRecompare;
 
 	_tcscpy_s(funcItem[CMD_PREV]._itemName, nbChar, TEXT("Previous"));
 	funcItem[CMD_PREV]._pFunc 				= Prev;
@@ -2701,6 +2713,9 @@ void onNppReady()
 			(LPARAM)Settings.DetectMoves);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID,
 			(LPARAM)Settings.UseNavBar);
+
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_AUTO_RECOMPARE]._cmdID,
+			(LPARAM)Settings.RecompareOnChange);
 }
 
 
@@ -2881,15 +2896,17 @@ void onSciModified(SCNotification* notifyCode)
 		}
 	}
 
-	if (cmpPair->isFullCompare &&
+	if (cmpPair->isFullCompare && Settings.RecompareOnChange &&
 		((notifyCode->modificationType & SC_MOD_DELETETEXT) || (notifyCode->modificationType & SC_MOD_INSERTTEXT)))
 	{
 		delayedAlignment.cancel();
 		delayedUpdate.cancel();
 
 		if (notifyCode->linesAdded)
-			cmpPair->autoUpdateDelay = 200;
+			cmpPair->autoUpdateDelay = 400;
 		else
+			// Leave bigger delay before re-compare if change is on single line because the user might be typing
+			// and we shouldn't interrupt / interfere
 			cmpPair->autoUpdateDelay = 1000;
 	}
 }
@@ -3112,7 +3129,7 @@ void onFileSaved(LRESULT buffId)
 		CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
 	}
 
-    if (pairIsActive && Settings.RecompareOnSave && cmpPair->autoUpdateDelay)
+    if (pairIsActive && Settings.RecompareOnChange && cmpPair->autoUpdateDelay)
     {
         delayedAlignment.cancel();
         delayedUpdate.cancel();
