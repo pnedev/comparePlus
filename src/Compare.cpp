@@ -328,18 +328,11 @@ public:
 	ComparedFile	file[2];
 	int				relativePos;
 
-	bool			isFullCompare;
-	bool			findUniqueMode;
-
-	bool			spacesIgnored;
-	bool			caseIgnored;
-	bool			movesDetected;
-
-	int				autoUpdateDelay = 0;
-
-	std::pair<int, int>	selections[2];
+	CompareOptions	options;
 
 	AlignmentInfo_t	alignmentInfo;
+
+	int				autoUpdateDelay = 0;
 };
 
 
@@ -439,12 +432,10 @@ public:
 class DelayedUpdate : public DelayedWork
 {
 public:
-	DelayedUpdate() : DelayedWork(), findUniqueMode(false) {}
+	DelayedUpdate() : DelayedWork() {}
 	virtual ~DelayedUpdate() = default;
 
 	virtual void operator()();
-
-	bool findUniqueMode;
 };
 
 
@@ -1048,21 +1039,21 @@ void ComparedPair::setStatus()
 {
 	TCHAR cmpType[128];
 
-	if (isFullCompare)
-		_tcscpy_s(cmpType, _countof(cmpType), TEXT("Full"));
-	else
+	if (options.selectionCompare)
 		_sntprintf_s(cmpType, _countof(cmpType), _TRUNCATE, TEXT("Sel: %d-%d vs. %d-%d"),
-				selections[MAIN_VIEW].first + 1, selections[MAIN_VIEW].second + 1,
-				selections[SUB_VIEW].first + 1, selections[SUB_VIEW].second + 1);
+				options.selections[MAIN_VIEW].first + 1, options.selections[MAIN_VIEW].second + 1,
+				options.selections[SUB_VIEW].first + 1, options.selections[SUB_VIEW].second + 1);
+	else
+		_tcscpy_s(cmpType, _countof(cmpType), TEXT("Full"));
 
 	TCHAR msg[512];
 
 	_sntprintf_s(msg, _countof(msg), _TRUNCATE,
 			TEXT("%s (%s)    Ignore Spaces (%s)    Ignore Case (%s)    Detect Moves (%s)"),
-			findUniqueMode	? TEXT("Find Unique") : TEXT("Compare"), cmpType,
-			spacesIgnored	? TEXT("Y")	: TEXT("N"),
-			caseIgnored		? TEXT("Y")	: TEXT("N"),
-			movesDetected	? TEXT("Y")	: TEXT("N"));
+			options.findUniqueMode	? TEXT("Find Unique") : TEXT("Compare"), cmpType,
+			options.ignoreSpaces	? TEXT("Y")	: TEXT("N"),
+			options.ignoreCase		? TEXT("Y")	: TEXT("N"),
+			options.detectMoves		? TEXT("Y")	: TEXT("N"));
 
 	::SendMessageW(nppData._nppHandle, NPPM_SETSTATUSBAR, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)msg));
 }
@@ -1217,7 +1208,7 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 	int view			= getCurrentViewId();
 	const int otherView	= getOtherViewId(view);
 
-	if (!cmpPair->findUniqueMode && !goToCornerDiff)
+	if (!cmpPair->options.findUniqueMode && !goToCornerDiff)
 	{
 		const int edgeLine		= (down ? getLastLine(view) : getFirstLine(view));
 		const int currentLine	= (Settings.FollowingCaret ? getCurrentLine(view) : edgeLine);
@@ -1258,7 +1249,7 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 		if (otherLine < 0)
 			return std::make_pair(-1, -1);
 
-		if (cmpPair->findUniqueMode)
+		if (cmpPair->options.findUniqueMode)
 		{
 			view = otherView;
 			line = otherLine;
@@ -1277,7 +1268,7 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 
 		if (switchViews)
 		{
-			if (cmpPair->findUniqueMode)
+			if (cmpPair->options.findUniqueMode)
 			{
 				view = otherView;
 				line = otherLine;
@@ -1289,7 +1280,7 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 		}
 	}
 
-	if (cmpPair->findUniqueMode && Settings.FollowingCaret)
+	if (cmpPair->options.findUniqueMode && Settings.FollowingCaret)
 		::SetFocus(getView(view));
 
 	if (!down && isLineAnnotated(view, line))
@@ -1877,42 +1868,26 @@ CompareList_t::iterator addComparePair()
 }
 
 
-CompareResult runCompare(CompareList_t::iterator cmpPair, bool selectionCompare, bool findUniqueMode)
+CompareResult runCompare(CompareList_t::iterator cmpPair)
 {
-	cmpPair->positionFiles();
-
-	section_t mainViewSection = { 0, 0 };
-	section_t subViewSection = { 0, 0 };
-
-	if (selectionCompare)
-	{
-		cmpPair->selections[MAIN_VIEW]	= getSelectionLines(MAIN_VIEW);
-		cmpPair->selections[SUB_VIEW]	= getSelectionLines(SUB_VIEW);
-
-		mainViewSection.off = cmpPair->selections[MAIN_VIEW].first;
-		mainViewSection.len = cmpPair->selections[MAIN_VIEW].second - cmpPair->selections[MAIN_VIEW].first + 1;
-
-		subViewSection.off = cmpPair->selections[SUB_VIEW].first;
-		subViewSection.len = cmpPair->selections[SUB_VIEW].second - cmpPair->selections[SUB_VIEW].first + 1;
-	}
-
 	setStyles(Settings);
 
 	const TCHAR* newName = ::PathFindFileName(cmpPair->getNewFile().name);
 	const TCHAR* oldName = ::PathFindFileName(cmpPair->getOldFile().name);
 
 	TCHAR progressInfo[MAX_PATH];
-	_sntprintf_s(progressInfo, _countof(progressInfo), _TRUNCATE, selectionCompare ?
+	_sntprintf_s(progressInfo, _countof(progressInfo), _TRUNCATE, cmpPair->options.selectionCompare ?
 			TEXT("Comparing selected lines in \"%s\" vs. selected lines in \"%s\"...") :
 			TEXT("Comparing \"%s\" vs. \"%s\"..."), newName, oldName);
 
-	return compareViews(mainViewSection, subViewSection, findUniqueMode, Settings, progressInfo,
-			cmpPair->alignmentInfo);
+	return compareViews(cmpPair->options, progressInfo, cmpPair->alignmentInfo);
 }
 
 
-void compare(bool selectionCompare = false, bool findUniqueMode = false)
+void compare(bool selectionCompare = false, bool findUniqueMode = false, bool autoUpdating = false)
 {
+	delayedUpdate.cancel();
+
 	ScopedIncrementer incr(notificationsLock);
 
 	const bool				doubleView		= !isSingleView();
@@ -1928,14 +1903,13 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false)
 	{
 		newCompare.reset();
 
-		const bool updateCompare = (cmpPair->autoUpdateDelay != 0);
-
 		cmpPair->autoUpdateDelay = 0;
 
-		if (selectionCompare && !areSelectionsValid())
+		if (!autoUpdating && selectionCompare && !areSelectionsValid())
 			return;
 
-		if (cmpPair->isFullCompare && (!Settings.GotoFirstDiff || updateCompare) && !selectionCompare)
+		// if (!cmpPair->options.selectionCompare && (!Settings.GotoFirstDiff || autoUpdating) && !selectionCompare)
+		if (!Settings.GotoFirstDiff || autoUpdating)
 			storedLocation.reset(new ViewLocation(getCurrentViewId()));
 
 		cmpPair->getOldFile().clear();
@@ -1975,19 +1949,32 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false)
 		}
 	}
 
-	const CompareResult cmpResult = runCompare(cmpPair, selectionCompare, findUniqueMode);
+	// Compare is triggered manually - get/re-get compare settings and position/reposition files
+	if (!autoUpdating)
+	{
+		cmpPair->options.oldFileViewId		= Settings.OldFileViewId;
+
+		cmpPair->options.findUniqueMode		= findUniqueMode;
+		cmpPair->options.ignoreSpaces		= Settings.IgnoreSpaces;
+		cmpPair->options.ignoreCase			= Settings.IgnoreCase;
+		cmpPair->options.detectMoves		= Settings.DetectMoves;
+		cmpPair->options.selectionCompare	= selectionCompare;
+
+		cmpPair->positionFiles();
+
+		if (selectionCompare)
+		{
+			cmpPair->options.selections[MAIN_VIEW]	= getSelectionLines(MAIN_VIEW);
+			cmpPair->options.selections[SUB_VIEW]	= getSelectionLines(SUB_VIEW);
+		}
+	}
+
+	const CompareResult cmpResult = runCompare(cmpPair);
 
 	switch (cmpResult)
 	{
 		case CompareResult::COMPARE_MISMATCH:
 		{
-			cmpPair->isFullCompare	= !selectionCompare;
-			cmpPair->findUniqueMode	= findUniqueMode;
-
-			cmpPair->spacesIgnored	= Settings.IgnoreSpaces;
-			cmpPair->caseIgnored	= Settings.IgnoreCase;
-			cmpPair->movesDetected	= Settings.DetectMoves;
-
 			if (Settings.UseNavBar)
 				showNavBar();
 
@@ -2057,7 +2044,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false)
 							TEXT("%s \"%s\" and \"%s\" %s.\n\nTemp file will be closed."),
 							selectionCompare ? TEXT("Selections in files") : TEXT("Files"),
 							newName, ::PathFindFileName(oldFile.name),
-							findUniqueMode ? TEXT("do not contain unique lines") : TEXT("match"));
+							cmpPair->options.findUniqueMode ? TEXT("do not contain unique lines") : TEXT("match"));
 				}
 				else
 				{
@@ -2070,7 +2057,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false)
 								oldFile.isTemp == GIT_TEMP ? TEXT("Git") : TEXT("SVN"));
 				}
 
-				::MessageBox(nppData._nppHandle, msg, findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"), MB_OK);
+				::MessageBox(nppData._nppHandle, msg, cmpPair->options.findUniqueMode ?
+						TEXT("Find Unique") : TEXT("Compare"), MB_OK);
 			}
 			else
 			{
@@ -2078,16 +2066,16 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false)
 						TEXT("%s \"%s\" and \"%s\" %s.%s"),
 						selectionCompare ? TEXT("Selections in files") : TEXT("Files"),
 						newName, ::PathFindFileName(oldFile.name),
-						findUniqueMode ? TEXT("do not contain unique lines") : TEXT("match"),
+						cmpPair->options.findUniqueMode ? TEXT("do not contain unique lines") : TEXT("match"),
 						Settings.PromptToCloseOnMatch ? TEXT("\n\nClose compared files?") : TEXT(""));
 
 				if (Settings.PromptToCloseOnMatch)
 					choice = ::MessageBox(nppData._nppHandle, msg,
-							findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"),
+							cmpPair->options.findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"),
 							MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON1);
 				else
 					::MessageBox(nppData._nppHandle, msg,
-							findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"), MB_OK);
+							cmpPair->options.findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"), MB_OK);
 			}
 
 			if (choice == IDYES)
@@ -2729,8 +2717,6 @@ void DelayedAlign::operator()()
 
 	if (cmpPair->autoUpdateDelay)
 	{
-        delayedUpdate.cancel();
-        delayedUpdate.findUniqueMode = cmpPair->findUniqueMode;
         delayedUpdate.post(cmpPair->autoUpdateDelay);
 
 		return;
@@ -2803,7 +2789,7 @@ void DelayedAlign::operator()()
 			::SetFocus(getCurrentView());
 		}
 	}
-	else if (cmpPair->findUniqueMode)
+	else if (cmpPair->options.findUniqueMode)
 	{
 		syncViews(getCurrentViewId());
 	}
@@ -2826,7 +2812,7 @@ void onSciUpdateUI(HWND view)
 
 void DelayedUpdate::operator()()
 {
-	compare(false, findUniqueMode);
+	compare(false, false, true);
 }
 
 
@@ -2896,7 +2882,7 @@ void onSciModified(SCNotification* notifyCode)
 		}
 	}
 
-	if (cmpPair->isFullCompare && Settings.RecompareOnChange &&
+	if (!cmpPair->options.selectionCompare && Settings.RecompareOnChange &&
 		((notifyCode->modificationType & SC_MOD_DELETETEXT) || (notifyCode->modificationType & SC_MOD_INSERTTEXT)))
 	{
 		delayedAlignment.cancel();
@@ -3132,8 +3118,6 @@ void onFileSaved(LRESULT buffId)
     if (pairIsActive && Settings.RecompareOnChange && cmpPair->autoUpdateDelay)
     {
         delayedAlignment.cancel();
-        delayedUpdate.cancel();
-        delayedUpdate.findUniqueMode = cmpPair->findUniqueMode;
         delayedUpdate.post(30);
     }
 

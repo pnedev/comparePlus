@@ -167,7 +167,7 @@ inline uint64_t Hash(uint64_t hval, char letter)
 }
 
 
-std::vector<uint64_t> computeLineHashes(DocCmpInfo& doc, const UserSettings& settings)
+std::vector<uint64_t> computeLineHashes(DocCmpInfo& doc, const CompareOptions& options)
 {
 	const int monitorCancelEveryXLine = 500;
 
@@ -201,12 +201,12 @@ std::vector<uint64_t> computeLineHashes(DocCmpInfo& doc, const UserSettings& set
 			std::vector<char> line = getText(doc.view, lineStart, lineEnd);
 			const int lineLen = static_cast<int>(line.size()) - 1;
 
-			if (settings.IgnoreCase)
+			if (options.ignoreCase)
 				toLowerCase(line);
 
 			for (int i = 0; i < lineLen; ++i)
 			{
-				if (settings.IgnoreSpaces && (line[i] == ' ' || line[i] == '\t'))
+				if (options.ignoreSpaces && (line[i] == ' ' || line[i] == '\t'))
 					continue;
 
 				lineHashes[lineNum] = Hash(lineHashes[lineNum], line[i]);
@@ -236,7 +236,7 @@ charType getCharType(char letter)
 }
 
 
-std::vector<std::vector<Word>> getWords(int lineOffset, int lineCount, int view, const UserSettings& settings)
+std::vector<std::vector<Word>> getWords(int lineOffset, int lineCount, int view, const CompareOptions& options)
 {
 	std::vector<std::vector<Word>> words(lineCount);
 
@@ -251,7 +251,7 @@ std::vector<std::vector<Word>> getWords(int lineOffset, int lineCount, int view,
 
 		if (lineLen > 0)
 		{
-			if (settings.IgnoreCase)
+			if (options.ignoreCase)
 				toLowerCase(line);
 
 			Word word;
@@ -272,7 +272,7 @@ std::vector<std::vector<Word>> getWords(int lineOffset, int lineCount, int view,
 				}
 				else
 				{
-					if (!settings.IgnoreSpaces || word.type != charType::SPACECHAR)
+					if (!options.ignoreSpaces || word.type != charType::SPACECHAR)
 						words[lineNum].push_back(word);
 
 					word.type = newType;
@@ -282,7 +282,7 @@ std::vector<std::vector<Word>> getWords(int lineOffset, int lineCount, int view,
 				}
 			}
 
-			if (!settings.IgnoreSpaces || word.type != charType::SPACECHAR)
+			if (!options.ignoreSpaces || word.type != charType::SPACECHAR)
 				words[lineNum].push_back(word);
 		}
 	}
@@ -560,11 +560,11 @@ void compareLines(diffInfo& blockDiff1, diffInfo& blockDiff2,
 }
 
 
-void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const UserSettings& settings,
+void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const CompareOptions& options,
 		diffInfo& blockDiff1, diffInfo& blockDiff2)
 {
-	const std::vector<std::vector<Word>> chunk1 = getWords(blockDiff1.off, blockDiff1.len, doc1.view, settings);
-	const std::vector<std::vector<Word>> chunk2 = getWords(blockDiff2.off, blockDiff2.len, doc2.view, settings);
+	const std::vector<std::vector<Word>> chunk1 = getWords(blockDiff1.off, blockDiff1.len, doc1.view, options);
+	const std::vector<std::vector<Word>> chunk2 = getWords(blockDiff2.off, blockDiff2.len, doc2.view, options);
 
 	const int linesCount1 = static_cast<int>(chunk1.size());
 	const int linesCount2 = static_cast<int>(chunk2.size());
@@ -932,29 +932,35 @@ bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
 }
 
 
-CompareResult runCompare(const section_t& mainViewSection, const section_t& subViewSection,
-		const UserSettings& settings, AlignmentInfo_t& alignmentInfo)
+CompareResult runCompare(const CompareOptions& options, AlignmentInfo_t& alignmentInfo)
 {
 	progress_ptr& progress = ProgressDlg::Get();
 
 	CompareInfo cmpInfo;
 
-	cmpInfo.doc1.view			= MAIN_VIEW;
-	cmpInfo.doc1.section		= mainViewSection;
-	cmpInfo.doc2.view			= SUB_VIEW;
-	cmpInfo.doc2.section		= subViewSection;
+	cmpInfo.doc1.view	= MAIN_VIEW;
+	cmpInfo.doc2.view	= SUB_VIEW;
 
-	cmpInfo.selectionCompare	= (cmpInfo.doc1.section.len || cmpInfo.doc2.section.len);
+	cmpInfo.selectionCompare	= options.selectionCompare;
 
-	cmpInfo.doc1.blockDiffMask = (settings.OldFileViewId == MAIN_VIEW) ? MARKER_MASK_REMOVED : MARKER_MASK_ADDED;
-	cmpInfo.doc2.blockDiffMask = (settings.OldFileViewId == MAIN_VIEW) ? MARKER_MASK_ADDED : MARKER_MASK_REMOVED;
+	if (options.selectionCompare)
+	{
+		cmpInfo.doc1.section.off	= options.selections[MAIN_VIEW].first;
+		cmpInfo.doc1.section.len	= options.selections[MAIN_VIEW].second - options.selections[MAIN_VIEW].first + 1;
 
-	const std::vector<uint64_t> doc1LineHashes = computeLineHashes(cmpInfo.doc1, settings);
+		cmpInfo.doc2.section.off	= options.selections[SUB_VIEW].first;
+		cmpInfo.doc2.section.len	= options.selections[SUB_VIEW].second - options.selections[SUB_VIEW].first + 1;
+	}
+
+	cmpInfo.doc1.blockDiffMask = (options.oldFileViewId == MAIN_VIEW) ? MARKER_MASK_REMOVED : MARKER_MASK_ADDED;
+	cmpInfo.doc2.blockDiffMask = (options.oldFileViewId == MAIN_VIEW) ? MARKER_MASK_ADDED : MARKER_MASK_REMOVED;
+
+	const std::vector<uint64_t> doc1LineHashes = computeLineHashes(cmpInfo.doc1, options);
 
 	if (progress && !progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
-	const std::vector<uint64_t> doc2LineHashes = computeLineHashes(cmpInfo.doc2, settings);
+	const std::vector<uint64_t> doc2LineHashes = computeLineHashes(cmpInfo.doc2, options);
 
 	if (progress && !progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
@@ -977,7 +983,7 @@ CompareResult runCompare(const section_t& mainViewSection, const section_t& subV
 
 	findUniqueLines(cmpInfo, *pLineHashes1, *pLineHashes2);
 
-	if (settings.DetectMoves)
+	if (options.detectMoves)
 		findMoves(cmpInfo, *pLineHashes1, *pLineHashes2);
 
 	if (cmpInfo.doc1.section.off || cmpInfo.doc2.section.off)
@@ -1011,7 +1017,7 @@ CompareResult runCompare(const section_t& mainViewSection, const section_t& subV
 				blockDiff1.info.matchBlock = &blockDiff2;
 				blockDiff2.info.matchBlock = &blockDiff1;
 
-				compareBlocks(cmpInfo.doc1, cmpInfo.doc2, settings, blockDiff1, blockDiff2);
+				compareBlocks(cmpInfo.doc1, cmpInfo.doc2, options, blockDiff1, blockDiff2);
 			}
 		}
 
@@ -1029,8 +1035,7 @@ CompareResult runCompare(const section_t& mainViewSection, const section_t& subV
 }
 
 
-CompareResult runFindUnique(const section_t& mainViewSection, const section_t& subViewSection,
-		const UserSettings& settings, AlignmentInfo_t& alignmentInfo)
+CompareResult runFindUnique(const CompareOptions& options, AlignmentInfo_t& alignmentInfo)
 {
 	progress_ptr& progress = ProgressDlg::Get();
 
@@ -1039,12 +1044,19 @@ CompareResult runFindUnique(const section_t& mainViewSection, const section_t& s
 	DocCmpInfo doc1;
 	DocCmpInfo doc2;
 
-	doc1.view		= MAIN_VIEW;
-	doc1.section	= mainViewSection;
-	doc2.view		= SUB_VIEW;
-	doc2.section	= subViewSection;
+	doc1.view	= MAIN_VIEW;
+	doc2.view	= SUB_VIEW;
 
-	if (settings.OldFileViewId == MAIN_VIEW)
+	if (options.selectionCompare)
+	{
+		doc1.section.off	= options.selections[MAIN_VIEW].first;
+		doc1.section.len	= options.selections[MAIN_VIEW].second - options.selections[MAIN_VIEW].first + 1;
+
+		doc2.section.off	= options.selections[SUB_VIEW].first;
+		doc2.section.len	= options.selections[SUB_VIEW].second - options.selections[SUB_VIEW].first + 1;
+	}
+
+	if (options.oldFileViewId == MAIN_VIEW)
 	{
 		doc1.blockDiffMask = MARKER_MASK_REMOVED;
 		doc2.blockDiffMask = MARKER_MASK_ADDED;
@@ -1055,12 +1067,12 @@ CompareResult runFindUnique(const section_t& mainViewSection, const section_t& s
 		doc2.blockDiffMask = MARKER_MASK_REMOVED;
 	}
 
-	std::vector<uint64_t> doc1LineHashes = computeLineHashes(doc1, settings);
+	std::vector<uint64_t> doc1LineHashes = computeLineHashes(doc1, options);
 
 	if (progress && !progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
-	std::vector<uint64_t> doc2LineHashes = computeLineHashes(doc2, settings);
+	std::vector<uint64_t> doc2LineHashes = computeLineHashes(doc2, options);
 
 	if (progress && !progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
@@ -1130,8 +1142,8 @@ CompareResult runFindUnique(const section_t& mainViewSection, const section_t& s
 	}
 
 	AlignmentPair align;
-	align.main.line	= mainViewSection.off;
-	align.sub.line	= subViewSection.off;
+	align.main.line	= doc1.section.off;
+	align.sub.line	= doc2.section.off;
 
 	alignmentInfo.push_back(align);
 
@@ -1141,8 +1153,7 @@ CompareResult runFindUnique(const section_t& mainViewSection, const section_t& s
 }
 
 
-CompareResult compareViews(const section_t& mainViewSection, const section_t& subViewSection, bool findUniqueMode,
-		const UserSettings& settings, const TCHAR* progressInfo, AlignmentInfo_t& alignmentInfo)
+CompareResult compareViews(const CompareOptions& options, const TCHAR* progressInfo, AlignmentInfo_t& alignmentInfo)
 {
 	CompareResult result = CompareResult::COMPARE_ERROR;
 
@@ -1151,10 +1162,10 @@ CompareResult compareViews(const section_t& mainViewSection, const section_t& su
 
 	try
 	{
-		if (findUniqueMode)
-			result = runFindUnique(mainViewSection, subViewSection, settings, alignmentInfo);
+		if (options.findUniqueMode)
+			result = runFindUnique(options, alignmentInfo);
 		else
-			result = runCompare(mainViewSection, subViewSection, settings, alignmentInfo);
+			result = runCompare(options, alignmentInfo);
 
 		ProgressDlg::Close();
 	}

@@ -38,11 +38,27 @@ enum class CompareResult
 
 struct section_t
 {
-	section_t() {}
+	section_t() : off(0), len(0) {}
 	section_t(int o, int l) : off(o), len(l) {}
 
 	int off;
 	int len;
+};
+
+
+struct CompareOptions
+{
+	int		oldFileViewId;
+
+	bool	findUniqueMode;
+
+	bool	ignoreSpaces;
+	bool	ignoreCase;
+	bool	detectMoves;
+
+	bool	selectionCompare;
+
+	std::pair<int, int>	selections[2];
 };
 
 
@@ -63,5 +79,4 @@ struct AlignmentPair
 using AlignmentInfo_t = std::vector<AlignmentPair>;
 
 
-CompareResult compareViews(const section_t& mainViewSection, const section_t& subViewSection, bool findUniqueMode,
-		const UserSettings& settings, const TCHAR* progressInfo, AlignmentInfo_t& alignmentInfo);
+CompareResult compareViews(const CompareOptions& options, const TCHAR* progressInfo, AlignmentInfo_t& alignmentInfo);
