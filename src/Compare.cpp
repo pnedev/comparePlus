@@ -149,7 +149,7 @@ struct DeletedSectionsList
 		return sections;
 	}
 
-	void push(int view, int currAction, int startLine, int len);
+	bool push(int view, int currAction, int startLine, int len);
 	void pop(int view, int currAction, int startLine);
 
 	void clear()
@@ -165,20 +165,20 @@ private:
 };
 
 
-void DeletedSectionsList::push(int view, int currAction, int startLine, int len)
+bool DeletedSectionsList::push(int view, int currAction, int startLine, int len)
 {
 	if (len < 1)
-		return;
+		return false;
 
 	if (skipPush)
 	{
 		--skipPush;
-		return;
+		return false;
 	}
 
 	// Is it line replacement revert operation?
 	if (!sections.empty() && sections.back().restoreAction == currAction && sections.back().lineReplace)
-		return;
+		return false;
 
 	DeletedSection delSection(currAction, startLine, len);
 
@@ -200,6 +200,8 @@ void DeletedSectionsList::push(int view, int currAction, int startLine, int len)
 	sections.push_back(delSection);
 
 	lastPushTimeMark = ::GetTickCount();
+
+	return delSection.onlyAlignmentBlankChange;
 }
 
 
@@ -272,9 +274,9 @@ public:
 	void restore() const;
 	bool isOpen() const;
 
-	void pushDeletedSection(int sciAction, int startLine, int len)
+	bool pushDeletedSection(int sciAction, int startLine, int len)
 	{
-		deletedSections.push(compareViewId, sciAction, startLine, len);
+		return deletedSections.push(compareViewId, sciAction, startLine, len);
 	}
 
 	void popDeletedSection(int sciAction, int startLine)
@@ -282,10 +284,15 @@ public:
 		deletedSections.pop(compareViewId, sciAction, startLine);
 	}
 
-	void redoAlignmentBlankDeletion()
+	bool redoAlignmentBlankDeletion()
 	{
 		if (!deletedSections.get().empty() && deletedSections.get().back().onlyAlignmentBlankChange)
+		{
 			::PostMessage(getView(compareViewId), SCI_UNDO, 0, 0);
+			return true;
+		}
+
+		return false;
 	}
 
 	Temp_t	isTemp;
@@ -1037,12 +1044,13 @@ void ComparedPair::restoreFiles(int currentBuffId = -1)
 
 void ComparedPair::setStatus()
 {
+	const int alignOff = (isAlignmentFirstLineInserted(MAIN_VIEW) || isAlignmentFirstLineInserted(SUB_VIEW)) ? 2 : 1;
 	TCHAR cmpType[128];
 
 	if (options.selectionCompare)
 		_sntprintf_s(cmpType, _countof(cmpType), _TRUNCATE, TEXT("Sel: %d-%d vs. %d-%d"),
-				options.selections[MAIN_VIEW].first + 1, options.selections[MAIN_VIEW].second + 1,
-				options.selections[SUB_VIEW].first + 1, options.selections[SUB_VIEW].second + 1);
+				options.selections[MAIN_VIEW].first + alignOff, options.selections[MAIN_VIEW].second + alignOff,
+				options.selections[SUB_VIEW].first + alignOff, options.selections[SUB_VIEW].second + alignOff);
 	else
 		_tcscpy_s(cmpType, _countof(cmpType), TEXT("Full"));
 
@@ -1512,8 +1520,10 @@ bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
 }
 
 
-void alignDiffs(const AlignmentInfo_t& alignmentInfo)
+void alignDiffs(const CompareList_t::iterator& cmpPair)
 {
+	const AlignmentInfo_t& alignmentInfo = cmpPair->alignmentInfo;
+
 	CallScintilla(MAIN_VIEW, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
 	CallScintilla(SUB_VIEW, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
 
@@ -1578,6 +1588,44 @@ void alignDiffs(const AlignmentInfo_t& alignmentInfo)
 				continue;
 
 			addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line + off, -mismatchLen);
+		}
+	}
+
+	// Mark selections for clarity
+	if (cmpPair->options.selectionCompare)
+	{
+		if (cmpPair->options.selections[MAIN_VIEW].first + off > 0 &&
+			cmpPair->options.selections[SUB_VIEW].first + off > 0)
+		{
+			int mainAnnotation =
+					getLineAnnotation(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first + off - 1);
+			int subAnnotation =
+					getLineAnnotation(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first + off - 1);
+
+			if (mainAnnotation == 0 || subAnnotation == 0)
+			{
+				++mainAnnotation;
+				++subAnnotation;
+			}
+
+			addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first + off, mainAnnotation, -1);
+			addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first + off, subAnnotation, -1);
+		}
+
+		{
+			int mainAnnotation =
+					getLineAnnotation(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].second + off);
+			int subAnnotation =
+					getLineAnnotation(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].second + off);
+
+			if (mainAnnotation == 0 || subAnnotation == 0)
+			{
+				++mainAnnotation;
+				++subAnnotation;
+			}
+
+			addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].second + off + 1, mainAnnotation, 1);
+			addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].second + off + 1, subAnnotation, 1);
 		}
 	}
 }
@@ -2745,7 +2793,7 @@ void DelayedAlign::operator()()
 		if (!storedLocation && !goToFirst)
 			storedLocation.reset(new ViewLocation(getCurrentViewId()));
 
-		alignDiffs(alignmentInfo);
+		alignDiffs(cmpPair);
 	}
 
 	if (goToFirst)
@@ -2846,15 +2894,22 @@ void onSciModified(SCNotification* notifyCode)
 
 			ScopedIncrementer incr(notificationsLock);
 
-			cmpPair->getFileByViewId(view).pushDeletedSection(action, startLine, endLine - startLine);
+			if (cmpPair->getFileByViewId(view).pushDeletedSection(action, startLine, endLine - startLine))
+				return;
 		}
 	}
 	else if ((notifyCode->modificationType & SC_MOD_DELETETEXT) && notifyCode->linesAdded)
 	{
 		if (!skipPushDeletedSection)
-			cmpPair->getFileByViewId(view).redoAlignmentBlankDeletion();
+		{
+			if (cmpPair->getFileByViewId(view).redoAlignmentBlankDeletion())
+				return;
+		}
 		else
+		{
 			skipPushDeletedSection = false;
+			return;
+		}
 	}
 	else if (notifyCode->modificationType & SC_MOD_INSERTTEXT)
 	{
@@ -2866,6 +2921,8 @@ void onSciModified(SCNotification* notifyCode)
 				skipPushDeletedSection = true;
 
 			::PostMessage(getView(view), SCI_UNDO, 0, 0);
+
+			return;
 		}
 		else if (notifyCode->linesAdded)
 		{
@@ -2882,18 +2939,42 @@ void onSciModified(SCNotification* notifyCode)
 		}
 	}
 
-	if (!cmpPair->options.selectionCompare && Settings.RecompareOnChange &&
-		((notifyCode->modificationType & SC_MOD_DELETETEXT) || (notifyCode->modificationType & SC_MOD_INSERTTEXT)))
+	if ((notifyCode->modificationType & SC_MOD_DELETETEXT) || (notifyCode->modificationType & SC_MOD_INSERTTEXT))
 	{
 		delayedAlignment.cancel();
 		delayedUpdate.cancel();
 
-		if (notifyCode->linesAdded)
-			cmpPair->autoUpdateDelay = 400;
-		else
-			// Leave bigger delay before re-compare if change is on single line because the user might be typing
-			// and we shouldn't interrupt / interfere
-			cmpPair->autoUpdateDelay = 1000;
+		if (cmpPair->options.selectionCompare && notifyCode->linesAdded)
+		{
+			const int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+			const int endLine = startLine + notifyCode->linesAdded - 1;
+
+			if (cmpPair->options.selections[view].first > startLine)
+			{
+				if (cmpPair->options.selections[view].first > endLine)
+					cmpPair->options.selections[view].first += notifyCode->linesAdded;
+				else
+					cmpPair->options.selections[view].first += (cmpPair->options.selections[view].first - startLine);
+			}
+
+			if (cmpPair->options.selections[view].second > startLine)
+			{
+				if (cmpPair->options.selections[view].second > endLine)
+					cmpPair->options.selections[view].second += notifyCode->linesAdded;
+				else
+					cmpPair->options.selections[view].second += (cmpPair->options.selections[view].second - startLine);
+			}
+		}
+
+		if (Settings.RecompareOnChange)
+		{
+			if (notifyCode->linesAdded)
+				cmpPair->autoUpdateDelay = 400;
+			else
+				// Leave bigger delay before re-compare if change is on single line because the user might be typing
+				// and we shouldn't interrupt / interfere
+				cmpPair->autoUpdateDelay = 1000;
+		}
 	}
 }
 

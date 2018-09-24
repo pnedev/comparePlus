@@ -400,6 +400,12 @@ inline int getWrapCount(int view, int line)
 }
 
 
+inline int getLineAnnotation(int view, int line)
+{
+	return CallScintilla(view, SCI_ANNOTATIONGETLINES, line, 0);
+}
+
+
 inline bool isLineVisible(int view, int line)
 {
 	const int firstVisibleLine = CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
@@ -417,7 +423,7 @@ inline bool isLineWrapped(int view, int line)
 
 inline bool isLineAnnotated(int view, int line)
 {
-	return (CallScintilla(view, SCI_ANNOTATIONGETLINES, line, 0) > 0);
+	return (getLineAnnotation(view, line) > 0);
 }
 
 
@@ -499,4 +505,4 @@ bool isVisibleAdjacentAnnotation(int view, int line, bool down);
 std::vector<char> getText(int view, int startPos, int endPos);
 void toLowerCase(std::vector<char>& text);
 
-void addBlankSection(int view, int line, int length);
+void addBlankSection(int view, int line, int length, int selectionMark = 0);

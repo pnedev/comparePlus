@@ -215,6 +215,8 @@ void setBlanksStyle(int view, int blankColor)
 	CallScintilla(view, SCI_ANNOTATIONSETSTYLEOFFSET,	blankStyle[view], 0);
 	CallScintilla(view, SCI_STYLESETEOLFILLED,			blankStyle[view], 1);
 	CallScintilla(view, SCI_STYLESETBACK,				blankStyle[view], blankColor);
+	// CallScintilla(view, SCI_STYLESETFORE,				blankStyle[view], 0xFF);
+	CallScintilla(view, SCI_STYLESETBOLD,				blankStyle[view], true);
 	CallScintilla(view, SCI_ANNOTATIONSETVISIBLE, ANNOTATION_STANDARD, 0);
 }
 
@@ -624,12 +626,28 @@ bool isVisibleAdjacentAnnotation(int view, int line, bool down)
 }
 
 
-void addBlankSection(int view, int line, int length)
+void addBlankSection(int view, int line, int length, int selectionMark)
 {
 	if (length <= 0)
 		return;
 
 	std::vector<char> blank(length - 1, '\n');
+
+	if (selectionMark < 0)
+	{
+		const char sel[] = "--- Selection Compare Block Start ---";
+
+		++selectionMark;
+		blank.insert(blank.end() + selectionMark, sel, sel + sizeof(sel) - 1);
+	}
+	else if (selectionMark > 0)
+	{
+		const char sel[] = "--- Selection Compare Block End ---";
+
+		--selectionMark;
+		blank.insert(blank.begin() + selectionMark, sel, sel + sizeof(sel) - 1);
+	}
+
 	blank.push_back('\0');
 
 	CallScintilla(view, SCI_ANNOTATIONSETTEXT, line - 1, (LPARAM)blank.data());

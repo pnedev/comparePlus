@@ -131,7 +131,7 @@ void UserSettings::save()
 	{
 		TCHAR msg[MAX_PATH + 64];
 
-		_sntprintf_s(msg, _countof(msg), _TRUNCATE, TEXT("Failed to write the\n'%s'\nconfiguration file."), iniFile);
+		_sntprintf_s(msg, _countof(msg), _TRUNCATE, TEXT("Failed to write\n'%s'\nconfiguration file."), iniFile);
 		::MessageBox(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK | MB_ICONWARNING);
 
 		return;
