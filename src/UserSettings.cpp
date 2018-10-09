@@ -108,6 +108,22 @@ void UserSettings::save()
 	TCHAR iniFile[MAX_PATH];
 
 	::SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, (WPARAM)_countof(iniFile), (LPARAM)iniFile);
+
+	if (::PathFileExists(iniFile) == FALSE)
+	{
+		if (::CreateDirectory(iniFile, NULL) == FALSE)
+		{
+			TCHAR msg[MAX_PATH + 128];
+
+			_sntprintf_s(msg, _countof(msg), _TRUNCATE,
+					TEXT("Notepad++ plugins config folder\n'%s'\ndoesn't exist and failed to be created.")
+					TEXT("\nCannot write configuration file."), iniFile);
+			::MessageBox(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK | MB_ICONWARNING);
+
+			return;
+		}
+	}
+
 	::PathAppend(iniFile, TEXT("ComparePlugin.ini"));
 
 	if (!::WritePrivateProfileString(mainSection, oldIsFirstSetting,
