@@ -123,17 +123,17 @@ if (UNIX OR MINGW)
 	target_link_libraries (ComparePlugin ${comctl32} ${comdlg32} ${shlwapi} ${msimg32})
 
 	install (FILES ${CMAKE_BINARY_DIR}/libComparePlugin.dll
-		DESTINATION "$ENV{HOME}/.wine/drive_c/Program Files/Notepad++/plugins"
+		DESTINATION "$ENV{HOME}/.wine/drive_c/Program Files/Notepad++/plugins/ComparePlugin"
 		RENAME ComparePlugin.dll
 	)
 
 	if (CMAKE_SIZEOF_VOID_P EQUAL 8)
 		install (DIRECTORY libs/x64/
-			DESTINATION "$ENV{HOME}/.wine/drive_c/Program Files/Notepad++/plugins/ComparePlugin"
+			DESTINATION "$ENV{HOME}/.wine/drive_c/Program Files/Notepad++/plugins/ComparePlugin/ComparePlugin"
 		)
 	else()
 		install (DIRECTORY libs/x86/
-			DESTINATION "$ENV{HOME}/.wine/drive_c/Program Files/Notepad++/plugins/ComparePlugin"
+			DESTINATION "$ENV{HOME}/.wine/drive_c/Program Files/Notepad++/plugins/ComparePlugin/ComparePlugin"
 		)
 	endif()
 
@@ -141,16 +141,16 @@ else (UNIX OR MINGW)
 	target_link_libraries (ComparePlugin comctl32 comdlg32 shlwapi msimg32)
 
 	install (TARGETS ComparePlugin
-		DESTINATION "${PROJECT_SOURCE_DIR}/Notepad++/plugins"
+		DESTINATION "${PROJECT_SOURCE_DIR}/Notepad++/plugins/ComparePlugin"
 	)
 
 	if (CMAKE_SIZEOF_VOID_P EQUAL 8)
 		install (DIRECTORY libs/x64/
-			DESTINATION "${PROJECT_SOURCE_DIR}/Notepad++/plugins/ComparePlugin"
+			DESTINATION "${PROJECT_SOURCE_DIR}/Notepad++/plugins/ComparePlugin/ComparePlugin"
 		)
 	else()
 		install (DIRECTORY libs/x86/
-			DESTINATION "${PROJECT_SOURCE_DIR}/Notepad++/plugins/ComparePlugin"
+			DESTINATION "${PROJECT_SOURCE_DIR}/Notepad++/plugins/ComparePlugin/ComparePlugin"
 		)
 	endif()
 

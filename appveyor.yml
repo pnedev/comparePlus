@@ -30,11 +30,11 @@ after_build:
     - cd "%APPVEYOR_BUILD_FOLDER%"
     - ps: >-
 
-        Push-AppveyorArtifact "Notepad++\plugins\ComparePlugin.dll" -FileName ComparePlugin.dll
+        Push-AppveyorArtifact "Notepad++\plugins\ComparePlugin\ComparePlugin.dll" -FileName ComparePlugin.dll
 
         if ($($env:APPVEYOR_REPO_TAG) -eq "true" -and $env:CONFIGURATION -eq "Release Unicode" -and $env:PLATFORMTOOLSET -eq "v140_xp") {
             $ZipFileName = "ComparePlugin_$($env:APPVEYOR_REPO_TAG_NAME)_$env:PLATFORM.zip"
-            Remove-Item .\Notepad++\plugins\*.pdb
+            Remove-Item .\Notepad++\plugins\ComparePlugin\*.pdb
             7z a $ZipFileName .\Notepad++\plugins\*
         }
 

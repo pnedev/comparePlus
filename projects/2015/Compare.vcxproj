@@ -66,13 +66,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>14.0.23107.0</_ProjectFileVersion>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|Win32'">..\..\Notepad++\plugins\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|Win32'">..\..\Notepad++\plugins\ComparePlugin\</OutDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|Win32'">true</LinkIncremental>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|x64'">..\..\Notepad++\plugins\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|x64'">..\..\Notepad++\plugins\ComparePlugin\</OutDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|x64'">true</LinkIncremental>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release Unicode|Win32'">..\..\Notepad++\plugins\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release Unicode|Win32'">..\..\Notepad++\plugins\ComparePlugin\</OutDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release Unicode|Win32'">false</LinkIncremental>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release Unicode|x64'">..\..\Notepad++\plugins\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release Unicode|x64'">..\..\Notepad++\plugins\ComparePlugin\</OutDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release Unicode|x64'">false</LinkIncremental>
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug Unicode|x64'">AllRules.ruleset</CodeAnalysisRuleSet>
@@ -119,7 +119,7 @@
       <PreprocessorDefinitions>_VC80_UPGRADE=0x0700;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <PostBuildEvent>
-      <Command>echo Copying additional libs to plugins\ComparePlugin
+      <Command>echo Copying additional libs to plugins\ComparePlugin\ComparePlugin
 if not exist "$(OutDir)ComparePlugin" mkdir "$(OutDir)ComparePlugin"
 copy "..\..\libs\x86\*.dll" "$(OutDir)ComparePlugin"</Command>
     </PostBuildEvent>
