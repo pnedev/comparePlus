@@ -24,7 +24,7 @@
 #include "Window.h"
 
 
-static const TCHAR cDonate_URL[]	= TEXT("https://www.paypal.me/pnedev");
+static const TCHAR cDonate_URL[]	= TEXT("https://paypal.me/pnedev");
 static const TCHAR cHelp_URL[]		= TEXT("https://github.com/pnedev/compare-plugin/blob/master/Help.md");
 
 
