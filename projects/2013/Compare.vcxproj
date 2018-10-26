@@ -151,7 +151,7 @@ copy "..\..\libs\x86\*.dll" "$(OutDir)ComparePlugin"</Command>
       <PreprocessorDefinitions>_VC80_UPGRADE=0x0700;_DEBUG;_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <PostBuildEvent>
-      <Command>echo Copying additional libs to plugins\ComparePlugin
+      <Command>echo Copying additional libs to plugins\ComparePlugin\ComparePlugin
 if not exist "$(OutDir)ComparePlugin" mkdir "$(OutDir)ComparePlugin"
 copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlugin"</Command>
     </PostBuildEvent>
@@ -188,7 +188,7 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlugin"</Command>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>echo Copying additional libs to plugins\ComparePlugin
+      <Command>echo Copying additional libs to plugins\ComparePlugin\ComparePlugin
 if not exist "$(OutDir)ComparePlugin" mkdir "$(OutDir)ComparePlugin"
 copy "..\..\libs\x86\*.dll" "$(OutDir)ComparePlugin"</Command>
     </PostBuildEvent>
@@ -227,7 +227,7 @@ copy "..\..\libs\x86\*.dll" "$(OutDir)ComparePlugin"</Command>
       <PreprocessorDefinitions>_VC80_UPGRADE=0x0700;_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <PostBuildEvent>
-      <Command>echo Copying additional libs to plugins\ComparePlugin
+      <Command>echo Copying additional libs to plugins\ComparePlugin\ComparePlugin
 if not exist "$(OutDir)ComparePlugin" mkdir "$(OutDir)ComparePlugin"
 copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlugin"</Command>
     </PostBuildEvent>
