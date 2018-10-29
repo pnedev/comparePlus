@@ -35,7 +35,7 @@ after_build:
         if ($($env:APPVEYOR_REPO_TAG) -eq "true" -and $env:CONFIGURATION -eq "Release Unicode" -and $env:PLATFORMTOOLSET -eq "v140_xp") {
             $ZipFileName = "ComparePlugin_$($env:APPVEYOR_REPO_TAG_NAME)_$env:PLATFORM.zip"
             Remove-Item .\Notepad++\plugins\ComparePlugin\*.pdb
-            7z a $ZipFileName .\Notepad++\plugins\*
+            7z a $ZipFileName .\Notepad++\plugins\ComparePlugin\*
         }
 
 artifacts:
