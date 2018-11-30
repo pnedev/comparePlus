@@ -841,8 +841,8 @@ bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
 
 					if (cmpInfo.doc1.section.len || cmpInfo.doc2.section.len)
 					{
-						pMainAlignData->diffMask	= cmpInfo.doc1.blockDiffMask;
-						pSubAlignData->diffMask		= cmpInfo.doc2.blockDiffMask;
+						pMainAlignData->diffMask	= cmpInfo.doc1.section.len ? cmpInfo.doc1.blockDiffMask : 0;
+						pSubAlignData->diffMask		= cmpInfo.doc2.section.len ? cmpInfo.doc2.blockDiffMask : 0;
 
 						alignmentInfo.push_back(alignPair);
 
@@ -878,8 +878,8 @@ bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
 
 				if (cmpInfo.doc1.section.len || cmpInfo.doc2.section.len)
 				{
-					pMainAlignData->diffMask	= cmpInfo.doc1.blockDiffMask;
-					pSubAlignData->diffMask		= cmpInfo.doc2.blockDiffMask;
+					pMainAlignData->diffMask	= cmpInfo.doc1.section.len ? cmpInfo.doc1.blockDiffMask : 0;
+					pSubAlignData->diffMask		= cmpInfo.doc2.section.len ? cmpInfo.doc2.blockDiffMask : 0;
 
 					alignmentInfo.push_back(alignPair);
 

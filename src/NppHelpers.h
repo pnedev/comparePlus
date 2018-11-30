@@ -394,6 +394,15 @@ inline int otherViewMatchingLine(int view, int line)
 }
 
 
+inline void gotoClosestUnhiddenLine(int view)
+{
+	const int closestUnhiddenLine = CallScintilla(view, SCI_DOCLINEFROMVISIBLE,
+		CallScintilla(view, SCI_VISIBLEFROMDOCLINE, getCurrentLine(view), 0), 0);
+
+	CallScintilla(view, SCI_GOTOLINE, closestUnhiddenLine, 0);
+}
+
+
 inline int getWrapCount(int view, int line)
 {
 	return CallScintilla(view, SCI_WRAPCOUNT, line, 0);
@@ -498,6 +507,8 @@ void clearWindow(int view);
 void clearMarks(int view, int line);
 int getPrevUnmarkedLine(int view, int startLine, int markMask);
 int getNextUnmarkedLine(int view, int startLine, int markMask);
+
+void hideUnmarked(int view, int markMask);
 
 bool isAdjacentAnnotation(int view, int line, bool down);
 bool isVisibleAdjacentAnnotation(int view, int line, bool down);

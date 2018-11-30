@@ -79,6 +79,7 @@ public:
 	static const TCHAR ignoreSpacesSetting[];
 	static const TCHAR ignoreCaseSetting[];
 	static const TCHAR detectMovesSetting[];
+	static const TCHAR hideMatchesSetting[];
 	static const TCHAR navBarSetting[];
 
 	static const TCHAR reCompareOnChangeSetting[];
@@ -104,6 +105,7 @@ public:
 	bool           	IgnoreSpaces;
 	bool           	IgnoreCase;
 	bool           	DetectMoves;
+	bool           	HideMatches;
 	bool           	UseNavBar;
 
 	bool           	RecompareOnChange;

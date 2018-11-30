@@ -519,6 +519,7 @@ void clearWindow(int view)
 {
 	removeAlignmentFirstLine(view);
 
+	CallScintilla(view, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
 	CallScintilla(view, SCI_ANNOTATIONCLEARALL, 0, 0);
 
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_CHANGED_LINE, 0);
@@ -586,6 +587,28 @@ int getNextUnmarkedLine(int view, int startLine, int markMask)
 }
 
 
+void hideUnmarked(int view, int markMask)
+{
+	const int linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+
+	// First line (0) cannot be hidden so start from line 1
+	for (int nextMarkedLine, nextUnmarkedLine = 1; nextUnmarkedLine < linesCount; nextUnmarkedLine = nextMarkedLine)
+	{
+		for (; (nextUnmarkedLine < linesCount) && isLineMarked(view, nextUnmarkedLine, markMask); ++nextUnmarkedLine);
+
+		if (nextUnmarkedLine == linesCount)
+			break;
+
+		nextMarkedLine = CallScintilla(view, SCI_MARKERNEXT, nextUnmarkedLine, markMask);
+
+		if (nextMarkedLine < 0)
+			nextMarkedLine = linesCount;
+
+		CallScintilla(view, SCI_HIDELINES, nextUnmarkedLine, nextMarkedLine - 1);
+	}
+}
+
+
 bool isAdjacentAnnotation(int view, int line, bool down)
 {
 	if (down)
@@ -650,5 +673,8 @@ void addBlankSection(int view, int line, int length, int selectionMark)
 
 	blank.push_back('\0');
 
-	CallScintilla(view, SCI_ANNOTATIONSETTEXT, line - 1, (LPARAM)blank.data());
+	const int previousUnhiddenLine = CallScintilla(view, SCI_DOCLINEFROMVISIBLE,
+			CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - 1, 0);
+
+	CallScintilla(view, SCI_ANNOTATIONSETTEXT, previousUnhiddenLine, (LPARAM)blank.data());
 }

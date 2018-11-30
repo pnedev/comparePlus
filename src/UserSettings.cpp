@@ -37,6 +37,7 @@ const TCHAR UserSettings::followingCaretSetting[]		= TEXT("Following Caret");
 const TCHAR UserSettings::ignoreSpacesSetting[]			= TEXT("Ignore Spaces");
 const TCHAR UserSettings::ignoreCaseSetting[]			= TEXT("Ignore Case");
 const TCHAR UserSettings::detectMovesSetting[]			= TEXT("Detect Moves");
+const TCHAR UserSettings::hideMatchesSetting[]			= TEXT("Hide Matches");
 const TCHAR UserSettings::navBarSetting[]				= TEXT("Navigation Bar");
 
 const TCHAR UserSettings::reCompareOnChangeSetting[]	= TEXT("Re-Compare on Change");
@@ -79,6 +80,7 @@ void UserSettings::load()
 	IgnoreSpaces		= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,		1, iniFile) == 1;
 	IgnoreCase			= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,		0, iniFile) == 1;
 	DetectMoves			= ::GetPrivateProfileInt(mainSection, detectMovesSetting,		1, iniFile) == 1;
+	HideMatches			= ::GetPrivateProfileInt(mainSection, hideMatchesSetting,		0, iniFile) == 1;
 	UseNavBar			= ::GetPrivateProfileInt(mainSection, navBarSetting,			1, iniFile) == 1;
 
 	RecompareOnChange	= ::GetPrivateProfileInt(mainSection, reCompareOnChangeSetting,	1, iniFile) == 1;
@@ -155,6 +157,7 @@ void UserSettings::save()
 	::WritePrivateProfileString(mainSection, ignoreSpacesSetting,	IgnoreSpaces	? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreCaseSetting,	    IgnoreCase		? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, detectMovesSetting,	DetectMoves		? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, hideMatchesSetting,	HideMatches		? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, navBarSetting,			UseNavBar		? TEXT("1") : TEXT("0"), iniFile);
 
 	::WritePrivateProfileString(mainSection, reCompareOnChangeSetting,
