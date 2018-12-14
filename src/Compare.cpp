@@ -1538,8 +1538,6 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 	{
 		hideUnmarked(MAIN_VIEW, MARKER_MASK_LINE);
 		hideUnmarked(SUB_VIEW, MARKER_MASK_LINE);
-
-		gotoClosestUnhiddenLine(getCurrentViewId());
 	}
 	else
 	{
@@ -1578,14 +1576,12 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 	for (int i = 0; i < maxSize &&
 			alignmentInfo[i].main.line + off <= mainEndLine && alignmentInfo[i].sub.line + off <= subEndLine; ++i)
 	{
-		int previousUnhiddenLine = CallScintilla(MAIN_VIEW, SCI_DOCLINEFROMVISIBLE,
-				CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line + off, 0) - 1, 0);
+		int previousUnhiddenLine = getPreviousUnhiddenLine(MAIN_VIEW, alignmentInfo[i].main.line + off);
 
 		if (isLineAnnotated(MAIN_VIEW, previousUnhiddenLine))
 			CallScintilla(MAIN_VIEW, SCI_ANNOTATIONSETTEXT, previousUnhiddenLine, (LPARAM)NULL);
 
-		previousUnhiddenLine = CallScintilla(SUB_VIEW, SCI_DOCLINEFROMVISIBLE,
-				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line + off, 0) - 1, 0);
+		previousUnhiddenLine = getPreviousUnhiddenLine(SUB_VIEW, alignmentInfo[i].sub.line + off);
 
 		if (isLineAnnotated(SUB_VIEW, previousUnhiddenLine))
 			CallScintilla(SUB_VIEW, SCI_ANNOTATIONSETTEXT, previousUnhiddenLine, (LPARAM)NULL);
@@ -1623,17 +1619,11 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 		if (cmpPair->options.selections[MAIN_VIEW].first + off > 0 &&
 			cmpPair->options.selections[SUB_VIEW].first + off > 0)
 		{
-			int previousUnhiddenLine = CallScintilla(MAIN_VIEW, SCI_DOCLINEFROMVISIBLE,
-					CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE,
-							cmpPair->options.selections[MAIN_VIEW].first + off, 0) - 1, 0);
+			int mainAnnotation = getLineAnnotation(MAIN_VIEW,
+					getPreviousUnhiddenLine(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first + off));
 
-			int mainAnnotation = getLineAnnotation(MAIN_VIEW, previousUnhiddenLine);
-
-			previousUnhiddenLine = CallScintilla(SUB_VIEW, SCI_DOCLINEFROMVISIBLE,
-					CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE,
-							cmpPair->options.selections[SUB_VIEW].first + off, 0) - 1, 0);
-
-			int subAnnotation = getLineAnnotation(SUB_VIEW, previousUnhiddenLine);
+			int subAnnotation = getLineAnnotation(SUB_VIEW,
+					getPreviousUnhiddenLine(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first + off));
 
 			if (mainAnnotation == 0 || subAnnotation == 0)
 			{
@@ -1641,22 +1631,18 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 				++subAnnotation;
 			}
 
-			addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first + off, mainAnnotation, -1);
-			addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first + off, subAnnotation, -1);
+			addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first + off,
+					mainAnnotation, -mainAnnotation);
+			addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first + off,
+					subAnnotation, -subAnnotation);
 		}
 
 		{
-			int previousUnhiddenLine = CallScintilla(MAIN_VIEW, SCI_DOCLINEFROMVISIBLE,
-					CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE,
-							cmpPair->options.selections[MAIN_VIEW].second + off + 1, 0) - 1, 0);
+			int mainAnnotation = getLineAnnotation(MAIN_VIEW,
+					getPreviousUnhiddenLine(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].second + off + 1));
 
-			int mainAnnotation = getLineAnnotation(MAIN_VIEW, previousUnhiddenLine);
-
-			previousUnhiddenLine = CallScintilla(SUB_VIEW, SCI_DOCLINEFROMVISIBLE,
-					CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE,
-							cmpPair->options.selections[SUB_VIEW].second + off + 1, 0) - 1, 0);
-
-			int subAnnotation = getLineAnnotation(SUB_VIEW, previousUnhiddenLine);
+			int subAnnotation = getLineAnnotation(SUB_VIEW,
+					getPreviousUnhiddenLine(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].second + off + 1));
 
 			if (mainAnnotation == 0 || subAnnotation == 0)
 			{
@@ -1664,8 +1650,10 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 				++subAnnotation;
 			}
 
-			addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].second + off + 1, mainAnnotation, 1);
-			addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].second + off + 1, subAnnotation, 1);
+			addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].second + off + 1,
+					mainAnnotation, mainAnnotation);
+			addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].second + off + 1,
+					subAnnotation, subAnnotation);
 		}
 	}
 }
@@ -2346,10 +2334,18 @@ void HideMatches()
 	{
 		ScopedIncrementer incr(notificationsLock);
 
+		const int view = getCurrentViewId();
+		const int firstLine = getFirstLine(view);
+
 		CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
 		CallScintilla(SUB_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
 
 		alignDiffs(cmpPair);
+
+		if (Settings.HideMatches && !isLineMarked(view, getCurrentLine(view), MARKER_MASK_LINE))
+			gotoClosestUnhiddenLine(view);
+
+		CallScintilla(view, SCI_SETFIRSTVISIBLELINE, CallScintilla(view, SCI_VISIBLEFROMDOCLINE, firstLine, 0), 0);
 
 		NavDlg.Update();
 	}

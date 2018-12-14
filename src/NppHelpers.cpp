@@ -649,32 +649,29 @@ bool isVisibleAdjacentAnnotation(int view, int line, bool down)
 }
 
 
-void addBlankSection(int view, int line, int length, int selectionMark)
+void addBlankSection(int view, int line, int length, int selectionMarkPosition)
 {
 	if (length <= 0)
 		return;
 
 	std::vector<char> blank(length - 1, '\n');
 
-	if (selectionMark < 0)
+	if (selectionMarkPosition < 0)
 	{
 		const char sel[] = "--- Selection Compare Block Start ---";
 
-		++selectionMark;
-		blank.insert(blank.end() + selectionMark, sel, sel + sizeof(sel) - 1);
+		++selectionMarkPosition;
+		blank.insert(blank.end() + selectionMarkPosition, sel, sel + sizeof(sel) - 1);
 	}
-	else if (selectionMark > 0)
+	else if (selectionMarkPosition > 0)
 	{
 		const char sel[] = "--- Selection Compare Block End ---";
 
-		--selectionMark;
-		blank.insert(blank.begin() + selectionMark, sel, sel + sizeof(sel) - 1);
+		--selectionMarkPosition;
+		blank.insert(blank.begin() + selectionMarkPosition, sel, sel + sizeof(sel) - 1);
 	}
 
 	blank.push_back('\0');
 
-	const int previousUnhiddenLine = CallScintilla(view, SCI_DOCLINEFROMVISIBLE,
-			CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - 1, 0);
-
-	CallScintilla(view, SCI_ANNOTATIONSETTEXT, previousUnhiddenLine, (LPARAM)blank.data());
+	CallScintilla(view, SCI_ANNOTATIONSETTEXT, getPreviousUnhiddenLine(view, line), (LPARAM)blank.data());
 }

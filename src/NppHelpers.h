@@ -383,6 +383,18 @@ inline int getLastVisibleLine(int view)
 }
 
 
+inline int getUnhiddenLine(int view, int line)
+{
+	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE, CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0), 0);
+}
+
+
+inline int getPreviousUnhiddenLine(int view, int line)
+{
+	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE, CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - 1, 0);
+}
+
+
 inline int otherViewMatchingLine(int view, int line)
 {
 	const int otherView = getOtherViewId(view);
@@ -396,10 +408,7 @@ inline int otherViewMatchingLine(int view, int line)
 
 inline void gotoClosestUnhiddenLine(int view)
 {
-	const int closestUnhiddenLine = CallScintilla(view, SCI_DOCLINEFROMVISIBLE,
-		CallScintilla(view, SCI_VISIBLEFROMDOCLINE, getCurrentLine(view), 0), 0);
-
-	CallScintilla(view, SCI_GOTOLINE, closestUnhiddenLine, 0);
+	CallScintilla(view, SCI_GOTOLINE, getUnhiddenLine(view, getCurrentLine(view)), 0);
 }
 
 
@@ -516,4 +525,4 @@ bool isVisibleAdjacentAnnotation(int view, int line, bool down);
 std::vector<char> getText(int view, int startPos, int endPos);
 void toLowerCase(std::vector<char>& text);
 
-void addBlankSection(int view, int line, int length, int selectionMark = 0);
+void addBlankSection(int view, int line, int length, int selectionMarkPosition = 0);
