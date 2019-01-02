@@ -1291,7 +1291,7 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 	if (cmpPair->options.findUniqueMode && Settings.FollowingCaret)
 		::SetFocus(getView(view));
 
-	if (!down && isLineAnnotated(view, line))
+	if (!down && !Settings.HideMatches && isLineAnnotated(view, line))
 		++line;
 
 	// No explicit go to corner diff but we are there - diffs wrap has occurred - 'up/down' notion is inverted
