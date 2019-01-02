@@ -149,8 +149,8 @@ bool ViewLocation::restore() const
 		CallScintilla(_view, SCI_SETFIRSTVISIBLELINE, firstVisibleLine, 0);
 
 		LOGD("Restore " + std::string(_view == MAIN_VIEW ? "MAIN" : "SUB") +
-				" view location, caret doc line: " + std::to_string(caretLine) + ", visible doc line: " +
-				std::to_string(CallScintilla(_view, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0)) + "\n");
+				" view location, caret doc line: " + std::to_string(caretLine + 1) + ", first visible doc line: " +
+				std::to_string(CallScintilla(_view, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0) + 1) + "\n");
 	}
 	else
 	{
@@ -158,7 +158,7 @@ bool ViewLocation::restore() const
 			centerAt(_view, _centerLine);
 
 		LOGD("Restore " + std::string(_view == MAIN_VIEW ? "MAIN" : "SUB") +
-				" view location, center doc line: " + std::to_string(_centerLine) + "\n");
+				" view location, center doc line: " + std::to_string(_centerLine + 1) + "\n");
 	}
 
 	return true;

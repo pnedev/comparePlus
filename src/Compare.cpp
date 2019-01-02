@@ -1331,7 +1331,7 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 	}
 
 	LOGD("Jump to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
-			" view, center doc line: " + std::to_string(line) + "\n");
+			" view, center doc line: " + std::to_string(line + 1) + "\n");
 
 	// Line is not visible - scroll into view
 	if (!isLineVisible(view, line) ||
@@ -2675,7 +2675,7 @@ void syncViews(int biasView)
 		if (firstVisible != otherFirstVisible)
 		{
 			LOGD("Syncing to " + std::string(biasView == MAIN_VIEW ? "MAIN" : "SUB") + " view, visible doc line: " +
-					std::to_string(firstLine) + "\n");
+					std::to_string(firstLine + 1) + "\n");
 
 			const int otherLastVisible = CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE,
 					CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0) - 1, 0);
@@ -2962,7 +2962,7 @@ void onSciModified(SCNotification* notifyCode)
 		if (!skipPushDeletedSection)
 		{
 			LOGD("SC_MOD_BEFOREDELETE: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
-					" view, lines range: " + std::to_string(startLine) + "-" + std::to_string(endLine - 1) + "\n");
+					" view, lines range: " + std::to_string(startLine + 1) + "-" + std::to_string(endLine) + "\n");
 
 			const int action =
 				notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
@@ -3005,8 +3005,8 @@ void onSciModified(SCNotification* notifyCode)
 				notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
 
 			LOGD("SC_MOD_INSERTTEXT: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
-					" view, lines range: " + std::to_string(startLine) + "-" +
-					std::to_string(startLine + notifyCode->linesAdded - 1) + "\n");
+					" view, lines range: " + std::to_string(startLine + 1) + "-" +
+					std::to_string(startLine + notifyCode->linesAdded) + "\n");
 
 			ScopedIncrementer incr(notificationsLock);
 

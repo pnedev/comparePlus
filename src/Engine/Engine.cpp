@@ -412,7 +412,7 @@ bool resolveMatch(const CompareInfo& cmpInfo,
 void findMoves(CompareInfo& cmpInfo,
 		const std::vector<uint64_t>& lineHashes1, const std::vector<uint64_t>& lineHashes2)
 {
-	LOGD("FIND MOVES\n");
+	// LOGD("FIND MOVES\n");
 
 	bool repeat = true;
 
@@ -425,7 +425,7 @@ void findMoves(CompareInfo& cmpInfo,
 			if (lookupDiff.type != diff_type::DIFF_IN_1)
 				continue;
 
-			LOGD("DIFF_IN_1 offset: " + std::to_string(lookupDiff.off + 1) + "\n");
+			// LOGD("DIFF_IN_1 offset: " + std::to_string(lookupDiff.off + 1) + "\n");
 
 			// Go through all lookupDiff's elements and check if each is matched
 			for (int lookupEi = 0; lookupEi < lookupDiff.len; ++lookupEi)
@@ -437,7 +437,7 @@ void findMoves(CompareInfo& cmpInfo,
 					continue;
 				}
 
-				LOGD("line offset: " + std::to_string(lookupEi) + "\n");
+				// LOGD("line offset: " + std::to_string(lookupEi) + "\n");
 
 				MatchInfo mi;
 				findBestMatch(cmpInfo, lineHashes1, lineHashes2, lookupDiff, lookupEi, mi);
@@ -451,7 +451,7 @@ void findMoves(CompareInfo& cmpInfo,
 					else
 						--lookupEi;
 
-					LOGD("move match found, next line offset: " + std::to_string(lookupEi + 1) + "\n");
+					// LOGD("move match found, next line offset: " + std::to_string(lookupEi + 1) + "\n");
 				}
 			}
 		}
