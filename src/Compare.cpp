@@ -509,6 +509,7 @@ toolbarIcons  tbFirst;
 toolbarIcons  tbPrev;
 toolbarIcons  tbNext;
 toolbarIcons  tbLast;
+toolbarIcons  tbDiffsOnly;
 toolbarIcons  tbNavBar;
 
 HINSTANCE hInstance;
@@ -2642,6 +2643,9 @@ void deinitPlugin()
 	if (tbLast.hToolbarBmp)
 		::DeleteObject(tbLast.hToolbarBmp);
 
+	if (tbDiffsOnly.hToolbarBmp)
+		::DeleteObject(tbDiffsOnly.hToolbarBmp);
+
 	if (tbNavBar.hToolbarBmp)
 		::DeleteObject(tbNavBar.hToolbarBmp);
 
@@ -2783,6 +2787,8 @@ void onToolBarReady()
 			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NEXT),	IMAGE_BITMAP, 0, 0, style);
 	tbLast.hToolbarBmp =
 			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_LAST),	IMAGE_BITMAP, 0, 0, style);
+	tbDiffsOnly.hToolbarBmp =
+			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_DIFFS_ONLY), IMAGE_BITMAP, 0, 0, style);
 	tbNavBar.hToolbarBmp =
 			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NAVBAR), IMAGE_BITMAP, 0, 0, style);
 
@@ -2802,6 +2808,8 @@ void onToolBarReady()
 			(WPARAM)funcItem[CMD_NEXT]._cmdID,				(LPARAM)&tbNext);
 	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
 			(WPARAM)funcItem[CMD_LAST]._cmdID,				(LPARAM)&tbLast);
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
+			(WPARAM)funcItem[CMD_HIDE_MATCHES]._cmdID,		(LPARAM)&tbDiffsOnly);
 	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
 			(WPARAM)funcItem[CMD_NAV_BAR]._cmdID,			(LPARAM)&tbNavBar);
 }

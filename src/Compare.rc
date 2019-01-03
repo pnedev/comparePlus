@@ -191,6 +191,7 @@ IDB_FIRST				BITMAP	"../res/First.bmp"
 IDB_LAST				BITMAP	"../res/Last.bmp"
 IDB_PREV				BITMAP	"../res/Previous.bmp"
 IDB_NEXT				BITMAP	"../res/Next.bmp"
+IDB_DIFFS_ONLY			BITMAP	"../res/DiffsOnly.bmp"
 IDB_NAVBAR				BITMAP	"../res/NavBar.bmp"
 
 IDB_ICON				ICON	"../res/Compare.ico"

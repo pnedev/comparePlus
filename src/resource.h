@@ -34,8 +34,9 @@
 #define IDB_LAST					126
 #define IDB_PREV					127
 #define IDB_NEXT					128
-#define IDB_NAVBAR					129
-#define IDB_ICON					130
+#define IDB_DIFFS_ONLY				129
+#define IDB_NAVBAR					130
+#define IDB_ICON					131
 
 #define IDC_ABOUT_CLOSE_BUTTON		1001
 #define IDC_DONATE_BUTTON			1002
