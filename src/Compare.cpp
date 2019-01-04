@@ -2336,17 +2336,34 @@ void HideMatches()
 		ScopedIncrementer incr(notificationsLock);
 
 		const int view = getCurrentViewId();
-		const int firstLine = getFirstLine(view);
+		int currentLine = getCurrentLine(view);
+
+		if (Settings.HideMatches && !isLineMarked(view, currentLine, MARKER_MASK_LINE))
+		{
+			currentLine = CallScintilla(view, SCI_MARKERNEXT, currentLine, MARKER_MASK_LINE);
+
+			if (!isLineVisible(view, currentLine))
+				centerAt(view, currentLine);
+
+			CallScintilla(view, SCI_GOTOLINE, currentLine, 0);
+		}
+
+		ViewLocation loc;
+
+		const int firstLine = isLineVisible(view, currentLine) ? -1 : getFirstLine(view);
+
+		if (firstLine == -1)
+			loc.save(view);
 
 		CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
 		CallScintilla(SUB_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
 
 		alignDiffs(cmpPair);
 
-		if (Settings.HideMatches && !isLineMarked(view, getCurrentLine(view), MARKER_MASK_LINE))
-			gotoClosestUnhiddenLine(view);
-
-		CallScintilla(view, SCI_SETFIRSTVISIBLELINE, CallScintilla(view, SCI_VISIBLEFROMDOCLINE, firstLine, 0), 0);
+		if (firstLine == -1)
+			loc.restore();
+		else
+			CallScintilla(view, SCI_SETFIRSTVISIBLELINE, CallScintilla(view, SCI_VISIBLEFROMDOCLINE, firstLine, 0), 0);
 
 		NavDlg.Update();
 	}
