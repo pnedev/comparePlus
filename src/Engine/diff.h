@@ -59,7 +59,7 @@ template <typename UserDataT>
 struct diff_info
 {
 	diff_type	type;
-	int			off; // off into _a if DIFF_MATCH and DIFF_IN_1 but into _b if DIFF_IN_2
+	int			off; // off into 1 if DIFF_MATCH and DIFF_IN_1 but into 2 if DIFF_IN_2
 	int			len;
 
 	UserDataT	info;
@@ -70,7 +70,7 @@ template <>
 struct diff_info<void>
 {
 	diff_type	type;
-	int			off; // off into _a if DIFF_MATCH and DIFF_IN_1 but into _b if DIFF_IN_2
+	int			off; // off into 1 if DIFF_MATCH and DIFF_IN_1 but into 2 if DIFF_IN_2
 	int			len;
 };
 
@@ -86,7 +86,7 @@ public:
 	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2, int max = INT_MAX);
 	DiffCalc(const Elem v1[], int v1_size, const Elem v2[], int v2_size, int max = INT_MAX);
 
-	std::vector<diff_info<UserDataT>> operator()();
+	std::vector<diff_info<UserDataT>> operator()(bool doBoundaryShift = true);
 
 	DiffCalc(const DiffCalc&) = delete;
 	const DiffCalc& operator=(const DiffCalc&) = delete;
@@ -509,7 +509,7 @@ void DiffCalc<Elem, UserDataT>::_shift_boundries()
 
 
 template <typename Elem, typename UserDataT>
-std::vector<diff_info<UserDataT>> DiffCalc<Elem, UserDataT>::operator()()
+std::vector<diff_info<UserDataT>> DiffCalc<Elem, UserDataT>::operator()(bool doBoundaryShift)
 {
 	/* The _ses function assumes we begin with a diff. The following ensures this is true by skipping any matches
 	 * in the beginning. This also helps to quickly process sequences that match entirely.
@@ -535,7 +535,7 @@ std::vector<diff_info<UserDataT>> DiffCalc<Elem, UserDataT>::operator()()
 
 	if (_ses(x, asize, y, bsize) == -1)
 		_diff.clear();
-	else
+	else if (doBoundaryShift)
 		_shift_boundries();
 
 	// Wipe temporal buffer to free memory
