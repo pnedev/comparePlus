@@ -246,11 +246,11 @@ std::vector<std::vector<Word>> getWords(int lineOffset, int lineCount, int view,
 		const int docLineStart = CallScintilla(view, SCI_POSITIONFROMLINE, docLineNum, 0);
 		const int docLineEnd = CallScintilla(view, SCI_GETLINEENDPOSITION, docLineNum, 0);
 
-		std::vector<char> line = getText(view, docLineStart, docLineEnd);
-		const int lineLen = static_cast<int>(line.size()) - 1;
-
-		if (lineLen > 0)
+		if (docLineEnd - docLineStart)
 		{
+			std::vector<char> line = getText(view, docLineStart, docLineEnd);
+			const int lineLen = static_cast<int>(line.size()) - 1;
+
 			if (options.ignoreCase)
 				toLowerCase(line);
 

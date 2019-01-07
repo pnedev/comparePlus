@@ -1485,11 +1485,8 @@ bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
 	if (off ^ subOff)
 		return false;
 
-	int firstLine = CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
-	int lastLine = firstLine + CallScintilla(view, SCI_LINESONSCREEN, 0, 0);
-
-	firstLine = CallScintilla(view, SCI_DOCLINEFROMVISIBLE, firstLine, 0);
-	lastLine = CallScintilla(view, SCI_DOCLINEFROMVISIBLE, lastLine, 0);
+	const int firstLine = getFirstLine(view);
+	const int lastLine = getLastLine(view);
 
 	const int maxSize = static_cast<int>(alignmentInfo.size());
 	int i;
@@ -2684,8 +2681,8 @@ void syncViews(int biasView)
 {
 	const int otherView = getOtherViewId(biasView);
 
-	const int firstVisible = CallScintilla(biasView, SCI_GETFIRSTVISIBLELINE, 0, 0);
-	const int otherFirstVisible = CallScintilla(otherView, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	const int firstVisible = getFirstVisibleLine(biasView);
+	const int otherFirstVisible = getFirstVisibleLine(otherView);
 
 	const int firstLine = CallScintilla(biasView, SCI_DOCLINEFROMVISIBLE, firstVisible, 0);
 

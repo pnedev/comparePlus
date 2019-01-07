@@ -358,28 +358,27 @@ inline int getCurrentVisibleLine(int view)
 }
 
 
-inline int getFirstLine(int view)
-{
-	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE, CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0), 0);
-}
-
-
 inline int getFirstVisibleLine(int view)
 {
 	return CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
 }
 
 
-inline int getLastLine(int view)
+inline int getFirstLine(int view)
 {
-	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE,
-			CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0) + CallScintilla(view, SCI_LINESONSCREEN, 0, 0) - 1, 0);
+	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE, getFirstVisibleLine(view), 0);
 }
 
 
 inline int getLastVisibleLine(int view)
 {
-	return (CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0) + CallScintilla(view, SCI_LINESONSCREEN, 0, 0) - 1);
+	return (getFirstVisibleLine(view) + CallScintilla(view, SCI_LINESONSCREEN, 0, 0) - 1);
+}
+
+
+inline int getLastLine(int view)
+{
+	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE, getLastVisibleLine(view), 0);
 }
 
 
@@ -426,10 +425,9 @@ inline int getLineAnnotation(int view, int line)
 
 inline bool isLineVisible(int view, int line)
 {
-	const int firstVisibleLine = CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
 	line = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0);
 
-	return ((line >= firstVisibleLine) && (line < firstVisibleLine + CallScintilla(view, SCI_LINESONSCREEN, 0, 0)));
+	return ((line >= getFirstVisibleLine(view)) && (line <= getLastVisibleLine(view)));
 }
 
 

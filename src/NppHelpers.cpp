@@ -126,8 +126,7 @@ void ViewLocation::save(int view, int centerLine)
 
 		const int line = CallScintilla(view, SCI_LINEFROMPOSITION, _pos, 0);
 
-		_visibleLineOffset = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) -
-				CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
+		_visibleLineOffset = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - getFirstVisibleLine(view);
 	}
 
 	LOGD("Store " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") + " view location\n");
