@@ -586,7 +586,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const CompareO
 					}
 
 					// Compare changed words sections
-					const std::vector<diff_info<void>> wordsDiff = DiffCalc<char>(*pSec1, *pSec2)(false);
+					const std::vector<diff_info<void>> wordsDiff = DiffCalc<char>(*pSec1, *pSec2)();
 
 					const int maxLen = (end1 - off1 > end2 - off2) ? end1 - off1 : end2 - off2;
 
@@ -628,6 +628,34 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const CompareO
 
 						++i;
 						continue;
+					}
+					else
+					{
+						const int startMatch =
+								(wordsDiff.front().type == diff_type::DIFF_MATCH) ? wordsDiff.front().len : 0;
+						const int endMatch =
+								(wordsDiff.back().type == diff_type::DIFF_MATCH) ? wordsDiff.back().len : 0;
+
+						// Always match characters in the begining and at the end
+						if (startMatch || endMatch)
+						{
+							section_t change;
+
+							change.off = off1 + startMatch;
+							change.len = end1 - change.off - endMatch + 1;
+
+							if (change.len > 0)
+								pBD1->info.changedLines.back().changes.emplace_back(change);
+
+							change.off = off2 + startMatch;
+							change.len = end2 - change.off - endMatch + 1;
+
+							if (change.len > 0)
+								pBD2->info.changedLines.back().changes.emplace_back(change);
+
+							++i;
+							continue;
+						}
 					}
 				}
 
