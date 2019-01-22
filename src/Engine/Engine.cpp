@@ -533,10 +533,10 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const CompareO
 			std::swap(line1, line2);
 		}
 
-		const std::vector<diff_info<void>> linesDiff = DiffCalc<Word>(*pLine1, *pLine2)();
-		const int linesDiffSize = static_cast<int>(linesDiff.size());
+		const std::vector<diff_info<void>> lineDiffs = DiffCalc<Word>(*pLine1, *pLine2)();
+		const int lineDiffsSize = static_cast<int>(lineDiffs.size());
 
-		if (linesDiffSize == 1 && linesDiff[0].type == diff_type::DIFF_MATCH)
+		if (lineDiffsSize == 1 && lineDiffs[0].type == diff_type::DIFF_MATCH)
 			continue;
 
 		pBlockDiff1->info.changedLines.emplace_back(line1);
@@ -545,16 +545,16 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const CompareO
 		const int lineOff1 = CallScintilla(pDoc1->view, SCI_POSITIONFROMLINE, line1 + pBlockDiff1->off, 0);
 		const int lineOff2 = CallScintilla(pDoc2->view, SCI_POSITIONFROMLINE, line2 + pBlockDiff2->off, 0);
 
-		for (int i = 0; i < linesDiffSize; ++i)
+		for (int i = 0; i < lineDiffsSize; ++i)
 		{
-			const auto& ld = linesDiff[i];
+			const auto& ld = lineDiffs[i];
 
 			if (ld.type == diff_type::DIFF_IN_1)
 			{
 				// Check if the DIFF_IN_1 / DIFF_IN_2 pair includes changed words or it's a completely new section
-				if (i + 1 < linesDiffSize && linesDiff[i + 1].type == diff_type::DIFF_IN_2)
+				if (i + 1 < lineDiffsSize && lineDiffs[i + 1].type == diff_type::DIFF_IN_2)
 				{
-					const auto& ld2 = linesDiff[i + 1];
+					const auto& ld2 = lineDiffs[i + 1];
 
 					int off1 = (*pLine1)[ld.off].pos;
 					int end1 = (*pLine1)[ld.off + ld.len - 1].pos + (*pLine1)[ld.off + ld.len - 1].length;
@@ -586,41 +586,41 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const CompareO
 					}
 
 					// Compare changed words sections
-					const std::vector<diff_info<void>> wordsDiff = DiffCalc<char>(*pSec1, *pSec2)();
+					const std::vector<diff_info<void>> sectionDiffs = DiffCalc<char>(*pSec1, *pSec2)();
 
 					const int maxLen = (end1 - off1 > end2 - off2) ? end1 - off1 : end2 - off2;
 
 					int matchLen = 0;
 					int matchSections = 0;
 
-					for (const auto& wd: wordsDiff)
+					for (const auto& sd: sectionDiffs)
 					{
-						if (wd.type == diff_type::DIFF_MATCH)
+						if (sd.type == diff_type::DIFF_MATCH)
 						{
-							matchLen += wd.len;
+							matchLen += sd.len;
 							++matchSections;
 						}
 					}
 
 					if ((matchLen / matchSections) && ((((matchLen / matchSections) * 100) / maxLen) >= 30))
 					{
-						for (const auto& wd: wordsDiff)
+						for (const auto& sd: sectionDiffs)
 						{
-							if (wd.type == diff_type::DIFF_IN_1)
+							if (sd.type == diff_type::DIFF_IN_1)
 							{
 								section_t change;
 
-								change.off = wd.off + off1;
-								change.len = wd.len;
+								change.off = sd.off + off1;
+								change.len = sd.len;
 
 								pBD1->info.changedLines.back().changes.emplace_back(change);
 							}
-							else if (wd.type == diff_type::DIFF_IN_2)
+							else if (sd.type == diff_type::DIFF_IN_2)
 							{
 								section_t change;
 
-								change.off = wd.off + off2;
-								change.len = wd.len;
+								change.off = sd.off + off2;
+								change.len = sd.len;
 
 								pBD2->info.changedLines.back().changes.emplace_back(change);
 							}
@@ -632,9 +632,9 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const CompareO
 					else
 					{
 						const int startMatch =
-								(wordsDiff.front().type == diff_type::DIFF_MATCH) ? wordsDiff.front().len : 0;
+								(sectionDiffs.front().type == diff_type::DIFF_MATCH) ? sectionDiffs.front().len : 0;
 						const int endMatch =
-								(wordsDiff.back().type == diff_type::DIFF_MATCH) ? wordsDiff.back().len : 0;
+								(sectionDiffs.back().type == diff_type::DIFF_MATCH) ? sectionDiffs.back().len : 0;
 
 						// Always match characters in the begining and at the end
 						if (startMatch || endMatch)
@@ -743,7 +743,7 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const Compare
 			if (pLine1->size() > 2 * pLine2->size())
 				continue;
 
-			const std::vector<diff_info<void>> linesDiff = DiffCalc<Word>(*pLine1, *pLine2)();
+			const std::vector<diff_info<void>> lineDiffs = DiffCalc<Word>(*pLine1, *pLine2)();
 
 			int line2Len = 0;
 			for (const auto& word: chunk2[line2])
@@ -752,29 +752,29 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, const Compare
 			if (line1Len < line2Len)
 				line1Len = line2Len;
 
-			int linesConvergence = 0;		// Convergence by words count
-			int linesLenConvergence = 0;	// Convergence by length (symbols/chars count)
+			int lineConvergence = 0;	// Convergence by words count
+			int lineLenConvergence = 0;	// Convergence by length (symbols/chars count)
 
-			for (const auto& ld: linesDiff)
+			for (const auto& ld: lineDiffs)
 			{
 				if (ld.type == diff_type::DIFF_MATCH)
 				{
-					linesConvergence += ld.len;
+					lineConvergence += ld.len;
 
 					for (int i = 0; i < ld.len; ++i)
-						linesLenConvergence += (*pLine1)[ld.off + i].length;
+						lineLenConvergence += (*pLine1)[ld.off + i].length;
 				}
 			}
 
-			linesConvergence = linesConvergence * 100 / pLine1->size();
-			linesLenConvergence = linesLenConvergence * 100 / line1Len;
+			lineConvergence = lineConvergence * 100 / pLine1->size();
+			lineLenConvergence = lineLenConvergence * 100 / line1Len;
 
 			// Take the better convergence of the two
-			if (linesConvergence < linesLenConvergence)
-				linesConvergence = linesLenConvergence;
+			if (lineConvergence < lineLenConvergence)
+				lineConvergence = lineLenConvergence;
 
-			if (linesConvergence >= 50)
-				orderedLinesConvergence.emplace(conv_key(linesConvergence, line1, line2));
+			if (lineConvergence >= 50)
+				orderedLinesConvergence.emplace(conv_key(lineConvergence, line1, line2));
 		}
 	}
 
@@ -1096,9 +1096,9 @@ CompareResult runCompare(const CompareOptions& options, AlignmentInfo_t& alignme
 
 	cmpInfo.blockDiffs = DiffCalc<uint64_t, blockDiffInfo>(*pLineHashes1, *pLineHashes2)();
 
-	const int blockDiffSize = static_cast<int>(cmpInfo.blockDiffs.size());
+	const int blockDiffsSize = static_cast<int>(cmpInfo.blockDiffs.size());
 
-	if (blockDiffSize == 0 || (blockDiffSize == 1 && cmpInfo.blockDiffs[0].type == diff_type::DIFF_MATCH))
+	if (blockDiffsSize == 0 || (blockDiffsSize == 1 && cmpInfo.blockDiffs[0].type == diff_type::DIFF_MATCH))
 		return CompareResult::COMPARE_MATCH;
 
 	findUniqueLines(cmpInfo, *pLineHashes1, *pLineHashes2);
@@ -1121,10 +1121,10 @@ CompareResult runCompare(const CompareOptions& options, AlignmentInfo_t& alignme
 		return CompareResult::COMPARE_CANCELLED;
 
 	if (progress)
-		progress->SetMaxCount(blockDiffSize);
+		progress->SetMaxCount(blockDiffsSize);
 
 	// Do block compares
-	for (int i = 0; i < blockDiffSize; ++i)
+	for (int i = 0; i < blockDiffsSize; ++i)
 	{
 		if (cmpInfo.blockDiffs[i].type == diff_type::DIFF_IN_2)
 		{
