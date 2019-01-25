@@ -27,6 +27,7 @@
 #define DEFAULT_OLD_IN_SUB_VIEW			0
 #define DEFAULT_COMPARE_TO_PREV			1
 
+#define DEFAULT_CHAR_PRECISION			1
 #define DEFAULT_ENCODINGS_CHECK			1
 #define DEFAULT_FOLLOWING_CARET			1
 #define DEFAULT_WRAP_AROUND				0
@@ -70,6 +71,8 @@ public:
 	static const TCHAR oldIsFirstSetting[];
 	static const TCHAR oldFileViewSetting[];
 	static const TCHAR compareToPrevSetting[];
+
+	static const TCHAR charPrecisionSetting[];
 	static const TCHAR encodingsCheckSetting[];
 	static const TCHAR followingCaretSetting[];
 	static const TCHAR wrapAroundSetting[];
@@ -79,6 +82,7 @@ public:
 	static const TCHAR ignoreSpacesSetting[];
 	static const TCHAR ignoreCaseSetting[];
 	static const TCHAR detectMovesSetting[];
+
 	static const TCHAR hideMatchesSetting[];
 	static const TCHAR navBarSetting[];
 
@@ -93,9 +97,13 @@ public:
 	static const TCHAR highlightColorSetting[];
 	static const TCHAR highlightAlphaSetting[];
 
+	static const int MatchPercentThreshold = 35;
+
 	bool           	OldFileIsFirst;
 	int				OldFileViewId;
 	bool           	CompareToPrev;
+
+	bool           	CharPrecision;
 	bool           	EncodingsCheck;
 	bool           	FollowingCaret;
 	bool           	WrapAround;
@@ -105,6 +113,7 @@ public:
 	bool           	IgnoreSpaces;
 	bool           	IgnoreCase;
 	bool           	DetectMoves;
+
 	bool           	HideMatches;
 	bool           	UseNavBar;
 

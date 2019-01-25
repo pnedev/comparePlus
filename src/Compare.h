@@ -83,6 +83,17 @@
 			break; \
 		}
 
+	#define PRINT_DIFFS(INFO, DIFFS) \
+		for (;;) { \
+			LOGD(INFO "\n"); \
+			for (const auto& d: DIFFS) { \
+				LOGD("\t" + std::string((d.type == diff_type::DIFF_IN_1) ? "D1" : \
+						(d.type == diff_type::DIFF_IN_2 ? "D2" : "M")) + \
+						" off: " + std::to_string(d.off + 1) + " len: " + std::to_string(d.len) + "\n"); \
+			} \
+			break; \
+		}
+
 	extern std::string	dLog;
 	extern DWORD		dLogTime_ms;
 
@@ -90,6 +101,7 @@
 
 	#define LOGD(STR)
 	#define LOGDB(BUFFID, STR)
+	#define PRINT_DIFFS(INFO, DIFFS)
 
 #endif
 

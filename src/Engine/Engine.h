@@ -52,9 +52,12 @@ struct CompareOptions
 
 	bool	findUniqueMode;
 
+	bool	charPrecision;
 	bool	ignoreSpaces;
 	bool	ignoreCase;
 	bool	detectMoves;
+
+	int		matchPercentThreshold;
 
 	bool	selectionCompare;
 

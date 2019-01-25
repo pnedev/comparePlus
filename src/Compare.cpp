@@ -2026,13 +2026,15 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	// Compare is triggered manually - get/re-get compare settings and position/reposition files
 	if (!autoUpdating)
 	{
-		cmpPair->options.oldFileViewId		= Settings.OldFileViewId;
+		cmpPair->options.oldFileViewId			= Settings.OldFileViewId;
 
-		cmpPair->options.findUniqueMode		= findUniqueMode;
-		cmpPair->options.ignoreSpaces		= Settings.IgnoreSpaces;
-		cmpPair->options.ignoreCase			= Settings.IgnoreCase;
-		cmpPair->options.detectMoves		= Settings.DetectMoves;
-		cmpPair->options.selectionCompare	= selectionCompare;
+		cmpPair->options.findUniqueMode			= findUniqueMode;
+		cmpPair->options.charPrecision			= Settings.CharPrecision;
+		cmpPair->options.ignoreSpaces			= Settings.IgnoreSpaces;
+		cmpPair->options.ignoreCase				= Settings.IgnoreCase;
+		cmpPair->options.detectMoves			= Settings.DetectMoves;
+		cmpPair->options.matchPercentThreshold	= Settings.MatchPercentThreshold;
+		cmpPair->options.selectionCompare		= selectionCompare;
 
 		cmpPair->positionFiles();
 

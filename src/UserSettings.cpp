@@ -28,6 +28,7 @@ const TCHAR UserSettings::oldIsFirstSetting[]			= TEXT("Old is First");
 const TCHAR UserSettings::oldFileViewSetting[]			= TEXT("Old in Sub View");
 const TCHAR UserSettings::compareToPrevSetting[]		= TEXT("Default Compare is to Prev");
 
+const TCHAR UserSettings::charPrecisionSetting[]		= TEXT("Character Precision");
 const TCHAR UserSettings::encodingsCheckSetting[]		= TEXT("Check Encodings");
 const TCHAR UserSettings::promptCloseOnMatchSetting[]	= TEXT("Prompt to Close on Match");
 const TCHAR UserSettings::wrapAroundSetting[]			= TEXT("Wrap Around");
@@ -66,6 +67,8 @@ void UserSettings::load()
 			DEFAULT_OLD_IN_SUB_VIEW, iniFile) == 0 ? MAIN_VIEW : SUB_VIEW;
 	CompareToPrev			= ::GetPrivateProfileInt(mainSection, compareToPrevSetting,
 			DEFAULT_COMPARE_TO_PREV, iniFile) == 1;
+	CharPrecision			= ::GetPrivateProfileInt(mainSection, charPrecisionSetting,
+			DEFAULT_CHAR_PRECISION, iniFile) == 1;
 	EncodingsCheck			= ::GetPrivateProfileInt(mainSection, encodingsCheckSetting,
 			DEFAULT_ENCODINGS_CHECK, iniFile) == 1;
 	FollowingCaret			= ::GetPrivateProfileInt(mainSection, followingCaretSetting,
@@ -143,6 +146,8 @@ void UserSettings::save()
 			OldFileViewId == SUB_VIEW ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, compareToPrevSetting,
 			CompareToPrev ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, charPrecisionSetting,
+			CharPrecision ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, encodingsCheckSetting,
 			EncodingsCheck ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, followingCaretSetting,
