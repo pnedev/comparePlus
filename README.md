@@ -22,9 +22,21 @@ Build Compare plugin for Notepad++ from source:
 Installation:
 ----------
 
-To install the plugin manually for usage with Notepad++, copy ComparePlugin.dll and ComparePlugin subfolder
+To install the plugin manually for usage with Notepad++, follow the insructions below based on your current Notepad++ version.
+
+7.6.0+:
+1. Create "ComparePlugin" folder in the plugins directory (`Notepad++ installation dir`)\Notepad++\Plugins.
+2. Copy the contents of the [Latest Release](https://github.com/pnedev/compare-plugin/releases/latest) zip file into the newly created folder.
+- ComparePlugin.dll : The core plugin.
+- ComparePlugin\libgit2.dll and ComparePlugin\sqlite.dll : Provide the Diff against Git and SVN (Please use the correct library versions - x86 or x64).
+3. Restart Notepad++.
+
+Pre 7.6.0:
+1. Copy the ComparePlugin.dll and ComparePlugin subfolder
 into the plugins directory (`Notepad++ installation dir`)\Notepad++\Plugins.
-The ComparePlugin subfolder contains the libs libgit2.dll and sqlite.dll for the Diff against Git and SVN (please use the correct library versions - x86 or x64).
+- ComparePlugin.dll : The core plugin.
+- ComparePlugin subfolder : Contains the libs libgit2.dll and sqlite.dll for the Diff against Git and SVN (Please use the correct library versions - x86 or x64).
+2. Restart Notepad++.
 
 Get Compare plugin for Notepad++ at the web:
 -------------------------------
