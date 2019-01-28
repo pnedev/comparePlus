@@ -123,7 +123,7 @@ if (UNIX OR MINGW)
 	target_link_libraries (ComparePlugin ${comctl32} ${comdlg32} ${shlwapi} ${msimg32})
 
 	set (INSTALL_PATH
-		"$ENV{HOME}/.wine/drive_c/users/Public/Application Data/Notepad++/plugins/ComparePlugin"
+		"$ENV{HOME}/.wine/drive_c/Program Files/Notepad++/plugins/ComparePlugin"
 	)
 
 	install (FILES ${CMAKE_BINARY_DIR}/libComparePlugin.dll
