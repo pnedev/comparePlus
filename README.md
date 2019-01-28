@@ -22,26 +22,29 @@ Build Compare plugin for Notepad++ from source:
 Installation:
 ----------
 
-To install the plugin manually for usage with Notepad++, follow the insructions below based on your current Notepad++ version.
+To install the plugin automatically use the Notepad++ PluginAdmin dialog (available since v7.6.3, find it in the `Plugins` menu).
 
-7.6.0+:
-1. Create "ComparePlugin" folder in the plugins directory (`Notepad++ installation dir`)\Notepad++\Plugins.
-2. Copy the contents of the [Latest Release](https://github.com/pnedev/compare-plugin/releases/latest) zip file into the newly created folder.
-- ComparePlugin.dll : The core plugin.
-- ComparePlugin\libgit2.dll and ComparePlugin\sqlite.dll : Provide the Diff against Git and SVN (Please use the correct library versions - x86 or x64).
+To install the plugin manually follow the instructions below based on your current Notepad++ version.
+
+7.6.3 and above:
+1. Create `ComparePlugin` folder in Notepad++'s plugins installation folder (`%Notepad++_program_folder%\Plugins`).
+2. Copy the contents of the [Latest Release](https://github.com/pnedev/compare-plugin/releases/latest) zip file
+into the newly created folder. Please use the correct archive version based on your Notepad++ architecture - x86 or x64.
+- ComparePlugin.dll : The core plugin DLL.
+- ComparePlugin sub-folder : Contains the libs libgit2.dll and sqlite.dll needed for the Diff against Git and SVN commands.
 3. Restart Notepad++.
 
 Pre 7.6.0:
-1. Copy the ComparePlugin.dll and ComparePlugin subfolder
-into the plugins directory (`Notepad++ installation dir`)\Notepad++\Plugins.
-- ComparePlugin.dll : The core plugin.
-- ComparePlugin subfolder : Contains the libs libgit2.dll and sqlite.dll for the Diff against Git and SVN (Please use the correct library versions - x86 or x64).
+1. Copy the contents of the [Latest Release](https://github.com/pnedev/compare-plugin/releases/latest) zip file
+into Notepad++'s plugins installation folder (`%Notepad++_program_folder%\Plugins`).
+Please use the correct archive version based on your Notepad++ architecture - x86 or x64.
+- ComparePlugin.dll : The core plugin DLL.
+- ComparePlugin sub-folder : Contains the libs libgit2.dll and sqlite.dll needed for the Diff against Git and SVN commands.
 2. Restart Notepad++.
 
 Get Compare plugin for Notepad++ at the web:
 -------------------------------
 
-- via Notepad++ PluginManager
 - from GitHub project link [Releases section](https://github.com/pnedev/compare-plugin/releases)
 - manual download of continuous builds from [Appveyor](https://ci.appveyor.com/project/pnedev/compare-plugin/history)
 
