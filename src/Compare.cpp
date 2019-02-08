@@ -491,7 +491,10 @@ volatile unsigned	notificationsLock = 0;
 bool				isNppMinimized = false;
 
 std::unique_ptr<ViewLocation> storedLocation;
+
+// Re-compare flags
 bool goToFirst = false;
+bool selectionAutoRecompare = false;
 
 DelayedAlign	delayedAlignment;
 DelayedActivate	delayedActivation;
@@ -1982,7 +1985,6 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		if (!autoUpdating && selectionCompare && !areSelectionsValid())
 			return;
 
-		// if (!cmpPair->options.selectionCompare && (!Settings.GotoFirstDiff || autoUpdating) && !selectionCompare)
 		if (!Settings.GotoFirstDiff || autoUpdating)
 			storedLocation.reset(new ViewLocation(getCurrentViewId()));
 
@@ -2044,6 +2046,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 			cmpPair->options.selections[SUB_VIEW]	= getSelectionLines(SUB_VIEW);
 		}
 	}
+
+	selectionAutoRecompare = autoUpdating && cmpPair->options.selectionCompare;
 
 	const CompareResult cmpResult = runCompare(cmpPair);
 
@@ -2874,7 +2878,7 @@ void DelayedAlign::operator()()
 	if (alignmentInfo.empty())
 		return;
 
-	bool realign = goToFirst;
+	bool realign = goToFirst || selectionAutoRecompare;
 
 	ScopedIncrementer incr(notificationsLock);
 
@@ -2891,6 +2895,8 @@ void DelayedAlign::operator()()
 
 		if (!storedLocation && !goToFirst)
 			storedLocation.reset(new ViewLocation(getCurrentViewId()));
+
+		selectionAutoRecompare = false;
 
 		alignDiffs(cmpPair);
 	}
@@ -2912,15 +2918,9 @@ void DelayedAlign::operator()()
 	}
 	else if (storedLocation)
 	{
-		if (realign)
-			++_consecutiveAligns;
-		else
+		if (!realign || (++_consecutiveAligns > 1))
 			_consecutiveAligns = 0;
-
-		if (_consecutiveAligns > 1)
-			_consecutiveAligns = 0;
-
-		if (storedLocation->restore())
+		else if (storedLocation->restore())
 			syncViews(storedLocation->getView());
 
 		// Retry re-alignment one more time - might be needed in case line number margin width has changed
@@ -2930,6 +2930,8 @@ void DelayedAlign::operator()()
 		}
 		else
 		{
+			syncViews(storedLocation->getView());
+
 			storedLocation.reset();
 			cmpPair->setStatus();
 
