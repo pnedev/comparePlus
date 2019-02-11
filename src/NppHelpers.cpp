@@ -245,7 +245,7 @@ std::pair<int, int> getSelectionLines(int view)
 
 	int endLine = CallScintilla(view, SCI_LINEFROMPOSITION, selectionEnd, 0);
 
-	if (selectionEnd == CallScintilla(view, SCI_POSITIONFROMLINE, endLine, 0))
+	if (selectionEnd == getLineStart(view, endLine))
 		--endLine;
 
 	return std::make_pair(CallScintilla(view, SCI_LINEFROMPOSITION, selectionStart, 0), endLine);
@@ -432,12 +432,12 @@ void clearChangedIndicator(int view, int start, int length)
 
 std::vector<char> getText(int view, int startPos, int endPos)
 {
-	const int lineLength = endPos - startPos;
+	const int len = endPos - startPos;
 
-	if (lineLength <= 0)
+	if (len <= 0)
 		return std::vector<char>(1, 0);
 
-	std::vector<char> text(lineLength + 1, 0);
+	std::vector<char> text(len + 1, 0);
 
 	Sci_TextRange tr;
 	tr.chrg.cpMin = startPos;

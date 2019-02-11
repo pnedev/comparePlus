@@ -54,6 +54,7 @@ struct CompareOptions
 
 	bool	charPrecision;
 	bool	ignoreSpaces;
+	bool	ignoreEmptyLines;
 	bool	ignoreCase;
 	bool	detectMoves;
 

@@ -80,6 +80,7 @@ public:
 	static const TCHAR promptCloseOnMatchSetting[];
 
 	static const TCHAR ignoreSpacesSetting[];
+	static const TCHAR ignoreEmptyLinesSetting[];
 	static const TCHAR ignoreCaseSetting[];
 	static const TCHAR detectMovesSetting[];
 
@@ -111,6 +112,7 @@ public:
 	bool           	PromptToCloseOnMatch;
 
 	bool           	IgnoreSpaces;
+	bool           	IgnoreEmptyLines;
 	bool           	IgnoreCase;
 	bool           	DetectMoves;
 

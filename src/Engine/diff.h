@@ -374,7 +374,7 @@ void DiffCalc<Elem, UserDataT>::_shift_boundaries()
 		if (_diff[i].type == diff_type::DIFF_IN_1)
 		{
 			// If there is DIFF_IN_2 after DIFF_IN_1 both sequences are changed - boundaries do not match for sure
-			if (i + 1 < static_cast<int>(_diff.size()) && _diff[i + 1].type == diff_type::DIFF_IN_2)
+			if ((i + 1 < static_cast<int>(_diff.size())) && (_diff[i + 1].type == diff_type::DIFF_IN_2))
 			{
 				++i;
 				continue;
@@ -386,9 +386,9 @@ void DiffCalc<Elem, UserDataT>::_shift_boundaries()
 		if (i + 1 < static_cast<int>(_diff.size()))
 		{
 			diff_info<UserDataT>& diff = _diff[i];
-			diff_info<UserDataT>& next_match_diff = _diff[i + 1];
+			diff_info<UserDataT>* next_match_diff = &_diff[i + 1];
 
-			const int max_len = (diff.len > next_match_diff.len) ? next_match_diff.len : diff.len;
+			const int max_len = (diff.len > next_match_diff->len) ? next_match_diff->len : diff.len;
 
 			int check_off = diff.off + diff.len;
 			int shift_len = 0;
@@ -420,13 +420,13 @@ void DiffCalc<Elem, UserDataT>::_shift_boundaries()
 					++i;
 				}
 
-				diff_info<UserDataT>& next_match_diff = _diff[i + 1];
+				next_match_diff = &_diff[i + 1];
 
-				next_match_diff.off += shift_len;
-				next_match_diff.len -= shift_len;
+				next_match_diff->off += shift_len;
+				next_match_diff->len -= shift_len;
 
 				// The whole match diff shifted - erase it and merge surrounding diff blocks
-				if (next_match_diff.len == 0)
+				if (next_match_diff->len == 0)
 				{
 					int j = i + 1;
 

@@ -36,6 +36,7 @@ const TCHAR UserSettings::gotoFirstDiffSetting[]		= TEXT("Go to First Diff");
 const TCHAR UserSettings::followingCaretSetting[]		= TEXT("Following Caret");
 
 const TCHAR UserSettings::ignoreSpacesSetting[]			= TEXT("Ignore Spaces");
+const TCHAR UserSettings::ignoreEmptyLinesSetting[]		= TEXT("Ignore Empty Lines");
 const TCHAR UserSettings::ignoreCaseSetting[]			= TEXT("Ignore Case");
 const TCHAR UserSettings::detectMovesSetting[]			= TEXT("Detect Moves");
 const TCHAR UserSettings::hideMatchesSetting[]			= TEXT("Hide Matches");
@@ -81,6 +82,7 @@ void UserSettings::load()
 			DEFAULT_PROMPT_CLOSE_ON_MATCH, iniFile) == 1;
 
 	IgnoreSpaces		= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,		1, iniFile) == 1;
+	IgnoreEmptyLines	= ::GetPrivateProfileInt(mainSection, ignoreEmptyLinesSetting,	1, iniFile) == 1;
 	IgnoreCase			= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,		0, iniFile) == 1;
 	DetectMoves			= ::GetPrivateProfileInt(mainSection, detectMovesSetting,		1, iniFile) == 1;
 	HideMatches			= ::GetPrivateProfileInt(mainSection, hideMatchesSetting,		0, iniFile) == 1;
@@ -159,11 +161,18 @@ void UserSettings::save()
 	::WritePrivateProfileString(mainSection, promptCloseOnMatchSetting,
 			PromptToCloseOnMatch ? TEXT("1") : TEXT("0"), iniFile);
 
-	::WritePrivateProfileString(mainSection, ignoreSpacesSetting,	IgnoreSpaces	? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, ignoreCaseSetting,	    IgnoreCase		? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, detectMovesSetting,	DetectMoves		? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, hideMatchesSetting,	HideMatches		? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, navBarSetting,			UseNavBar		? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, ignoreSpacesSetting,
+			IgnoreSpaces ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, ignoreEmptyLinesSetting,
+			IgnoreEmptyLines ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, ignoreCaseSetting,
+			IgnoreCase ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, detectMovesSetting,
+			DetectMoves ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, hideMatchesSetting,
+			HideMatches ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, navBarSetting,
+			UseNavBar ? TEXT("1") : TEXT("0"), iniFile);
 
 	::WritePrivateProfileString(mainSection, reCompareOnChangeSetting,
 			RecompareOnChange ? TEXT("1") : TEXT("0"), iniFile);

@@ -345,6 +345,18 @@ inline int getDocId(int view)
 }
 
 
+inline int getLineStart(int view, int line)
+{
+	return CallScintilla(view, SCI_POSITIONFROMLINE, line, 0);
+}
+
+
+inline int getLineEnd(int view, int line)
+{
+	return CallScintilla(view, SCI_GETLINEENDPOSITION, line, 0);
+}
+
+
 inline int getCurrentLine(int view)
 {
 	return CallScintilla(view, SCI_LINEFROMPOSITION, CallScintilla(view, SCI_GETCURRENTPOS, 0, 0), 0);
@@ -451,8 +463,7 @@ inline bool isLineMarked(int view, int line, int markMask)
 
 inline bool isLineEmpty(int view, int line)
 {
-	return ((CallScintilla(view, SCI_GETLINEENDPOSITION, line, 0) -
-			CallScintilla(view, SCI_POSITIONFROMLINE, line, 0)) == 0);
+	return ((getLineEnd(view, line) - getLineStart(view, line)) == 0);
 }
 
 

@@ -182,8 +182,8 @@ bool DeletedSectionsList::push(int view, int currAction, int startLine, int len)
 
 	DeletedSection delSection(currAction, startLine, len);
 
-	const int startPos = CallScintilla(view, SCI_POSITIONFROMLINE, startLine, 0);
-	clearChangedIndicator(view, startPos, CallScintilla(view, SCI_POSITIONFROMLINE, startLine + len, 0) - startPos);
+	const int startPos = getLineStart(view, startLine);
+	clearChangedIndicator(view, startPos, getLineStart(view, startLine + len) - startPos);
 
 	for (int line = CallScintilla(view, SCI_MARKERPREVIOUS, startLine + len - 1, MARKER_MASK_ALL_PLUS_BLANK);
 			line >= startLine;
@@ -231,9 +231,8 @@ void DeletedSectionsList::pop(int view, int currAction, int startLine)
 
 	const int linesCount = static_cast<int>(last.markers.size());
 
-	const int startPos = CallScintilla(view, SCI_POSITIONFROMLINE, last.startLine, 0);
-	clearChangedIndicator(view,
-			startPos, CallScintilla(view, SCI_POSITIONFROMLINE, last.startLine + linesCount, 0) - startPos);
+	const int startPos = getLineStart(view, last.startLine);
+	clearChangedIndicator(view, startPos, getLineStart(view, last.startLine + linesCount) - startPos);
 
 	for (int i = 0; i < linesCount; ++i)
 	{
@@ -662,10 +661,10 @@ void NppSettings::setCompareMode(bool clearHorizontalScroll)
 
 	if (clearHorizontalScroll)
 	{
-		int pos = CallScintilla(MAIN_VIEW, SCI_POSITIONFROMLINE, getCurrentLine(MAIN_VIEW), 0);
+		int pos = getLineStart(MAIN_VIEW, getCurrentLine(MAIN_VIEW));
 		CallScintilla(MAIN_VIEW, SCI_SETSEL, pos, pos);
 
-		pos = CallScintilla(SUB_VIEW, SCI_POSITIONFROMLINE, getCurrentLine(SUB_VIEW), 0);
+		pos = getLineStart(SUB_VIEW, getCurrentLine(SUB_VIEW));
 		CallScintilla(SUB_VIEW, SCI_SETSEL, pos, pos);
 	}
 
@@ -1049,23 +1048,21 @@ void ComparedPair::restoreFiles(int currentBuffId = -1)
 void ComparedPair::setStatus()
 {
 	const int alignOff = (isAlignmentFirstLineInserted(MAIN_VIEW) || isAlignmentFirstLineInserted(SUB_VIEW)) ? 2 : 1;
-	TCHAR cmpType[128];
+	TCHAR cmpType[128] = TEXT("");
 
 	if (options.selectionCompare)
-		_sntprintf_s(cmpType, _countof(cmpType), _TRUNCATE, TEXT("Sel: %d-%d vs. %d-%d"),
+		_sntprintf_s(cmpType, _countof(cmpType), _TRUNCATE, TEXT(" Selections: %d-%d vs. %d-%d"),
 				options.selections[MAIN_VIEW].first + alignOff, options.selections[MAIN_VIEW].second + alignOff,
 				options.selections[SUB_VIEW].first + alignOff, options.selections[SUB_VIEW].second + alignOff);
-	else
-		_tcscpy_s(cmpType, _countof(cmpType), TEXT("Full"));
 
 	TCHAR msg[512];
 
-	_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-			TEXT("%s (%s)    Ignore Spaces (%s)    Ignore Case (%s)    Detect Moves (%s)"),
-			options.findUniqueMode	? TEXT("Find Unique") : TEXT("Compare"), cmpType,
-			options.ignoreSpaces	? TEXT("Y")	: TEXT("N"),
-			options.ignoreCase		? TEXT("Y")	: TEXT("N"),
-			options.detectMoves		? TEXT("Y")	: TEXT("N"));
+	_sntprintf_s(msg, _countof(msg), _TRUNCATE, TEXT("%s%s%s%s%s%s"),
+			options.findUniqueMode		? TEXT("Find Unique") : TEXT("Compare"), cmpType,
+			options.ignoreSpaces		? TEXT("   | Ignore Spaces")		: TEXT(""),
+			options.ignoreEmptyLines	? TEXT("   | Ignore Empty Lines")	: TEXT(""),
+			options.ignoreCase			? TEXT("   | Ignore Case")			: TEXT(""),
+			options.detectMoves			? TEXT("   | Detect Moves")			: TEXT(""));
 
 	::SendMessageW(nppData._nppHandle, NPPM_SETSTATUSBAR, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)msg));
 }
@@ -1352,9 +1349,9 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 
 		if (down && (isLineAnnotated(view, line) && isLineWrapped(view, line) &&
 				!isLineMarked(view, line, MARKER_MASK_LINE)))
-			pos = CallScintilla(view, SCI_GETLINEENDPOSITION, line, 0);
+			pos = getLineEnd(view, line);
 		else
-			pos = CallScintilla(view, SCI_POSITIONFROMLINE, line, 0);
+			pos = getLineStart(view, line);
 
 		CallScintilla(view, SCI_SETEMPTYSELECTION, pos, 0);
 
@@ -2033,6 +2030,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		cmpPair->options.findUniqueMode			= findUniqueMode;
 		cmpPair->options.charPrecision			= Settings.CharPrecision;
 		cmpPair->options.ignoreSpaces			= Settings.IgnoreSpaces;
+		cmpPair->options.ignoreEmptyLines		= Settings.IgnoreEmptyLines;
 		cmpPair->options.ignoreCase				= Settings.IgnoreCase;
 		cmpPair->options.detectMoves			= Settings.DetectMoves;
 		cmpPair->options.matchPercentThreshold	= Settings.MatchPercentThreshold;
@@ -2307,6 +2305,15 @@ void IgnoreSpaces()
 }
 
 
+void IgnoreEmptyLines()
+{
+	Settings.IgnoreEmptyLines = !Settings.IgnoreEmptyLines;
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_EMPTY_LINES]._cmdID,
+			(LPARAM)Settings.IgnoreEmptyLines);
+	Settings.markAsDirty();
+}
+
+
 void IgnoreCase()
 {
 	Settings.IgnoreCase = !Settings.IgnoreCase;
@@ -2573,6 +2580,9 @@ void createMenu()
 	_tcscpy_s(funcItem[CMD_IGNORE_SPACES]._itemName, nbChar, TEXT("Ignore Spaces"));
 	funcItem[CMD_IGNORE_SPACES]._pFunc = IgnoreSpaces;
 
+	_tcscpy_s(funcItem[CMD_IGNORE_EMPTY_LINES]._itemName, nbChar, TEXT("Ignore Empty Lines"));
+	funcItem[CMD_IGNORE_EMPTY_LINES]._pFunc = IgnoreEmptyLines;
+
 	_tcscpy_s(funcItem[CMD_IGNORE_CASE]._itemName, nbChar, TEXT("Ignore Case"));
 	funcItem[CMD_IGNORE_CASE]._pFunc = IgnoreCase;
 
@@ -2732,9 +2742,9 @@ void syncViews(int biasView)
 			int pos;
 
 			if (isLineAnnotated(otherView, otherLine) && isLineWrapped(otherView, otherLine))
-				pos = CallScintilla(otherView, SCI_GETLINEENDPOSITION, otherLine, 0);
+				pos = getLineEnd(otherView, otherLine);
 			else
-				pos = CallScintilla(otherView, SCI_POSITIONFROMLINE, otherLine, 0);
+				pos = getLineStart(otherView, otherLine);
 
 			ScopedIncrementer incr(notificationsLock);
 
@@ -2845,6 +2855,8 @@ void onNppReady()
 
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACES]._cmdID,
 			(LPARAM)Settings.IgnoreSpaces);
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_EMPTY_LINES]._cmdID,
+			(LPARAM)Settings.IgnoreEmptyLines);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_CASE]._cmdID,
 			(LPARAM)Settings.IgnoreCase);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID,
