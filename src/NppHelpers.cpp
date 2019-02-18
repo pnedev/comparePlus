@@ -586,6 +586,19 @@ int getNextUnmarkedLine(int view, int startLine, int markMask)
 }
 
 
+void hideOutsideRange(int view, int startLine, int endLine)
+{
+	const int linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+
+	// First line (0) cannot be hidden so start from line 1
+	if (startLine > 0)
+		CallScintilla(view, SCI_HIDELINES, 1, startLine - 1);
+
+	if (endLine > 0 && endLine + 1 < linesCount)
+		CallScintilla(view, SCI_HIDELINES, endLine + 1, linesCount - 1);
+}
+
+
 void hideUnmarked(int view, int markMask)
 {
 	const int linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);

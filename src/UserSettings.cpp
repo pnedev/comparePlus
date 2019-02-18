@@ -39,6 +39,7 @@ const TCHAR UserSettings::ignoreSpacesSetting[]			= TEXT("Ignore Spaces");
 const TCHAR UserSettings::ignoreEmptyLinesSetting[]		= TEXT("Ignore Empty Lines");
 const TCHAR UserSettings::ignoreCaseSetting[]			= TEXT("Ignore Case");
 const TCHAR UserSettings::detectMovesSetting[]			= TEXT("Detect Moves");
+const TCHAR UserSettings::showOnlySelSetting[]			= TEXT("Show Only Selections");
 const TCHAR UserSettings::hideMatchesSetting[]			= TEXT("Hide Matches");
 const TCHAR UserSettings::navBarSetting[]				= TEXT("Navigation Bar");
 
@@ -85,6 +86,7 @@ void UserSettings::load()
 	IgnoreEmptyLines	= ::GetPrivateProfileInt(mainSection, ignoreEmptyLinesSetting,	1, iniFile) == 1;
 	IgnoreCase			= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,		0, iniFile) == 1;
 	DetectMoves			= ::GetPrivateProfileInt(mainSection, detectMovesSetting,		1, iniFile) == 1;
+	ShowOnlySelections	= ::GetPrivateProfileInt(mainSection, showOnlySelSetting,		1, iniFile) == 1;
 	HideMatches			= ::GetPrivateProfileInt(mainSection, hideMatchesSetting,		0, iniFile) == 1;
 	UseNavBar			= ::GetPrivateProfileInt(mainSection, navBarSetting,			1, iniFile) == 1;
 
@@ -169,6 +171,8 @@ void UserSettings::save()
 			IgnoreCase ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, detectMovesSetting,
 			DetectMoves ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, showOnlySelSetting,
+			ShowOnlySelections ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, hideMatchesSetting,
 			HideMatches ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, navBarSetting,

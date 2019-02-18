@@ -526,7 +526,7 @@ void NavDialog::setPos(int x, int y)
 
 		CallScintilla(currentView->m_view, SCI_SETEMPTYSELECTION, getLineStart(currentView->m_view, currentLine), 0);
 
-		if (Settings.HideMatches)
+		if (Settings.HideMatches || Settings.ShowOnlySelections)
 			gotoClosestUnhiddenLine(currentView->m_view);
 
 		::UpdateWindow(getView(currentView->m_view));

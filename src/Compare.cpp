@@ -1537,6 +1537,13 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 		hideUnmarked(MAIN_VIEW, MARKER_MASK_LINE);
 		hideUnmarked(SUB_VIEW, MARKER_MASK_LINE);
 	}
+	else if (cmpPair->options.selectionCompare && Settings.ShowOnlySelections)
+	{
+		hideOutsideRange(MAIN_VIEW,
+				cmpPair->options.selections[MAIN_VIEW].first, cmpPair->options.selections[MAIN_VIEW].second);
+		hideOutsideRange(SUB_VIEW,
+				cmpPair->options.selections[SUB_VIEW].first, cmpPair->options.selections[SUB_VIEW].second);
+	}
 	else
 	{
 		CallScintilla(MAIN_VIEW, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
@@ -2332,6 +2339,54 @@ void DetectMoves()
 }
 
 
+void ShowOnlySelections()
+{
+	Settings.ShowOnlySelections = !Settings.ShowOnlySelections;
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_SHOW_ONLY_SEL]._cmdID,
+			(LPARAM)Settings.ShowOnlySelections);
+	Settings.markAsDirty();
+
+	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
+
+	if (cmpPair != compareList.end())
+	{
+		ScopedIncrementer incr(notificationsLock);
+
+		const int view = getCurrentViewId();
+		int currentLine = getCurrentLine(view);
+
+		if (Settings.ShowOnlySelections && !isLineMarked(view, currentLine, MARKER_MASK_LINE))
+		{
+			currentLine = CallScintilla(view, SCI_MARKERNEXT, currentLine, MARKER_MASK_LINE);
+
+			if (!isLineVisible(view, currentLine))
+				centerAt(view, currentLine);
+
+			CallScintilla(view, SCI_GOTOLINE, currentLine, 0);
+		}
+
+		ViewLocation loc;
+
+		const int firstLine = isLineVisible(view, currentLine) ? -1 : getFirstLine(view);
+
+		if (firstLine == -1)
+			loc.save(view);
+
+		CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
+		CallScintilla(SUB_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
+
+		alignDiffs(cmpPair);
+
+		if (firstLine == -1)
+			loc.restore();
+		else
+			CallScintilla(view, SCI_SETFIRSTVISIBLELINE, CallScintilla(view, SCI_VISIBLEFROMDOCLINE, firstLine, 0), 0);
+
+		NavDlg.Update();
+	}
+}
+
+
 void HideMatches()
 {
 	Settings.HideMatches = !Settings.HideMatches;
@@ -2589,6 +2644,9 @@ void createMenu()
 	_tcscpy_s(funcItem[CMD_DETECT_MOVES]._itemName, nbChar, TEXT("Detect Moves"));
 	funcItem[CMD_DETECT_MOVES]._pFunc = DetectMoves;
 
+	_tcscpy_s(funcItem[CMD_SHOW_ONLY_SEL]._itemName, nbChar, TEXT("Show Only Compared Selections"));
+	funcItem[CMD_SHOW_ONLY_SEL]._pFunc = ShowOnlySelections;
+
 	_tcscpy_s(funcItem[CMD_HIDE_MATCHES]._itemName, nbChar, TEXT("Hide Matches (Show Only Diffs)"));
 	funcItem[CMD_HIDE_MATCHES]._pFunc = HideMatches;
 
@@ -2778,11 +2836,12 @@ void comparedFileActivated()
 	setCompareView(MAIN_VIEW,	Settings.colors.blank);
 	setCompareView(SUB_VIEW,	Settings.colors.blank);
 
-	if (Settings.HideMatches)
+	if (Settings.HideMatches || Settings.ShowOnlySelections)
 	{
 		CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
 
-		if (cmpPair != compareList.end())
+		if ((cmpPair != compareList.end()) && (Settings.HideMatches ||
+			(cmpPair->options.selectionCompare && Settings.ShowOnlySelections)))
 		{
 			ScopedIncrementer incr(notificationsLock);
 
@@ -2861,6 +2920,8 @@ void onNppReady()
 			(LPARAM)Settings.IgnoreCase);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID,
 			(LPARAM)Settings.DetectMoves);
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_SHOW_ONLY_SEL]._cmdID,
+			(LPARAM)Settings.ShowOnlySelections);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_HIDE_MATCHES]._cmdID,
 			(LPARAM)Settings.HideMatches);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID,
