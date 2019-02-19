@@ -224,13 +224,7 @@ inline uint64_t Hash(uint64_t hval, char letter)
 }
 
 
-inline int toMatchAlignmentLine(const DocCmpInfo& doc, int bdLine)
-{
-	return ((bdLine > 0) ? doc.lines[bdLine - 1].line + 1 : doc.lines.front().line);
-}
-
-
-inline int toDiffAlignmentLine(const DocCmpInfo& doc, int bdLine)
+inline int toAlignmentLine(const DocCmpInfo& doc, int bdLine)
 {
 	return ((bdLine < 0) ? doc.lines.front().line :
 			(bdLine < (int)doc.lines.size()) ? doc.lines[bdLine].line : doc.lines.back().line + 1);
@@ -1094,10 +1088,10 @@ bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
 		if (bd.type == diff_type::DIFF_MATCH)
 		{
 			pMainAlignData->diffMask	= 0;
-			pMainAlignData->line		= toMatchAlignmentLine(cmpInfo.doc1, alignLines.first);
+			pMainAlignData->line		= toAlignmentLine(cmpInfo.doc1, alignLines.first);
 
 			pSubAlignData->diffMask		= 0;
-			pSubAlignData->line			= toMatchAlignmentLine(cmpInfo.doc2, alignLines.second);
+			pSubAlignData->line			= toAlignmentLine(cmpInfo.doc2, alignLines.second);
 
 			alignmentInfo.emplace_back(alignPair);
 
@@ -1111,10 +1105,10 @@ bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
 			markSection(cmpInfo.doc2, bd);
 
 			pMainAlignData->diffMask	= 0;
-			pMainAlignData->line		= toMatchAlignmentLine(cmpInfo.doc1, alignLines.first);
+			pMainAlignData->line		= toAlignmentLine(cmpInfo.doc1, alignLines.first);
 
 			pSubAlignData->diffMask		= cmpInfo.doc2.blockDiffMask;
-			pSubAlignData->line			= toDiffAlignmentLine(cmpInfo.doc2, alignLines.second);
+			pSubAlignData->line			= toAlignmentLine(cmpInfo.doc2, alignLines.second);
 
 			alignmentInfo.emplace_back(alignPair);
 
@@ -1137,10 +1131,10 @@ bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
 					if (cmpInfo.doc1.section.len || cmpInfo.doc2.section.len)
 					{
 						pMainAlignData->diffMask	= cmpInfo.doc1.section.len ? cmpInfo.doc1.blockDiffMask : 0;
-						pMainAlignData->line		= toDiffAlignmentLine(cmpInfo.doc1, alignLines.first);
+						pMainAlignData->line		= toAlignmentLine(cmpInfo.doc1, alignLines.first);
 
 						pSubAlignData->diffMask		= cmpInfo.doc2.section.len ? cmpInfo.doc2.blockDiffMask : 0;
-						pSubAlignData->line			= toDiffAlignmentLine(cmpInfo.doc2, alignLines.second);
+						pSubAlignData->line			= toAlignmentLine(cmpInfo.doc2, alignLines.second);
 
 						alignmentInfo.emplace_back(alignPair);
 
@@ -1158,10 +1152,10 @@ bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
 					}
 
 					pMainAlignData->diffMask	= MARKER_MASK_CHANGED;
-					pMainAlignData->line		= toDiffAlignmentLine(cmpInfo.doc1, alignLines.first);
+					pMainAlignData->line		= toAlignmentLine(cmpInfo.doc1, alignLines.first);
 
 					pSubAlignData->diffMask		= MARKER_MASK_CHANGED;
-					pSubAlignData->line			= toDiffAlignmentLine(cmpInfo.doc2, alignLines.second);
+					pSubAlignData->line			= toAlignmentLine(cmpInfo.doc2, alignLines.second);
 
 					alignmentInfo.emplace_back(alignPair);
 
@@ -1179,27 +1173,11 @@ bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
 
 				if (cmpInfo.doc1.section.len || cmpInfo.doc2.section.len)
 				{
-					if (cmpInfo.doc1.section.len)
-					{
-						pMainAlignData->diffMask	= cmpInfo.doc1.blockDiffMask;
-						pMainAlignData->line		= toDiffAlignmentLine(cmpInfo.doc1, alignLines.first);
-					}
-					else
-					{
-						pMainAlignData->diffMask	= 0;
-						pMainAlignData->line		= toMatchAlignmentLine(cmpInfo.doc1, alignLines.first);
-					}
+					pMainAlignData->diffMask	= cmpInfo.doc1.section.len ? cmpInfo.doc1.blockDiffMask : 0;
+					pMainAlignData->line		= toAlignmentLine(cmpInfo.doc1, alignLines.first);
 
-					if (cmpInfo.doc2.section.len)
-					{
-						pSubAlignData->diffMask		= cmpInfo.doc2.blockDiffMask;
-						pSubAlignData->line			= toDiffAlignmentLine(cmpInfo.doc2, alignLines.second);
-					}
-					else
-					{
-						pSubAlignData->diffMask		= 0;
-						pSubAlignData->line			= toMatchAlignmentLine(cmpInfo.doc2, alignLines.second);
-					}
+					pSubAlignData->diffMask		= cmpInfo.doc2.section.len ? cmpInfo.doc2.blockDiffMask : 0;
+					pSubAlignData->line			= toAlignmentLine(cmpInfo.doc2, alignLines.second);
 
 					alignmentInfo.emplace_back(alignPair);
 
@@ -1225,10 +1203,10 @@ bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
 				markSection(cmpInfo.doc1, bd);
 
 				pMainAlignData->diffMask	= cmpInfo.doc1.blockDiffMask;
-				pMainAlignData->line		= toDiffAlignmentLine(cmpInfo.doc1, alignLines.first);
+				pMainAlignData->line		= toAlignmentLine(cmpInfo.doc1, alignLines.first);
 
 				pSubAlignData->diffMask		= 0;
-				pSubAlignData->line			= toMatchAlignmentLine(cmpInfo.doc2, alignLines.second);
+				pSubAlignData->line			= toAlignmentLine(cmpInfo.doc2, alignLines.second);
 
 				alignmentInfo.emplace_back(alignPair);
 
@@ -1243,10 +1221,10 @@ bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
 	if (cmpInfo.selectionCompare)
 	{
 		pMainAlignData->diffMask	= 0;
-		pMainAlignData->line		= toMatchAlignmentLine(cmpInfo.doc1, alignLines.first);
+		pMainAlignData->line		= toAlignmentLine(cmpInfo.doc1, alignLines.first);
 
 		pSubAlignData->diffMask		= 0;
-		pSubAlignData->line			= toMatchAlignmentLine(cmpInfo.doc2, alignLines.second);
+		pSubAlignData->line			= toAlignmentLine(cmpInfo.doc2, alignLines.second);
 
 		alignmentInfo.emplace_back(alignPair);
 	}
