@@ -2339,11 +2339,11 @@ void DetectMoves()
 }
 
 
-void ShowOnlySelections()
+void HideMatches()
 {
-	Settings.ShowOnlySelections = !Settings.ShowOnlySelections;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_SHOW_ONLY_SEL]._cmdID,
-			(LPARAM)Settings.ShowOnlySelections);
+	Settings.HideMatches = !Settings.HideMatches;
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_HIDE_MATCHES]._cmdID,
+			(LPARAM)Settings.HideMatches);
 	Settings.markAsDirty();
 
 	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
@@ -2355,7 +2355,7 @@ void ShowOnlySelections()
 		const int view = getCurrentViewId();
 		int currentLine = getCurrentLine(view);
 
-		if (Settings.ShowOnlySelections && !isLineMarked(view, currentLine, MARKER_MASK_LINE))
+		if (Settings.HideMatches && !isLineMarked(view, currentLine, MARKER_MASK_LINE))
 		{
 			currentLine = CallScintilla(view, SCI_MARKERNEXT, currentLine, MARKER_MASK_LINE);
 
@@ -2387,11 +2387,11 @@ void ShowOnlySelections()
 }
 
 
-void HideMatches()
+void ShowOnlySelections()
 {
-	Settings.HideMatches = !Settings.HideMatches;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_HIDE_MATCHES]._cmdID,
-			(LPARAM)Settings.HideMatches);
+	Settings.ShowOnlySelections = !Settings.ShowOnlySelections;
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_SHOW_ONLY_SEL]._cmdID,
+			(LPARAM)Settings.ShowOnlySelections);
 	Settings.markAsDirty();
 
 	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
@@ -2403,10 +2403,8 @@ void HideMatches()
 		const int view = getCurrentViewId();
 		int currentLine = getCurrentLine(view);
 
-		if (Settings.HideMatches && !isLineMarked(view, currentLine, MARKER_MASK_LINE))
+		if (Settings.ShowOnlySelections)
 		{
-			currentLine = CallScintilla(view, SCI_MARKERNEXT, currentLine, MARKER_MASK_LINE);
-
 			if (!isLineVisible(view, currentLine))
 				centerAt(view, currentLine);
 
@@ -2644,11 +2642,11 @@ void createMenu()
 	_tcscpy_s(funcItem[CMD_DETECT_MOVES]._itemName, nbChar, TEXT("Detect Moves"));
 	funcItem[CMD_DETECT_MOVES]._pFunc = DetectMoves;
 
+	_tcscpy_s(funcItem[CMD_HIDE_MATCHES]._itemName, nbChar, TEXT("Show Only Diffs (Hide Matches)"));
+	funcItem[CMD_HIDE_MATCHES]._pFunc = HideMatches;
+
 	_tcscpy_s(funcItem[CMD_SHOW_ONLY_SEL]._itemName, nbChar, TEXT("Show Only Compared Selections"));
 	funcItem[CMD_SHOW_ONLY_SEL]._pFunc = ShowOnlySelections;
-
-	_tcscpy_s(funcItem[CMD_HIDE_MATCHES]._itemName, nbChar, TEXT("Hide Matches (Show Only Diffs)"));
-	funcItem[CMD_HIDE_MATCHES]._pFunc = HideMatches;
 
 	_tcscpy_s(funcItem[CMD_NAV_BAR]._itemName, nbChar, TEXT("Navigation Bar"));
 	funcItem[CMD_NAV_BAR]._pFunc = ViewNavigationBar;
@@ -2920,10 +2918,10 @@ void onNppReady()
 			(LPARAM)Settings.IgnoreCase);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID,
 			(LPARAM)Settings.DetectMoves);
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_SHOW_ONLY_SEL]._cmdID,
-			(LPARAM)Settings.ShowOnlySelections);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_HIDE_MATCHES]._cmdID,
 			(LPARAM)Settings.HideMatches);
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_SHOW_ONLY_SEL]._cmdID,
+			(LPARAM)Settings.ShowOnlySelections);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID,
 			(LPARAM)Settings.UseNavBar);
 

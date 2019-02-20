@@ -117,8 +117,8 @@ public:
 	bool           	IgnoreCase;
 	bool           	DetectMoves;
 
-	bool           	ShowOnlySelections;
 	bool           	HideMatches;
+	bool           	ShowOnlySelections;
 	bool           	UseNavBar;
 
 	bool           	RecompareOnChange;
