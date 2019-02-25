@@ -1048,21 +1048,32 @@ void ComparedPair::restoreFiles(int currentBuffId = -1)
 void ComparedPair::setStatus()
 {
 	const int alignOff = (isAlignmentFirstLineInserted(MAIN_VIEW) || isAlignmentFirstLineInserted(SUB_VIEW)) ? 2 : 1;
-	TCHAR cmpType[128] = TEXT("");
+	TCHAR buf[256] = TEXT("");
 
 	if (options.selectionCompare)
-		_sntprintf_s(cmpType, _countof(cmpType), _TRUNCATE, TEXT(" Selections: %d-%d vs. %d-%d"),
+		_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Selections - %d-%d vs. %d-%d"),
 				options.selections[MAIN_VIEW].first + alignOff, options.selections[MAIN_VIEW].second + alignOff,
 				options.selections[SUB_VIEW].first + alignOff, options.selections[SUB_VIEW].second + alignOff);
 
 	TCHAR msg[512];
 
-	_sntprintf_s(msg, _countof(msg), _TRUNCATE, TEXT("%s%s%s%s%s%s"),
-			options.findUniqueMode		? TEXT("Find Unique") : TEXT("Compare"), cmpType,
-			options.ignoreSpaces		? TEXT("   | Ignore Spaces")		: TEXT(""),
-			options.ignoreEmptyLines	? TEXT("   | Ignore Empty Lines")	: TEXT(""),
-			options.ignoreCase			? TEXT("   | Ignore Case")			: TEXT(""),
-			options.detectMoves			? TEXT("   | Detect Moves")			: TEXT(""));
+	_sntprintf_s(msg, _countof(msg), _TRUNCATE, TEXT("%s%s"),
+			options.findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"), buf);
+
+	_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%s%s%s%s"),
+			options.ignoreSpaces		? TEXT(" Ignore Spaces | ")			: TEXT(""),
+			options.ignoreEmptyLines	? TEXT(" Ignore Empty Lines | ")	: TEXT(""),
+			options.ignoreCase			? TEXT(" Ignore Case | ")			: TEXT(""),
+			options.detectMoves			? TEXT(" Detect Moves | ")			: TEXT(""));
+
+	int len = _tcslen(buf);
+
+	if (len)
+	{
+		buf[len - 3] = TEXT('\0');
+		_tcscat_s(msg, _countof(msg), TEXT(" :  "));
+		_tcscat_s(msg, _countof(msg), buf);
+	}
 
 	::SendMessageW(nppData._nppHandle, NPPM_SETSTATUSBAR, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)msg));
 }
