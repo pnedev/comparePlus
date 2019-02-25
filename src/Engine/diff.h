@@ -34,7 +34,7 @@
  */
 
 /* Modified into template class DiffCalc
- * Copyright (C) 2017-2018  Pavel Nedev <pg.nedev@gmail.com>
+ * Copyright (C) 2017-2019  Pavel Nedev <pg.nedev@gmail.com>
  */
 
 
