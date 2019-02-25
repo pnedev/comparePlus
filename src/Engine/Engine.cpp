@@ -1059,7 +1059,7 @@ void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, int lineIdx)
 }
 
 
-bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
+bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo, const CompareOptions& options)
 {
 	progress_ptr& progress = ProgressDlg::Get();
 
@@ -1095,8 +1095,32 @@ bool markAllDiffs(CompareInfo& cmpInfo, AlignmentInfo_t& alignmentInfo)
 
 			alignmentInfo.emplace_back(alignPair);
 
-			alignLines.first	+= bd.len;
-			alignLines.second	+= bd.len;
+			if (options.ignoreEmptyLines)
+			{
+				// Align pairs of matching lines after ignored lines sections
+				for (int j = bd.len - 1; j; --j)
+				{
+					++alignLines.first;
+					++alignLines.second;
+
+					if ((++pMainAlignData->line != cmpInfo.doc1.lines[alignLines.first].line) ||
+						(++pSubAlignData->line != cmpInfo.doc2.lines[alignLines.second].line))
+					{
+						pMainAlignData->line	= cmpInfo.doc1.lines[alignLines.first].line;
+						pSubAlignData->line		= cmpInfo.doc2.lines[alignLines.second].line;
+
+						alignmentInfo.emplace_back(alignPair);
+					}
+				}
+
+				++alignLines.first;
+				++alignLines.second;
+			}
+			else
+			{
+				alignLines.first	+= bd.len;
+				alignLines.second	+= bd.len;
+			}
 		}
 		else if (bd.type == diff_type::DIFF_IN_2)
 		{
@@ -1316,7 +1340,7 @@ CompareResult runCompare(const CompareOptions& options, AlignmentInfo_t& alignme
 	if (progress && !progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
-	if (!markAllDiffs(cmpInfo, alignmentInfo))
+	if (!markAllDiffs(cmpInfo, alignmentInfo, options))
 		return CompareResult::COMPARE_CANCELLED;
 
 	return CompareResult::COMPARE_MISMATCH;
