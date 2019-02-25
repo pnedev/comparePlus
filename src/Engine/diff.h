@@ -403,7 +403,7 @@ void DiffCalc<Elem, UserDataT>::_shift_boundaries()
 			// Diff block shifted - we need to adjust the surrounding matching blocks accordingly
 			if (shift_len)
 			{
-				if (i >= 1)
+				if (i > 0)
 				{
 					_diff[i - 1].len += shift_len;
 				}
@@ -432,10 +432,7 @@ void DiffCalc<Elem, UserDataT>::_shift_boundaries()
 
 					_diff.erase(_diff.begin() + j);
 
-					while (j < static_cast<int>(_diff.size()) && _diff[i].type != _diff[j].type)
-						++j;
-
-					if (j < static_cast<int>(_diff.size()))
+					if (j < static_cast<int>(_diff.size()) && _diff[i].type == _diff[j].type)
 					{
 						_diff[i].len += _diff[j].len;
 						_diff.erase(_diff.begin() + j);
