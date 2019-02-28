@@ -112,7 +112,7 @@ BEGIN
     AUTORADIOBUTTON	"Current and previous files", IDC_COMPARE_TO_PREV, 21, 125, 98, 8, WS_GROUP | WS_TABSTOP
     AUTORADIOBUTTON	"Current and next files", IDC_COMPARE_TO_NEXT, 21, 138, 98, 8
 	GROUPBOX		"Misc.", IDC_STATIC, 135, 20, 138, 130
-	AUTOCHECKBOX	"Character precision compare", IDC_CHAR_PRECISION, 142, 34, 128, 14
+	AUTOCHECKBOX	"Align all matching lines", IDC_ALIGN_ALL_MATCHES, 142, 34, 128, 14
 	AUTOCHECKBOX	"Warn about encodings mismatch", IDC_ENCODING_CHECK, 142, 53, 128, 14
 	AUTOCHECKBOX	"Move caret on navigation", IDC_FOLLOWING_CARET, 142, 72, 128, 14
 	AUTOCHECKBOX	"Wrap around diffs", IDC_WRAP_AROUND, 142, 91, 128, 14

@@ -2046,6 +2046,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		cmpPair->options.oldFileViewId			= Settings.OldFileViewId;
 
 		cmpPair->options.findUniqueMode			= findUniqueMode;
+		cmpPair->options.alignAllMatches		= Settings.AlignAllMatches;
 		cmpPair->options.charPrecision			= Settings.CharPrecision;
 		cmpPair->options.ignoreSpaces			= Settings.IgnoreSpaces;
 		cmpPair->options.ignoreEmptyLines		= Settings.IgnoreEmptyLines;
@@ -2311,6 +2312,15 @@ void GitDiff()
 	content.clear();
 
 	compare(false, false);
+}
+
+
+void CharPrecision()
+{
+	Settings.CharPrecision = !Settings.CharPrecision;
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_CHAR_HIGHLIGHTING]._cmdID,
+			(LPARAM)Settings.CharPrecision);
+	Settings.markAsDirty();
 }
 
 
@@ -2641,6 +2651,9 @@ void createMenu()
 	funcItem[CMD_GIT_DIFF]._pShKey->_isShift		= false;
 	funcItem[CMD_GIT_DIFF]._pShKey->_key 			= 'G';
 
+	_tcscpy_s(funcItem[CMD_CHAR_HIGHLIGHTING]._itemName, nbChar, TEXT("Highlight Diffs on Character Level"));
+	funcItem[CMD_CHAR_HIGHLIGHTING]._pFunc = CharPrecision;
+
 	_tcscpy_s(funcItem[CMD_IGNORE_SPACES]._itemName, nbChar, TEXT("Ignore Spaces"));
 	funcItem[CMD_IGNORE_SPACES]._pFunc = IgnoreSpaces;
 
@@ -2921,6 +2934,8 @@ void onNppReady()
 
 	NppSettings::get().updatePluginMenu();
 
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_CHAR_HIGHLIGHTING]._cmdID,
+			(LPARAM)Settings.CharPrecision);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACES]._cmdID,
 			(LPARAM)Settings.IgnoreSpaces);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_EMPTY_LINES]._cmdID,

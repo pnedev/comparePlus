@@ -28,7 +28,7 @@
 #define DEFAULT_OLD_IN_SUB_VIEW			0
 #define DEFAULT_COMPARE_TO_PREV			1
 
-#define DEFAULT_CHAR_PRECISION			1
+#define DEFAULT_ALIGN_ALL_MATCHES		0
 #define DEFAULT_ENCODINGS_CHECK			1
 #define DEFAULT_FOLLOWING_CARET			1
 #define DEFAULT_WRAP_AROUND				0
@@ -73,13 +73,14 @@ public:
 	static const TCHAR oldFileViewSetting[];
 	static const TCHAR compareToPrevSetting[];
 
-	static const TCHAR charPrecisionSetting[];
+	static const TCHAR alignAllMatchesSetting[];
 	static const TCHAR encodingsCheckSetting[];
 	static const TCHAR followingCaretSetting[];
 	static const TCHAR wrapAroundSetting[];
 	static const TCHAR gotoFirstDiffSetting[];
 	static const TCHAR promptCloseOnMatchSetting[];
 
+	static const TCHAR charPrecisionSetting[];
 	static const TCHAR ignoreSpacesSetting[];
 	static const TCHAR ignoreEmptyLinesSetting[];
 	static const TCHAR ignoreCaseSetting[];
@@ -106,13 +107,14 @@ public:
 	int				OldFileViewId;
 	bool           	CompareToPrev;
 
-	bool           	CharPrecision;
 	bool           	EncodingsCheck;
+	bool           	AlignAllMatches;
 	bool           	FollowingCaret;
 	bool           	WrapAround;
 	bool           	GotoFirstDiff;
 	bool           	PromptToCloseOnMatch;
 
+	bool           	CharPrecision;
 	bool           	IgnoreSpaces;
 	bool           	IgnoreEmptyLines;
 	bool           	IgnoreCase;

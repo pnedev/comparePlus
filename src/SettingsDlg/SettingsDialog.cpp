@@ -154,8 +154,8 @@ void SettingsDialog::SetParams(UserSettings* settings)
 			BST_CHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, settings->CompareToPrev ? IDC_COMPARE_TO_NEXT : IDC_COMPARE_TO_PREV),
 			BST_UNCHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, IDC_CHAR_PRECISION),
-			settings->CharPrecision ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ALIGN_ALL_MATCHES),
+			settings->AlignAllMatches ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ENCODING_CHECK),
 			settings->EncodingsCheck ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_PROMPT_CLOSE_ON_MATCH),
@@ -185,7 +185,7 @@ void SettingsDialog::GetParams()
 	_Settings->OldFileViewId		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_OLD_MAIN)) == BST_CHECKED) ?
 			MAIN_VIEW : SUB_VIEW;
 	_Settings->CompareToPrev		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_COMPARE_TO_PREV)) == BST_CHECKED);
-	_Settings->CharPrecision		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_CHAR_PRECISION)) == BST_CHECKED);
+	_Settings->AlignAllMatches		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ALIGN_ALL_MATCHES)) == BST_CHECKED);
 	_Settings->EncodingsCheck		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENCODING_CHECK)) == BST_CHECKED);
 	_Settings->PromptToCloseOnMatch	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_PROMPT_CLOSE_ON_MATCH)) == BST_CHECKED);
 	_Settings->WrapAround			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_WRAP_AROUND)) == BST_CHECKED);

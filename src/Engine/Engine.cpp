@@ -1093,22 +1093,18 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, Alignment
 
 			alignmentInfo.emplace_back(alignPair);
 
-			if (options.ignoreEmptyLines)
+			if (options.alignAllMatches)
 			{
-				// Align pairs of matching lines after ignored lines sections
+				// Align all pairs of matching lines
 				for (int j = bd.len - 1; j; --j)
 				{
 					++alignLines.first;
 					++alignLines.second;
 
-					if ((++pMainAlignData->line != cmpInfo.doc1.lines[alignLines.first].line) ||
-						(++pSubAlignData->line != cmpInfo.doc2.lines[alignLines.second].line))
-					{
-						pMainAlignData->line	= cmpInfo.doc1.lines[alignLines.first].line;
-						pSubAlignData->line		= cmpInfo.doc2.lines[alignLines.second].line;
+					pMainAlignData->line	= cmpInfo.doc1.lines[alignLines.first].line;
+					pSubAlignData->line		= cmpInfo.doc2.lines[alignLines.second].line;
 
-						alignmentInfo.emplace_back(alignPair);
-					}
+					alignmentInfo.emplace_back(alignPair);
 				}
 
 				++alignLines.first;
@@ -1116,8 +1112,32 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, Alignment
 			}
 			else
 			{
-				alignLines.first	+= bd.len;
-				alignLines.second	+= bd.len;
+				if (options.ignoreEmptyLines)
+				{
+					// Align pairs of matching lines after ignored lines sections
+					for (int j = bd.len - 1; j; --j)
+					{
+						++alignLines.first;
+						++alignLines.second;
+
+						if ((++pMainAlignData->line != cmpInfo.doc1.lines[alignLines.first].line) ||
+							(++pSubAlignData->line != cmpInfo.doc2.lines[alignLines.second].line))
+						{
+							pMainAlignData->line	= cmpInfo.doc1.lines[alignLines.first].line;
+							pSubAlignData->line		= cmpInfo.doc2.lines[alignLines.second].line;
+
+							alignmentInfo.emplace_back(alignPair);
+						}
+					}
+
+					++alignLines.first;
+					++alignLines.second;
+				}
+				else
+				{
+					alignLines.first	+= bd.len;
+					alignLines.second	+= bd.len;
+				}
 			}
 		}
 		else if (bd.type == diff_type::DIFF_IN_2)

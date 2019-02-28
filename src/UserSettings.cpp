@@ -29,13 +29,14 @@ const TCHAR UserSettings::oldIsFirstSetting[]			= TEXT("Old is First");
 const TCHAR UserSettings::oldFileViewSetting[]			= TEXT("Old in Sub View");
 const TCHAR UserSettings::compareToPrevSetting[]		= TEXT("Default Compare is to Prev");
 
-const TCHAR UserSettings::charPrecisionSetting[]		= TEXT("Character Precision");
+const TCHAR UserSettings::alignAllMatchesSetting[]		= TEXT("Align All Matches");
 const TCHAR UserSettings::encodingsCheckSetting[]		= TEXT("Check Encodings");
 const TCHAR UserSettings::promptCloseOnMatchSetting[]	= TEXT("Prompt to Close on Match");
 const TCHAR UserSettings::wrapAroundSetting[]			= TEXT("Wrap Around");
 const TCHAR UserSettings::gotoFirstDiffSetting[]		= TEXT("Go to First Diff");
 const TCHAR UserSettings::followingCaretSetting[]		= TEXT("Following Caret");
 
+const TCHAR UserSettings::charPrecisionSetting[]		= TEXT("Character Precision");
 const TCHAR UserSettings::ignoreSpacesSetting[]			= TEXT("Ignore Spaces");
 const TCHAR UserSettings::ignoreEmptyLinesSetting[]		= TEXT("Ignore Empty Lines");
 const TCHAR UserSettings::ignoreCaseSetting[]			= TEXT("Ignore Case");
@@ -70,8 +71,8 @@ void UserSettings::load()
 			DEFAULT_OLD_IN_SUB_VIEW, iniFile) == 0 ? MAIN_VIEW : SUB_VIEW;
 	CompareToPrev			= ::GetPrivateProfileInt(mainSection, compareToPrevSetting,
 			DEFAULT_COMPARE_TO_PREV, iniFile) == 1;
-	CharPrecision			= ::GetPrivateProfileInt(mainSection, charPrecisionSetting,
-			DEFAULT_CHAR_PRECISION, iniFile) == 1;
+	AlignAllMatches			= ::GetPrivateProfileInt(mainSection, alignAllMatchesSetting,
+			DEFAULT_ALIGN_ALL_MATCHES, iniFile) == 1;
 	EncodingsCheck			= ::GetPrivateProfileInt(mainSection, encodingsCheckSetting,
 			DEFAULT_ENCODINGS_CHECK, iniFile) == 1;
 	FollowingCaret			= ::GetPrivateProfileInt(mainSection, followingCaretSetting,
@@ -83,6 +84,7 @@ void UserSettings::load()
 	PromptToCloseOnMatch	= ::GetPrivateProfileInt(mainSection, promptCloseOnMatchSetting,
 			DEFAULT_PROMPT_CLOSE_ON_MATCH, iniFile) == 1;
 
+	CharPrecision		= ::GetPrivateProfileInt(mainSection, charPrecisionSetting,		1, iniFile) == 1;
 	IgnoreSpaces		= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,		1, iniFile) == 1;
 	IgnoreEmptyLines	= ::GetPrivateProfileInt(mainSection, ignoreEmptyLinesSetting,	1, iniFile) == 1;
 	IgnoreCase			= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,		0, iniFile) == 1;
@@ -151,8 +153,8 @@ void UserSettings::save()
 			OldFileViewId == SUB_VIEW ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, compareToPrevSetting,
 			CompareToPrev ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, charPrecisionSetting,
-			CharPrecision ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, alignAllMatchesSetting,
+			AlignAllMatches ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, encodingsCheckSetting,
 			EncodingsCheck ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, followingCaretSetting,
@@ -164,6 +166,8 @@ void UserSettings::save()
 	::WritePrivateProfileString(mainSection, promptCloseOnMatchSetting,
 			PromptToCloseOnMatch ? TEXT("1") : TEXT("0"), iniFile);
 
+	::WritePrivateProfileString(mainSection, charPrecisionSetting,
+			CharPrecision ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreSpacesSetting,
 			IgnoreSpaces ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreEmptyLinesSetting,
