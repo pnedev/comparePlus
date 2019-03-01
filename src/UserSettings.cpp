@@ -85,9 +85,9 @@ void UserSettings::load()
 	PromptToCloseOnMatch	= ::GetPrivateProfileInt(mainSection, promptCloseOnMatchSetting,
 			DEFAULT_PROMPT_CLOSE_ON_MATCH, iniFile) == 1;
 
-	CharPrecision		= ::GetPrivateProfileInt(mainSection, charPrecisionSetting,		1, iniFile) == 1;
-	IgnoreSpaces		= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,		1, iniFile) == 1;
-	IgnoreEmptyLines	= ::GetPrivateProfileInt(mainSection, ignoreEmptyLinesSetting,	1, iniFile) == 1;
+	CharPrecision		= ::GetPrivateProfileInt(mainSection, charPrecisionSetting,		0, iniFile) == 1;
+	IgnoreSpaces		= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,		0, iniFile) == 1;
+	IgnoreEmptyLines	= ::GetPrivateProfileInt(mainSection, ignoreEmptyLinesSetting,	0, iniFile) == 1;
 	IgnoreCase			= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,		0, iniFile) == 1;
 	DetectMoves			= ::GetPrivateProfileInt(mainSection, detectMovesSetting,		1, iniFile) == 1;
 	ShowOnlyDiffs		= ::GetPrivateProfileInt(mainSection, showOnlyDiffSetting,		0, iniFile) == 1;
