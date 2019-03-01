@@ -1991,14 +1991,31 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	storedLocation.reset();
 	goToFirst = false;
 
+	bool recompareSameSelections = false;
+
 	if (recompare)
 	{
 		newCompare.reset();
 
 		cmpPair->autoUpdateDelay = 0;
 
-		if (!autoUpdating && selectionCompare && !areSelectionsValid())
-			return;
+		if (!autoUpdating && selectionCompare)
+		{
+			// New selections to compare - validate them
+			if (isSelection(MAIN_VIEW) && isSelection(SUB_VIEW))
+			{
+				if (!areSelectionsValid())
+					return;
+			}
+			else
+			{
+				if (((cmpPair->options.selections[MAIN_VIEW].first == -1) ||
+						(cmpPair->options.selections[SUB_VIEW].first == -1)) && !areSelectionsValid())
+					return;
+
+				recompareSameSelections = true;
+			}
+		}
 
 		if (!Settings.GotoFirstDiff || autoUpdating)
 			storedLocation.reset(new ViewLocation(getCurrentViewId()));
@@ -2057,7 +2074,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 		cmpPair->positionFiles();
 
-		if (selectionCompare)
+		if (selectionCompare && !recompareSameSelections)
 		{
 			cmpPair->options.selections[MAIN_VIEW]	= getSelectionLines(MAIN_VIEW);
 			cmpPair->options.selections[SUB_VIEW]	= getSelectionLines(SUB_VIEW);

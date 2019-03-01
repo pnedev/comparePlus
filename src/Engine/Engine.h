@@ -63,7 +63,7 @@ struct CompareOptions
 
 	bool	selectionCompare;
 
-	std::pair<int, int>	selections[2];
+	std::pair<int, int>	selections[2] { {-1, -1}, {-1, -1} };
 };
 
 
