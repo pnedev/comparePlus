@@ -23,7 +23,7 @@
 #include <cstdlib>
 
 
-const TCHAR UserSettings::mainSection[]					= TEXT("Main");
+const TCHAR UserSettings::mainSection[]					= TEXT("Main Settings");
 
 const TCHAR UserSettings::oldIsFirstSetting[]			= TEXT("Old is First");
 const TCHAR UserSettings::oldFileViewSetting[]			= TEXT("Old in Sub View");
@@ -36,18 +36,18 @@ const TCHAR UserSettings::wrapAroundSetting[]			= TEXT("Wrap Around");
 const TCHAR UserSettings::gotoFirstDiffSetting[]		= TEXT("Go to First Diff");
 const TCHAR UserSettings::followingCaretSetting[]		= TEXT("Following Caret");
 
-const TCHAR UserSettings::charPrecisionSetting[]		= TEXT("Character Precision");
+const TCHAR UserSettings::charPrecisionSetting[]		= TEXT("Character Level Highlight");
 const TCHAR UserSettings::ignoreSpacesSetting[]			= TEXT("Ignore Spaces");
 const TCHAR UserSettings::ignoreEmptyLinesSetting[]		= TEXT("Ignore Empty Lines");
 const TCHAR UserSettings::ignoreCaseSetting[]			= TEXT("Ignore Case");
 const TCHAR UserSettings::detectMovesSetting[]			= TEXT("Detect Moves");
 const TCHAR UserSettings::showOnlySelSetting[]			= TEXT("Show Only Selections");
-const TCHAR UserSettings::hideMatchesSetting[]			= TEXT("Hide Matches");
+const TCHAR UserSettings::showOnlyDiffSetting[]			= TEXT("Show Only Diffs");
 const TCHAR UserSettings::navBarSetting[]				= TEXT("Navigation Bar");
 
 const TCHAR UserSettings::reCompareOnChangeSetting[]	= TEXT("Re-Compare on Change");
 
-const TCHAR UserSettings::colorsSection[]				= TEXT("Colors");
+const TCHAR UserSettings::colorsSection[]				= TEXT("Color Settings");
 
 const TCHAR UserSettings::addedColorSetting[]			= TEXT("Added");
 const TCHAR UserSettings::removedColorSetting[]			= TEXT("Removed");
@@ -55,6 +55,7 @@ const TCHAR UserSettings::changedColorSetting[]			= TEXT("Changed");
 const TCHAR UserSettings::movedColorSetting[]			= TEXT("Moved");
 const TCHAR UserSettings::highlightColorSetting[]		= TEXT("Highlight");
 const TCHAR UserSettings::highlightAlphaSetting[]		= TEXT("Alpha");
+const TCHAR UserSettings::changedThresholdSetting[]		= TEXT("Changed Threshold Percentage");
 
 
 void UserSettings::load()
@@ -89,7 +90,7 @@ void UserSettings::load()
 	IgnoreEmptyLines	= ::GetPrivateProfileInt(mainSection, ignoreEmptyLinesSetting,	1, iniFile) == 1;
 	IgnoreCase			= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,		0, iniFile) == 1;
 	DetectMoves			= ::GetPrivateProfileInt(mainSection, detectMovesSetting,		1, iniFile) == 1;
-	HideMatches			= ::GetPrivateProfileInt(mainSection, hideMatchesSetting,		0, iniFile) == 1;
+	ShowOnlyDiffs		= ::GetPrivateProfileInt(mainSection, showOnlyDiffSetting,		0, iniFile) == 1;
 	ShowOnlySelections	= ::GetPrivateProfileInt(mainSection, showOnlySelSetting,		1, iniFile) == 1;
 	UseNavBar			= ::GetPrivateProfileInt(mainSection, navBarSetting,			1, iniFile) == 1;
 
@@ -107,6 +108,9 @@ void UserSettings::load()
 			DEFAULT_HIGHLIGHT_COLOR, iniFile);
 	colors.alpha		= ::GetPrivateProfileInt(colorsSection, highlightAlphaSetting,
 			DEFAULT_HIGHLIGHT_ALPHA, iniFile);
+
+	ChangedThresholdPercent	= ::GetPrivateProfileInt(colorsSection, changedThresholdSetting,
+			DEFAULT_CHANGED_THRESHOLD, iniFile);
 
 	dirty = false;
 }
@@ -176,8 +180,8 @@ void UserSettings::save()
 			IgnoreCase ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, detectMovesSetting,
 			DetectMoves ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, hideMatchesSetting,
-			HideMatches ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, showOnlyDiffSetting,
+			ShowOnlyDiffs ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, showOnlySelSetting,
 			ShowOnlySelections ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, navBarSetting,
@@ -205,6 +209,9 @@ void UserSettings::save()
 
 	_itot_s(colors.alpha, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, highlightAlphaSetting, buffer, iniFile);
+
+	_itot_s(ChangedThresholdPercent, buffer, 64, 10);
+	::WritePrivateProfileString(colorsSection, changedThresholdSetting, buffer, iniFile);
 
 	dirty = false;
 }

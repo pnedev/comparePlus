@@ -25,6 +25,12 @@
 #include "NppHelpers.h"
 
 
+static const int c_Highlight_spin_min = 0;
+static const int c_Highlight_spin_max = 100;
+static const int c_Threshold_spin_min = 1;
+static const int c_Threshold_spin_max = 99;
+
+
 typedef HRESULT (WINAPI *ETDTProc) (HWND, DWORD);
 
 
@@ -57,8 +63,17 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 			_ColorComboRemoved.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_REMOVED_COLOR));
 			_ColorComboHighlight.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_HIGHLIGHT_COLOR));
 
-			HWND hUpDown = ::GetDlgItem(_hSelf, IDC_SPIN_CTL);
-			::SendMessage(hUpDown, UDM_SETRANGE, 0L, MAKELONG(100, 0));
+			HWND hCtrl = ::GetDlgItem(_hSelf, IDC_HIGHLIGHT_SPIN_BOX);
+			::SendMessage(hCtrl, EM_SETLIMITTEXT, 3L, 0);
+
+			hCtrl = ::GetDlgItem(_hSelf, IDC_THRESHOLD_SPIN_BOX);
+			::SendMessage(hCtrl, EM_SETLIMITTEXT, 2L, 0);
+
+			hCtrl = ::GetDlgItem(_hSelf, IDC_HIGHLIGHT_SPIN_CTL);
+			::SendMessage(hCtrl, UDM_SETRANGE, 0L, MAKELONG(c_Highlight_spin_max, c_Highlight_spin_min));
+
+			hCtrl = ::GetDlgItem(_hSelf, IDC_THRESHOLD_SPIN_CTL);
+			::SendMessage(hCtrl, UDM_SETRANGE, 0L, MAKELONG(c_Threshold_spin_max, c_Threshold_spin_min));
 
 			if (isRTLwindow(nppData._nppHandle))
 			{
@@ -91,18 +106,21 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					settings.OldFileIsFirst			= (bool) DEFAULT_OLD_IS_FIRST;
 					settings.OldFileViewId			= DEFAULT_OLD_IN_SUB_VIEW ? SUB_VIEW : MAIN_VIEW;
 					settings.CompareToPrev			= (bool) DEFAULT_COMPARE_TO_PREV;
+					settings.AlignAllMatches		= (bool) DEFAULT_ALIGN_ALL_MATCHES;
 					settings.EncodingsCheck			= (bool) DEFAULT_ENCODINGS_CHECK;
-					settings.PromptToCloseOnMatch	= (bool) DEFAULT_PROMPT_CLOSE_ON_MATCH;
+					settings.FollowingCaret			= (bool) DEFAULT_FOLLOWING_CARET;
 					settings.WrapAround				= (bool) DEFAULT_WRAP_AROUND;
 					settings.GotoFirstDiff			= (bool) DEFAULT_GOTO_FIRST_DIFF;
-					settings.FollowingCaret			= (bool) DEFAULT_FOLLOWING_CARET;
+					settings.PromptToCloseOnMatch	= (bool) DEFAULT_PROMPT_CLOSE_ON_MATCH;
 
-					settings.colors.added     	= DEFAULT_ADDED_COLOR;
-					settings.colors.changed   	= DEFAULT_CHANGED_COLOR;
-					settings.colors.deleted   	= DEFAULT_DELETED_COLOR;
-					settings.colors.moved     	= DEFAULT_MOVED_COLOR;
-					settings.colors.highlight 	= DEFAULT_HIGHLIGHT_COLOR;
-					settings.colors.alpha     	= DEFAULT_HIGHLIGHT_ALPHA;
+					settings.colors.added		= DEFAULT_ADDED_COLOR;
+					settings.colors.deleted		= DEFAULT_DELETED_COLOR;
+					settings.colors.changed		= DEFAULT_CHANGED_COLOR;
+					settings.colors.moved		= DEFAULT_MOVED_COLOR;
+					settings.colors.highlight	= DEFAULT_HIGHLIGHT_COLOR;
+					settings.colors.alpha		= DEFAULT_HIGHLIGHT_ALPHA;
+
+					settings.ChangedThresholdPercent	= DEFAULT_CHANGED_THRESHOLD;
 
 					SetParams(&settings);
 				}
@@ -174,8 +192,21 @@ void SettingsDialog::SetParams(UserSettings* settings)
 	_ColorComboChanged.setColor(settings->colors.changed);
 	_ColorComboHighlight.setColor(settings->colors.highlight);
 
+	if (settings->colors.alpha < c_Highlight_spin_min)
+		settings->colors.alpha = c_Highlight_spin_min;
+	else if (settings->colors.alpha > c_Highlight_spin_max)
+		settings->colors.alpha = c_Highlight_spin_max;
+
 	// Set transparency
-	::SetDlgItemInt(_hSelf, IDC_SPIN_BOX, settings->colors.alpha, FALSE);
+	::SetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, settings->colors.alpha, FALSE);
+
+	if (settings->ChangedThresholdPercent < c_Threshold_spin_min)
+		settings->ChangedThresholdPercent = c_Threshold_spin_min;
+	else if (settings->ChangedThresholdPercent > c_Threshold_spin_max)
+		settings->ChangedThresholdPercent = c_Threshold_spin_max;
+
+	// Set changed threshold percentage
+	::SetDlgItemInt(_hSelf, IDC_THRESHOLD_SPIN_BOX, settings->ChangedThresholdPercent, FALSE);
 }
 
 
@@ -200,5 +231,26 @@ void SettingsDialog::GetParams()
 	_ColorComboHighlight.getColor((LPCOLORREF)&_Settings->colors.highlight);
 
 	// Get transparency
-	_Settings->colors.alpha = ::GetDlgItemInt(_hSelf, IDC_SPIN_BOX, NULL, FALSE);
+	_Settings->colors.alpha = ::GetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, NULL, FALSE);
+	int setting = _Settings->colors.alpha;
+
+	if (_Settings->colors.alpha < c_Highlight_spin_min)
+		_Settings->colors.alpha = c_Highlight_spin_min;
+	else if (_Settings->colors.alpha > c_Highlight_spin_max)
+		_Settings->colors.alpha = c_Highlight_spin_max;
+
+	if (setting != _Settings->colors.alpha)
+		::SetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, _Settings->colors.alpha, FALSE);
+
+	// Get changed threshold percentage
+	_Settings->ChangedThresholdPercent = ::GetDlgItemInt(_hSelf, IDC_THRESHOLD_SPIN_BOX, NULL, FALSE);
+	setting = _Settings->ChangedThresholdPercent;
+
+	if (_Settings->ChangedThresholdPercent < c_Threshold_spin_min)
+		_Settings->ChangedThresholdPercent = c_Threshold_spin_min;
+	else if (_Settings->ChangedThresholdPercent > c_Threshold_spin_max)
+		_Settings->ChangedThresholdPercent = c_Threshold_spin_max;
+
+	if (setting != _Settings->ChangedThresholdPercent)
+		::SetDlgItemInt(_hSelf, IDC_THRESHOLD_SPIN_BOX, _Settings->ChangedThresholdPercent, FALSE);
 }

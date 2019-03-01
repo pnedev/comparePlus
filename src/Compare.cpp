@@ -1303,7 +1303,7 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 	if (cmpPair->options.findUniqueMode && Settings.FollowingCaret)
 		::SetFocus(getView(view));
 
-	if (!down && !Settings.HideMatches && isLineAnnotated(view, line))
+	if (!down && !Settings.ShowOnlyDiffs && isLineAnnotated(view, line))
 		++line;
 
 	// No explicit go to corner diff but we are there - diffs wrap has occurred - 'up/down' notion is inverted
@@ -1516,7 +1516,7 @@ bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
 
 	for (; i < maxSize; ++i)
 	{
-		if (Settings.HideMatches)
+		if (Settings.ShowOnlyDiffs)
 		{
 			if ((alignmentInfo[i].main.diffMask != 0) && (alignmentInfo[i].sub.diffMask != 0) &&
 					(CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line + off, 0) !=
@@ -1543,7 +1543,7 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 {
 	const AlignmentInfo_t& alignmentInfo = cmpPair->alignmentInfo;
 
-	if (Settings.HideMatches)
+	if (Settings.ShowOnlyDiffs)
 	{
 		hideUnmarked(MAIN_VIEW, MARKER_MASK_LINE);
 		hideUnmarked(SUB_VIEW, MARKER_MASK_LINE);
@@ -2043,17 +2043,17 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	// Compare is triggered manually - get/re-get compare settings and position/reposition files
 	if (!autoUpdating)
 	{
-		cmpPair->options.oldFileViewId			= Settings.OldFileViewId;
+		cmpPair->options.oldFileViewId				= Settings.OldFileViewId;
 
-		cmpPair->options.findUniqueMode			= findUniqueMode;
-		cmpPair->options.alignAllMatches		= Settings.AlignAllMatches;
-		cmpPair->options.charPrecision			= Settings.CharPrecision;
-		cmpPair->options.ignoreSpaces			= Settings.IgnoreSpaces;
-		cmpPair->options.ignoreEmptyLines		= Settings.IgnoreEmptyLines;
-		cmpPair->options.ignoreCase				= Settings.IgnoreCase;
-		cmpPair->options.detectMoves			= Settings.DetectMoves;
-		cmpPair->options.matchPercentThreshold	= Settings.MatchPercentThreshold;
-		cmpPair->options.selectionCompare		= selectionCompare;
+		cmpPair->options.findUniqueMode				= findUniqueMode;
+		cmpPair->options.alignAllMatches			= Settings.AlignAllMatches;
+		cmpPair->options.charPrecision				= Settings.CharPrecision;
+		cmpPair->options.ignoreSpaces				= Settings.IgnoreSpaces;
+		cmpPair->options.ignoreEmptyLines			= Settings.IgnoreEmptyLines;
+		cmpPair->options.ignoreCase					= Settings.IgnoreCase;
+		cmpPair->options.detectMoves				= Settings.DetectMoves;
+		cmpPair->options.changedThresholdPercent	= Settings.ChangedThresholdPercent;
+		cmpPair->options.selectionCompare			= selectionCompare;
 
 		cmpPair->positionFiles();
 
@@ -2360,11 +2360,11 @@ void DetectMoves()
 }
 
 
-void HideMatches()
+void ShowOnlyDiffs()
 {
-	Settings.HideMatches = !Settings.HideMatches;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_HIDE_MATCHES]._cmdID,
-			(LPARAM)Settings.HideMatches);
+	Settings.ShowOnlyDiffs = !Settings.ShowOnlyDiffs;
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_SHOW_ONLY_DIFF]._cmdID,
+			(LPARAM)Settings.ShowOnlyDiffs);
 	Settings.markAsDirty();
 
 	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
@@ -2376,7 +2376,7 @@ void HideMatches()
 		const int view = getCurrentViewId();
 		int currentLine = getCurrentLine(view);
 
-		if (Settings.HideMatches && !isLineMarked(view, currentLine, MARKER_MASK_LINE))
+		if (Settings.ShowOnlyDiffs && !isLineMarked(view, currentLine, MARKER_MASK_LINE))
 		{
 			currentLine = CallScintilla(view, SCI_MARKERNEXT, currentLine, MARKER_MASK_LINE);
 
@@ -2666,8 +2666,8 @@ void createMenu()
 	_tcscpy_s(funcItem[CMD_DETECT_MOVES]._itemName, nbChar, TEXT("Detect Moves"));
 	funcItem[CMD_DETECT_MOVES]._pFunc = DetectMoves;
 
-	_tcscpy_s(funcItem[CMD_HIDE_MATCHES]._itemName, nbChar, TEXT("Show Only Diffs (Hide Matches)"));
-	funcItem[CMD_HIDE_MATCHES]._pFunc = HideMatches;
+	_tcscpy_s(funcItem[CMD_SHOW_ONLY_DIFF]._itemName, nbChar, TEXT("Show Only Diffs (Hide Matches)"));
+	funcItem[CMD_SHOW_ONLY_DIFF]._pFunc = ShowOnlyDiffs;
 
 	_tcscpy_s(funcItem[CMD_SHOW_ONLY_SEL]._itemName, nbChar, TEXT("Show Only Compared Selections"));
 	funcItem[CMD_SHOW_ONLY_SEL]._pFunc = ShowOnlySelections;
@@ -2858,11 +2858,11 @@ void comparedFileActivated()
 	setCompareView(MAIN_VIEW,	Settings.colors.blank);
 	setCompareView(SUB_VIEW,	Settings.colors.blank);
 
-	if (Settings.HideMatches || Settings.ShowOnlySelections)
+	if (Settings.ShowOnlyDiffs || Settings.ShowOnlySelections)
 	{
 		CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
 
-		if ((cmpPair != compareList.end()) && (Settings.HideMatches ||
+		if ((cmpPair != compareList.end()) && (Settings.ShowOnlyDiffs ||
 			(cmpPair->options.selectionCompare && Settings.ShowOnlySelections)))
 		{
 			ScopedIncrementer incr(notificationsLock);
@@ -2920,7 +2920,7 @@ void onToolBarReady()
 	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
 			(WPARAM)funcItem[CMD_LAST]._cmdID,				(LPARAM)&tbLast);
 	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
-			(WPARAM)funcItem[CMD_HIDE_MATCHES]._cmdID,		(LPARAM)&tbDiffsOnly);
+			(WPARAM)funcItem[CMD_SHOW_ONLY_DIFF]._cmdID,	(LPARAM)&tbDiffsOnly);
 	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
 			(WPARAM)funcItem[CMD_NAV_BAR]._cmdID,			(LPARAM)&tbNavBar);
 }
@@ -2944,8 +2944,8 @@ void onNppReady()
 			(LPARAM)Settings.IgnoreCase);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID,
 			(LPARAM)Settings.DetectMoves);
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_HIDE_MATCHES]._cmdID,
-			(LPARAM)Settings.HideMatches);
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_SHOW_ONLY_DIFF]._cmdID,
+			(LPARAM)Settings.ShowOnlyDiffs);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_SHOW_ONLY_SEL]._cmdID,
 			(LPARAM)Settings.ShowOnlySelections);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID,

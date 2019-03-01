@@ -59,7 +59,7 @@ struct CompareOptions
 	bool	ignoreCase;
 	bool	detectMoves;
 
-	int		matchPercentThreshold;
+	int		changedThresholdPercent;
 
 	bool	selectionCompare;
 

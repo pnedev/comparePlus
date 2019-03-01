@@ -41,6 +41,7 @@
 #define DEFAULT_MOVED_COLOR				0xFFE6CC
 #define DEFAULT_HIGHLIGHT_COLOR			0x683FF
 #define DEFAULT_HIGHLIGHT_ALPHA			100
+#define DEFAULT_CHANGED_THRESHOLD		30
 
 
 struct ColorSettings
@@ -87,7 +88,7 @@ public:
 	static const TCHAR detectMovesSetting[];
 
 	static const TCHAR showOnlySelSetting[];
-	static const TCHAR hideMatchesSetting[];
+	static const TCHAR showOnlyDiffSetting[];
 	static const TCHAR navBarSetting[];
 
 	static const TCHAR reCompareOnChangeSetting[];
@@ -100,8 +101,7 @@ public:
 	static const TCHAR movedColorSetting[];
 	static const TCHAR highlightColorSetting[];
 	static const TCHAR highlightAlphaSetting[];
-
-	static const int MatchPercentThreshold = 35;
+	static const TCHAR changedThresholdSetting[];
 
 	bool           	OldFileIsFirst;
 	int				OldFileViewId;
@@ -114,13 +114,15 @@ public:
 	bool           	GotoFirstDiff;
 	bool           	PromptToCloseOnMatch;
 
+	int				ChangedThresholdPercent;
+
 	bool           	CharPrecision;
 	bool           	IgnoreSpaces;
 	bool           	IgnoreEmptyLines;
 	bool           	IgnoreCase;
 	bool           	DetectMoves;
 
-	bool           	HideMatches;
+	bool           	ShowOnlyDiffs;
 	bool           	ShowOnlySelections;
 	bool           	UseNavBar;
 

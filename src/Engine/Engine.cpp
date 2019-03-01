@@ -745,7 +745,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 								std::to_string(matchSections) + ", matched len: " + std::to_string(matchLen) + "\n");
 
 						// Are similarities a considerable portion of the diff?
-						if ((int)((matchLen * 100) / pSec1->size()) >= options.matchPercentThreshold)
+						if ((int)((matchLen * 100) / pSec1->size()) >= options.changedThresholdPercent)
 						{
 							for (const auto& sd: sectionDiffs)
 							{
@@ -838,7 +838,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 		}
 
 		// Not enough portion of the lines matches - consider them totally different
-		if (((totalLineMatchLen * 100) / std::max(lineLen1, lineLen2)) < options.matchPercentThreshold)
+		if (((totalLineMatchLen * 100) / std::max(lineLen1, lineLen2)) < options.changedThresholdPercent)
 		{
 			pBlockDiff1->info.changedLines.pop_back();
 			pBlockDiff2->info.changedLines.pop_back();
@@ -903,7 +903,7 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 			const int minSize = std::min(pLine1->size(), pLine2->size());
 			const int maxSize = std::max(pLine1->size(), pLine2->size());
 
-			if ((int)((minSize * 100) / maxSize) < options.matchPercentThreshold)
+			if ((int)((minSize * 100) / maxSize) < options.changedThresholdPercent)
 				continue;
 
 			auto diffRes = DiffCalc<Char>(*pLine1, *pLine2)();
@@ -922,7 +922,7 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 
 			lineConvergence = lineConvergence * 100 / maxSize;
 
-			if (lineConvergence >= options.matchPercentThreshold)
+			if (lineConvergence >= options.changedThresholdPercent)
 				orderedLinesConvergence.emplace(conv_key(lineConvergence, line1, line2));
 		}
 	}
