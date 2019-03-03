@@ -1541,26 +1541,6 @@ bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
 
 void alignDiffs(const CompareList_t::iterator& cmpPair)
 {
-	const AlignmentInfo_t& alignmentInfo = cmpPair->alignmentInfo;
-
-	if (Settings.ShowOnlyDiffs)
-	{
-		hideUnmarked(MAIN_VIEW, MARKER_MASK_LINE);
-		hideUnmarked(SUB_VIEW, MARKER_MASK_LINE);
-	}
-	else if (cmpPair->options.selectionCompare && Settings.ShowOnlySelections)
-	{
-		hideOutsideRange(MAIN_VIEW,
-				cmpPair->options.selections[MAIN_VIEW].first, cmpPair->options.selections[MAIN_VIEW].second);
-		hideOutsideRange(SUB_VIEW,
-				cmpPair->options.selections[SUB_VIEW].first, cmpPair->options.selections[SUB_VIEW].second);
-	}
-	else
-	{
-		CallScintilla(MAIN_VIEW, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
-		CallScintilla(SUB_VIEW, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
-	}
-
 	int off = 0;
 	{
 		const bool mainAlignBlank	= isAlignmentFirstLineInserted(MAIN_VIEW);
@@ -1583,10 +1563,30 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 		}
 	}
 
-	const int mainEndLine = CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
-	const int subEndLine = CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
+	if (Settings.ShowOnlyDiffs)
+	{
+		hideUnmarked(MAIN_VIEW, MARKER_MASK_LINE);
+		hideUnmarked(SUB_VIEW, MARKER_MASK_LINE);
+	}
+	else if (cmpPair->options.selectionCompare && Settings.ShowOnlySelections)
+	{
+		hideOutsideRange(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first + off,
+				cmpPair->options.selections[MAIN_VIEW].second + off);
+		hideOutsideRange(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first + off,
+				cmpPair->options.selections[SUB_VIEW].second + off);
+	}
+	else
+	{
+		CallScintilla(MAIN_VIEW, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
+		CallScintilla(SUB_VIEW, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
+	}
+
+	const AlignmentInfo_t& alignmentInfo = cmpPair->alignmentInfo;
 
 	const int maxSize = static_cast<int>(alignmentInfo.size());
+
+	const int mainEndLine = CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
+	const int subEndLine = CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
 
 	// Align diffs
 	for (int i = 0; i < maxSize &&
