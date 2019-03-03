@@ -48,6 +48,12 @@ struct section_t
 
 struct CompareOptions
 {
+	CompareOptions()
+	{
+		selections[0] = std::make_pair(-1, -1);
+		selections[1] = std::make_pair(-1, -1);
+	}
+
 	int		oldFileViewId;
 
 	bool	findUniqueMode;
@@ -63,7 +69,7 @@ struct CompareOptions
 
 	bool	selectionCompare;
 
-	std::pair<int, int>	selections[2] { {-1, -1}, {-1, -1} };
+	std::pair<int, int>	selections[2];
 };
 
 

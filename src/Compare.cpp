@@ -2009,8 +2009,10 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 			}
 			else
 			{
-				if (((cmpPair->options.selections[MAIN_VIEW].first == -1) ||
-						(cmpPair->options.selections[SUB_VIEW].first == -1)) && !areSelectionsValid())
+				if (((cmpPair->options.selections[MAIN_VIEW].second -
+						cmpPair->options.selections[MAIN_VIEW].first == 0) ||
+						(cmpPair->options.selections[SUB_VIEW].second -
+						cmpPair->options.selections[SUB_VIEW].first == 0)) && !areSelectionsValid())
 					return;
 
 				recompareSameSelections = true;
