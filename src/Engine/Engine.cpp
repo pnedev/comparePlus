@@ -224,8 +224,14 @@ inline uint64_t Hash(uint64_t hval, char letter)
 
 inline int toAlignmentLine(const DocCmpInfo& doc, int bdLine)
 {
-	return ((bdLine < 0) ? doc.lines.front().line :
-			(bdLine < (int)doc.lines.size()) ? doc.lines[bdLine].line : doc.lines.back().line + 1);
+	if (doc.lines.empty())
+		return 0;
+	else if (bdLine < 0)
+		return doc.lines.front().line;
+	else if (bdLine < (int)doc.lines.size())
+		return doc.lines[bdLine].line;
+
+	return (doc.lines.back().line + 1);
 }
 
 
