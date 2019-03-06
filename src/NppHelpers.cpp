@@ -597,7 +597,7 @@ void hideOutsideRange(int view, int startLine, int endLine)
 	if (endLine > 0 && endLine + 1 < linesCount)
 		CallScintilla(view, SCI_HIDELINES, endLine + 1, linesCount - 1);
 
-	if (startLine > 0 && endLine > startLine)
+	if (startLine >= 0 && (endLine > startLine && endLine < linesCount))
 		CallScintilla(view, SCI_SHOWLINES, startLine, endLine);
 }
 
