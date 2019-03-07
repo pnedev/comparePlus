@@ -2001,22 +2001,44 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 		if (!autoUpdating && selectionCompare)
 		{
+			bool checkSelections = false;
+
 			// New selections to compare - validate them
 			if (isSelection(MAIN_VIEW) && isSelection(SUB_VIEW))
 			{
-				if (!areSelectionsValid())
-					return;
+				checkSelections = true;
 			}
-			else
+			else if (isSelection(MAIN_VIEW) && (cmpPair->options.selections[SUB_VIEW].first != -1))
 			{
-				if (((cmpPair->options.selections[MAIN_VIEW].second -
-						cmpPair->options.selections[MAIN_VIEW].first == 0) ||
-						(cmpPair->options.selections[SUB_VIEW].second -
-						cmpPair->options.selections[SUB_VIEW].first == 0)) && !areSelectionsValid())
-					return;
+				std::pair<int, int> newSelection = getSelectionLines(MAIN_VIEW);
+				checkSelections = (newSelection.first == -1);
+
+				if (!checkSelections)
+					cmpPair->options.selections[MAIN_VIEW] = newSelection;
 
 				recompareSameSelections = true;
 			}
+			else if (isSelection(SUB_VIEW) && (cmpPair->options.selections[MAIN_VIEW].first != -1))
+			{
+				std::pair<int, int> newSelection = getSelectionLines(SUB_VIEW);
+				checkSelections = (newSelection.first == -1);
+
+				if (!checkSelections)
+					cmpPair->options.selections[SUB_VIEW] = newSelection;
+
+				recompareSameSelections = true;
+			}
+			else
+			{
+				if ((cmpPair->options.selections[MAIN_VIEW].first == -1) ||
+						(cmpPair->options.selections[SUB_VIEW].first == -1))
+					checkSelections = true;
+
+				recompareSameSelections = true;
+			}
+
+			if (checkSelections && !areSelectionsValid())
+				return;
 		}
 
 		if (!Settings.GotoFirstDiff || autoUpdating)
