@@ -196,13 +196,18 @@ void defineRgbaSymbol(int type, const unsigned char* rgba)
 
 void setTextStyle(const ColorSettings& settings)
 {
+	static const int cMinAlpha = 0;
+	static const int cMaxAlpha = 100;
+
+	const int alpha = ((100 - settings.transparency) * (cMaxAlpha - cMinAlpha) / 100) + cMinAlpha;
+
 	CallScintilla(MAIN_VIEW, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT,	INDIC_ROUNDBOX);
 	CallScintilla(MAIN_VIEW, SCI_INDICSETFORE,	INDIC_HIGHLIGHT,	settings.highlight);
-	CallScintilla(MAIN_VIEW, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT,	settings.alpha);
+	CallScintilla(MAIN_VIEW, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT,	alpha);
 
 	CallScintilla(SUB_VIEW, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT,	INDIC_ROUNDBOX);
 	CallScintilla(SUB_VIEW, SCI_INDICSETFORE,	INDIC_HIGHLIGHT,	settings.highlight);
-	CallScintilla(SUB_VIEW, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT,	settings.alpha);
+	CallScintilla(SUB_VIEW, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT,	alpha);
 }
 
 
@@ -216,7 +221,7 @@ void setBlanksStyle(int view, int blankColor)
 	CallScintilla(view, SCI_STYLESETBACK,				blankStyle[view], blankColor);
 	// CallScintilla(view, SCI_STYLESETFORE,				blankStyle[view], 0xFF);
 	CallScintilla(view, SCI_STYLESETBOLD,				blankStyle[view], true);
-	CallScintilla(view, SCI_ANNOTATIONSETVISIBLE, ANNOTATION_STANDARD, 0);
+	CallScintilla(view, SCI_ANNOTATIONSETVISIBLE,		ANNOTATION_STANDARD, 0);
 }
 
 } // anonymous namespace

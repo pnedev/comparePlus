@@ -40,7 +40,7 @@
 #define DEFAULT_CHANGED_COLOR			0x98E7E7
 #define DEFAULT_MOVED_COLOR				0xFFE6CC
 #define DEFAULT_HIGHLIGHT_COLOR			0x683FF
-#define DEFAULT_HIGHLIGHT_ALPHA			100
+#define DEFAULT_HIGHLIGHT_TRANSP		0
 #define DEFAULT_CHANGED_THRESHOLD		30
 
 
@@ -53,7 +53,7 @@ struct ColorSettings
 	int blank;
     int _default;
 	int highlight;
-	int alpha;
+	int transparency;
 };
 
 
@@ -100,7 +100,7 @@ public:
 	static const TCHAR changedColorSetting[];
 	static const TCHAR movedColorSetting[];
 	static const TCHAR highlightColorSetting[];
-	static const TCHAR highlightAlphaSetting[];
+	static const TCHAR highlightTranspSetting[];
 	static const TCHAR changedThresholdSetting[];
 
 	bool           	OldFileIsFirst;

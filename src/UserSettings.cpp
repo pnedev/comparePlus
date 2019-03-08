@@ -54,7 +54,7 @@ const TCHAR UserSettings::removedColorSetting[]			= TEXT("Removed");
 const TCHAR UserSettings::changedColorSetting[]			= TEXT("Changed");
 const TCHAR UserSettings::movedColorSetting[]			= TEXT("Moved");
 const TCHAR UserSettings::highlightColorSetting[]		= TEXT("Highlight");
-const TCHAR UserSettings::highlightAlphaSetting[]		= TEXT("Alpha");
+const TCHAR UserSettings::highlightTranspSetting[]		= TEXT("Transparency");
 const TCHAR UserSettings::changedThresholdSetting[]		= TEXT("Changed Threshold Percentage");
 
 
@@ -106,8 +106,8 @@ void UserSettings::load()
 			DEFAULT_MOVED_COLOR, iniFile);
 	colors.highlight	= ::GetPrivateProfileInt(colorsSection, highlightColorSetting,
 			DEFAULT_HIGHLIGHT_COLOR, iniFile);
-	colors.alpha		= ::GetPrivateProfileInt(colorsSection, highlightAlphaSetting,
-			DEFAULT_HIGHLIGHT_ALPHA, iniFile);
+	colors.transparency	= ::GetPrivateProfileInt(colorsSection, highlightTranspSetting,
+			DEFAULT_HIGHLIGHT_TRANSP, iniFile);
 
 	ChangedThresholdPercent	= ::GetPrivateProfileInt(colorsSection, changedThresholdSetting,
 			DEFAULT_CHANGED_THRESHOLD, iniFile);
@@ -207,8 +207,8 @@ void UserSettings::save()
 	_itot_s(colors.highlight, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, highlightColorSetting, buffer, iniFile);
 
-	_itot_s(colors.alpha, buffer, 64, 10);
-	::WritePrivateProfileString(colorsSection, highlightAlphaSetting, buffer, iniFile);
+	_itot_s(colors.transparency, buffer, 64, 10);
+	::WritePrivateProfileString(colorsSection, highlightTranspSetting, buffer, iniFile);
 
 	_itot_s(ChangedThresholdPercent, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, changedThresholdSetting, buffer, iniFile);
