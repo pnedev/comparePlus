@@ -179,11 +179,9 @@ void defineColor(int type, int color)
 {
 	CallScintilla(MAIN_VIEW,	SCI_MARKERDEFINE,	type, SC_MARK_BACKGROUND);
 	CallScintilla(MAIN_VIEW,	SCI_MARKERSETBACK,	type, color);
-	CallScintilla(MAIN_VIEW,	SCI_MARKERSETFORE,	type, 0);
 
 	CallScintilla(SUB_VIEW,		SCI_MARKERDEFINE,	type, SC_MARK_BACKGROUND);
 	CallScintilla(SUB_VIEW,		SCI_MARKERSETBACK,	type, color);
-	CallScintilla(SUB_VIEW,		SCI_MARKERSETFORE,	type, 0);
 }
 
 
@@ -408,6 +406,9 @@ void setStyles(UserSettings& settings)
 	defineRgbaSymbol(MARKER_MOVED_BLOCK_END_SYMBOL,		icon_moved_block_end);
 
 	setTextStyle(settings.colors);
+
+	setBlanksStyle(MAIN_VIEW,	settings.colors.blank);
+	setBlanksStyle(SUB_VIEW,	settings.colors.blank);
 }
 
 
