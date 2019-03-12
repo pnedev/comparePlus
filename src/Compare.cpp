@@ -495,6 +495,8 @@ std::unique_ptr<ViewLocation> storedLocation;
 bool goToFirst = false;
 bool selectionAutoRecompare = false;
 
+LRESULT currentlyActiveBuffID = 0;
+
 DelayedAlign	delayedAlignment;
 DelayedActivate	delayedActivation;
 DelayedClose	delayedClosure;
@@ -3242,20 +3244,31 @@ void DelayedActivate::operator()()
 
 	LOGDB(buffId, "Activate\n");
 
-	storedLocation.reset(new ViewLocation(viewIdFromBuffId(buffId)));
-
-	const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
-
-	// When compared file is activated make sure its corresponding pair file is also active in the other view
-	if (getDocId(getOtherViewId()) != otherFile.sciDoc)
+	if (buffId != currentlyActiveBuffID)
 	{
-		ScopedIncrementer incr(notificationsLock);
+		storedLocation.reset(new ViewLocation(viewIdFromBuffId(buffId)));
 
-		activateBufferID(otherFile.buffId);
-		activateBufferID(buffId);
+		const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
+
+		// When compared file is activated make sure its corresponding pair file is also active in the other view
+		if (getDocId(getOtherViewId()) != otherFile.sciDoc)
+		{
+			ScopedIncrementer incr(notificationsLock);
+
+			activateBufferID(otherFile.buffId);
+			activateBufferID(buffId);
+		}
+
+		comparedFileActivated();
+
+		currentlyActiveBuffID = buffId;
 	}
-
-	comparedFileActivated();
+	// File seems reloaded - re-compare pair
+	else
+	{
+        delayedAlignment.cancel();
+        delayedUpdate.post(30);
+	}
 }
 
 
@@ -3275,6 +3288,8 @@ void onBufferActivated(LRESULT buffId)
 		NppSettings::get().setNormalMode();
 		setNormalView(getCurrentViewId());
 		resetCompareView(getOtherViewId());
+
+		currentlyActiveBuffID = buffId;
 	}
 	else
 	{
@@ -3616,13 +3631,15 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 				onBufferActivated(notifyCode->nmhdr.idFrom);
 		break;
 
+		// If file is opened from compared file some SCN_MODIFIED notifications are received from SUB_VIEW
+		// leading to erroneous behavior so temporarily disable notifications processing until file is fully opened
 		case NPPN_FILEBEFORELOAD:
 			if (NppSettings::get().compareMode)
 			{
 				++notificationsLock;
 
 				LOGD("NPPN_FILEBEFORELOAD: " +
-					std::string(getViewId((HWND)notifyCode->nmhdr.hwndFrom) == MAIN_VIEW ? "MAIN\n" : "SUB\n"));
+					std::string(getViewId((HWND)notifyCode->nmhdr.hwndFrom) == MAIN_VIEW ? "MAIN view\n" : "SUB view\n"));
 			}
 		break;
 
