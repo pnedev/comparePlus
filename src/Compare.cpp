@@ -3265,6 +3265,10 @@ void onBufferActivated(LRESULT buffId)
 	delayedUpdate.cancel();
 	delayedActivation.cancel();
 
+	ScopedIncrementer incr(notificationsLock);
+
+	LOGDB(buffId, "onBufferActivated()\n");
+
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
 	{
@@ -3610,6 +3614,25 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 		case NPPN_BUFFERACTIVATED:
 			if (!compareList.empty() && !notificationsLock && !delayedClosure)
 				onBufferActivated(notifyCode->nmhdr.idFrom);
+		break;
+
+		case NPPN_FILEBEFORELOAD:
+			if (NppSettings::get().compareMode)
+			{
+				++notificationsLock;
+
+				LOGD("NPPN_FILEBEFORELOAD: " +
+					std::string(getViewId((HWND)notifyCode->nmhdr.hwndFrom) == MAIN_VIEW ? "MAIN\n" : "SUB\n"));
+			}
+		break;
+
+		case NPPN_FILEOPENED:
+			if (!compareList.empty() && notificationsLock > 0)
+			{
+				--notificationsLock;
+
+				LOGDB(notifyCode->nmhdr.idFrom, "NPPN_FILEOPENED\n");
+			}
 		break;
 
 		case NPPN_FILEBEFORECLOSE:
