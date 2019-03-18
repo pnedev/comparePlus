@@ -160,6 +160,16 @@ struct blockDiffInfo
 	std::vector<diffLine>	changedLines;
 	std::vector<section_t>	moves;
 
+	inline int movedCount() const
+	{
+		int count = 0;
+
+		for (const auto& move: moves)
+			count += move.len;
+
+		return count;
+	}
+
 	inline int movedSection(int line) const
 	{
 		for (const auto& move: moves)
@@ -1101,11 +1111,17 @@ void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, int lineIdx)
 }
 
 
-bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, AlignmentInfo_t& alignmentInfo)
+bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSummary& summary)
 {
 	progress_ptr& progress = ProgressDlg::Get();
 
-	alignmentInfo.clear();
+	summary.alignmentInfo.clear();
+
+	summary.match	= 0;
+	summary.added	= 0;
+	summary.removed	= 0;
+	summary.moved	= 0;
+	summary.changed	= 0;
 
 	const int blockDiffSize = static_cast<int>(cmpInfo.blockDiffs.size());
 
@@ -1135,7 +1151,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, Alignment
 			pSubAlignData->diffMask		= 0;
 			pSubAlignData->line			= toAlignmentLine(cmpInfo.doc2, alignLines.second);
 
-			alignmentInfo.emplace_back(alignPair);
+			summary.alignmentInfo.emplace_back(alignPair);
 
 			if (options.alignAllMatches)
 			{
@@ -1148,7 +1164,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, Alignment
 					pMainAlignData->line	= cmpInfo.doc1.lines[alignLines.first].line;
 					pSubAlignData->line		= cmpInfo.doc2.lines[alignLines.second].line;
 
-					alignmentInfo.emplace_back(alignPair);
+					summary.alignmentInfo.emplace_back(alignPair);
 				}
 
 				++alignLines.first;
@@ -1170,7 +1186,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, Alignment
 							pMainAlignData->line	= cmpInfo.doc1.lines[alignLines.first].line;
 							pSubAlignData->line		= cmpInfo.doc2.lines[alignLines.second].line;
 
-							alignmentInfo.emplace_back(alignPair);
+							summary.alignmentInfo.emplace_back(alignPair);
 						}
 					}
 
@@ -1183,6 +1199,8 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, Alignment
 					alignLines.second	+= bd.len;
 				}
 			}
+
+			summary.match += bd.len;
 		}
 		else if (bd.type == diff_type::DIFF_IN_2)
 		{
@@ -1196,7 +1214,16 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, Alignment
 			pSubAlignData->diffMask		= cmpInfo.doc2.blockDiffMask;
 			pSubAlignData->line			= toAlignmentLine(cmpInfo.doc2, alignLines.second);
 
-			alignmentInfo.emplace_back(alignPair);
+			summary.alignmentInfo.emplace_back(alignPair);
+
+			const int movedLines = bd.info.movedCount();
+
+			summary.moved += movedLines;
+
+			if (cmpInfo.doc2.blockDiffMask == MARKER_MASK_ADDED)
+				summary.added += bd.len - movedLines;
+			else
+				summary.removed += bd.len - movedLines;
 
 			alignLines.second += bd.len;
 		}
@@ -1222,7 +1249,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, Alignment
 						pSubAlignData->diffMask		= cmpInfo.doc2.section.len ? cmpInfo.doc2.blockDiffMask : 0;
 						pSubAlignData->line			= toAlignmentLine(cmpInfo.doc2, alignLines.second);
 
-						alignmentInfo.emplace_back(alignPair);
+						summary.alignmentInfo.emplace_back(alignPair);
 
 						if (cmpInfo.doc1.section.len)
 						{
@@ -1243,7 +1270,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, Alignment
 					pSubAlignData->diffMask		= MARKER_MASK_CHANGED;
 					pSubAlignData->line			= toAlignmentLine(cmpInfo.doc2, alignLines.second);
 
-					alignmentInfo.emplace_back(alignPair);
+					summary.alignmentInfo.emplace_back(alignPair);
 
 					markLineDiffs(cmpInfo, bd, j);
 
@@ -1265,7 +1292,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, Alignment
 					pSubAlignData->diffMask		= cmpInfo.doc2.section.len ? cmpInfo.doc2.blockDiffMask : 0;
 					pSubAlignData->line			= toAlignmentLine(cmpInfo.doc2, alignLines.second);
 
-					alignmentInfo.emplace_back(alignPair);
+					summary.alignmentInfo.emplace_back(alignPair);
 
 					if (cmpInfo.doc1.section.len)
 					{
@@ -1278,6 +1305,26 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, Alignment
 						markSection(cmpInfo.doc2, *bd.info.matchBlock);
 						alignLines.second += cmpInfo.doc2.section.len;
 					}
+				}
+
+				const int movedLines1 = bd.info.movedCount();
+				const int movedLines2 = bd.info.matchBlock->info.movedCount();
+
+				const int newLines1 = bd.len - changedLinesCount - movedLines1;
+				const int newLines2 = bd.info.matchBlock->len - changedLinesCount - movedLines2;
+
+				summary.moved	+= movedLines1 + movedLines2;
+				summary.changed	+= changedLinesCount;
+
+				if (cmpInfo.doc1.blockDiffMask == MARKER_MASK_ADDED)
+				{
+					summary.added	+= newLines1;
+					summary.removed	+= newLines2;
+				}
+				else
+				{
+					summary.added	+= newLines2;
+					summary.removed	+= newLines1;
 				}
 
 				++i;
@@ -1294,7 +1341,16 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, Alignment
 				pSubAlignData->diffMask		= 0;
 				pSubAlignData->line			= toAlignmentLine(cmpInfo.doc2, alignLines.second);
 
-				alignmentInfo.emplace_back(alignPair);
+				summary.alignmentInfo.emplace_back(alignPair);
+
+				const int movedLines = bd.info.movedCount();
+
+				summary.moved += movedLines;
+
+				if (cmpInfo.doc1.blockDiffMask == MARKER_MASK_ADDED)
+					summary.added += bd.len - movedLines;
+				else
+					summary.removed += bd.len - movedLines;
 
 				alignLines.first += bd.len;
 			}
@@ -1303,6 +1359,8 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, Alignment
 		if (progress && !progress->Advance())
 			return false;
 	}
+
+	summary.moved /= 2;
 
 	if (options.selectionCompare)
 	{
@@ -1314,7 +1372,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, Alignment
 
 		if ((pMainAlignData->line < CallScintilla(cmpInfo.doc1.view, SCI_GETLINECOUNT, 0, 0)) &&
 				(pSubAlignData->line < CallScintilla(cmpInfo.doc2.view, SCI_GETLINECOUNT, 0, 0)))
-			alignmentInfo.emplace_back(alignPair);
+			summary.alignmentInfo.emplace_back(alignPair);
 	}
 
 	if (progress && !progress->NextPhase())
@@ -1324,7 +1382,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, Alignment
 }
 
 
-CompareResult runCompare(const CompareOptions& options, AlignmentInfo_t& alignmentInfo)
+CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 {
 	progress_ptr& progress = ProgressDlg::Get();
 
@@ -1402,18 +1460,18 @@ CompareResult runCompare(const CompareOptions& options, AlignmentInfo_t& alignme
 	if (progress && !progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
-	if (!markAllDiffs(cmpInfo, options, alignmentInfo))
+	if (!markAllDiffs(cmpInfo, options, summary))
 		return CompareResult::COMPARE_CANCELLED;
 
 	return CompareResult::COMPARE_MISMATCH;
 }
 
 
-CompareResult runFindUnique(const CompareOptions& options, AlignmentInfo_t& alignmentInfo)
+CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summary)
 {
 	progress_ptr& progress = ProgressDlg::Get();
 
-	alignmentInfo.clear();
+	summary.alignmentInfo.clear();
 
 	DocCmpInfo doc1;
 	DocCmpInfo doc2;
@@ -1514,7 +1572,7 @@ CompareResult runFindUnique(const CompareOptions& options, AlignmentInfo_t& alig
 	align.main.line	= doc1.section.off;
 	align.sub.line	= doc2.section.off;
 
-	alignmentInfo.push_back(align);
+	summary.alignmentInfo.push_back(align);
 
 	return CompareResult::COMPARE_MISMATCH;
 }
@@ -1522,7 +1580,7 @@ CompareResult runFindUnique(const CompareOptions& options, AlignmentInfo_t& alig
 }
 
 
-CompareResult compareViews(const CompareOptions& options, const TCHAR* progressInfo, AlignmentInfo_t& alignmentInfo)
+CompareResult compareViews(const CompareOptions& options, const TCHAR* progressInfo, CompareSummary& summary)
 {
 	CompareResult result = CompareResult::COMPARE_ERROR;
 
@@ -1532,9 +1590,9 @@ CompareResult compareViews(const CompareOptions& options, const TCHAR* progressI
 	try
 	{
 		if (options.findUniqueMode)
-			result = runFindUnique(options, alignmentInfo);
+			result = runFindUnique(options, summary);
 		else
-			result = runCompare(options, alignmentInfo);
+			result = runCompare(options, summary);
 
 		ProgressDlg::Close();
 	}

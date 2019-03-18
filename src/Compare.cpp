@@ -329,16 +329,26 @@ public:
 	void positionFiles();
 	void restoreFiles(int currentBuffId);
 
+	void setStatusInfo();
 	void setStatus();
+
+	inline void toggleStatusInfo()
+	{
+		showSummary = !showSummary;
+		setStatusInfo();
+	}
 
 	ComparedFile	file[2];
 	int				relativePos;
 
 	CompareOptions	options;
 
-	AlignmentInfo_t	alignmentInfo;
+	CompareSummary	summary;
 
-	int				autoUpdateDelay = 0;
+	int				autoUpdateDelay	= 0;
+
+private:
+	bool			showSummary = true;
 };
 
 
@@ -483,6 +493,8 @@ static const TempMark_t tempMark[] =
 };
 
 
+LRESULT (*nppNotificationProc)(HWND, UINT, WPARAM, LPARAM) = nullptr;
+
 CompareList_t compareList;
 std::unique_ptr<NewCompare> newCompare;
 
@@ -503,23 +515,24 @@ DelayedClose	delayedClosure;
 DelayedUpdate	delayedUpdate;
 DelayedMaximize	delayedMaximize;
 
-NavDialog     	NavDlg;
+NavDialog		NavDlg;
 
-toolbarIcons  tbSetFirst;
-toolbarIcons  tbCompare;
-toolbarIcons  tbCompareSel;
-toolbarIcons  tbClearCompare;
-toolbarIcons  tbFirst;
-toolbarIcons  tbPrev;
-toolbarIcons  tbNext;
-toolbarIcons  tbLast;
-toolbarIcons  tbDiffsOnly;
-toolbarIcons  tbNavBar;
+toolbarIcons	tbSetFirst;
+toolbarIcons	tbCompare;
+toolbarIcons	tbCompareSel;
+toolbarIcons	tbClearCompare;
+toolbarIcons	tbFirst;
+toolbarIcons	tbPrev;
+toolbarIcons	tbNext;
+toolbarIcons	tbLast;
+toolbarIcons	tbDiffsOnly;
+toolbarIcons	tbNavBar;
 
 HINSTANCE hInstance;
 FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
 
 // Declare local functions that appear before they are defined
+LRESULT statusProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 void onBufferActivated(LRESULT buffId);
 void syncViews(int biasView);
 void setArrowMark(int view, int line = -1, bool down = true);
@@ -647,6 +660,9 @@ void NppSettings::setNormalMode(bool forceUpdate)
 
 		updatePluginMenu();
 	}
+
+	if (nppNotificationProc != nullptr)
+		::SetWindowLongPtr(nppData._nppHandle, GWLP_WNDPROC, static_cast<LPARAM>((LONG_PTR)nppNotificationProc));
 }
 
 
@@ -1047,37 +1063,102 @@ void ComparedPair::restoreFiles(int currentBuffId = -1)
 }
 
 
+void ComparedPair::setStatusInfo()
+{
+	HWND hStatusBar = NppStatusBarHandleGetter::get();
+
+	if (hStatusBar != nullptr)
+	{
+		TCHAR info[512] = TEXT("");
+
+		// Toggle shown status bar info
+		if (!showSummary)
+		{
+			const int alignOff =
+					(isAlignmentFirstLineInserted(MAIN_VIEW) || isAlignmentFirstLineInserted(SUB_VIEW)) ? 2 : 1;
+			TCHAR buf[256] = TEXT("");
+
+			if (options.selectionCompare)
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Selections - %d-%d vs. %d-%d"),
+						options.selections[MAIN_VIEW].first + alignOff, options.selections[MAIN_VIEW].second + alignOff,
+						options.selections[SUB_VIEW].first + alignOff, options.selections[SUB_VIEW].second + alignOff);
+
+			_sntprintf_s(info, _countof(info), _TRUNCATE, TEXT("%s%s"),
+					options.findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"), buf);
+
+			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%s%s%s%s"),
+					options.ignoreSpaces		? TEXT(" Ignore Spaces | ")			: TEXT(""),
+					options.ignoreEmptyLines	? TEXT(" Ignore Empty Lines | ")	: TEXT(""),
+					options.ignoreCase			? TEXT(" Ignore Case | ")			: TEXT(""),
+					options.detectMoves			? TEXT(" Detect Moves | ")			: TEXT(""));
+
+			int len = _tcslen(buf);
+
+			if (len)
+			{
+				buf[len - 3] = TEXT('\0');
+				_tcscat_s(info, _countof(info), TEXT(":  "));
+				_tcscat_s(info, _countof(info), buf);
+			}
+		}
+		else
+		{
+			TCHAR buf[64];
+
+			if (summary.match)
+			{
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Match: %d,  "), summary.match);
+				_tcscat_s(info, _countof(info), buf);
+			}
+			if (summary.added)
+			{
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Added: %d,  "), summary.added);
+				_tcscat_s(info, _countof(info), buf);
+			}
+			if (summary.removed)
+			{
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Removed: %d,  "), summary.removed);
+				_tcscat_s(info, _countof(info), buf);
+			}
+			if (summary.moved)
+			{
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Moved: %d,  "), summary.moved);
+				_tcscat_s(info, _countof(info), buf);
+			}
+			if (summary.changed)
+			{
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Changed: %d,  "), summary.changed);
+				_tcscat_s(info, _countof(info), buf);
+			}
+
+			info[_tcslen(info) - 3] = TEXT('\0');
+		}
+
+		::SendMessage(hStatusBar, SB_SETTEXT, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)info));
+		::SendMessage(hStatusBar, SB_SETTIPTEXT, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)info));
+	}
+}
+
+
 void ComparedPair::setStatus()
 {
-	const int alignOff = (isAlignmentFirstLineInserted(MAIN_VIEW) || isAlignmentFirstLineInserted(SUB_VIEW)) ? 2 : 1;
-	TCHAR buf[256] = TEXT("");
+	HWND hStatusBar = NppStatusBarHandleGetter::get();
 
-	if (options.selectionCompare)
-		_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Selections - %d-%d vs. %d-%d"),
-				options.selections[MAIN_VIEW].first + alignOff, options.selections[MAIN_VIEW].second + alignOff,
-				options.selections[SUB_VIEW].first + alignOff, options.selections[SUB_VIEW].second + alignOff);
-
-	TCHAR msg[512];
-
-	_sntprintf_s(msg, _countof(msg), _TRUNCATE, TEXT("%s%s"),
-			options.findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"), buf);
-
-	_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%s%s%s%s"),
-			options.ignoreSpaces		? TEXT(" Ignore Spaces | ")			: TEXT(""),
-			options.ignoreEmptyLines	? TEXT(" Ignore Empty Lines | ")	: TEXT(""),
-			options.ignoreCase			? TEXT(" Ignore Case | ")			: TEXT(""),
-			options.detectMoves			? TEXT(" Detect Moves | ")			: TEXT(""));
-
-	int len = _tcslen(buf);
-
-	if (len)
+	if (hStatusBar != nullptr)
 	{
-		buf[len - 3] = TEXT('\0');
-		_tcscat_s(msg, _countof(msg), TEXT(" :  "));
-		_tcscat_s(msg, _countof(msg), buf);
-	}
+		const LRESULT style = ::GetWindowLongPtr(hStatusBar, GWL_STYLE) | SBARS_TOOLTIPS;
 
-	::SendMessageW(nppData._nppHandle, NPPM_SETSTATUSBAR, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)msg));
+		::SetWindowLongPtr(hStatusBar, GWL_STYLE, style);
+
+		if (nppNotificationProc == nullptr)
+			nppNotificationProc =
+					(LRESULT (*)(HWND, UINT, WPARAM, LPARAM))::GetWindowLongPtr(nppData._nppHandle, GWLP_WNDPROC);
+
+		if (nppNotificationProc != nullptr)
+			::SetWindowLongPtr(nppData._nppHandle, GWLP_WNDPROC, static_cast<LPARAM>((LONG_PTR)statusProc));
+
+		setStatusInfo();
+	}
 }
 
 
@@ -1604,7 +1685,7 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 		CallScintilla(SUB_VIEW, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
 	}
 
-	const AlignmentInfo_t& alignmentInfo = cmpPair->alignmentInfo;
+	const AlignmentInfo_t& alignmentInfo = cmpPair->summary.alignmentInfo;
 
 	const int maxSize = static_cast<int>(alignmentInfo.size());
 
@@ -1995,7 +2076,7 @@ CompareResult runCompare(CompareList_t::iterator cmpPair)
 			TEXT("Comparing selected lines in \"%s\" vs. selected lines in \"%s\"...") :
 			TEXT("Comparing \"%s\" vs. \"%s\"..."), newName, oldName);
 
-	return compareViews(cmpPair->options, progressInfo, cmpPair->alignmentInfo);
+	return compareViews(cmpPair->options, progressInfo, cmpPair->summary);
 }
 
 
@@ -2159,7 +2240,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 				// Move the view so the Notepad++ line number area width is updated now and we avoid getting
 				// second alignment request on Scintilla paint notification
-				for (const AlignmentPair& alignment : cmpPair->alignmentInfo)
+				for (const AlignmentPair& alignment : cmpPair->summary.alignmentInfo)
 				{
 					if (alignment.main.diffMask)
 					{
@@ -3043,7 +3124,7 @@ void DelayedAlign::operator()()
 		return;
 	}
 
-	const AlignmentInfo_t& alignmentInfo = cmpPair->alignmentInfo;
+	const AlignmentInfo_t& alignmentInfo = cmpPair->summary.alignmentInfo;
 	if (alignmentInfo.empty())
 		return;
 
@@ -3533,6 +3614,27 @@ void DelayedMaximize::operator()()
 	::SetFocus(getCurrentView());
 
 	NavDlg.Update();
+}
+
+
+LRESULT statusProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	// Handle only status bar mouse left-click notification
+	if ((msg == WM_NOTIFY) && (((LPNMHDR)lParam)->hwndFrom == NppStatusBarHandleGetter::get()) &&
+		((((LPNMHDR)lParam)->code == NM_CLICK)) && (((LPNMMOUSE)lParam)->dwItemSpec == DWORD(STATUSBAR_DOC_TYPE)))
+	{
+		const LRESULT			currentBuffId	= getCurrentBuffId();
+		CompareList_t::iterator	cmpPair			= getCompare(currentBuffId);
+
+		if (cmpPair != compareList.end())
+		{
+			cmpPair->toggleStatusInfo();
+
+			return TRUE;
+		}
+	}
+
+	return nppNotificationProc(hwnd, msg, wParam, lParam);
 }
 
 } // anonymous namespace

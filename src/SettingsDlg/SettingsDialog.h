@@ -24,8 +24,6 @@
 #include "UserSettings.h"
 #include "ColorCombo.h"
 
-#include <string>
-
 
 using namespace std;
 

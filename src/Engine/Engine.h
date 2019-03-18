@@ -90,4 +90,16 @@ struct AlignmentPair
 using AlignmentInfo_t = std::vector<AlignmentPair>;
 
 
-CompareResult compareViews(const CompareOptions& options, const TCHAR* progressInfo, AlignmentInfo_t& alignmentInfo);
+struct CompareSummary
+{
+	int				match;
+	int				added;
+	int				removed;
+	int				moved;
+	int				changed;
+
+	AlignmentInfo_t	alignmentInfo;
+};
+
+
+CompareResult compareViews(const CompareOptions& options, const TCHAR* progressInfo, CompareSummary& summary);

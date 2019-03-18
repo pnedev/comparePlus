@@ -107,6 +107,34 @@ BOOL CALLBACK NppTabHandleGetter::enumWindowsCB(HWND hwnd, LPARAM lParam)
 }
 
 
+HWND NppStatusBarHandleGetter::hNppStatusBar = NULL;
+
+
+HWND NppStatusBarHandleGetter::get()
+{
+	if (hNppStatusBar == NULL)
+		::EnumChildWindows(nppData._nppHandle, enumWindowsCB, 0);
+
+	return hNppStatusBar;
+}
+
+
+BOOL CALLBACK NppStatusBarHandleGetter::enumWindowsCB(HWND hwnd, LPARAM )
+{
+	TCHAR winClassName[64];
+
+	::GetClassName(hwnd, winClassName, _countof(winClassName));
+
+	if (!_tcscmp(winClassName, STATUSCLASSNAME))
+	{
+		hNppStatusBar = hwnd;
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+
 void ViewLocation::save(int view, int centerLine)
 {
 	if (view != MAIN_VIEW && view != SUB_VIEW)
