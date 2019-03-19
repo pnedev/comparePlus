@@ -224,10 +224,6 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 
 					return FALSE;
 				}
-
-				case IDCANCEL :
-					::SendMessage(_hParent, COLOR_POPUP_CANCEL, 0, 0);
-					return TRUE;
 			}
 
 			return FALSE;
