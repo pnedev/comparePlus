@@ -1256,10 +1256,10 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 	int mainNextLine	= CallScintilla(MAIN_VIEW, nextMarker, mainStartLine, MARKER_MASK_LINE);
 	int subNextLine		= CallScintilla(SUB_VIEW, nextMarker, subStartLine, MARKER_MASK_LINE);
 
-	if (mainNextLine == mainStartLine && (!goToCornerDiff || !isCornerDiff))
+	if ((mainNextLine == mainStartLine) && !isCornerDiff)
 		mainNextLine = -1;
 
-	if (subNextLine == subStartLine && (!goToCornerDiff || !isCornerDiff))
+	if ((subNextLine == subStartLine) && !isCornerDiff)
 		subNextLine = -1;
 
 	int line			= (view == MAIN_VIEW) ? mainNextLine : subNextLine;
@@ -1415,32 +1415,53 @@ std::pair<int, int> jumpToChange(bool down, bool wrapAround)
 	{
 		currentLine = (Settings.FollowingCaret ? getCurrentLine(currentView) : getLastLine(currentView));
 
-		const bool currentLineNotAnnotated = !isLineAnnotated(currentView, currentLine);
+		if (Settings.FollowingCaret && isLineMarked(currentView, currentLine, MARKER_MASK_LINE) &&
+			(currentLine > getLastLine(currentView)))
+		{
+			// Current line is marked but invisible - get into view
+			centerAt(currentView, currentLine);
+			viewLoc = std::make_pair(currentView, currentLine);
+		}
+		else
+		{
+			const bool currentLineNotAnnotated = !isLineAnnotated(currentView, currentLine);
 
-		if (!currentLineNotAnnotated && isVisibleAdjacentAnnotation(currentView, currentLine, down))
-			++currentLine;
+			if (!currentLineNotAnnotated && isVisibleAdjacentAnnotation(currentView, currentLine, down))
+				++currentLine;
 
-		otherLine = (Settings.FollowingCaret ?
-				otherViewMatchingLine(currentView, currentLine) : getLastLine(otherView));
+			otherLine = (Settings.FollowingCaret ?
+					otherViewMatchingLine(currentView, currentLine) : getLastLine(otherView));
 
-		if (currentLineNotAnnotated && isLineAnnotated(otherView, otherLine))
-			++otherLine;
+			if (currentLineNotAnnotated && isLineAnnotated(otherView, otherLine))
+				++otherLine;
 
-		viewLoc = jumpToNextChange(getNextUnmarkedLine(MAIN_VIEW, mainStartLine, MARKER_MASK_LINE),
-				getNextUnmarkedLine(SUB_VIEW, subStartLine, MARKER_MASK_LINE), down);
+			viewLoc = jumpToNextChange(getNextUnmarkedLine(MAIN_VIEW, mainStartLine, MARKER_MASK_LINE),
+					getNextUnmarkedLine(SUB_VIEW, subStartLine, MARKER_MASK_LINE), down);
+		}
+
 	}
 	else
 	{
 		currentLine = (Settings.FollowingCaret ? getCurrentLine(currentView) : getFirstLine(currentView));
 
-		if (isVisibleAdjacentAnnotation(currentView, currentLine, down))
-			--currentLine;
+		if (Settings.FollowingCaret && isLineMarked(currentView, currentLine, MARKER_MASK_LINE) &&
+			(currentLine < getFirstLine(currentView)))
+		{
+			// Current line is marked but invisible - get into view
+			centerAt(currentView, currentLine);
+			viewLoc = std::make_pair(currentView, currentLine);
+		}
+		else
+		{
+			if (isVisibleAdjacentAnnotation(currentView, currentLine, down))
+				--currentLine;
 
-		otherLine = (Settings.FollowingCaret ?
-				otherViewMatchingLine(currentView, currentLine) : getFirstLine(otherView));
+			otherLine = (Settings.FollowingCaret ?
+					otherViewMatchingLine(currentView, currentLine) : getFirstLine(otherView));
 
-		viewLoc = jumpToNextChange(getPrevUnmarkedLine(MAIN_VIEW, mainStartLine, MARKER_MASK_LINE),
-				getPrevUnmarkedLine(SUB_VIEW, subStartLine, MARKER_MASK_LINE), down);
+			viewLoc = jumpToNextChange(getPrevUnmarkedLine(MAIN_VIEW, mainStartLine, MARKER_MASK_LINE),
+					getPrevUnmarkedLine(SUB_VIEW, subStartLine, MARKER_MASK_LINE), down);
+		}
 	}
 
 	if (viewLoc.first < 0)
@@ -2513,7 +2534,11 @@ void Prev()
 		ScopedIncrementer incr(notificationsLock);
 
 		std::pair<int, int> viewLoc = jumpToChange(false, Settings.WrapAround);
-		storedLocation.reset(new ViewLocation(viewLoc.first, viewLoc.second));
+
+		if (viewLoc.first < 0)
+			storedLocation.reset();
+		else
+			storedLocation.reset(new ViewLocation(viewLoc.first, viewLoc.second));
 	}
 }
 
@@ -2525,7 +2550,11 @@ void Next()
 		ScopedIncrementer incr(notificationsLock);
 
 		std::pair<int, int> viewLoc = jumpToChange(true, Settings.WrapAround);
-		storedLocation.reset(new ViewLocation(viewLoc.first, viewLoc.second));
+
+		if (viewLoc.first < 0)
+			storedLocation.reset();
+		else
+			storedLocation.reset(new ViewLocation(viewLoc.first, viewLoc.second));
 	}
 }
 
