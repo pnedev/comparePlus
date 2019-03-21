@@ -1117,11 +1117,12 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 
 	summary.alignmentInfo.clear();
 
-	summary.match	= 0;
-	summary.added	= 0;
-	summary.removed	= 0;
-	summary.moved	= 0;
-	summary.changed	= 0;
+	summary.diffLines	= 0;
+	summary.added		= 0;
+	summary.removed		= 0;
+	summary.changed		= 0;
+	summary.moved		= 0;
+	summary.match		= 0;
 
 	const int blockDiffSize = static_cast<int>(cmpInfo.blockDiffs.size());
 
@@ -1255,6 +1256,9 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 						{
 							markSection(cmpInfo.doc1, bd);
 							alignLines.first += cmpInfo.doc1.section.len;
+
+							if (cmpInfo.doc2.section.len)
+								summary.diffLines += std::min(cmpInfo.doc1.section.len, cmpInfo.doc2.section.len);
 						}
 
 						if (cmpInfo.doc2.section.len)
@@ -1298,6 +1302,9 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 					{
 						markSection(cmpInfo.doc1, bd);
 						alignLines.first += cmpInfo.doc1.section.len;
+
+						if (cmpInfo.doc2.section.len)
+							summary.diffLines += std::min(cmpInfo.doc1.section.len, cmpInfo.doc2.section.len);
 					}
 
 					if (cmpInfo.doc2.section.len)
@@ -1313,8 +1320,9 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 				const int newLines1 = bd.len - changedLinesCount - movedLines1;
 				const int newLines2 = bd.info.matchBlock->len - changedLinesCount - movedLines2;
 
-				summary.moved	+= movedLines1 + movedLines2;
-				summary.changed	+= changedLinesCount;
+				summary.moved		+= movedLines1 + movedLines2;
+				summary.changed		+= changedLinesCount;
+				summary.diffLines	+= changedLinesCount;
 
 				if (cmpInfo.doc1.blockDiffMask == MARKER_MASK_ADDED)
 				{
@@ -1473,6 +1481,13 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 
 	summary.alignmentInfo.clear();
 
+	summary.diffLines	= 0;
+	summary.added		= 0;
+	summary.removed		= 0;
+	summary.changed		= 0;
+	summary.moved		= 0;
+	summary.match		= 0;
+
 	DocCmpInfo doc1;
 	DocCmpInfo doc2;
 
@@ -1546,6 +1561,7 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 		if (doc2it != doc2UniqueLines.end())
 		{
 			doc2UniqueLines.erase(doc2it);
+			++summary.match;
 		}
 		else
 		{
@@ -1560,12 +1576,20 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 	if (doc1UniqueLinesCount == 0 && doc2UniqueLines.empty())
 		return CompareResult::COMPARE_MATCH;
 
+	if (doc1.blockDiffMask == MARKER_MASK_ADDED)
+		summary.added = doc1UniqueLinesCount;
+	else
+		summary.removed = doc1UniqueLinesCount;
+
 	for (const auto& uniqueLine: doc2UniqueLines)
 	{
 		for (const auto& line: uniqueLine.second)
-		{
 			CallScintilla(doc2.view, SCI_MARKERADDSET, line, doc2.blockDiffMask);
-		}
+
+		if (doc2.blockDiffMask == MARKER_MASK_ADDED)
+			summary.added += uniqueLine.second.size();
+		else
+			summary.removed += uniqueLine.second.size();
 	}
 
 	AlignmentPair align;

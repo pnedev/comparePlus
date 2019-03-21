@@ -66,6 +66,13 @@ namespace // anonymous namespace
 class NppSettings
 {
 public:
+	enum StatusType
+	{
+		COMPARE_SUMMARY = 0,
+		COMPARE_OPTIONS,
+		STATUS_TYPE_END
+	};
+
 	static NppSettings& get()
 	{
 		static NppSettings instance;
@@ -77,6 +84,13 @@ public:
 	void updatePluginMenu();
 	void setNormalMode(bool forceUpdate = false);
 	void setCompareMode(bool clearHorizontalScroll = false);
+
+	void toggleStatusType()
+	{
+		statusType = static_cast<StatusType>(static_cast<int>(statusType) + 1);
+		if (statusType == StatusType::STATUS_TYPE_END)
+			statusType = StatusType::COMPARE_SUMMARY;
+	}
 
 	void setMainZoom(int zoom)
 	{
@@ -93,10 +107,12 @@ public:
 		_compareZoom = zoom;
 	}
 
-	bool	compareMode;
+	bool		compareMode;
+	StatusType	statusType;
 
 private:
-	NppSettings() : compareMode(false), _restoreMultilineTab(false), _mainZoom(0), _subZoom(0), _compareZoom(0) {}
+	NppSettings() : compareMode(false), statusType(StatusType::COMPARE_SUMMARY),
+			_restoreMultilineTab(false), _mainZoom(0), _subZoom(0), _compareZoom(0) {}
 
 	void save();
 	void toSingleLineTab();
@@ -332,12 +348,6 @@ public:
 	void setStatusInfo();
 	void setStatus();
 
-	inline void toggleStatusInfo()
-	{
-		showSummary = !showSummary;
-		setStatusInfo();
-	}
-
 	ComparedFile	file[2];
 	int				relativePos;
 
@@ -346,9 +356,6 @@ public:
 	CompareSummary	summary;
 
 	int				autoUpdateDelay	= 0;
-
-private:
-	bool			showSummary = true;
 };
 
 
@@ -1069,70 +1076,68 @@ void ComparedPair::setStatusInfo()
 
 	if (hStatusBar != nullptr)
 	{
-		TCHAR info[512] = TEXT("");
+		TCHAR info[512];
+		TCHAR buf[256] = TEXT(": ");
 
-		// Toggle shown status bar info
-		if (!showSummary)
+		if (options.selectionCompare)
 		{
 			const int alignOff =
 					(isAlignmentFirstLineInserted(MAIN_VIEW) || isAlignmentFirstLineInserted(SUB_VIEW)) ? 2 : 1;
-			TCHAR buf[256] = TEXT("");
 
-			if (options.selectionCompare)
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Selections - %d-%d vs. %d-%d"),
-						options.selections[MAIN_VIEW].first + alignOff, options.selections[MAIN_VIEW].second + alignOff,
-						options.selections[SUB_VIEW].first + alignOff, options.selections[SUB_VIEW].second + alignOff);
-
-			_sntprintf_s(info, _countof(info), _TRUNCATE, TEXT("%s%s"),
-					options.findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"), buf);
-
-			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%s%s%s%s"),
-					options.ignoreSpaces		? TEXT(" Ignore Spaces | ")			: TEXT(""),
-					options.ignoreEmptyLines	? TEXT(" Ignore Empty Lines | ")	: TEXT(""),
-					options.ignoreCase			? TEXT(" Ignore Case | ")			: TEXT(""),
-					options.detectMoves			? TEXT(" Detect Moves | ")			: TEXT(""));
-
-			int len = _tcslen(buf);
-
-			if (len)
-			{
-				buf[len - 3] = TEXT('\0');
-				_tcscat_s(info, _countof(info), TEXT(":  "));
-				_tcscat_s(info, _countof(info), buf);
-			}
+			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Selections - %d-%d vs. %d-%d: "),
+					options.selections[MAIN_VIEW].first + alignOff, options.selections[MAIN_VIEW].second + alignOff,
+					options.selections[SUB_VIEW].first + alignOff, options.selections[SUB_VIEW].second + alignOff);
 		}
-		else
-		{
-			TCHAR buf[64];
 
-			if (summary.match)
+		_sntprintf_s(info, _countof(info), _TRUNCATE, TEXT("%s%s"),
+				options.findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"), buf);
+
+		// Toggle shown status bar info
+		if (NppSettings::get().statusType == NppSettings::StatusType::COMPARE_OPTIONS)
+		{
+			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%s%s%s%s"),
+					options.ignoreSpaces		? TEXT(" Ignore Spaces, ")		: TEXT(""),
+					options.ignoreEmptyLines	? TEXT(" Ignore Empty Lines, ")	: TEXT(""),
+					options.ignoreCase			? TEXT(" Ignore Case, ")		: TEXT(""),
+					options.detectMoves			? TEXT(" Detect Moves, ")		: TEXT(""));
+
+			_tcscat_s(info, _countof(info), buf);
+		}
+		else if (NppSettings::get().statusType == NppSettings::StatusType::COMPARE_SUMMARY)
+		{
+			if (summary.diffLines)
 			{
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Match: %d,  "), summary.match);
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%d Diff Lines, "), summary.diffLines);
 				_tcscat_s(info, _countof(info), buf);
 			}
 			if (summary.added)
 			{
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Added: %d,  "), summary.added);
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%d Added, "), summary.added);
 				_tcscat_s(info, _countof(info), buf);
 			}
 			if (summary.removed)
 			{
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Removed: %d,  "), summary.removed);
-				_tcscat_s(info, _countof(info), buf);
-			}
-			if (summary.moved)
-			{
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Moved: %d,  "), summary.moved);
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%d Removed, "), summary.removed);
 				_tcscat_s(info, _countof(info), buf);
 			}
 			if (summary.changed)
 			{
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Changed: %d,  "), summary.changed);
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%d Changed, "), summary.changed);
 				_tcscat_s(info, _countof(info), buf);
 			}
-
-			info[_tcslen(info) - 3] = TEXT('\0');
+			if (summary.moved)
+			{
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%d Moved, "), summary.moved);
+				_tcscat_s(info, _countof(info), buf);
+			}
+			if (summary.match)
+			{
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%d Match, "), summary.match);
+				_tcscat_s(info, _countof(info), buf);
+			}
 		}
+
+		info[_tcslen(info) - 2] = TEXT('\0');
 
 		::SendMessage(hStatusBar, SB_SETTEXT, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)info));
 		::SendMessage(hStatusBar, SB_SETTIPTEXT, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)info));
@@ -3628,7 +3633,9 @@ LRESULT statusProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		if (cmpPair != compareList.end())
 		{
-			cmpPair->toggleStatusInfo();
+			NppSettings::get().toggleStatusType();
+
+			cmpPair->setStatusInfo();
 
 			return TRUE;
 		}

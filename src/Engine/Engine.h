@@ -92,11 +92,12 @@ using AlignmentInfo_t = std::vector<AlignmentPair>;
 
 struct CompareSummary
 {
-	int				match;
+	int				diffLines;
 	int				added;
 	int				removed;
-	int				moved;
 	int				changed;
+	int				moved;
+	int				match;
 
 	AlignmentInfo_t	alignmentInfo;
 };
