@@ -1219,7 +1219,8 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 
 			const int movedLines = bd.info.movedCount();
 
-			summary.moved += movedLines;
+			summary.diffLines	+= bd.len;
+			summary.moved		+= movedLines;
 
 			if (cmpInfo.doc2.blockDiffMask == MARKER_MASK_ADDED)
 				summary.added += bd.len - movedLines;
@@ -1256,9 +1257,6 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 						{
 							markSection(cmpInfo.doc1, bd);
 							alignLines.first += cmpInfo.doc1.section.len;
-
-							if (cmpInfo.doc2.section.len)
-								summary.diffLines += std::min(cmpInfo.doc1.section.len, cmpInfo.doc2.section.len);
 						}
 
 						if (cmpInfo.doc2.section.len)
@@ -1302,9 +1300,6 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 					{
 						markSection(cmpInfo.doc1, bd);
 						alignLines.first += cmpInfo.doc1.section.len;
-
-						if (cmpInfo.doc2.section.len)
-							summary.diffLines += std::min(cmpInfo.doc1.section.len, cmpInfo.doc2.section.len);
 					}
 
 					if (cmpInfo.doc2.section.len)
@@ -1320,9 +1315,9 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 				const int newLines1 = bd.len - changedLinesCount - movedLines1;
 				const int newLines2 = bd.info.matchBlock->len - changedLinesCount - movedLines2;
 
-				summary.moved		+= movedLines1 + movedLines2;
+				summary.diffLines	+= std::max(bd.len, bd.info.matchBlock->len);
 				summary.changed		+= changedLinesCount;
-				summary.diffLines	+= changedLinesCount;
+				summary.moved		+= movedLines1 + movedLines2;
 
 				if (cmpInfo.doc1.blockDiffMask == MARKER_MASK_ADDED)
 				{
@@ -1353,7 +1348,8 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 
 				const int movedLines = bd.info.movedCount();
 
-				summary.moved += movedLines;
+				summary.diffLines	+= bd.len;
+				summary.moved		+= movedLines;
 
 				if (cmpInfo.doc1.blockDiffMask == MARKER_MASK_ADDED)
 					summary.added += bd.len - movedLines;

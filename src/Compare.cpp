@@ -1077,14 +1077,14 @@ void ComparedPair::setStatusInfo()
 	if (hStatusBar != nullptr)
 	{
 		TCHAR info[512];
-		TCHAR buf[256] = TEXT(": ");
+		TCHAR buf[256] = TEXT(" ***");
 
 		if (options.selectionCompare)
 		{
 			const int alignOff =
 					(isAlignmentFirstLineInserted(MAIN_VIEW) || isAlignmentFirstLineInserted(SUB_VIEW)) ? 2 : 1;
 
-			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Selections - %d-%d vs. %d-%d: "),
+			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Selections - %d-%d vs. %d-%d ***"),
 					options.selections[MAIN_VIEW].first + alignOff, options.selections[MAIN_VIEW].second + alignOff,
 					options.selections[SUB_VIEW].first + alignOff, options.selections[SUB_VIEW].second + alignOff);
 		}
@@ -1096,48 +1096,54 @@ void ComparedPair::setStatusInfo()
 		if (NppSettings::get().statusType == NppSettings::StatusType::COMPARE_OPTIONS)
 		{
 			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%s%s%s%s"),
-					options.ignoreSpaces		? TEXT(" Ignore Spaces, ")		: TEXT(""),
-					options.ignoreEmptyLines	? TEXT(" Ignore Empty Lines, ")	: TEXT(""),
-					options.ignoreCase			? TEXT(" Ignore Case, ")		: TEXT(""),
-					options.detectMoves			? TEXT(" Detect Moves, ")		: TEXT(""));
+					options.ignoreSpaces		? TEXT(" Ignore Spaces ,")		: TEXT(""),
+					options.ignoreEmptyLines	? TEXT(" Ignore Empty Lines ,")	: TEXT(""),
+					options.ignoreCase			? TEXT(" Ignore Case ,")		: TEXT(""),
+					options.detectMoves			? TEXT(" Detect Moves ,")		: TEXT(""));
 
-			_tcscat_s(info, _countof(info), buf);
+			if (_tcslen(buf))
+				_tcscat_s(info, _countof(info), buf);
+			else
+				_tcscat_s(info, _countof(info), TEXT(" No active compare options"));
 		}
 		else if (NppSettings::get().statusType == NppSettings::StatusType::COMPARE_SUMMARY)
 		{
 			if (summary.diffLines)
 			{
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%d Diff Lines, "), summary.diffLines);
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Diff Lines: "), summary.diffLines);
 				_tcscat_s(info, _countof(info), buf);
 			}
 			if (summary.added)
 			{
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%d Added, "), summary.added);
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Added ,"), summary.added);
 				_tcscat_s(info, _countof(info), buf);
 			}
 			if (summary.removed)
 			{
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%d Removed, "), summary.removed);
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Removed ,"), summary.removed);
 				_tcscat_s(info, _countof(info), buf);
 			}
 			if (summary.changed)
 			{
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%d Changed, "), summary.changed);
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Changed ,"), summary.changed);
 				_tcscat_s(info, _countof(info), buf);
 			}
 			if (summary.moved)
 			{
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%d Moved, "), summary.moved);
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Moved ,"), summary.moved);
 				_tcscat_s(info, _countof(info), buf);
 			}
 			if (summary.match)
 			{
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%d Match, "), summary.match);
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Match ,"), summary.match);
 				_tcscat_s(info, _countof(info), buf);
 			}
 		}
 
-		info[_tcslen(info) - 2] = TEXT('\0');
+		const int infoLen = _tcslen(info);
+
+		if (info[infoLen - 2] == TEXT(' '))
+			info[infoLen - 2] = TEXT('\0');
 
 		::SendMessage(hStatusBar, SB_SETTEXT, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)info));
 		::SendMessage(hStatusBar, SB_SETTIPTEXT, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)info));
@@ -3626,17 +3632,24 @@ LRESULT statusProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	// Handle only status bar mouse left-click notification
 	if ((msg == WM_NOTIFY) && (((LPNMHDR)lParam)->hwndFrom == NppStatusBarHandleGetter::get()) &&
-		((((LPNMHDR)lParam)->code == NM_CLICK)) && (((LPNMMOUSE)lParam)->dwItemSpec == DWORD(STATUSBAR_DOC_TYPE)))
+		(((LPNMMOUSE)lParam)->dwItemSpec == DWORD(STATUSBAR_DOC_TYPE)))
 	{
-		const LRESULT			currentBuffId	= getCurrentBuffId();
-		CompareList_t::iterator	cmpPair			= getCompare(currentBuffId);
-
-		if (cmpPair != compareList.end())
+		if (((LPNMHDR)lParam)->code == NM_CLICK)
 		{
-			NppSettings::get().toggleStatusType();
+			const LRESULT			currentBuffId	= getCurrentBuffId();
+			CompareList_t::iterator	cmpPair			= getCompare(currentBuffId);
 
-			cmpPair->setStatusInfo();
+			if (cmpPair != compareList.end())
+			{
+				NppSettings::get().toggleStatusType();
 
+				cmpPair->setStatusInfo();
+
+				return TRUE;
+			}
+		}
+		else if (((LPNMHDR)lParam)->code == NM_DBLCLK)
+		{
 			return TRUE;
 		}
 	}
@@ -3829,6 +3842,15 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 					NppSettings::get().setMainZoom(CallScintilla(MAIN_VIEW, SCI_GETZOOM, 0, 0));
 					NppSettings::get().setSubZoom(CallScintilla(SUB_VIEW, SCI_GETZOOM, 0, 0));
 				}
+			}
+		break;
+
+		case NPPN_LANGCHANGED:
+			if (NppSettings::get().compareMode)
+			{
+				CompareList_t::iterator	cmpPair = getCompare(notifyCode->nmhdr.idFrom);
+				if (cmpPair != compareList.end())
+					cmpPair->setStatusInfo();
 			}
 		break;
 
