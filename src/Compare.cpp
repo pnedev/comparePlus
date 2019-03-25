@@ -1079,6 +1079,8 @@ void ComparedPair::setStatusInfo()
 		TCHAR info[512];
 		TCHAR buf[256] = TEXT(" ***");
 
+		int infoCurrentPos = 0;
+
 		if (options.selectionCompare)
 		{
 			const int alignOff =
@@ -1089,61 +1091,69 @@ void ComparedPair::setStatusInfo()
 					options.selections[SUB_VIEW].first + alignOff, options.selections[SUB_VIEW].second + alignOff);
 		}
 
-		_sntprintf_s(info, _countof(info), _TRUNCATE, TEXT("%s%s"),
+		infoCurrentPos = _sntprintf_s(info, _countof(info), _TRUNCATE, TEXT("%s%s"),
 				options.findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"), buf);
 
 		// Toggle shown status bar info
 		if (NppSettings::get().statusType == NppSettings::StatusType::COMPARE_OPTIONS)
 		{
-			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%s%s%s%s"),
+			const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%s%s%s%s"),
 					options.ignoreSpaces		? TEXT(" Ignore Spaces ,")		: TEXT(""),
 					options.ignoreEmptyLines	? TEXT(" Ignore Empty Lines ,")	: TEXT(""),
 					options.ignoreCase			? TEXT(" Ignore Case ,")		: TEXT(""),
 					options.detectMoves			? TEXT(" Detect Moves ,")		: TEXT(""));
 
-			if (_tcslen(buf))
-				_tcscat_s(info, _countof(info), buf);
-			else
-				_tcscat_s(info, _countof(info), TEXT(" No active compare options"));
+			_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+			infoCurrentPos += len;
 		}
 		else if (NppSettings::get().statusType == NppSettings::StatusType::COMPARE_SUMMARY)
 		{
 			if (summary.diffLines)
 			{
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Diff Lines: "), summary.diffLines);
-				_tcscat_s(info, _countof(info), buf);
+				const int len =
+						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Diff Lines: "), summary.diffLines);
+				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+				infoCurrentPos += len;
 			}
 			if (summary.added)
 			{
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Added ,"), summary.added);
-				_tcscat_s(info, _countof(info), buf);
+				const int len =
+						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Added ,"), summary.added);
+				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+				infoCurrentPos += len;
 			}
 			if (summary.removed)
 			{
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Removed ,"), summary.removed);
-				_tcscat_s(info, _countof(info), buf);
+				const int len =
+						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Removed ,"), summary.removed);
+				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+				infoCurrentPos += len;
 			}
 			if (summary.changed)
 			{
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Changed ,"), summary.changed);
-				_tcscat_s(info, _countof(info), buf);
+				const int len =
+						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Changed ,"), summary.changed);
+				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+				infoCurrentPos += len;
 			}
 			if (summary.moved)
 			{
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Moved ,"), summary.moved);
-				_tcscat_s(info, _countof(info), buf);
+				const int len =
+						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Moved ,"), summary.moved);
+				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+				infoCurrentPos += len;
 			}
 			if (summary.match)
 			{
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Match ,"), summary.match);
-				_tcscat_s(info, _countof(info), buf);
+				const int len =
+						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(".  %d Match ,"), summary.match) - 2;
+				_tcscpy_s(info + infoCurrentPos - 2, _countof(info) - infoCurrentPos + 2, buf);
+				infoCurrentPos += len;
 			}
 		}
 
-		const int infoLen = _tcslen(info);
-
-		if (info[infoLen - 2] == TEXT(' '))
-			info[infoLen - 2] = TEXT('\0');
+		if (info[infoCurrentPos - 2] == TEXT(' '))
+			info[infoCurrentPos - 2] = TEXT('\0');
 
 		::SendMessage(hStatusBar, SB_SETTEXT, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)info));
 		::SendMessage(hStatusBar, SB_SETTIPTEXT, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)info));

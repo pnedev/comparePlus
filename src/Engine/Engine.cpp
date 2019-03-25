@@ -1257,12 +1257,20 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 						{
 							markSection(cmpInfo.doc1, bd);
 							alignLines.first += cmpInfo.doc1.section.len;
+
+							if (cmpInfo.doc2.section.len)
+								summary.diffLines += std::max(cmpInfo.doc1.section.len, cmpInfo.doc2.section.len);
+							else
+								summary.diffLines += cmpInfo.doc1.section.len;
 						}
 
 						if (cmpInfo.doc2.section.len)
 						{
 							markSection(cmpInfo.doc2, *bd.info.matchBlock);
 							alignLines.second += cmpInfo.doc2.section.len;
+
+							if (!cmpInfo.doc1.section.len)
+								summary.diffLines += cmpInfo.doc2.section.len;
 						}
 					}
 
@@ -1300,12 +1308,20 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 					{
 						markSection(cmpInfo.doc1, bd);
 						alignLines.first += cmpInfo.doc1.section.len;
+
+						if (cmpInfo.doc2.section.len)
+							summary.diffLines += std::max(cmpInfo.doc1.section.len, cmpInfo.doc2.section.len);
+						else
+							summary.diffLines += cmpInfo.doc1.section.len;
 					}
 
 					if (cmpInfo.doc2.section.len)
 					{
 						markSection(cmpInfo.doc2, *bd.info.matchBlock);
 						alignLines.second += cmpInfo.doc2.section.len;
+
+						if (!cmpInfo.doc1.section.len)
+							summary.diffLines += cmpInfo.doc2.section.len;
 					}
 				}
 
@@ -1315,7 +1331,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 				const int newLines1 = bd.len - changedLinesCount - movedLines1;
 				const int newLines2 = bd.info.matchBlock->len - changedLinesCount - movedLines2;
 
-				summary.diffLines	+= std::max(bd.len, bd.info.matchBlock->len);
+				summary.diffLines	+= changedLinesCount;
 				summary.changed		+= changedLinesCount;
 				summary.moved		+= movedLines1 + movedLines2;
 
