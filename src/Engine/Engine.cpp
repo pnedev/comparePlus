@@ -1257,21 +1257,15 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 						{
 							markSection(cmpInfo.doc1, bd);
 							alignLines.first += cmpInfo.doc1.section.len;
-
-							if (cmpInfo.doc2.section.len)
-								summary.diffLines += std::max(cmpInfo.doc1.section.len, cmpInfo.doc2.section.len);
-							else
-								summary.diffLines += cmpInfo.doc1.section.len;
 						}
 
 						if (cmpInfo.doc2.section.len)
 						{
 							markSection(cmpInfo.doc2, *bd.info.matchBlock);
 							alignLines.second += cmpInfo.doc2.section.len;
-
-							if (!cmpInfo.doc1.section.len)
-								summary.diffLines += cmpInfo.doc2.section.len;
 						}
+
+						summary.diffLines += std::max(cmpInfo.doc1.section.len, cmpInfo.doc2.section.len);
 					}
 
 					pMainAlignData->diffMask	= MARKER_MASK_CHANGED;
@@ -1308,21 +1302,15 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 					{
 						markSection(cmpInfo.doc1, bd);
 						alignLines.first += cmpInfo.doc1.section.len;
-
-						if (cmpInfo.doc2.section.len)
-							summary.diffLines += std::max(cmpInfo.doc1.section.len, cmpInfo.doc2.section.len);
-						else
-							summary.diffLines += cmpInfo.doc1.section.len;
 					}
 
 					if (cmpInfo.doc2.section.len)
 					{
 						markSection(cmpInfo.doc2, *bd.info.matchBlock);
 						alignLines.second += cmpInfo.doc2.section.len;
-
-						if (!cmpInfo.doc1.section.len)
-							summary.diffLines += cmpInfo.doc2.section.len;
 					}
+
+					summary.diffLines += std::max(cmpInfo.doc1.section.len, cmpInfo.doc2.section.len);
 				}
 
 				const int movedLines1 = bd.info.movedCount();
