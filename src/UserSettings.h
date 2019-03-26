@@ -35,6 +35,8 @@
 #define DEFAULT_GOTO_FIRST_DIFF			1
 #define DEFAULT_PROMPT_CLOSE_ON_MATCH	0
 
+#define DEFAULT_STATUS_TYPE				0
+
 #define DEFAULT_ADDED_COLOR				0xC6FFC6
 #define DEFAULT_DELETED_COLOR			0xC6C6FF
 #define DEFAULT_CHANGED_COLOR			0x98E7E7
@@ -42,6 +44,14 @@
 #define DEFAULT_HIGHLIGHT_COLOR			0x683FF
 #define DEFAULT_HIGHLIGHT_TRANSP		0
 #define DEFAULT_CHANGED_THRESHOLD		30
+
+
+enum StatusType
+{
+	COMPARE_SUMMARY = 0,
+	COMPARE_OPTIONS,
+	STATUS_TYPE_END
+};
 
 
 struct ColorSettings
@@ -66,6 +76,14 @@ public:
 	inline void markAsDirty()
 	{
 		dirty = true;
+	}
+
+	void toggleStatusType()
+	{
+		statusType = static_cast<StatusType>(static_cast<int>(statusType) + 1);
+
+		if (statusType == StatusType::STATUS_TYPE_END)
+			statusType = StatusType::COMPARE_SUMMARY;
 	}
 
 	static const TCHAR mainSection[];
@@ -93,6 +111,8 @@ public:
 
 	static const TCHAR reCompareOnChangeSetting[];
 
+	static const TCHAR statusTypeSetting[];
+
 	static const TCHAR colorsSection[];
 
 	static const TCHAR addedColorSetting[];
@@ -114,8 +134,6 @@ public:
 	bool           	GotoFirstDiff;
 	bool           	PromptToCloseOnMatch;
 
-	int				ChangedThresholdPercent;
-
 	bool           	CharPrecision;
 	bool           	IgnoreSpaces;
 	bool           	IgnoreEmptyLines;
@@ -128,7 +146,12 @@ public:
 
 	bool           	RecompareOnChange;
 
+	StatusType		SavedStatusType;
+	StatusType		statusType;
+
 	ColorSettings	colors;
+
+	int				ChangedThresholdPercent;
 
 private:
 	bool dirty {false};

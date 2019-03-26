@@ -66,13 +66,6 @@ namespace // anonymous namespace
 class NppSettings
 {
 public:
-	enum StatusType
-	{
-		COMPARE_SUMMARY = 0,
-		COMPARE_OPTIONS,
-		STATUS_TYPE_END
-	};
-
 	static NppSettings& get()
 	{
 		static NppSettings instance;
@@ -84,13 +77,6 @@ public:
 	void updatePluginMenu();
 	void setNormalMode(bool forceUpdate = false);
 	void setCompareMode(bool clearHorizontalScroll = false);
-
-	void toggleStatusType()
-	{
-		statusType = static_cast<StatusType>(static_cast<int>(statusType) + 1);
-		if (statusType == StatusType::STATUS_TYPE_END)
-			statusType = StatusType::COMPARE_SUMMARY;
-	}
 
 	void setMainZoom(int zoom)
 	{
@@ -107,12 +93,10 @@ public:
 		_compareZoom = zoom;
 	}
 
-	bool		compareMode;
-	StatusType	statusType;
+	bool compareMode;
 
 private:
-	NppSettings() : compareMode(false), statusType(StatusType::COMPARE_SUMMARY),
-			_restoreMultilineTab(false), _mainZoom(0), _subZoom(0), _compareZoom(0) {}
+	NppSettings() : compareMode(false), _restoreMultilineTab(false), _mainZoom(0), _subZoom(0), _compareZoom(0) {}
 
 	void save();
 	void toSingleLineTab();
@@ -1095,7 +1079,7 @@ void ComparedPair::setStatusInfo()
 				options.findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"), buf);
 
 		// Toggle shown status bar info
-		if (NppSettings::get().statusType == NppSettings::StatusType::COMPARE_OPTIONS)
+		if (Settings.statusType == StatusType::COMPARE_OPTIONS)
 		{
 			const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%s%s%s%s"),
 					options.ignoreSpaces		? TEXT(" Ignore Spaces ,")		: TEXT(""),
@@ -1106,7 +1090,7 @@ void ComparedPair::setStatusInfo()
 			_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 			infoCurrentPos += len;
 		}
-		else if (NppSettings::get().statusType == NppSettings::StatusType::COMPARE_SUMMARY)
+		else if (Settings.statusType == StatusType::COMPARE_SUMMARY)
 		{
 			if (summary.diffLines)
 			{
@@ -3651,7 +3635,7 @@ LRESULT statusProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			if (cmpPair != compareList.end())
 			{
-				NppSettings::get().toggleStatusType();
+				Settings.toggleStatusType();
 
 				cmpPair->setStatusInfo();
 
