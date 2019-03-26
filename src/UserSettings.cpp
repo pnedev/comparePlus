@@ -69,39 +69,39 @@ void UserSettings::load()
 	::PathAppend(iniFile, TEXT("ComparePlugin.ini"));
 
 	OldFileIsFirst			= ::GetPrivateProfileInt(mainSection, oldIsFirstSetting,
-			DEFAULT_OLD_IS_FIRST, iniFile) == 1;
+			DEFAULT_OLD_IS_FIRST, iniFile) != 0;
 	OldFileViewId			= ::GetPrivateProfileInt(mainSection, oldFileViewSetting,
 			DEFAULT_OLD_IN_SUB_VIEW, iniFile) == 0 ? MAIN_VIEW : SUB_VIEW;
 	CompareToPrev			= ::GetPrivateProfileInt(mainSection, compareToPrevSetting,
-			DEFAULT_COMPARE_TO_PREV, iniFile) == 1;
+			DEFAULT_COMPARE_TO_PREV, iniFile) != 0;
 	AlignAllMatches			= ::GetPrivateProfileInt(mainSection, alignAllMatchesSetting,
-			DEFAULT_ALIGN_ALL_MATCHES, iniFile) == 1;
+			DEFAULT_ALIGN_ALL_MATCHES, iniFile) != 0;
 	EncodingsCheck			= ::GetPrivateProfileInt(mainSection, encodingsCheckSetting,
-			DEFAULT_ENCODINGS_CHECK, iniFile) == 1;
+			DEFAULT_ENCODINGS_CHECK, iniFile) != 0;
 	FollowingCaret			= ::GetPrivateProfileInt(mainSection, followingCaretSetting,
-			DEFAULT_FOLLOWING_CARET, iniFile) == 1;
+			DEFAULT_FOLLOWING_CARET, iniFile) != 0;
 	WrapAround				= ::GetPrivateProfileInt(mainSection, wrapAroundSetting,
-			DEFAULT_WRAP_AROUND, iniFile) == 1;
+			DEFAULT_WRAP_AROUND, iniFile) != 0;
 	GotoFirstDiff			= ::GetPrivateProfileInt(mainSection, gotoFirstDiffSetting,
-			DEFAULT_GOTO_FIRST_DIFF, iniFile) == 1;
+			DEFAULT_GOTO_FIRST_DIFF, iniFile) != 0;
 	PromptToCloseOnMatch	= ::GetPrivateProfileInt(mainSection, promptCloseOnMatchSetting,
-			DEFAULT_PROMPT_CLOSE_ON_MATCH, iniFile) == 1;
+			DEFAULT_PROMPT_CLOSE_ON_MATCH, iniFile) != 0;
 
-	CharPrecision		= ::GetPrivateProfileInt(mainSection, charPrecisionSetting,		0, iniFile) == 1;
-	IgnoreSpaces		= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,		0, iniFile) == 1;
-	IgnoreEmptyLines	= ::GetPrivateProfileInt(mainSection, ignoreEmptyLinesSetting,	0, iniFile) == 1;
-	IgnoreCase			= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,		0, iniFile) == 1;
-	DetectMoves			= ::GetPrivateProfileInt(mainSection, detectMovesSetting,		1, iniFile) == 1;
-	ShowOnlyDiffs		= ::GetPrivateProfileInt(mainSection, showOnlyDiffSetting,		0, iniFile) == 1;
-	ShowOnlySelections	= ::GetPrivateProfileInt(mainSection, showOnlySelSetting,		1, iniFile) == 1;
-	UseNavBar			= ::GetPrivateProfileInt(mainSection, navBarSetting,			1, iniFile) == 1;
+	CharPrecision		= ::GetPrivateProfileInt(mainSection, charPrecisionSetting,		0, iniFile) != 0;
+	IgnoreSpaces		= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,		0, iniFile) != 0;
+	IgnoreEmptyLines	= ::GetPrivateProfileInt(mainSection, ignoreEmptyLinesSetting,	0, iniFile) != 0;
+	IgnoreCase			= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,		0, iniFile) != 0;
+	DetectMoves			= ::GetPrivateProfileInt(mainSection, detectMovesSetting,		1, iniFile) != 0;
+	ShowOnlyDiffs		= ::GetPrivateProfileInt(mainSection, showOnlyDiffSetting,		0, iniFile) != 0;
+	ShowOnlySelections	= ::GetPrivateProfileInt(mainSection, showOnlySelSetting,		1, iniFile) != 0;
+	UseNavBar			= ::GetPrivateProfileInt(mainSection, navBarSetting,			1, iniFile) != 0;
 
-	RecompareOnChange	= ::GetPrivateProfileInt(mainSection, reCompareOnChangeSetting,	1, iniFile) == 1;
+	RecompareOnChange	= ::GetPrivateProfileInt(mainSection, reCompareOnChangeSetting,	1, iniFile) != 0;
 
 	SavedStatusType	= static_cast<StatusType>(::GetPrivateProfileInt(mainSection, statusTypeSetting,
 			DEFAULT_STATUS_TYPE, iniFile));
 
-	statusType = SavedStatusType;
+	statusType = (SavedStatusType < STATUS_TYPE_END) ? SavedStatusType : static_cast<StatusType>(DEFAULT_STATUS_TYPE);
 
 	colors.added		= ::GetPrivateProfileInt(colorsSection, addedColorSetting,
 			DEFAULT_ADDED_COLOR, iniFile);
