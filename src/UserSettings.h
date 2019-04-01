@@ -29,6 +29,7 @@
 #define DEFAULT_COMPARE_TO_PREV			1
 
 #define DEFAULT_ALIGN_ALL_MATCHES		0
+#define DEFAULT_NEVER_MARK_IGNORED		0
 #define DEFAULT_ENCODINGS_CHECK			1
 #define DEFAULT_FOLLOWING_CARET			1
 #define DEFAULT_WRAP_AROUND				0
@@ -93,6 +94,7 @@ public:
 	static const TCHAR compareToPrevSetting[];
 
 	static const TCHAR alignAllMatchesSetting[];
+	static const TCHAR markIgnoredLinesSetting[];
 	static const TCHAR encodingsCheckSetting[];
 	static const TCHAR followingCaretSetting[];
 	static const TCHAR wrapAroundSetting[];
@@ -127,8 +129,9 @@ public:
 	int				OldFileViewId;
 	bool           	CompareToPrev;
 
-	bool           	EncodingsCheck;
 	bool           	AlignAllMatches;
+	bool           	NeverMarkIgnored;
+	bool           	EncodingsCheck;
 	bool           	FollowingCaret;
 	bool           	WrapAround;
 	bool           	GotoFirstDiff;

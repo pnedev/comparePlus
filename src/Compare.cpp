@@ -2197,6 +2197,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 		cmpPair->options.findUniqueMode				= findUniqueMode;
 		cmpPair->options.alignAllMatches			= Settings.AlignAllMatches;
+		cmpPair->options.neverMarkIgnored			= Settings.NeverMarkIgnored;
 		cmpPair->options.charPrecision				= Settings.CharPrecision;
 		cmpPair->options.ignoreSpaces				= Settings.IgnoreSpaces;
 		cmpPair->options.ignoreEmptyLines			= Settings.IgnoreEmptyLines;

@@ -1,3 +1,4 @@
+
 /*
  * This file is part of Compare plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
@@ -1035,7 +1036,7 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 }
 
 
-void markSection(const DocCmpInfo& doc, const diffInfo& bd)
+void markSection(const DocCmpInfo& doc, const diffInfo& bd, const CompareOptions& options)
 {
 	const int endOff = doc.section.off + doc.section.len;
 
@@ -1048,6 +1049,8 @@ void markSection(const DocCmpInfo& doc, const diffInfo& bd)
 
 		if (movedLen == 0)
 		{
+			int prevLine = doc.lines[line].line + 1;
+
 			for (; (i < endOff) && (bd.info.movedSection(i) == 0); ++i, ++line)
 			{
 				const int docLine = doc.lines[line].line;
@@ -1055,6 +1058,14 @@ void markSection(const DocCmpInfo& doc, const diffInfo& bd)
 						(doc.blockDiffMask == MARKER_MASK_ADDED) ? MARKER_MASK_ADDED_LOCAL : MARKER_MASK_REMOVED_LOCAL;
 
 				CallScintilla(doc.view, SCI_MARKERADDSET, docLine, mark);
+
+				if (options.ignoreEmptyLines && !options.neverMarkIgnored)
+				{
+					for (; prevLine < docLine; ++prevLine)
+						CallScintilla(doc.view, SCI_MARKERADDSET, prevLine, doc.blockDiffMask);
+
+					prevLine = docLine + 1;
+				}
 			}
 
 			--i;
@@ -1070,10 +1081,23 @@ void markSection(const DocCmpInfo& doc, const diffInfo& bd)
 
 			i += --movedLen;
 
-			const int endLine = line + movedLen;
+			if (options.neverMarkIgnored)
+			{
+				int endLine = line + movedLen;
 
-			for (++line; line < endLine; ++line)
-				CallScintilla(doc.view, SCI_MARKERADDSET, doc.lines[line].line, MARKER_MASK_MOVED_MID);
+				for (++line; line < endLine; ++line)
+					CallScintilla(doc.view, SCI_MARKERADDSET, doc.lines[line].line, MARKER_MASK_MOVED_MID);
+			}
+			else
+			{
+				int docLine = doc.lines[line].line;
+				line += movedLen;
+
+				const int endDocLine = doc.lines[line].line;
+
+				for (++docLine; docLine < endDocLine; ++docLine)
+					CallScintilla(doc.view, SCI_MARKERADDSET, docLine, MARKER_MASK_MOVED_MID);
+			}
 
 			CallScintilla(doc.view, SCI_MARKERADDSET, doc.lines[line].line, MARKER_MASK_MOVED_END);
 		}
@@ -1201,7 +1225,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 		{
 			cmpInfo.doc2.section.off = 0;
 			cmpInfo.doc2.section.len = bd.len;
-			markSection(cmpInfo.doc2, bd);
+			markSection(cmpInfo.doc2, bd, options);
 
 			pMainAlignData->diffMask	= 0;
 			pMainAlignData->line		= toAlignmentLine(cmpInfo.doc1, alignLines.first);
@@ -1249,13 +1273,13 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 
 						if (cmpInfo.doc1.section.len)
 						{
-							markSection(cmpInfo.doc1, bd);
+							markSection(cmpInfo.doc1, bd, options);
 							alignLines.first += cmpInfo.doc1.section.len;
 						}
 
 						if (cmpInfo.doc2.section.len)
 						{
-							markSection(cmpInfo.doc2, *bd.info.matchBlock);
+							markSection(cmpInfo.doc2, *bd.info.matchBlock, options);
 							alignLines.second += cmpInfo.doc2.section.len;
 						}
 
@@ -1294,13 +1318,13 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 
 					if (cmpInfo.doc1.section.len)
 					{
-						markSection(cmpInfo.doc1, bd);
+						markSection(cmpInfo.doc1, bd, options);
 						alignLines.first += cmpInfo.doc1.section.len;
 					}
 
 					if (cmpInfo.doc2.section.len)
 					{
-						markSection(cmpInfo.doc2, *bd.info.matchBlock);
+						markSection(cmpInfo.doc2, *bd.info.matchBlock, options);
 						alignLines.second += cmpInfo.doc2.section.len;
 					}
 
@@ -1334,7 +1358,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 			{
 				cmpInfo.doc1.section.off = 0;
 				cmpInfo.doc1.section.len = bd.len;
-				markSection(cmpInfo.doc1, bd);
+				markSection(cmpInfo.doc1, bd, options);
 
 				pMainAlignData->diffMask	= cmpInfo.doc1.blockDiffMask;
 				pMainAlignData->line		= toAlignmentLine(cmpInfo.doc1, alignLines.first);

@@ -59,6 +59,7 @@ struct CompareOptions
 	bool	findUniqueMode;
 
 	bool	alignAllMatches;
+	bool	neverMarkIgnored;
 	bool	charPrecision;
 	bool	ignoreSpaces;
 	bool	ignoreEmptyLines;

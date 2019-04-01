@@ -30,6 +30,7 @@ const TCHAR UserSettings::oldFileViewSetting[]			= TEXT("Old in Sub View");
 const TCHAR UserSettings::compareToPrevSetting[]		= TEXT("Default Compare is to Prev");
 
 const TCHAR UserSettings::alignAllMatchesSetting[]		= TEXT("Align All Matches");
+const TCHAR UserSettings::markIgnoredLinesSetting[]		= TEXT("Never Mark Ignored Lines");
 const TCHAR UserSettings::encodingsCheckSetting[]		= TEXT("Check Encodings");
 const TCHAR UserSettings::promptCloseOnMatchSetting[]	= TEXT("Prompt to Close on Match");
 const TCHAR UserSettings::wrapAroundSetting[]			= TEXT("Wrap Around");
@@ -76,6 +77,8 @@ void UserSettings::load()
 			DEFAULT_COMPARE_TO_PREV, iniFile) != 0;
 	AlignAllMatches			= ::GetPrivateProfileInt(mainSection, alignAllMatchesSetting,
 			DEFAULT_ALIGN_ALL_MATCHES, iniFile) != 0;
+	NeverMarkIgnored		= ::GetPrivateProfileInt(mainSection, markIgnoredLinesSetting,
+			DEFAULT_NEVER_MARK_IGNORED, iniFile) != 0;
 	EncodingsCheck			= ::GetPrivateProfileInt(mainSection, encodingsCheckSetting,
 			DEFAULT_ENCODINGS_CHECK, iniFile) != 0;
 	FollowingCaret			= ::GetPrivateProfileInt(mainSection, followingCaretSetting,
@@ -166,6 +169,8 @@ void UserSettings::save()
 			CompareToPrev ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, alignAllMatchesSetting,
 			AlignAllMatches ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, markIgnoredLinesSetting,
+			NeverMarkIgnored ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, encodingsCheckSetting,
 			EncodingsCheck ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, followingCaretSetting,
