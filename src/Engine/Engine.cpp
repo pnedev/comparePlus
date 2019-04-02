@@ -1271,6 +1271,41 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 
 						summary.alignmentInfo.emplace_back(alignPair);
 
+						if (options.ignoreEmptyLines && options.neverMarkIgnored &&
+							cmpInfo.doc1.section.len && cmpInfo.doc2.section.len)
+						{
+							std::vector<int> alignLines1;
+							int maxLines = cmpInfo.doc1.section.len + alignLines.first;
+
+							for (int l = alignLines.first + 1; l < maxLines; ++l)
+							{
+								if (cmpInfo.doc1.lines[l].line - cmpInfo.doc1.lines[l - 1].line > 1)
+									alignLines1.emplace_back(l);
+							}
+
+							if (!alignLines1.empty())
+							{
+								std::vector<int> alignLines2;
+								maxLines = cmpInfo.doc2.section.len + alignLines.second;
+
+								for (int l = alignLines.second + 1; l < maxLines; ++l)
+								{
+									if (cmpInfo.doc2.lines[l].line - cmpInfo.doc2.lines[l - 1].line > 1)
+										alignLines2.emplace_back(l);
+								}
+
+								maxLines = std::min(alignLines1.size(), alignLines2.size());
+
+								for (int l = 0; l < maxLines; ++l)
+								{
+									pMainAlignData->line	= toAlignmentLine(cmpInfo.doc1, alignLines1[l]);
+									pSubAlignData->line		= toAlignmentLine(cmpInfo.doc2, alignLines2[l]);
+
+									summary.alignmentInfo.emplace_back(alignPair);
+								}
+							}
+						}
+
 						if (cmpInfo.doc1.section.len)
 						{
 							markSection(cmpInfo.doc1, bd, options);
@@ -1315,6 +1350,41 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 					pSubAlignData->line			= toAlignmentLine(cmpInfo.doc2, alignLines.second);
 
 					summary.alignmentInfo.emplace_back(alignPair);
+
+					if (options.ignoreEmptyLines && options.neverMarkIgnored &&
+						cmpInfo.doc1.section.len && cmpInfo.doc2.section.len)
+					{
+						std::vector<int> alignLines1;
+						int maxLines = cmpInfo.doc1.section.len + alignLines.first;
+
+						for (int l = alignLines.first + 1; l < maxLines; ++l)
+						{
+							if (cmpInfo.doc1.lines[l].line - cmpInfo.doc1.lines[l - 1].line > 1)
+								alignLines1.emplace_back(l);
+						}
+
+						if (!alignLines1.empty())
+						{
+							std::vector<int> alignLines2;
+							maxLines = cmpInfo.doc2.section.len + alignLines.second;
+
+							for (int l = alignLines.second + 1; l < maxLines; ++l)
+							{
+								if (cmpInfo.doc2.lines[l].line - cmpInfo.doc2.lines[l - 1].line > 1)
+									alignLines2.emplace_back(l);
+							}
+
+							maxLines = std::min(alignLines1.size(), alignLines2.size());
+
+							for (int l = 0; l < maxLines; ++l)
+							{
+								pMainAlignData->line	= toAlignmentLine(cmpInfo.doc1, alignLines1[l]);
+								pSubAlignData->line		= toAlignmentLine(cmpInfo.doc2, alignLines2[l]);
+
+								summary.alignmentInfo.emplace_back(alignPair);
+							}
+						}
+					}
 
 					if (cmpInfo.doc1.section.len)
 					{
