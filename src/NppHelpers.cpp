@@ -1,5 +1,5 @@
 /*
- * This file is part of Compare plugin for Notepad++
+ * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
  * Copyright (C)2017-2019 Pavel Nedev (pg.nedev@gmail.com)
  *
@@ -511,7 +511,7 @@ void insertAlignmentFirstLine(int view)
 	ScopedViewWriteEnabler writeEn(view);
 
 	// CallScintilla(view, SCI_INSERTTEXT, 0,
-			// (LPARAM)("\"Compare Plugin: Please DO NOT delete or edit this line. "
+			// (LPARAM)("\"ComparePlus: Please DO NOT delete or edit this line. "
 			// "It will be automatically removed when you Clear the active Compare or close the compared file(s). "
 			// "On Save it will NOT be saved.\"\n"));
 	CallScintilla(view, SCI_INSERTTEXT, 0, (LPARAM)("\n"));

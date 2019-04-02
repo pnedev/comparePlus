@@ -1,5 +1,5 @@
 /*
- * This file is part of Compare plugin for Notepad++
+ * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2013 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
  * Copyright (C)2017 Pavel Nedev (pg.nedev@gmail.com)
  *
@@ -38,7 +38,7 @@ bool InitSQLite()
 	{
 		TCHAR dllPath[MAX_PATH];
 
-		HMODULE hPlugin = ::GetModuleHandle(TEXT("ComparePlugin.dll"));
+		HMODULE hPlugin = ::GetModuleHandle(TEXT("ComparePlus.dll"));
 		if (!hPlugin)
 			return false;
 

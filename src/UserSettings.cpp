@@ -1,5 +1,5 @@
 /*
- * This file is part of Compare Plugin for Notepad++
+ * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2017-2019 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -67,7 +67,7 @@ void UserSettings::load()
 
 	::SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, (WPARAM)_countof(iniFile), (LPARAM)iniFile);
 
-	::PathAppend(iniFile, TEXT("ComparePlugin.ini"));
+	::PathAppend(iniFile, TEXT("ComparePlus.ini"));
 
 	OldFileIsFirst			= ::GetPrivateProfileInt(mainSection, oldIsFirstSetting,
 			DEFAULT_OLD_IS_FIRST, iniFile) != 0;
@@ -150,7 +150,7 @@ void UserSettings::save()
 		}
 	}
 
-	::PathAppend(iniFile, TEXT("ComparePlugin.ini"));
+	::PathAppend(iniFile, TEXT("ComparePlus.ini"));
 
 	if (!::WritePrivateProfileString(mainSection, oldIsFirstSetting,
 			OldFileIsFirst ? TEXT("1") : TEXT("0"), iniFile))

@@ -1,5 +1,5 @@
 /*
- * This file is part of Compare Plugin for Notepad++
+ * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2009
  * Copyright (C)2017-2019 Pavel Nedev (pg.nedev@gmail.com)
  *
@@ -219,10 +219,10 @@ void NavDialog::doDialog()
 
 		// define the default docking behaviour
 		_data.uMask			= DWS_DF_CONT_RIGHT | DWS_ICONTAB;
-		_data.pszName       = TEXT("Compare NavBar");
+		_data.pszName       = TEXT("ComparePlus NavBar");
 		_data.pszModuleName	= getPluginFileName();
 		_data.dlgID			= CMD_NAV_BAR;
-		_data.hIconTab		= (HICON)::LoadImage(GetModuleHandle(TEXT("ComparePlugin.dll")),
+		_data.hIconTab		= (HICON)::LoadImage(GetModuleHandle(TEXT("ComparePlus.dll")),
 				MAKEINTRESOURCE(IDB_ICON), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE);
 
 		::SendMessage(_hParent, NPPM_DMMREGASDCKDLG, 0, (LPARAM)&_data);

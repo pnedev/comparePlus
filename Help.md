@@ -1,6 +1,6 @@
 **Some Notepad++ Features**
 
-*Single-View mode:* 
+*Single-View mode:*
 ![image](https://cloud.githubusercontent.com/assets/10229320/23313224/7a845b98-fac5-11e6-8c03-51e0497c139e.png)
 
 *Double-View mode:*
@@ -13,9 +13,9 @@ You can set the Double-View mode to horizontal or vertical by right-clicking the
 
 It's recommended to restart Notepad++ after shifting from horizontal to vertical split or vice-versa.
 
-**Compare Plugin Concept**
+**ComparePlus Concept**
 
-Compare Plugin (CP) assumes that you would normally want to compare an old version of your work vs. its new version.
+ComparePlus (CP) assumes that you would normally want to compare an old version of your work vs. its new version.
 CP regards the new file as the (more) important one. Your **focal** file.
 
 **Compare**
@@ -25,7 +25,7 @@ You can initiate a Compare in three ways:
 **1.** Open multiple files (A, B, C, D, - D is active), press "Set as First to Compare", activate file B and press "Compare".
 - File B - *active when you pressed "Compare"* - is regarded as the new file and compared to the old file D (default - see **Settings**).
 - The new file is positioned at the right view (default).
- 
+
 **2.** Open two files (A, B) and press "Compare".
 - File B (new) is compared to file A.
 
@@ -103,7 +103,7 @@ You can set your own shortcuts to all CP commands via Notepad++ Settings -> Shor
 
 **Icons**
 
-You can use the excellent **Customize Toolbar** plugin (by Dave) to add, move and remove any toolbar buttons.  
+You can use the excellent **Customize Toolbar** plugin (by Dave) to add, move and remove any toolbar buttons.
 ***
 **[Requests and Issues-Report](https://github.com/pnedev/compare-plugin/issues)**
 **Thank you for [Donating](https://www.paypal.me/pnedev).**

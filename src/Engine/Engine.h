@@ -1,5 +1,5 @@
 /*
- * This file is part of Compare plugin for Notepad++
+ * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
  * Copyright (C)2017-2019 Pavel Nedev (pg.nedev@gmail.com)
  *

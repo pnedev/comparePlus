@@ -1,5 +1,5 @@
 /*
- * This file is part of Compare plugin for Notepad++
+ * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
  * Copyright (C)2017-2019 Pavel Nedev (pg.nedev@gmail.com)
  *
@@ -39,7 +39,7 @@
 #include "resource.h"
 
 
-const TCHAR PLUGIN_NAME[] = TEXT("Compare");
+const TCHAR PLUGIN_NAME[] = TEXT("ComparePlus");
 
 NppData			nppData;
 SciFnDirect		sciFunc;
@@ -49,7 +49,7 @@ UserSettings	Settings;
 
 #ifdef DLOG
 
-std::string		dLog("Compare Plugin debug log\n\n");
+std::string		dLog("ComparePlus debug log\n\n");
 DWORD			dLogTime_ms = 0;
 static LRESULT	dLogBuf = -1;
 

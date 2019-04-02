@@ -19,7 +19,7 @@ if (UNIX OR MINGW)
 	set (win32_lib_dir ${CMAKE_SYSROOT}/${toolchain_prefix}/lib)
 endif (UNIX OR MINGW)
 
-project (Compare)
+project (ComparePlus)
 
 if (UNIX OR MINGW)
 	set (defs
@@ -97,7 +97,7 @@ include_directories (
 
 add_definitions (${defs})
 
-add_library (ComparePlugin MODULE ${project_rc_files} ${project_sources})
+add_library (ComparePlus MODULE ${project_rc_files} ${project_sources})
 
 if (UNIX OR MINGW)
 	find_library (comctl32
@@ -120,25 +120,25 @@ if (UNIX OR MINGW)
 		PATHS ${win32_lib_dir}
 	)
 
-	target_link_libraries (ComparePlugin ${comctl32} ${comdlg32} ${shlwapi} ${msimg32})
+	target_link_libraries (ComparePlus ${comctl32} ${comdlg32} ${shlwapi} ${msimg32})
 
 	set (INSTALL_PATH
-		"$ENV{HOME}/.wine/drive_c/Program Files/Notepad++/plugins/ComparePlugin"
+		"$ENV{HOME}/.wine/drive_c/Program Files/Notepad++/plugins/ComparePlus"
 	)
 
-	install (FILES ${CMAKE_BINARY_DIR}/libComparePlugin.dll
+	install (FILES ${CMAKE_BINARY_DIR}/libComparePlus.dll
 		DESTINATION "${INSTALL_PATH}"
-		RENAME ComparePlugin.dll
+		RENAME ComparePlus.dll
 	)
 
 else (UNIX OR MINGW)
-	target_link_libraries (ComparePlugin comctl32 comdlg32 shlwapi msimg32)
+	target_link_libraries (ComparePlus comctl32 comdlg32 shlwapi msimg32)
 
 	set (INSTALL_PATH
-		"${PROJECT_SOURCE_DIR}/Notepad++/plugins/ComparePlugin"
+		"${PROJECT_SOURCE_DIR}/Notepad++/plugins/ComparePlus"
 	)
 
-	install (TARGETS ComparePlugin
+	install (TARGETS ComparePlus
 		DESTINATION "${INSTALL_PATH}"
 	)
 
@@ -148,10 +148,10 @@ message ("Install destination: ${INSTALL_PATH}")
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
 	install (DIRECTORY libs/x64/
-		DESTINATION "${INSTALL_PATH}/ComparePlugin"
+		DESTINATION "${INSTALL_PATH}/ComparePlus"
 	)
 else()
 	install (DIRECTORY libs/x86/
-		DESTINATION "${INSTALL_PATH}/ComparePlugin"
+		DESTINATION "${INSTALL_PATH}/ComparePlus"
 	)
 endif()

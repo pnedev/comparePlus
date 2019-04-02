@@ -1,5 +1,5 @@
 /*
- * This file is part of Compare Plugin for Notepad++
+ * This file is part of ComparePlus plugin for Notepad++
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 #include "ProgressDlg.h"
 
 
-const TCHAR ProgressDlg::cClassName[]     = TEXT("CompareProgressClass");
+const TCHAR ProgressDlg::cClassName[]     = TEXT("ComparePlusProgressClass");
 const int ProgressDlg::cBackgroundColor   = COLOR_3DFACE;
 const int ProgressDlg::cPBwidth           = 600;
 const int ProgressDlg::cPBheight          = 10;

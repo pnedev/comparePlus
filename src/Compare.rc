@@ -54,13 +54,13 @@ END
 // Dialog
 //
 
-#define VER_FILEVERSION			3,0,0,0
-#define VER_FILEVERSION_STR		"3.0.0\0"
+#define VER_FILEVERSION			1,0,0,0
+#define VER_FILEVERSION_STR		"1.0.0\0"
 #define IS_PRERELEASE			1
 
 IDD_ABOUT_DIALOG DIALOGEX 0, 0, 174, 209
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Compare Plugin v3.0.0 rc0"
+CAPTION "ComparePlus v1.0.0 rc0"
 FONT 8, "MS Shell Dlg", 400, 0, 0x0
 BEGIN
     DEFPUSHBUTTON   "Close", IDC_ABOUT_CLOSE_BUTTON, 22, 188, 50, 14
@@ -95,7 +95,7 @@ END
 
 IDD_SETTINGS_DIALOG DIALOGEX 0, 0, 429, 220
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Compare Plugin Settings"
+CAPTION "ComparePlus Settings"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON	"OK", IDOK, 119, 196, 44, 14
@@ -222,9 +222,9 @@ IDB_ICON				ICON	"../res/Compare.ico"
 #define VER_FILEFLAGS	(VER_PRERELEASE | VER_DEBUG)
 
 #ifdef _WIN64
-#define VER_PRODUCT_STR		"ComparePlugin (64-bit)"
+#define VER_PRODUCT_STR		"ComparePlus (64-bit)"
 #else
-#define VER_PRODUCT_STR		"ComparePlugin (32-bit)"
+#define VER_PRODUCT_STR		"ComparePlus (32-bit)"
 #endif
 
 VS_VERSION_INFO VERSIONINFO
@@ -240,11 +240,11 @@ BEGIN
     BEGIN
         BLOCK "040904E4"
         BEGIN
-            VALUE "FileDescription",	"Compare Plugin for Notepad++"
+            VALUE "FileDescription",	"ComparePlus plugin for Notepad++"
             VALUE "FileVersion",		VER_FILEVERSION_STR
-            VALUE "InternalName",		"ComparePlugin"
+            VALUE "InternalName",		"ComparePlus"
             VALUE "LegalCopyright",		"Copyright (C) 2019"
-            VALUE "OriginalFilename",	"ComparePlugin.dll"
+            VALUE "OriginalFilename",	"ComparePlus.dll"
             VALUE "ProductName",		VER_PRODUCT_STR
             VALUE "ProductVersion",		VER_FILEVERSION_STR
         END

@@ -1,6 +1,6 @@
 
 /*
- * This file is part of Compare plugin for Notepad++
+ * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
  * Copyright (C)2017-2019 Pavel Nedev (pg.nedev@gmail.com)
  *
@@ -1714,13 +1714,13 @@ CompareResult compareViews(const CompareOptions& options, const TCHAR* progressI
 
 		char msg[128];
 		_snprintf_s(msg, _countof(msg), _TRUNCATE, "Exception occurred: %s", e.what());
-		::MessageBoxA(nppData._nppHandle, msg, "Compare", MB_OK | MB_ICONWARNING);
+		::MessageBoxA(nppData._nppHandle, msg, "ComparePlus", MB_OK | MB_ICONWARNING);
 	}
 	catch (...)
 	{
 		ProgressDlg::Close();
 
-		::MessageBoxA(nppData._nppHandle, "Unknown exception occurred.", "Compare", MB_OK | MB_ICONWARNING);
+		::MessageBoxA(nppData._nppHandle, "Unknown exception occurred.", "ComparePlus", MB_OK | MB_ICONWARNING);
 	}
 
 	return result;
