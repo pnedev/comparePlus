@@ -30,7 +30,7 @@ const TCHAR UserSettings::oldFileViewSetting[]			= TEXT("Old in Sub View");
 const TCHAR UserSettings::compareToPrevSetting[]		= TEXT("Default Compare is to Prev");
 
 const TCHAR UserSettings::alignAllMatchesSetting[]		= TEXT("Align All Matches");
-const TCHAR UserSettings::markIgnoredLinesSetting[]		= TEXT("Never Mark Ignored Lines");
+const TCHAR UserSettings::markIgnoredLinesSetting[]		= TEXT("Never Colorize Ignored Lines");
 const TCHAR UserSettings::encodingsCheckSetting[]		= TEXT("Check Encodings");
 const TCHAR UserSettings::promptCloseOnMatchSetting[]	= TEXT("Prompt to Close on Match");
 const TCHAR UserSettings::wrapAroundSetting[]			= TEXT("Wrap Around");

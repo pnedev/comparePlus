@@ -113,7 +113,7 @@ BEGIN
     AUTORADIOBUTTON	"Current and next files", IDC_COMPARE_TO_NEXT, 21, 158, 98, 8
 	GROUPBOX		"Misc.", IDC_STATIC, 135, 22, 138, 150
 	AUTOCHECKBOX	"Align all matching lines", IDC_ALIGN_ALL_MATCHES, 142, 36, 128, 14
-	AUTOCHECKBOX	"Never mark ignored lines", IDC_NEVER_MARK_IGNORED, 142, 55, 128, 14
+	AUTOCHECKBOX	"Never colorize ignored lines", IDC_NEVER_MARK_IGNORED, 142, 55, 128, 14
 	AUTOCHECKBOX	"Warn about encodings mismatch", IDC_ENCODING_CHECK, 142, 74, 128, 14
 	AUTOCHECKBOX	"Move caret on navigation", IDC_FOLLOWING_CARET, 142, 93, 128, 14
 	AUTOCHECKBOX	"Wrap around diffs", IDC_WRAP_AROUND, 142, 112, 128, 14
