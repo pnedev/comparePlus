@@ -23,34 +23,34 @@
 #include <cstdlib>
 
 
-const TCHAR UserSettings::mainSection[]					= TEXT("Main Settings");
+const TCHAR UserSettings::mainSection[]					= TEXT("Main_Settings");
 
-const TCHAR UserSettings::oldIsFirstSetting[]			= TEXT("Old is First");
-const TCHAR UserSettings::oldFileViewSetting[]			= TEXT("Old in Sub View");
-const TCHAR UserSettings::compareToPrevSetting[]		= TEXT("Default Compare is to Prev");
+const TCHAR UserSettings::oldIsFirstSetting[]			= TEXT("Old_is_First");
+const TCHAR UserSettings::oldFileViewSetting[]			= TEXT("Old_in_Sub_View");
+const TCHAR UserSettings::compareToPrevSetting[]		= TEXT("Default_Compare_to_Prev");
 
-const TCHAR UserSettings::alignAllMatchesSetting[]		= TEXT("Align All Matches");
-const TCHAR UserSettings::markIgnoredLinesSetting[]		= TEXT("Never Colorize Ignored Lines");
-const TCHAR UserSettings::encodingsCheckSetting[]		= TEXT("Check Encodings");
-const TCHAR UserSettings::promptCloseOnMatchSetting[]	= TEXT("Prompt to Close on Match");
-const TCHAR UserSettings::wrapAroundSetting[]			= TEXT("Wrap Around");
-const TCHAR UserSettings::gotoFirstDiffSetting[]		= TEXT("Go to First Diff");
-const TCHAR UserSettings::followingCaretSetting[]		= TEXT("Following Caret");
+const TCHAR UserSettings::alignAllMatchesSetting[]		= TEXT("Align_All_Matches");
+const TCHAR UserSettings::markIgnoredLinesSetting[]		= TEXT("Never_Colorize_Ignored_Lines");
+const TCHAR UserSettings::encodingsCheckSetting[]		= TEXT("Check_Encodings");
+const TCHAR UserSettings::promptCloseOnMatchSetting[]	= TEXT("Prompt_to_Close_on_Match");
+const TCHAR UserSettings::wrapAroundSetting[]			= TEXT("Wrap_Around");
+const TCHAR UserSettings::gotoFirstDiffSetting[]		= TEXT("Go_to_First_on_ReCompare");
+const TCHAR UserSettings::followingCaretSetting[]		= TEXT("Following_Caret");
 
-const TCHAR UserSettings::charPrecisionSetting[]		= TEXT("Character Level Highlight");
-const TCHAR UserSettings::ignoreSpacesSetting[]			= TEXT("Ignore Spaces");
-const TCHAR UserSettings::ignoreEmptyLinesSetting[]		= TEXT("Ignore Empty Lines");
-const TCHAR UserSettings::ignoreCaseSetting[]			= TEXT("Ignore Case");
-const TCHAR UserSettings::detectMovesSetting[]			= TEXT("Detect Moves");
-const TCHAR UserSettings::showOnlySelSetting[]			= TEXT("Show Only Selections");
-const TCHAR UserSettings::showOnlyDiffSetting[]			= TEXT("Show Only Diffs");
-const TCHAR UserSettings::navBarSetting[]				= TEXT("Navigation Bar");
+const TCHAR UserSettings::charPrecisionSetting[]		= TEXT("Character_Level_Highlight");
+const TCHAR UserSettings::ignoreSpacesSetting[]			= TEXT("Ignore_Spaces");
+const TCHAR UserSettings::ignoreEmptyLinesSetting[]		= TEXT("Ignore_Empty_Lines");
+const TCHAR UserSettings::ignoreCaseSetting[]			= TEXT("Ignore_Case");
+const TCHAR UserSettings::detectMovesSetting[]			= TEXT("Detect_Moves");
+const TCHAR UserSettings::showOnlySelSetting[]			= TEXT("Show_Only_Selections");
+const TCHAR UserSettings::showOnlyDiffSetting[]			= TEXT("Show_Only_Diffs");
+const TCHAR UserSettings::navBarSetting[]				= TEXT("Navigation_Bar");
 
-const TCHAR UserSettings::reCompareOnChangeSetting[]	= TEXT("Re-Compare on Change");
+const TCHAR UserSettings::reCompareOnChangeSetting[]	= TEXT("ReCompare_on_Change");
 
-const TCHAR UserSettings::statusTypeSetting[]			= TEXT("Status Type");
+const TCHAR UserSettings::statusTypeSetting[]			= TEXT("Status_Type");
 
-const TCHAR UserSettings::colorsSection[]				= TEXT("Color Settings");
+const TCHAR UserSettings::colorsSection[]				= TEXT("Color_Settings");
 
 const TCHAR UserSettings::addedColorSetting[]			= TEXT("Added");
 const TCHAR UserSettings::removedColorSetting[]			= TEXT("Removed");
@@ -58,7 +58,7 @@ const TCHAR UserSettings::changedColorSetting[]			= TEXT("Changed");
 const TCHAR UserSettings::movedColorSetting[]			= TEXT("Moved");
 const TCHAR UserSettings::highlightColorSetting[]		= TEXT("Highlight");
 const TCHAR UserSettings::highlightTranspSetting[]		= TEXT("Transparency");
-const TCHAR UserSettings::changedThresholdSetting[]		= TEXT("Changed Threshold Percentage");
+const TCHAR UserSettings::changedThresholdSetting[]		= TEXT("Changed_Threshold_Percentage");
 
 
 void UserSettings::load()
