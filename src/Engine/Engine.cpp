@@ -1062,7 +1062,7 @@ void markSection(const DocCmpInfo& doc, const diffInfo& bd, const CompareOptions
 				if (options.ignoreEmptyLines && !options.neverMarkIgnored)
 				{
 					for (; prevLine < docLine; ++prevLine)
-						CallScintilla(doc.view, SCI_MARKERADDSET, prevLine, doc.blockDiffMask);
+						CallScintilla(doc.view, SCI_MARKERADDSET, prevLine, doc.blockDiffMask & MARKER_MASK_LINE);
 
 					prevLine = docLine + 1;
 				}
@@ -1081,25 +1081,31 @@ void markSection(const DocCmpInfo& doc, const diffInfo& bd, const CompareOptions
 
 			i += --movedLen;
 
-			if (options.neverMarkIgnored)
+			int prevLine = doc.lines[line].line + 1;
+			int endLine = line + movedLen;
+
+			for (++line; line < endLine; ++line)
 			{
-				int endLine = line + movedLen;
+				const int docLine = doc.lines[line].line;
+				CallScintilla(doc.view, SCI_MARKERADDSET, docLine, MARKER_MASK_MOVED_MID);
 
-				for (++line; line < endLine; ++line)
-					CallScintilla(doc.view, SCI_MARKERADDSET, doc.lines[line].line, MARKER_MASK_MOVED_MID);
+				if (options.ignoreEmptyLines && !options.neverMarkIgnored)
+				{
+					for (; prevLine < docLine; ++prevLine)
+						CallScintilla(doc.view, SCI_MARKERADDSET, prevLine, MARKER_MASK_MOVED_MID & MARKER_MASK_LINE);
+
+					prevLine = docLine + 1;
+				}
 			}
-			else
+
+			const int docLine = doc.lines[line].line;
+			CallScintilla(doc.view, SCI_MARKERADDSET, docLine, MARKER_MASK_MOVED_END);
+
+			if (options.ignoreEmptyLines && !options.neverMarkIgnored)
 			{
-				int docLine = doc.lines[line].line;
-				line += movedLen;
-
-				const int endDocLine = doc.lines[line].line;
-
-				for (++docLine; docLine < endDocLine; ++docLine)
-					CallScintilla(doc.view, SCI_MARKERADDSET, docLine, MARKER_MASK_MOVED_MID);
+				for (; prevLine < docLine; ++prevLine)
+					CallScintilla(doc.view, SCI_MARKERADDSET, prevLine, MARKER_MASK_MOVED_MID & MARKER_MASK_LINE);
 			}
-
-			CallScintilla(doc.view, SCI_MARKERADDSET, doc.lines[line].line, MARKER_MASK_MOVED_END);
 		}
 	}
 }
