@@ -1502,8 +1502,8 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 		cmpInfo.doc2.section.len	= options.selections[SUB_VIEW].second - options.selections[SUB_VIEW].first + 1;
 	}
 
-	cmpInfo.doc1.blockDiffMask = (options.oldFileViewId == MAIN_VIEW) ? MARKER_MASK_REMOVED : MARKER_MASK_ADDED;
-	cmpInfo.doc2.blockDiffMask = (options.oldFileViewId == MAIN_VIEW) ? MARKER_MASK_ADDED : MARKER_MASK_REMOVED;
+	cmpInfo.doc1.blockDiffMask = (options.newFileViewId == MAIN_VIEW) ? MARKER_MASK_ADDED : MARKER_MASK_REMOVED;
+	cmpInfo.doc2.blockDiffMask = (options.newFileViewId == MAIN_VIEW) ? MARKER_MASK_REMOVED : MARKER_MASK_ADDED;
 
 	getLines(cmpInfo.doc1, options);
 
@@ -1597,15 +1597,15 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 		doc2.section.len	= options.selections[SUB_VIEW].second - options.selections[SUB_VIEW].first + 1;
 	}
 
-	if (options.oldFileViewId == MAIN_VIEW)
-	{
-		doc1.blockDiffMask = MARKER_MASK_REMOVED;
-		doc2.blockDiffMask = MARKER_MASK_ADDED;
-	}
-	else
+	if (options.newFileViewId == MAIN_VIEW)
 	{
 		doc1.blockDiffMask = MARKER_MASK_ADDED;
 		doc2.blockDiffMask = MARKER_MASK_REMOVED;
+	}
+	else
+	{
+		doc1.blockDiffMask = MARKER_MASK_REMOVED;
+		doc2.blockDiffMask = MARKER_MASK_ADDED;
 	}
 
 	getLines(doc1, options);

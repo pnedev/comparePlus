@@ -54,7 +54,7 @@ struct CompareOptions
 		selections[1] = std::make_pair(-1, -1);
 	}
 
-	int		oldFileViewId;
+	int		newFileViewId;
 
 	bool	findUniqueMode;
 

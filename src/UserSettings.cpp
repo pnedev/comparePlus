@@ -25,8 +25,8 @@
 
 const TCHAR UserSettings::mainSection[]					= TEXT("Main_Settings");
 
-const TCHAR UserSettings::oldIsFirstSetting[]			= TEXT("Old_is_First");
-const TCHAR UserSettings::oldFileViewSetting[]			= TEXT("Old_in_Sub_View");
+const TCHAR UserSettings::currentIsNewSetting[]			= TEXT("Current_on_Compare_is_New");
+const TCHAR UserSettings::newFileViewSetting[]			= TEXT("New_in_Sub_View");
 const TCHAR UserSettings::compareToPrevSetting[]		= TEXT("Default_Compare_to_Prev");
 
 const TCHAR UserSettings::alignAllMatchesSetting[]		= TEXT("Align_All_Matches");
@@ -69,10 +69,10 @@ void UserSettings::load()
 
 	::PathAppend(iniFile, TEXT("ComparePlus.ini"));
 
-	OldFileIsFirst			= ::GetPrivateProfileInt(mainSection, oldIsFirstSetting,
-			DEFAULT_OLD_IS_FIRST, iniFile) != 0;
-	OldFileViewId			= ::GetPrivateProfileInt(mainSection, oldFileViewSetting,
-			DEFAULT_OLD_IN_SUB_VIEW, iniFile) == 0 ? MAIN_VIEW : SUB_VIEW;
+	CurrentFileIsNew		= ::GetPrivateProfileInt(mainSection, currentIsNewSetting,
+			DEFAULT_CURRENT_IS_NEW, iniFile) != 0;
+	NewFileViewId			= ::GetPrivateProfileInt(mainSection, newFileViewSetting,
+			DEFAULT_NEW_IN_SUB_VIEW, iniFile) == 0 ? MAIN_VIEW : SUB_VIEW;
 	CompareToPrev			= ::GetPrivateProfileInt(mainSection, compareToPrevSetting,
 			DEFAULT_COMPARE_TO_PREV, iniFile) != 0;
 	AlignAllMatches			= ::GetPrivateProfileInt(mainSection, alignAllMatchesSetting,
@@ -152,8 +152,8 @@ void UserSettings::save()
 
 	::PathAppend(iniFile, TEXT("ComparePlus.ini"));
 
-	if (!::WritePrivateProfileString(mainSection, oldIsFirstSetting,
-			OldFileIsFirst ? TEXT("1") : TEXT("0"), iniFile))
+	if (!::WritePrivateProfileString(mainSection, currentIsNewSetting,
+			CurrentFileIsNew ? TEXT("1") : TEXT("0"), iniFile))
 	{
 		TCHAR msg[MAX_PATH + 64];
 
@@ -163,8 +163,8 @@ void UserSettings::save()
 		return;
 	}
 
-	::WritePrivateProfileString(mainSection, oldFileViewSetting,
-			OldFileViewId == SUB_VIEW ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, newFileViewSetting,
+			NewFileViewId == SUB_VIEW ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, compareToPrevSetting,
 			CompareToPrev ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, alignAllMatchesSetting,

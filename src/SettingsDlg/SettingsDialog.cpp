@@ -77,8 +77,8 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 
 			if (isRTLwindow(nppData._nppHandle))
 			{
-				SetDlgItemText(_hSelf, IDC_OLD_MAIN, TEXT("Old file in right view"));
-				SetDlgItemText(_hSelf, IDC_OLD_SUB, TEXT("Old file in left view"));
+				SetDlgItemText(_hSelf, IDC_NEW_IN_SUB, TEXT("New file in left view"));
+				SetDlgItemText(_hSelf, IDC_OLD_IN_SUB, TEXT("Old file in left view"));
 			}
 
 			SetParams();
@@ -103,8 +103,8 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 				{
 					UserSettings settings;
 
-					settings.OldFileIsFirst			= (bool) DEFAULT_OLD_IS_FIRST;
-					settings.OldFileViewId			= DEFAULT_OLD_IN_SUB_VIEW ? SUB_VIEW : MAIN_VIEW;
+					settings.CurrentFileIsNew		= (bool) DEFAULT_CURRENT_IS_NEW;
+					settings.NewFileViewId			= DEFAULT_NEW_IN_SUB_VIEW ? SUB_VIEW : MAIN_VIEW;
 					settings.CompareToPrev			= (bool) DEFAULT_COMPARE_TO_PREV;
 					settings.AlignAllMatches		= (bool) DEFAULT_ALIGN_ALL_MATCHES;
 					settings.NeverMarkIgnored		= (bool) DEFAULT_NEVER_MARK_IGNORED;
@@ -163,11 +163,13 @@ void SettingsDialog::SetParams(UserSettings* settings)
 	if (settings == nullptr)
 		settings = _Settings;
 
-	Button_SetCheck(::GetDlgItem(_hSelf, settings->OldFileIsFirst ? IDC_FIRST_OLD : IDC_FIRST_NEW), BST_CHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, settings->OldFileIsFirst ? IDC_FIRST_NEW : IDC_FIRST_OLD), BST_UNCHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, settings->OldFileViewId == MAIN_VIEW ? IDC_OLD_MAIN : IDC_OLD_SUB),
+	Button_SetCheck(::GetDlgItem(_hSelf, settings->CurrentFileIsNew ? IDC_CURRENT_NEW : IDC_CURRENT_OLD),
 			BST_CHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, settings->OldFileViewId == MAIN_VIEW ? IDC_OLD_SUB : IDC_OLD_MAIN),
+	Button_SetCheck(::GetDlgItem(_hSelf, settings->CurrentFileIsNew ? IDC_CURRENT_OLD : IDC_CURRENT_NEW),
+			BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, settings->NewFileViewId == MAIN_VIEW ? IDC_OLD_IN_SUB : IDC_NEW_IN_SUB),
+			BST_CHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, settings->NewFileViewId == MAIN_VIEW ? IDC_NEW_IN_SUB : IDC_OLD_IN_SUB),
 			BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, settings->CompareToPrev ? IDC_COMPARE_TO_PREV : IDC_COMPARE_TO_NEXT),
 			BST_CHECKED);
@@ -215,9 +217,9 @@ void SettingsDialog::SetParams(UserSettings* settings)
 
 void SettingsDialog::GetParams()
 {
-	_Settings->OldFileIsFirst		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_FIRST_OLD)) == BST_CHECKED);
-	_Settings->OldFileViewId		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_OLD_MAIN)) == BST_CHECKED) ?
-			MAIN_VIEW : SUB_VIEW;
+	_Settings->CurrentFileIsNew		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_CURRENT_NEW)) == BST_CHECKED);
+	_Settings->NewFileViewId		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_NEW_IN_SUB)) == BST_CHECKED) ?
+			SUB_VIEW : MAIN_VIEW;
 	_Settings->CompareToPrev		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_COMPARE_TO_PREV)) == BST_CHECKED);
 	_Settings->AlignAllMatches		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ALIGN_ALL_MATCHES)) == BST_CHECKED);
 	_Settings->NeverMarkIgnored		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_NEVER_MARK_IGNORED)) == BST_CHECKED);

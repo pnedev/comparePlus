@@ -861,7 +861,7 @@ void ComparedFile::updateFromCurrent()
 
 void ComparedFile::updateView()
 {
-	compareViewId = isNew ? ((Settings.OldFileViewId == MAIN_VIEW) ? SUB_VIEW : MAIN_VIEW) : Settings.OldFileViewId;
+	compareViewId = isNew ? Settings.NewFileViewId : ((Settings.NewFileViewId == MAIN_VIEW) ? SUB_VIEW : MAIN_VIEW);
 }
 
 
@@ -1193,7 +1193,7 @@ NewCompare::NewCompare(bool currFileIsNew, bool markFirstName)
 			tab.pszText = tabText;
 
 			_sntprintf_s(tabText, _countof(tabText), _TRUNCATE, TEXT("%s ** %s to Compare"),
-					_firstTabText, Settings.OldFileIsFirst ? TEXT("Old") : TEXT("New"));
+					_firstTabText, currFileIsNew ? TEXT("New") : TEXT("Old"));
 
 			::SendMessage(nppData._nppHandle, NPPM_HIDETABBAR, 0, TRUE);
 
@@ -2019,7 +2019,7 @@ bool initNewCompare()
 	if (!firstIsSet)
 	{
 		const bool singleView = isSingleView();
-		const bool isNew = singleView ? true : getCurrentViewId() != Settings.OldFileViewId;
+		const bool isNew = singleView ? Settings.CurrentFileIsNew : getCurrentViewId() == Settings.NewFileViewId;
 
 		if (!setFirst(isNew))
 			return false;
@@ -2193,7 +2193,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	// Compare is triggered manually - get/re-get compare settings and position/reposition files
 	if (!autoUpdating)
 	{
-		cmpPair->options.oldFileViewId				= Settings.OldFileViewId;
+		cmpPair->options.newFileViewId				= Settings.NewFileViewId;
 
 		cmpPair->options.findUniqueMode				= findUniqueMode;
 		cmpPair->options.alignAllMatches			= Settings.AlignAllMatches;
@@ -2343,7 +2343,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 void SetAsFirst()
 {
-	if (!setFirst(!Settings.OldFileIsFirst, true))
+	if (!setFirst(!Settings.CurrentFileIsNew, true))
 		newCompare.reset();
 }
 
