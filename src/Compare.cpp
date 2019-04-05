@@ -2735,7 +2735,7 @@ void OpenAboutDlg()
 
 void createMenu()
 {
-	_tcscpy_s(funcItem[CMD_SET_FIRST]._itemName, nbChar, TEXT("Set as First to Compare"));
+	_tcscpy_s(funcItem[CMD_SET_FIRST]._itemName, nbChar, TEXT("Mark to Compare"));
 	funcItem[CMD_SET_FIRST]._pFunc					= SetAsFirst;
 	funcItem[CMD_SET_FIRST]._pShKey					= new ShortcutKey;
 	funcItem[CMD_SET_FIRST]._pShKey->_isAlt			= true;
