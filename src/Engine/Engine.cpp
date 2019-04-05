@@ -1115,9 +1115,11 @@ void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, int lineIdx)
 {
 	int line = cmpInfo.doc1.lines[bd.off + bd.info.changedLines[lineIdx].line].line;
 	int linePos = getLineStart(cmpInfo.doc1.view, line);
+	int color = (cmpInfo.doc1.blockDiffMask == MARKER_MASK_ADDED) ?
+			Settings.colors.add_highlight : Settings.colors.rem_highlight;
 
 	for (const auto& change: bd.info.changedLines[lineIdx].changes)
-		markTextAsChanged(cmpInfo.doc1.view, linePos + change.off, change.len);
+		markTextAsChanged(cmpInfo.doc1.view, linePos + change.off, change.len, color);
 
 	CallScintilla(cmpInfo.doc1.view, SCI_MARKERADDSET, line,
 			cmpInfo.doc1.nonUniqueLines.find(line) == cmpInfo.doc1.nonUniqueLines.end() ?
@@ -1125,9 +1127,11 @@ void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, int lineIdx)
 
 	line = cmpInfo.doc2.lines[bd.info.matchBlock->off + bd.info.matchBlock->info.changedLines[lineIdx].line].line;
 	linePos = getLineStart(cmpInfo.doc2.view, line);
+	color = (cmpInfo.doc2.blockDiffMask == MARKER_MASK_ADDED) ?
+			Settings.colors.add_highlight : Settings.colors.rem_highlight;
 
 	for (const auto& change: bd.info.matchBlock->info.changedLines[lineIdx].changes)
-		markTextAsChanged(cmpInfo.doc2.view, linePos + change.off, change.len);
+		markTextAsChanged(cmpInfo.doc2.view, linePos + change.off, change.len, color);
 
 	CallScintilla(cmpInfo.doc2.view, SCI_MARKERADDSET, line,
 			cmpInfo.doc2.nonUniqueLines.find(line) == cmpInfo.doc2.nonUniqueLines.end() ?

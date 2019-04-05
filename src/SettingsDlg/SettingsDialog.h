@@ -64,7 +64,8 @@ private:
 	ColorCombo _ColorComboRemoved;
 	ColorCombo _ColorComboChanged;
 	ColorCombo _ColorComboBlank;
-	ColorCombo _ColorComboHighlight;
+	ColorCombo _ColorComboAddHighlight;
+	ColorCombo _ColorComboRemHighlight;
 
 	struct UserSettings* _Settings;
 };

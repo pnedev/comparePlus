@@ -39,7 +39,7 @@
 #define DEFAULT_STATUS_TYPE				0
 
 #define DEFAULT_ADDED_COLOR				0xC6FFC6
-#define DEFAULT_DELETED_COLOR			0xC6C6FF
+#define DEFAULT_REMOVED_COLOR			0xC6C6FF
 #define DEFAULT_CHANGED_COLOR			0x98E7E7
 #define DEFAULT_MOVED_COLOR				0xFFE6CC
 #define DEFAULT_HIGHLIGHT_COLOR			0x683FF
@@ -58,12 +58,13 @@ enum StatusType
 struct ColorSettings
 {
 	int added;
-	int deleted;
+	int removed;
 	int changed;
 	int moved;
 	int blank;
     int _default;
-	int highlight;
+	int add_highlight;
+	int rem_highlight;
 	int transparency;
 };
 
@@ -121,7 +122,8 @@ public:
 	static const TCHAR removedColorSetting[];
 	static const TCHAR changedColorSetting[];
 	static const TCHAR movedColorSetting[];
-	static const TCHAR highlightColorSetting[];
+	static const TCHAR addHighlightColorSetting[];
+	static const TCHAR remHighlightColorSetting[];
 	static const TCHAR highlightTranspSetting[];
 	static const TCHAR changedThresholdSetting[];
 

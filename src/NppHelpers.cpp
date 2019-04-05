@@ -220,19 +220,19 @@ void defineRgbaSymbol(int type, const unsigned char* rgba)
 }
 
 
-void setTextStyle(const ColorSettings& settings)
+void setTextStyle(int transparency)
 {
 	static const int cMinAlpha = 0;
 	static const int cMaxAlpha = 100;
 
-	const int alpha = ((100 - settings.transparency) * (cMaxAlpha - cMinAlpha) / 100) + cMinAlpha;
+	const int alpha = ((100 - transparency) * (cMaxAlpha - cMinAlpha) / 100) + cMinAlpha;
 
 	CallScintilla(MAIN_VIEW, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT,	INDIC_ROUNDBOX);
-	CallScintilla(MAIN_VIEW, SCI_INDICSETFORE,	INDIC_HIGHLIGHT,	settings.highlight);
+	CallScintilla(MAIN_VIEW, SCI_INDICSETFLAGS,	INDIC_HIGHLIGHT,	SC_INDICFLAG_VALUEFORE);
 	CallScintilla(MAIN_VIEW, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT,	alpha);
 
 	CallScintilla(SUB_VIEW, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT,	INDIC_ROUNDBOX);
-	CallScintilla(SUB_VIEW, SCI_INDICSETFORE,	INDIC_HIGHLIGHT,	settings.highlight);
+	CallScintilla(SUB_VIEW, SCI_INDICSETFLAGS,	INDIC_HIGHLIGHT,	SC_INDICFLAG_VALUEFORE);
 	CallScintilla(SUB_VIEW, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT,	alpha);
 }
 
@@ -245,7 +245,6 @@ void setBlanksStyle(int view, int blankColor)
 	CallScintilla(view, SCI_ANNOTATIONSETSTYLEOFFSET,	blankStyle[view], 0);
 	CallScintilla(view, SCI_STYLESETEOLFILLED,			blankStyle[view], 1);
 	CallScintilla(view, SCI_STYLESETBACK,				blankStyle[view], blankColor);
-	// CallScintilla(view, SCI_STYLESETFORE,				blankStyle[view], 0xFF);
 	CallScintilla(view, SCI_STYLESETBOLD,				blankStyle[view], true);
 	CallScintilla(view, SCI_ANNOTATIONSETVISIBLE,		ANNOTATION_STANDARD, 0);
 }
@@ -416,9 +415,9 @@ void setStyles(UserSettings& settings)
 
 	settings.colors.blank = r | (g << 8) | (b << 16);
 
-	defineColor(MARKER_CHANGED_LINE,	settings.colors.changed);
 	defineColor(MARKER_ADDED_LINE,		settings.colors.added);
-	defineColor(MARKER_REMOVED_LINE,	settings.colors.deleted);
+	defineColor(MARKER_REMOVED_LINE,	settings.colors.removed);
+	defineColor(MARKER_CHANGED_LINE,	settings.colors.changed);
 	defineColor(MARKER_MOVED_LINE,		settings.colors.moved);
 	defineColor(MARKER_BLANK,			settings.colors.blank);
 
@@ -433,19 +432,20 @@ void setStyles(UserSettings& settings)
 	defineRgbaSymbol(MARKER_MOVED_BLOCK_MID_SYMBOL,		icon_moved_block_middle);
 	defineRgbaSymbol(MARKER_MOVED_BLOCK_END_SYMBOL,		icon_moved_block_end);
 
-	setTextStyle(settings.colors);
+	setTextStyle(settings.colors.transparency);
 
 	setBlanksStyle(MAIN_VIEW,	settings.colors.blank);
 	setBlanksStyle(SUB_VIEW,	settings.colors.blank);
 }
 
 
-void markTextAsChanged(int view, int start, int length)
+void markTextAsChanged(int view, int start, int length, int color)
 {
 	if (length != 0)
 	{
 		const int curIndic = CallScintilla(view, SCI_GETINDICATORCURRENT, 0, 0);
 		CallScintilla(view, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
+		CallScintilla(view, SCI_SETINDICATORVALUE, color | SC_INDICVALUEBIT, 0);
 		CallScintilla(view, SCI_INDICATORFILLRANGE, start, length);
 		CallScintilla(view, SCI_SETINDICATORCURRENT, curIndic, 0);
 	}

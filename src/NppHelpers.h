@@ -519,7 +519,7 @@ void blinkRange(int view, int startPos, int endPos);
 
 void centerAt(int view, int line);
 
-void markTextAsChanged(int view, int start, int length);
+void markTextAsChanged(int view, int start, int length, int color);
 void clearChangedIndicator(int view, int start, int length);
 
 void setNormalView(int view);

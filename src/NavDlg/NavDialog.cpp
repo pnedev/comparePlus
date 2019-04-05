@@ -343,7 +343,7 @@ void NavDialog::createBitmap()
 
 			if (marker & MARKER_MASK_CHANGED)		marker = m_clr.changed;
 			else if (marker & MARKER_MASK_ADDED)	marker = m_clr.added;
-			else if (marker & MARKER_MASK_REMOVED)	marker = m_clr.deleted;
+			else if (marker & MARKER_MASK_REMOVED)	marker = m_clr.removed;
 			else if (marker & MARKER_MASK_MOVED)	marker = m_clr.moved;
 			else if (reductionRatio)				marker = m_clr._default;
 			else
@@ -382,7 +382,7 @@ void NavDialog::createBitmap()
 
 			if (marker & MARKER_MASK_CHANGED)		marker = m_clr.changed;
 			else if (marker & MARKER_MASK_ADDED)	marker = m_clr.added;
-			else if (marker & MARKER_MASK_REMOVED)	marker = m_clr.deleted;
+			else if (marker & MARKER_MASK_REMOVED)	marker = m_clr.removed;
 			else if (marker & MARKER_MASK_MOVED)	marker = m_clr.moved;
 			else if (reductionRatio)				marker = m_clr._default;
 			else

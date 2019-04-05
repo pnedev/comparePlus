@@ -56,7 +56,8 @@ const TCHAR UserSettings::addedColorSetting[]			= TEXT("Added");
 const TCHAR UserSettings::removedColorSetting[]			= TEXT("Removed");
 const TCHAR UserSettings::changedColorSetting[]			= TEXT("Changed");
 const TCHAR UserSettings::movedColorSetting[]			= TEXT("Moved");
-const TCHAR UserSettings::highlightColorSetting[]		= TEXT("Highlight");
+const TCHAR UserSettings::addHighlightColorSetting[]	= TEXT("Added_Highlight");
+const TCHAR UserSettings::remHighlightColorSetting[]	= TEXT("Removed_Highlight");
 const TCHAR UserSettings::highlightTranspSetting[]		= TEXT("Transparency");
 const TCHAR UserSettings::changedThresholdSetting[]		= TEXT("Changed_Threshold_Percentage");
 
@@ -106,17 +107,19 @@ void UserSettings::load()
 
 	statusType = (SavedStatusType < STATUS_TYPE_END) ? SavedStatusType : static_cast<StatusType>(DEFAULT_STATUS_TYPE);
 
-	colors.added		= ::GetPrivateProfileInt(colorsSection, addedColorSetting,
+	colors.added			= ::GetPrivateProfileInt(colorsSection, addedColorSetting,
 			DEFAULT_ADDED_COLOR, iniFile);
-	colors.deleted		= ::GetPrivateProfileInt(colorsSection, removedColorSetting,
-			DEFAULT_DELETED_COLOR, iniFile);
-	colors.changed		= ::GetPrivateProfileInt(colorsSection, changedColorSetting,
+	colors.removed			= ::GetPrivateProfileInt(colorsSection, removedColorSetting,
+			DEFAULT_REMOVED_COLOR, iniFile);
+	colors.changed			= ::GetPrivateProfileInt(colorsSection, changedColorSetting,
 			DEFAULT_CHANGED_COLOR, iniFile);
-	colors.moved		= ::GetPrivateProfileInt(colorsSection, movedColorSetting,
+	colors.moved			= ::GetPrivateProfileInt(colorsSection, movedColorSetting,
 			DEFAULT_MOVED_COLOR, iniFile);
-	colors.highlight	= ::GetPrivateProfileInt(colorsSection, highlightColorSetting,
+	colors.add_highlight	= ::GetPrivateProfileInt(colorsSection, addHighlightColorSetting,
 			DEFAULT_HIGHLIGHT_COLOR, iniFile);
-	colors.transparency	= ::GetPrivateProfileInt(colorsSection, highlightTranspSetting,
+	colors.rem_highlight	= ::GetPrivateProfileInt(colorsSection, remHighlightColorSetting,
+			DEFAULT_HIGHLIGHT_COLOR, iniFile);
+	colors.transparency		= ::GetPrivateProfileInt(colorsSection, highlightTranspSetting,
 			DEFAULT_HIGHLIGHT_TRANSP, iniFile);
 
 	ChangedThresholdPercent	= ::GetPrivateProfileInt(colorsSection, changedThresholdSetting,
@@ -212,7 +215,7 @@ void UserSettings::save()
 	_itot_s(colors.added, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, addedColorSetting, buffer, iniFile);
 
-	_itot_s(colors.deleted, buffer, 64, 10);
+	_itot_s(colors.removed, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, removedColorSetting, buffer, iniFile);
 
 	_itot_s(colors.changed, buffer, 64, 10);
@@ -221,8 +224,11 @@ void UserSettings::save()
 	_itot_s(colors.moved, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, movedColorSetting, buffer, iniFile);
 
-	_itot_s(colors.highlight, buffer, 64, 10);
-	::WritePrivateProfileString(colorsSection, highlightColorSetting, buffer, iniFile);
+	_itot_s(colors.add_highlight, buffer, 64, 10);
+	::WritePrivateProfileString(colorsSection, addHighlightColorSetting, buffer, iniFile);
+
+	_itot_s(colors.rem_highlight, buffer, 64, 10);
+	::WritePrivateProfileString(colorsSection, remHighlightColorSetting, buffer, iniFile);
 
 	_itot_s(colors.transparency, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, highlightTranspSetting, buffer, iniFile);
