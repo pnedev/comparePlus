@@ -52,8 +52,8 @@
 #define IDC_HELP_URL					1017
 #define IDC_NEW_IN_SUB					1018
 #define IDC_OLD_IN_SUB					1019
-#define IDC_CURRENT_NEW					1020
-#define IDC_CURRENT_OLD					1021
+#define IDC_FIRST_NEW					1020
+#define IDC_FIRST_OLD					1021
 #define IDC_COMPARE_TO_PREV				1022
 #define IDC_COMPARE_TO_NEXT				1023
 #define IDC_ALIGN_ALL_MATCHES			1024

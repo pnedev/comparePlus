@@ -2019,7 +2019,7 @@ bool initNewCompare()
 	if (!firstIsSet)
 	{
 		const bool singleView = isSingleView();
-		const bool isNew = singleView ? Settings.CurrentFileIsNew : getCurrentViewId() == Settings.NewFileViewId;
+		const bool isNew = singleView ? Settings.FirstFileIsNew : getCurrentViewId() == Settings.NewFileViewId;
 
 		if (!setFirst(isNew))
 			return false;
@@ -2343,7 +2343,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 void SetAsFirst()
 {
-	if (!setFirst(!Settings.CurrentFileIsNew, true))
+	if (!setFirst(Settings.FirstFileIsNew, true))
 		newCompare.reset();
 }
 
@@ -2735,7 +2735,7 @@ void OpenAboutDlg()
 
 void createMenu()
 {
-	_tcscpy_s(funcItem[CMD_SET_FIRST]._itemName, nbChar, TEXT("Mark to Compare"));
+	_tcscpy_s(funcItem[CMD_SET_FIRST]._itemName, nbChar, TEXT("Set as First to Compare"));
 	funcItem[CMD_SET_FIRST]._pFunc					= SetAsFirst;
 	funcItem[CMD_SET_FIRST]._pShKey					= new ShortcutKey;
 	funcItem[CMD_SET_FIRST]._pShKey->_isAlt			= true;

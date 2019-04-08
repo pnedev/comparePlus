@@ -104,7 +104,7 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 				{
 					UserSettings settings;
 
-					settings.CurrentFileIsNew		= (bool) DEFAULT_CURRENT_IS_NEW;
+					settings.FirstFileIsNew			= (bool) DEFAULT_FIRST_IS_NEW;
 					settings.NewFileViewId			= DEFAULT_NEW_IN_SUB_VIEW ? SUB_VIEW : MAIN_VIEW;
 					settings.CompareToPrev			= (bool) DEFAULT_COMPARE_TO_PREV;
 					settings.AlignAllMatches		= (bool) DEFAULT_ALIGN_ALL_MATCHES;
@@ -169,9 +169,9 @@ void SettingsDialog::SetParams(UserSettings* settings)
 	if (settings == nullptr)
 		settings = _Settings;
 
-	Button_SetCheck(::GetDlgItem(_hSelf, settings->CurrentFileIsNew ? IDC_CURRENT_NEW : IDC_CURRENT_OLD),
+	Button_SetCheck(::GetDlgItem(_hSelf, settings->FirstFileIsNew ? IDC_FIRST_NEW : IDC_FIRST_OLD),
 			BST_CHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, settings->CurrentFileIsNew ? IDC_CURRENT_OLD : IDC_CURRENT_NEW),
+	Button_SetCheck(::GetDlgItem(_hSelf, settings->FirstFileIsNew ? IDC_FIRST_OLD : IDC_FIRST_NEW),
 			BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, settings->NewFileViewId == MAIN_VIEW ? IDC_OLD_IN_SUB : IDC_NEW_IN_SUB),
 			BST_CHECKED);
@@ -224,7 +224,7 @@ void SettingsDialog::SetParams(UserSettings* settings)
 
 void SettingsDialog::GetParams()
 {
-	_Settings->CurrentFileIsNew		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_CURRENT_NEW)) == BST_CHECKED);
+	_Settings->FirstFileIsNew		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_FIRST_NEW)) == BST_CHECKED);
 	_Settings->NewFileViewId		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_NEW_IN_SUB)) == BST_CHECKED) ?
 			SUB_VIEW : MAIN_VIEW;
 	_Settings->CompareToPrev		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_COMPARE_TO_PREV)) == BST_CHECKED);

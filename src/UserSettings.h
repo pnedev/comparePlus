@@ -24,7 +24,7 @@
 
 
 // Those are interpreted as bool values
-#define DEFAULT_CURRENT_IS_NEW			1
+#define DEFAULT_FIRST_IS_NEW			1
 #define DEFAULT_NEW_IN_SUB_VIEW			1
 #define DEFAULT_COMPARE_TO_PREV			1
 
@@ -90,8 +90,8 @@ public:
 
 	static const TCHAR mainSection[];
 
-	static const TCHAR currentIsNewSetting[];
 	static const TCHAR newFileViewSetting[];
+	static const TCHAR firstIsNewSetting[];
 	static const TCHAR compareToPrevSetting[];
 
 	static const TCHAR alignAllMatchesSetting[];
@@ -127,7 +127,7 @@ public:
 	static const TCHAR highlightTranspSetting[];
 	static const TCHAR changedThresholdSetting[];
 
-	bool           	CurrentFileIsNew;
+	bool           	FirstFileIsNew;
 	int				NewFileViewId;
 	bool           	CompareToPrev;
 
