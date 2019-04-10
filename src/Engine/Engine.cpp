@@ -709,8 +709,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 			else
 			{
 				// Resolve words mismatched DIFF_IN_1 / DIFF_IN_2 pairs to find possible sub-word similarities
-				if (options.charPrecision &&
-					(i + 1 < lineDiffsSize) && (lineDiffs[i + 1].type == diff_type::DIFF_IN_2))
+				if ((i + 1 < lineDiffsSize) && (lineDiffs[i + 1].type == diff_type::DIFF_IN_2))
 				{
 					const auto& ld2 = lineDiffs[i + 1];
 
@@ -725,131 +724,199 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 					const std::vector<Char> sec2 =
 							getSectionChars(pDoc2->view, off2 + lineOff2, end2 + lineOff2, options);
 
-					LOGD("Compare sections " +
-							std::to_string(off1 + 1) + " to " +
-							std::to_string(end1 + 1) + " and " +
-							std::to_string(off2 + 1) + " to " +
-							std::to_string(end2 + 1) + "\n");
+					const int minSecSize = std::min(sec1.size(), sec2.size());
 
-					const auto* pSec1 = &sec1;
-					const auto* pSec2 = &sec2;
-
-					diffInfo* pBD1 = pBlockDiff1;
-					diffInfo* pBD2 = pBlockDiff2;
-
-					// Compare changed words
-					auto diffRes = DiffCalc<Char>(sec1, sec2)();
-					const std::vector<diff_info<void>> sectionDiffs = std::move(diffRes.first);
-
-					if (diffRes.second)
+					if (options.charPrecision)
 					{
-						std::swap(pSec1, pSec2);
-						std::swap(pBD1, pBD2);
-						std::swap(off1, off2);
-						std::swap(end1, end2);
-					}
+						LOGD("Compare sections " +
+								std::to_string(off1 + 1) + " to " +
+								std::to_string(end1 + 1) + " and " +
+								std::to_string(off2 + 1) + " to " +
+								std::to_string(end2 + 1) + "\n");
 
-					PRINT_DIFFS("CHAR DIFFS", sectionDiffs);
+						const auto* pSec1 = &sec1;
+						const auto* pSec2 = &sec2;
 
-					int matchLen = 0;
-					int matchSections = 0;
+						diffInfo* pBD1 = pBlockDiff1;
+						diffInfo* pBD2 = pBlockDiff2;
 
-					for (const auto& sd: sectionDiffs)
-					{
-						if (sd.type == diff_type::DIFF_MATCH)
+						// Compare changed words
+						auto diffRes = DiffCalc<Char>(sec1, sec2)();
+						const std::vector<diff_info<void>> sectionDiffs = std::move(diffRes.first);
+
+						if (diffRes.second)
 						{
-							matchLen += sd.len;
-							++matchSections;
+							std::swap(pSec1, pSec2);
+							std::swap(pBD1, pBD2);
+							std::swap(off1, off2);
+							std::swap(end1, end2);
 						}
-					}
 
-					if (matchSections)
-					{
-						LOGD("Matching sections found: " +
-								std::to_string(matchSections) + ", matched len: " + std::to_string(matchLen) + "\n");
+						PRINT_DIFFS("CHAR DIFFS", sectionDiffs);
 
-						// Are similarities a considerable portion of the diff?
-						if ((int)((matchLen * 100) / pSec1->size()) >= options.changedThresholdPercent)
+						int matchLen = 0;
+						int matchSections = 0;
+
+						for (const auto& sd: sectionDiffs)
 						{
-							for (const auto& sd: sectionDiffs)
+							if (sd.type == diff_type::DIFF_MATCH)
 							{
-								if (sd.type == diff_type::DIFF_IN_1)
-								{
-									section_t change;
-
-									change.off = (*pSec1)[sd.off].pos + off1;
-									change.len = (*pSec1)[sd.off + sd.len - 1].pos + off1 + 1 - change.off;
-
-									pBD1->info.changedLines.back().changes.emplace_back(change);
-								}
-								else if (sd.type == diff_type::DIFF_IN_2)
-								{
-									section_t change;
-
-									change.off = (*pSec2)[sd.off].pos + off2;
-									change.len = (*pSec2)[sd.off + sd.len - 1].pos + off2 + 1 - change.off;
-
-									pBD2->info.changedLines.back().changes.emplace_back(change);
-								}
+								matchLen += sd.len;
+								++matchSections;
 							}
-
-							totalLineMatchLen += matchLen;
-
-							LOGD("Match whole\n");
-
-							++i;
-							continue;
 						}
-						// If not, mark only beginning and ending diff section matches
-						else
+
+						if (matchSections)
 						{
-							int startMatch = 0;
-							while ((*pSec1)[startMatch] == (*pSec2)[startMatch])
-								++startMatch;
+							LOGD("Matching sections found: " + std::to_string(matchSections) +
+									", matched len: " + std::to_string(matchLen) + "\n");
 
-							int endMatch = 0;
-							while (((int)pSec2->size() - endMatch - 1 > startMatch) &&
-									((*pSec1)[pSec1->size() - endMatch - 1] == (*pSec2)[pSec2->size() - endMatch - 1]))
-								++endMatch;
-
-							// Always match characters in the beginning and at the end
-							if (startMatch || endMatch)
+							// Are similarities a considerable portion of the diff?
+							if ((int)((matchLen * 100) / pSec1->size()) >= options.changedThresholdPercent)
 							{
-								section_t change;
+								for (const auto& sd: sectionDiffs)
+								{
+									if (sd.type == diff_type::DIFF_IN_1)
+									{
+										section_t change;
 
-								change.off = off1;
-								if (startMatch)
-									change.off += (*pSec1)[startMatch - 1].pos + 1;
+										change.off = (*pSec1)[sd.off].pos + off1;
+										change.len = (*pSec1)[sd.off + sd.len - 1].pos + off1 + 1 - change.off;
 
-								change.len = (endMatch ?
-										(*pSec1)[pSec1->size() - endMatch - 1].pos + 1 + off1 : end1) - change.off;
+										pBD1->info.changedLines.back().changes.emplace_back(change);
+									}
+									else if (sd.type == diff_type::DIFF_IN_2)
+									{
+										section_t change;
 
-								if (change.len > 0)
-									pBD1->info.changedLines.back().changes.emplace_back(change);
+										change.off = (*pSec2)[sd.off].pos + off2;
+										change.len = (*pSec2)[sd.off + sd.len - 1].pos + off2 + 1 - change.off;
 
-								change.off = off2;
-								if (startMatch)
-									change.off += (*pSec2)[startMatch - 1].pos + 1;
+										pBD2->info.changedLines.back().changes.emplace_back(change);
+									}
+								}
 
-								change.len = (endMatch ?
-										(*pSec2)[pSec2->size() - endMatch - 1].pos + 1 + off2 : end2) - change.off;
+								totalLineMatchLen += matchLen;
 
-								if (change.len > 0)
-									pBD2->info.changedLines.back().changes.emplace_back(change);
-
-								totalLineMatchLen += startMatch + endMatch;
-
-								LOGD("Matched beginning and end\n");
+								LOGD("Match whole\n");
 
 								++i;
 								continue;
 							}
+							// If not, mark only beginning and ending diff section matches
+							else
+							{
+								int startMatch = 0;
+								while ((minSecSize > startMatch) && (*pSec1)[startMatch] == (*pSec2)[startMatch])
+									++startMatch;
+
+								int endMatch = 0;
+								while ((minSecSize - startMatch > endMatch) &&
+										((*pSec1)[pSec1->size() - endMatch - 1] ==
+										(*pSec2)[pSec2->size() - endMatch - 1]))
+									++endMatch;
+
+								// Always match characters in the beginning and at the end
+								if (startMatch || endMatch)
+								{
+									section_t change;
+
+									if ((int)pSec1->size() > startMatch + endMatch)
+									{
+										change.off = off1;
+										if (startMatch)
+											change.off += (*pSec1)[startMatch].pos;
+
+										change.len = (endMatch ?
+												(*pSec1)[pSec1->size() - endMatch - 1].pos + 1 + off1 : end1) - change.off;
+
+										if (change.len > 0)
+											pBD1->info.changedLines.back().changes.emplace_back(change);
+									}
+
+									if ((int)pSec2->size() > startMatch + endMatch)
+									{
+										change.off = off2;
+										if (startMatch)
+											change.off += (*pSec2)[startMatch].pos + 1;
+
+										change.len = (endMatch ?
+												(*pSec2)[pSec2->size() - endMatch - 1].pos + 1 + off2 : end2) - change.off;
+
+										if (change.len > 0)
+											pBD2->info.changedLines.back().changes.emplace_back(change);
+									}
+
+									totalLineMatchLen += startMatch + endMatch;
+
+									LOGD("Matched beginning and end\n");
+
+									++i;
+									continue;
+								}
+							}
+
+							// No matching sections between the lines found - move to next lines
+							if (lineDiffsSize == 2)
+								break;
 						}
 					}
+					// Always match symbol characters in the beginning and at the end
+					else
+					{
+						int startMatch = 0;
+						while ((minSecSize > startMatch) && (sec1[startMatch] == sec2[startMatch]) &&
+								(getCharType(sec1[startMatch].ch) == charType::OTHERCHAR))
+							++startMatch;
 
-					// No matching sections between the lines found - move to next lines
-					if (lineDiffsSize == 2)
-						break;
+						int endMatch = 0;
+						while ((minSecSize - startMatch > endMatch) &&
+								(sec1[sec1.size() - endMatch - 1] == sec2[sec2.size() - endMatch - 1]) &&
+								(getCharType(sec1[sec1.size() - endMatch - 1].ch) == charType::OTHERCHAR))
+							++endMatch;
+
+						if (startMatch || endMatch)
+						{
+							section_t change;
+
+							if ((int)sec1.size() > startMatch + endMatch)
+							{
+								change.off = off1;
+								if (startMatch)
+									change.off += sec1[startMatch].pos;
+
+								change.len = (endMatch ?
+										sec1[sec1.size() - endMatch - 1].pos + 1 + off1 : end1) - change.off;
+
+								if (change.len > 0)
+									pBlockDiff1->info.changedLines.back().changes.emplace_back(change);
+							}
+
+							if ((int)sec2.size() > startMatch + endMatch)
+							{
+								change.off = off2;
+								if (startMatch)
+									change.off += sec2[startMatch].pos;
+
+								change.len = (endMatch ?
+										sec2[sec2.size() - endMatch - 1].pos + 1 + off2 : end2) - change.off;
+
+								if (change.len > 0)
+									pBlockDiff2->info.changedLines.back().changes.emplace_back(change);
+							}
+
+							totalLineMatchLen += startMatch + endMatch;
+
+							LOGD("Matched beginning and end for symbol chars\n");
+
+							++i;
+							continue;
+						}
+
+						// No matching sections between the lines found - move to next lines
+						if (lineDiffsSize == 2)
+							break;
+					}
 				}
 
 				section_t change;
@@ -912,7 +979,7 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 			const int minSize = std::min(chunk1[line1].size(), chunk2[line2].size());
 			const int maxSize = std::max(chunk1[line1].size(), chunk2[line2].size());
 
-			if ((int)((minSize * 100) / maxSize) < options.changedThresholdPercent)
+			if (((minSize * 100) / maxSize) < options.changedThresholdPercent)
 				continue;
 
 			auto diffRes = DiffCalc<Char>(chunk1[line1], chunk2[line2])();
