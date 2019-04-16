@@ -112,9 +112,9 @@ BEGIN
     AUTORADIOBUTTON	"Current and previous files", IDC_COMPARE_TO_PREV, 21, 145, 100, 8, WS_GROUP | WS_TABSTOP
     AUTORADIOBUTTON	"Current and next files", IDC_COMPARE_TO_NEXT, 21, 158, 100, 8
 	GROUPBOX		"Misc.", IDC_STATIC, 145, 22, 138, 150
-	AUTOCHECKBOX	"Align all matching lines", IDC_ALIGN_ALL_MATCHES, 153, 36, 128, 14
-	AUTOCHECKBOX	"Never colorize ignored lines", IDC_NEVER_MARK_IGNORED, 153, 55, 128, 14
-	AUTOCHECKBOX	"Warn about encodings mismatch", IDC_ENCODING_CHECK, 153, 74, 128, 14
+	AUTOCHECKBOX	"Warn about encodings mismatch", IDC_ENCODING_CHECK, 153, 36, 128, 14
+	AUTOCHECKBOX	"Align all matching lines", IDC_ALIGN_ALL_MATCHES, 153, 55, 128, 14
+	AUTOCHECKBOX	"Never colorize ignored lines", IDC_NEVER_MARK_IGNORED, 153, 74, 128, 14
 	AUTOCHECKBOX	"Move caret on navigation", IDC_FOLLOWING_CARET, 153, 93, 128, 14
 	AUTOCHECKBOX	"Wrap around diffs", IDC_WRAP_AROUND, 153, 112, 128, 14
 	AUTOCHECKBOX	"Go to first diff after re-Compare", IDC_GOTO_FIRST_DIFF, 153, 131, 128, 14

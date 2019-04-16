@@ -107,9 +107,9 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					settings.FirstFileIsNew			= (bool) DEFAULT_FIRST_IS_NEW;
 					settings.NewFileViewId			= DEFAULT_NEW_IN_SUB_VIEW ? SUB_VIEW : MAIN_VIEW;
 					settings.CompareToPrev			= (bool) DEFAULT_COMPARE_TO_PREV;
+					settings.EncodingsCheck			= (bool) DEFAULT_ENCODINGS_CHECK;
 					settings.AlignAllMatches		= (bool) DEFAULT_ALIGN_ALL_MATCHES;
 					settings.NeverMarkIgnored		= (bool) DEFAULT_NEVER_MARK_IGNORED;
-					settings.EncodingsCheck			= (bool) DEFAULT_ENCODINGS_CHECK;
 					settings.FollowingCaret			= (bool) DEFAULT_FOLLOWING_CARET;
 					settings.WrapAround				= (bool) DEFAULT_WRAP_AROUND;
 					settings.GotoFirstDiff			= (bool) DEFAULT_GOTO_FIRST_DIFF;
@@ -181,12 +181,12 @@ void SettingsDialog::SetParams(UserSettings* settings)
 			BST_CHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, settings->CompareToPrev ? IDC_COMPARE_TO_NEXT : IDC_COMPARE_TO_PREV),
 			BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ENCODING_CHECK),
+			settings->EncodingsCheck ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ALIGN_ALL_MATCHES),
 			settings->AlignAllMatches ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_NEVER_MARK_IGNORED),
 			settings->NeverMarkIgnored ? BST_CHECKED : BST_UNCHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ENCODING_CHECK),
-			settings->EncodingsCheck ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_PROMPT_CLOSE_ON_MATCH),
 			settings->PromptToCloseOnMatch ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_WRAP_AROUND),
@@ -228,9 +228,9 @@ void SettingsDialog::GetParams()
 	_Settings->NewFileViewId		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_NEW_IN_SUB)) == BST_CHECKED) ?
 			SUB_VIEW : MAIN_VIEW;
 	_Settings->CompareToPrev		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_COMPARE_TO_PREV)) == BST_CHECKED);
+	_Settings->EncodingsCheck		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENCODING_CHECK)) == BST_CHECKED);
 	_Settings->AlignAllMatches		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ALIGN_ALL_MATCHES)) == BST_CHECKED);
 	_Settings->NeverMarkIgnored		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_NEVER_MARK_IGNORED)) == BST_CHECKED);
-	_Settings->EncodingsCheck		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENCODING_CHECK)) == BST_CHECKED);
 	_Settings->PromptToCloseOnMatch	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_PROMPT_CLOSE_ON_MATCH)) == BST_CHECKED);
 	_Settings->WrapAround			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_WRAP_AROUND)) == BST_CHECKED);
 	_Settings->GotoFirstDiff		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_GOTO_FIRST_DIFF)) == BST_CHECKED);

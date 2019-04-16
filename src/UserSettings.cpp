@@ -29,9 +29,9 @@ const TCHAR UserSettings::newFileViewSetting[]			= TEXT("New_in_Sub_View");
 const TCHAR UserSettings::firstIsNewSetting[]			= TEXT("Set_First_as_New");
 const TCHAR UserSettings::compareToPrevSetting[]		= TEXT("Default_Compare_to_Prev");
 
+const TCHAR UserSettings::encodingsCheckSetting[]		= TEXT("Check_Encodings");
 const TCHAR UserSettings::alignAllMatchesSetting[]		= TEXT("Align_All_Matches");
 const TCHAR UserSettings::markIgnoredLinesSetting[]		= TEXT("Never_Colorize_Ignored_Lines");
-const TCHAR UserSettings::encodingsCheckSetting[]		= TEXT("Check_Encodings");
 const TCHAR UserSettings::promptCloseOnMatchSetting[]	= TEXT("Prompt_to_Close_on_Match");
 const TCHAR UserSettings::wrapAroundSetting[]			= TEXT("Wrap_Around");
 const TCHAR UserSettings::gotoFirstDiffSetting[]		= TEXT("Go_to_First_on_ReCompare");
@@ -76,12 +76,12 @@ void UserSettings::load()
 			DEFAULT_FIRST_IS_NEW, iniFile) != 0;
 	CompareToPrev			= ::GetPrivateProfileInt(mainSection, compareToPrevSetting,
 			DEFAULT_COMPARE_TO_PREV, iniFile) != 0;
+	EncodingsCheck			= ::GetPrivateProfileInt(mainSection, encodingsCheckSetting,
+			DEFAULT_ENCODINGS_CHECK, iniFile) != 0;
 	AlignAllMatches			= ::GetPrivateProfileInt(mainSection, alignAllMatchesSetting,
 			DEFAULT_ALIGN_ALL_MATCHES, iniFile) != 0;
 	NeverMarkIgnored		= ::GetPrivateProfileInt(mainSection, markIgnoredLinesSetting,
 			DEFAULT_NEVER_MARK_IGNORED, iniFile) != 0;
-	EncodingsCheck			= ::GetPrivateProfileInt(mainSection, encodingsCheckSetting,
-			DEFAULT_ENCODINGS_CHECK, iniFile) != 0;
 	FollowingCaret			= ::GetPrivateProfileInt(mainSection, followingCaretSetting,
 			DEFAULT_FOLLOWING_CARET, iniFile) != 0;
 	WrapAround				= ::GetPrivateProfileInt(mainSection, wrapAroundSetting,
@@ -170,12 +170,12 @@ void UserSettings::save()
 			FirstFileIsNew ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, compareToPrevSetting,
 			CompareToPrev ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, encodingsCheckSetting,
+			EncodingsCheck ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, alignAllMatchesSetting,
 			AlignAllMatches ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, markIgnoredLinesSetting,
 			NeverMarkIgnored ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, encodingsCheckSetting,
-			EncodingsCheck ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, followingCaretSetting,
 			FollowingCaret ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, wrapAroundSetting,

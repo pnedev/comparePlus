@@ -28,9 +28,9 @@
 #define DEFAULT_NEW_IN_SUB_VIEW			1
 #define DEFAULT_COMPARE_TO_PREV			1
 
+#define DEFAULT_ENCODINGS_CHECK			1
 #define DEFAULT_ALIGN_ALL_MATCHES		0
 #define DEFAULT_NEVER_MARK_IGNORED		0
-#define DEFAULT_ENCODINGS_CHECK			1
 #define DEFAULT_FOLLOWING_CARET			1
 #define DEFAULT_WRAP_AROUND				0
 #define DEFAULT_GOTO_FIRST_DIFF			1
@@ -94,9 +94,9 @@ public:
 	static const TCHAR firstIsNewSetting[];
 	static const TCHAR compareToPrevSetting[];
 
+	static const TCHAR encodingsCheckSetting[];
 	static const TCHAR alignAllMatchesSetting[];
 	static const TCHAR markIgnoredLinesSetting[];
-	static const TCHAR encodingsCheckSetting[];
 	static const TCHAR followingCaretSetting[];
 	static const TCHAR wrapAroundSetting[];
 	static const TCHAR gotoFirstDiffSetting[];
@@ -131,9 +131,9 @@ public:
 	int				NewFileViewId;
 	bool           	CompareToPrev;
 
+	bool           	EncodingsCheck;
 	bool           	AlignAllMatches;
 	bool           	NeverMarkIgnored;
-	bool           	EncodingsCheck;
 	bool           	FollowingCaret;
 	bool           	WrapAround;
 	bool           	GotoFirstDiff;
