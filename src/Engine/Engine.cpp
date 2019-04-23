@@ -221,6 +221,24 @@ struct MatchInfo
 };
 
 
+struct conv_key
+{
+	float convergence;
+	int line1;
+	int line2;
+
+	conv_key(float c, int l1, int l2) : convergence(c), line1(l1), line2(l2)
+	{}
+
+	bool operator<(const conv_key& rhs) const
+	{
+		return ((convergence > rhs.convergence) ||
+				((convergence == rhs.convergence) && ((line1 < rhs.line1) ||
+					((line1 == rhs.line1) && ((line2 < rhs.line2))))));
+	}
+};
+
+
 const uint64_t cHashSeed = 0x84222325;
 
 inline uint64_t Hash(uint64_t hval, char letter)
@@ -353,32 +371,6 @@ std::vector<Char> getSectionChars(int view, int secStart, int secEnd, const Comp
 }
 
 
-std::vector<std::vector<Char>> getChars(const DocCmpInfo& doc, const diffInfo& blockDiff,
-		const CompareOptions& options)
-{
-	std::vector<std::vector<Char>> chars(blockDiff.len);
-
-	for (int lineNum = 0; lineNum < blockDiff.len; ++lineNum)
-	{
-		// Don't get moved lines
-		if (blockDiff.info.getNextUnmoved(lineNum))
-		{
-			--lineNum;
-			continue;
-		}
-
-		const int docLineNum	= doc.lines[lineNum + blockDiff.off].line;
-		const int docLineStart	= getLineStart(doc.view, docLineNum);
-		const int docLineEnd	= getLineEnd(doc.view, docLineNum);
-
-		if (docLineEnd - docLineStart)
-			chars[lineNum] = getSectionChars(doc.view, docLineStart, docLineEnd, options);
-	}
-
-	return chars;
-}
-
-
 std::vector<Word> getLineWords(int view, int lineNum, const CompareOptions& options)
 {
 	std::vector<Word> words;
@@ -425,6 +417,60 @@ std::vector<Word> getLineWords(int view, int lineNum, const CompareOptions& opti
 
 		if (!options.ignoreSpaces || currentWordType != charType::SPACECHAR)
 			words.emplace_back(word);
+	}
+
+	return words;
+}
+
+
+template <typename T>
+std::vector<std::vector<T>> getElems(const DocCmpInfo& doc, const diffInfo& blockDiff,
+		const CompareOptions& options);
+
+
+template <>
+std::vector<std::vector<Char>> getElems<Char>(const DocCmpInfo& doc, const diffInfo& blockDiff,
+		const CompareOptions& options)
+{
+	std::vector<std::vector<Char>> chars(blockDiff.len);
+
+	for (int lineNum = 0; lineNum < blockDiff.len; ++lineNum)
+	{
+		// Don't get moved lines
+		if (blockDiff.info.getNextUnmoved(lineNum))
+		{
+			--lineNum;
+			continue;
+		}
+
+		const int docLineNum	= doc.lines[lineNum + blockDiff.off].line;
+		const int docLineStart	= getLineStart(doc.view, docLineNum);
+		const int docLineEnd	= getLineEnd(doc.view, docLineNum);
+
+		if (docLineEnd - docLineStart)
+			chars[lineNum] = getSectionChars(doc.view, docLineStart, docLineEnd, options);
+	}
+
+	return chars;
+}
+
+
+template <>
+std::vector<std::vector<Word>> getElems<Word>(const DocCmpInfo& doc, const diffInfo& blockDiff,
+		const CompareOptions& options)
+{
+	std::vector<std::vector<Word>> words(blockDiff.len);
+
+	for (int lineNum = 0; lineNum < blockDiff.len; ++lineNum)
+	{
+		// Don't get moved lines
+		if (blockDiff.info.getNextUnmoved(lineNum))
+		{
+			--lineNum;
+			continue;
+		}
+
+		words[lineNum] = getLineWords(doc.view, lineNum, options);
 	}
 
 	return words;
@@ -938,33 +984,17 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 }
 
 
-void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blockDiff1, diffInfo& blockDiff2,
-		const CompareOptions& options)
+template <typename T>
+std::set<conv_key> getOrderedConvergence(const DocCmpInfo& doc1, const DocCmpInfo& doc2,
+		diffInfo& blockDiff1, diffInfo& blockDiff2, const CompareOptions& options)
 {
-	const std::vector<std::vector<Char>> chunk1 = getChars(doc1, blockDiff1, options);
-	const std::vector<std::vector<Char>> chunk2 = getChars(doc2, blockDiff2, options);
+	std::set<conv_key> orderedLinesConvergence;
+
+	const std::vector<std::vector<T>> chunk1 = getElems<T>(doc1, blockDiff1, options);
+	const std::vector<std::vector<T>> chunk2 = getElems<T>(doc2, blockDiff2, options);
 
 	const int linesCount1 = static_cast<int>(chunk1.size());
 	const int linesCount2 = static_cast<int>(chunk2.size());
-
-	struct conv_key
-	{
-		float convergence;
-		int line1;
-		int line2;
-
-		conv_key(float c, int l1, int l2) : convergence(c), line1(l1), line2(l2)
-		{}
-
-		bool operator<(const conv_key& rhs) const
-		{
-			return ((convergence > rhs.convergence) ||
-					((convergence == rhs.convergence) && ((line1 < rhs.line1) ||
-						((line1 == rhs.line1) && ((line2 < rhs.line2))))));
-		}
-	};
-
-	std::set<conv_key> orderedLinesConvergence;
 
 	for (int line1 = 0; line1 < linesCount1; ++line1)
 	{
@@ -982,7 +1012,7 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 			if (((minSize * 100) / maxSize) < options.changedThresholdPercent)
 				continue;
 
-			auto diffRes = DiffCalc<Char>(chunk1[line1], chunk2[line2])();
+			auto diffRes = DiffCalc<T>(chunk1[line1], chunk2[line2])();
 			const std::vector<diff_info<void>> lineDiffs = std::move(diffRes.first);
 
 			float lineConvergence = 0;
@@ -993,7 +1023,7 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 					lineConvergence += ld.len;
 			}
 
-			if ((int)(lineConvergence * 100 / maxSize) >= options.changedThresholdPercent)
+			if ((int)(lineConvergence * 100 / minSize) >= options.changedThresholdPercent)
 			{
 				lineConvergence = (lineConvergence * 100 / minSize) + (lineConvergence * 100 / maxSize);
 
@@ -1001,6 +1031,20 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 			}
 		}
 	}
+
+	return orderedLinesConvergence;
+}
+
+
+void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blockDiff1, diffInfo& blockDiff2,
+		const CompareOptions& options)
+{
+	std::set<conv_key> orderedLinesConvergence = (options.charPrecision) ?
+			getOrderedConvergence<Char>(doc1, doc2, blockDiff1, blockDiff2, options) :
+			getOrderedConvergence<Word>(doc1, doc2, blockDiff1, blockDiff2, options);
+
+	const int linesCount1 = blockDiff1.len;
+	const int linesCount2 = blockDiff2.len;
 
 #ifdef DLOG
 	for (const auto& oc: orderedLinesConvergence)
