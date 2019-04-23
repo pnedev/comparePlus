@@ -907,18 +907,18 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 								break;
 						}
 					}
-					// Always match symbol characters in the beginning and at the end
+					// Always match non-alphabetical characters in the beginning and at the end
 					else
 					{
 						int startMatch = 0;
 						while ((minSecSize > startMatch) && (sec1[startMatch] == sec2[startMatch]) &&
-								(getCharType(sec1[startMatch].ch) == charType::OTHERCHAR))
+								(getCharType(sec1[startMatch].ch) != charType::ALPHANUMCHAR))
 							++startMatch;
 
 						int endMatch = 0;
 						while ((minSecSize - startMatch > endMatch) &&
 								(sec1[sec1.size() - endMatch - 1] == sec2[sec2.size() - endMatch - 1]) &&
-								(getCharType(sec1[sec1.size() - endMatch - 1].ch) == charType::OTHERCHAR))
+								(getCharType(sec1[sec1.size() - endMatch - 1].ch) != charType::ALPHANUMCHAR))
 							++endMatch;
 
 						if (startMatch || endMatch)
