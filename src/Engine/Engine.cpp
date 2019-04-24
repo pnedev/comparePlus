@@ -470,7 +470,9 @@ std::vector<std::vector<Word>> getElems<Word>(const DocCmpInfo& doc, const diffI
 			continue;
 		}
 
-		words[lineNum] = getLineWords(doc.view, lineNum, options);
+		const int docLineNum = doc.lines[lineNum + blockDiff.off].line;
+
+		words[lineNum] = getLineWords(doc.view, docLineNum, options);
 	}
 
 	return words;
@@ -818,7 +820,8 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 									", matched len: " + std::to_string(matchLen) + "\n");
 
 							// Are similarities a considerable portion of the diff?
-							if ((int)((matchLen * 100) / pSec1->size()) >= options.changedThresholdPercent)
+							if ((int)((matchLen * 100) / std::max(sec1.size(), sec2.size())) >=
+								options.changedThresholdPercent)
 							{
 								for (const auto& sd: sectionDiffs)
 								{
@@ -953,7 +956,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 
 							totalLineMatchLen += startMatch + endMatch;
 
-							LOGD("Matched beginning and end for symbol chars\n");
+							LOGD("Matched beginning and end for non-alphabetical chars\n");
 
 							++i;
 							continue;
