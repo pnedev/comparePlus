@@ -224,17 +224,19 @@ struct MatchInfo
 struct conv_key
 {
 	float convergence;
+	int diffsCount;
 	int line1;
 	int line2;
 
-	conv_key(float c, int l1, int l2) : convergence(c), line1(l1), line2(l2)
+	conv_key(float c, int dc, int l1, int l2) : convergence(c), diffsCount(dc), line1(l1), line2(l2)
 	{}
 
 	bool operator<(const conv_key& rhs) const
 	{
-		return ((convergence > rhs.convergence) ||
-				((convergence == rhs.convergence) && ((line1 < rhs.line1) ||
-					((line1 == rhs.line1) && ((line2 < rhs.line2))))));
+		return ((diffsCount < rhs.diffsCount) ||
+				((diffsCount == rhs.diffsCount) && (convergence > rhs.convergence)) ||
+				((diffsCount == rhs.diffsCount) && (convergence == rhs.convergence) &&
+						(line1 + line2 < rhs.line1 + rhs.line2)));
 	}
 };
 
@@ -420,6 +422,40 @@ std::vector<Word> getLineWords(int view, int lineNum, const CompareOptions& opti
 	}
 
 	return words;
+}
+
+
+inline int getCharLen(const std::vector<Char>& section)
+{
+	return section.size();
+}
+
+
+int getCharLen(const std::vector<Word>& section)
+{
+	int len = 0;
+
+	for (const auto& i : section)
+		len += i.len;
+
+	return len;
+}
+
+
+inline int getDiffCharLen(const std::vector<Char>& section, const diff_info<void>& diff)
+{
+	return diff.len;
+}
+
+
+int getDiffCharLen(const std::vector<Word>& section, const diff_info<void>& diff)
+{
+	int len = 0;
+
+	for (int i = 0; i < diff.len; ++i)
+		len += section[diff.off + i].len;
+
+	return len;
 }
 
 
@@ -1009,8 +1045,11 @@ std::set<conv_key> getOrderedConvergence(const DocCmpInfo& doc1, const DocCmpInf
 			if (chunk2[line2].empty())
 				continue;
 
-			const int minSize = std::min(chunk1[line1].size(), chunk2[line2].size());
-			const int maxSize = std::max(chunk1[line1].size(), chunk2[line2].size());
+			const int lineLen1 = getCharLen(chunk1[line1]);
+			const int lineLen2 = getCharLen(chunk2[line2]);
+
+			const int minSize = std::min(lineLen1, lineLen2);
+			const int maxSize = std::max(lineLen1, lineLen2);
 
 			if (((minSize * 100) / maxSize) < options.changedThresholdPercent)
 				continue;
@@ -1018,20 +1057,23 @@ std::set<conv_key> getOrderedConvergence(const DocCmpInfo& doc1, const DocCmpInf
 			auto diffRes = DiffCalc<T>(chunk1[line1], chunk2[line2])();
 			const std::vector<diff_info<void>> lineDiffs = std::move(diffRes.first);
 
+			const std::vector<T>& line = diffRes.second ? chunk2[line2] : chunk1[line1];
+
 			float lineConvergence = 0;
+			int diffsCount = 0;
 
 			for (const auto& ld: lineDiffs)
 			{
 				if (ld.type == diff_type::DIFF_MATCH)
-					lineConvergence += ld.len;
+					lineConvergence += getDiffCharLen(line, ld);
+				else
+					++diffsCount;
 			}
 
-			if ((int)(lineConvergence * 100 / minSize) >= options.changedThresholdPercent)
-			{
-				lineConvergence = (lineConvergence * 100 / minSize) + (lineConvergence * 100 / maxSize);
+			lineConvergence = (lineConvergence * 100 / minSize);
 
-				orderedLinesConvergence.emplace(conv_key(lineConvergence, line1, line2));
-			}
+			if (static_cast<int>(lineConvergence) >= options.changedThresholdPercent)
+				orderedLinesConvergence.emplace(conv_key(lineConvergence, diffsCount, line1, line2));
 		}
 	}
 
