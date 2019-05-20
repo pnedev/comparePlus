@@ -1704,24 +1704,29 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 	if (progress && !progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
-	if (progress)
-		progress->SetMaxCount(blockDiffsSize - 1);
+	std::vector<int> changedBlockIdx;
 
-	// Do block compares
+	// Get changed blocks to sub-compare
 	for (int i = 1; i < blockDiffsSize; ++i)
 	{
-		// Check if the DIFF_IN_1 / DIFF_IN_2 pair includes changed lines or it's a completely replaced block
 		if ((cmpInfo.blockDiffs[i].type == diff_type::DIFF_IN_2) &&
-			(cmpInfo.blockDiffs[i - 1].type == diff_type::DIFF_IN_1))
-		{
-			diffInfo& blockDiff1 = cmpInfo.blockDiffs[i - 1];
-			diffInfo& blockDiff2 = cmpInfo.blockDiffs[i];
+				(cmpInfo.blockDiffs[i - 1].type == diff_type::DIFF_IN_1))
+			changedBlockIdx.emplace_back(i);
+	}
 
-			blockDiff1.info.matchBlock = &blockDiff2;
-			blockDiff2.info.matchBlock = &blockDiff1;
+	if (progress)
+		progress->SetMaxCount(changedBlockIdx.size());
 
-			compareBlocks(cmpInfo.doc1, cmpInfo.doc2, blockDiff1, blockDiff2, options);
-		}
+	// Do block compares
+	for (int i : changedBlockIdx)
+	{
+		diffInfo& blockDiff1 = cmpInfo.blockDiffs[i - 1];
+		diffInfo& blockDiff2 = cmpInfo.blockDiffs[i];
+
+		blockDiff1.info.matchBlock = &blockDiff2;
+		blockDiff2.info.matchBlock = &blockDiff1;
+
+		compareBlocks(cmpInfo.doc1, cmpInfo.doc2, blockDiff1, blockDiff2, options);
 
 		if (progress && !progress->Advance())
 			return CompareResult::COMPARE_CANCELLED;
