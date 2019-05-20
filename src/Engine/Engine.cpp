@@ -1029,8 +1029,13 @@ std::set<conv_key> getOrderedConvergence(const DocCmpInfo& doc1, const DocCmpInf
 {
 	std::set<conv_key> orderedLinesConvergence;
 
-	const std::vector<std::vector<T>> chunk1 = getElems<T>(doc1, blockDiff1, options);
-	const std::vector<std::vector<T>> chunk2 = getElems<T>(doc2, blockDiff2, options);
+	const std::vector<std::vector<T>> e1 = getElems<T>(doc1, blockDiff1, options);
+	const std::vector<std::vector<T>> e2 = getElems<T>(doc2, blockDiff2, options);
+
+	const bool swapped = e1.size() > e2.size();
+
+	const auto& chunk1 = swapped ? e2 : e1;
+	const auto& chunk2 = swapped ? e1 : e2;
 
 	const int linesCount1 = static_cast<int>(chunk1.size());
 	const int linesCount2 = static_cast<int>(chunk2.size());
@@ -1040,12 +1045,13 @@ std::set<conv_key> getOrderedConvergence(const DocCmpInfo& doc1, const DocCmpInf
 		if (chunk1[line1].empty())
 			continue;
 
+		const int lineLen1 = getCharLen(chunk1[line1]);
+
 		for (int line2 = 0; line2 < linesCount2; ++line2)
 		{
 			if (chunk2[line2].empty())
 				continue;
 
-			const int lineLen1 = getCharLen(chunk1[line1]);
 			const int lineLen2 = getCharLen(chunk2[line2]);
 
 			const int minSize = std::min(lineLen1, lineLen2);
@@ -1070,10 +1076,12 @@ std::set<conv_key> getOrderedConvergence(const DocCmpInfo& doc1, const DocCmpInf
 					++diffsCount;
 			}
 
-			lineConvergence = (lineConvergence * 100 / minSize);
-
-			if (static_cast<int>(lineConvergence) >= options.changedThresholdPercent)
-				orderedLinesConvergence.emplace(conv_key(lineConvergence, diffsCount, line1, line2));
+			if (static_cast<int>(lineConvergence * 100 / minSize) >= options.changedThresholdPercent)
+			{
+				lineConvergence = (lineConvergence * 100 / lineLen1);
+				orderedLinesConvergence.emplace(conv_key(lineConvergence, diffsCount,
+						(swapped ? line2 : line1), (swapped ? line1 : line2)));
+			}
 		}
 	}
 
