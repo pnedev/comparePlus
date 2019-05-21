@@ -469,7 +469,7 @@ inline int DiffCalc<Elem, UserDataT>::_count_replaces()
 template <typename Elem, typename UserDataT>
 std::pair<std::vector<diff_info<UserDataT>>, bool> DiffCalc<Elem, UserDataT>::operator()(bool doBoundaryShift)
 {
-	bool swapped = (_a_size < _b_size);
+	bool swapped = (_a_size > _b_size);
 
 	if (swapped)
 	{
