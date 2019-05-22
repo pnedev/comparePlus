@@ -21,6 +21,7 @@
 #define NOMINMAX
 
 #include <climits>
+#include <cmath>
 #include <exception>
 #include <cstdint>
 #include <utility>
@@ -233,10 +234,9 @@ struct conv_key
 
 	bool operator<(const conv_key& rhs) const
 	{
-		return ((diffsCount < rhs.diffsCount) ||
-				((diffsCount == rhs.diffsCount) && (convergence > rhs.convergence)) ||
-				((diffsCount == rhs.diffsCount) && (convergence == rhs.convergence) &&
-						(line1 + line2 < rhs.line1 + rhs.line2)));
+		return ((diffsCount < rhs.diffsCount) || ((diffsCount == rhs.diffsCount) &&
+					((convergence > rhs.convergence) || ((convergence == rhs.convergence) &&
+					(abs(line2 - line1) <= abs(rhs.line2 - rhs.line1))))));
 	}
 };
 
@@ -425,47 +425,7 @@ std::vector<Word> getLineWords(int view, int lineNum, const CompareOptions& opti
 }
 
 
-inline int getCharLen(const std::vector<Char>& section)
-{
-	return section.size();
-}
-
-
-int getCharLen(const std::vector<Word>& section)
-{
-	int len = 0;
-
-	for (const auto& i : section)
-		len += i.len;
-
-	return len;
-}
-
-
-inline int getDiffCharLen(const std::vector<Char>& section, const diff_info<void>& diff)
-{
-	return diff.len;
-}
-
-
-int getDiffCharLen(const std::vector<Word>& section, const diff_info<void>& diff)
-{
-	int len = 0;
-
-	for (int i = 0; i < diff.len; ++i)
-		len += section[diff.off + i].len;
-
-	return len;
-}
-
-
-template <typename T>
-std::vector<std::vector<T>> getElems(const DocCmpInfo& doc, const diffInfo& blockDiff,
-		const CompareOptions& options);
-
-
-template <>
-std::vector<std::vector<Char>> getElems<Char>(const DocCmpInfo& doc, const diffInfo& blockDiff,
+std::vector<std::vector<Char>> getChars(const DocCmpInfo& doc, const diffInfo& blockDiff,
 		const CompareOptions& options)
 {
 	std::vector<std::vector<Char>> chars(blockDiff.len);
@@ -488,30 +448,6 @@ std::vector<std::vector<Char>> getElems<Char>(const DocCmpInfo& doc, const diffI
 	}
 
 	return chars;
-}
-
-
-template <>
-std::vector<std::vector<Word>> getElems<Word>(const DocCmpInfo& doc, const diffInfo& blockDiff,
-		const CompareOptions& options)
-{
-	std::vector<std::vector<Word>> words(blockDiff.len);
-
-	for (int lineNum = 0; lineNum < blockDiff.len; ++lineNum)
-	{
-		// Don't get moved lines
-		if (blockDiff.info.getNextUnmoved(lineNum))
-		{
-			--lineNum;
-			continue;
-		}
-
-		const int docLineNum = doc.lines[lineNum + blockDiff.off].line;
-
-		words[lineNum] = getLineWords(doc.view, docLineNum, options);
-	}
-
-	return words;
 }
 
 
@@ -631,7 +567,7 @@ bool resolveMatch(const CompareInfo& cmpInfo, diffInfo& lookupDiff, int lookupOf
 
 void findMoves(CompareInfo& cmpInfo)
 {
-	// LOGD("FIND MOVES\n");
+	LOGD("FIND MOVES\n");
 
 	bool repeat = true;
 
@@ -644,7 +580,7 @@ void findMoves(CompareInfo& cmpInfo)
 			if (lookupDiff.type != diff_type::DIFF_IN_1)
 				continue;
 
-			// LOGD("DIFF_IN_1 offset: " + std::to_string(lookupDiff.off + 1) + "\n");
+			LOGD("D1 off: " + std::to_string(lookupDiff.off + 1) + "\n");
 
 			// Go through all lookupDiff's elements and check if each is matched
 			for (int lookupEi = 0; lookupEi < lookupDiff.len; ++lookupEi)
@@ -656,7 +592,7 @@ void findMoves(CompareInfo& cmpInfo)
 					continue;
 				}
 
-				// LOGD("line offset: " + std::to_string(lookupEi) + "\n");
+				LOGD("line offset: " + std::to_string(lookupEi) + "\n");
 
 				MatchInfo mi;
 				findBestMatch(cmpInfo, lookupDiff, lookupEi, mi);
@@ -670,7 +606,7 @@ void findMoves(CompareInfo& cmpInfo)
 					else
 						--lookupEi;
 
-					// LOGD("move match found, next line offset: " + std::to_string(lookupEi + 1) + "\n");
+					LOGD("Move match found, next line offset: " + std::to_string(lookupEi + 1) + "\n");
 				}
 			}
 		}
@@ -722,7 +658,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 		int line1 = lm.first;
 		int line2 = lm.second.second;
 
-		LOGD("CompareLines " + std::to_string(doc1.lines[blockDiff1.off + line1].line + 1) + " and " +
+		LOGD("Compare Lines " + std::to_string(doc1.lines[blockDiff1.off + line1].line + 1) + " and " +
 				std::to_string(doc2.lines[blockDiff2.off + line2].line + 1) + "\n");
 
 		lastLine2 = line2;
@@ -812,7 +748,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 
 					if (options.charPrecision)
 					{
-						LOGD("Compare sections " +
+						LOGD("Compare Sections " +
 								std::to_string(off1 + 1) + " to " +
 								std::to_string(end1 + 1) + " and " +
 								std::to_string(off2 + 1) + " to " +
@@ -883,7 +819,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 
 								totalLineMatchLen += matchLen;
 
-								LOGD("Match whole\n");
+								LOGD("Whole section checked for matches\n");
 
 								++i;
 								continue;
@@ -913,7 +849,8 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 											change.off += (*pSec1)[startMatch].pos;
 
 										change.len = (endMatch ?
-												(*pSec1)[pSec1->size() - endMatch - 1].pos + 1 + off1 : end1) - change.off;
+												(*pSec1)[pSec1->size() - endMatch - 1].pos + 1 + off1 : end1) -
+												change.off;
 
 										if (change.len > 0)
 											pBD1->info.changedLines.back().changes.emplace_back(change);
@@ -926,7 +863,8 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 											change.off += (*pSec2)[startMatch].pos + 1;
 
 										change.len = (endMatch ?
-												(*pSec2)[pSec2->size() - endMatch - 1].pos + 1 + off2 : end2) - change.off;
+												(*pSec2)[pSec2->size() - endMatch - 1].pos + 1 + off2 : end2) -
+												change.off;
 
 										if (change.len > 0)
 											pBD2->info.changedLines.back().changes.emplace_back(change);
@@ -934,7 +872,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 
 									totalLineMatchLen += startMatch + endMatch;
 
-									LOGD("Matched beginning and end\n");
+									LOGD("Beginning and end of section checked for matches\n");
 
 									++i;
 									continue;
@@ -992,7 +930,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 
 							totalLineMatchLen += startMatch + endMatch;
 
-							LOGD("Matched beginning and end for non-alphabetical chars\n");
+							LOGD("Beginning and end of non-alphabetical chars checked for matches\n");
 
 							++i;
 							continue;
@@ -1023,64 +961,94 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 }
 
 
-template <typename T>
-std::set<conv_key> getOrderedConvergence(const DocCmpInfo& doc1, const DocCmpInfo& doc2,
+std::vector<std::set<conv_key>> getOrderedConvergence(const DocCmpInfo& doc1, const DocCmpInfo& doc2,
 		diffInfo& blockDiff1, diffInfo& blockDiff2, const CompareOptions& options)
 {
-	std::set<conv_key> orderedLinesConvergence;
-
-	const std::vector<std::vector<T>> e1 = getElems<T>(doc1, blockDiff1, options);
-	const std::vector<std::vector<T>> e2 = getElems<T>(doc2, blockDiff2, options);
-
-	const bool swapped = e1.size() > e2.size();
-
-	const auto& chunk1 = swapped ? e2 : e1;
-	const auto& chunk2 = swapped ? e1 : e2;
+	const std::vector<std::vector<Char>> chunk1 = getChars(doc1, blockDiff1, options);
+	const std::vector<std::vector<Char>> chunk2 = getChars(doc2, blockDiff2, options);
 
 	const int linesCount1 = static_cast<int>(chunk1.size());
 	const int linesCount2 = static_cast<int>(chunk2.size());
+
+	std::vector<std::set<conv_key>> orderedLinesConvergence(linesCount1);
+
+	std::vector<std::vector<Word>> words2(linesCount2);
 
 	for (int line1 = 0; line1 < linesCount1; ++line1)
 	{
 		if (chunk1[line1].empty())
 			continue;
 
-		const int lineLen1 = getCharLen(chunk1[line1]);
+		std::vector<Word> words1;
 
 		for (int line2 = 0; line2 < linesCount2; ++line2)
 		{
 			if (chunk2[line2].empty())
 				continue;
 
-			const int lineLen2 = getCharLen(chunk2[line2]);
-
-			const int minSize = std::min(lineLen1, lineLen2);
-			const int maxSize = std::max(lineLen1, lineLen2);
+			const int minSize = std::min(chunk1[line1].size(), chunk2[line2].size());
+			const int maxSize = std::max(chunk1[line1].size(), chunk2[line2].size());
 
 			if (((minSize * 100) / maxSize) < options.changedThresholdPercent)
 				continue;
 
-			auto diffRes = DiffCalc<T>(chunk1[line1], chunk2[line2])();
-			const std::vector<diff_info<void>> lineDiffs = std::move(diffRes.first);
-
-			const std::vector<T>& line = diffRes.second ? chunk2[line2] : chunk1[line1];
-
-			float lineConvergence = 0;
 			int diffsCount = 0;
 
-			for (const auto& ld: lineDiffs)
+			if (!options.charPrecision)
 			{
-				if (ld.type == diff_type::DIFF_MATCH)
-					lineConvergence += getDiffCharLen(line, ld);
-				else
-					++diffsCount;
+				if (words1.empty())
+					words1 = getLineWords(doc1.view, doc1.lines[blockDiff1.off + line1].line, options);
+
+				if (words2[line2].empty())
+					words2[line2] = getLineWords(doc2.view, doc2.lines[blockDiff2.off + line2].line, options);
+
+				auto wordDiffs = DiffCalc<Word>(words1, words2[line2])();
+
+				const int wordDiffsSize = static_cast<int>(wordDiffs.first.size());
+
+				int matchesCount = 0;
+
+				for (int i = 0; i < wordDiffsSize; ++i)
+				{
+					if (wordDiffs.first[i].type == diff_type::DIFF_MATCH)
+					{
+						++matchesCount;
+					}
+					else
+					{
+						++diffsCount;
+
+						// Count replacement as a single diff
+						if ((i + 1 < wordDiffsSize) && (wordDiffs.first[i + 1].type == diff_type::DIFF_IN_2))
+							++i;
+					}
+				}
+
+				if (matchesCount == 0)
+					continue;
 			}
 
-			if (static_cast<int>(lineConvergence * 100 / minSize) >= options.changedThresholdPercent)
+			int matchesCount = 0;
 			{
-				lineConvergence = (lineConvergence * 100 / lineLen1);
-				orderedLinesConvergence.emplace(conv_key(lineConvergence, diffsCount,
-						(swapped ? line2 : line1), (swapped ? line1 : line2)));
+				auto charDiffs = DiffCalc<Char>(chunk1[line1], chunk2[line2])();
+
+				for (const auto& ld: charDiffs.first)
+				{
+					if (ld.type == diff_type::DIFF_MATCH)
+						matchesCount += ld.len;
+				}
+			}
+
+			if (((matchesCount * 100) / minSize) >= options.changedThresholdPercent)
+			{
+				const float lineConvergence = ((static_cast<float>(matchesCount) * 100) / minSize) +
+						((static_cast<float>(matchesCount) * 100) / maxSize);
+
+				orderedLinesConvergence[line1].emplace(lineConvergence, diffsCount, line1, line2);
+
+				LOGD("Matching Lines: " + std::to_string(doc1.lines[blockDiff1.off + line1].line + 1) + " and " +
+						std::to_string(doc2.lines[blockDiff2.off + line2].line + 1) + ", diffs: " +
+						std::to_string(diffsCount) + ", conv: " + std::to_string(lineConvergence) + "\n");
 			}
 		}
 	}
@@ -1092,104 +1060,41 @@ std::set<conv_key> getOrderedConvergence(const DocCmpInfo& doc1, const DocCmpInf
 void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blockDiff1, diffInfo& blockDiff2,
 		const CompareOptions& options)
 {
-	std::set<conv_key> orderedLinesConvergence = (options.charPrecision) ?
-			getOrderedConvergence<Char>(doc1, doc2, blockDiff1, blockDiff2, options) :
-			getOrderedConvergence<Word>(doc1, doc2, blockDiff1, blockDiff2, options);
+	std::vector<std::set<conv_key>> orderedLinesConvergence =
+			getOrderedConvergence(doc1, doc2, blockDiff1, blockDiff2, options);
 
-	const int linesCount1 = blockDiff1.len;
 	const int linesCount2 = blockDiff2.len;
 
 #ifdef DLOG
 	for (const auto& oc: orderedLinesConvergence)
 	{
-		LOGD("Ordered Converged Lines: " + std::to_string(doc1.lines[oc.line1 + blockDiff1.off].line + 1) + " and " +
-				std::to_string(doc2.lines[oc.line2 + blockDiff2.off].line + 1) + "\n");
+		if (!oc.empty())
+			LOGD("Best Matching Lines: " + std::to_string(doc1.lines[oc.begin()->line1 + blockDiff1.off].line + 1) +
+					" and " + std::to_string(doc2.lines[oc.begin()->line2 + blockDiff2.off].line + 1) + "\n");
 	}
 #endif
 
 	std::map<int, std::pair<float, int>> bestLineMappings;
-	float bestBlockConvergence = 0;
 
-	for (auto startItr = orderedLinesConvergence.begin(); startItr != orderedLinesConvergence.end(); ++startItr)
+	std::vector<bool> mappedLines2(linesCount2, false);
+
+	int unmappedLinesCount2 = linesCount2;
+
+	for (const auto& oc: orderedLinesConvergence)
 	{
-		std::map<int, std::pair<float, int>> lineMappings;
-
-		std::vector<bool> mappedLines1(linesCount1, false);
-		std::vector<bool> mappedLines2(linesCount2, false);
-
-		int mappedLinesCount1 = 0;
-		int mappedLinesCount2 = 0;
-
-		for (auto ocItr = startItr; ocItr != orderedLinesConvergence.end(); ++ocItr)
+		if (!oc.empty())
 		{
-			if (!mappedLines1[ocItr->line1] && !mappedLines2[ocItr->line2])
+			auto ocItr = oc.begin();
+
+			if (!mappedLines2[ocItr->line2])
 			{
-				lineMappings.emplace(ocItr->line1, std::pair<float, int>(ocItr->convergence, ocItr->line2));
+				bestLineMappings.emplace(ocItr->line1, std::pair<float, int>(ocItr->convergence, ocItr->line2));
 
-				if ((++mappedLinesCount1 == linesCount1) || (++mappedLinesCount2 == linesCount2))
-					break;
-
-				mappedLines1[ocItr->line1] = true;
 				mappedLines2[ocItr->line2] = true;
+
+				if (--unmappedLinesCount2 == 0)
+					break;
 			}
-		}
-
-		if ((mappedLinesCount1 != linesCount1) && (mappedLinesCount2 != linesCount2))
-		{
-			for (auto ocItr = orderedLinesConvergence.begin(); ocItr != startItr; ++ocItr)
-			{
-				if (!mappedLines1[ocItr->line1] && !mappedLines2[ocItr->line2])
-				{
-					lineMappings.emplace(ocItr->line1, std::pair<float, int>(ocItr->convergence, ocItr->line2));
-
-					if ((++mappedLinesCount1 == linesCount1) || (++mappedLinesCount2 == linesCount2))
-						break;
-
-					mappedLines1[ocItr->line1] = true;
-					mappedLines2[ocItr->line2] = true;
-				}
-			}
-		}
-
-#ifdef DLOG
-		for (const auto& lm: lineMappings)
-		{
-			LOGD("Current LineMappings: " + std::to_string(doc1.lines[lm.first + blockDiff1.off].line + 1) + " and " +
-					std::to_string(doc2.lines[lm.second.second + blockDiff2.off].line + 1) + "\n");
-		}
-#endif
-
-		float currentBlockConvergence = 0;
-		int lastLine2 = -1;
-
-		for (const auto& lm: lineMappings)
-		{
-			// lines1 are stored in ascending order and to have a match lines2 must also be in ascending order
-			if (lm.second.second > lastLine2)
-			{
-				currentBlockConvergence += lm.second.first;
-				lastLine2 = lm.second.second;
-
-				LOGD("Converged Lines: " + std::to_string(doc1.lines[lm.first + blockDiff1.off].line + 1) + " and " +
-						std::to_string(doc2.lines[lm.second.second + blockDiff2.off].line + 1) + "\n");
-			}
-#ifdef DLOG
-			else
-			{
-				LOGD("Unordered Lines: " + std::to_string(doc1.lines[lm.first + blockDiff1.off].line + 1) + " and " +
-						std::to_string(doc2.lines[lm.second.second + blockDiff2.off].line + 1) + "\n");
-			}
-#endif
-		}
-
-		LOGD("Current Convergence: " + std::to_string(currentBlockConvergence) + "\n");
-
-		if (bestBlockConvergence < currentBlockConvergence)
-		{
-			bestBlockConvergence = currentBlockConvergence;
-			bestLineMappings = std::move(lineMappings);
-
-			LOGD("New Best Convergence: " + std::to_string(currentBlockConvergence) + "\n");
 		}
 	}
 
@@ -1689,7 +1594,7 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 	if (diffRes.second)
 		swap(cmpInfo.doc1, cmpInfo.doc2);
 
-	PRINT_DIFFS("LINE DIFFS", cmpInfo.blockDiffs);
+	PRINT_DIFFS("COMPARE START - LINE DIFFS", cmpInfo.blockDiffs);
 
 	const int blockDiffsSize = static_cast<int>(cmpInfo.blockDiffs.size());
 
@@ -1718,7 +1623,7 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 		progress->SetMaxCount(changedBlockIdx.size());
 
 	// Do block compares
-	for (int i : changedBlockIdx)
+	for (int i: changedBlockIdx)
 	{
 		diffInfo& blockDiff1 = cmpInfo.blockDiffs[i - 1];
 		diffInfo& blockDiff2 = cmpInfo.blockDiffs[i];

@@ -37,8 +37,8 @@ const int ProgressDlg::cBTNheight         = 25;
 const int ProgressDlg::cPhases[] = {
 	10,		// Docs1 hashes
 	20,		// Docs2 hashes
-	25,		// Docs diff
-	65,		// Blocks diff
+	30,		// Docs diff
+	80,		// Blocks diff
 	100,	// Results colorization and presentation
 };
 
