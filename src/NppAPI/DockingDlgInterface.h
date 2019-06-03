@@ -32,11 +32,7 @@
 
 #include <assert.h>
 #include <shlwapi.h>
-#include <string>
 #include "StaticDialog.h"
-
-
-typedef std::basic_string<TCHAR> generic_string;
 
 
 class DockingDlgInterface : public StaticDialog

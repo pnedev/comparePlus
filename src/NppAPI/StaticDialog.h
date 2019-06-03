@@ -27,8 +27,10 @@
 #pragma once
 #include "Notepad_plus_msgs.h"
 #include "Window.h"
+#include <string>
 
 
+typedef std::basic_string<TCHAR> generic_string;
 typedef HRESULT (WINAPI * ETDTProc) (HWND, DWORD);
 
 enum class PosAlign { left, right, top, bottom };
