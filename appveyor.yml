@@ -1,8 +1,9 @@
 version: Build {build}
-image: Visual Studio 2015
+image: Visual Studio 2017
 
 environment:
     matrix:
+        - PlatformToolset: v141_xp
         - PlatformToolset: v140_xp
 
 platform:
@@ -15,16 +16,17 @@ configuration:
 
 install:
     - if "%platform%"=="x64" set archi=amd64
-    - if "%platform%"=="x86" set archi=x86
-    - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" %archi%
+    - if "%platform%"=="x64" set platform_input=x64
 
-build:
-    parallel: true
-    verbosity: minimal
+    - if "%platform%"=="x86" set archi=x86
+    - if "%platform%"=="x86" set platform_input=x86
+
+    - if "%PlatformToolset%"=="v140_xp" call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" %archi%
+    - if "%PlatformToolset%"=="v141_xp" call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" %archi%
 
 build_script:
     - cd "%APPVEYOR_BUILD_FOLDER%"\projects\2015\
-    - msbuild ComparePlus.vcxproj /p:configuration="%configuration%" /p:platform="%platform%" /p:PlatformToolset="%PlatformToolset%" /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+    - msbuild ComparePlus.vcxproj /m /p:configuration="%configuration%" /p:platform="%platform_input%" /p:PlatformToolset="%PlatformToolset%" /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
 after_build:
     - cd "%APPVEYOR_BUILD_FOLDER%"
@@ -33,7 +35,7 @@ after_build:
         Push-AppveyorArtifact "Notepad++\plugins\ComparePlus\ComparePlus.dll" -FileName ComparePlus.dll
 
         if ($($env:APPVEYOR_REPO_TAG) -eq "true" -and $env:CONFIGURATION -eq "Release Unicode" -and $env:PLATFORMTOOLSET -eq "v140_xp") {
-            $ZipFileName = "ComparePlus_$($env:APPVEYOR_REPO_TAG_NAME)_$env:PLATFORM.zip"
+            $ZipFileName = "ComparePlus_$($env:APPVEYOR_REPO_TAG_NAME)_$env:PLATFORM_INPUT.zip"
             Remove-Item .\Notepad++\plugins\ComparePlus\*.pdb
             7z a $ZipFileName .\Notepad++\plugins\ComparePlus\*
         }
