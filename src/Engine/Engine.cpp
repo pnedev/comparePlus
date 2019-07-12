@@ -481,8 +481,6 @@ void findBestMatch(const CompareInfo& cmpInfo, const diffInfo& lookupDiff, int l
 		if (matchDiff.type != matchType || matchDiff.len < minMatchLen)
 			continue;
 
-		int matchLastUnmoved = 0;
-
 		for (int matchOff = 0; matchOff < matchDiff.len; ++matchOff)
 		{
 			if ((*pLookupLines)[lookupDiff.off + lookupOff] != (*pMatchLines)[matchDiff.off + matchOff])
@@ -490,18 +488,20 @@ void findBestMatch(const CompareInfo& cmpInfo, const diffInfo& lookupDiff, int l
 
 			if (matchDiff.info.getNextUnmoved(matchOff))
 			{
-				matchLastUnmoved = matchOff;
-				--matchOff;
-				continue;
+				if (matchOff >= matchDiff.len)
+					break;
+
+				if ((*pLookupLines)[lookupDiff.off + lookupOff] != (*pMatchLines)[matchDiff.off + matchOff])
+					continue;
 			}
 
 			int lookupStart	= lookupOff - 1;
 			int matchStart	= matchOff - 1;
 
 			// Check for the beginning of the matched block (containing lookupOff element)
-			for (; lookupStart >= 0 && matchStart >= matchLastUnmoved &&
+			for (; lookupStart >= 0 && matchStart >= 0 &&
 					(*pLookupLines)[lookupDiff.off + lookupStart] == (*pMatchLines)[matchDiff.off + matchStart] &&
-					!lookupDiff.info.movedSection(lookupStart);
+					!lookupDiff.info.movedSection(lookupStart) && !matchDiff.info.movedSection(matchStart);
 					--lookupStart, --matchStart);
 
 			++lookupStart;
@@ -526,10 +526,12 @@ void findBestMatch(const CompareInfo& cmpInfo, const diffInfo& lookupDiff, int l
 				mi.matchLen		= matchLen;
 
 				minMatchLen		= matchLen;
+				matchOff		= matchEnd - 1;
 			}
 			else if (mi.matchLen == matchLen)
 			{
-				mi.matchDiff = nullptr;
+				mi.matchDiff	= nullptr;
+				matchOff		= matchEnd - 1;
 			}
 		}
 	}
@@ -548,14 +550,18 @@ bool resolveMatch(const CompareInfo& cmpInfo, diffInfo& lookupDiff, int lookupOf
 		MatchInfo reverseMi;
 		findBestMatch(cmpInfo, *(lookupMi.matchDiff), lookupOff, reverseMi);
 
-		if (reverseMi.matchDiff == &lookupDiff)
+		if ((reverseMi.matchDiff == &lookupDiff) && (reverseMi.matchOff == lookupMi.lookupOff))
 		{
+			LOGD("Move match found, len: " + std::to_string(lookupMi.matchLen) + "\n");
+
 			lookupDiff.info.moves.emplace_back(lookupMi.lookupOff, lookupMi.matchLen);
 			lookupMi.matchDiff->info.moves.emplace_back(lookupMi.matchOff, lookupMi.matchLen);
 			ret = true;
 		}
 		else if (reverseMi.matchDiff)
 		{
+			LOGD("Better match during resolve\n");
+
 			ret = resolveMatch(cmpInfo, *(lookupMi.matchDiff), lookupOff, reverseMi);
 			lookupMi.matchLen = 0;
 		}
@@ -580,7 +586,7 @@ void findMoves(CompareInfo& cmpInfo)
 			if (lookupDiff.type != diff_type::DIFF_IN_1)
 				continue;
 
-			LOGD("D1 off: " + std::to_string(lookupDiff.off + 1) + "\n");
+			LOGD("D1 off: " + std::to_string(cmpInfo.doc1.lines[lookupDiff.off].line + 1) + "\n");
 
 			// Go through all lookupDiff's elements and check if each is matched
 			for (int lookupEi = 0; lookupEi < lookupDiff.len; ++lookupEi)
@@ -588,11 +594,11 @@ void findMoves(CompareInfo& cmpInfo)
 				// Skip already detected moves
 				if (lookupDiff.info.getNextUnmoved(lookupEi))
 				{
-					--lookupEi;
-					continue;
+					if (lookupEi >= lookupDiff.len)
+						break;
 				}
 
-				LOGD("line offset: " + std::to_string(lookupEi) + "\n");
+				LOGD("line offset: " + std::to_string(cmpInfo.doc1.lines[lookupDiff.off + lookupEi].line + 1) + "\n");
 
 				MatchInfo mi;
 				findBestMatch(cmpInfo, lookupDiff, lookupEi, mi);
@@ -605,8 +611,6 @@ void findMoves(CompareInfo& cmpInfo)
 						lookupEi = mi.lookupOff + mi.matchLen - 1;
 					else
 						--lookupEi;
-
-					LOGD("Move match found, next line offset: " + std::to_string(lookupEi + 1) + "\n");
 				}
 			}
 		}
