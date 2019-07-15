@@ -38,6 +38,16 @@
 #include "diff.h"
 #include "ProgressDlg.h"
 
+#ifdef MULTITHREAD
+
+#if defined(__MINGW32__) && !defined(_GLIBCXX_HAS_GTHREADS)
+#include "../mingw-std-threads/mingw.thread.h"
+#else
+#include <thread>
+#endif
+
+#endif // MULTITHREAD
+
 
 namespace {
 
@@ -561,8 +571,6 @@ bool resolveMatch(const CompareInfo& cmpInfo, diffInfo& lookupDiff, int lookupOf
 		}
 		else if (reverseMi.matchDiff)
 		{
-			LOGD("Better match during resolve\n");
-
 			ret = resolveMatch(cmpInfo, *(lookupMi.matchDiff), lookupOff, reverseMi);
 			lookupMi.matchLen = 0;
 		}
@@ -587,7 +595,7 @@ void findMoves(CompareInfo& cmpInfo)
 			if (lookupDiff.type != diff_type::DIFF_IN_1)
 				continue;
 
-			LOGD("D1 off: " + std::to_string(cmpInfo.doc1.lines[lookupDiff.off].line + 1) + "\n");
+			LOGD("Check D1 with off: " + std::to_string(cmpInfo.doc1.lines[lookupDiff.off].line + 1) + "\n");
 
 			// Go through all lookupDiff's elements and check if each is matched
 			for (int lookupEi = 0; lookupEi < lookupDiff.len; ++lookupEi)
@@ -598,8 +606,6 @@ void findMoves(CompareInfo& cmpInfo)
 					if (lookupEi >= lookupDiff.len)
 						break;
 				}
-
-				LOGD("line offset: " + std::to_string(cmpInfo.doc1.lines[lookupDiff.off + lookupEi].line + 1) + "\n");
 
 				MatchInfo mi;
 				findBestMatch(cmpInfo, lookupDiff, lookupEi, mi);
@@ -883,7 +889,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 							{
 								const int matches =
 										matchBeginEnd(*pBD1, *pBD2, *pSec1, *pSec2, off1, off2, end1, end2,
-												[](char ch) { return true; });
+												[](char) { return true; });
 
 								if (matches)
 								{
@@ -940,7 +946,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 
 
 std::vector<std::set<conv_key>> getOrderedConvergence(const DocCmpInfo& doc1, const DocCmpInfo& doc2,
-		diffInfo& blockDiff1, diffInfo& blockDiff2, const CompareOptions& options)
+		const diffInfo& blockDiff1, const diffInfo& blockDiff2, const CompareOptions& options)
 {
 	const std::vector<std::vector<Char>> chunk1 = getChars(doc1, blockDiff1, options);
 	const std::vector<std::vector<Char>> chunk2 = getChars(doc2, blockDiff2, options);
@@ -948,88 +954,136 @@ std::vector<std::set<conv_key>> getOrderedConvergence(const DocCmpInfo& doc1, co
 	const int linesCount1 = static_cast<int>(chunk1.size());
 	const int linesCount2 = static_cast<int>(chunk2.size());
 
-	std::vector<std::set<conv_key>> orderedLinesConvergence(linesCount1);
-
 	std::vector<std::vector<Word>> words2(linesCount2);
 
-	for (int line1 = 0; line1 < linesCount1; ++line1)
+	if (!options.charPrecision)
 	{
-		if (chunk1[line1].empty())
-			continue;
-
-		std::vector<Word> words1;
-
 		for (int line2 = 0; line2 < linesCount2; ++line2)
-		{
-			if (chunk2[line2].empty())
-				continue;
-
-			const int minSize = std::min(chunk1[line1].size(), chunk2[line2].size());
-			const int maxSize = std::max(chunk1[line1].size(), chunk2[line2].size());
-
-			if (((minSize * 100) / maxSize) < options.changedThresholdPercent)
-				continue;
-
-			int diffsCount = 0;
-
-			if (!options.charPrecision)
-			{
-				if (words1.empty())
-					words1 = getLineWords(doc1.view, doc1.lines[blockDiff1.off + line1].line, options);
-
-				if (words2[line2].empty())
-					words2[line2] = getLineWords(doc2.view, doc2.lines[blockDiff2.off + line2].line, options);
-
-				auto wordDiffs = DiffCalc<Word>(words1, words2[line2])();
-
-				const int wordDiffsSize = static_cast<int>(wordDiffs.first.size());
-
-				int matchesCount = 0;
-
-				for (int i = 0; i < wordDiffsSize; ++i)
-				{
-					if (wordDiffs.first[i].type == diff_type::DIFF_MATCH)
-					{
-						++matchesCount;
-					}
-					else
-					{
-						++diffsCount;
-
-						// Count replacement as a single diff
-						if ((i + 1 < wordDiffsSize) && (wordDiffs.first[i + 1].type == diff_type::DIFF_IN_2))
-							++i;
-					}
-				}
-
-				if (matchesCount == 0)
-					continue;
-			}
-
-			int matchesCount = 0;
-			{
-				auto charDiffs = DiffCalc<Char>(chunk1[line1], chunk2[line2])();
-
-				for (const auto& ld: charDiffs.first)
-				{
-					if (ld.type == diff_type::DIFF_MATCH)
-						matchesCount += ld.len;
-				}
-			}
-
-			if (((matchesCount * 100) / minSize) >= options.changedThresholdPercent)
-			{
-				const float lineConvergence = ((static_cast<float>(matchesCount) * 100) / minSize) +
-						((static_cast<float>(matchesCount) * 100) / maxSize);
-
-				orderedLinesConvergence[line1].emplace(lineConvergence, diffsCount, line1, line2);
-
-				LOGD("Matching Lines: " + std::to_string(doc1.lines[blockDiff1.off + line1].line + 1) + " and " +
-						std::to_string(doc2.lines[blockDiff2.off + line2].line + 1) + ", diffs: " +
-						std::to_string(diffsCount) + ", conv: " + std::to_string(lineConvergence) + "\n");
-			}
-		}
+			if (!chunk2[line2].empty())
+				words2[line2] = getLineWords(doc2.view, doc2.lines[blockDiff2.off + line2].line, options);
 	}
+
+	std::vector<std::set<conv_key>> orderedLinesConvergence(linesCount1);
+
+#ifdef MULTITHREAD
+	const int totalJobs = linesCount1 * linesCount2;
+
+	int jobsPerThread = 25;
+
+	int threadsCount = (totalJobs + jobsPerThread) / jobsPerThread;
+
+	if (threadsCount > (int)std::thread::hardware_concurrency() - 1)
+		threadsCount = std::thread::hardware_concurrency() - 1;
+
+	if (threadsCount == 0)
+		++threadsCount;
+
+	jobsPerThread = (totalJobs + threadsCount) / threadsCount;
+
+	// Convert to line1 iterations per thread
+	jobsPerThread = (jobsPerThread + linesCount2) / linesCount2;
+
+#ifdef DLOG
+	LOGD("getOrderedConvergence(): " + std::to_string(threadsCount) + " threads will be used, " +
+			std::to_string(jobsPerThread) + " line1 iterations per thread\n");
+
+	for (int th = 0; th < threadsCount; ++th)
+		LOGD("Thread " + std::to_string(th) + " line1 range: " + std::to_string(th * jobsPerThread) + " to " +
+				std::to_string((((th + 1) != threadsCount) ? ((th + 1) * jobsPerThread) : linesCount1) - 1) + "\n");
+#endif
+
+	std::vector<std::thread> threads;
+
+	for (int th = 0; th < threadsCount; ++th)
+	{
+		threads.emplace_back(
+			[&, th]()
+			{
+				const int endLine = ((th + 1) != threadsCount) ? ((th + 1) * jobsPerThread) : linesCount1;
+
+				for (int line1 = th * jobsPerThread; line1 < endLine; ++line1)
+#else
+				for (int line1 = 0; line1 < linesCount1; ++line1)
+#endif // MULTITHREAD
+				{
+					if (chunk1[line1].empty())
+						continue;
+
+					std::vector<Word> words1;
+
+					for (int line2 = 0; line2 < linesCount2; ++line2)
+					{
+						if (chunk2[line2].empty())
+							continue;
+
+						const int minSize = std::min(chunk1[line1].size(), chunk2[line2].size());
+						const int maxSize = std::max(chunk1[line1].size(), chunk2[line2].size());
+
+						if (((minSize * 100) / maxSize) < options.changedThresholdPercent)
+							continue;
+
+						int diffsCount = 0;
+
+						if (!options.charPrecision)
+						{
+							if (words1.empty())
+								words1 = getLineWords(doc1.view, doc1.lines[blockDiff1.off + line1].line, options);
+
+							auto wordDiffs = DiffCalc<Word>(words1, words2[line2])();
+
+							const int wordDiffsSize = static_cast<int>(wordDiffs.first.size());
+
+							int matchesCount = 0;
+
+							for (int i = 0; i < wordDiffsSize; ++i)
+							{
+								if (wordDiffs.first[i].type == diff_type::DIFF_MATCH)
+								{
+									++matchesCount;
+								}
+								else
+								{
+									++diffsCount;
+
+									// Count replacement as a single diff
+									if ((i + 1 < wordDiffsSize) &&
+										(wordDiffs.first[i + 1].type == diff_type::DIFF_IN_2))
+										++i;
+								}
+							}
+
+							if (matchesCount == 0)
+								continue;
+						}
+
+						int matchesCount = 0;
+						{
+							auto charDiffs = DiffCalc<Char>(chunk1[line1], chunk2[line2])();
+
+							for (const auto& ld: charDiffs.first)
+							{
+								if (ld.type == diff_type::DIFF_MATCH)
+									matchesCount += ld.len;
+							}
+						}
+
+						if (((matchesCount * 100) / minSize) >= options.changedThresholdPercent)
+						{
+							const float lineConvergence = ((static_cast<float>(matchesCount) * 100) / minSize) +
+									((static_cast<float>(matchesCount) * 100) / maxSize);
+
+							orderedLinesConvergence[line1].emplace(lineConvergence, diffsCount, line1, line2);
+						}
+					}
+				}
+#ifdef MULTITHREAD
+			}
+		);
+	}
+
+	for (auto& th : threads)
+		th.join();
+#endif // MULTITHREAD
 
 	return orderedLinesConvergence;
 }

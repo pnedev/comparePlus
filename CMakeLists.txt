@@ -31,6 +31,10 @@ if (UNIX OR MINGW)
 		set (defs ${defs} -DNDEBUG)
 	endif ()
 
+	if (MULTITHREAD)
+		set (defs ${defs} -DMULTITHREAD)
+	endif ()
+
 	if (DLOG)
 		set (defs ${defs} -DDLOG)
 	endif ()
