@@ -864,7 +864,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 									{
 										change.off = off2;
 										if (startMatch)
-											change.off += (*pSec2)[startMatch].pos + 1;
+											change.off += (*pSec2)[startMatch].pos;
 
 										change.len = (endMatch ?
 												(*pSec2)[pSec2->size() - endMatch - 1].pos + 1 + off2 : end2) -
