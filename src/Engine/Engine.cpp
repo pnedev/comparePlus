@@ -30,6 +30,7 @@
 #include <unordered_map>
 #include <map>
 #include <algorithm>
+#include <functional>
 
 #include <windows.h>
 
@@ -648,6 +649,57 @@ void findUniqueLines(CompareInfo& cmpInfo)
 }
 
 
+inline int matchBeginEnd(diffInfo& blockDiff1, diffInfo& blockDiff2,
+		const std::vector<Char>& sec1, const std::vector<Char>& sec2,
+		int off1, int off2, int end1, int end2, std::function<bool(char)>&& charFilter_fn)
+{
+	const int minSecSize = std::min(sec1.size(), sec2.size());
+
+	int startMatch = 0;
+	while ((minSecSize > startMatch) && (sec1[startMatch] == sec2[startMatch]) && charFilter_fn(sec1[startMatch].ch))
+		++startMatch;
+
+	int endMatch = 0;
+	while ((minSecSize - startMatch > endMatch) &&
+			(sec1[sec1.size() - endMatch - 1] == sec2[sec2.size() - endMatch - 1]) &&
+			charFilter_fn(sec1[startMatch].ch))
+		++endMatch;
+
+	if (startMatch || endMatch)
+	{
+		section_t change;
+
+		if ((int)sec1.size() > startMatch + endMatch)
+		{
+			change.off = off1;
+			if (startMatch)
+				change.off += sec1[startMatch].pos;
+
+			change.len = (endMatch ?
+					sec1[sec1.size() - endMatch - 1].pos + 1 + off1 : end1) - change.off;
+
+			if (change.len > 0)
+				blockDiff1.info.changedLines.back().changes.emplace_back(change);
+		}
+
+		if ((int)sec2.size() > startMatch + endMatch)
+		{
+			change.off = off2;
+			if (startMatch)
+				change.off += sec2[startMatch].pos;
+
+			change.len = (endMatch ?
+					sec2[sec2.size() - endMatch - 1].pos + 1 + off2 : end2) - change.off;
+
+			if (change.len > 0)
+				blockDiff2.info.changedLines.back().changes.emplace_back(change);
+		}
+	}
+
+	return (startMatch + endMatch);
+}
+
+
 void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blockDiff1, diffInfo& blockDiff2,
 		const std::map<int, std::pair<float, int>>& lineMappings, const CompareOptions& options)
 {
@@ -748,8 +800,6 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 					const std::vector<Char> sec2 =
 							getSectionChars(pDoc2->view, off2 + lineOff2, end2 + lineOff2, options);
 
-					const int minSecSize = std::min(sec1.size(), sec2.size());
-
 					if (options.charPrecision)
 					{
 						LOGD("Compare Sections " +
@@ -831,52 +881,13 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 							// If not, mark only beginning and ending diff section matches
 							else
 							{
-								int startMatch = 0;
-								while ((minSecSize > startMatch) && (*pSec1)[startMatch] == (*pSec2)[startMatch])
-									++startMatch;
+								const int matches =
+										matchBeginEnd(*pBD1, *pBD2, *pSec1, *pSec2, off1, off2, end1, end2,
+												[](char ch) { return true; });
 
-								int endMatch = 0;
-								while ((minSecSize - startMatch > endMatch) &&
-										((*pSec1)[pSec1->size() - endMatch - 1] ==
-										(*pSec2)[pSec2->size() - endMatch - 1]))
-									++endMatch;
-
-								// Always match characters in the beginning and at the end
-								if (startMatch || endMatch)
+								if (matches)
 								{
-									section_t change;
-
-									if ((int)pSec1->size() > startMatch + endMatch)
-									{
-										change.off = off1;
-										if (startMatch)
-											change.off += (*pSec1)[startMatch].pos;
-
-										change.len = (endMatch ?
-												(*pSec1)[pSec1->size() - endMatch - 1].pos + 1 + off1 : end1) -
-												change.off;
-
-										if (change.len > 0)
-											pBD1->info.changedLines.back().changes.emplace_back(change);
-									}
-
-									if ((int)pSec2->size() > startMatch + endMatch)
-									{
-										change.off = off2;
-										if (startMatch)
-											change.off += (*pSec2)[startMatch].pos;
-
-										change.len = (endMatch ?
-												(*pSec2)[pSec2->size() - endMatch - 1].pos + 1 + off2 : end2) -
-												change.off;
-
-										if (change.len > 0)
-											pBD2->info.changedLines.back().changes.emplace_back(change);
-									}
-
-									totalLineMatchLen += startMatch + endMatch;
-
-									LOGD("Beginning and end of section checked for matches\n");
+									totalLineMatchLen += matches;
 
 									++i;
 									continue;
@@ -891,50 +902,13 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 					// Always match non-alphabetical characters in the beginning and at the end
 					else
 					{
-						int startMatch = 0;
-						while ((minSecSize > startMatch) && (sec1[startMatch] == sec2[startMatch]) &&
-								(getCharType(sec1[startMatch].ch) != charType::ALPHANUMCHAR))
-							++startMatch;
+						const int matches =
+								matchBeginEnd(*pBlockDiff1, *pBlockDiff2, sec1, sec2, off1, off2, end1, end2,
+										[](char ch) { return (getCharType(ch) != charType::ALPHANUMCHAR); });
 
-						int endMatch = 0;
-						while ((minSecSize - startMatch > endMatch) &&
-								(sec1[sec1.size() - endMatch - 1] == sec2[sec2.size() - endMatch - 1]) &&
-								(getCharType(sec1[sec1.size() - endMatch - 1].ch) != charType::ALPHANUMCHAR))
-							++endMatch;
-
-						if (startMatch || endMatch)
+						if (matches)
 						{
-							section_t change;
-
-							if ((int)sec1.size() > startMatch + endMatch)
-							{
-								change.off = off1;
-								if (startMatch)
-									change.off += sec1[startMatch].pos;
-
-								change.len = (endMatch ?
-										sec1[sec1.size() - endMatch - 1].pos + 1 + off1 : end1) - change.off;
-
-								if (change.len > 0)
-									pBlockDiff1->info.changedLines.back().changes.emplace_back(change);
-							}
-
-							if ((int)sec2.size() > startMatch + endMatch)
-							{
-								change.off = off2;
-								if (startMatch)
-									change.off += sec2[startMatch].pos;
-
-								change.len = (endMatch ?
-										sec2[sec2.size() - endMatch - 1].pos + 1 + off2 : end2) - change.off;
-
-								if (change.len > 0)
-									pBlockDiff2->info.changedLines.back().changes.emplace_back(change);
-							}
-
-							totalLineMatchLen += startMatch + endMatch;
-
-							LOGD("Beginning and end of non-alphabetical chars checked for matches\n");
+							totalLineMatchLen += matches;
 
 							++i;
 							continue;
