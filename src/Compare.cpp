@@ -2924,10 +2924,10 @@ void deinitPlugin()
 	for (int i = 0; i < NB_MENU_COMMANDS; i++)
 	{
 		if (funcItem[i]._pShKey != NULL)
-        {
+		{
 			delete funcItem[i]._pShKey;
-            funcItem[i]._pShKey = NULL;
-        }
+			funcItem[i]._pShKey = NULL;
+		}
 	}
 }
 
@@ -3138,7 +3138,7 @@ void DelayedAlign::operator()()
 
 	if (cmpPair->autoUpdateDelay)
 	{
-        delayedUpdate.post(cmpPair->autoUpdateDelay);
+		delayedUpdate.post(cmpPair->autoUpdateDelay);
 
 		return;
 	}
@@ -3395,8 +3395,8 @@ void DelayedActivate::operator()()
 	// File seems reloaded - re-compare pair
 	else
 	{
-        delayedAlignment.cancel();
-        delayedUpdate.post(30);
+		delayedAlignment.cancel();
+		delayedUpdate.post(30);
 	}
 }
 
@@ -3532,25 +3532,25 @@ void onFileBeforeSave(LRESULT buffId)
 	if (cmpPair == compareList.end())
 		return;
 
-    const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
+	const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
 
-    const LRESULT currentBuffId = getCurrentBuffId();
-    const bool pairIsActive = (currentBuffId == buffId || currentBuffId == otherFile.buffId);
+	const LRESULT currentBuffId = getCurrentBuffId();
+	const bool pairIsActive = (currentBuffId == buffId || currentBuffId == otherFile.buffId);
 
 	ScopedIncrementer incr(notificationsLock);
 
-    if (!pairIsActive)
-        activateBufferID(buffId);
+	if (!pairIsActive)
+		activateBufferID(buffId);
 
 	const int currentView = viewIdFromBuffId(buffId);
-    ComparedFile& currentFile = cmpPair->getFileByBuffId(buffId);
+	ComparedFile& currentFile = cmpPair->getFileByBuffId(buffId);
 	currentFile.restoreAlignmentLine = isAlignmentFirstLineInserted(currentView);
 
 	if (currentFile.restoreAlignmentLine)
 		removeAlignmentFirstLine(currentView);
 
-    if (!pairIsActive)
-        activateBufferID(currentBuffId);
+	if (!pairIsActive)
+		activateBufferID(currentBuffId);
 }
 
 
@@ -3560,17 +3560,17 @@ void onFileSaved(LRESULT buffId)
 	if (cmpPair == compareList.end())
 		return;
 
-    const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
+	const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
 
-    const LRESULT currentBuffId = getCurrentBuffId();
-    const bool pairIsActive = (currentBuffId == buffId || currentBuffId == otherFile.buffId);
+	const LRESULT currentBuffId = getCurrentBuffId();
+	const bool pairIsActive = (currentBuffId == buffId || currentBuffId == otherFile.buffId);
 
 	ScopedIncrementer incr(notificationsLock);
 
-    if (!pairIsActive)
-        activateBufferID(buffId);
+	if (!pairIsActive)
+		activateBufferID(buffId);
 
-    ComparedFile& currentFile = cmpPair->getFileByBuffId(buffId);
+	ComparedFile& currentFile = cmpPair->getFileByBuffId(buffId);
 
 	if (currentFile.restoreAlignmentLine)
 	{
@@ -3583,43 +3583,43 @@ void onFileSaved(LRESULT buffId)
 		CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
 	}
 
-    if (pairIsActive && Settings.RecompareOnChange && cmpPair->autoUpdateDelay)
-    {
-        delayedAlignment.cancel();
-        delayedUpdate.post(30);
-    }
+	if (pairIsActive && Settings.RecompareOnChange && cmpPair->autoUpdateDelay)
+	{
+		delayedAlignment.cancel();
+		delayedUpdate.post(30);
+	}
 
-    if (otherFile.isTemp == LAST_SAVED_TEMP)
-    {
-        HWND hNppTabBar = NppTabHandleGetter::get(otherFile.compareViewId);
+	if (otherFile.isTemp == LAST_SAVED_TEMP)
+	{
+		HWND hNppTabBar = NppTabHandleGetter::get(otherFile.compareViewId);
 
-        if (hNppTabBar)
-        {
-            TCHAR tabText[MAX_PATH];
+		if (hNppTabBar)
+		{
+			TCHAR tabText[MAX_PATH];
 
-            TCITEM tab;
-            tab.mask = TCIF_TEXT;
-            tab.pszText = tabText;
-            tab.cchTextMax = _countof(tabText);
+			TCITEM tab;
+			tab.mask = TCIF_TEXT;
+			tab.pszText = tabText;
+			tab.cchTextMax = _countof(tabText);
 
-            const int tabPos = posFromBuffId(otherFile.buffId);
-            TabCtrl_GetItem(hNppTabBar, tabPos, &tab);
+			const int tabPos = posFromBuffId(otherFile.buffId);
+			TabCtrl_GetItem(hNppTabBar, tabPos, &tab);
 
-            _tcscat_s(tabText, _countof(tabText), TEXT(" - Outdated"));
+			_tcscat_s(tabText, _countof(tabText), TEXT(" - Outdated"));
 
 			::SendMessage(nppData._nppHandle, NPPM_HIDETABBAR, 0, TRUE);
 
-            TabCtrl_SetItem(hNppTabBar, tabPos, &tab);
+			TabCtrl_SetItem(hNppTabBar, tabPos, &tab);
 
 			::SendMessage(nppData._nppHandle, NPPM_HIDETABBAR, 0, FALSE);
-        }
-    }
+		}
+	}
 
-    if (!pairIsActive)
-    {
-        activateBufferID(currentBuffId);
-        onBufferActivated(currentBuffId);
-    }
+	if (!pairIsActive)
+	{
+		activateBufferID(currentBuffId);
+		onBufferActivated(currentBuffId);
+	}
 }
 
 

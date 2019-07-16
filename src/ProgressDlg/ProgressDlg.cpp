@@ -171,10 +171,10 @@ ProgressDlg::ProgressDlg() : _hwnd(NULL),  _hKeyHook(NULL),
 
 ProgressDlg::~ProgressDlg()
 {
-    if (_hKeyHook)
-        ::UnhookWindowsHookEx(_hKeyHook);
+	if (_hKeyHook)
+		::UnhookWindowsHookEx(_hKeyHook);
 
-    destroy();
+	destroy();
 
 	::EnableWindow(nppData._nppHandle, TRUE);
 	::SetForegroundWindow(nppData._nppHandle);
@@ -185,33 +185,33 @@ ProgressDlg::~ProgressDlg()
 
 HWND ProgressDlg::create()
 {
-    // Create manually reset non-signaled event
-    _hActiveState = ::CreateEvent(NULL, TRUE, FALSE, NULL);
-    if (!_hActiveState)
-        return NULL;
+	// Create manually reset non-signaled event
+	_hActiveState = ::CreateEvent(NULL, TRUE, FALSE, NULL);
+	if (!_hActiveState)
+		return NULL;
 
 	for (HWND hwnd = nppData._nppHandle; hwnd; hwnd = ::GetParent(hwnd))
 		::UpdateWindow(hwnd);
 
-    _hThread = ::CreateThread(NULL, 0, threadFunc, this, 0, NULL);
-    if (!_hThread)
-    {
-        ::CloseHandle(_hActiveState);
-        return NULL;
-    }
-
-    // Wait for the progress window to be created
-    ::WaitForSingleObject(_hActiveState, INFINITE);
-
-    // On progress window create fail
-    if (!_hwnd)
-    {
-        ::WaitForSingleObject(_hThread, INFINITE);
-        ::CloseHandle(_hThread);
+	_hThread = ::CreateThread(NULL, 0, threadFunc, this, 0, NULL);
+	if (!_hThread)
+	{
 		::CloseHandle(_hActiveState);
-    }
+		return NULL;
+	}
 
-    return _hwnd;
+	// Wait for the progress window to be created
+	::WaitForSingleObject(_hActiveState, INFINITE);
+
+	// On progress window create fail
+	if (!_hwnd)
+	{
+		::WaitForSingleObject(_hThread, INFINITE);
+		::CloseHandle(_hThread);
+		::CloseHandle(_hActiveState);
+	}
+
+	return _hwnd;
 }
 
 
@@ -226,15 +226,15 @@ void ProgressDlg::cancel()
 
 void ProgressDlg::destroy()
 {
-    if (_hwnd)
-    {
+	if (_hwnd)
+	{
 		::PostMessage(_hwnd, WM_CLOSE, 0, 0);
 		_hwnd = NULL;
 
-        ::WaitForSingleObject(_hThread, INFINITE);
-        ::CloseHandle(_hThread);
-        ::CloseHandle(_hActiveState);
-    }
+		::WaitForSingleObject(_hThread, INFINITE);
+		::CloseHandle(_hThread);
+		::CloseHandle(_hActiveState);
+	}
 }
 
 
@@ -252,22 +252,22 @@ void ProgressDlg::update()
 
 DWORD WINAPI ProgressDlg::threadFunc(LPVOID data)
 {
-    ProgressDlg* pw = static_cast<ProgressDlg*>(data);
-    return (DWORD)pw->thread();
+	ProgressDlg* pw = static_cast<ProgressDlg*>(data);
+	return (DWORD)pw->thread();
 }
 
 
 BOOL ProgressDlg::thread()
 {
-    BOOL r = createProgressWindow();
-    ::SetEvent(_hActiveState);
-    if (!r)
-        return r;
+	BOOL r = createProgressWindow();
+	::SetEvent(_hActiveState);
+	if (!r)
+		return r;
 
-    // Window message loop
-    MSG msg;
-    while ((r = ::GetMessage(&msg, NULL, 0, 0)) != 0 && r != -1)
-        ::DispatchMessage(&msg);
+	// Window message loop
+	MSG msg;
+	while ((r = ::GetMessage(&msg, NULL, 0, 0)) != 0 && r != -1)
+		::DispatchMessage(&msg);
 
 	return r;
 }
@@ -277,35 +277,35 @@ BOOL ProgressDlg::createProgressWindow()
 {
 	_hwnd = ::CreateWindowEx(
 		WS_EX_APPWINDOW | WS_EX_TOOLWINDOW | WS_EX_OVERLAPPEDWINDOW,
-            cClassName, PLUGIN_NAME, WS_POPUP | WS_CAPTION,
-            CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-            NULL, NULL, _hInst, (LPVOID)this);
-    if (!_hwnd)
-        return FALSE;
+			cClassName, PLUGIN_NAME, WS_POPUP | WS_CAPTION,
+			CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+			NULL, NULL, _hInst, (LPVOID)this);
+	if (!_hwnd)
+		return FALSE;
 
-    int width = cPBwidth + 10;
-    int height = cPBheight + cBTNheight + 35;
-    RECT win = adjustSizeAndPos(width, height);
-    ::MoveWindow(_hwnd, win.left, win.top, win.right - win.left, win.bottom - win.top, TRUE);
+	int width = cPBwidth + 10;
+	int height = cPBheight + cBTNheight + 35;
+	RECT win = adjustSizeAndPos(width, height);
+	::MoveWindow(_hwnd, win.left, win.top, win.right - win.left, win.bottom - win.top, TRUE);
 
-    ::GetClientRect(_hwnd, &win);
-    width = win.right - win.left;
-    height = win.bottom - win.top;
+	::GetClientRect(_hwnd, &win);
+	width = win.right - win.left;
+	height = win.bottom - win.top;
 
 	_hPText = ::CreateWindowEx(0, TEXT("STATIC"), TEXT(""),
 			WS_CHILD | WS_VISIBLE | BS_TEXT | SS_PATHELLIPSIS,
 			5, 5, width - 10, 20, _hwnd, NULL, _hInst, NULL);
 
-    _hPBar = ::CreateWindowEx(0, PROGRESS_CLASS, TEXT("Progress Bar"),
-            WS_CHILD | WS_VISIBLE | PBS_SMOOTH,
-            5, 25, width - 10, cPBheight,
-            _hwnd, NULL, _hInst, NULL);
-    ::SendMessage(_hPBar, PBM_SETRANGE, 0, MAKELPARAM(0, cPhases[_countof(cPhases) - 1]));
+	_hPBar = ::CreateWindowEx(0, PROGRESS_CLASS, TEXT("Progress Bar"),
+			WS_CHILD | WS_VISIBLE | PBS_SMOOTH,
+			5, 25, width - 10, cPBheight,
+			_hwnd, NULL, _hInst, NULL);
+	::SendMessage(_hPBar, PBM_SETRANGE, 0, MAKELPARAM(0, cPhases[_countof(cPhases) - 1]));
 
-    _hBtn = ::CreateWindowEx(0, TEXT("BUTTON"), TEXT("Cancel"),
-            WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON | BS_TEXT,
-            (width - cBTNwidth) / 2, height - cBTNheight - 5,
-            cBTNwidth, cBTNheight, _hwnd, NULL, _hInst, NULL);
+	_hBtn = ::CreateWindowEx(0, TEXT("BUTTON"), TEXT("Cancel"),
+			WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON | BS_TEXT,
+			(width - cBTNwidth) / 2, height - cBTNheight - 5,
+			cBTNwidth, cBTNheight, _hwnd, NULL, _hInst, NULL);
 
 	HFONT hf = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);
 	if (hf)
@@ -314,12 +314,12 @@ BOOL ProgressDlg::createProgressWindow()
 		::SendMessage(_hBtn, WM_SETFONT, (WPARAM)hf, MAKELPARAM(TRUE, 0));
 	}
 
-    _hKeyHook = ::SetWindowsHookEx(WH_KEYBOARD, keyHookProc, _hInst, GetCurrentThreadId());
+	_hKeyHook = ::SetWindowsHookEx(WH_KEYBOARD, keyHookProc, _hInst, GetCurrentThreadId());
 
-    ::ShowWindow(_hwnd, SW_SHOWNORMAL);
-    ::UpdateWindow(_hwnd);
+	::ShowWindow(_hwnd, SW_SHOWNORMAL);
+	::UpdateWindow(_hwnd);
 
-    return TRUE;
+	return TRUE;
 }
 
 
@@ -391,49 +391,49 @@ RECT ProgressDlg::adjustSizeAndPos(int width, int height)
 
 LRESULT CALLBACK ProgressDlg::keyHookProc(int code, WPARAM wParam, LPARAM lParam)
 {
-    if (code >= 0 && Inst)
-    {
-        if (Inst->_hBtn == ::GetFocus())
-        {
-            // Key is pressed
-            if (!(lParam & (1 << 31)))
-            {
-                if (wParam == VK_RETURN || wParam == VK_ESCAPE)
-                {
-                    Inst->cancel();
-                    return 1;
-                }
-            }
-        }
-    }
+	if (code >= 0 && Inst)
+	{
+		if (Inst->_hBtn == ::GetFocus())
+		{
+			// Key is pressed
+			if (!(lParam & (1 << 31)))
+			{
+				if (wParam == VK_RETURN || wParam == VK_ESCAPE)
+				{
+					Inst->cancel();
+					return 1;
+				}
+			}
+		}
+	}
 
-    return ::CallNextHookEx(NULL, code, wParam, lParam);
+	return ::CallNextHookEx(NULL, code, wParam, lParam);
 }
 
 
 LRESULT APIENTRY ProgressDlg::wndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 {
-    switch (umsg)
-    {
-        case WM_CREATE:
-            return 0;
+	switch (umsg)
+	{
+		case WM_CREATE:
+			return 0;
 
-        case WM_SETFOCUS:
-            ::SetFocus(Inst->_hBtn);
-            return 0;
+		case WM_SETFOCUS:
+			::SetFocus(Inst->_hBtn);
+			return 0;
 
-        case WM_COMMAND:
-            if (HIWORD(wparam) == BN_CLICKED)
-            {
+		case WM_COMMAND:
+			if (HIWORD(wparam) == BN_CLICKED)
+			{
 				Inst->cancel();
-                return 0;
-            }
-            break;
+				return 0;
+			}
+			break;
 
-        case WM_DESTROY:
-            ::PostQuitMessage(0);
-            return 0;
-    }
+		case WM_DESTROY:
+			::PostQuitMessage(0);
+			return 0;
+	}
 
-    return ::DefWindowProc(hwnd, umsg, wparam, lparam);
+	return ::DefWindowProc(hwnd, umsg, wparam, lparam);
 }
