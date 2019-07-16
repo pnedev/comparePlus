@@ -3,7 +3,7 @@ cmake_minimum_required (VERSION 2.8)
 set (CMAKE_SYSTEM_NAME Windows)
 
 if (UNIX OR MINGW)
-	set (CMAKE_SYSROOT "$ENV{HOME}/bin/cross")
+	set (CMAKE_SYSROOT "/usr")
 
 	set (CMAKE_FIND_ROOT_PATH_MODE_PROGRAM  NEVER)
 	set (CMAKE_FIND_ROOT_PATH_MODE_LIBRARY  ONLY)
@@ -40,7 +40,7 @@ if (UNIX OR MINGW)
 	endif ()
 
 	set (CMAKE_CXX_FLAGS
-		"-std=c++11 -O3 -mwindows -mthreads -municode -Wall -Wno-unknown-pragmas"
+		"-std=c++11 -O3 -static-libgcc -static-libstdc++ -Wall -Wno-unknown-pragmas"
 	)
 
 	set (CMAKE_MODULE_LINKER_FLAGS
