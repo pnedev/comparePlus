@@ -35,6 +35,12 @@
 	#include <string>
 	#include <shlwapi.h>
 
+	#define LOGD_GET_TIME \
+		for (;;) { \
+			dLogTime_ms = ::GetTickCount(); \
+			break; \
+		}
+
 	#define LOGD(STR) \
 		for (;;) { \
 			const DWORD time_ms = ::GetTickCount(); \
@@ -43,7 +49,6 @@
 			::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, _countof(file), (LPARAM)file); \
 			::WideCharToMultiByte(CP_ACP, 0, file, -1, fileA, sizeof(fileA), NULL, NULL); \
 			if (dLogTime_ms) dLog += "+ "; \
-			else dLogTime_ms = time_ms; \
 			std::string tmp_str { std::to_string(time_ms - dLogTime_ms) }; \
 			dLog += tmp_str; \
 			if (tmp_str.size() < 3) dLog += " ms\t\t- "; \
@@ -55,7 +60,6 @@
 			else if (tmp_str.size() < 12) dLog += " -\t\t"; \
 			else dLog += " -\t"; \
 			dLog += (STR); \
-			dLogTime_ms = ::GetTickCount(); \
 			break; \
 		}
 
@@ -67,7 +71,6 @@
 			::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, BUFFID, (LPARAM)file); \
 			::WideCharToMultiByte(CP_ACP, 0, ::PathFindFileName(file), -1, fileA, sizeof(fileA), NULL, NULL); \
 			if (dLogTime_ms) dLog += "+ "; \
-			else dLogTime_ms = time_ms; \
 			std::string tmp_str { std::to_string(time_ms - dLogTime_ms) }; \
 			dLog += tmp_str; \
 			if (tmp_str.size() < 3) dLog += " ms\t\t- "; \
@@ -79,7 +82,6 @@
 			else if (tmp_str.size() < 12) dLog += " -\t\t"; \
 			else dLog += " -\t"; \
 			dLog += (STR); \
-			dLogTime_ms = ::GetTickCount(); \
 			break; \
 		}
 
@@ -99,6 +101,7 @@
 
 #else
 
+	#define LOGD_GET_TIME
 	#define LOGD(STR)
 	#define LOGDB(BUFFID, STR)
 	#define PRINT_DIFFS(INFO, DIFFS)

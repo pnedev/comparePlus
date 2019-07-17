@@ -1572,6 +1572,7 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 	if (diffRes.second)
 		swap(cmpInfo.doc1, cmpInfo.doc2);
 
+	LOGD_GET_TIME;
 	PRINT_DIFFS("COMPARE START - LINE DIFFS", cmpInfo.blockDiffs);
 
 	const int blockDiffsSize = static_cast<int>(cmpInfo.blockDiffs.size());
