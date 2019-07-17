@@ -668,7 +668,7 @@ inline int matchBeginEnd(diffInfo& blockDiff1, diffInfo& blockDiff2,
 	int endMatch = 0;
 	while ((minSecSize - startMatch > endMatch) &&
 			(sec1[sec1.size() - endMatch - 1] == sec2[sec2.size() - endMatch - 1]) &&
-			charFilter_fn(sec1[startMatch].ch))
+			charFilter_fn(sec1[sec1.size() - endMatch - 1].ch))
 		++endMatch;
 
 	if (startMatch || endMatch)
