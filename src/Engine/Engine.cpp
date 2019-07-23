@@ -965,46 +965,10 @@ std::vector<std::set<conv_key>> getOrderedConvergence(const DocCmpInfo& doc1, co
 
 	std::vector<std::set<conv_key>> orderedLinesConvergence(linesCount1);
 
-#ifdef MULTITHREAD
-	const int totalJobs = linesCount1 * linesCount2;
-
-	int jobsPerThread = 25;
-
-	int threadsCount = (totalJobs + jobsPerThread) / jobsPerThread;
-
-	if (threadsCount > (int)std::thread::hardware_concurrency() - 1)
-		threadsCount = std::thread::hardware_concurrency() - 1;
-
-	if (threadsCount == 0)
-		++threadsCount;
-
-	jobsPerThread = (totalJobs + threadsCount) / threadsCount;
-
-	// Convert to line1 iterations per thread
-	jobsPerThread = (jobsPerThread + linesCount2) / linesCount2;
-
-#ifdef DLOG
-	LOGD("getOrderedConvergence(): " + std::to_string(threadsCount) + " threads will be used, " +
-			std::to_string(jobsPerThread) + " line1 iterations per thread\n");
-
-	for (int th = 0; th < threadsCount; ++th)
-		LOGD("Thread " + std::to_string(th) + " line1 range: " + std::to_string(th * jobsPerThread) + " to " +
-				std::to_string((((th + 1) != threadsCount) ? ((th + 1) * jobsPerThread) : linesCount1) - 1) + "\n");
-#endif
-
-	std::vector<std::thread> threads;
-
-	for (int th = 0; th < threadsCount; ++th)
-	{
-		threads.emplace_back(
-			[&, th]()
+	auto workFn =
+			[&](int startLine, int endLine)
 			{
-				const int endLine = ((th + 1) != threadsCount) ? ((th + 1) * jobsPerThread) : linesCount1;
-
-				for (int line1 = th * jobsPerThread; line1 < endLine; ++line1)
-#else
-				for (int line1 = 0; line1 < linesCount1; ++line1)
-#endif // MULTITHREAD
+				for (int line1 = startLine; line1 < endLine; ++line1)
 				{
 					if (chunk1[line1].empty())
 						continue;
@@ -1076,13 +1040,64 @@ std::vector<std::set<conv_key>> getOrderedConvergence(const DocCmpInfo& doc1, co
 						}
 					}
 				}
+			};
+
 #ifdef MULTITHREAD
-			}
-		);
+
+	int threadsCount = std::thread::hardware_concurrency() - 1;
+
+	if (threadsCount < 1)
+		threadsCount = 1;
+
+	if (threadsCount == 1)
+	{
+		LOGD("getOrderedConvergence(): only 1 thread available\n");
+
+		workFn(0, linesCount1);
+	}
+	else
+	{
+		const int totalJobs = linesCount1 * linesCount2;
+
+		int jobsPerThread = 50;
+
+		const int threadsNeeded = (totalJobs + jobsPerThread - 1) / jobsPerThread;
+
+		if (threadsCount > threadsNeeded)
+			threadsCount = threadsNeeded;
+
+		jobsPerThread = (totalJobs + threadsCount - 1) / threadsCount;
+
+		LOGD("getOrderedConvergence(): " + std::to_string(threadsCount) + " threads will be used, " +
+				std::to_string(jobsPerThread) + " jobs per thread\n");
+
+		// Convert to line1 iterations per thread
+		jobsPerThread = (jobsPerThread + linesCount2 - 1) / linesCount2;
+
+		std::vector<std::thread> threads;
+
+		int startLine = 0;
+
+		for (int th = 0; th < threadsCount; ++th)
+		{
+			const int endLine = ((th == (threadsCount - 1)) ? linesCount1 : (startLine + jobsPerThread));
+
+			LOGD("Thread " + std::to_string(th) + " line1 range: " + std::to_string(startLine) + " to " +
+					std::to_string(endLine - 1) + "\n");
+
+			threads.emplace_back(std::bind(workFn, startLine, endLine));
+
+			startLine += jobsPerThread;
+		}
+
+		for (auto& th : threads)
+			th.join();
 	}
 
-	for (auto& th : threads)
-		th.join();
+#else
+
+	workFn(0, linesCount1);
+
 #endif // MULTITHREAD
 
 	return orderedLinesConvergence;
