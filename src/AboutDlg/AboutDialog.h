@@ -40,10 +40,8 @@ public:
 	UINT doDialog();
 
 	virtual void destroy() {
-		_emailLinkJSL.destroy();
-		_emailLinkPND.destroy();
-		_urlOriginalRepo.destroy();
-		_urlPNDRepo.destroy();
+		_emailLink.destroy();
+		_urlRepo.destroy();
 		_helpLink.destroy();
 	};
 
@@ -56,9 +54,7 @@ private:
 	HWND			_HSource;
 
 	/* for eMail */
-	URLCtrl			_emailLinkJSL;
-	URLCtrl			_emailLinkPND;
-	URLCtrl			_urlOriginalRepo;
-	URLCtrl			_urlPNDRepo;
+	URLCtrl			_emailLink;
+	URLCtrl			_urlRepo;
 	URLCtrl			_helpLink;
 };

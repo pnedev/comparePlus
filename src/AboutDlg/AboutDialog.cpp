@@ -18,6 +18,7 @@
 #include <windows.h>
 #include <tchar.h>
 #include <shellapi.h>
+#include <cstdlib>
 
 #include "AboutDialog.h"
 #include "resource.h"
@@ -25,6 +26,7 @@
 
 
 static const TCHAR cDonate_URL[]	= TEXT("https://paypal.me/pnedev");
+static const TCHAR cRepo_URL[]		= TEXT("https://github.com/pnedev/compare-plugin");
 static const TCHAR cHelp_URL[]		= TEXT("https://github.com/pnedev/compare-plugin/blob/master/Help.md");
 
 
@@ -42,14 +44,17 @@ INT_PTR CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*
 		{
 			goToCenter();
 
-			_emailLinkJSL.init(_hInst, _hSelf);
-			_emailLinkJSL.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK_JSL), TEXT("mailto:jean.sebastien.leroy@gmail.com"));
-			_emailLinkPND.init(_hInst, _hSelf);
-			_emailLinkPND.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK_PND), TEXT("mailto:pg.nedev@gmail.com"));
-			_urlOriginalRepo.init(_hInst, _hSelf);
-			_urlOriginalRepo.create(::GetDlgItem(_hSelf, IDC_ORIGINAL_REPO_URL), NULL);
-			_urlPNDRepo.init(_hInst, _hSelf);
-			_urlPNDRepo.create(::GetDlgItem(_hSelf, IDC_LATEST_DEV_REPO_URL), NULL);
+			TCHAR buildTimeStr[256];
+
+			_sntprintf_s(buildTimeStr, _countof(buildTimeStr), _TRUNCATE,
+					TEXT("Build time:    %s,  %s"), TEXT(__DATE__), TEXT(__TIME__));
+
+			::SetDlgItemText(_hSelf, IDC_BUILD_TIME, buildTimeStr);
+
+			_emailLink.init(_hInst, _hSelf);
+			_emailLink.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK), TEXT("mailto:pg.nedev@gmail.com"));
+			_urlRepo.init(_hInst, _hSelf);
+			_urlRepo.create(::GetDlgItem(_hSelf, IDC_REPO_URL), cRepo_URL);
 			_helpLink.init(_hInst, _hSelf);
 			_helpLink.create(::GetDlgItem(_hSelf, IDC_HELP_URL), cHelp_URL);
 
