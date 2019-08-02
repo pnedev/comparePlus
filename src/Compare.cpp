@@ -3343,7 +3343,7 @@ void onSciModified(SCNotification* notifyCode)
 			else
 				// Leave bigger delay before re-compare if change is on single line because the user might be typing
 				// and we shouldn't interrupt / interfere
-				cmpPair->autoUpdateDelay = 1000;
+				cmpPair->autoUpdateDelay = 1500;
 		}
 	}
 }

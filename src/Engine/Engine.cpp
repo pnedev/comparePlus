@@ -22,9 +22,10 @@
 
 #include <climits>
 #include <cmath>
-#include <exception>
 #include <cstdint>
+#include <exception>
 #include <utility>
+#include <vector>
 #include <unordered_set>
 #include <set>
 #include <unordered_map>
@@ -709,21 +710,13 @@ inline int matchBeginEnd(diffInfo& blockDiff1, diffInfo& blockDiff2,
 void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blockDiff1, diffInfo& blockDiff2,
 		const std::map<int, int>& lineMappings, const CompareOptions& options)
 {
-	int lastLine2 = -1;
-
 	for (const auto& lm: lineMappings)
 	{
-		// lines1 are stored in ascending order and to have a match lines2 must also be in ascending order
-		if (lm.second <= lastLine2)
-			continue;
-
-		int line1 = lm.first;
-		int line2 = lm.second;
+		int line1 = lm.second;
+		int line2 = lm.first;
 
 		LOGD("Compare Lines " + std::to_string(doc1.lines[blockDiff1.off + line1].line + 1) + " and " +
 				std::to_string(doc2.lines[blockDiff2.off + line2].line + 1) + "\n");
-
-		lastLine2 = line2;
 
 		const std::vector<Word> lineWords1 = getLineWords(doc1.view, doc1.lines[blockDiff1.off + line1].line, options);
 		const std::vector<Word> lineWords2 = getLineWords(doc2.view, doc2.lines[blockDiff2.off + line2].line, options);
@@ -738,7 +731,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 		diffInfo* pBlockDiff2 = &blockDiff2;
 
 		// First use word granularity (find matching words) for better precision
-		auto wordDiffRes = DiffCalc<Word>(lineWords1, lineWords2)();
+		auto wordDiffRes = DiffCalc<Word>(lineWords1, lineWords2)(false);
 		const std::vector<diff_info<void>> lineDiffs = std::move(wordDiffRes.first);
 
 		if (wordDiffRes.second)
@@ -821,7 +814,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 						diffInfo* pBD2 = pBlockDiff2;
 
 						// Compare changed words
-						auto diffRes = DiffCalc<Char>(sec1, sec2)();
+						auto diffRes = DiffCalc<Char>(sec1, sec2)(false);
 						const std::vector<diff_info<void>> sectionDiffs = std::move(diffRes.first);
 
 						if (diffRes.second)
@@ -986,18 +979,18 @@ std::vector<std::set<conv_key>> getOrderedConvergence(const DocCmpInfo& doc1, co
 					if (((minSize * 100) / maxSize) < options.changedThresholdPercent)
 						continue;
 
-					int diffsCount = 0;
+					int matchesCount	= 0;
+					int diffsCount		= 0;
 
 					if (!options.charPrecision)
 					{
 						if (words1.empty())
 							words1 = getLineWords(doc1.view, doc1.lines[blockDiff1.off + line1].line, options);
 
-						auto wordDiffs = DiffCalc<Word>(words1, words2[line2])();
+						auto wordDiffs = DiffCalc<Word>(words1, words2[line2])(false);
 
 						const int wordDiffsSize = static_cast<int>(wordDiffs.first.size());
 
-						int matchesCount = 0;
 
 						for (int i = 0; i < wordDiffsSize; ++i)
 						{
@@ -1020,9 +1013,9 @@ std::vector<std::set<conv_key>> getOrderedConvergence(const DocCmpInfo& doc1, co
 							continue;
 					}
 
-					int matchesCount = 0;
+					matchesCount = 0;
 					{
-						auto charDiffs = DiffCalc<Char>(chunk1[line1], chunk2[line2])();
+						auto charDiffs = DiffCalc<Char>(chunk1[line1], chunk2[line2])(false);
 
 						for (const auto& ld: charDiffs.first)
 						{
@@ -1138,8 +1131,6 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 	std::vector<std::set<conv_key>> orderedLinesConvergence =
 			getOrderedConvergence(doc1, doc2, blockDiff1, blockDiff2, options);
 
-	const int linesCount2 = blockDiff2.len;
-
 #ifdef DLOG
 	for (const auto& oc: orderedLinesConvergence)
 	{
@@ -1149,32 +1140,120 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 	}
 #endif
 
-	std::map<int, int> bestLineMappings;
-
-	std::vector<bool> mappedLines2(linesCount2, false);
-
-	int unmappedLinesCount2 = linesCount2;
-
-	for (const auto& oc: orderedLinesConvergence)
+	std::map<int, int> bestLineMappings; // line2 -> line1
 	{
-		if (!oc.empty())
+		std::vector<std::map<int, int>> groupedLines;
+
+		for (const auto& oc: orderedLinesConvergence)
 		{
-			auto ocItr = oc.begin();
-
-			if (!mappedLines2[ocItr->line2])
+			if (!oc.empty())
 			{
-				bestLineMappings.emplace(ocItr->line1, ocItr->line2);
+				auto ocItr = oc.begin();
 
-				mappedLines2[ocItr->line2] = true;
+				if (groupedLines.empty())
+				{
+					groupedLines.emplace_back();
+					groupedLines.back().emplace(ocItr->line2, ocItr->line1);
 
-				if (--unmappedLinesCount2 == 0)
-					break;
+					continue;
+				}
+
+				int addToIdx = -1;
+
+				for (int i = 0; i < static_cast<int>(groupedLines.size()); ++i)
+				{
+					const auto& gl = groupedLines[i];
+
+					if ((ocItr->line2) > (gl.rbegin()->first))
+					{
+						if (addToIdx == -1)
+						{
+							addToIdx = i;
+						}
+						else if (groupedLines[addToIdx].size() < gl.size())
+						{
+							groupedLines.erase(groupedLines.begin() + addToIdx);
+							addToIdx = --i;
+						}
+					}
+				}
+
+				if (addToIdx != -1)
+				{
+					auto& gl = groupedLines[addToIdx];
+					gl.emplace_hint(gl.end(), ocItr->line2, ocItr->line1);
+
+					continue;
+				}
+
+				std::map<int, int> subGroup;
+
+				for (int i = 0; i < static_cast<int>(groupedLines.size()); ++i)
+				{
+					auto& gl = groupedLines[i];
+
+					auto glResItr = gl.emplace(ocItr->line2, ocItr->line1);
+					auto sgEndItr = glResItr.first;
+
+					if (glResItr.second)
+					{
+						std::map<int, int> newSubGroup;
+
+						newSubGroup.insert(gl.begin(), ++sgEndItr);
+						gl.erase(glResItr.first);
+
+						if (newSubGroup.size() > subGroup.size())
+							subGroup = std::move(newSubGroup);
+					}
+					else
+					{
+						auto foundOcItr = orderedLinesConvergence[sgEndItr->second].begin();
+
+						if ((foundOcItr->diffsCount < ocItr->diffsCount) ||
+							((foundOcItr->diffsCount == ocItr->diffsCount) &&
+							(foundOcItr->convergence <= ocItr->convergence)))
+						{
+							std::map<int, int> newSubGroup;
+
+							newSubGroup.insert(gl.begin(), sgEndItr);
+							newSubGroup.emplace_hint(newSubGroup.end(), ocItr->line2, ocItr->line1);
+
+							if (newSubGroup.size() > subGroup.size())
+								subGroup = std::move(newSubGroup);
+						}
+					}
+				}
+
+				if (!subGroup.empty())
+				{
+					groupedLines.emplace_back(std::move(subGroup));
+
+					LOGD("New lines group (" + std::to_string(groupedLines.size()) + " total). Last lines: " +
+							std::to_string(doc1.lines[ocItr->line1 + blockDiff1.off].line + 1) + " - " +
+							std::to_string(doc2.lines[ocItr->line2 + blockDiff2.off].line + 1) + "\n");
+				}
 			}
 		}
+
+		if (groupedLines.empty())
+			return;
+
+		int bestGroupIdx = 0;
+		std::size_t bestSize = groupedLines[0].size();
+
+		for (int i = 1; i < static_cast<int>(groupedLines.size()); ++i)
+		{
+			if (bestSize < groupedLines[i].size())
+			{
+				bestSize = groupedLines[i].size();
+				bestGroupIdx = i;
+			}
+		}
+
+		bestLineMappings = std::move(groupedLines[bestGroupIdx]);
 	}
 
-	if (!bestLineMappings.empty())
-		compareLines(doc1, doc2, blockDiff1, blockDiff2, bestLineMappings, options);
+	compareLines(doc1, doc2, blockDiff1, blockDiff2, bestLineMappings, options);
 }
 
 
@@ -1690,7 +1769,7 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 	{
 		if ((cmpInfo.blockDiffs[i].type == diff_type::DIFF_IN_2) &&
 				(cmpInfo.blockDiffs[i - 1].type == diff_type::DIFF_IN_1))
-			changedBlockIdx.emplace_back(i);
+			changedBlockIdx.emplace_back(i++);
 	}
 
 	if (progress)
