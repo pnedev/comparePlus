@@ -961,15 +961,25 @@ std::vector<std::set<conv_key>> getOrderedConvergence(const DocCmpInfo& doc1, co
 	auto workFn =
 		[&](int startLine, int endLine)
 		{
+			progress_ptr& progress = ProgressDlg::Get();
+
 			for (int line1 = startLine; line1 < endLine; ++line1)
 			{
 				if (chunk1[line1].empty())
+				{
+					if (progress && !progress->Advance(linesCount2))
+						return;
+
 					continue;
+				}
 
 				std::vector<Word> words1;
 
 				for (int line2 = 0; line2 < linesCount2; ++line2)
 				{
+					if (progress && !progress->Advance())
+						return;
+
 					if (chunk2[line2].empty())
 						continue;
 
@@ -1125,11 +1135,18 @@ std::vector<std::set<conv_key>> getOrderedConvergence(const DocCmpInfo& doc1, co
 }
 
 
-void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blockDiff1, diffInfo& blockDiff2,
+bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blockDiff1, diffInfo& blockDiff2,
 		const CompareOptions& options)
 {
 	std::vector<std::set<conv_key>> orderedLinesConvergence =
 			getOrderedConvergence(doc1, doc2, blockDiff1, blockDiff2, options);
+
+	{
+		progress_ptr& progress = ProgressDlg::Get();
+
+		if (progress && progress->IsCancelled())
+			return false;
+	}
 
 #ifdef DLOG
 	for (const auto& oc: orderedLinesConvergence)
@@ -1236,7 +1253,7 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 		}
 
 		if (groupedLines.empty())
-			return;
+			return true;
 
 		int bestGroupIdx = 0;
 		std::size_t bestSize = groupedLines[0].size();
@@ -1254,6 +1271,8 @@ void compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 	}
 
 	compareLines(doc1, doc2, blockDiff1, blockDiff2, bestLineMappings, options);
+
+	return true;
 }
 
 
@@ -1764,16 +1783,21 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 
 	std::vector<int> changedBlockIdx;
 
+	int changedProgressCount = 0;
+
 	// Get changed blocks to sub-compare
 	for (int i = 1; i < blockDiffsSize; ++i)
 	{
 		if ((cmpInfo.blockDiffs[i].type == diff_type::DIFF_IN_2) &&
 				(cmpInfo.blockDiffs[i - 1].type == diff_type::DIFF_IN_1))
+		{
+			changedProgressCount += cmpInfo.blockDiffs[i].len * cmpInfo.blockDiffs[i - 1].len;
 			changedBlockIdx.emplace_back(i++);
+		}
 	}
 
 	if (progress)
-		progress->SetMaxCount(changedBlockIdx.size());
+		progress->SetMaxCount(changedProgressCount);
 
 	// Do block compares
 	for (int i: changedBlockIdx)
@@ -1784,9 +1808,7 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 		blockDiff1.info.matchBlock = &blockDiff2;
 		blockDiff2.info.matchBlock = &blockDiff1;
 
-		compareBlocks(cmpInfo.doc1, cmpInfo.doc2, blockDiff1, blockDiff2, options);
-
-		if (progress && !progress->Advance())
+		if (!compareBlocks(cmpInfo.doc1, cmpInfo.doc2, blockDiff1, blockDiff2, options))
 			return CompareResult::COMPARE_CANCELLED;
 	}
 
