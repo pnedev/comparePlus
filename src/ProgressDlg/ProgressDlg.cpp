@@ -72,6 +72,14 @@ progress_ptr& ProgressDlg::Open(const TCHAR* info)
 }
 
 
+inline bool ProgressDlg::IsEnded() const
+{
+	if (_hwnd)
+		return (_phase + 1 == _countof(cPhases));
+	return false;
+}
+
+
 unsigned ProgressDlg::NextPhase()
 {
 	if (IsCancelled())
@@ -228,6 +236,7 @@ void ProgressDlg::destroy()
 {
 	if (_hwnd)
 	{
+		::KillTimer(_hwnd, 1);
 		::PostMessage(_hwnd, WM_CLOSE, 0, 0);
 		_hwnd = NULL;
 
@@ -316,8 +325,9 @@ BOOL ProgressDlg::createProgressWindow()
 
 	_hKeyHook = ::SetWindowsHookEx(WH_KEYBOARD, keyHookProc, _hInst, GetCurrentThreadId());
 
-	::ShowWindow(_hwnd, SW_SHOWNORMAL);
-	::UpdateWindow(_hwnd);
+	::ShowWindow(_hwnd, SW_HIDE);
+
+	::SetTimer(_hwnd, 1, cInitialShowDelay_ms, NULL);
 
 	return TRUE;
 }
@@ -429,6 +439,18 @@ LRESULT APIENTRY ProgressDlg::wndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARA
 				return 0;
 			}
 			break;
+
+		case WM_TIMER:
+			if (Inst->IsEnded())
+			{
+				::SendMessage(hwnd, WM_CLOSE, 0, 0);
+			}
+			else
+			{
+				::ShowWindow(hwnd, SW_SHOWNORMAL);
+				::UpdateWindow(hwnd);
+			}
+			return 0;
 
 		case WM_DESTROY:
 			::PostQuitMessage(0);

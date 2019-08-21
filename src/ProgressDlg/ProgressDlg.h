@@ -59,6 +59,8 @@ public:
 		return false;
 	}
 
+	inline bool IsEnded() const;
+
 	unsigned NextPhase();
 	bool SetMaxCount(unsigned max, unsigned phase = 0);
 	bool SetCount(unsigned cnt, unsigned phase = 0);
@@ -71,6 +73,8 @@ private:
     static const int cPBheight;
     static const int cBTNwidth;
     static const int cBTNheight;
+
+	static const int cInitialShowDelay_ms = 500;
 
 	static const int cPhases[];
 
