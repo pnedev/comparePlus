@@ -1815,6 +1815,9 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 	if (progress && !progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
+	clearWindow(MAIN_VIEW);
+	clearWindow(SUB_VIEW);
+
 	if (!markAllDiffs(cmpInfo, options, summary))
 		return CompareResult::COMPARE_CANCELLED;
 
@@ -1899,6 +1902,9 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 	if (progress && !progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
+	clearWindow(MAIN_VIEW);
+	clearWindow(SUB_VIEW);
+
 	int doc1UniqueLinesCount = 0;
 
 	for (const auto& uniqueLine: doc1UniqueLines)
@@ -1966,10 +1972,19 @@ CompareResult compareViews(const CompareOptions& options, const TCHAR* progressI
 			result = runCompare(options, summary);
 
 		ProgressDlg::Close();
+
+		if (result != CompareResult::COMPARE_MISMATCH)
+		{
+			clearWindow(MAIN_VIEW);
+			clearWindow(SUB_VIEW);
+		}
 	}
 	catch (std::exception& e)
 	{
 		ProgressDlg::Close();
+
+		clearWindow(MAIN_VIEW);
+		clearWindow(SUB_VIEW);
 
 		char msg[128];
 		_snprintf_s(msg, _countof(msg), _TRUNCATE, "Exception occurred: %s", e.what());

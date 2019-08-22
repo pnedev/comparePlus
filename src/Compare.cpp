@@ -867,9 +867,7 @@ void ComparedFile::updateView()
 
 void ComparedFile::clear()
 {
-	clearWindow(viewIdFromBuffId(buffId));
 	setArrowMark(-1);
-
 	deletedSections.clear();
 }
 
@@ -881,6 +879,7 @@ void ComparedFile::onBeforeClose() const
 	const int view = getCurrentViewId();
 
 	clearWindow(view);
+	setNormalView(view);
 	setArrowMark(-1);
 
 	if (isTemp)
@@ -910,7 +909,10 @@ void ComparedFile::restore() const
 
 	activateBufferID(buffId);
 
-	clearWindow(getCurrentViewId());
+	const int view = getCurrentViewId();
+
+	clearWindow(view);
+	setNormalView(view);
 	setArrowMark(-1);
 
 	if (viewIdFromBuffId(buffId) != originalViewId)

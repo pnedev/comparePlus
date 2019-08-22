@@ -574,8 +574,6 @@ void clearWindow(int view)
 	clearChangedIndicator(view, 0, CallScintilla(view, SCI_GETLENGTH, 0, 0));
 
 	CallScintilla(view, SCI_COLOURISE, 0, -1);
-
-	setNormalView(view);
 }
 
 
