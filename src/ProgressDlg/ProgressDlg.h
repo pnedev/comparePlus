@@ -52,14 +52,14 @@ public:
 			::SendMessage(_hPText, WM_SETTEXT, 0, (LPARAM)info);
 	}
 
+	void Show() const;
+
 	inline bool IsCancelled() const
 	{
 		if (_hwnd)
 			return (::WaitForSingleObject(_hActiveState, 0) != WAIT_OBJECT_0);
 		return false;
 	}
-
-	inline bool IsEnded() const;
 
 	unsigned NextPhase();
 	bool SetMaxCount(unsigned max, unsigned phase = 0);

@@ -72,11 +72,22 @@ progress_ptr& ProgressDlg::Open(const TCHAR* info)
 }
 
 
-inline bool ProgressDlg::IsEnded() const
+void ProgressDlg::Show() const
 {
 	if (_hwnd)
-		return (_phase + 1 == _countof(cPhases));
-	return false;
+	{
+		if (_phase + 1 == _countof(cPhases))
+		{
+			::SendMessage(_hwnd, WM_CLOSE, 0, 0);
+		}
+		else
+		{
+			::ShowWindow(_hwnd, SW_SHOWNORMAL);
+			::UpdateWindow(_hwnd);
+		}
+
+		::KillTimer(_hwnd, 1);
+	}
 }
 
 
@@ -441,15 +452,7 @@ LRESULT APIENTRY ProgressDlg::wndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARA
 			break;
 
 		case WM_TIMER:
-			if (Inst->IsEnded())
-			{
-				::SendMessage(hwnd, WM_CLOSE, 0, 0);
-			}
-			else
-			{
-				::ShowWindow(hwnd, SW_SHOWNORMAL);
-				::UpdateWindow(hwnd);
-			}
+			Inst->Show();
 			return 0;
 
 		case WM_DESTROY:

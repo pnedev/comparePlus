@@ -1797,7 +1797,12 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 	}
 
 	if (progress)
+	{
 		progress->SetMaxCount(changedProgressCount);
+
+		if (changedProgressCount > 10000)
+			progress->Show();
+	}
 
 	// Do block compares
 	for (int i: changedBlockIdx)
