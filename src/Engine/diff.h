@@ -89,7 +89,7 @@ public:
 	// Runs the actual compare and returns the differences + swap flag indicating if the
 	// compared sequences have been swapped for better results (if true, _a and _b have been swapped,
 	// meaning that DIFF_IN_1 in the differences is regarding _b instead _a)
-	std::pair<std::vector<diff_info<UserDataT>>, bool> operator()(bool doBoundaryShift = true);
+	std::pair<std::vector<diff_info<UserDataT>>, bool> operator()(bool doBoundaryShift = false);
 
 	DiffCalc(const DiffCalc&) = delete;
 	const DiffCalc& operator=(const DiffCalc&) = delete;

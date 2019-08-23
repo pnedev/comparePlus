@@ -21,7 +21,6 @@
 #define NOMINMAX
 
 #include <climits>
-#include <cmath>
 #include <cstdint>
 #include <exception>
 #include <utility>
@@ -43,14 +42,39 @@
 
 #if defined(__MINGW32__) && !defined(_GLIBCXX_HAS_GTHREADS)
 #include "../mingw-std-threads/mingw.thread.h"
+#include "../mingw-std-threads/mingw.mutex.h"
 #else
 #include <thread>
-#endif
+#include <mutex>
+#endif // __MINGW32__ ...
 
 #endif // MULTITHREAD
 
 
 namespace {
+
+#ifdef MULTITHREAD
+
+struct Autolock
+{
+	Autolock(std::mutex& m) : _mtx(m)
+	{
+		m.lock();
+	}
+
+	~Autolock()
+	{
+		_mtx.unlock();
+	}
+
+	Autolock& operator=(const Autolock&) = delete;
+
+private:
+	std::mutex& _mtx;
+};
+
+#endif // MULTITHREAD
+
 
 enum class charType
 {
@@ -234,21 +258,66 @@ struct MatchInfo
 };
 
 
-struct conv_key
+struct Conv
 {
 	float convergence;
 	int diffsCount;
+
+	Conv(float c = 0, int dc = 0) : convergence(c), diffsCount(dc)
+	{}
+
+	Conv(const Conv& c) : convergence(c.convergence), diffsCount(c.diffsCount)
+	{}
+
+	const Conv& operator=(const Conv& rhs)
+	{
+		if (&rhs != this)
+			Set(rhs.convergence, rhs.diffsCount);
+
+		return *this;
+	}
+
+	void Set(float c, int dc)
+	{
+		convergence = c;
+		diffsCount = dc;
+	}
+
+	bool operator>(const Conv& rhs) const
+	{
+		return ((diffsCount < rhs.diffsCount) || ((diffsCount == rhs.diffsCount) && (convergence > rhs.convergence)));
+	}
+
+	bool operator==(const Conv& rhs) const
+	{
+		return ((diffsCount == rhs.diffsCount) && (convergence == rhs.convergence));
+	}
+};
+
+
+struct LinesConv
+{
+	Conv conv;
+
 	int line1;
 	int line2;
 
-	conv_key(float c, int dc, int l1, int l2) : convergence(c), diffsCount(dc), line1(l1), line2(l2)
+	LinesConv() : line1(-1), line2(-1)
 	{}
 
-	bool operator<(const conv_key& rhs) const
+	LinesConv(const Conv& c, int l1, int l2) : conv(c), line1(l1), line2(l2)
+	{}
+
+	void Set(const Conv& c, int l1, int l2)
 	{
-		return ((diffsCount < rhs.diffsCount) || ((diffsCount == rhs.diffsCount) &&
-					((convergence > rhs.convergence) || ((convergence == rhs.convergence) &&
-					(abs(line2 - line1) <= abs(rhs.line2 - rhs.line1))))));
+		conv = c;
+		line1 = l1;
+		line2 = l2;
+	}
+
+	bool operator<(const LinesConv& rhs) const
+	{
+		return ((conv > rhs.conv) || ((conv == rhs.conv) && (line2 < rhs.line2)));
 	}
 };
 
@@ -731,7 +800,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 		diffInfo* pBlockDiff2 = &blockDiff2;
 
 		// First use word granularity (find matching words) for better precision
-		auto wordDiffRes = DiffCalc<Word>(lineWords1, lineWords2)(false);
+		auto wordDiffRes = DiffCalc<Word>(lineWords1, lineWords2)();
 		const std::vector<diff_info<void>> lineDiffs = std::move(wordDiffRes.first);
 
 		if (wordDiffRes.second)
@@ -814,7 +883,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 						diffInfo* pBD2 = pBlockDiff2;
 
 						// Compare changed words
-						auto diffRes = DiffCalc<Char>(sec1, sec2)(false);
+						auto diffRes = DiffCalc<Char>(sec1, sec2)();
 						const std::vector<diff_info<void>> sectionDiffs = std::move(diffRes.first);
 
 						if (diffRes.second)
@@ -938,7 +1007,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 }
 
 
-std::vector<std::set<conv_key>> getOrderedConvergence(const DocCmpInfo& doc1, const DocCmpInfo& doc2,
+std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, const DocCmpInfo& doc2,
 		const diffInfo& blockDiff1, const diffInfo& blockDiff2, const CompareOptions& options)
 {
 	const std::vector<std::vector<Char>> chunk1 = getChars(doc1, blockDiff1, options);
@@ -956,20 +1025,25 @@ std::vector<std::set<conv_key>> getOrderedConvergence(const DocCmpInfo& doc1, co
 				words2[line2] = getLineWords(doc2.view, doc2.lines[blockDiff2.off + line2].line, options);
 	}
 
-	std::vector<std::set<conv_key>> orderedLinesConvergence(linesCount1);
+	std::vector<std::set<LinesConv>> lines1Convergence(linesCount1);
+	std::vector<std::set<LinesConv>> lines2Convergence(linesCount2);
+
+#ifdef MULTITHREAD
+	std::mutex mtx;
+#endif
 
 	auto workFn =
 		[&](int startLine, int endLine)
 		{
 			progress_ptr& progress = ProgressDlg::Get();
 
+			int linesProgress = 0;
+
 			for (int line1 = startLine; line1 < endLine; ++line1)
 			{
 				if (chunk1[line1].empty())
 				{
-					if (progress && !progress->Advance(linesCount2))
-						return;
-
+					linesProgress += linesCount2;
 					continue;
 				}
 
@@ -977,17 +1051,20 @@ std::vector<std::set<conv_key>> getOrderedConvergence(const DocCmpInfo& doc1, co
 
 				for (int line2 = 0; line2 < linesCount2; ++line2)
 				{
-					if (progress && !progress->Advance())
-						return;
-
 					if (chunk2[line2].empty())
+					{
+						++linesProgress;
 						continue;
+					}
 
 					const int minSize = std::min(chunk1[line1].size(), chunk2[line2].size());
 					const int maxSize = std::max(chunk1[line1].size(), chunk2[line2].size());
 
 					if (((minSize * 100) / maxSize) < options.changedThresholdPercent)
+					{
+						++linesProgress;
 						continue;
+					}
 
 					int matchesCount	= 0;
 					int diffsCount		= 0;
@@ -997,10 +1074,9 @@ std::vector<std::set<conv_key>> getOrderedConvergence(const DocCmpInfo& doc1, co
 						if (words1.empty())
 							words1 = getLineWords(doc1.view, doc1.lines[blockDiff1.off + line1].line, options);
 
-						auto wordDiffs = DiffCalc<Word>(words1, words2[line2])(false);
+						auto wordDiffs = DiffCalc<Word>(words1, words2[line2])();
 
 						const int wordDiffsSize = static_cast<int>(wordDiffs.first.size());
-
 
 						for (int i = 0; i < wordDiffsSize; ++i)
 						{
@@ -1013,19 +1089,21 @@ std::vector<std::set<conv_key>> getOrderedConvergence(const DocCmpInfo& doc1, co
 								++diffsCount;
 
 								// Count replacement as a single diff
-								if ((i + 1 < wordDiffsSize) &&
-									(wordDiffs.first[i + 1].type == diff_type::DIFF_IN_2))
+								if ((i + 1 < wordDiffsSize) && (wordDiffs.first[i + 1].type == diff_type::DIFF_IN_2))
 									++i;
 							}
 						}
 
 						if (matchesCount == 0)
+						{
+							++linesProgress;
 							continue;
+						}
 					}
 
 					matchesCount = 0;
 					{
-						auto charDiffs = DiffCalc<Char>(chunk1[line1], chunk2[line2])(false);
+						auto charDiffs = DiffCalc<Char>(chunk1[line1], chunk2[line2])();
 
 						for (const auto& ld: charDiffs.first)
 						{
@@ -1039,7 +1117,71 @@ std::vector<std::set<conv_key>> getOrderedConvergence(const DocCmpInfo& doc1, co
 						const float lineConvergence = ((static_cast<float>(matchesCount) * 100) / minSize) +
 								((static_cast<float>(matchesCount) * 100) / maxSize);
 
-						orderedLinesConvergence[line1].emplace(lineConvergence, diffsCount, line1, line2);
+						Conv conv(lineConvergence, diffsCount);
+
+#ifdef MULTITHREAD
+						Autolock lock(mtx);
+#endif
+
+						if (progress && !progress->Advance(linesProgress + 1))
+							return;
+
+						linesProgress = 0;
+
+						bool addL1C = false;
+
+						if (lines2Convergence[line2].empty() || (conv == lines2Convergence[line2].begin()->conv))
+						{
+							lines2Convergence[line2].emplace(conv, line1, line2);
+							addL1C = true;
+						}
+						else if (conv > lines2Convergence[line2].begin()->conv)
+						{
+							for (const auto& l2c : lines2Convergence[line2])
+							{
+								auto& l1c = lines1Convergence[l2c.line1];
+
+								if (!l1c.empty())
+								{
+									for (auto l1cI = l1c.begin(); l1cI != l1c.end(); ++l1cI)
+									{
+										if (l1cI->line2 == line2)
+										{
+											l1c.erase(l1cI);
+											break;
+										}
+									}
+								}
+							}
+
+							lines2Convergence[line2].clear();
+							lines2Convergence[line2].emplace(conv, line1, line2);
+							addL1C = true;
+						}
+
+						if (addL1C)
+						{
+							if (lines1Convergence[line1].empty() || (conv == lines1Convergence[line1].begin()->conv))
+							{
+								lines1Convergence[line1].emplace(conv, line1, line2);
+							}
+							else if (conv > lines1Convergence[line1].begin()->conv)
+							{
+								lines1Convergence[line1].clear();
+								lines1Convergence[line1].emplace(conv, line1, line2);
+							}
+						}
+					}
+					else
+					{
+#ifdef MULTITHREAD
+						Autolock lock(mtx);
+#endif
+
+						if (progress && !progress->Advance(linesProgress + 1))
+							return;
+
+						linesProgress = 0;
 					}
 				}
 			}
@@ -1067,14 +1209,14 @@ std::vector<std::set<conv_key>> getOrderedConvergence(const DocCmpInfo& doc1, co
 			}
 		};
 
-	int threadsCount = std::thread::hardware_concurrency() - 1;
+	int threadsCount = std::thread::hardware_concurrency() - 2;
 
 	if (threadsCount < 1)
 		threadsCount = 1;
 
 	if (threadsCount == 1)
 	{
-		LOGD("getOrderedConvergence(): only 1 thread available\n");
+		LOGD("getOrderedConvergence(): only 1 worker thread available\n");
 
 		workFn(0, linesCount1);
 	}
@@ -1105,7 +1247,7 @@ std::vector<std::set<conv_key>> getOrderedConvergence(const DocCmpInfo& doc1, co
 		{
 			const int endLine = ((th == (threadsCount - 1)) ? linesCount1 : (startLine + jobsPerThread));
 
-			LOGD("Thread " + std::to_string(th) + " line1 range: " + std::to_string(startLine) + " to " +
+			LOGD("Thread " + std::to_string(th + 1) + " line1 range: " + std::to_string(startLine) + " to " +
 					std::to_string(endLine - 1) + "\n");
 
 			try
@@ -1131,14 +1273,14 @@ std::vector<std::set<conv_key>> getOrderedConvergence(const DocCmpInfo& doc1, co
 
 #endif // MULTITHREAD
 
-	return orderedLinesConvergence;
+	return lines1Convergence;
 }
 
 
 bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blockDiff1, diffInfo& blockDiff2,
 		const CompareOptions& options)
 {
-	std::vector<std::set<conv_key>> orderedLinesConvergence =
+	std::vector<std::set<LinesConv>> orderedLinesConvergence =
 			getOrderedConvergence(doc1, doc2, blockDiff1, blockDiff2, options);
 
 	{
@@ -1163,20 +1305,23 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 
 		for (const auto& oc: orderedLinesConvergence)
 		{
-			if (!oc.empty())
+			if (oc.empty())
+				continue;
+
+			if (groupedLines.empty())
 			{
 				auto ocItr = oc.begin();
 
-				if (groupedLines.empty())
-				{
-					groupedLines.emplace_back();
-					groupedLines.back().emplace(ocItr->line2, ocItr->line1);
+				groupedLines.emplace_back();
+				groupedLines.back().emplace(ocItr->line2, ocItr->line1);
 
-					continue;
-				}
+				continue;
+			}
 
-				int addToIdx = -1;
+			int addToIdx = -1;
 
+			for (auto ocItr = oc.begin(); ocItr != oc.end(); ++ocItr)
+			{
 				for (int i = 0; i < static_cast<int>(groupedLines.size()); ++i)
 				{
 					const auto& gl = groupedLines[i];
@@ -1192,6 +1337,11 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 							groupedLines.erase(groupedLines.begin() + addToIdx);
 							addToIdx = --i;
 						}
+						else
+						{
+							groupedLines.erase(groupedLines.begin() + i);
+							--i;
+						}
 					}
 				}
 
@@ -1200,55 +1350,43 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 					auto& gl = groupedLines[addToIdx];
 					gl.emplace_hint(gl.end(), ocItr->line2, ocItr->line1);
 
-					continue;
+					break;
 				}
+			}
 
-				std::map<int, int> subGroup;
+			if (addToIdx != -1)
+				continue;
 
-				for (int i = 0; i < static_cast<int>(groupedLines.size()); ++i)
+			auto ocrItr = oc.rbegin();
+
+			std::map<int, int> subGroup;
+
+			for (int i = 0; i < static_cast<int>(groupedLines.size()); ++i)
+			{
+				auto& gl = groupedLines[i];
+
+				auto glResItr = gl.emplace(ocrItr->line2, ocrItr->line1);
+
+				if (glResItr.second)
 				{
-					auto& gl = groupedLines[i];
-
-					auto glResItr = gl.emplace(ocItr->line2, ocItr->line1);
+					std::map<int, int> newSubGroup;
 					auto sgEndItr = glResItr.first;
 
-					if (glResItr.second)
-					{
-						std::map<int, int> newSubGroup;
+					newSubGroup.insert(gl.begin(), ++sgEndItr);
+					gl.erase(glResItr.first);
 
-						newSubGroup.insert(gl.begin(), ++sgEndItr);
-						gl.erase(glResItr.first);
-
-						if (newSubGroup.size() > subGroup.size())
-							subGroup = std::move(newSubGroup);
-					}
-					else
-					{
-						auto foundOcItr = orderedLinesConvergence[sgEndItr->second].begin();
-
-						if ((foundOcItr->diffsCount < ocItr->diffsCount) ||
-							((foundOcItr->diffsCount == ocItr->diffsCount) &&
-							(foundOcItr->convergence <= ocItr->convergence)))
-						{
-							std::map<int, int> newSubGroup;
-
-							newSubGroup.insert(gl.begin(), sgEndItr);
-							newSubGroup.emplace_hint(newSubGroup.end(), ocItr->line2, ocItr->line1);
-
-							if (newSubGroup.size() > subGroup.size())
-								subGroup = std::move(newSubGroup);
-						}
-					}
+					if (newSubGroup.size() > subGroup.size())
+						subGroup = std::move(newSubGroup);
 				}
+			}
 
-				if (!subGroup.empty())
-				{
-					groupedLines.emplace_back(std::move(subGroup));
+			if (!subGroup.empty())
+			{
+				groupedLines.emplace_back(std::move(subGroup));
 
-					LOGD("New lines group (" + std::to_string(groupedLines.size()) + " total). Last lines: " +
-							std::to_string(doc1.lines[ocItr->line1 + blockDiff1.off].line + 1) + " - " +
-							std::to_string(doc2.lines[ocItr->line2 + blockDiff2.off].line + 1) + "\n");
-				}
+				LOGD("New lines group (" + std::to_string(groupedLines.size()) + " total). Last lines: " +
+						std::to_string(doc1.lines[ocrItr->line1 + blockDiff1.off].line + 1) + " - " +
+						std::to_string(doc2.lines[ocrItr->line2 + blockDiff2.off].line + 1) + "\n");
 			}
 		}
 
@@ -1759,7 +1897,7 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 	if (progress && !progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
-	auto diffRes = DiffCalc<Line, blockDiffInfo>(cmpInfo.doc1.lines, cmpInfo.doc2.lines)();
+	auto diffRes = DiffCalc<Line, blockDiffInfo>(cmpInfo.doc1.lines, cmpInfo.doc2.lines)(true);
 	cmpInfo.blockDiffs = std::move(diffRes.first);
 
 	if (diffRes.second)
