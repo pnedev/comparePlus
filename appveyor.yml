@@ -21,8 +21,8 @@ install:
     - if "%platform%"=="x86" set archi=x86
     - if "%platform%"=="x86" set platform_input=x86
 
-    - if "%PlatformToolset%"=="v140_xp" call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" %archi%
     - if "%PlatformToolset%"=="v141_xp" call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" %archi%
+    - if "%PlatformToolset%"=="v140_xp" call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" %archi%
 
 build_script:
     - cd "%APPVEYOR_BUILD_FOLDER%"\projects\2015\
@@ -34,7 +34,7 @@ after_build:
 
         Push-AppveyorArtifact "Notepad++\plugins\ComparePlus\ComparePlus.dll" -FileName ComparePlus.dll
 
-        if ($($env:APPVEYOR_REPO_TAG) -eq "true" -and $env:CONFIGURATION -eq "Release Unicode" -and $env:PLATFORMTOOLSET -eq "v140_xp") {
+        if ($($env:APPVEYOR_REPO_TAG) -eq "true" -and $env:CONFIGURATION -eq "Release Unicode" -and $env:PLATFORMTOOLSET -eq "v141_xp") {
             $ZipFileName = "ComparePlus_$($env:APPVEYOR_REPO_TAG_NAME)_$env:PLATFORM_INPUT.zip"
             Remove-Item .\Notepad++\plugins\ComparePlus\*.pdb
             7z a $ZipFileName .\Notepad++\plugins\ComparePlus\*
@@ -54,5 +54,5 @@ deploy:
     force_update: true
     on:
         appveyor_repo_tag: true
-        PlatformToolset: v140_xp
+        PlatformToolset: v141_xp
         configuration: Release Unicode
