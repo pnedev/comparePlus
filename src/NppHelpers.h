@@ -46,42 +46,45 @@ enum Marker_t
 };
 
 
-const int MARKER_MASK_CHANGED		=	(1 << MARKER_CHANGED_LINE)	|	(1 << MARKER_CHANGED_SYMBOL);
-const int MARKER_MASK_CHANGED_LOCAL	=	(1 << MARKER_CHANGED_LINE)	|	(1 << MARKER_CHANGED_LOCAL_SYMBOL);
-const int MARKER_MASK_ADDED			=	(1 << MARKER_ADDED_LINE)	|	(1 << MARKER_ADDED_SYMBOL);
-const int MARKER_MASK_ADDED_LOCAL	=	(1 << MARKER_ADDED_LINE)	|	(1 << MARKER_ADDED_LOCAL_SYMBOL);
-const int MARKER_MASK_REMOVED		=	(1 << MARKER_REMOVED_LINE)	|	(1 << MARKER_REMOVED_SYMBOL);
-const int MARKER_MASK_REMOVED_LOCAL	=	(1 << MARKER_REMOVED_LINE)	|	(1 << MARKER_REMOVED_LOCAL_SYMBOL);
-const int MARKER_MASK_MOVED_LINE	=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_LINE_SYMBOL);
-const int MARKER_MASK_MOVED_BEGIN	=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_BLOCK_BEGIN_SYMBOL);
-const int MARKER_MASK_MOVED_MID		=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_BLOCK_MID_SYMBOL);
-const int MARKER_MASK_MOVED_END		=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_BLOCK_END_SYMBOL);
-const int MARKER_MASK_MOVED			=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_LINE_SYMBOL) |
-																		(1 << MARKER_MOVED_BLOCK_BEGIN_SYMBOL) |
-																		(1 << MARKER_MOVED_BLOCK_MID_SYMBOL) |
-																		(1 << MARKER_MOVED_BLOCK_END_SYMBOL);
+constexpr int MARKER_MASK_CHANGED		=	(1 << MARKER_CHANGED_LINE)	|	(1 << MARKER_CHANGED_SYMBOL);
+constexpr int MARKER_MASK_CHANGED_LOCAL	=	(1 << MARKER_CHANGED_LINE)	|	(1 << MARKER_CHANGED_LOCAL_SYMBOL);
+constexpr int MARKER_MASK_ADDED			=	(1 << MARKER_ADDED_LINE)	|	(1 << MARKER_ADDED_SYMBOL);
+constexpr int MARKER_MASK_ADDED_LOCAL	=	(1 << MARKER_ADDED_LINE)	|	(1 << MARKER_ADDED_LOCAL_SYMBOL);
+constexpr int MARKER_MASK_REMOVED		=	(1 << MARKER_REMOVED_LINE)	|	(1 << MARKER_REMOVED_SYMBOL);
+constexpr int MARKER_MASK_REMOVED_LOCAL	=	(1 << MARKER_REMOVED_LINE)	|	(1 << MARKER_REMOVED_LOCAL_SYMBOL);
+constexpr int MARKER_MASK_MOVED_LINE	=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_LINE_SYMBOL);
+constexpr int MARKER_MASK_MOVED_BEGIN	=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_BLOCK_BEGIN_SYMBOL);
+constexpr int MARKER_MASK_MOVED_MID		=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_BLOCK_MID_SYMBOL);
+constexpr int MARKER_MASK_MOVED_END		=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_BLOCK_END_SYMBOL);
+constexpr int MARKER_MASK_MOVED			=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_LINE_SYMBOL) |
+																			(1 << MARKER_MOVED_BLOCK_BEGIN_SYMBOL) |
+																			(1 << MARKER_MOVED_BLOCK_MID_SYMBOL) |
+																			(1 << MARKER_MOVED_BLOCK_END_SYMBOL);
 
-const int MARKER_MASK_BLANK			=	(1 << MARKER_BLANK);
-const int MARKER_MASK_ARROW			=	(1 << MARKER_ARROW_SYMBOL);
+constexpr int MARKER_MASK_BLANK			=	(1 << MARKER_BLANK);
+constexpr int MARKER_MASK_ARROW			=	(1 << MARKER_ARROW_SYMBOL);
 
-const int MARKER_MASK_LINE			=	(1 << MARKER_CHANGED_LINE) |
-										(1 << MARKER_ADDED_LINE) |
-										(1 << MARKER_REMOVED_LINE) |
-										(1 << MARKER_MOVED_LINE);
+constexpr int MARKER_MASK_LINE			=	(1 << MARKER_CHANGED_LINE) |
+											(1 << MARKER_ADDED_LINE) |
+											(1 << MARKER_REMOVED_LINE) |
+											(1 << MARKER_MOVED_LINE);
 
-const int MARKER_MASK_SYMBOL		=	(1 << MARKER_CHANGED_SYMBOL) |
-										(1 << MARKER_CHANGED_LOCAL_SYMBOL) |
-										(1 << MARKER_ADDED_SYMBOL) |
-										(1 << MARKER_ADDED_LOCAL_SYMBOL) |
-										(1 << MARKER_REMOVED_SYMBOL) |
-										(1 << MARKER_REMOVED_LOCAL_SYMBOL) |
-										(1 << MARKER_MOVED_LINE_SYMBOL) |
-										(1 << MARKER_MOVED_BLOCK_BEGIN_SYMBOL) |
-										(1 << MARKER_MOVED_BLOCK_MID_SYMBOL) |
-										(1 << MARKER_MOVED_BLOCK_END_SYMBOL);
+constexpr int MARKER_MASK_SYMBOL		=	(1 << MARKER_CHANGED_SYMBOL) |
+											(1 << MARKER_CHANGED_LOCAL_SYMBOL) |
+											(1 << MARKER_ADDED_SYMBOL) |
+											(1 << MARKER_ADDED_LOCAL_SYMBOL) |
+											(1 << MARKER_REMOVED_SYMBOL) |
+											(1 << MARKER_REMOVED_LOCAL_SYMBOL) |
+											(1 << MARKER_MOVED_LINE_SYMBOL) |
+											(1 << MARKER_MOVED_BLOCK_BEGIN_SYMBOL) |
+											(1 << MARKER_MOVED_BLOCK_MID_SYMBOL) |
+											(1 << MARKER_MOVED_BLOCK_END_SYMBOL);
 
-const int MARKER_MASK_ALL				=	MARKER_MASK_LINE | MARKER_MASK_SYMBOL;
-const int MARKER_MASK_ALL_PLUS_BLANK	=	MARKER_MASK_ALL | MARKER_MASK_BLANK;
+constexpr int MARKER_MASK_ALL				=	MARKER_MASK_LINE | MARKER_MASK_SYMBOL;
+constexpr int MARKER_MASK_ALL_PLUS_BLANK	=	MARKER_MASK_ALL | MARKER_MASK_BLANK;
+
+
+constexpr int MARGIN_NUM = 4;
 
 
 /**
@@ -153,8 +156,8 @@ struct ScopedViewWriteEnabler
 	}
 
 private:
-	int	_view;
-	int	_isRO;
+	int _view;
+	int _isRO;
 };
 
 
@@ -184,6 +187,28 @@ struct ScopedViewUndoCollectionBlocker
 private:
 	int	_view;
 	int	_isUndoOn;
+};
+
+
+/**
+ *  \struct
+ *  \brief
+ *  \warning  Don't use that helper struct if somewhere in its scope the view document is changed!!!
+ */
+struct ScopedViewUndoAction
+{
+	ScopedViewUndoAction(int view) : _view(view)
+	{
+		CallScintilla(_view, SCI_BEGINUNDOACTION, 0, 0);
+	}
+
+	~ScopedViewUndoAction()
+	{
+		CallScintilla(_view, SCI_ENDUNDOACTION, 0, 0);
+	}
+
+private:
+	int	_view;
 };
 
 
@@ -422,17 +447,6 @@ inline int getPreviousUnhiddenLine(int view, int line)
 }
 
 
-inline int otherViewMatchingLine(int view, int line)
-{
-	const int otherView = getOtherViewId(view);
-
-	line = CallScintilla(otherView, SCI_DOCLINEFROMVISIBLE,
-			CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0), 0);
-
-	return (line == CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0)) ? line - 1 : line;
-}
-
-
 inline void gotoClosestUnhiddenLine(int view)
 {
 	CallScintilla(view, SCI_GOTOLINE, getUnhiddenLine(view, getCurrentLine(view)), 0);
@@ -509,6 +523,7 @@ inline void clearSelection(int view)
 }
 
 
+int otherViewMatchingLine(int view, int line, int adjustment = 0, bool check = false);
 void activateBufferID(LRESULT buffId);
 std::pair<int, int> getSelectionLines(int view);
 
@@ -542,11 +557,20 @@ void clearMarks(int view, int line);
 int getPrevUnmarkedLine(int view, int startLine, int markMask);
 int getNextUnmarkedLine(int view, int startLine, int markMask);
 
+std::pair<int, int> getMarkedSection(int view, int startLine, int endLine, int markMask, bool excludeNewLine = false);
+
 void hideOutsideRange(int view, int startLine, int endLine);
 void hideUnmarked(int view, int markMask);
 
 bool isAdjacentAnnotation(int view, int line, bool down);
 bool isVisibleAdjacentAnnotation(int view, int line, bool down);
+
+
+inline void clearAnnotation(int view, int line)
+{
+	CallScintilla(view, SCI_ANNOTATIONSETTEXT, line, (LPARAM)NULL);
+}
+
 
 std::vector<char> getText(int view, int startPos, int endPos);
 void toLowerCase(std::vector<char>& text);

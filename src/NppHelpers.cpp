@@ -252,6 +252,21 @@ void setBlanksStyle(int view, int blankColor)
 } // anonymous namespace
 
 
+int otherViewMatchingLine(int view, int line, int adjustment, bool check)
+{
+	const int otherView			= getOtherViewId(view);
+	const int otherLineCount	= CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0);
+
+	const int otherLine = CallScintilla(otherView, SCI_DOCLINEFROMVISIBLE,
+			CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) + adjustment, 0);
+
+	if (check && (otherLine < otherLineCount) && (otherViewMatchingLine(otherView, otherLine, -adjustment) != line))
+		return -1;
+
+	return (otherLine >= otherLineCount) ? otherLineCount - 1 : otherLine;
+}
+
+
 void activateBufferID(LRESULT buffId)
 {
 	if (buffId != getCurrentBuffId())
@@ -365,8 +380,9 @@ void setNormalView(int view)
 
 		CallScintilla(view, SCI_SETENDATLASTLINE, endAtLastLine[view], 0);
 
-		CallScintilla(view, SCI_SETMARGINMASKN, 4, 0);
-		CallScintilla(view, SCI_SETMARGINWIDTHN, 4, 0);
+		CallScintilla(view, SCI_SETMARGINMASKN, MARGIN_NUM, 0);
+		CallScintilla(view, SCI_SETMARGINWIDTHN, MARGIN_NUM, 0);
+		CallScintilla(view, SCI_SETMARGINSENSITIVEN, MARGIN_NUM, false);
 
 		CallScintilla(view, SCI_SETCARETLINEBACKALPHA, SC_ALPHA_NOALPHA, 0);
 	}
@@ -382,8 +398,9 @@ void setCompareView(int view, int blankColor)
 		endAtLastLine[view] = (CallScintilla(view, SCI_GETENDATLASTLINE, 0, 0) != 0);
 		CallScintilla(view, SCI_SETENDATLASTLINE, false, 0);
 
-		CallScintilla(view, SCI_SETMARGINMASKN, 4, (LPARAM)(MARKER_MASK_SYMBOL | MARKER_MASK_ARROW));
-		CallScintilla(view, SCI_SETMARGINWIDTHN, 4, 16);
+		CallScintilla(view, SCI_SETMARGINMASKN, MARGIN_NUM, (LPARAM)(MARKER_MASK_SYMBOL | MARKER_MASK_ARROW));
+		CallScintilla(view, SCI_SETMARGINWIDTHN, MARGIN_NUM, 16);
+		CallScintilla(view, SCI_SETMARGINSENSITIVEN, MARGIN_NUM, true);
 
 		CallScintilla(view, SCI_SETCARETLINEBACKALPHA, 96, 0);
 	}
@@ -601,7 +618,7 @@ int getPrevUnmarkedLine(int view, int startLine, int markMask)
 {
 	int prevUnmarkedLine = startLine;
 
-	for (; (prevUnmarkedLine > 0) && isLineMarked(view, prevUnmarkedLine, markMask); --prevUnmarkedLine);
+	for (; (prevUnmarkedLine >= 0) && isLineMarked(view, prevUnmarkedLine, markMask); --prevUnmarkedLine);
 
 	return prevUnmarkedLine;
 }
@@ -612,9 +629,32 @@ int getNextUnmarkedLine(int view, int startLine, int markMask)
 	const int endLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
 	int nextUnmarkedLine = startLine;
 
-	for (; (nextUnmarkedLine < endLine) && isLineMarked(view, nextUnmarkedLine, markMask); ++nextUnmarkedLine);
+	for (; (nextUnmarkedLine <= endLine) && isLineMarked(view, nextUnmarkedLine, markMask); ++nextUnmarkedLine);
 
-	return nextUnmarkedLine;
+	return ((nextUnmarkedLine <= endLine) ? nextUnmarkedLine : -1);
+}
+
+
+std::pair<int, int> getMarkedSection(int view, int startLine, int endLine, int markMask, bool excludeNewLine)
+{
+	const int lastLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
+
+	if ((startLine < 0) || (endLine > lastLine) || (startLine > endLine) || !isLineMarked(view, startLine, markMask))
+		return std::make_pair(-1, -1);
+
+	if ((startLine != endLine) && (!isLineMarked(view, endLine, markMask)))
+		return std::make_pair(-1, -1);
+
+	const int line1	= getPrevUnmarkedLine(view, startLine, markMask) + 1;
+	int line2		= getNextUnmarkedLine(view, endLine, markMask);
+
+	if (excludeNewLine)
+		--line2;
+
+	const int endPos = (line2 < 0) ? getLineEnd(view, lastLine) :
+			(excludeNewLine ? getLineEnd(view, line2) : getLineStart(view, line2));
+
+	return std::make_pair(getLineStart(view, line1), endPos);
 }
 
 

@@ -1335,9 +1335,21 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 		}
 	}
 
-	const bool isCornerDiff = (((mainStartLine == 0) && (subStartLine == 0)) ||
-			((mainStartLine == CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0)) &&
-			(subStartLine == CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0))));
+	const bool isCornerDiff = ((mainStartLine < 0) && (subStartLine < 0));
+
+	if (isCornerDiff)
+	{
+		if (down)
+		{
+			mainStartLine	= 0;
+			subStartLine	= 0;
+		}
+		else
+		{
+			mainStartLine	= CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
+			subStartLine	= CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
+		}
+	}
 
 	const int nextMarker = down ? SCI_MARKERNEXT : SCI_MARKERPREVIOUS;
 
@@ -1706,12 +1718,12 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 		int previousUnhiddenLine = getPreviousUnhiddenLine(MAIN_VIEW, alignmentInfo[i].main.line + off);
 
 		if (isLineAnnotated(MAIN_VIEW, previousUnhiddenLine))
-			CallScintilla(MAIN_VIEW, SCI_ANNOTATIONSETTEXT, previousUnhiddenLine, (LPARAM)NULL);
+			clearAnnotation(MAIN_VIEW, previousUnhiddenLine);
 
 		previousUnhiddenLine = getPreviousUnhiddenLine(SUB_VIEW, alignmentInfo[i].sub.line + off);
 
 		if (isLineAnnotated(SUB_VIEW, previousUnhiddenLine))
-			CallScintilla(SUB_VIEW, SCI_ANNOTATIONSETTEXT, previousUnhiddenLine, (LPARAM)NULL);
+			clearAnnotation(SUB_VIEW, previousUnhiddenLine);
 
 		const int mismatchLen =
 				CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line + off, 0) -
@@ -3236,6 +3248,231 @@ void DelayedUpdate::operator()()
 }
 
 
+void onMarginClick(HWND view, int pos, int keyMods)
+{
+	if (keyMods & SCMOD_ALT)
+		return;
+
+	const int viewId	= getViewId(view);
+	const int line		= CallScintilla(viewId, SCI_LINEFROMPOSITION, pos, 0);
+
+	if (!isLineMarked(viewId, line, MARKER_MASK_LINE) && !isLineAnnotated(viewId, line))
+		return;
+
+	int mark = MARKER_MASK_LINE;
+
+	if (keyMods & SCMOD_SHIFT)
+	{
+		const int markerMask = CallScintilla(viewId, SCI_MARKERGET, line, 0);
+
+		if ((markerMask & (1 << MARKER_CHANGED_LINE)) == (1 << MARKER_CHANGED_LINE))
+			mark = (1 << MARKER_CHANGED_LINE);
+		else if (markerMask & MARKER_MASK_LINE)
+			mark = (1 << MARKER_ADDED_LINE) | (1 << MARKER_REMOVED_LINE) | (1 << MARKER_MOVED_LINE);
+	}
+
+	if (!(keyMods & SCMOD_CTRL))
+	{
+		std::pair<int, int> markedRange;
+
+		if (mark == (1 << MARKER_CHANGED_LINE))
+		{
+			markedRange.first	= getLineStart(viewId, line);
+			markedRange.second	= ((line + 1) < (CallScintilla(viewId, SCI_GETLINECOUNT, 0, 0))) ?
+					getLineStart(viewId, line + 1) :
+					getLineEnd(viewId, CallScintilla(viewId, SCI_GETLINECOUNT, 0, 0));
+		}
+		else
+		{
+			markedRange = getMarkedSection(viewId, line, line, mark);
+
+			if ((markedRange.first < 0) && !(keyMods & SCMOD_SHIFT))
+				markedRange = getMarkedSection(viewId, line + 1, line + 1, mark);
+		}
+
+		if (markedRange.first >= 0)
+			CallScintilla(viewId, SCI_SETSEL, markedRange.first, markedRange.second);
+
+		return;
+	}
+
+	{
+		CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(viewId));
+		if (cmpPair == compareList.end())
+			return;
+
+		if (!Settings.RecompareOnChange || cmpPair->options.findUniqueMode ||
+				CallScintilla(viewId, SCI_GETREADONLY, 0, 0))
+			return;
+	}
+
+	const int otherViewId = getOtherViewId(viewId);
+
+	if ((keyMods & SCMOD_SHIFT) && (mark == (1 << MARKER_CHANGED_LINE)))
+	{
+		const int otherLine = otherViewMatchingLine(viewId, line, 0, true);
+
+		if (otherLine < 0)
+			return;
+
+		mark = CallScintilla(otherViewId, SCI_MARKERGET, otherLine, 0);
+
+		if ((mark & (1 << MARKER_CHANGED_LINE)) != (1 << MARKER_CHANGED_LINE))
+			return;
+
+		const int startPos = getLineStart(viewId, line);
+		const auto text =
+				getText(otherViewId, getLineStart(otherViewId, otherLine), getLineEnd(otherViewId, otherLine));
+
+		ScopedViewUndoAction scopedUndo(viewId);
+
+		clearMarks(viewId, line);
+
+		CallScintilla(viewId, SCI_DELETERANGE, startPos, getLineEnd(viewId, line) - startPos);
+		CallScintilla(viewId, SCI_INSERTTEXT, startPos, (LPARAM)text.data());
+
+		return;
+	}
+
+	std::pair<int, int> markedRange = getMarkedSection(viewId, line, line, mark, true);
+
+	if ((markedRange.first < 0) && !(keyMods & SCMOD_SHIFT))
+		markedRange = getMarkedSection(viewId, line + 1, line + 1, mark, true);
+
+	std::pair<int, int> otherMarkedRange;
+
+	if (markedRange.first < 0)
+	{
+		otherMarkedRange.first	= otherViewMatchingLine(viewId, line, getWrapCount(viewId, line));
+		otherMarkedRange.second	= otherViewMatchingLine(viewId, line + 1, -1);
+	}
+	else
+	{
+		int startLine	= CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.first, 0);
+		int endLine		= CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.second, 0);
+
+		int startOffset	= 0;
+		int endOffset	= 0;
+
+		if ((startLine > 1) && isLineAnnotated(viewId, startLine - 1))
+		{
+			--startLine;
+			startOffset = getWrapCount(viewId, startLine);
+		}
+
+		if (isLineAnnotated(viewId, endLine))
+		{
+			++endLine;
+			endOffset = -1;
+		}
+		else
+		{
+			endOffset = getWrapCount(viewId, endLine) - 1;
+		}
+
+		otherMarkedRange.first = otherViewMatchingLine(viewId, startLine, startOffset, true);
+
+		if (otherMarkedRange.first < 0)
+			otherMarkedRange.first = otherViewMatchingLine(viewId, startLine, startOffset) + 1;
+
+		otherMarkedRange.second	= otherViewMatchingLine(viewId, endLine, endOffset);
+	}
+
+	for (; (otherMarkedRange.first <= otherMarkedRange.second) &&
+			!isLineMarked(otherViewId, otherMarkedRange.first, mark); ++otherMarkedRange.first);
+
+	if (otherMarkedRange.first > otherMarkedRange.second)
+	{
+		otherMarkedRange.first = -1;
+	}
+	else
+	{
+		for (; (otherMarkedRange.second >= otherMarkedRange.first) &&
+				!isLineMarked(otherViewId, otherMarkedRange.second, mark); --otherMarkedRange.second);
+
+		if (otherMarkedRange.second < otherMarkedRange.first)
+		{
+			otherMarkedRange.first = -1;
+		}
+		else
+		{
+			otherMarkedRange.first	= getLineStart(otherViewId, otherMarkedRange.first);
+
+			if (markedRange.first < 0)
+				otherMarkedRange.second	= getLineStart(otherViewId, otherMarkedRange.second + 1);
+			else
+				otherMarkedRange.second	= getLineEnd(otherViewId, otherMarkedRange.second);
+		}
+	}
+
+	{
+		ScopedViewUndoAction scopedUndo(viewId);
+
+		if (markedRange.first >= 0)
+		{
+			const int startLine	= CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.first, 0);
+			const int endLine	= CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.second, 0);
+
+			if (otherMarkedRange.first < 0)
+			{
+				if ((endLine + 1) < CallScintilla(viewId, SCI_GETLINECOUNT, 0, 0))
+					markedRange.second = getLineStart(viewId, endLine + 1);
+			}
+
+			clearMarks(viewId, endLine);
+
+			if ((otherMarkedRange.first >= 0) && (startLine > 0) && (isLineAnnotated(viewId, startLine - 1)))
+				clearAnnotation(viewId, startLine - 1);
+
+			CallScintilla(viewId, SCI_DELETERANGE, markedRange.first, markedRange.second - markedRange.first);
+		}
+
+		if (otherMarkedRange.first >= 0)
+		{
+			const int lastLine = CallScintilla(viewId, SCI_GETLINECOUNT, 0, 0) - 1;
+
+			bool copyOtherTillEnd = false;
+
+			int startPos = markedRange.first;
+
+			if (startPos < 0)
+			{
+				if (line < lastLine)
+				{
+					startPos = getLineStart(viewId, line + 1);
+				}
+				else
+				{
+					startPos = getLineEnd(viewId, line);
+
+					const int otherStartLine =
+							CallScintilla(otherViewId, SCI_LINEFROMPOSITION, otherMarkedRange.first, 0) - 1;
+
+					if (otherStartLine >= 0)
+						otherMarkedRange.first = getLineEnd(otherViewId, otherStartLine);
+
+					copyOtherTillEnd = true;
+				}
+
+				clearAnnotation(viewId, line);
+			}
+			else if (CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.first, 0) == lastLine)
+			{
+				copyOtherTillEnd = true;
+			}
+
+			if (copyOtherTillEnd)
+				otherMarkedRange.second =
+						getLineEnd(otherViewId, CallScintilla(otherViewId, SCI_GETLINECOUNT, 0, 0) - 1);
+
+			const auto text = getText(otherViewId, otherMarkedRange.first, otherMarkedRange.second);
+
+			CallScintilla(viewId, SCI_INSERTTEXT, startPos, (LPARAM)text.data());
+		}
+	}
+}
+
+
 void onSciModified(SCNotification* notifyCode)
 {
 	static bool skipPushDeletedSection = false;
@@ -3341,7 +3578,7 @@ void onSciModified(SCNotification* notifyCode)
 		if (Settings.RecompareOnChange)
 		{
 			if (notifyCode->linesAdded)
-				cmpPair->autoUpdateDelay = 400;
+				cmpPair->autoUpdateDelay = 500;
 			else
 				// Leave bigger delay before re-compare if change is on single line because the user might be typing
 				// and we shouldn't interrupt / interfere
@@ -3787,6 +4024,12 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 			}
 		break;
 
+		case SCN_MARGINCLICK:
+			if (NppSettings::get().compareMode && !notificationsLock &&
+					!delayedActivation && !delayedClosure && !delayedUpdate && (notifyCode->margin == MARGIN_NUM))
+				onMarginClick((HWND)notifyCode->nmhdr.hwndFrom, notifyCode->position, notifyCode->modifiers);
+		break;
+
 		case NPPN_BUFFERACTIVATED:
 			if (!compareList.empty() && !notificationsLock && !delayedClosure)
 				onBufferActivated(notifyCode->nmhdr.idFrom);
@@ -3800,7 +4043,8 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 				++notificationsLock;
 
 				LOGD("NPPN_FILEBEFORELOAD: " +
-					std::string(getViewId((HWND)notifyCode->nmhdr.hwndFrom) == MAIN_VIEW ? "MAIN view\n" : "SUB view\n"));
+					std::string(getViewId((HWND)notifyCode->nmhdr.hwndFrom) == MAIN_VIEW ?
+					"MAIN view\n" : "SUB view\n"));
 			}
 		break;
 
