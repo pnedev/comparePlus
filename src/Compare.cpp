@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include <vector>
 #include <memory>
+#include <cmath>
 
 #include <windows.h>
 #include <tchar.h>
@@ -283,7 +284,7 @@ public:
 		deletedSections.pop(compareViewId, sciAction, startLine);
 	}
 
-	bool redoAlignmentBlankDeletion()
+	bool undoAlignmentBlankDeletion()
 	{
 		if (!deletedSections.get().empty() && deletedSections.get().back().onlyAlignmentBlankChange)
 		{
@@ -3475,7 +3476,7 @@ void onMarginClick(HWND view, int pos, int keyMods)
 
 void onSciModified(SCNotification* notifyCode)
 {
-	static bool skipPushDeletedSection = false;
+	static bool linesAutoRemoved = false;
 
 	const int view = getViewId((HWND)notifyCode->nmhdr.hwndFrom);
 
@@ -3493,7 +3494,7 @@ void onSciModified(SCNotification* notifyCode)
 		if (endLine <= startLine)
 			return;
 
-		if (!skipPushDeletedSection)
+		if (!linesAutoRemoved)
 		{
 			LOGD("SC_MOD_BEFOREDELETE: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
 					" view, lines range: " + std::to_string(startLine + 1) + "-" + std::to_string(endLine) + "\n");
@@ -3509,14 +3510,13 @@ void onSciModified(SCNotification* notifyCode)
 	}
 	else if ((notifyCode->modificationType & SC_MOD_DELETETEXT) && notifyCode->linesAdded)
 	{
-		if (!skipPushDeletedSection)
+		if (linesAutoRemoved)
 		{
-			if (cmpPair->getFileByViewId(view).redoAlignmentBlankDeletion())
-				return;
+			linesAutoRemoved = false;
+			return;
 		}
-		else
+		else if (cmpPair->getFileByViewId(view).undoAlignmentBlankDeletion())
 		{
-			skipPushDeletedSection = false;
 			return;
 		}
 	}
@@ -3527,7 +3527,7 @@ void onSciModified(SCNotification* notifyCode)
 		if (startLine <= CallScintilla(view, SCI_MARKERNEXT, 0, MARKER_MASK_BLANK))
 		{
 			if (notifyCode->linesAdded)
-				skipPushDeletedSection = true;
+				linesAutoRemoved = true;
 
 			::PostMessage(getView(view), SCI_UNDO, 0, 0);
 
@@ -3556,22 +3556,38 @@ void onSciModified(SCNotification* notifyCode)
 		if (cmpPair->options.selectionCompare && notifyCode->linesAdded)
 		{
 			const int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
-			const int endLine = startLine + notifyCode->linesAdded - 1;
+			const int endLine = startLine + std::abs(notifyCode->linesAdded) - 1;
 
 			if (cmpPair->options.selections[view].first > startLine)
 			{
-				if (cmpPair->options.selections[view].first > endLine)
+				if (notifyCode->linesAdded > 0)
+				{
 					cmpPair->options.selections[view].first += notifyCode->linesAdded;
+				}
 				else
-					cmpPair->options.selections[view].first += (cmpPair->options.selections[view].first - startLine);
+				{
+					if (cmpPair->options.selections[view].first > endLine)
+						cmpPair->options.selections[view].first += notifyCode->linesAdded;
+					else
+						cmpPair->options.selections[view].first -=
+								(cmpPair->options.selections[view].first - startLine);
+				}
 			}
 
-			if (cmpPair->options.selections[view].second > startLine)
+			if (cmpPair->options.selections[view].second >= startLine)
 			{
-				if (cmpPair->options.selections[view].second > endLine)
+				if (notifyCode->linesAdded > 0)
+				{
 					cmpPair->options.selections[view].second += notifyCode->linesAdded;
+				}
 				else
-					cmpPair->options.selections[view].second += (cmpPair->options.selections[view].second - startLine);
+				{
+					if (cmpPair->options.selections[view].second >= endLine)
+						cmpPair->options.selections[view].second += notifyCode->linesAdded;
+					else
+						cmpPair->options.selections[view].second -=
+								(cmpPair->options.selections[view].second - startLine + 1);
+				}
 			}
 		}
 
