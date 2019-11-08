@@ -122,7 +122,8 @@ private:
  */
 struct DeletedSection
 {
-	DeletedSection(int action, int line, int len) : startLine(line), lineReplace(false), onlyAlignmentBlankChange(false)
+	DeletedSection(int action, int line, int len, const std::pair<int, int>& sel) :
+			startLine(line), lineReplace(false), onlyAlignmentBlankChange(false), selection(sel)
 	{
 		restoreAction = (action == SC_PERFORMED_UNDO) ? SC_PERFORMED_REDO : SC_PERFORMED_UNDO;
 
@@ -134,6 +135,8 @@ struct DeletedSection
 	int					restoreAction;
 	bool				onlyAlignmentBlankChange;
 	std::vector<int>	markers;
+
+	const std::pair<int, int>	selection;
 };
 
 
@@ -150,8 +153,8 @@ struct DeletedSectionsList
 		return sections;
 	}
 
-	bool push(int view, int currAction, int startLine, int len);
-	void pop(int view, int currAction, int startLine);
+	bool push(int view, int currAction, int startLine, int len, const std::pair<int, int>& selection);
+	std::pair<int, int> pop(int view, int currAction, int startLine);
 
 	void clear()
 	{
@@ -166,7 +169,7 @@ private:
 };
 
 
-bool DeletedSectionsList::push(int view, int currAction, int startLine, int len)
+bool DeletedSectionsList::push(int view, int currAction, int startLine, int len, const std::pair<int, int>& selection)
 {
 	if (len < 1)
 		return false;
@@ -181,7 +184,7 @@ bool DeletedSectionsList::push(int view, int currAction, int startLine, int len)
 	if (!sections.empty() && sections.back().restoreAction == currAction && sections.back().lineReplace)
 		return false;
 
-	DeletedSection delSection(currAction, startLine, len);
+	DeletedSection delSection(currAction, startLine, len, selection);
 
 	const int startPos = getLineStart(view, startLine);
 	clearChangedIndicator(view, startPos, getLineStart(view, startLine + len) - startPos);
@@ -206,12 +209,12 @@ bool DeletedSectionsList::push(int view, int currAction, int startLine, int len)
 }
 
 
-void DeletedSectionsList::pop(int view, int currAction, int startLine)
+std::pair<int, int> DeletedSectionsList::pop(int view, int currAction, int startLine)
 {
 	if (sections.empty())
 	{
 		++skipPush;
-		return;
+		return std::make_pair(-1, -1);
 	}
 
 	DeletedSection& last = sections.back();
@@ -224,11 +227,11 @@ void DeletedSectionsList::pop(int view, int currAction, int startLine)
 		else
 			++skipPush;
 
-		return;
+		return std::make_pair(-1, -1);
 	}
 
 	if (last.startLine != startLine)
-		return;
+		return std::make_pair(-1, -1);
 
 	const int linesCount = static_cast<int>(last.markers.size());
 
@@ -243,7 +246,11 @@ void DeletedSectionsList::pop(int view, int currAction, int startLine)
 			CallScintilla(view, SCI_MARKERADDSET, last.startLine + i, last.markers[i]);
 	}
 
+	std::pair<int, int> sel = last.selection;
+
 	sections.pop_back();
+
+	return sel;
 }
 
 
@@ -268,20 +275,20 @@ public:
 	void initFromCurrent(bool currFileIsNew);
 	void updateFromCurrent();
 	void updateView();
-	void clear();
+	void clear(bool keepDeleteHistory = false);
 	void onBeforeClose() const;
 	void close() const;
 	void restore() const;
 	bool isOpen() const;
 
-	bool pushDeletedSection(int sciAction, int startLine, int len)
+	bool pushDeletedSection(int sciAction, int startLine, int len, const std::pair<int, int>& selection)
 	{
-		return deletedSections.push(compareViewId, sciAction, startLine, len);
+		return deletedSections.push(compareViewId, sciAction, startLine, len, selection);
 	}
 
-	void popDeletedSection(int sciAction, int startLine)
+	std::pair<int, int> popDeletedSection(int sciAction, int startLine)
 	{
-		deletedSections.pop(compareViewId, sciAction, startLine);
+		return deletedSections.pop(compareViewId, sciAction, startLine);
 	}
 
 	bool undoAlignmentBlankDeletion()
@@ -866,10 +873,12 @@ void ComparedFile::updateView()
 }
 
 
-void ComparedFile::clear()
+void ComparedFile::clear(bool keepDeleteHistory)
 {
 	setArrowMark(-1);
-	deletedSections.clear();
+
+	if (!keepDeleteHistory)
+		deletedSections.clear();
 }
 
 
@@ -2168,8 +2177,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		if ((!Settings.GotoFirstDiff && !selectionCompare) || autoUpdating)
 			storedLocation.reset(new ViewLocation(getCurrentViewId()));
 
-		cmpPair->getOldFile().clear();
-		cmpPair->getNewFile().clear();
+		cmpPair->getOldFile().clear(autoUpdating);
+		cmpPair->getNewFile().clear(autoUpdating);
 	}
 	// New compare
 	else
@@ -3484,6 +3493,8 @@ void onSciModified(SCNotification* notifyCode)
 	if (cmpPair == compareList.end())
 		return;
 
+	bool selectionRestored = false;
+
 	if (notifyCode->modificationType & SC_MOD_BEFOREDELETE)
 	{
 		const int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
@@ -3504,7 +3515,8 @@ void onSciModified(SCNotification* notifyCode)
 
 			ScopedIncrementer incr(notificationsLock);
 
-			if (cmpPair->getFileByViewId(view).pushDeletedSection(action, startLine, endLine - startLine))
+			if (cmpPair->getFileByViewId(view).pushDeletedSection(action, startLine, endLine - startLine,
+					cmpPair->options.selections[view]))
 				return;
 		}
 	}
@@ -3544,7 +3556,15 @@ void onSciModified(SCNotification* notifyCode)
 
 			ScopedIncrementer incr(notificationsLock);
 
-			cmpPair->getFileByViewId(view).popDeletedSection(action, startLine);
+			const std::pair<int, int> sel = cmpPair->getFileByViewId(view).popDeletedSection(action, startLine);
+
+			selectionRestored = (sel.first != sel.second);
+
+			if (selectionRestored)
+			{
+				cmpPair->options.selections[view] = sel;
+				LOGD("Selection restored.\n");
+			}
 		}
 	}
 
@@ -3553,7 +3573,7 @@ void onSciModified(SCNotification* notifyCode)
 		delayedAlignment.cancel();
 		delayedUpdate.cancel();
 
-		if (cmpPair->options.selectionCompare && notifyCode->linesAdded)
+		if (cmpPair->options.selectionCompare && notifyCode->linesAdded && !selectionRestored)
 		{
 			const int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 			const int endLine = startLine + std::abs(notifyCode->linesAdded) - 1;
@@ -3589,6 +3609,8 @@ void onSciModified(SCNotification* notifyCode)
 								(cmpPair->options.selections[view].second - startLine + 1);
 				}
 			}
+
+			LOGD("Selection adjusted.\n");
 		}
 
 		if (Settings.RecompareOnChange)
@@ -3599,6 +3621,12 @@ void onSciModified(SCNotification* notifyCode)
 				// Leave bigger delay before re-compare if change is on single line because the user might be typing
 				// and we shouldn't interrupt / interfere
 				cmpPair->autoUpdateDelay = 1000;
+		}
+		else
+		{
+			// TODO: Need to adjust alignment data here!!!
+
+			CallScintilla(view, SCI_ANNOTATIONCLEARALL, 0, 0);
 		}
 	}
 }
