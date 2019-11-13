@@ -362,6 +362,7 @@ public:
 
 	CompareSummary	summary;
 
+	bool			compareDirty	= true;
 	int				autoUpdateDelay	= 0;
 };
 
@@ -1085,9 +1086,17 @@ void ComparedPair::setStatusInfo()
 {
 	HWND hStatusBar = NppStatusBarHandleGetter::get();
 
-	if (hStatusBar != nullptr)
+	if (hStatusBar == nullptr)
+		return;
+
+	TCHAR info[512];
+
+	if (compareDirty)
 	{
-		TCHAR info[512];
+		_tcscpy_s(info, _countof(info), TEXT("COMPARED FILE CHANGED - RESULTS MAY BE INACCURATE!"));
+	}
+	else
+	{
 		TCHAR buf[256] = TEXT(" ***");
 
 		int infoCurrentPos = 0;
@@ -1165,10 +1174,10 @@ void ComparedPair::setStatusInfo()
 
 		if (info[infoCurrentPos - 2] == TEXT(' '))
 			info[infoCurrentPos - 2] = TEXT('\0');
-
-		::SendMessage(hStatusBar, SB_SETTEXT, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)info));
-		::SendMessage(hStatusBar, SB_SETTIPTEXT, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)info));
 	}
+
+	::SendMessage(hStatusBar, SB_SETTEXT, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)info));
+	::SendMessage(hStatusBar, SB_SETTIPTEXT, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)info));
 }
 
 
@@ -2296,6 +2305,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 	const CompareResult cmpResult = runCompare(cmpPair);
 
+	cmpPair->compareDirty = false;
+
 	switch (cmpResult)
 	{
 		case CompareResult::COMPARE_MISMATCH:
@@ -2688,6 +2699,14 @@ void AutoRecompare()
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_AUTO_RECOMPARE]._cmdID,
 			(LPARAM)Settings.RecompareOnChange);
 	Settings.markAsDirty();
+
+	if (Settings.RecompareOnChange)
+	{
+		CompareList_t::iterator cmpPair = getCompare(getCurrentBuffId());
+
+		if ((cmpPair != compareList.end()) && cmpPair->compareDirty)
+			delayedUpdate.post(30);
+	}
 }
 
 
@@ -3364,7 +3383,7 @@ void onMarginClick(HWND view, int pos, int keyMods)
 		if (cmpPair == compareList.end())
 			return;
 
-		if (!Settings.RecompareOnChange || cmpPair->options.findUniqueMode ||
+		if (cmpPair->compareDirty || cmpPair->options.findUniqueMode ||
 				CallScintilla(viewId, SCI_GETREADONLY, 0, 0))
 			return;
 	}
@@ -3550,8 +3569,8 @@ void onSciModified(SCNotification* notifyCode)
 
 	if (notifyCode->modificationType & SC_MOD_BEFOREDELETE)
 	{
-		int startLine	= CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
-		int endLine		= CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position + notifyCode->length, 0);
+		const int startLine	= CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+		const int endLine	= CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position + notifyCode->length, 0);
 
 		// Change is on single line?
 		if (endLine <= startLine)
@@ -3652,6 +3671,35 @@ void onSciModified(SCNotification* notifyCode)
 		delayedAlignment.cancel();
 		delayedUpdate.cancel();
 
+		if (!Settings.RecompareOnChange && !cmpPair->compareDirty)
+		{
+			if (!cmpPair->options.selectionCompare)
+			{
+				cmpPair->compareDirty = true;
+			}
+			else
+			{
+				int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+
+				if (isAlignmentFirstLineInserted(view))
+					--startLine;
+
+				if ((startLine >= cmpPair->options.selections[view].first) &&
+						(startLine <= cmpPair->options.selections[view].second))
+					cmpPair->compareDirty = true;
+
+				if (!cmpPair->compareDirty && notifyCode->linesAdded &&
+					(notifyCode->modificationType & SC_MOD_DELETETEXT))
+				{
+					startLine += notifyCode->linesAdded + 1;
+
+					if ((startLine >= cmpPair->options.selections[view].first) &&
+							(startLine <= cmpPair->options.selections[view].second))
+						cmpPair->compareDirty = true;
+				}
+			}
+		}
+
 		if (cmpPair->options.selectionCompare && notifyCode->linesAdded && !undo)
 		{
 			int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
@@ -3694,7 +3742,10 @@ void onSciModified(SCNotification* notifyCode)
 			}
 
 			if (cmpPair->options.selections[view].second < cmpPair->options.selections[view].first)
+			{
 				clearComparePair(getCurrentBuffId());
+				return;
+			}
 
 			LOGD("Selection adjusted.\n");
 		}
@@ -3726,6 +3777,9 @@ void onSciModified(SCNotification* notifyCode)
 			CallScintilla(view, SCI_ANNOTATIONCLEARALL, 0, 0);
 			CallScintilla(getOtherViewId(view), SCI_ANNOTATIONCLEARALL, 0, 0);
 		}
+
+		if (cmpPair->compareDirty && (notifyCode->linesAdded == 0))
+			cmpPair->setStatus();
 	}
 }
 
