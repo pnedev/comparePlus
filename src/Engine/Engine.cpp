@@ -1,4 +1,3 @@
-
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
@@ -800,7 +799,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 		diffInfo* pBlockDiff2 = &blockDiff2;
 
 		// First use word granularity (find matching words) for better precision
-		auto wordDiffRes = DiffCalc<Word>(lineWords1, lineWords2)();
+		auto wordDiffRes = DiffCalc<Word>(lineWords1, lineWords2)(!options.charPrecision);
 		const std::vector<diff_info<void>> lineDiffs = std::move(wordDiffRes.first);
 
 		if (wordDiffRes.second)
@@ -1074,7 +1073,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 						if (words1.empty())
 							words1 = getLineWords(doc1.view, doc1.lines[blockDiff1.off + line1].line, options);
 
-						auto wordDiffs = DiffCalc<Word>(words1, words2[line2])();
+						auto wordDiffs = DiffCalc<Word>(words1, words2[line2])(true);
 
 						const int wordDiffsSize = static_cast<int>(wordDiffs.first.size());
 
@@ -1897,7 +1896,7 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 	if (progress && !progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
-	auto diffRes = DiffCalc<Line, blockDiffInfo>(cmpInfo.doc1.lines, cmpInfo.doc2.lines)(true);
+	auto diffRes = DiffCalc<Line, blockDiffInfo>(cmpInfo.doc1.lines, cmpInfo.doc2.lines)(true, true);
 	cmpInfo.blockDiffs = std::move(diffRes.first);
 
 	if (diffRes.second)

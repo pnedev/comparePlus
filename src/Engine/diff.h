@@ -88,8 +88,9 @@ public:
 
 	// Runs the actual compare and returns the differences + swap flag indicating if the
 	// compared sequences have been swapped for better results (if true, _a and _b have been swapped,
-	// meaning that DIFF_IN_1 in the differences is regarding _b instead _a)
-	std::pair<std::vector<diff_info<UserDataT>>, bool> operator()(bool doBoundaryShift = false);
+	// meaning that DIFF_IN_1 in the differences is regarding _b instead of _a)
+	std::pair<std::vector<diff_info<UserDataT>>, bool> operator()(bool doDiffsCombine = false,
+			bool doBoundaryShift = false);
 
 	DiffCalc(const DiffCalc&) = delete;
 	const DiffCalc& operator=(const DiffCalc&) = delete;
@@ -103,6 +104,7 @@ private:
 	void _edit(diff_type type, int off, int len);
 	int _find_middle_snake(int aoff, int aend, int boff, int bend, middle_snake& ms);
 	int _ses(int aoff, int aend, int boff, int bend);
+	void _combine_diffs();
 	void _shift_boundaries();
 	inline int _count_replaces();
 
@@ -356,6 +358,119 @@ int DiffCalc<Elem, UserDataT>::_ses(int aoff, int aend, int boff, int bend)
 }
 
 
+// If a whole matching block is contained at the end of the next diff block shift match down:
+// If [] surrounds the marked differences, basically [abc]d[efgd]hi is the same as [abcdefg]dhi
+// We combine diffs to make results more compact and clean
+template <typename Elem, typename UserDataT>
+void DiffCalc<Elem, UserDataT>::_combine_diffs()
+{
+	for (int i = 1; i < static_cast<int>(_diff.size()); ++i)
+	{
+		if (_diff[i].type != diff_type::DIFF_MATCH)
+			continue;
+
+		if (i + 1 < static_cast<int>(_diff.size()))
+		{
+			const Elem*	el	= _b;
+
+			if (_diff[i + 1].type == diff_type::DIFF_IN_1)
+			{
+				// If there is DIFF_IN_2 after DIFF_IN_1 both sequences are changed - diff endings don't match for sure
+				if ((i + 2 < static_cast<int>(_diff.size())) && (_diff[i + 2].type == diff_type::DIFF_IN_2))
+				{
+					i += 2;
+					continue;
+				}
+
+				el	= _a;
+			}
+
+			diff_info<UserDataT>& match = _diff[i];
+			diff_info<UserDataT>* next_diff = &_diff[i + 1];
+
+			if (match.len > next_diff->len)
+			{
+				++i;
+				continue;
+			}
+
+			int match_len = match.len;
+
+			int match_off = next_diff->off - 1;
+			int check_off = next_diff->off + next_diff->len - 1;
+
+			while ((match_len > 0) && (el[match_off] == el[check_off]))
+			{
+				--match_off;
+				--check_off;
+				--match_len;
+			}
+
+			if (match_len > 0)
+			{
+				++i;
+				continue;
+			}
+
+			// The whole match is contained at the end of the next diff -
+			// move the match down linking the surrounding diffs and matches
+
+			// Link match to the next matching block
+			if (i + 2 < static_cast<int>(_diff.size()))
+			{
+				_diff[i + 2].off -= match.len;
+				_diff[i + 2].len += match.len;
+			}
+			// Create new match block at the end
+			else
+			{
+				diff_info<UserDataT> end_match;
+
+				end_match.type = diff_type::DIFF_MATCH;
+				end_match.off = match.off + next_diff->len;
+				end_match.len = match.len;
+
+				_diff.emplace_back(end_match);
+			}
+
+			next_diff->off -= match.len;
+
+			_diff.erase(_diff.begin() + i);
+
+			next_diff = &_diff[i];
+
+			int k = i - 1;
+
+			diff_info<UserDataT>* prev_diff = &_diff[k];
+
+			if (next_diff->type != prev_diff->type)
+			{
+				if ((k > 0) && (_diff[k - 1].type == next_diff->type))
+					prev_diff = &_diff[--k];
+			}
+
+			// Merge diffs
+			if (next_diff->type == prev_diff->type)
+			{
+				prev_diff->len += next_diff->len;
+
+				_diff.erase(_diff.begin() + i);
+				--i;
+			}
+			// Swap diffs to represent block replacement (DIFF_IN_1 followed by DIFF_IN_2)
+			else if (next_diff->type == diff_type::DIFF_IN_1)
+			{
+				std::swap(*prev_diff, *next_diff);
+			}
+
+			// Check if previous match is suitable for combining
+			if (k > 1)
+				i = k - 2;
+		}
+	}
+}
+
+
 // Algorithm borrowed from WinMerge
 // If the Elem after the DIFF_IN_1 is the same as the first Elem of the DIFF_IN_1, shift differences down:
 // If [] surrounds the marked differences, basically [abb]a is the same as a[bba]
@@ -467,7 +582,8 @@ inline int DiffCalc<Elem, UserDataT>::_count_replaces()
 
 
 template <typename Elem, typename UserDataT>
-std::pair<std::vector<diff_info<UserDataT>>, bool> DiffCalc<Elem, UserDataT>::operator()(bool doBoundaryShift)
+std::pair<std::vector<diff_info<UserDataT>>, bool> DiffCalc<Elem, UserDataT>::operator()(bool doDiffsCombine,
+		bool doBoundaryShift)
 {
 	bool swapped = (_a_size > _b_size);
 
@@ -535,6 +651,9 @@ std::pair<std::vector<diff_info<UserDataT>>, bool> DiffCalc<Elem, UserDataT>::op
 			swapped = !swapped;
 		}
 	}
+
+	if (doDiffsCombine)
+		_combine_diffs();
 
 	if (doBoundaryShift)
 		_shift_boundaries();
