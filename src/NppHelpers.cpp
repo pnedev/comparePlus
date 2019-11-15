@@ -288,12 +288,19 @@ std::pair<int, int> getSelectionLines(int view)
 	if (selectionEnd - selectionStart == 0)
 		return std::make_pair(-1, -1);
 
-	int endLine = CallScintilla(view, SCI_LINEFROMPOSITION, selectionEnd, 0);
+	int startLine	= CallScintilla(view, SCI_LINEFROMPOSITION, selectionStart, 0);
+	int endLine		= CallScintilla(view, SCI_LINEFROMPOSITION, selectionEnd, 0);
 
 	if (selectionEnd == getLineStart(view, endLine))
 		--endLine;
 
-	return std::make_pair(CallScintilla(view, SCI_LINEFROMPOSITION, selectionStart, 0), endLine);
+	if (isAlignmentFirstLineInserted(view))
+	{
+		--startLine;
+		--endLine;
+	}
+
+	return std::make_pair(startLine, endLine);
 }
 
 
