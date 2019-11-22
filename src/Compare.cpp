@@ -218,7 +218,7 @@ bool DeletedSectionsList::push(int view, int currAction, int startLine, int len,
 
 	lastPushTimeMark = ::GetTickCount();
 
-	return delSection.onlyAlignmentBlankChange;
+	return true;
 }
 
 
@@ -294,7 +294,8 @@ public:
 	void restore() const;
 	bool isOpen() const;
 
-	bool pushDeletedSection(int sciAction, int startLine, int len, const std::shared_ptr<DeletedSection::UndoData>& undo)
+	bool pushDeletedSection(int sciAction, int startLine, int len,
+		const std::shared_ptr<DeletedSection::UndoData>& undo)
 	{
 		return deletedSections.push(compareViewId, sciAction, startLine, len, undo);
 	}
@@ -304,15 +305,9 @@ public:
 		return deletedSections.pop(compareViewId, sciAction, startLine);
 	}
 
-	bool undoAlignmentBlankDeletion()
+	bool isOnlyAlignmentBlankDeleted()
 	{
-		if (!deletedSections.get().empty() && deletedSections.get().back().onlyAlignmentBlankChange)
-		{
-			::PostMessage(getView(compareViewId), SCI_UNDO, 0, 0);
-			return true;
-		}
-
-		return false;
+		return (!deletedSections.get().empty() && deletedSections.get().back().onlyAlignmentBlankChange);
 	}
 
 	Temp_t	isTemp;
@@ -362,7 +357,10 @@ public:
 
 	CompareSummary	summary;
 
-	bool			compareDirty	= true;
+	bool			compareDirty	= false;
+	bool			manuallyChanged	= false;
+	unsigned		inEditMode		= 0;
+
 	int				autoUpdateDelay	= 0;
 };
 
@@ -474,6 +472,31 @@ public:
  *  \class
  *  \brief
  */
+class SelectRangeTimeout : public DelayedWork
+{
+public:
+	SelectRangeTimeout(int view, int startPos, int endPos) : DelayedWork(), _view(view)
+	{
+		_sel = getSelection(view);
+
+		CallScintilla(view, SCI_SETSEL, startPos, endPos);
+	}
+
+	virtual ~SelectRangeTimeout();
+
+	virtual void operator()();
+
+private:
+	int	_view;
+
+	std::pair<int, int> _sel;
+};
+
+
+/**
+ *  \class
+ *  \brief
+ */
 class LineArrowMarkTimeout : public DelayedWork
 {
 public:
@@ -511,12 +534,12 @@ static const TempMark_t tempMark[] =
 LRESULT (*nppNotificationProc)(HWND, UINT, WPARAM, LPARAM) = nullptr;
 
 CompareList_t compareList;
-std::unique_ptr<NewCompare> newCompare;
+std::unique_ptr<NewCompare> newCompare = nullptr;
 
 volatile unsigned	notificationsLock = 0;
 bool				isNppMinimized = false;
 
-std::unique_ptr<ViewLocation> storedLocation;
+std::unique_ptr<ViewLocation> storedLocation = nullptr;
 
 // Re-compare flags
 bool goToFirst = false;
@@ -550,6 +573,7 @@ FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
 LRESULT statusProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 void onBufferActivated(LRESULT buffId);
 void syncViews(int biasView);
+void temporaryRangeSelect(int view, int startPos = -1, int endPos = -1);
 void setArrowMark(int view, int line = -1, bool down = true);
 
 
@@ -891,6 +915,7 @@ void ComparedFile::updateView()
 
 void ComparedFile::clear(bool keepDeleteHistory)
 {
+	temporaryRangeSelect(-1);
 	setArrowMark(-1);
 
 	if (!keepDeleteHistory)
@@ -906,6 +931,7 @@ void ComparedFile::onBeforeClose() const
 
 	clearWindow(view);
 	setNormalView(view);
+	temporaryRangeSelect(-1);
 	setArrowMark(-1);
 
 	if (isTemp)
@@ -939,6 +965,7 @@ void ComparedFile::restore() const
 
 	clearWindow(view);
 	setNormalView(view);
+	temporaryRangeSelect(-1);
 	setArrowMark(-1);
 
 	if (viewIdFromBuffId(buffId) != originalViewId)
@@ -1093,7 +1120,10 @@ void ComparedPair::setStatusInfo()
 
 	if (compareDirty)
 	{
-		_tcscpy_s(info, _countof(info), TEXT("COMPARED FILE CHANGED - RESULTS MAY BE INACCURATE!"));
+		if (manuallyChanged)
+			_tcscpy_s(info, _countof(info), TEXT("FILE MANUALLY CHANGED, PLEASE RE-COMPARE!"));
+		else
+			_tcscpy_s(info, _countof(info), TEXT("FILE CHANGED, COMPARE RESULTS MIGHT BE INACCURATE!"));
 	}
 	else
 	{
@@ -1210,9 +1240,6 @@ void ComparedPair::adjustAlignment(int view, int line, int offset)
 
 	int startIdx = 0;
 
-	if (offset < 0)
-		++line;
-
 	for (int i = static_cast<int>(alignInfo.size()) / 2; i; i /= 2)
 	{
 		if ((alignInfo[startIdx + i].*alignView).line < line)
@@ -1224,19 +1251,20 @@ void ComparedPair::adjustAlignment(int view, int line, int offset)
 
 	if ((startIdx < static_cast<int>(alignInfo.size())) && ((alignInfo[startIdx].*alignView).line >= line))
 	{
-		for (int i = startIdx; i < static_cast<int>(alignInfo.size()); ++i)
+		if (offset < 0)
 		{
-			if ((offset < 0) && (i + 1 < static_cast<int>(alignInfo.size())) &&
-				((alignInfo[i].*alignView).line > (alignInfo[i + 1].*alignView).line + offset))
-			{
-				alignInfo.erase(alignInfo.begin() + i);
-				--i;
-			}
-			else
-			{
-				(alignInfo[i].*alignView).line += offset;
-			}
+			int endIdx = startIdx;
+
+			while ((endIdx < static_cast<int>(alignInfo.size())) &&
+					(line > (alignInfo[endIdx].*alignView).line + offset))
+				++endIdx;
+
+			if (endIdx > startIdx)
+				alignInfo.erase(alignInfo.begin() + startIdx, alignInfo.begin() + endIdx);
 		}
+
+		for (int i = startIdx; i < static_cast<int>(alignInfo.size()); ++i)
+			(alignInfo[i].*alignView).line += offset;
 	}
 }
 
@@ -1307,6 +1335,26 @@ NewCompare::~NewCompare()
 }
 
 
+SelectRangeTimeout::~SelectRangeTimeout()
+{
+	(*this)();
+}
+
+
+void SelectRangeTimeout::operator()()
+{
+	if ((_sel.first >= 0) && (_sel.second > _sel.first))
+	{
+		CallScintilla(_view, SCI_SETSELECTIONSTART, _sel.first, 0);
+		CallScintilla(_view, SCI_SETSELECTIONEND, _sel.second, 0);
+	}
+	else
+	{
+		clearSelection(_view);
+	}
+}
+
+
 LineArrowMarkTimeout::~LineArrowMarkTimeout()
 {
 	(*this)();
@@ -1343,22 +1391,41 @@ CompareList_t::iterator getCompareBySciDoc(int sciDoc)
 }
 
 
+void temporaryRangeSelect(int view, int startPos, int endPos)
+{
+	static std::unique_ptr<SelectRangeTimeout> range;
+
+	if (view < 0 || startPos < 0 || endPos < startPos)
+	{
+		range = nullptr;
+		return;
+	}
+
+	range = nullptr;
+	range = std::make_unique<SelectRangeTimeout>(view, startPos, endPos);
+
+	if (range)
+		range->post(2000);
+}
+
+
 void setArrowMark(int view, int line, bool down)
 {
 	static std::unique_ptr<LineArrowMarkTimeout> lineArrowMark;
 
 	if (view < 0 || line < 0)
 	{
-		lineArrowMark.reset();
+		lineArrowMark = nullptr;
 		return;
 	}
 
 	const int markerHandle = showArrowSymbol(view, line, down);
 
-	lineArrowMark.reset(new LineArrowMarkTimeout(view, markerHandle));
+	lineArrowMark = nullptr;
+	lineArrowMark = std::make_unique<LineArrowMarkTimeout>(view, markerHandle);
 
 	if (lineArrowMark)
-		lineArrowMark->post(3000);
+		lineArrowMark->post(2000);
 }
 
 
@@ -1952,8 +2019,8 @@ bool setFirst(bool currFileIsNew, bool markName = false)
 
 	// Done on purpose: First wipe the std::unique_ptr so ~NewCompare is called before the new object constructor.
 	// This is important because the N++ plugin menu is updated on NewCompare construct/destruct.
-	newCompare.reset();
-	newCompare.reset(new NewCompare(currFileIsNew, markName));
+	newCompare = nullptr;
+	newCompare = std::make_unique<NewCompare>(currFileIsNew, markName);
 
 	return true;
 }
@@ -2052,7 +2119,7 @@ bool createTempFile(const TCHAR *file, Temp_t tempType)
 
 	::MessageBox(nppData._nppHandle, TEXT("Creating temp file failed - operation aborted."), PLUGIN_NAME, MB_OK);
 
-	newCompare.reset();
+	newCompare = nullptr;
 
 	return false;
 }
@@ -2149,7 +2216,7 @@ bool initNewCompare()
 CompareList_t::iterator addComparePair()
 {
 	compareList.push_back(newCompare->pair);
-	newCompare.reset();
+	newCompare = nullptr;
 
 	return compareList.end() - 1;
 }
@@ -2183,14 +2250,14 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	const bool				recompare		= (cmpPair != compareList.end());
 
 	// Just to be sure any old state is cleared
-	storedLocation.reset();
+	storedLocation = nullptr;
 	goToFirst = false;
 
 	bool recompareSameSelections = false;
 
 	if (recompare)
 	{
-		newCompare.reset();
+		newCompare = nullptr;
 
 		cmpPair->autoUpdateDelay = 0;
 
@@ -2237,7 +2304,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		}
 
 		if ((!Settings.GotoFirstDiff && !selectionCompare) || autoUpdating)
-			storedLocation.reset(new ViewLocation(getCurrentViewId()));
+			storedLocation = std::make_unique<ViewLocation>(getCurrentViewId());
 
 		cmpPair->getOldFile().clear(autoUpdating);
 		cmpPair->getNewFile().clear(autoUpdating);
@@ -2247,7 +2314,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	{
 		if (!initNewCompare())
 		{
-			newCompare.reset();
+			newCompare = nullptr;
 			return;
 		}
 
@@ -2305,7 +2372,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 	const CompareResult cmpResult = runCompare(cmpPair);
 
-	cmpPair->compareDirty = false;
+	cmpPair->compareDirty		= false;
+	cmpPair->manuallyChanged	= false;
 
 	switch (cmpResult)
 	{
@@ -2425,14 +2493,14 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 			clearComparePair(getCurrentBuffId());
 	}
 
-	storedLocation.reset();
+	storedLocation = nullptr;
 }
 
 
 void SetAsFirst()
 {
 	if (!setFirst(Settings.FirstFileIsNew, true))
-		newCompare.reset();
+		newCompare = nullptr;
 }
 
 
@@ -2462,7 +2530,7 @@ void FindSelectionsUnique()
 
 void ClearActiveCompare()
 {
-	newCompare.reset();
+	newCompare = nullptr;
 
 	if (NppSettings::get().compareMode)
 		clearComparePair(getCurrentBuffId());
@@ -2471,7 +2539,7 @@ void ClearActiveCompare()
 
 void ClearAllCompares()
 {
-	newCompare.reset();
+	newCompare = nullptr;
 
 	if (!compareList.size())
 		return;
@@ -2719,9 +2787,9 @@ void Prev()
 		std::pair<int, int> viewLoc = jumpToChange(false, Settings.WrapAround);
 
 		if (viewLoc.first < 0)
-			storedLocation.reset();
+			storedLocation = nullptr;
 		else
-			storedLocation.reset(new ViewLocation(viewLoc.first, viewLoc.second));
+			storedLocation = std::make_unique<ViewLocation>(viewLoc.first, viewLoc.second);
 	}
 }
 
@@ -2735,9 +2803,9 @@ void Next()
 		std::pair<int, int> viewLoc = jumpToChange(true, Settings.WrapAround);
 
 		if (viewLoc.first < 0)
-			storedLocation.reset();
+			storedLocation = nullptr;
 		else
-			storedLocation.reset(new ViewLocation(viewLoc.first, viewLoc.second));
+			storedLocation = std::make_unique<ViewLocation>(viewLoc.first, viewLoc.second);
 	}
 }
 
@@ -2749,7 +2817,7 @@ void First()
 		ScopedIncrementer incr(notificationsLock);
 
 		std::pair<int, int> viewLoc = jumpToFirstChange(true);
-		storedLocation.reset(new ViewLocation(viewLoc.first, viewLoc.second));
+		storedLocation = std::make_unique<ViewLocation>(viewLoc.first, viewLoc.second);
 	}
 }
 
@@ -2761,7 +2829,7 @@ void Last()
 		ScopedIncrementer incr(notificationsLock);
 
 		std::pair<int, int> viewLoc = jumpToLastChange(true);
-		storedLocation.reset(new ViewLocation(viewLoc.first, viewLoc.second));
+		storedLocation = std::make_unique<ViewLocation>(viewLoc.first, viewLoc.second);
 	}
 }
 
@@ -2774,7 +2842,7 @@ void OpenSettingsDlg(void)
 	{
 		Settings.save();
 
-		newCompare.reset();
+		newCompare = nullptr;
 
 		if (!compareList.empty())
 		{
@@ -3108,6 +3176,7 @@ void comparedFileActivated()
 	CallScintilla(MAIN_VIEW,	SCI_MARKERDELETEALL, MARKER_ARROW_SYMBOL, 0);
 	CallScintilla(SUB_VIEW,		SCI_MARKERDELETEALL, MARKER_ARROW_SYMBOL, 0);
 
+	temporaryRangeSelect(-1);
 	setArrowMark(-1);
 
 	setCompareView(MAIN_VIEW,	Settings.colors.blank);
@@ -3259,7 +3328,7 @@ void DelayedAlign::operator()()
 		LOGD("Aligning diffs\n");
 
 		if (!storedLocation && !goToFirst)
-			storedLocation.reset(new ViewLocation(getCurrentViewId()));
+			storedLocation = std::make_unique<ViewLocation>(getCurrentViewId());
 
 		selectionAutoRecompare = false;
 
@@ -3297,7 +3366,7 @@ void DelayedAlign::operator()()
 		{
 			syncViews(storedLocation->getView());
 
-			storedLocation.reset();
+			storedLocation = nullptr;
 			cmpPair->setStatus();
 
 			::SetFocus(getCurrentView());
@@ -3353,40 +3422,12 @@ void onMarginClick(HWND view, int pos, int keyMods)
 			mark = (1 << MARKER_ADDED_LINE) | (1 << MARKER_REMOVED_LINE) | (1 << MARKER_MOVED_LINE);
 	}
 
-	if (!(keyMods & SCMOD_CTRL))
-	{
-		std::pair<int, int> markedRange;
-
-		if (mark == (1 << MARKER_CHANGED_LINE))
-		{
-			markedRange.first	= getLineStart(viewId, line);
-			markedRange.second	= ((line + 1) < (CallScintilla(viewId, SCI_GETLINECOUNT, 0, 0))) ?
-					getLineStart(viewId, line + 1) :
-					getLineEnd(viewId, CallScintilla(viewId, SCI_GETLINECOUNT, 0, 0));
-		}
-		else
-		{
-			markedRange = getMarkedSection(viewId, line, line, mark);
-
-			if ((markedRange.first < 0) && !(keyMods & SCMOD_SHIFT))
-				markedRange = getMarkedSection(viewId, line + 1, line + 1, mark);
-		}
-
-		if (markedRange.first >= 0)
-			CallScintilla(viewId, SCI_SETSEL, markedRange.first, markedRange.second);
-
+	CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(viewId));
+	if (cmpPair == compareList.end())
 		return;
-	}
 
-	{
-		CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(viewId));
-		if (cmpPair == compareList.end())
-			return;
-
-		if (cmpPair->compareDirty || cmpPair->options.findUniqueMode ||
-				CallScintilla(viewId, SCI_GETREADONLY, 0, 0))
-			return;
-	}
+	if ((keyMods & SCMOD_CTRL) && CallScintilla(viewId, SCI_GETREADONLY, 0, 0))
+		return;
 
 	const int otherViewId = getOtherViewId(viewId);
 
@@ -3402,24 +3443,45 @@ void onMarginClick(HWND view, int pos, int keyMods)
 		if ((mark & (1 << MARKER_CHANGED_LINE)) != (1 << MARKER_CHANGED_LINE))
 			return;
 
-		const int startPos = getLineStart(viewId, line);
+		if (!(keyMods & SCMOD_CTRL))
+		{
+			CallScintilla(viewId, SCI_SETSEL,
+					getLineStart(viewId, line), getLineStart(viewId, line + 1));
+
+			temporaryRangeSelect(otherViewId,
+					getLineStart(otherViewId, otherLine), getLineStart(otherViewId, otherLine + 1));
+
+			return;
+		}
+
+		const int startPos	= getLineStart(viewId, line);
+		const int endPos	= getLineStart(viewId, line + 1);
 		const auto text =
-				getText(otherViewId, getLineStart(otherViewId, otherLine), getLineEnd(otherViewId, otherLine));
+				getText(otherViewId, getLineStart(otherViewId, otherLine), getLineStart(otherViewId, otherLine + 1));
 
-		ScopedViewUndoAction scopedUndo(viewId);
+		const bool lastMarked = (endPos == CallScintilla(viewId, SCI_GETLENGTH, 0, 0));
 
-		clearMarks(viewId, line);
+		ScopedIncrementer			inEdit(cmpPair->inEditMode);
+		ScopedViewUndoAction		scopedUndo(viewId);
+		ScopedFirstVisibleLineStore	firstVisLine(viewId);
 
-		CallScintilla(viewId, SCI_DELETERANGE, startPos, getLineEnd(viewId, line) - startPos);
+		clearSelection(viewId);
+		temporaryRangeSelect(-1);
+
+		CallScintilla(viewId, SCI_DELETERANGE, startPos, endPos - startPos);
+
+		if (lastMarked)
+			clearMarks(viewId, line);
+
 		CallScintilla(viewId, SCI_INSERTTEXT, startPos, (LPARAM)text.data());
 
 		return;
 	}
 
-	std::pair<int, int> markedRange = getMarkedSection(viewId, line, line, mark, true);
+	std::pair<int, int> markedRange = getMarkedSection(viewId, line, line, mark);
 
 	if ((markedRange.first < 0) && !(keyMods & SCMOD_SHIFT))
-		markedRange = getMarkedSection(viewId, line + 1, line + 1, mark, true);
+		markedRange = getMarkedSection(viewId, line + 1, line + 1, mark);
 
 	std::pair<int, int> otherMarkedRange;
 
@@ -3432,6 +3494,9 @@ void onMarginClick(HWND view, int pos, int keyMods)
 	{
 		int startLine	= CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.first, 0);
 		int endLine		= CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.second, 0);
+
+		if (getLineStart(viewId, endLine) == markedRange.second)
+			--endLine;
 
 		int startOffset	= 0;
 		int endOffset	= 0;
@@ -3479,78 +3544,92 @@ void onMarginClick(HWND view, int pos, int keyMods)
 		else
 		{
 			otherMarkedRange.first	= getLineStart(otherViewId, otherMarkedRange.first);
-
-			if (markedRange.first < 0)
-				otherMarkedRange.second	= getLineStart(otherViewId, otherMarkedRange.second + 1);
-			else
-				otherMarkedRange.second	= getLineEnd(otherViewId, otherMarkedRange.second);
+			otherMarkedRange.second	= getLineStart(otherViewId, otherMarkedRange.second + 1);
 		}
 	}
 
+	if (!(keyMods & SCMOD_CTRL))
 	{
-		ScopedViewUndoAction scopedUndo(viewId);
-
 		if (markedRange.first >= 0)
-		{
-			const int startLine	= CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.first, 0);
-			const int endLine	= CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.second, 0);
-
-			if (otherMarkedRange.first < 0)
-			{
-				if ((endLine + 1) < CallScintilla(viewId, SCI_GETLINECOUNT, 0, 0))
-					markedRange.second = getLineStart(viewId, endLine + 1);
-			}
-
-			clearMarks(viewId, endLine);
-
-			if ((otherMarkedRange.first >= 0) && (startLine > 0) && (isLineAnnotated(viewId, startLine - 1)))
-				clearAnnotation(viewId, startLine - 1);
-
-			CallScintilla(viewId, SCI_DELETERANGE, markedRange.first, markedRange.second - markedRange.first);
-		}
+			CallScintilla(viewId, SCI_SETSEL, markedRange.first, markedRange.second);
+		else
+			clearSelection(viewId);
 
 		if (otherMarkedRange.first >= 0)
+			temporaryRangeSelect(otherViewId, otherMarkedRange.first, otherMarkedRange.second);
+		else
+			temporaryRangeSelect(-1);
+
+		return;
+	}
+
+	if (cmpPair->options.findUniqueMode)
+		return;
+
+	ScopedIncrementer			inEdit(cmpPair->inEditMode);
+	ScopedViewUndoAction		scopedUndo(viewId);
+	ScopedFirstVisibleLineStore	firstVisLine(viewId);
+
+	clearSelection(viewId);
+	temporaryRangeSelect(-1);
+
+	if (markedRange.first >= 0)
+	{
+		const int startLine	= CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.first, 0);
+
+		if ((otherMarkedRange.first >= 0) && (startLine > 0))
+			clearAnnotation(viewId, startLine - 1);
+
+		const bool lastMarked = (markedRange.second == CallScintilla(viewId, SCI_GETLENGTH, 0, 0));
+
+		CallScintilla(viewId, SCI_DELETERANGE, markedRange.first, markedRange.second - markedRange.first);
+
+		if (lastMarked)
+			clearMarks(viewId, CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.first, 0));
+	}
+
+	if (otherMarkedRange.first >= 0)
+	{
+		const int lastLine			= CallScintilla(viewId, SCI_GETLINECOUNT, 0, 0) - 1;
+		const int otherStartLine	= CallScintilla(otherViewId, SCI_LINEFROMPOSITION, otherMarkedRange.first, 0);
+
+		bool copyOtherTillEnd = false;
+
+		int startPos = markedRange.first;
+
+		if (startPos < 0)
 		{
-			const int lastLine = CallScintilla(viewId, SCI_GETLINECOUNT, 0, 0) - 1;
-
-			bool copyOtherTillEnd = false;
-
-			int startPos = markedRange.first;
-
-			if (startPos < 0)
+			if (line < lastLine)
 			{
-				if (line < lastLine)
-				{
-					startPos = getLineStart(viewId, line + 1);
-				}
-				else
-				{
-					startPos = getLineEnd(viewId, line);
-
-					const int otherStartLine =
-							CallScintilla(otherViewId, SCI_LINEFROMPOSITION, otherMarkedRange.first, 0) - 1;
-
-					if (otherStartLine >= 0)
-						otherMarkedRange.first = getLineEnd(otherViewId, otherStartLine);
-
-					copyOtherTillEnd = true;
-				}
-
-				clearAnnotation(viewId, line);
+				startPos = getLineStart(viewId, line + 1);
 			}
-			else if (CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.first, 0) == lastLine)
+			else
 			{
+				startPos = getLineEnd(viewId, line);
+
+				if (otherStartLine > 0)
+					otherMarkedRange.first = getLineEnd(otherViewId, otherStartLine - 1);
+
 				copyOtherTillEnd = true;
 			}
 
-			if (copyOtherTillEnd)
-				otherMarkedRange.second =
-						getLineEnd(otherViewId, CallScintilla(otherViewId, SCI_GETLINECOUNT, 0, 0) - 1);
-
-			const auto text = getText(otherViewId, otherMarkedRange.first, otherMarkedRange.second);
-
-			CallScintilla(viewId, SCI_INSERTTEXT, startPos, (LPARAM)text.data());
+			clearAnnotation(viewId, line);
 		}
+		else if (CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.first, 0) == lastLine)
+		{
+			copyOtherTillEnd = true;
+		}
+
+		if (copyOtherTillEnd)
+			otherMarkedRange.second =
+					getLineEnd(otherViewId, CallScintilla(otherViewId, SCI_GETLINECOUNT, 0, 0) - 1);
+
+		const auto text = getText(otherViewId, otherMarkedRange.first, otherMarkedRange.second);
+
+		if (otherStartLine > 0)
+			clearAnnotation(otherViewId, otherStartLine - 1);
+
+		CallScintilla(viewId, SCI_INSERTTEXT, startPos, (LPARAM)text.data());
 	}
 }
 
@@ -3586,12 +3665,19 @@ void onSciModified(SCNotification* notifyCode)
 
 			ScopedIncrementer incr(notificationsLock);
 
+#ifdef DLOG
+			bool isAlignmentStored = false;
+			bool isSelectionStored = false;
+#endif
+
 			if (!Settings.RecompareOnChange)
 			{
 				undo = std::make_shared<DeletedSection::UndoData>();
 				undo->alignment = cmpPair->summary.alignmentInfo;
 
-				LOGD("Alignment stored.\n");
+#ifdef DLOG
+				isAlignmentStored = true;
+#endif
 			}
 
 			if (cmpPair->options.selectionCompare)
@@ -3601,25 +3687,48 @@ void onSciModified(SCNotification* notifyCode)
 
 				undo->selection = cmpPair->options.selections[view];
 
-				LOGD("Selection stored.\n");
+#ifdef DLOG
+				isSelectionStored = true;
+#endif
 			}
 
+#ifdef DLOG
+			if (cmpPair->getFileByViewId(view).pushDeletedSection(action, startLine, endLine - startLine, undo))
+			{
+				if (isAlignmentStored)
+				{
+					LOGD("Alignment stored.\n");
+				}
+
+				if (isSelectionStored)
+				{
+					LOGD("Selection stored.\n");
+				}
+			}
+#else
 			cmpPair->getFileByViewId(view).pushDeletedSection(action, startLine, endLine - startLine, undo);
+#endif
 		}
 
 		return;
 	}
-	else if ((notifyCode->modificationType & SC_MOD_DELETETEXT) && notifyCode->linesAdded)
+
+	if ((notifyCode->modificationType & SC_MOD_DELETETEXT) && notifyCode->linesAdded)
 	{
 		if (linesAutoRemoved)
 		{
 			linesAutoRemoved = false;
+
 			return;
 		}
-		else if (cmpPair->getFileByViewId(view).undoAlignmentBlankDeletion())
+		else if (cmpPair->getFileByViewId(view).isOnlyAlignmentBlankDeleted())
 		{
+			::PostMessage(getView(view), SCI_UNDO, 0, 0);
+
 			return;
 		}
+
+		LOGD("SC_MOD_DELETETEXT\n");
 	}
 	else if (notifyCode->modificationType & SC_MOD_INSERTTEXT)
 	{
@@ -3662,6 +3771,8 @@ void onSciModified(SCNotification* notifyCode)
 
 					LOGD("Selection restored.\n");
 				}
+
+				SetLocation(view, startLine);
 			}
 		}
 	}
@@ -3671,31 +3782,54 @@ void onSciModified(SCNotification* notifyCode)
 		delayedAlignment.cancel();
 		delayedUpdate.cancel();
 
-		if (!Settings.RecompareOnChange && !cmpPair->compareDirty)
+		bool updateStatus = false;
+
+		if (!Settings.RecompareOnChange && !(notifyCode->modificationType & (SC_PERFORMED_UNDO | SC_PERFORMED_REDO)))
 		{
-			if (!cmpPair->options.selectionCompare)
+			if (!cmpPair->compareDirty || (!cmpPair->inEditMode && !cmpPair->manuallyChanged))
 			{
-				cmpPair->compareDirty = true;
-			}
-			else
-			{
-				int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
-
-				if (isAlignmentFirstLineInserted(view))
-					--startLine;
-
-				if ((startLine >= cmpPair->options.selections[view].first) &&
-						(startLine <= cmpPair->options.selections[view].second))
+				if (!cmpPair->options.selectionCompare)
+				{
 					cmpPair->compareDirty = true;
 
-				if (!cmpPair->compareDirty && notifyCode->linesAdded &&
-					(notifyCode->modificationType & SC_MOD_DELETETEXT))
+					if (!cmpPair->inEditMode)
+						cmpPair->manuallyChanged = true;
+
+					updateStatus = true;
+				}
+				else
 				{
-					startLine += notifyCode->linesAdded + 1;
+					int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+
+					if (isAlignmentFirstLineInserted(view))
+						--startLine;
 
 					if ((startLine >= cmpPair->options.selections[view].first) &&
 							(startLine <= cmpPair->options.selections[view].second))
+					{
 						cmpPair->compareDirty = true;
+
+						if (!cmpPair->inEditMode)
+							cmpPair->manuallyChanged = true;
+
+						updateStatus = true;
+					}
+
+					if (!updateStatus && notifyCode->linesAdded && (notifyCode->modificationType & SC_MOD_DELETETEXT))
+					{
+						startLine += notifyCode->linesAdded + 1;
+
+						if ((startLine >= cmpPair->options.selections[view].first) &&
+								(startLine <= cmpPair->options.selections[view].second))
+						{
+							cmpPair->compareDirty = true;
+
+							if (!cmpPair->inEditMode)
+								cmpPair->manuallyChanged = true;
+
+							updateStatus = true;
+						}
+					}
 				}
 			}
 		}
@@ -3764,21 +3898,28 @@ void onSciModified(SCNotification* notifyCode)
 
 		if (notifyCode->linesAdded)
 		{
+			int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+
 			if (!undo)
 			{
-				int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 
 				if (isAlignmentFirstLineInserted(view))
 					--startLine;
 
 				cmpPair->adjustAlignment(view, startLine, notifyCode->linesAdded);
-			}
 
-			CallScintilla(view, SCI_ANNOTATIONCLEARALL, 0, 0);
-			CallScintilla(getOtherViewId(view), SCI_ANNOTATIONCLEARALL, 0, 0);
+				LOGD("Alignment adjusted.\n");
+			}
+			else if (cmpPair->options.selectionCompare)
+			{
+				SetLocation(view, startLine);
+
+				CallScintilla(view, SCI_ANNOTATIONCLEARALL, 0, 0);
+				CallScintilla(getOtherViewId(view), SCI_ANNOTATIONCLEARALL, 0, 0);
+			}
 		}
 
-		if (cmpPair->compareDirty && (notifyCode->linesAdded == 0))
+		if (updateStatus)
 			cmpPair->setStatus();
 	}
 }
@@ -3810,7 +3951,7 @@ void DelayedActivate::operator()()
 
 	if (buffId != currentlyActiveBuffID)
 	{
-		storedLocation.reset(new ViewLocation(viewIdFromBuffId(buffId)));
+		storedLocation = std::make_unique<ViewLocation>(viewIdFromBuffId(buffId));
 
 		const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
 
@@ -4105,7 +4246,7 @@ LRESULT statusProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 void SetLocation(int view, int line)
 {
-	storedLocation.reset(new ViewLocation(view, line));
+	storedLocation = std::make_unique<ViewLocation>(view, line);
 }
 
 
@@ -4255,7 +4396,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 
 		case NPPN_FILEBEFORECLOSE:
 			if (newCompare && (newCompare->pair.file[0].buffId == static_cast<LRESULT>(notifyCode->nmhdr.idFrom)))
-				newCompare.reset();
+				newCompare = nullptr;
 #ifdef DLOG
 			else if (dLogBuf == static_cast<LRESULT>(notifyCode->nmhdr.idFrom))
 				dLogBuf = -1;

@@ -216,6 +216,28 @@ private:
  *  \struct
  *  \brief
  */
+struct ScopedFirstVisibleLineStore
+{
+	ScopedFirstVisibleLineStore(int view) : _view(view)
+	{
+		_firstVisibleLine = CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	}
+
+	~ScopedFirstVisibleLineStore()
+	{
+		CallScintilla(_view, SCI_SETFIRSTVISIBLELINE, _firstVisibleLine, 0);
+	}
+
+private:
+	int	_view;
+	int	_firstVisibleLine;
+};
+
+
+/**
+ *  \struct
+ *  \brief
+ */
 struct ViewLocation
 {
 	ViewLocation() : _view(-1) {}
@@ -406,8 +428,7 @@ inline int getCurrentLine(int view)
 
 inline int getCurrentVisibleLine(int view)
 {
-	return CallScintilla(view, SCI_VISIBLEFROMDOCLINE,
-			CallScintilla(view, SCI_LINEFROMPOSITION, CallScintilla(view, SCI_GETCURRENTPOS, 0, 0), 0), 0);
+	return CallScintilla(view, SCI_VISIBLEFROMDOCLINE, getCurrentLine(view), 0);
 }
 
 
@@ -519,7 +540,7 @@ inline std::pair<int, int> getSelection(int view)
 inline void clearSelection(int view)
 {
 	const int currentPos = CallScintilla(view, SCI_GETCURRENTPOS, 0, 0);
-	CallScintilla(view, SCI_SETSEL, currentPos, currentPos);
+	CallScintilla(view, SCI_SETEMPTYSELECTION, currentPos, 0);
 }
 
 
