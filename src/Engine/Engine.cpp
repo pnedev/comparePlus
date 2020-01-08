@@ -2106,9 +2106,6 @@ CompareResult compareViews(const CompareOptions& options, const TCHAR* progressI
 	if (progressInfo)
 		ProgressDlg::Open(progressInfo);
 
-	removeAlignmentFirstLine(MAIN_VIEW);
-	removeAlignmentFirstLine(SUB_VIEW);
-
 	try
 	{
 		if (options.findUniqueMode)

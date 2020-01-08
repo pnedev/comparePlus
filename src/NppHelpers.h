@@ -80,9 +80,7 @@ constexpr int MARKER_MASK_SYMBOL		=	(1 << MARKER_CHANGED_SYMBOL) |
 											(1 << MARKER_MOVED_BLOCK_MID_SYMBOL) |
 											(1 << MARKER_MOVED_BLOCK_END_SYMBOL);
 
-constexpr int MARKER_MASK_ALL				=	MARKER_MASK_LINE | MARKER_MASK_SYMBOL;
-constexpr int MARKER_MASK_ALL_PLUS_BLANK	=	MARKER_MASK_ALL | MARKER_MASK_BLANK;
-
+constexpr int MARKER_MASK_ALL			=	MARKER_MASK_LINE | MARKER_MASK_SYMBOL;
 
 constexpr int MARGIN_NUM = 4;
 
@@ -563,16 +561,6 @@ void setCompareView(int view, int blankColor);
 
 void setStyles(UserSettings& settings);
 
-
-inline bool isAlignmentFirstLineInserted(int view)
-{
-	return isLineMarked(view, 0, MARKER_MASK_BLANK);
-}
-
-
-void insertAlignmentFirstLine(int view);
-void removeAlignmentFirstLine(int view);
-
 void clearWindow(int view);
 void clearMarks(int view, int line);
 int getPrevUnmarkedLine(int view, int startLine, int markMask);
@@ -596,4 +584,4 @@ inline void clearAnnotation(int view, int line)
 std::vector<char> getText(int view, int startPos, int endPos);
 void toLowerCase(std::vector<char>& text);
 
-void addBlankSection(int view, int line, int length, int selectionMarkPosition = 0);
+void addBlankSection(int view, int line, int length, int selectionMarkPosition = 0, const char *text = nullptr);

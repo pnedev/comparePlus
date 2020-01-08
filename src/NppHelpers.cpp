@@ -294,12 +294,6 @@ std::pair<int, int> getSelectionLines(int view)
 	if (selectionEnd == getLineStart(view, endLine))
 		--endLine;
 
-	if (isAlignmentFirstLineInserted(view))
-	{
-		--startLine;
-		--endLine;
-	}
-
 	return std::make_pair(startLine, endLine);
 }
 
@@ -318,7 +312,7 @@ int showArrowSymbol(int view, int line, bool down)
 
 void blinkLine(int view, int line)
 {
-	const int marker = CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL_PLUS_BLANK;
+	const int marker = CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL;
 	HWND hView = getView(view);
 
 	for (int i = cBlinkCount; ;)
@@ -527,55 +521,8 @@ void toLowerCase(std::vector<char>& text)
 }
 
 
-void insertAlignmentFirstLine(int view)
-{
-	const BOOL modified	= (BOOL)CallScintilla(view, SCI_GETMODIFY, 0, 0);
-	const BOOL canUndo	= (BOOL)CallScintilla(view, SCI_CANUNDO, 0, 0);
-
-	ScopedViewWriteEnabler writeEn(view);
-
-	// CallScintilla(view, SCI_INSERTTEXT, 0,
-			// (LPARAM)("\"ComparePlus: Please DO NOT delete or edit this line. "
-			// "It will be automatically removed when you Clear the active Compare or close the compared file(s). "
-			// "On Save it will NOT be saved.\"\n"));
-	CallScintilla(view, SCI_INSERTTEXT, 0, (LPARAM)("\n"));
-
-	if (!canUndo)
-		CallScintilla(view, SCI_EMPTYUNDOBUFFER, 0, 0);
-
-	if (!modified)
-		CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
-
-	CallScintilla(view, SCI_MARKERADDSET, 0, MARKER_MASK_BLANK);
-}
-
-
-void removeAlignmentFirstLine(int view)
-{
-	if (isAlignmentFirstLineInserted(view))
-	{
-		const BOOL modified	= (BOOL)CallScintilla(view, SCI_GETMODIFY, 0, 0);
-		const BOOL canUndo	= (BOOL)CallScintilla(view, SCI_CANUNDO, 0, 0);
-
-		ScopedViewWriteEnabler writeEn(view);
-
-		CallScintilla(view, SCI_MARKERDELETE, 0, MARKER_BLANK);
-
-		CallScintilla(view, SCI_DELETERANGE, 0, CallScintilla(view, SCI_LINELENGTH, 0, 0));
-
-		if (!canUndo)
-			CallScintilla(view, SCI_EMPTYUNDOBUFFER, 0, 0);
-
-		if (!modified)
-			CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
-	}
-}
-
-
 void clearWindow(int view)
 {
-	removeAlignmentFirstLine(view);
-
 	CallScintilla(view, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
 	CallScintilla(view, SCI_ANNOTATIONCLEARALL, 0, 0);
 
@@ -743,7 +690,7 @@ bool isVisibleAdjacentAnnotation(int view, int line, bool down)
 }
 
 
-void addBlankSection(int view, int line, int length, int selectionMarkPosition)
+void addBlankSection(int view, int line, int length, int selectionMarkPosition, const char *text)
 {
 	if (length <= 0)
 		return;
@@ -752,17 +699,29 @@ void addBlankSection(int view, int line, int length, int selectionMarkPosition)
 
 	if (selectionMarkPosition < 0)
 	{
-		const char sel[] = "--- Selection Compare Block Start ---";
+		if (text == nullptr)
+		{
+			const char sel[] = "--- Selection Compare Block Start ---";
 
-		++selectionMarkPosition;
-		blank.insert(blank.end() + selectionMarkPosition, sel, sel + sizeof(sel) - 1);
+			blank.insert(blank.end() + selectionMarkPosition + 1, sel, sel + sizeof(sel));
+		}
+		else
+		{
+			blank.insert(blank.end() + selectionMarkPosition + 1, text, text + strlen(text));
+		}
 	}
 	else if (selectionMarkPosition > 0)
 	{
-		const char sel[] = "--- Selection Compare Block End ---";
+		if (text == nullptr)
+		{
+			const char sel[] = "--- Selection Compare Block End ---";
 
-		--selectionMarkPosition;
-		blank.insert(blank.begin() + selectionMarkPosition, sel, sel + sizeof(sel) - 1);
+			blank.insert(blank.begin() + selectionMarkPosition - 1, sel, sel + sizeof(sel));
+		}
+		else
+		{
+			blank.insert(blank.begin() + selectionMarkPosition - 1, text, text + strlen(text));
+		}
 	}
 
 	blank.push_back('\0');

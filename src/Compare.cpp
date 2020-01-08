@@ -133,7 +133,7 @@ struct DeletedSection
 	};
 
 	DeletedSection(int action, int line, int len, const std::shared_ptr<UndoData>& undo) :
-			startLine(line), lineReplace(false), onlyAlignmentBlankChange(false), undoInfo(undo)
+			startLine(line), lineReplace(false), undoInfo(undo)
 	{
 		restoreAction = (action == SC_PERFORMED_UNDO) ? SC_PERFORMED_REDO : SC_PERFORMED_UNDO;
 
@@ -143,7 +143,6 @@ struct DeletedSection
 	int					startLine;
 	bool				lineReplace;
 	int					restoreAction;
-	bool				onlyAlignmentBlankChange;
 	std::vector<int>	markers;
 
 	const std::shared_ptr<UndoData> undoInfo;
@@ -200,19 +199,16 @@ bool DeletedSectionsList::push(int view, int currAction, int startLine, int len,
 	const int startPos = getLineStart(view, startLine);
 	clearChangedIndicator(view, startPos, getLineStart(view, startLine + len) - startPos);
 
-	for (int line = CallScintilla(view, SCI_MARKERPREVIOUS, startLine + len - 1, MARKER_MASK_ALL_PLUS_BLANK);
+	for (int line = CallScintilla(view, SCI_MARKERPREVIOUS, startLine + len - 1, MARKER_MASK_ALL);
 			line >= startLine;
-			line = CallScintilla(view, SCI_MARKERPREVIOUS, line - 1, MARKER_MASK_ALL_PLUS_BLANK))
+			line = CallScintilla(view, SCI_MARKERPREVIOUS, line - 1, MARKER_MASK_ALL))
 	{
 		delSection.markers[line - startLine] =
-				CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL_PLUS_BLANK;
+				CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL;
 		clearMarks(view, line);
 	}
 
-	delSection.markers[len] = CallScintilla(view, SCI_MARKERGET, startLine + len, 0) & MARKER_MASK_ALL_PLUS_BLANK;
-
-	if ((len == 1) && (delSection.markers[0] & MARKER_MASK_BLANK))
-		delSection.onlyAlignmentBlankChange = true;
+	delSection.markers[len] = CallScintilla(view, SCI_MARKERGET, startLine + len, 0) & MARKER_MASK_ALL;
 
 	sections.push_back(delSection);
 
@@ -305,11 +301,6 @@ public:
 		return deletedSections.pop(compareViewId, sciAction, startLine);
 	}
 
-	bool isOnlyAlignmentBlankDeleted()
-	{
-		return (!deletedSections.get().empty() && deletedSections.get().back().onlyAlignmentBlankChange);
-	}
-
 	Temp_t	isTemp;
 	bool	isNew;
 
@@ -320,8 +311,6 @@ public:
 	LRESULT	buffId;
 	int		sciDoc;
 	TCHAR	name[MAX_PATH];
-
-	bool	restoreAlignmentLine {false};
 
 private:
 	DeletedSectionsList deletedSections;
@@ -1133,12 +1122,9 @@ void ComparedPair::setStatusInfo()
 
 		if (options.selectionCompare)
 		{
-			const int alignOff =
-					(isAlignmentFirstLineInserted(MAIN_VIEW) || isAlignmentFirstLineInserted(SUB_VIEW)) ? 2 : 1;
-
 			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Selections - %d-%d vs. %d-%d ***"),
-					options.selections[MAIN_VIEW].first + alignOff, options.selections[MAIN_VIEW].second + alignOff,
-					options.selections[SUB_VIEW].first + alignOff, options.selections[SUB_VIEW].second + alignOff);
+					options.selections[MAIN_VIEW].first + 1, options.selections[MAIN_VIEW].second + 1,
+					options.selections[SUB_VIEW].first + 1, options.selections[SUB_VIEW].second + 1);
 		}
 
 		infoCurrentPos = _sntprintf_s(info, _countof(info), _TRUNCATE, TEXT("%s%s"),
@@ -1752,12 +1738,6 @@ bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
 {
 	const AlignmentViewData AlignmentPair::*pView = (view == MAIN_VIEW) ? &AlignmentPair::main : &AlignmentPair::sub;
 
-	const int off		= isAlignmentFirstLineInserted(MAIN_VIEW) ? 1 : 0;
-	const int subOff	= isAlignmentFirstLineInserted(SUB_VIEW) ? 1 : 0;
-
-	if (off ^ subOff)
-		return false;
-
 	const int firstLine = getFirstLine(view);
 	const int lastLine = getLastLine(view);
 
@@ -1766,7 +1746,7 @@ bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
 
 	for (i = 0; i < maxSize; ++i)
 	{
-		if ((alignmentInfo[i].*pView).line + off >= firstLine)
+		if ((alignmentInfo[i].*pView).line >= firstLine)
 			break;
 	}
 
@@ -1776,24 +1756,28 @@ bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
 	if (i)
 		--i;
 
+	// Ignore alignment on line 0 as it is currently not supported by Scintilla
+	while ((i < maxSize) && ((alignmentInfo[i].main.line == 0) || (alignmentInfo[i].sub.line == 0)))
+		++i;
+
 	for (; i < maxSize; ++i)
 	{
 		if (Settings.ShowOnlyDiffs)
 		{
 			if ((alignmentInfo[i].main.diffMask != 0) && (alignmentInfo[i].sub.diffMask != 0) &&
-					(CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line + off, 0) !=
-					CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line + off, 0)))
+					(CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) !=
+					CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0)))
 				return true;
 		}
 		else
 		{
 			if ((alignmentInfo[i].main.diffMask == alignmentInfo[i].sub.diffMask) &&
-					(CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line + off, 0) !=
-					CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line + off, 0)))
+					(CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) !=
+					CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0)))
 				return true;
 		}
 
-		if ((alignmentInfo[i].*pView).line + off > lastLine)
+		if ((alignmentInfo[i].*pView).line > lastLine)
 			break;
 	}
 
@@ -1803,27 +1787,7 @@ bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
 
 void alignDiffs(const CompareList_t::iterator& cmpPair)
 {
-	int off = 0;
-	{
-		const bool mainAlignBlank	= isAlignmentFirstLineInserted(MAIN_VIEW);
-		const bool subAlignBlank	= isAlignmentFirstLineInserted(SUB_VIEW);
-
-		if (mainAlignBlank)
-		{
-			if (!subAlignBlank)
-				insertAlignmentFirstLine(SUB_VIEW);
-
-			off = 1;
-		}
-		else
-		{
-			if (subAlignBlank)
-			{
-				insertAlignmentFirstLine(MAIN_VIEW);
-				off = 1;
-			}
-		}
-	}
+	bool lineZeroAlignmentSkipped = false;
 
 	if (Settings.ShowOnlyDiffs)
 	{
@@ -1832,10 +1796,10 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 	}
 	else if (cmpPair->options.selectionCompare && Settings.ShowOnlySelections)
 	{
-		hideOutsideRange(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first + off,
-				cmpPair->options.selections[MAIN_VIEW].second + off);
-		hideOutsideRange(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first + off,
-				cmpPair->options.selections[SUB_VIEW].second + off);
+		hideOutsideRange(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first,
+				cmpPair->options.selections[MAIN_VIEW].second);
+		hideOutsideRange(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first,
+				cmpPair->options.selections[SUB_VIEW].second);
 	}
 	else
 	{
@@ -1847,61 +1811,86 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 
 	const int maxSize = static_cast<int>(alignmentInfo.size());
 
-	const int mainEndLine = CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
-	const int subEndLine = CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
+	int mainEndLine = CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
+	int subEndLine = CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
 
 	// Align diffs
 	for (int i = 0; i < maxSize &&
-			alignmentInfo[i].main.line + off <= mainEndLine && alignmentInfo[i].sub.line + off <= subEndLine; ++i)
+			alignmentInfo[i].main.line <= mainEndLine && alignmentInfo[i].sub.line <= subEndLine; ++i)
 	{
-		int previousUnhiddenLine = getPreviousUnhiddenLine(MAIN_VIEW, alignmentInfo[i].main.line + off);
+		int previousUnhiddenLine = getPreviousUnhiddenLine(MAIN_VIEW, alignmentInfo[i].main.line);
 
 		if (isLineAnnotated(MAIN_VIEW, previousUnhiddenLine))
 			clearAnnotation(MAIN_VIEW, previousUnhiddenLine);
 
-		previousUnhiddenLine = getPreviousUnhiddenLine(SUB_VIEW, alignmentInfo[i].sub.line + off);
+		previousUnhiddenLine = getPreviousUnhiddenLine(SUB_VIEW, alignmentInfo[i].sub.line);
 
 		if (isLineAnnotated(SUB_VIEW, previousUnhiddenLine))
 			clearAnnotation(SUB_VIEW, previousUnhiddenLine);
 
 		const int mismatchLen =
-				CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line + off, 0) -
-				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line + off, 0);
+				CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) -
+				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0);
 
-		if (off == 0 && mismatchLen != 0 && (alignmentInfo[i].main.line == 0 || alignmentInfo[i].sub.line == 0))
+		// Ignore alignment on line 0 as it is currently not supported by Scintilla
+		if (mismatchLen != 0 && (alignmentInfo[i].main.line == 0 || alignmentInfo[i].sub.line == 0))
 		{
-			insertAlignmentFirstLine(MAIN_VIEW);
-			insertAlignmentFirstLine(SUB_VIEW);
-			off = 1;
+			lineZeroAlignmentSkipped = true;
+			continue;
 		}
+
+		static const char *lineZeroAlignInfo =
+					"Lines above cannot be properly aligned.\n"
+					"If you want to see them aligned,\n"
+					"please manually insert one empty line\n"
+					"in the beginning of each file and re-compare.";
 
 		if (mismatchLen > 0)
 		{
 			if ((i + 1 < maxSize) && (alignmentInfo[i].sub.line == alignmentInfo[i + 1].sub.line))
 				continue;
 
-			addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line + off, mismatchLen);
+			if (lineZeroAlignmentSkipped)
+			{
+				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, 1, -1, lineZeroAlignInfo);
+				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, mismatchLen + 1, -1, lineZeroAlignInfo);
+
+				lineZeroAlignmentSkipped = false;
+			}
+			else
+			{
+				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, mismatchLen);
+			}
 		}
 		else if (mismatchLen < 0)
 		{
 			if ((i + 1 < maxSize) && (alignmentInfo[i].main.line == alignmentInfo[i + 1].main.line))
 				continue;
 
-			addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line + off, -mismatchLen);
+			if (lineZeroAlignmentSkipped)
+			{
+				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, -mismatchLen + 1, -1, lineZeroAlignInfo);
+				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, 1, -1, lineZeroAlignInfo);
+
+				lineZeroAlignmentSkipped = false;
+			}
+			else
+			{
+				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, -mismatchLen);
+			}
 		}
 	}
 
 	// Mark selections for clarity
 	if (cmpPair->options.selectionCompare)
 	{
-		if (cmpPair->options.selections[MAIN_VIEW].first + off > 0 &&
-			cmpPair->options.selections[SUB_VIEW].first + off > 0)
+		if (cmpPair->options.selections[MAIN_VIEW].first > 0 && cmpPair->options.selections[SUB_VIEW].first > 0)
 		{
 			int mainAnnotation = getLineAnnotation(MAIN_VIEW,
-					getPreviousUnhiddenLine(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first + off));
+					getPreviousUnhiddenLine(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first));
 
 			int subAnnotation = getLineAnnotation(SUB_VIEW,
-					getPreviousUnhiddenLine(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first + off));
+					getPreviousUnhiddenLine(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first));
 
 			if (mainAnnotation == 0 || subAnnotation == 0)
 			{
@@ -1909,18 +1898,16 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 				++subAnnotation;
 			}
 
-			addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first + off,
-					mainAnnotation, -mainAnnotation);
-			addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first + off,
-					subAnnotation, -subAnnotation);
+			addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first, mainAnnotation, -mainAnnotation);
+			addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first, subAnnotation, -subAnnotation);
 		}
 
 		{
 			int mainAnnotation = getLineAnnotation(MAIN_VIEW,
-					getPreviousUnhiddenLine(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].second + off + 1));
+					getPreviousUnhiddenLine(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].second + 1));
 
 			int subAnnotation = getLineAnnotation(SUB_VIEW,
-					getPreviousUnhiddenLine(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].second + off + 1));
+					getPreviousUnhiddenLine(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].second + 1));
 
 			if (mainAnnotation == 0 || subAnnotation == 0)
 			{
@@ -1928,9 +1915,9 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 				++subAnnotation;
 			}
 
-			addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].second + off + 1,
+			addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].second + 1,
 					mainAnnotation, mainAnnotation);
-			addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].second + off + 1,
+			addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].second + 1,
 					subAnnotation, subAnnotation);
 		}
 	}
@@ -3436,17 +3423,30 @@ void onMarginClick(HWND view, int pos, int keyMods)
 		const int otherLine = otherViewMatchingLine(viewId, line, 0, true);
 
 		if (otherLine < 0)
+		{
+			if (!(keyMods & SCMOD_CTRL))
+				CallScintilla(viewId, SCI_SETSEL, getLineStart(viewId, line), getLineStart(viewId, line + 1));
+
+			temporaryRangeSelect(-1);
+
 			return;
+		}
 
 		mark = CallScintilla(otherViewId, SCI_MARKERGET, otherLine, 0);
 
 		if ((mark & (1 << MARKER_CHANGED_LINE)) != (1 << MARKER_CHANGED_LINE))
+		{
+			if (!(keyMods & SCMOD_CTRL))
+				CallScintilla(viewId, SCI_SETSEL, getLineStart(viewId, line), getLineStart(viewId, line + 1));
+
+			temporaryRangeSelect(-1);
+
 			return;
+		}
 
 		if (!(keyMods & SCMOD_CTRL))
 		{
-			CallScintilla(viewId, SCI_SETSEL,
-					getLineStart(viewId, line), getLineStart(viewId, line + 1));
+			CallScintilla(viewId, SCI_SETSEL, getLineStart(viewId, line), getLineStart(viewId, line + 1));
 
 			temporaryRangeSelect(otherViewId,
 					getLineStart(otherViewId, otherLine), getLineStart(otherViewId, otherLine + 1));
@@ -3636,8 +3636,6 @@ void onMarginClick(HWND view, int pos, int keyMods)
 
 void onSciModified(SCNotification* notifyCode)
 {
-	static bool linesAutoRemoved = false;
-
 	const int view = getViewId((HWND)notifyCode->nmhdr.hwndFrom);
 
 	CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(view));
@@ -3655,125 +3653,93 @@ void onSciModified(SCNotification* notifyCode)
 		if (endLine <= startLine)
 			return;
 
-		if (!linesAutoRemoved)
-		{
-			LOGD("SC_MOD_BEFOREDELETE: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
-					" view, lines range: " + std::to_string(startLine + 1) + "-" + std::to_string(endLine) + "\n");
+		LOGD("SC_MOD_BEFOREDELETE: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
+				" view, lines range: " + std::to_string(startLine + 1) + "-" + std::to_string(endLine) + "\n");
 
-			const int action =
+		const int action =
 				notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
 
-			ScopedIncrementer incr(notificationsLock);
+		ScopedIncrementer incr(notificationsLock);
 
 #ifdef DLOG
-			bool isAlignmentStored = false;
-			bool isSelectionStored = false;
+		bool isAlignmentStored = false;
+		bool isSelectionStored = false;
 #endif
 
-			if (!Settings.RecompareOnChange)
-			{
-				undo = std::make_shared<DeletedSection::UndoData>();
-				undo->alignment = cmpPair->summary.alignmentInfo;
+		if (!Settings.RecompareOnChange)
+		{
+			undo = std::make_shared<DeletedSection::UndoData>();
+			undo->alignment = cmpPair->summary.alignmentInfo;
 
 #ifdef DLOG
-				isAlignmentStored = true;
-#endif
-			}
-
-			if (cmpPair->options.selectionCompare)
-			{
-				if (!undo)
-					undo = std::make_shared<DeletedSection::UndoData>();
-
-				undo->selection = cmpPair->options.selections[view];
-
-#ifdef DLOG
-				isSelectionStored = true;
-#endif
-			}
-
-#ifdef DLOG
-			if (cmpPair->getFileByViewId(view).pushDeletedSection(action, startLine, endLine - startLine, undo))
-			{
-				if (isAlignmentStored)
-				{
-					LOGD("Alignment stored.\n");
-				}
-
-				if (isSelectionStored)
-				{
-					LOGD("Selection stored.\n");
-				}
-			}
-#else
-			cmpPair->getFileByViewId(view).pushDeletedSection(action, startLine, endLine - startLine, undo);
+			isAlignmentStored = true;
 #endif
 		}
+
+		if (cmpPair->options.selectionCompare)
+		{
+			if (!undo)
+				undo = std::make_shared<DeletedSection::UndoData>();
+
+			undo->selection = cmpPair->options.selections[view];
+
+#ifdef DLOG
+			isSelectionStored = true;
+#endif
+		}
+
+#ifdef DLOG
+		if (cmpPair->getFileByViewId(view).pushDeletedSection(action, startLine, endLine - startLine, undo))
+		{
+			if (isAlignmentStored)
+			{
+				LOGD("Alignment stored.\n");
+			}
+
+			if (isSelectionStored)
+			{
+				LOGD("Selection stored.\n");
+			}
+		}
+#else
+		cmpPair->getFileByViewId(view).pushDeletedSection(action, startLine, endLine - startLine, undo);
+#endif
 
 		return;
 	}
 
-	if ((notifyCode->modificationType & SC_MOD_DELETETEXT) && notifyCode->linesAdded)
-	{
-		if (linesAutoRemoved)
-		{
-			linesAutoRemoved = false;
-
-			return;
-		}
-		else if (cmpPair->getFileByViewId(view).isOnlyAlignmentBlankDeleted())
-		{
-			::PostMessage(getView(view), SCI_UNDO, 0, 0);
-
-			return;
-		}
-
-		LOGD("SC_MOD_DELETETEXT\n");
-	}
-	else if (notifyCode->modificationType & SC_MOD_INSERTTEXT)
+	if ((notifyCode->modificationType & SC_MOD_INSERTTEXT) && notifyCode->linesAdded)
 	{
 		int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 
-		if (startLine <= CallScintilla(view, SCI_MARKERNEXT, 0, MARKER_MASK_BLANK))
-		{
-			if (notifyCode->linesAdded)
-				linesAutoRemoved = true;
-
-			::PostMessage(getView(view), SCI_UNDO, 0, 0);
-
-			return;
-		}
-		else if (notifyCode->linesAdded)
-		{
-			const int action =
+		const int action =
 				notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
 
-			LOGD("SC_MOD_INSERTTEXT: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
-					" view, lines range: " + std::to_string(startLine + 1) + "-" +
-					std::to_string(startLine + notifyCode->linesAdded) + "\n");
+		LOGD("SC_MOD_INSERTTEXT: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
+				" view, lines range: " + std::to_string(startLine + 1) + "-" +
+				std::to_string(startLine + notifyCode->linesAdded) + "\n");
 
-			ScopedIncrementer incr(notificationsLock);
+		ScopedIncrementer incr(notificationsLock);
 
-			undo = cmpPair->getFileByViewId(view).popDeletedSection(action, startLine);
+		undo = cmpPair->getFileByViewId(view).popDeletedSection(action, startLine);
 
-			if (undo)
+		if (undo)
+		{
+			if (!Settings.RecompareOnChange)
 			{
-				if (!Settings.RecompareOnChange)
-				{
-					cmpPair->summary.alignmentInfo = std::move(undo->alignment);
+				cmpPair->summary.alignmentInfo = std::move(undo->alignment);
 
-					LOGD("Alignment restored.\n");
-				}
-
-				if (undo->selection.first < undo->selection.second)
-				{
-					cmpPair->options.selections[view] = undo->selection;
-
-					LOGD("Selection restored.\n");
-				}
-
-				SetLocation(view, startLine);
+				LOGD("Alignment restored.\n");
 			}
+
+			if (undo->selection.first < undo->selection.second)
+			{
+				cmpPair->options.selections[view] = undo->selection;
+
+				LOGD("Selection restored.\n");
+			}
+
+			SetLocation(view, startLine);
 		}
 	}
 
@@ -3800,9 +3766,6 @@ void onSciModified(SCNotification* notifyCode)
 				else
 				{
 					int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
-
-					if (isAlignmentFirstLineInserted(view))
-						--startLine;
 
 					if ((startLine >= cmpPair->options.selections[view].first) &&
 							(startLine <= cmpPair->options.selections[view].second))
@@ -3836,12 +3799,8 @@ void onSciModified(SCNotification* notifyCode)
 
 		if (cmpPair->options.selectionCompare && notifyCode->linesAdded && !undo)
 		{
-			int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
-
-			if (isAlignmentFirstLineInserted(view))
-				--startLine;
-
-			const int endLine = startLine + std::abs(notifyCode->linesAdded) - 1;
+			const int startLine	= CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+			const int endLine	= startLine + std::abs(notifyCode->linesAdded) - 1;
 
 			if (cmpPair->options.selections[view].first > startLine)
 			{
@@ -3898,14 +3857,10 @@ void onSciModified(SCNotification* notifyCode)
 
 		if (notifyCode->linesAdded)
 		{
-			int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+			const int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 
 			if (!undo)
 			{
-
-				if (isAlignmentFirstLineInserted(view))
-					--startLine;
-
 				cmpPair->adjustAlignment(view, startLine, notifyCode->linesAdded);
 
 				LOGD("Alignment adjusted.\n");
@@ -4102,34 +4057,6 @@ void onFileBeforeClose(LRESULT buffId)
 }
 
 
-void onFileBeforeSave(LRESULT buffId)
-{
-	CompareList_t::iterator cmpPair = getCompare(buffId);
-	if (cmpPair == compareList.end())
-		return;
-
-	const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
-
-	const LRESULT currentBuffId = getCurrentBuffId();
-	const bool pairIsActive = (currentBuffId == buffId || currentBuffId == otherFile.buffId);
-
-	ScopedIncrementer incr(notificationsLock);
-
-	if (!pairIsActive)
-		activateBufferID(buffId);
-
-	const int currentView = viewIdFromBuffId(buffId);
-	ComparedFile& currentFile = cmpPair->getFileByBuffId(buffId);
-	currentFile.restoreAlignmentLine = isAlignmentFirstLineInserted(currentView);
-
-	if (currentFile.restoreAlignmentLine)
-		removeAlignmentFirstLine(currentView);
-
-	if (!pairIsActive)
-		activateBufferID(currentBuffId);
-}
-
-
 void onFileSaved(LRESULT buffId)
 {
 	CompareList_t::iterator cmpPair = getCompare(buffId);
@@ -4144,22 +4071,10 @@ void onFileSaved(LRESULT buffId)
 	ScopedIncrementer incr(notificationsLock);
 
 	if (!pairIsActive)
-		activateBufferID(buffId);
-
-	ComparedFile& currentFile = cmpPair->getFileByBuffId(buffId);
-
-	if (currentFile.restoreAlignmentLine)
 	{
-		currentFile.restoreAlignmentLine = false;
-
-		const int view = viewIdFromBuffId(buffId);
-
-		CallScintilla(view, SCI_UNDO, 0, 0);
-		CallScintilla(view, SCI_MARKERADDSET, 0, MARKER_MASK_BLANK);
-		CallScintilla(view, SCI_SETSAVEPOINT, 0, 0);
+		activateBufferID(buffId);
 	}
-
-	if (pairIsActive && Settings.RecompareOnChange && cmpPair->autoUpdateDelay)
+	else if (Settings.RecompareOnChange && cmpPair->autoUpdateDelay)
 	{
 		delayedAlignment.cancel();
 		delayedUpdate.post(30);
@@ -4403,11 +4318,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 #endif
 			else if (!compareList.empty() && !notificationsLock)
 				onFileBeforeClose(notifyCode->nmhdr.idFrom);
-		break;
-
-		case NPPN_FILEBEFORESAVE:
-			if (!compareList.empty() && !notificationsLock)
-				onFileBeforeSave(notifyCode->nmhdr.idFrom);
 		break;
 
 		case NPPN_FILESAVED:
