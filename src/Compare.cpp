@@ -564,6 +564,7 @@ void onBufferActivated(LRESULT buffId);
 void syncViews(int biasView);
 void temporaryRangeSelect(int view, int startPos = -1, int endPos = -1);
 void setArrowMark(int view, int line = -1, bool down = true);
+int getAlignmentIdxAfter(const AlignmentViewData AlignmentPair::*pView, const AlignmentInfo_t &alignInfo, int line);
 
 
 void NppSettings::enableClearCommands(bool enable) const
@@ -1224,16 +1225,7 @@ void ComparedPair::adjustAlignment(int view, int line, int offset)
 	AlignmentViewData AlignmentPair::*alignView = (view == MAIN_VIEW) ? &AlignmentPair::main : &AlignmentPair::sub;
 	AlignmentInfo_t& alignInfo = summary.alignmentInfo;
 
-	int startIdx = 0;
-
-	for (int i = static_cast<int>(alignInfo.size()) / 2; i; i /= 2)
-	{
-		if ((alignInfo[startIdx + i].*alignView).line < line)
-			startIdx += i;
-	}
-
-	while ((startIdx < static_cast<int>(alignInfo.size())) && ((alignInfo[startIdx].*alignView).line < line))
-		++startIdx;
+	const int startIdx = getAlignmentIdxAfter(alignView, alignInfo, line);
 
 	if ((startIdx < static_cast<int>(alignInfo.size())) && ((alignInfo[startIdx].*alignView).line >= line))
 	{
@@ -1734,6 +1726,23 @@ void resetCompareView(int view)
 }
 
 
+int getAlignmentIdxAfter(const AlignmentViewData AlignmentPair::*pView, const AlignmentInfo_t &alignInfo, int line)
+{
+	int idx = 0;
+
+	for (int i = static_cast<int>(alignInfo.size()) / 2; i; i /= 2)
+	{
+		if ((alignInfo[idx + i].*pView).line < line)
+			idx += i;
+	}
+
+	while ((idx < static_cast<int>(alignInfo.size())) && ((alignInfo[idx].*pView).line < line))
+		++idx;
+
+	return idx;
+}
+
+
 bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
 {
 	const AlignmentViewData AlignmentPair::*pView = (view == MAIN_VIEW) ? &AlignmentPair::main : &AlignmentPair::sub;
@@ -1742,15 +1751,10 @@ bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
 	const int lastLine = getLastLine(view);
 
 	const int maxSize = static_cast<int>(alignmentInfo.size());
-	int i;
 
-	for (i = 0; i < maxSize; ++i)
-	{
-		if ((alignmentInfo[i].*pView).line >= firstLine)
-			break;
-	}
+	int i = getAlignmentIdxAfter(pView, alignmentInfo, firstLine);
 
-	if (i == maxSize)
+	if (i >= maxSize)
 		return false;
 
 	if (i)
@@ -3656,8 +3660,7 @@ void onSciModified(SCNotification* notifyCode)
 		LOGD("SC_MOD_BEFOREDELETE: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
 				" view, lines range: " + std::to_string(startLine + 1) + "-" + std::to_string(endLine) + "\n");
 
-		const int action =
-				notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
+		const int action = notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
 
 		ScopedIncrementer incr(notificationsLock);
 
@@ -3712,8 +3715,7 @@ void onSciModified(SCNotification* notifyCode)
 	{
 		int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 
-		const int action =
-				notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
+		const int action = notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
 
 		LOGD("SC_MOD_INSERTTEXT: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
 				" view, lines range: " + std::to_string(startLine + 1) + "-" +
@@ -3768,7 +3770,7 @@ void onSciModified(SCNotification* notifyCode)
 					int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 
 					if ((startLine >= cmpPair->options.selections[view].first) &&
-							(startLine <= cmpPair->options.selections[view].second))
+						(startLine <= cmpPair->options.selections[view].second))
 					{
 						cmpPair->compareDirty = true;
 
@@ -3783,7 +3785,7 @@ void onSciModified(SCNotification* notifyCode)
 						startLine += notifyCode->linesAdded + 1;
 
 						if ((startLine >= cmpPair->options.selections[view].first) &&
-								(startLine <= cmpPair->options.selections[view].second))
+							(startLine <= cmpPair->options.selections[view].second))
 						{
 							cmpPair->compareDirty = true;
 
