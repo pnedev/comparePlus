@@ -132,12 +132,10 @@ struct DeletedSection
 		std::pair<int, int>	selection {-1, -1};
 	};
 
-	DeletedSection(int action, int line, int len, const std::shared_ptr<UndoData>& undo) :
+	DeletedSection(int action, int line, const std::shared_ptr<UndoData>& undo) :
 			startLine(line), lineReplace(false), undoInfo(undo)
 	{
 		restoreAction = (action == SC_PERFORMED_UNDO) ? SC_PERFORMED_REDO : SC_PERFORMED_UNDO;
-
-		markers.resize(len + 1, 0);
 	}
 
 	int					startLine;
@@ -194,21 +192,9 @@ bool DeletedSectionsList::push(int view, int currAction, int startLine, int len,
 	if (!sections.empty() && sections.back().restoreAction == currAction && sections.back().lineReplace)
 		return false;
 
-	DeletedSection delSection(currAction, startLine, len, undo);
+	DeletedSection delSection(currAction, startLine, undo);
 
-	const int startPos = getLineStart(view, startLine);
-	clearChangedIndicator(view, startPos, getLineStart(view, startLine + len) - startPos);
-
-	for (int line = CallScintilla(view, SCI_MARKERPREVIOUS, startLine + len - 1, MARKER_MASK_ALL);
-			line >= startLine;
-			line = CallScintilla(view, SCI_MARKERPREVIOUS, line - 1, MARKER_MASK_ALL))
-	{
-		delSection.markers[line - startLine] =
-				CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL;
-		clearMarks(view, line);
-	}
-
-	delSection.markers[len] = CallScintilla(view, SCI_MARKERGET, startLine + len, 0) & MARKER_MASK_ALL;
+	delSection.markers = getMarkers(view, startLine, len, MARKER_MASK_ALL);
 
 	sections.push_back(delSection);
 
@@ -242,18 +228,7 @@ std::shared_ptr<DeletedSection::UndoData> DeletedSectionsList::pop(int view, int
 	if (last.startLine != startLine)
 		return nullptr;
 
-	const int linesCount = static_cast<int>(last.markers.size());
-
-	const int startPos = getLineStart(view, last.startLine);
-	clearChangedIndicator(view, startPos, getLineStart(view, last.startLine + linesCount) - startPos);
-
-	for (int i = 0; i < linesCount; ++i)
-	{
-		clearMarks(view, last.startLine + i);
-
-		if (last.markers[i])
-			CallScintilla(view, SCI_MARKERADDSET, last.startLine + i, last.markers[i]);
-	}
+	setMarkers(view, last.startLine, last.markers);
 
 	std::shared_ptr<DeletedSection::UndoData> undo = last.undoInfo;
 

@@ -612,6 +612,56 @@ std::pair<int, int> getMarkedSection(int view, int startLine, int endLine, int m
 }
 
 
+std::vector<int> getMarkers(int view, int startLine, int length, int markMask, bool clearMarkers)
+{
+	std::vector<int> markers;
+
+	if (length <= 0 or startLine < 0)
+		return markers;
+
+	if (clearMarkers)
+	{
+		const int startPos = getLineStart(view, startLine);
+		clearChangedIndicator(view, startPos, getLineStart(view, startLine + length) - startPos);
+	}
+
+	markers.resize(length + 1, 0);
+
+	for (int line = CallScintilla(view, SCI_MARKERPREVIOUS, startLine + length - 1, markMask); line >= startLine;
+		line = CallScintilla(view, SCI_MARKERPREVIOUS, line - 1, markMask))
+	{
+		markers[line - startLine] = CallScintilla(view, SCI_MARKERGET, line, 0) & markMask;
+
+		if (clearMarkers)
+			clearMarks(view, line);
+	}
+
+	markers[length] = CallScintilla(view, SCI_MARKERGET, startLine + length, 0) & markMask;
+
+	return markers;
+}
+
+
+void setMarkers(int view, int startLine, const std::vector<int> &markers)
+{
+	const int linesCount = static_cast<int>(markers.size());
+
+	if (startLine < 0 || linesCount == 0)
+		return;
+
+	const int startPos = getLineStart(view, startLine);
+	clearChangedIndicator(view, startPos, getLineStart(view, startLine + linesCount) - startPos);
+
+	for (int i = 0; i < linesCount; ++i)
+	{
+		clearMarks(view, startLine + i);
+
+		if (markers[i])
+			CallScintilla(view, SCI_MARKERADDSET, startLine + i, markers[i]);
+	}
+}
+
+
 void hideOutsideRange(int view, int startLine, int endLine)
 {
 	const int linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
