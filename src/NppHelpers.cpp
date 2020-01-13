@@ -690,38 +690,19 @@ bool isVisibleAdjacentAnnotation(int view, int line, bool down)
 }
 
 
-void addBlankSection(int view, int line, int length, int selectionMarkPosition, const char *text)
+void addBlankSection(int view, int line, int length, int textLinePos, const char *text)
 {
 	if (length <= 0)
 		return;
 
 	std::vector<char> blank(length - 1, '\n');
 
-	if (selectionMarkPosition < 0)
+	if (textLinePos > 0 && text != nullptr)
 	{
-		if (text == nullptr)
-		{
-			const char sel[] = "--- Selection Compare Block Start ---";
+		if (length < textLinePos)
+			return;
 
-			blank.insert(blank.end() + selectionMarkPosition + 1, sel, sel + sizeof(sel));
-		}
-		else
-		{
-			blank.insert(blank.end() + selectionMarkPosition + 1, text, text + strlen(text));
-		}
-	}
-	else if (selectionMarkPosition > 0)
-	{
-		if (text == nullptr)
-		{
-			const char sel[] = "--- Selection Compare Block End ---";
-
-			blank.insert(blank.begin() + selectionMarkPosition - 1, sel, sel + sizeof(sel));
-		}
-		else
-		{
-			blank.insert(blank.begin() + selectionMarkPosition - 1, text, text + strlen(text));
-		}
+		blank.insert(blank.begin() + textLinePos - 1, text, text + strlen(text));
 	}
 
 	blank.push_back('\0');

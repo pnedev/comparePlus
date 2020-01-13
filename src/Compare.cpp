@@ -1856,8 +1856,9 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 
 			if (lineZeroAlignmentSkipped)
 			{
-				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, 1, -1, lineZeroAlignInfo);
-				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, mismatchLen + 1, -1, lineZeroAlignInfo);
+				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, 1, 1, lineZeroAlignInfo);
+				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, mismatchLen + 1, mismatchLen + 1,
+						lineZeroAlignInfo);
 
 				lineZeroAlignmentSkipped = false;
 			}
@@ -1873,8 +1874,9 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 
 			if (lineZeroAlignmentSkipped)
 			{
-				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, -mismatchLen + 1, -1, lineZeroAlignInfo);
-				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, 1, -1, lineZeroAlignInfo);
+				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, -mismatchLen + 1, -mismatchLen + 1,
+						lineZeroAlignInfo);
+				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, 1, 1, lineZeroAlignInfo);
 
 				lineZeroAlignmentSkipped = false;
 			}
@@ -1902,8 +1904,10 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 				++subAnnotation;
 			}
 
-			addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first, mainAnnotation, -mainAnnotation);
-			addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first, subAnnotation, -subAnnotation);
+			addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first, mainAnnotation, 1,
+					"--- Selection Compare Block Start ---");
+			addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first, subAnnotation, 1,
+					"--- Selection Compare Block Start ---");
 		}
 
 		{
@@ -1920,9 +1924,9 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 			}
 
 			addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].second + 1,
-					mainAnnotation, mainAnnotation);
+					mainAnnotation, mainAnnotation, "--- Selection Compare Block End ---");
 			addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].second + 1,
-					subAnnotation, subAnnotation);
+					subAnnotation, subAnnotation, "--- Selection Compare Block End ---");
 		}
 	}
 }
