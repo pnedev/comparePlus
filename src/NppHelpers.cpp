@@ -472,7 +472,7 @@ void markTextAsChanged(int view, int start, int length, int color)
 
 void clearChangedIndicator(int view, int start, int length)
 {
-	if (length != 0)
+	if (length > 0)
 	{
 		const int curIndic = CallScintilla(view, SCI_GETINDICATORCURRENT, 0, 0);
 		CallScintilla(view, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
@@ -568,6 +568,22 @@ void clearMarks(int view, int line)
 }
 
 
+void clearMarks(int view, int startLine, int length)
+{
+	int endLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+
+	if (startLine + length < endLine)
+		endLine = startLine + length;
+
+	const int startPos = getLineStart(view, startLine);
+
+	clearChangedIndicator(view, startPos, getLineEnd(view, endLine - 1) - startPos);
+
+	for (; startLine < endLine; ++startLine)
+		clearMarks(view, startLine);
+}
+
+
 int getPrevUnmarkedLine(int view, int startLine, int markMask)
 {
 	int prevUnmarkedLine = startLine;
@@ -616,16 +632,21 @@ std::vector<int> getMarkers(int view, int startLine, int length, int markMask, b
 {
 	std::vector<int> markers;
 
-	if (length <= 0 or startLine < 0)
+	if (length <= 0 || startLine < 0)
 		return markers;
+
+	const int linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+
+	if (startLine + length > linesCount)
+		length = linesCount - startLine;
 
 	if (clearMarkers)
 	{
 		const int startPos = getLineStart(view, startLine);
-		clearChangedIndicator(view, startPos, getLineStart(view, startLine + length) - startPos);
+		clearChangedIndicator(view, startPos, getLineEnd(view, startLine + length - 1) - startPos);
 	}
 
-	markers.resize(length + 1, 0);
+	markers.resize(length, 0);
 
 	for (int line = CallScintilla(view, SCI_MARKERPREVIOUS, startLine + length - 1, markMask); line >= startLine;
 		line = CallScintilla(view, SCI_MARKERPREVIOUS, line - 1, markMask))
@@ -635,8 +656,6 @@ std::vector<int> getMarkers(int view, int startLine, int length, int markMask, b
 		if (clearMarkers)
 			clearMarks(view, line);
 	}
-
-	markers[length] = CallScintilla(view, SCI_MARKERGET, startLine + length, 0) & markMask;
 
 	return markers;
 }
@@ -650,7 +669,7 @@ void setMarkers(int view, int startLine, const std::vector<int> &markers)
 		return;
 
 	const int startPos = getLineStart(view, startLine);
-	clearChangedIndicator(view, startPos, getLineStart(view, startLine + linesCount) - startPos);
+	clearChangedIndicator(view, startPos, getLineEnd(view, startLine + linesCount - 1) - startPos);
 
 	for (int i = 0; i < linesCount; ++i)
 	{
@@ -737,6 +756,18 @@ bool isVisibleAdjacentAnnotation(int view, int line, bool down)
 	}
 
 	return true;
+}
+
+
+void clearAnnotations(int view, int startLine, int length)
+{
+	int endLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+
+	if (startLine + length < endLine)
+		endLine = startLine + length;
+
+	for (; startLine < endLine; ++startLine)
+		clearAnnotation(view, startLine);
 }
 
 

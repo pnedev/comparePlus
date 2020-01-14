@@ -563,6 +563,7 @@ void setStyles(UserSettings& settings);
 
 void clearWindow(int view);
 void clearMarks(int view, int line);
+void clearMarks(int view, int startLine, int length);
 int getPrevUnmarkedLine(int view, int startLine, int markMask);
 int getNextUnmarkedLine(int view, int startLine, int markMask);
 
@@ -582,6 +583,8 @@ inline void clearAnnotation(int view, int line)
 	CallScintilla(view, SCI_ANNOTATIONSETTEXT, line, (LPARAM)NULL);
 }
 
+
+void clearAnnotations(int view, int startLine, int length);
 
 std::vector<char> getText(int view, int startPos, int endPos);
 void toLowerCase(std::vector<char>& text);

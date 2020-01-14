@@ -130,10 +130,11 @@ struct DeletedSection
 	{
 		AlignmentInfo_t		alignment;
 		std::pair<int, int>	selection {-1, -1};
+		std::vector<int>	otherViewMarks;
 	};
 
 	DeletedSection(int action, int line, const std::shared_ptr<UndoData>& undo) :
-			startLine(line), lineReplace(false), undoInfo(undo)
+			startLine(line), lineReplace(false), nextLineMarker(0), undoInfo(undo)
 	{
 		restoreAction = (action == SC_PERFORMED_UNDO) ? SC_PERFORMED_REDO : SC_PERFORMED_UNDO;
 	}
@@ -142,6 +143,7 @@ struct DeletedSection
 	bool				lineReplace;
 	int					restoreAction;
 	std::vector<int>	markers;
+	int					nextLineMarker;
 
 	const std::shared_ptr<UndoData> undoInfo;
 };
@@ -194,7 +196,17 @@ bool DeletedSectionsList::push(int view, int currAction, int startLine, int len,
 
 	DeletedSection delSection(currAction, startLine, undo);
 
-	delSection.markers = getMarkers(view, startLine, len, MARKER_MASK_ALL);
+	if (!Settings.RecompareOnChange)
+	{
+		delSection.markers = getMarkers(view, startLine, len, MARKER_MASK_ALL);
+
+		if (startLine + len < CallScintilla(view, SCI_GETLINECOUNT, 0, 0))
+			delSection.nextLineMarker = CallScintilla(view, SCI_MARKERGET, startLine + len, 0) & MARKER_MASK_ALL;
+	}
+	else
+	{
+		clearMarks(view, startLine, len);
+	}
 
 	sections.push_back(delSection);
 
@@ -228,7 +240,13 @@ std::shared_ptr<DeletedSection::UndoData> DeletedSectionsList::pop(int view, int
 	if (last.startLine != startLine)
 		return nullptr;
 
-	setMarkers(view, last.startLine, last.markers);
+	if (!last.markers.empty())
+	{
+		setMarkers(view, last.startLine, last.markers);
+
+		if (last.nextLineMarker)
+			CallScintilla(view, SCI_MARKERADDSET, startLine + last.markers.size(), last.nextLineMarker);
+	}
 
 	std::shared_ptr<DeletedSection::UndoData> undo = last.undoInfo;
 
@@ -313,6 +331,14 @@ public:
 	void setStatus();
 
 	void adjustAlignment(int view, int line, int offset);
+
+	void setCompareDirty()
+	{
+		compareDirty = true;
+
+		if (!inEditMode)
+			manuallyChanged = true;
+	}
 
 	ComparedFile	file[2];
 	int				relativePos;
@@ -504,6 +530,7 @@ volatile unsigned	notificationsLock = 0;
 bool				isNppMinimized = false;
 
 std::unique_ptr<ViewLocation> storedLocation = nullptr;
+std::vector<int> copiedSectionMarks;
 
 // Re-compare flags
 bool goToFirst = false;
@@ -2222,6 +2249,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	// Just to be sure any old state is cleared
 	storedLocation = nullptr;
 	goToFirst = false;
+	copiedSectionMarks.clear();
 
 	bool recompareSameSelections = false;
 
@@ -3451,6 +3479,16 @@ void onMarginClick(HWND view, int pos, int keyMods)
 		clearSelection(viewId);
 		temporaryRangeSelect(-1);
 
+		if (!Settings.RecompareOnChange)
+		{
+			copiedSectionMarks = getMarkers(otherViewId, otherLine, 1, MARKER_MASK_ALL);
+			clearAnnotation(otherViewId, otherLine);
+		}
+		else
+		{
+			clearMarks(otherViewId, otherLine, 1);
+		}
+
 		CallScintilla(viewId, SCI_DELETERANGE, startPos, endPos - startPos);
 
 		if (lastMarked)
@@ -3565,6 +3603,27 @@ void onMarginClick(HWND view, int pos, int keyMods)
 
 		const bool lastMarked = (markedRange.second == CallScintilla(viewId, SCI_GETLENGTH, 0, 0));
 
+		if (otherMarkedRange.first >= 0)
+		{
+			const int otherStartLine	= CallScintilla(otherViewId, SCI_LINEFROMPOSITION, otherMarkedRange.first, 0);
+			const int otherEndLine		= CallScintilla(otherViewId, SCI_LINEFROMPOSITION, otherMarkedRange.second, 0);
+			const bool otherLastMarked	= (otherMarkedRange.second == CallScintilla(otherViewId, SCI_GETLENGTH, 0, 0));
+
+			if (!Settings.RecompareOnChange)
+			{
+				copiedSectionMarks =
+						getMarkers(otherViewId, otherStartLine, otherEndLine - otherStartLine, MARKER_MASK_ALL);
+				clearAnnotations(otherViewId, otherStartLine, otherEndLine - otherStartLine);
+			}
+			else
+			{
+				clearMarks(otherViewId, otherStartLine, otherEndLine - otherStartLine);
+			}
+
+			if (otherLastMarked)
+				clearMarks(otherViewId, otherEndLine);
+		}
+
 		CallScintilla(viewId, SCI_DELETERANGE, markedRange.first, markedRange.second - markedRange.first);
 
 		if (lastMarked)
@@ -3643,19 +3702,13 @@ void onSciModified(SCNotification* notifyCode)
 
 		ScopedIncrementer incr(notificationsLock);
 
-#ifdef DLOG
-		bool isAlignmentStored = false;
-		bool isSelectionStored = false;
-#endif
-
 		if (!Settings.RecompareOnChange)
 		{
 			undo = std::make_shared<DeletedSection::UndoData>();
 			undo->alignment = cmpPair->summary.alignmentInfo;
 
-#ifdef DLOG
-			isAlignmentStored = true;
-#endif
+			if (cmpPair->inEditMode && !copiedSectionMarks.empty())
+				undo->otherViewMarks = std::move(copiedSectionMarks);
 		}
 
 		if (cmpPair->options.selectionCompare)
@@ -3664,23 +3717,27 @@ void onSciModified(SCNotification* notifyCode)
 				undo = std::make_shared<DeletedSection::UndoData>();
 
 			undo->selection = cmpPair->options.selections[view];
-
-#ifdef DLOG
-			isSelectionStored = true;
-#endif
 		}
 
 #ifdef DLOG
 		if (cmpPair->getFileByViewId(view).pushDeletedSection(action, startLine, endLine - startLine, undo))
 		{
-			if (isAlignmentStored)
+			if (undo)
 			{
-				LOGD("Alignment stored.\n");
-			}
+				if (!undo->alignment.empty())
+				{
+					LOGD("Alignment stored.\n");
+				}
 
-			if (isSelectionStored)
-			{
-				LOGD("Selection stored.\n");
+				if (!undo->otherViewMarks.empty())
+				{
+					LOGD("Other view markers stored.\n");
+				}
+
+				if (undo->selection.first >= 0)
+				{
+					LOGD("Selection stored.\n");
+				}
 			}
 		}
 #else
@@ -3711,6 +3768,25 @@ void onSciModified(SCNotification* notifyCode)
 				cmpPair->summary.alignmentInfo = std::move(undo->alignment);
 
 				LOGD("Alignment restored.\n");
+
+				if (!undo->otherViewMarks.empty())
+				{
+					AlignmentViewData AlignmentPair::*alignView =
+							(view == MAIN_VIEW) ? &AlignmentPair::main : &AlignmentPair::sub;
+
+					const int alignIdx = getAlignmentIdxAfter(alignView, cmpPair->summary.alignmentInfo, startLine);
+
+					if ((alignIdx < static_cast<int>(cmpPair->summary.alignmentInfo.size())) &&
+						((cmpPair->summary.alignmentInfo[alignIdx].*alignView).line == startLine))
+					{
+						alignView = (view == MAIN_VIEW) ? &AlignmentPair::sub : &AlignmentPair::main;
+
+						setMarkers(getOtherViewId(view),
+								(cmpPair->summary.alignmentInfo[alignIdx].*alignView).line, undo->otherViewMarks);
+
+						LOGD("Other view markers restored.\n");
+					}
+				}
 			}
 
 			if (undo->selection.first < undo->selection.second)
@@ -3737,11 +3813,7 @@ void onSciModified(SCNotification* notifyCode)
 			{
 				if (!cmpPair->options.selectionCompare)
 				{
-					cmpPair->compareDirty = true;
-
-					if (!cmpPair->inEditMode)
-						cmpPair->manuallyChanged = true;
-
+					cmpPair->setCompareDirty();
 					updateStatus = true;
 				}
 				else
@@ -3751,11 +3823,7 @@ void onSciModified(SCNotification* notifyCode)
 					if ((startLine >= cmpPair->options.selections[view].first) &&
 						(startLine <= cmpPair->options.selections[view].second))
 					{
-						cmpPair->compareDirty = true;
-
-						if (!cmpPair->inEditMode)
-							cmpPair->manuallyChanged = true;
-
+						cmpPair->setCompareDirty();
 						updateStatus = true;
 					}
 
@@ -3766,11 +3834,7 @@ void onSciModified(SCNotification* notifyCode)
 						if ((startLine >= cmpPair->options.selections[view].first) &&
 							(startLine <= cmpPair->options.selections[view].second))
 						{
-							cmpPair->compareDirty = true;
-
-							if (!cmpPair->inEditMode)
-								cmpPair->manuallyChanged = true;
-
+							cmpPair->setCompareDirty();
 							updateStatus = true;
 						}
 					}
@@ -3815,7 +3879,8 @@ void onSciModified(SCNotification* notifyCode)
 				}
 			}
 
-			if (cmpPair->options.selections[view].second < cmpPair->options.selections[view].first)
+			if (!cmpPair->inEditMode &&
+				cmpPair->options.selections[view].second < cmpPair->options.selections[view].first)
 			{
 				clearComparePair(getCurrentBuffId());
 				return;
