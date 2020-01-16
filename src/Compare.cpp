@@ -3678,6 +3678,8 @@ void onMarginClick(HWND view, int pos, int keyMods)
 
 void onSciModified(SCNotification* notifyCode)
 {
+	static bool notReverting = true;
+
 	const int view = getViewId((HWND)notifyCode->nmhdr.hwndFrom);
 
 	CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(view));
@@ -3719,8 +3721,10 @@ void onSciModified(SCNotification* notifyCode)
 			undo->selection = cmpPair->options.selections[view];
 		}
 
+		notReverting = cmpPair->getFileByViewId(view).pushDeletedSection(action, startLine, endLine - startLine, undo);
+
 #ifdef DLOG
-		if (cmpPair->getFileByViewId(view).pushDeletedSection(action, startLine, endLine - startLine, undo))
+		if (notReverting)
 		{
 			if (undo)
 			{
@@ -3740,8 +3744,6 @@ void onSciModified(SCNotification* notifyCode)
 				}
 			}
 		}
-#else
-		cmpPair->getFileByViewId(view).pushDeletedSection(action, startLine, endLine - startLine, undo);
 #endif
 
 		return;
@@ -3758,6 +3760,8 @@ void onSciModified(SCNotification* notifyCode)
 				std::to_string(startLine + notifyCode->linesAdded) + "\n");
 
 		ScopedIncrementer incr(notificationsLock);
+
+		notReverting = true;
 
 		undo = cmpPair->getFileByViewId(view).popDeletedSection(action, startLine);
 
@@ -3805,9 +3809,12 @@ void onSciModified(SCNotification* notifyCode)
 		delayedAlignment.cancel();
 		delayedUpdate.cancel();
 
+		if (notifyCode->linesAdded == 0)
+			notReverting = true;
+
 		bool updateStatus = false;
 
-		if (!Settings.RecompareOnChange && !(notifyCode->modificationType & (SC_PERFORMED_UNDO | SC_PERFORMED_REDO)))
+		if (!Settings.RecompareOnChange && notReverting && !undo)
 		{
 			if (!cmpPair->compareDirty || (!cmpPair->inEditMode && !cmpPair->manuallyChanged))
 			{
