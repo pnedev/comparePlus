@@ -459,7 +459,7 @@ void setStyles(UserSettings& settings)
 
 void markTextAsChanged(int view, int start, int length, int color)
 {
-	if (length != 0)
+	if (length > 0)
 	{
 		const int curIndic = CallScintilla(view, SCI_GETINDICATORCURRENT, 0, 0);
 		CallScintilla(view, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);

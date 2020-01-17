@@ -3586,6 +3586,26 @@ void onMarginClick(HWND view, int pos, int keyMods)
 	clearSelection(viewId);
 	temporaryRangeSelect(-1);
 
+	if (otherMarkedRange.first >= 0)
+	{
+		const int otherStartLine	= CallScintilla(otherViewId, SCI_LINEFROMPOSITION, otherMarkedRange.first, 0);
+		int otherEndLine			= CallScintilla(otherViewId, SCI_LINEFROMPOSITION, otherMarkedRange.second, 0);
+
+		if (otherMarkedRange.second == CallScintilla(otherViewId, SCI_GETLENGTH, 0, 0))
+			++otherEndLine;
+
+		if (!Settings.RecompareOnChange)
+		{
+			copiedSectionMarks =
+					getMarkers(otherViewId, otherStartLine, otherEndLine - otherStartLine, MARKER_MASK_ALL);
+			clearAnnotations(otherViewId, otherStartLine, otherEndLine - otherStartLine);
+		}
+		else
+		{
+			clearMarks(otherViewId, otherStartLine, otherEndLine - otherStartLine);
+		}
+	}
+
 	if (markedRange.first >= 0)
 	{
 		const int startLine	= CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.first, 0);
@@ -3594,27 +3614,6 @@ void onMarginClick(HWND view, int pos, int keyMods)
 			clearAnnotation(viewId, startLine - 1);
 
 		const bool lastMarked = (markedRange.second == CallScintilla(viewId, SCI_GETLENGTH, 0, 0));
-
-		if (otherMarkedRange.first >= 0)
-		{
-			const int otherStartLine	= CallScintilla(otherViewId, SCI_LINEFROMPOSITION, otherMarkedRange.first, 0);
-			const int otherEndLine		= CallScintilla(otherViewId, SCI_LINEFROMPOSITION, otherMarkedRange.second, 0);
-			const bool otherLastMarked	= (otherMarkedRange.second == CallScintilla(otherViewId, SCI_GETLENGTH, 0, 0));
-
-			if (!Settings.RecompareOnChange)
-			{
-				copiedSectionMarks =
-						getMarkers(otherViewId, otherStartLine, otherEndLine - otherStartLine, MARKER_MASK_ALL);
-				clearAnnotations(otherViewId, otherStartLine, otherEndLine - otherStartLine);
-			}
-			else
-			{
-				clearMarks(otherViewId, otherStartLine, otherEndLine - otherStartLine);
-			}
-
-			if (otherLastMarked)
-				clearMarks(otherViewId, otherEndLine);
-		}
 
 		CallScintilla(viewId, SCI_DELETERANGE, markedRange.first, markedRange.second - markedRange.first);
 
