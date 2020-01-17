@@ -542,6 +542,20 @@ inline void clearSelection(int view)
 }
 
 
+inline void setSelection(int view, int start, int end, bool scrollView = false)
+{
+	if (scrollView)
+	{
+		CallScintilla(view, SCI_SETSEL, start, end);
+	}
+	else
+	{
+		CallScintilla(view, SCI_SETSELECTIONSTART, start, 0);
+		CallScintilla(view, SCI_SETSELECTIONEND, end, 0);
+	}
+}
+
+
 int otherViewMatchingLine(int view, int line, int adjustment = 0, bool check = false);
 void activateBufferID(LRESULT buffId);
 std::pair<int, int> getSelectionLines(int view);

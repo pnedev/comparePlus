@@ -469,7 +469,7 @@ public:
 	{
 		_sel = getSelection(view);
 
-		CallScintilla(view, SCI_SETSEL, startPos, endPos);
+		setSelection(view, startPos, endPos);
 	}
 
 	virtual ~SelectRangeTimeout();
@@ -710,11 +710,8 @@ void NppSettings::setCompareMode(bool clearHorizontalScroll)
 
 	if (clearHorizontalScroll)
 	{
-		int pos = getLineStart(MAIN_VIEW, getCurrentLine(MAIN_VIEW));
-		CallScintilla(MAIN_VIEW, SCI_SETSEL, pos, pos);
-
-		pos = getLineStart(SUB_VIEW, getCurrentLine(SUB_VIEW));
-		CallScintilla(SUB_VIEW, SCI_SETSEL, pos, pos);
+		CallScintilla(MAIN_VIEW, SCI_GOTOLINE, getCurrentLine(MAIN_VIEW), 0);
+		CallScintilla(SUB_VIEW, SCI_GOTOLINE, getCurrentLine(SUB_VIEW), 0);
 	}
 
 	// Disable N++ vertical scroll - we handle it manually because of the Word Wrap
@@ -1324,14 +1321,9 @@ SelectRangeTimeout::~SelectRangeTimeout()
 void SelectRangeTimeout::operator()()
 {
 	if ((_sel.first >= 0) && (_sel.second > _sel.first))
-	{
-		CallScintilla(_view, SCI_SETSELECTIONSTART, _sel.first, 0);
-		CallScintilla(_view, SCI_SETSELECTIONEND, _sel.second, 0);
-	}
+		setSelection(_view, _sel.first, _sel.second);
 	else
-	{
 		clearSelection(_view);
-	}
 }
 
 
@@ -3436,7 +3428,7 @@ void onMarginClick(HWND view, int pos, int keyMods)
 		if (otherLine < 0)
 		{
 			if (!(keyMods & SCMOD_CTRL))
-				CallScintilla(viewId, SCI_SETSEL, getLineStart(viewId, line), getLineStart(viewId, line + 1));
+				setSelection(viewId, getLineStart(viewId, line), getLineStart(viewId, line + 1));
 
 			temporaryRangeSelect(-1);
 
@@ -3448,7 +3440,7 @@ void onMarginClick(HWND view, int pos, int keyMods)
 		if ((mark & (1 << MARKER_CHANGED_LINE)) != (1 << MARKER_CHANGED_LINE))
 		{
 			if (!(keyMods & SCMOD_CTRL))
-				CallScintilla(viewId, SCI_SETSEL, getLineStart(viewId, line), getLineStart(viewId, line + 1));
+				setSelection(viewId, getLineStart(viewId, line), getLineStart(viewId, line + 1));
 
 			temporaryRangeSelect(-1);
 
@@ -3457,7 +3449,7 @@ void onMarginClick(HWND view, int pos, int keyMods)
 
 		if (!(keyMods & SCMOD_CTRL))
 		{
-			CallScintilla(viewId, SCI_SETSEL, getLineStart(viewId, line), getLineStart(viewId, line + 1));
+			setSelection(viewId, getLineStart(viewId, line), getLineStart(viewId, line + 1));
 
 			temporaryRangeSelect(otherViewId,
 					getLineStart(otherViewId, otherLine), getLineStart(otherViewId, otherLine + 1));
@@ -3572,7 +3564,7 @@ void onMarginClick(HWND view, int pos, int keyMods)
 	if (!(keyMods & SCMOD_CTRL))
 	{
 		if (markedRange.first >= 0)
-			CallScintilla(viewId, SCI_SETSEL, markedRange.first, markedRange.second);
+			setSelection(viewId, markedRange.first, markedRange.second);
 		else
 			clearSelection(viewId);
 

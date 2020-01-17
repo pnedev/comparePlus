@@ -172,7 +172,7 @@ bool ViewLocation::restore() const
 		const int firstVisibleLine = CallScintilla(_view, SCI_VISIBLEFROMDOCLINE, caretLine, 0) - _visibleLineOffset;
 
 		CallScintilla(_view, SCI_ENSUREVISIBLEENFORCEPOLICY, caretLine, 0);
-		CallScintilla(_view, SCI_SETSEL, _selStart, _selEnd);
+		setSelection(_view, _selStart, _selEnd);
 		CallScintilla(_view, SCI_SETFIRSTVISIBLELINE, firstVisibleLine, 0);
 
 		LOGD("Restore " + std::string(_view == MAIN_VIEW ? "MAIN" : "SUB") +
@@ -346,14 +346,14 @@ void blinkRange(int view, int startPos, int endPos)
 
 	for (int i = cBlinkCount; ;)
 	{
-		CallScintilla(view, SCI_SETSEL, startPos, endPos);
+		setSelection(view, startPos, endPos, true);
 		::UpdateWindow(getView(view));
 		::Sleep(cBlinkInterval_ms);
 
 		if (--i == 0)
 			break;
 
-		CallScintilla(view, SCI_SETSEL, startPos, startPos);
+		setSelection(view, startPos, endPos, true);
 		::UpdateWindow(getView(view));
 		::Sleep(cBlinkInterval_ms);
 	}
