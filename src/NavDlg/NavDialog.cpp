@@ -724,7 +724,7 @@ INT_PTR CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lPar
 
 			if (pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_CLOSE)
 			{
-				ViewNavigationBar();
+				ToggleNavigationBar();
 			}
 			else if ((pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_FLOAT) ||
 					(pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_DOCK))

@@ -1928,8 +1928,8 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 
 void showNavBar()
 {
-	NavDlg.SetColors(Settings.colors);
-	NavDlg.Show();
+	if (!NavDlg.SetColors(Settings.colors))
+		NavDlg.Show();
 }
 
 
@@ -2986,7 +2986,7 @@ void createMenu()
 	funcItem[CMD_SHOW_ONLY_SEL]._pFunc = ShowOnlySelections;
 
 	_tcscpy_s(funcItem[CMD_NAV_BAR]._itemName, nbChar, TEXT("Navigation Bar"));
-	funcItem[CMD_NAV_BAR]._pFunc = ViewNavigationBar;
+	funcItem[CMD_NAV_BAR]._pFunc = ToggleNavigationBar;
 
 	_tcscpy_s(funcItem[CMD_AUTO_RECOMPARE]._itemName, nbChar, TEXT("Auto Re-Compare on Change"));
 	funcItem[CMD_AUTO_RECOMPARE]._pFunc = AutoRecompare;
@@ -3037,7 +3037,7 @@ void createMenu()
 
 void deinitPlugin()
 {
-	// Always close it, else N++'s plugin manager would call 'ViewNavigationBar'
+	// Always close it, else N++'s plugin manager would call 'ToggleNavigationBar'
 	// on startup, when N++ has been shut down before with opened navigation bar
 	if (NavDlg.isVisible())
 		NavDlg.Hide();
@@ -3488,6 +3488,9 @@ void onMarginClick(HWND view, int pos, int keyMods)
 
 		CallScintilla(viewId, SCI_INSERTTEXT, startPos, (LPARAM)text.data());
 
+		if (!Settings.RecompareOnChange && Settings.UseNavBar)
+			NavDlg.Show();
+
 		return;
 	}
 
@@ -3664,6 +3667,9 @@ void onMarginClick(HWND view, int pos, int keyMods)
 
 		CallScintilla(viewId, SCI_INSERTTEXT, startPos, (LPARAM)text.data());
 	}
+
+	if (!Settings.RecompareOnChange && Settings.UseNavBar)
+		NavDlg.Show();
 }
 
 
@@ -3805,6 +3811,7 @@ void onSciModified(SCNotification* notifyCode)
 
 		bool updateStatus = false;
 
+		// Set compare dirty flag if needed
 		if (!Settings.RecompareOnChange && notReverting && !undo)
 		{
 			if (!cmpPair->compareDirty || (!cmpPair->inEditMode && !cmpPair->manuallyChanged))
@@ -3916,6 +3923,9 @@ void onSciModified(SCNotification* notifyCode)
 				CallScintilla(view, SCI_ANNOTATIONCLEARALL, 0, 0);
 				CallScintilla(getOtherViewId(view), SCI_ANNOTATIONCLEARALL, 0, 0);
 			}
+
+			if (Settings.UseNavBar && !cmpPair->inEditMode)
+				NavDlg.Show();
 		}
 
 		if (updateStatus)
@@ -4209,7 +4219,7 @@ void SetLocation(int view, int line)
 }
 
 
-void ViewNavigationBar()
+void ToggleNavigationBar()
 {
 	Settings.UseNavBar = !Settings.UseNavBar;
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID,

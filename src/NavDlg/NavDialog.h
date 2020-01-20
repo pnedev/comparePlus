@@ -41,12 +41,17 @@ public:
 	void Show();
 	void Hide();
 
-	void SetColors(const ColorSettings& colors)
+	bool SetColors(const ColorSettings& colors)
 	{
 		m_clr = colors;
 
 		if (isVisible())
+		{
 			Show();
+			return true;
+		}
+
+		return false;
 	}
 
 	void Update();
