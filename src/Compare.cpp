@@ -4197,7 +4197,8 @@ LRESULT statusProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			if (cmpPair != compareList.end())
 			{
-				Settings.toggleStatusType();
+				if (!cmpPair->compareDirty)
+					Settings.toggleStatusType();
 
 				cmpPair->setStatusInfo();
 
