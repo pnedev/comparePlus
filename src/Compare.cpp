@@ -2233,15 +2233,18 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 	ScopedIncrementer incr(notificationsLock);
 
-	const bool				doubleView		= !isSingleView();
-	const LRESULT			currentBuffId	= getCurrentBuffId();
-	CompareList_t::iterator	cmpPair			= getCompare(currentBuffId);
-	const bool				recompare		= (cmpPair != compareList.end());
-
 	// Just to be sure any old state is cleared
 	storedLocation = nullptr;
 	goToFirst = false;
 	copiedSectionMarks.clear();
+
+	temporaryRangeSelect(-1);
+	setArrowMark(-1);
+
+	const bool				doubleView		= !isSingleView();
+	const LRESULT			currentBuffId	= getCurrentBuffId();
+	CompareList_t::iterator	cmpPair			= getCompare(currentBuffId);
+	const bool				recompare		= (cmpPair != compareList.end());
 
 	bool recompareSameSelections = false;
 
