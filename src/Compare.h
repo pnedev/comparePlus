@@ -63,6 +63,10 @@
 			break; \
 		}
 
+	#define LOGDIF(COND, STR) \
+		if (COND) \
+			LOGD(STR)
+
 	#define LOGDB(BUFFID, STR) \
 		for (;;) { \
 			const DWORD time_ms = ::GetTickCount(); \
@@ -103,6 +107,7 @@
 
 	#define LOGD_GET_TIME
 	#define LOGD(STR)
+	#define LOGDIF(COND, STR)
 	#define LOGDB(BUFFID, STR)
 	#define PRINT_DIFFS(INFO, DIFFS)
 

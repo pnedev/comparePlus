@@ -3704,21 +3704,22 @@ void onSciModified(SCNotification* notifyCode)
 
 		ScopedIncrementer incr(notificationsLock);
 
-		if (!Settings.RecompareOnChange)
+		if (cmpPair->options.selectionCompare)
 		{
 			undo = std::make_shared<DeletedSection::UndoData>();
-			undo->alignment = cmpPair->summary.alignmentInfo;
 
-			if (cmpPair->inEditMode && !copiedSectionMarks.empty())
-				undo->otherViewMarks = std::move(copiedSectionMarks);
+			undo->selection = cmpPair->options.selections[view];
 		}
 
-		if (cmpPair->options.selectionCompare)
+		if (!Settings.RecompareOnChange)
 		{
 			if (!undo)
 				undo = std::make_shared<DeletedSection::UndoData>();
 
-			undo->selection = cmpPair->options.selections[view];
+			undo->alignment = cmpPair->summary.alignmentInfo;
+
+			if (cmpPair->inEditMode && !copiedSectionMarks.empty())
+				undo->otherViewMarks = std::move(copiedSectionMarks);
 		}
 
 		notReverting = cmpPair->getFileByViewId(view).pushDeletedSection(action, startLine, endLine - startLine, undo);
@@ -3728,6 +3729,11 @@ void onSciModified(SCNotification* notifyCode)
 		{
 			if (undo)
 			{
+				if (undo->selection.first >= 0)
+				{
+					LOGD("Selection stored.\n");
+				}
+
 				if (!undo->alignment.empty())
 				{
 					LOGD("Alignment stored.\n");
@@ -3737,11 +3743,6 @@ void onSciModified(SCNotification* notifyCode)
 				{
 					LOGD("Other view markers stored.\n");
 				}
-
-				if (undo->selection.first >= 0)
-				{
-					LOGD("Selection stored.\n");
-				}
 			}
 		}
 #endif
@@ -3749,9 +3750,11 @@ void onSciModified(SCNotification* notifyCode)
 		return;
 	}
 
+	bool selectionsAdjusted = false;
+
 	if ((notifyCode->modificationType & SC_MOD_INSERTTEXT) && notifyCode->linesAdded)
 	{
-		int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+		const int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 
 		const int action = notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
 
@@ -3767,6 +3770,16 @@ void onSciModified(SCNotification* notifyCode)
 
 		if (undo)
 		{
+			if ((undo->selection.first < undo->selection.second) &&
+				(cmpPair->options.selections[view] != undo->selection))
+			{
+				cmpPair->options.selections[view] = undo->selection;
+
+				selectionsAdjusted = true;
+
+				LOGD("Selection restored.\n");
+			}
+
 			if (!Settings.RecompareOnChange)
 			{
 				cmpPair->summary.alignmentInfo = std::move(undo->alignment);
@@ -3791,13 +3804,6 @@ void onSciModified(SCNotification* notifyCode)
 						LOGD("Other view markers restored.\n");
 					}
 				}
-			}
-
-			if (undo->selection.first < undo->selection.second)
-			{
-				cmpPair->options.selections[view] = undo->selection;
-
-				LOGD("Selection restored.\n");
 			}
 
 			SetLocation(view, startLine);
@@ -3850,7 +3856,7 @@ void onSciModified(SCNotification* notifyCode)
 			}
 		}
 
-		if (cmpPair->options.selectionCompare && notifyCode->linesAdded && !undo)
+		if (cmpPair->options.selectionCompare && notifyCode->linesAdded && !undo && !selectionsAdjusted)
 		{
 			const int startLine	= CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 			const int endLine	= startLine + std::abs(notifyCode->linesAdded) - 1;
@@ -3869,6 +3875,8 @@ void onSciModified(SCNotification* notifyCode)
 						cmpPair->options.selections[view].first -=
 								(cmpPair->options.selections[view].first - startLine);
 				}
+
+				selectionsAdjusted = true;
 			}
 
 			if (cmpPair->options.selections[view].second >= startLine)
@@ -3885,6 +3893,8 @@ void onSciModified(SCNotification* notifyCode)
 						cmpPair->options.selections[view].second -=
 								(cmpPair->options.selections[view].second - startLine + 1);
 				}
+
+				selectionsAdjusted = true;
 			}
 
 			if (!cmpPair->inEditMode &&
@@ -3894,7 +3904,7 @@ void onSciModified(SCNotification* notifyCode)
 				return;
 			}
 
-			LOGD("Selection adjusted.\n");
+			LOGDIF(selectionsAdjusted, "Selection adjusted.\n");
 		}
 
 		if (Settings.RecompareOnChange)
@@ -3915,16 +3925,22 @@ void onSciModified(SCNotification* notifyCode)
 
 			if (!undo)
 			{
-				cmpPair->adjustAlignment(view, startLine, notifyCode->linesAdded);
+				if (!cmpPair->options.selectionCompare || selectionsAdjusted)
+				{
+					cmpPair->adjustAlignment(view, startLine, notifyCode->linesAdded);
 
-				LOGD("Alignment adjusted.\n");
+					LOGD("Alignment adjusted.\n");
+				}
 			}
-			else if (cmpPair->options.selectionCompare)
+
+			if (selectionsAdjusted)
 			{
 				SetLocation(view, startLine);
 
 				CallScintilla(view, SCI_ANNOTATIONCLEARALL, 0, 0);
 				CallScintilla(getOtherViewId(view), SCI_ANNOTATIONCLEARALL, 0, 0);
+
+				selectionAutoRecompare = true; // Force re-alignment in onSciPaint()
 			}
 
 			if (Settings.UseNavBar && !cmpPair->inEditMode)
