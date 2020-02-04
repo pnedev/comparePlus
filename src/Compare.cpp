@@ -336,7 +336,7 @@ public:
 	{
 		compareDirty = true;
 
-		if (!inEditMode)
+		if (!inEqualizeMode)
 			manuallyChanged = true;
 	}
 
@@ -349,7 +349,7 @@ public:
 
 	bool			compareDirty	= false;
 	bool			manuallyChanged	= false;
-	unsigned		inEditMode		= 0;
+	unsigned		inEqualizeMode	= 0;
 
 	int				autoUpdateDelay	= 0;
 };
@@ -3467,7 +3467,7 @@ void onMarginClick(HWND view, int pos, int keyMods)
 
 		const bool lastMarked = (endPos == CallScintilla(viewId, SCI_GETLENGTH, 0, 0));
 
-		ScopedIncrementer			inEdit(cmpPair->inEditMode);
+		ScopedIncrementer			inEqualize(cmpPair->inEqualizeMode);
 		ScopedViewUndoAction		scopedUndo(viewId);
 		ScopedFirstVisibleLineStore	firstVisLine(viewId);
 
@@ -3585,7 +3585,7 @@ void onMarginClick(HWND view, int pos, int keyMods)
 	if (cmpPair->options.findUniqueMode)
 		return;
 
-	ScopedIncrementer			inEdit(cmpPair->inEditMode);
+	ScopedIncrementer			inEqualize(cmpPair->inEqualizeMode);
 	ScopedViewUndoAction		scopedUndo(viewId);
 	ScopedFirstVisibleLineStore	firstVisLine(viewId);
 
@@ -3718,7 +3718,7 @@ void onSciModified(SCNotification* notifyCode)
 
 			undo->alignment = cmpPair->summary.alignmentInfo;
 
-			if (cmpPair->inEditMode && !copiedSectionMarks.empty())
+			if (cmpPair->inEqualizeMode && !copiedSectionMarks.empty())
 				undo->otherViewMarks = std::move(copiedSectionMarks);
 		}
 
@@ -3823,7 +3823,7 @@ void onSciModified(SCNotification* notifyCode)
 		// Set compare dirty flag if needed
 		if (!Settings.RecompareOnChange && notReverting && !undo)
 		{
-			if (!cmpPair->compareDirty || (!cmpPair->inEditMode && !cmpPair->manuallyChanged))
+			if (!cmpPair->compareDirty || (!cmpPair->inEqualizeMode && !cmpPair->manuallyChanged))
 			{
 				if (!cmpPair->options.selectionCompare)
 				{
@@ -3856,9 +3856,10 @@ void onSciModified(SCNotification* notifyCode)
 			}
 		}
 
+		// Adjust selections if in selection compare
 		if (cmpPair->options.selectionCompare && notifyCode->linesAdded && !undo && !selectionsAdjusted)
 		{
-			const int startLine	= CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+			int startLine		= CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 			const int endLine	= startLine + std::abs(notifyCode->linesAdded) - 1;
 
 			if (cmpPair->options.selections[view].first > startLine)
@@ -3879,6 +3880,13 @@ void onSciModified(SCNotification* notifyCode)
 				selectionsAdjusted = true;
 			}
 
+			// Handle the special case when the end of the selection compare is diff-equalized -
+			// the insert part of the replace notification then needs to increase the selection accordingly to
+			// include the equalized diff
+			if (cmpPair->inEqualizeMode && (cmpPair->options.selections[view].second == startLine - 1) &&
+					(notifyCode->linesAdded > 0))
+				--startLine;
+
 			if (cmpPair->options.selections[view].second >= startLine)
 			{
 				if (notifyCode->linesAdded > 0)
@@ -3897,7 +3905,7 @@ void onSciModified(SCNotification* notifyCode)
 				selectionsAdjusted = true;
 			}
 
-			if (!cmpPair->inEditMode &&
+			if (!cmpPair->inEqualizeMode &&
 				cmpPair->options.selections[view].second < cmpPair->options.selections[view].first)
 			{
 				clearComparePair(getCurrentBuffId());
@@ -3921,7 +3929,7 @@ void onSciModified(SCNotification* notifyCode)
 
 		if (notifyCode->linesAdded)
 		{
-			const int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+			int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 
 			if (!undo)
 			{
@@ -3943,7 +3951,7 @@ void onSciModified(SCNotification* notifyCode)
 				selectionAutoRecompare = true; // Force re-alignment in onSciPaint()
 			}
 
-			if (Settings.UseNavBar && !cmpPair->inEditMode)
+			if (Settings.UseNavBar && !cmpPair->inEqualizeMode)
 				NavDlg.Show();
 		}
 
