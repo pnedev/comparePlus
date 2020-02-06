@@ -245,7 +245,10 @@ std::shared_ptr<DeletedSection::UndoData> DeletedSectionsList::pop(int view, int
 		setMarkers(view, last.startLine, last.markers);
 
 		if (last.nextLineMarker)
+		{
+			clearMarks(view, startLine + last.markers.size());
 			CallScintilla(view, SCI_MARKERADDSET, startLine + last.markers.size(), last.nextLineMarker);
+		}
 	}
 
 	std::shared_ptr<DeletedSection::UndoData> undo = last.undoInfo;
@@ -3397,8 +3400,16 @@ void onMarginClick(HWND view, int pos, int keyMods)
 	if (keyMods & SCMOD_ALT)
 		return;
 
-	const int viewId	= getViewId(view);
-	const int line		= CallScintilla(viewId, SCI_LINEFROMPOSITION, pos, 0);
+	const int viewId = getViewId(view);
+
+	if ((keyMods & SCMOD_CTRL) && CallScintilla(viewId, SCI_GETREADONLY, 0, 0))
+		return;
+
+	CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(viewId));
+	if (cmpPair == compareList.end())
+		return;
+
+	const int line = CallScintilla(viewId, SCI_LINEFROMPOSITION, pos, 0);
 
 	if (!isLineMarked(viewId, line, MARKER_MASK_LINE) && !isLineAnnotated(viewId, line))
 		return;
@@ -3409,41 +3420,25 @@ void onMarginClick(HWND view, int pos, int keyMods)
 	{
 		const int markerMask = CallScintilla(viewId, SCI_MARKERGET, line, 0);
 
-		if ((markerMask & (1 << MARKER_CHANGED_LINE)) == (1 << MARKER_CHANGED_LINE))
+		if (markerMask & (1 << MARKER_CHANGED_LINE))
 			mark = (1 << MARKER_CHANGED_LINE);
 		else if (markerMask & MARKER_MASK_LINE)
 			mark = (1 << MARKER_ADDED_LINE) | (1 << MARKER_REMOVED_LINE) | (1 << MARKER_MOVED_LINE);
 	}
 
-	CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(viewId));
-	if (cmpPair == compareList.end())
-		return;
-
-	if ((keyMods & SCMOD_CTRL) && CallScintilla(viewId, SCI_GETREADONLY, 0, 0))
-		return;
-
 	const int otherViewId = getOtherViewId(viewId);
 
 	if ((keyMods & SCMOD_SHIFT) && (mark == (1 << MARKER_CHANGED_LINE)))
 	{
+		const int startPos	= getLineStart(viewId, line);
+		const int endPos	= getLineStart(viewId, line + 1);
 		const int otherLine = otherViewMatchingLine(viewId, line, 0, true);
 
-		if (otherLine < 0)
+		if ((otherLine < 0) ||
+			!(CallScintilla(otherViewId, SCI_MARKERGET, otherLine, 0) & (1 << MARKER_CHANGED_LINE)))
 		{
 			if (!(keyMods & SCMOD_CTRL))
-				setSelection(viewId, getLineStart(viewId, line), getLineStart(viewId, line + 1));
-
-			temporaryRangeSelect(-1);
-
-			return;
-		}
-
-		mark = CallScintilla(otherViewId, SCI_MARKERGET, otherLine, 0);
-
-		if ((mark & (1 << MARKER_CHANGED_LINE)) != (1 << MARKER_CHANGED_LINE))
-		{
-			if (!(keyMods & SCMOD_CTRL))
-				setSelection(viewId, getLineStart(viewId, line), getLineStart(viewId, line + 1));
+				setSelection(viewId, startPos, endPos);
 
 			temporaryRangeSelect(-1);
 
@@ -3452,7 +3447,7 @@ void onMarginClick(HWND view, int pos, int keyMods)
 
 		if (!(keyMods & SCMOD_CTRL))
 		{
-			setSelection(viewId, getLineStart(viewId, line), getLineStart(viewId, line + 1));
+			setSelection(viewId, startPos, endPos);
 
 			temporaryRangeSelect(otherViewId,
 					getLineStart(otherViewId, otherLine), getLineStart(otherViewId, otherLine + 1));
@@ -3460,8 +3455,6 @@ void onMarginClick(HWND view, int pos, int keyMods)
 			return;
 		}
 
-		const int startPos	= getLineStart(viewId, line);
-		const int endPos	= getLineStart(viewId, line + 1);
 		const auto text =
 				getText(otherViewId, getLineStart(otherViewId, otherLine), getLineStart(otherViewId, otherLine + 1));
 
