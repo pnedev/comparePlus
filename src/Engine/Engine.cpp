@@ -799,7 +799,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 		diffInfo* pBlockDiff2 = &blockDiff2;
 
 		// First use word granularity (find matching words) for better precision
-		auto wordDiffRes = DiffCalc<Word>(lineWords1, lineWords2)(!options.charPrecision);
+		auto wordDiffRes = DiffCalc<Word>(lineWords1, lineWords2)(!options.charPrecision, true);
 		const std::vector<diff_info<void>> lineDiffs = std::move(wordDiffRes.first);
 
 		if (wordDiffRes.second)
