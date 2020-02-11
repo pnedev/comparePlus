@@ -3484,8 +3484,14 @@ void onMarginClick(HWND view, int pos, int keyMods)
 
 		CallScintilla(viewId, SCI_INSERTTEXT, startPos, (LPARAM)text.data());
 
-		if (!Settings.RecompareOnChange && Settings.UseNavBar)
-			NavDlg.Show();
+		if (!Settings.RecompareOnChange)
+		{
+			if (Settings.ShowOnlyDiffs)
+				alignDiffs(cmpPair);
+
+			if (Settings.UseNavBar)
+				NavDlg.Show();
+		}
 
 		return;
 	}
@@ -3664,8 +3670,14 @@ void onMarginClick(HWND view, int pos, int keyMods)
 		CallScintilla(viewId, SCI_INSERTTEXT, startPos, (LPARAM)text.data());
 	}
 
-	if (!Settings.RecompareOnChange && Settings.UseNavBar)
-		NavDlg.Show();
+	if (!Settings.RecompareOnChange)
+	{
+		if (Settings.ShowOnlyDiffs)
+			alignDiffs(cmpPair);
+
+		if (Settings.UseNavBar)
+			NavDlg.Show();
+	}
 }
 
 
@@ -3793,6 +3805,10 @@ void onSciModified(SCNotification* notifyCode)
 
 						setMarkers(getOtherViewId(view),
 								(cmpPair->summary.alignmentInfo[alignIdx].*alignView).line, undo->otherViewMarks);
+
+						if (Settings.ShowOnlyDiffs)
+							showRange(getOtherViewId(view), (cmpPair->summary.alignmentInfo[alignIdx].*alignView).line,
+									undo->otherViewMarks.size());
 
 						LOGD("Other view markers restored.\n");
 					}

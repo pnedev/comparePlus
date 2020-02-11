@@ -585,6 +585,7 @@ std::pair<int, int> getMarkedSection(int view, int startLine, int endLine, int m
 std::vector<int> getMarkers(int view, int startLine, int length, int markMask, bool clearMarkers = true);
 void setMarkers(int view, int startLine, const std::vector<int> &markers);
 
+void showRange(int view, int line, int length);
 void hideOutsideRange(int view, int startLine, int endLine);
 void hideUnmarked(int view, int markMask);
 

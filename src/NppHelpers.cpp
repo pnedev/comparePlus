@@ -681,6 +681,20 @@ void setMarkers(int view, int startLine, const std::vector<int> &markers)
 }
 
 
+void showRange(int view, int line, int length)
+{
+	if (line >= 0 && length > 0)
+	{
+		const int linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+
+		if (line + length > linesCount)
+			length = linesCount - line;
+
+		CallScintilla(view, SCI_SHOWLINES, line, line + length - 1);
+	}
+}
+
+
 void hideOutsideRange(int view, int startLine, int endLine)
 {
 	const int linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
