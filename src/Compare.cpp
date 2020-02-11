@@ -3501,6 +3501,21 @@ void onMarginClick(HWND view, int pos, int keyMods)
 	if ((markedRange.first < 0) && !(keyMods & SCMOD_SHIFT))
 		markedRange = getMarkedSection(viewId, line + 1, line + 1, mark);
 
+	if (cmpPair->options.findUniqueMode)
+	{
+		if (!(keyMods & SCMOD_CTRL))
+		{
+			if (markedRange.first >= 0)
+				setSelection(viewId, markedRange.first, markedRange.second);
+			else
+				clearSelection(viewId);
+
+			temporaryRangeSelect(-1);
+		}
+
+		return;
+	}
+
 	std::pair<int, int> otherMarkedRange;
 
 	if (markedRange.first < 0)
@@ -3580,9 +3595,6 @@ void onMarginClick(HWND view, int pos, int keyMods)
 
 		return;
 	}
-
-	if (cmpPair->options.findUniqueMode)
-		return;
 
 	ScopedIncrementer			inEqualize(cmpPair->inEqualizeMode);
 	ScopedViewUndoAction		scopedUndo(viewId);
