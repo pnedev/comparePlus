@@ -1520,14 +1520,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 {
 	progress_ptr& progress = ProgressDlg::Get();
 
-	summary.alignmentInfo.clear();
-
-	summary.diffLines	= 0;
-	summary.added		= 0;
-	summary.removed		= 0;
-	summary.changed		= 0;
-	summary.moved		= 0;
-	summary.match		= 0;
+	summary.clear();
 
 	const int blockDiffSize = static_cast<int>(cmpInfo.blockDiffs.size());
 
