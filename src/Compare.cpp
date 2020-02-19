@@ -155,7 +155,7 @@ struct DeletedSection
  */
 struct DeletedSectionsList
 {
-	DeletedSectionsList() : skipPush(0), lastPushTimeMark(0) {}
+	DeletedSectionsList() : lastPushTimeMark(0) {}
 
 	std::vector<DeletedSection>& get()
 	{
@@ -167,12 +167,10 @@ struct DeletedSectionsList
 
 	void clear()
 	{
-		skipPush = 0;
 		sections.clear();
 	}
 
 private:
-	int							skipPush;
 	DWORD						lastPushTimeMark;
 	std::vector<DeletedSection>	sections;
 };
@@ -183,12 +181,6 @@ bool DeletedSectionsList::push(int view, int currAction, int startLine, int len,
 {
 	if (len < 1)
 		return false;
-
-	if (skipPush)
-	{
-		--skipPush;
-		return false;
-	}
 
 	// Is it line replacement revert operation?
 	if (!sections.empty() && sections.back().restoreAction == currAction && sections.back().lineReplace)
@@ -219,26 +211,21 @@ bool DeletedSectionsList::push(int view, int currAction, int startLine, int len,
 std::shared_ptr<DeletedSection::UndoData> DeletedSectionsList::pop(int view, int currAction, int startLine)
 {
 	if (sections.empty())
-	{
-		++skipPush;
 		return nullptr;
-	}
 
 	DeletedSection& last = sections.back();
+
+	if (last.startLine != startLine)
+		return nullptr;
 
 	if (last.restoreAction != currAction)
 	{
 		// Try to guess if this is the insert part of line replacement operation
 		if (::GetTickCount() < lastPushTimeMark + 40)
 			last.lineReplace = true;
-		else
-			++skipPush;
 
 		return nullptr;
 	}
-
-	if (last.startLine != startLine)
-		return nullptr;
 
 	if (!last.markers.empty())
 	{
@@ -570,6 +557,7 @@ void syncViews(int biasView);
 void temporaryRangeSelect(int view, int startPos = -1, int endPos = -1);
 void setArrowMark(int view, int line = -1, bool down = true);
 int getAlignmentIdxAfter(const AlignmentViewData AlignmentPair::*pView, const AlignmentInfo_t &alignInfo, int line);
+int getAlignmentLine(const AlignmentInfo_t &alignInfo, int view, int line);
 
 
 void NppSettings::enableClearCommands(bool enable) const
@@ -1737,6 +1725,24 @@ int getAlignmentIdxAfter(const AlignmentViewData AlignmentPair::*pView, const Al
 		++idx;
 
 	return idx;
+}
+
+
+int getAlignmentLine(const AlignmentInfo_t &alignInfo, int view, int line)
+{
+	if (line < 0)
+		return -1;
+
+	AlignmentViewData AlignmentPair::*alignView = (view == MAIN_VIEW) ? &AlignmentPair::main : &AlignmentPair::sub;
+
+	const int alignIdx = getAlignmentIdxAfter(alignView, alignInfo, line);
+
+	if ((alignIdx >= static_cast<int>(alignInfo.size())) || ((alignInfo[alignIdx].*alignView).line != line))
+		return -1;
+
+	alignView = (view == MAIN_VIEW) ? &AlignmentPair::sub : &AlignmentPair::main;
+
+	return (alignInfo[alignIdx].*alignView).line;
 }
 
 
@@ -3526,29 +3532,23 @@ void onMarginClick(HWND view, int pos, int keyMods)
 	else
 	{
 		int startLine	= CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.first, 0);
-		int endLine		= CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.second, 0);
-
-		if (getLineStart(viewId, endLine) == markedRange.second)
-			--endLine;
-
 		int startOffset	= 0;
-		int endOffset	= 0;
 
-		if ((startLine > 1) && isLineAnnotated(viewId, startLine - 1))
+		if (!Settings.ShowOnlyDiffs && (startLine > 1) && isLineAnnotated(viewId, startLine - 1))
 		{
 			--startLine;
 			startOffset = getWrapCount(viewId, startLine);
 		}
 
-		if (isLineAnnotated(viewId, endLine))
-		{
-			++endLine;
-			endOffset = -1;
-		}
-		else
-		{
-			endOffset = getWrapCount(viewId, endLine) - 1;
-		}
+		int endLine = CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.second, 0);
+
+		if (getLineStart(viewId, endLine) == markedRange.second)
+			--endLine;
+
+		int endOffset = getWrapCount(viewId, endLine) - 1;
+
+		if (!Settings.ShowOnlyDiffs)
+			endOffset += getLineAnnotation(viewId, endLine);
 
 		otherMarkedRange.first = otherViewMatchingLine(viewId, startLine, startOffset, true);
 
@@ -3558,8 +3558,20 @@ void onMarginClick(HWND view, int pos, int keyMods)
 		otherMarkedRange.second	= otherViewMatchingLine(viewId, endLine, endOffset);
 	}
 
-	for (; (otherMarkedRange.first <= otherMarkedRange.second) &&
-			!isLineMarked(otherViewId, otherMarkedRange.first, mark); ++otherMarkedRange.first);
+	if (!Settings.ShowOnlyDiffs)
+	{
+		for (; (otherMarkedRange.first <= otherMarkedRange.second) &&
+				!isLineMarked(otherViewId, otherMarkedRange.first, mark); ++otherMarkedRange.first);
+	}
+	else
+	{
+		int otherLine = otherMarkedRange.second;
+
+		for (; (otherLine > otherMarkedRange.first) && isLineMarked(otherViewId, otherLine, mark); --otherLine);
+
+		if (otherLine > otherMarkedRange.first)
+			otherMarkedRange.first = otherLine + 1;
+	}
 
 	if (otherMarkedRange.first > otherMarkedRange.second)
 	{
@@ -3651,7 +3663,22 @@ void onMarginClick(HWND view, int pos, int keyMods)
 		{
 			if (line < lastLine)
 			{
-				startPos = getLineStart(viewId, line + 1);
+				if (!Settings.ShowOnlyDiffs)
+				{
+					startPos = line + 1;
+				}
+				else
+				{
+					if (otherStartLine < 0)
+						return;
+
+					startPos = getAlignmentLine(cmpPair->summary.alignmentInfo, otherViewId, otherStartLine);
+
+					if (startPos < 0)
+						return;
+				}
+
+				startPos = getLineStart(viewId, startPos);
 			}
 			else
 			{
@@ -3805,22 +3832,14 @@ void onSciModified(SCNotification* notifyCode)
 
 				if (!undo->otherViewMarks.empty())
 				{
-					AlignmentViewData AlignmentPair::*alignView =
-							(view == MAIN_VIEW) ? &AlignmentPair::main : &AlignmentPair::sub;
+					const int alignLine = getAlignmentLine(cmpPair->summary.alignmentInfo, view, startLine);
 
-					const int alignIdx = getAlignmentIdxAfter(alignView, cmpPair->summary.alignmentInfo, startLine);
-
-					if ((alignIdx < static_cast<int>(cmpPair->summary.alignmentInfo.size())) &&
-						((cmpPair->summary.alignmentInfo[alignIdx].*alignView).line == startLine))
+					if (alignLine >= 0)
 					{
-						alignView = (view == MAIN_VIEW) ? &AlignmentPair::sub : &AlignmentPair::main;
-
-						setMarkers(getOtherViewId(view),
-								(cmpPair->summary.alignmentInfo[alignIdx].*alignView).line, undo->otherViewMarks);
+						setMarkers(getOtherViewId(view), alignLine, undo->otherViewMarks);
 
 						if (Settings.ShowOnlyDiffs)
-							showRange(getOtherViewId(view), (cmpPair->summary.alignmentInfo[alignIdx].*alignView).line,
-									undo->otherViewMarks.size());
+							showRange(getOtherViewId(view), alignLine, undo->otherViewMarks.size());
 
 						LOGD("Other view markers restored.\n");
 					}
