@@ -518,16 +518,15 @@ void NavDialog::setPos(int x, int y)
 	if (!isLineVisible(currentView->m_view, currentLine))
 		centerAt(currentView->m_view, currentLine);
 
-	SetLocation(currentView->m_view, currentLine);
-
 	if (Settings.FollowingCaret)
 	{
 		::SetFocus(getView(currentView->m_view));
 
-		CallScintilla(currentView->m_view, SCI_SETEMPTYSELECTION, getLineStart(currentView->m_view, currentLine), 0);
-
 		if (Settings.ShowOnlyDiffs || Settings.ShowOnlySelections)
-			gotoClosestUnhiddenLine(currentView->m_view);
+			gotoClosestUnhiddenLine(currentView->m_view, currentLine);
+		else
+			CallScintilla(currentView->m_view, SCI_SETEMPTYSELECTION,
+					getLineStart(currentView->m_view, currentLine), 0);
 
 		::UpdateWindow(getView(currentView->m_view));
 	}

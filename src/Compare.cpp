@@ -2786,12 +2786,7 @@ void Prev()
 	{
 		ScopedIncrementer incr(notificationsLock);
 
-		std::pair<int, int> viewLoc = jumpToChange(false, Settings.WrapAround);
-
-		if (viewLoc.first < 0)
-			storedLocation = nullptr;
-		else
-			storedLocation = std::make_unique<ViewLocation>(viewLoc.first, viewLoc.second);
+		jumpToChange(false, Settings.WrapAround);
 	}
 }
 
@@ -2802,12 +2797,7 @@ void Next()
 	{
 		ScopedIncrementer incr(notificationsLock);
 
-		std::pair<int, int> viewLoc = jumpToChange(true, Settings.WrapAround);
-
-		if (viewLoc.first < 0)
-			storedLocation = nullptr;
-		else
-			storedLocation = std::make_unique<ViewLocation>(viewLoc.first, viewLoc.second);
+		jumpToChange(true, Settings.WrapAround);
 	}
 }
 
@@ -2818,8 +2808,7 @@ void First()
 	{
 		ScopedIncrementer incr(notificationsLock);
 
-		std::pair<int, int> viewLoc = jumpToFirstChange(true);
-		storedLocation = std::make_unique<ViewLocation>(viewLoc.first, viewLoc.second);
+		jumpToFirstChange(true);
 	}
 }
 
@@ -2830,8 +2819,7 @@ void Last()
 	{
 		ScopedIncrementer incr(notificationsLock);
 
-		std::pair<int, int> viewLoc = jumpToLastChange(true);
-		storedLocation = std::make_unique<ViewLocation>(viewLoc.first, viewLoc.second);
+		jumpToLastChange(true);
 	}
 }
 
@@ -3366,6 +3354,9 @@ void DelayedAlign::operator()()
 		}
 		else
 		{
+			if (realign)
+				storedLocation->restore();
+
 			syncViews(storedLocation->getView());
 
 			storedLocation = nullptr;
@@ -3391,7 +3382,11 @@ void onSciUpdateUI(HWND view)
 {
 	ScopedIncrementer incr(notificationsLock);
 
-	syncViews(getViewId(view));
+	LOGD("onSciUpdateUI()\n");
+
+	storedLocation = std::make_unique<ViewLocation>(getViewId(view));
+
+	syncViews(storedLocation->getView());
 }
 
 
@@ -3845,8 +3840,6 @@ void onSciModified(SCNotification* notifyCode)
 					}
 				}
 			}
-
-			SetLocation(view, startLine);
 		}
 	}
 
@@ -3983,8 +3976,6 @@ void onSciModified(SCNotification* notifyCode)
 
 			if (selectionsAdjusted)
 			{
-				SetLocation(view, startLine);
-
 				CallScintilla(view, SCI_ANNOTATIONCLEARALL, 0, 0);
 				CallScintilla(getOtherViewId(view), SCI_ANNOTATIONCLEARALL, 0, 0);
 
@@ -4027,22 +4018,37 @@ void DelayedActivate::operator()()
 
 	if (buffId != currentlyActiveBuffID)
 	{
-		storedLocation = std::make_unique<ViewLocation>(viewIdFromBuffId(buffId));
+		const int viewId				= viewIdFromBuffId(buffId);
+		const std::pair<int, int> sel	= getSelection(viewId); // Used to refresh selection
+
+		ScopedIncrementer incr(notificationsLock);
+
+		setSelection(viewId, sel.first, sel.first);
+
+		onSciUpdateUI(getView(viewId));
 
 		const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
 
 		// When compared file is activated make sure its corresponding pair file is also active in the other view
 		if (getDocId(getOtherViewId()) != otherFile.sciDoc)
 		{
-			ScopedIncrementer incr(notificationsLock);
+			HWND hCaptureWnd = ::GetCapture();
+
+			if (hCaptureWnd)
+				::ReleaseCapture();
 
 			activateBufferID(otherFile.buffId);
 			activateBufferID(buffId);
+
+			if (hCaptureWnd)
+				::SetFocus(hCaptureWnd);
 		}
+
+		currentlyActiveBuffID = buffId;
 
 		comparedFileActivated();
 
-		currentlyActiveBuffID = buffId;
+		setSelection(viewId, sel.first, sel.second);
 	}
 	// File seems reloaded - re-compare pair
 	else
@@ -4279,12 +4285,6 @@ LRESULT statusProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 } // anonymous namespace
-
-
-void SetLocation(int view, int line)
-{
-	storedLocation = std::make_unique<ViewLocation>(view, line);
-}
 
 
 void ToggleNavigationBar()

@@ -268,12 +268,11 @@ struct ViewLocation
 	}
 
 private:
-	int		_view;
-	int		_centerLine;
-	int		_visibleLineOffset;
-	int		_pos;
-	int		_selStart;
-	int		_selEnd;
+	int	_view;
+	int	_centerLine;
+	int	_caretLine;
+	int	_firstLine;
+	int	_visibleLineOffset;
 };
 
 
@@ -472,6 +471,12 @@ inline void gotoClosestUnhiddenLine(int view)
 }
 
 
+inline void gotoClosestUnhiddenLine(int view, int line)
+{
+	CallScintilla(view, SCI_GOTOLINE, getUnhiddenLine(view, line), 0);
+}
+
+
 inline int getWrapCount(int view, int line)
 {
 	return CallScintilla(view, SCI_WRAPCOUNT, line, 0);
@@ -481,6 +486,12 @@ inline int getWrapCount(int view, int line)
 inline int getLineAnnotation(int view, int line)
 {
 	return CallScintilla(view, SCI_ANNOTATIONGETLINES, line, 0);
+}
+
+
+inline int getFirstVisibleLineOffset(int view, int line)
+{
+	return (CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - getFirstVisibleLine(view));
 }
 
 
