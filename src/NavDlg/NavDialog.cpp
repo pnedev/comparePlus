@@ -731,6 +731,10 @@ INT_PTR CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lPar
 				setScalingFactor();
 				::SetFocus(getView(m_syncView->m_view));
 			}
+			else if (LOWORD(pnmh->code) == DMN_SWITCHIN)
+			{
+				Update();
+			}
 		}
 		break;
 
