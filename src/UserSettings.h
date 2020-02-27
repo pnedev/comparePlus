@@ -35,6 +35,7 @@
 #define DEFAULT_WRAP_AROUND				0
 #define DEFAULT_GOTO_FIRST_DIFF			1
 #define DEFAULT_PROMPT_CLOSE_ON_MATCH	0
+#define DEFAULT_EN_REGEX				0
 
 #define DEFAULT_STATUS_TYPE				0
 
@@ -101,6 +102,8 @@ public:
 	static const TCHAR wrapAroundSetting[];
 	static const TCHAR gotoFirstDiffSetting[];
 	static const TCHAR promptCloseOnMatchSetting[];
+	static const TCHAR enableCompareOnlyRegexSetting[];
+
 
 	static const TCHAR charPrecisionSetting[];
 	static const TCHAR ignoreSpacesSetting[];
@@ -138,6 +141,7 @@ public:
 	bool           	WrapAround;
 	bool           	GotoFirstDiff;
 	bool           	PromptToCloseOnMatch;
+	bool			EnableOnlyCompareRegex;
 
 	bool           	CharPrecision;
 	bool           	IgnoreSpaces;
