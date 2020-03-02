@@ -1085,7 +1085,8 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 							}
 							else
 							{
-								++diffsCount;
+								if (options.diffsBasedLineChanges)
+									++diffsCount;
 
 								// Count replacement as a single diff
 								if ((i + 1 < wordDiffsSize) && (wordDiffs.first[i + 1].type == diff_type::DIFF_IN_2))

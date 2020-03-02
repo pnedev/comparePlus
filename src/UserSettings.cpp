@@ -38,6 +38,7 @@ const TCHAR UserSettings::gotoFirstDiffSetting[]		= TEXT("Go_to_First_on_ReCompa
 const TCHAR UserSettings::followingCaretSetting[]		= TEXT("Following_Caret");
 
 const TCHAR UserSettings::charPrecisionSetting[]		= TEXT("Character_Level_Highlight");
+const TCHAR UserSettings::diffsBasedChangesSetting[]	= TEXT("Diffs_Based_Line_Changes");
 const TCHAR UserSettings::ignoreSpacesSetting[]			= TEXT("Ignore_Spaces");
 const TCHAR UserSettings::ignoreEmptyLinesSetting[]		= TEXT("Ignore_Empty_Lines");
 const TCHAR UserSettings::ignoreCaseSetting[]			= TEXT("Ignore_Case");
@@ -91,16 +92,17 @@ void UserSettings::load()
 	PromptToCloseOnMatch	= ::GetPrivateProfileInt(mainSection, promptCloseOnMatchSetting,
 			DEFAULT_PROMPT_CLOSE_ON_MATCH, iniFile) != 0;
 
-	CharPrecision		= ::GetPrivateProfileInt(mainSection, charPrecisionSetting,		0, iniFile) != 0;
-	IgnoreSpaces		= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,		0, iniFile) != 0;
-	IgnoreEmptyLines	= ::GetPrivateProfileInt(mainSection, ignoreEmptyLinesSetting,	0, iniFile) != 0;
-	IgnoreCase			= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,		0, iniFile) != 0;
-	DetectMoves			= ::GetPrivateProfileInt(mainSection, detectMovesSetting,		1, iniFile) != 0;
-	ShowOnlyDiffs		= ::GetPrivateProfileInt(mainSection, showOnlyDiffSetting,		0, iniFile) != 0;
-	ShowOnlySelections	= ::GetPrivateProfileInt(mainSection, showOnlySelSetting,		1, iniFile) != 0;
-	UseNavBar			= ::GetPrivateProfileInt(mainSection, navBarSetting,			1, iniFile) != 0;
+	CharPrecision			= ::GetPrivateProfileInt(mainSection, charPrecisionSetting,		0, iniFile) != 0;
+	DiffsBasedLineChanges	= ::GetPrivateProfileInt(mainSection, diffsBasedChangesSetting,	0, iniFile) != 0;
+	IgnoreSpaces			= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,		0, iniFile) != 0;
+	IgnoreEmptyLines		= ::GetPrivateProfileInt(mainSection, ignoreEmptyLinesSetting,	0, iniFile) != 0;
+	IgnoreCase				= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,		0, iniFile) != 0;
+	DetectMoves				= ::GetPrivateProfileInt(mainSection, detectMovesSetting,		1, iniFile) != 0;
+	ShowOnlyDiffs			= ::GetPrivateProfileInt(mainSection, showOnlyDiffSetting,		0, iniFile) != 0;
+	ShowOnlySelections		= ::GetPrivateProfileInt(mainSection, showOnlySelSetting,		1, iniFile) != 0;
+	UseNavBar				= ::GetPrivateProfileInt(mainSection, navBarSetting,			1, iniFile) != 0;
 
-	RecompareOnChange	= ::GetPrivateProfileInt(mainSection, reCompareOnChangeSetting,	1, iniFile) != 0;
+	RecompareOnChange		= ::GetPrivateProfileInt(mainSection, reCompareOnChangeSetting,	1, iniFile) != 0;
 
 	SavedStatusType	= static_cast<StatusType>(::GetPrivateProfileInt(mainSection, statusTypeSetting,
 			DEFAULT_STATUS_TYPE, iniFile));
@@ -187,6 +189,8 @@ void UserSettings::save()
 
 	::WritePrivateProfileString(mainSection, charPrecisionSetting,
 			CharPrecision ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, diffsBasedChangesSetting,
+			DiffsBasedLineChanges ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreSpacesSetting,
 			IgnoreSpaces ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreEmptyLinesSetting,

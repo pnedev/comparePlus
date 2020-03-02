@@ -2354,6 +2354,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		cmpPair->options.alignAllMatches			= Settings.AlignAllMatches;
 		cmpPair->options.neverMarkIgnored			= Settings.NeverMarkIgnored;
 		cmpPair->options.charPrecision				= Settings.CharPrecision;
+		cmpPair->options.diffsBasedLineChanges		= Settings.DiffsBasedLineChanges;
 		cmpPair->options.ignoreSpaces				= Settings.IgnoreSpaces;
 		cmpPair->options.ignoreEmptyLines			= Settings.IgnoreEmptyLines;
 		cmpPair->options.ignoreCase					= Settings.IgnoreCase;
@@ -2629,6 +2630,15 @@ void CharPrecision()
 	Settings.CharPrecision = !Settings.CharPrecision;
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_CHAR_HIGHLIGHTING]._cmdID,
 			(LPARAM)Settings.CharPrecision);
+	Settings.markAsDirty();
+}
+
+
+void DiffsCountLineChanges()
+{
+	Settings.DiffsBasedLineChanges = !Settings.DiffsBasedLineChanges;
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DIFFS_BASED_LINE_CHANGES]._cmdID,
+			(LPARAM)Settings.DiffsBasedLineChanges);
 	Settings.markAsDirty();
 }
 
@@ -2967,6 +2977,9 @@ void createMenu()
 	_tcscpy_s(funcItem[CMD_CHAR_HIGHLIGHTING]._itemName, nbChar, TEXT("Detect Diffs on Character Level"));
 	funcItem[CMD_CHAR_HIGHLIGHTING]._pFunc = CharPrecision;
 
+	_tcscpy_s(funcItem[CMD_DIFFS_BASED_LINE_CHANGES]._itemName, nbChar, TEXT("Diffs Count Line Changes Detection"));
+	funcItem[CMD_DIFFS_BASED_LINE_CHANGES]._pFunc = DiffsCountLineChanges;
+
 	_tcscpy_s(funcItem[CMD_IGNORE_SPACES]._itemName, nbChar, TEXT("Ignore Spaces"));
 	funcItem[CMD_IGNORE_SPACES]._pFunc = IgnoreSpaces;
 
@@ -3263,6 +3276,8 @@ void onNppReady()
 
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_CHAR_HIGHLIGHTING]._cmdID,
 			(LPARAM)Settings.CharPrecision);
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DIFFS_BASED_LINE_CHANGES]._cmdID,
+			(LPARAM)Settings.DiffsBasedLineChanges);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACES]._cmdID,
 			(LPARAM)Settings.IgnoreSpaces);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_EMPTY_LINES]._cmdID,

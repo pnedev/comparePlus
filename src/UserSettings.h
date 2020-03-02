@@ -103,6 +103,7 @@ public:
 	static const TCHAR promptCloseOnMatchSetting[];
 
 	static const TCHAR charPrecisionSetting[];
+	static const TCHAR diffsBasedChangesSetting[];
 	static const TCHAR ignoreSpacesSetting[];
 	static const TCHAR ignoreEmptyLinesSetting[];
 	static const TCHAR ignoreCaseSetting[];
@@ -140,6 +141,7 @@ public:
 	bool           	PromptToCloseOnMatch;
 
 	bool           	CharPrecision;
+	bool           	DiffsBasedLineChanges;
 	bool           	IgnoreSpaces;
 	bool           	IgnoreEmptyLines;
 	bool           	IgnoreCase;

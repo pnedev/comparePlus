@@ -61,6 +61,7 @@ struct CompareOptions
 	bool	alignAllMatches;
 	bool	neverMarkIgnored;
 	bool	charPrecision;
+	bool	diffsBasedLineChanges;
 	bool	ignoreSpaces;
 	bool	ignoreEmptyLines;
 	bool	ignoreCase;
