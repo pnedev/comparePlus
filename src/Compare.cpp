@@ -2977,7 +2977,7 @@ void createMenu()
 	_tcscpy_s(funcItem[CMD_CHAR_HIGHLIGHTING]._itemName, nbChar, TEXT("Detect Diffs on Character Level"));
 	funcItem[CMD_CHAR_HIGHLIGHTING]._pFunc = CharPrecision;
 
-	_tcscpy_s(funcItem[CMD_DIFFS_BASED_LINE_CHANGES]._itemName, nbChar, TEXT("Diffs Count Line Changes Detection"));
+	_tcscpy_s(funcItem[CMD_DIFFS_BASED_LINE_CHANGES]._itemName, nbChar, TEXT("Base Changed Lines on Minimum Diffs"));
 	funcItem[CMD_DIFFS_BASED_LINE_CHANGES]._pFunc = DiffsCountLineChanges;
 
 	_tcscpy_s(funcItem[CMD_IGNORE_SPACES]._itemName, nbChar, TEXT("Ignore Spaces"));
