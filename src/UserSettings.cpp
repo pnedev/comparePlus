@@ -34,6 +34,7 @@ const TCHAR UserSettings::alignAllMatchesSetting[]		= TEXT("Align_All_Matches");
 const TCHAR UserSettings::markIgnoredLinesSetting[]		= TEXT("Never_Colorize_Ignored_Lines");
 const TCHAR UserSettings::promptCloseOnMatchSetting[]	= TEXT("Prompt_to_Close_on_Match");
 const TCHAR UserSettings::enableCompareOnlyRegexSetting[]= TEXT("Enable_Only_Compare_Regex");
+const TCHAR UserSettings::regexStringSetting[]			= TEXT("Regex_String");
 const TCHAR UserSettings::wrapAroundSetting[]			= TEXT("Wrap_Around");
 const TCHAR UserSettings::gotoFirstDiffSetting[]		= TEXT("Go_to_First_on_ReCompare");
 const TCHAR UserSettings::followingCaretSetting[]		= TEXT("Following_Caret");
@@ -93,6 +94,9 @@ void UserSettings::load()
 			DEFAULT_PROMPT_CLOSE_ON_MATCH, iniFile) != 0;
 	EnableOnlyCompareRegex = ::GetPrivateProfileInt(mainSection, enableCompareOnlyRegexSetting,
 			DEFAULT_EN_REGEX, iniFile) != 0;
+	//Default_regex is null, according to the docs, the function will then return ""
+	::GetPrivateProfileString(mainSection, regexStringSetting,
+		DEFAULT_REGEX, RegexString, sizeof(RegexString) / sizeof(TCHAR), iniFile) != 0;
 
 	CharPrecision		= ::GetPrivateProfileInt(mainSection, charPrecisionSetting,		0, iniFile) != 0;
 	IgnoreSpaces		= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,		0, iniFile) != 0;
@@ -189,6 +193,8 @@ void UserSettings::save()
 			PromptToCloseOnMatch ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, enableCompareOnlyRegexSetting,
 			EnableOnlyCompareRegex ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection,	regexStringSetting,
+		RegexString, iniFile);
 
 	::WritePrivateProfileString(mainSection, charPrecisionSetting,
 			CharPrecision ? TEXT("1") : TEXT("0"), iniFile);

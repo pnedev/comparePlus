@@ -115,6 +115,7 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					settings.GotoFirstDiff			= (bool) DEFAULT_GOTO_FIRST_DIFF;
 					settings.PromptToCloseOnMatch	= (bool) DEFAULT_PROMPT_CLOSE_ON_MATCH;
 					settings.EnableOnlyCompareRegex = (bool) DEFAULT_EN_REGEX;
+					settings.RegexString[0]			= DEFAULT_REGEX;
 
 					settings.colors.added			= DEFAULT_ADDED_COLOR;
 					settings.colors.removed			= DEFAULT_REMOVED_COLOR;
@@ -212,6 +213,9 @@ void SettingsDialog::SetParams(UserSettings* settings)
 	else if (settings->colors.transparency > c_Highlight_transp_max)
 		settings->colors.transparency = c_Highlight_transp_max;
 
+	// Set the regex
+	::SetDlgItemText(_hSelf, IDC_REGEX, settings->RegexString);
+
 	// Set transparency
 	::SetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, settings->colors.transparency, FALSE);
 
@@ -247,6 +251,9 @@ void SettingsDialog::GetParams()
 	_ColorComboChanged.getColor((LPCOLORREF)&_Settings->colors.changed);
 	_ColorComboAddHighlight.getColor((LPCOLORREF)&_Settings->colors.add_highlight);
 	_ColorComboRemHighlight.getColor((LPCOLORREF)&_Settings->colors.rem_highlight);
+
+	// Get the regex
+	::GetDlgItemText(_hSelf, IDC_REGEX, _Settings->RegexString, sizeof(_Settings->RegexString) / sizeof(TCHAR));
 
 	// Get transparency
 	_Settings->colors.transparency = ::GetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, NULL, FALSE);
