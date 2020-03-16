@@ -30,6 +30,8 @@
 #include <map>
 #include <algorithm>
 #include <functional>
+#include <regex>
+#include <comdef.h>
 
 #include <windows.h>
 
@@ -356,6 +358,8 @@ void swap(DocCmpInfo& lhs, DocCmpInfo& rhs)
 }
 
 
+void createHash(const int& lineEnd, const int& lineStart, const CompareOptions& options, std::vector<char>& line, Line& newLine);
+
 void getLines(DocCmpInfo& doc, const CompareOptions& options)
 {
 	const int monitorCancelEveryXLine = 500;
@@ -400,18 +404,51 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 
 			if (options.ignoreCase)
 				toLowerCase(line);
-
-			for (int i = 0; i < lineEnd - lineStart; ++i)
-			{
-				if (options.ignoreSpaces && (line[i] == ' ' || line[i] == '\t'))
+				
+			if (Settings.EnableOnlyCompareRegex) {
+				#ifdef UNICODE
+					//use wchar, for international support, shouldn't the chars be wchars in the entire codebase?
+					_bstr_t b(Settings.RegexString);
+					std::regex regexExpr(b);
+				#else
+					//use string regex
+					std::regex regexExpr(Settings.RegexString);
+				#endif
+				std::cmatch matchResult;
+				char* c = &line[0];
+				if (std::regex_search(c, matchResult, regexExpr)) {
+					std::string resultString(matchResult[0].str());
+					std::copy(resultString.begin(), resultString.end(), line.begin());
+					line.resize(resultString.size());
+					createHash(resultString.size()+lineStart, lineStart, options, line, newLine);
+				}
+				else {
 					continue;
-
-				newLine.hash = Hash(newLine.hash, line[i]);
+				}
 			}
+			else {
+				createHash(lineEnd, lineStart, options, line, newLine);
+			}
+
+
+
 		}
+
+
 
 		if (!options.ignoreEmptyLines || newLine.hash != cHashSeed)
 			doc.lines.emplace_back(newLine);
+	}
+}
+
+void createHash(const int& lineEnd, const int& lineStart, const CompareOptions& options, std::vector<char>& line, Line& newLine)
+{
+	for (int i = 0; i < lineEnd - lineStart; ++i)
+	{
+		if (options.ignoreSpaces && (line[i] == ' ' || line[i] == '\t'))
+			continue;
+
+		newLine.hash = Hash(newLine.hash, line[i]);
 	}
 }
 
