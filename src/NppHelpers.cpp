@@ -802,3 +802,15 @@ void addBlankSection(int view, int line, int length, int textLinePos, const char
 
 	CallScintilla(view, SCI_ANNOTATIONSETTEXT, getPreviousUnhiddenLine(view, line), (LPARAM)blank.data());
 }
+
+
+void addBlankSectionAfter(int view, int line, int length)
+{
+	if (length <= 0)
+		return;
+
+	std::vector<char> blank(length - 1, '\n');
+	blank.push_back('\0');
+
+	CallScintilla(view, SCI_ANNOTATIONSETTEXT, getUnhiddenLine(view, line), (LPARAM)blank.data());
+}

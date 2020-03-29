@@ -616,3 +616,4 @@ std::vector<char> getText(int view, int startPos, int endPos);
 void toLowerCase(std::vector<char>& text);
 
 void addBlankSection(int view, int line, int length, int selectionMarkPosition = 0, const char *text = nullptr);
+void addBlankSectionAfter(int view, int line, int length);
