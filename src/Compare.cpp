@@ -4506,7 +4506,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 		break;
 
 		case NPPN_FILEOPENED:
-			if (!compareList.empty() && notificationsLock > 0)
+			if (!compareList.empty() && (notificationsLock > 0) && !newCompare)
 			{
 				--notificationsLock;
 
