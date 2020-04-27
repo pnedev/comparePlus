@@ -2118,7 +2118,7 @@ bool checkFileExists(const TCHAR *file)
 
 bool createTempFile(const TCHAR *file, Temp_t tempType)
 {
-	if (!setFirst(true, false))
+	if (!setFirst(true))
 		return false;
 
 	TCHAR tempFile[MAX_PATH];
@@ -2576,13 +2576,13 @@ void SetAsFirst()
 
 void CompareWhole()
 {
-	compare(false, false);
+	compare();
 }
 
 
 void CompareSelections()
 {
-	compare(true, false);
+	compare(true);
 }
 
 
@@ -2646,7 +2646,7 @@ void LastSaveDiff()
 		return;
 
 	if (createTempFile(file, LAST_SAVED_TEMP))
-		compare(false, false);
+		compare();
 }
 
 
@@ -2664,7 +2664,7 @@ void SvnDiff()
 		return;
 
 	if (createTempFile(svnFile, SVN_TEMP))
-		compare(false, false);
+		compare();
 }
 
 
@@ -2688,7 +2688,7 @@ void GitDiff()
 	setContent(content.data());
 	content.clear();
 
-	compare(false, false);
+	compare();
 }
 
 
