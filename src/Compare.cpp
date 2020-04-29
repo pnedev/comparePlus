@@ -1128,7 +1128,8 @@ void ComparedPair::setStatusInfo()
 					options.ignoreSpaces		? TEXT(" Ignore Spaces ,")		: TEXT(""),
 					options.ignoreEmptyLines	? TEXT(" Ignore Empty Lines ,")	: TEXT(""),
 					options.ignoreCase			? TEXT(" Ignore Case ,")		: TEXT(""),
-					options.detectMoves			? TEXT(" Detect Moves ,")		: TEXT(""));
+					options.detectMoves			? TEXT(" Detect Moves ,")		: TEXT(""),
+					options.ignoreLineNumbers   ? TEXT(" Ignor Line Numbers ,") : TEXT(""));
 
 			_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 			infoCurrentPos += len;
@@ -2357,6 +2358,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		cmpPair->options.diffsBasedLineChanges		= Settings.DiffsBasedLineChanges;
 		cmpPair->options.ignoreSpaces				= Settings.IgnoreSpaces;
 		cmpPair->options.ignoreEmptyLines			= Settings.IgnoreEmptyLines;
+		cmpPair->options.ignoreLineNumbers = Settings.ignoreLineNumbers;
 		cmpPair->options.ignoreCase					= Settings.IgnoreCase;
 		cmpPair->options.detectMoves				= Settings.DetectMoves;
 		cmpPair->options.changedThresholdPercent	= Settings.ChangedThresholdPercent;
@@ -2650,6 +2652,15 @@ void IgnoreSpaces()
 			(LPARAM)Settings.IgnoreSpaces);
 	Settings.markAsDirty();
 }
+
+void IgnoreLineNumbers()
+{
+	Settings.IgnoreLineNumbers = !Settings.IgnoreLineNumbers;
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_LINE_NUMBERS]._cmdID,
+		(LPARAM)Settings.IgnoreLineNumbers);
+	Settings.markAsDirty();
+}
+
 
 
 void IgnoreEmptyLines()
@@ -2983,6 +2994,9 @@ void createMenu()
 	_tcscpy_s(funcItem[CMD_IGNORE_SPACES]._itemName, nbChar, TEXT("Ignore Spaces"));
 	funcItem[CMD_IGNORE_SPACES]._pFunc = IgnoreSpaces;
 
+	_tcscpy_s(funcItem[CMD_IGNORE_LINE_NUMBERS]._itemName, nbChar, TEXT("Ignore Line Numbers"));
+	funcItem[CMD_IGNORE_LINE_NUMBERS]._pFunc = IgnoreLineNumbers;
+
 	_tcscpy_s(funcItem[CMD_IGNORE_EMPTY_LINES]._itemName, nbChar, TEXT("Ignore Empty Lines"));
 	funcItem[CMD_IGNORE_EMPTY_LINES]._pFunc = IgnoreEmptyLines;
 
@@ -3280,6 +3294,8 @@ void onNppReady()
 			(LPARAM)Settings.DiffsBasedLineChanges);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACES]._cmdID,
 			(LPARAM)Settings.IgnoreSpaces);
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_LINE_NUMBERS]._cmdID,
+		(LPARAM)Settings.IgnoreLineNumbers);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_EMPTY_LINES]._cmdID,
 			(LPARAM)Settings.IgnoreEmptyLines);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_CASE]._cmdID,

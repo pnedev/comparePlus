@@ -66,6 +66,7 @@ struct CompareOptions
 	bool	ignoreEmptyLines;
 	bool	ignoreCase;
 	bool	detectMoves;
+	bool	ignoreLineNumbers;
 
 	int		changedThresholdPercent;
 

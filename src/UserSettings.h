@@ -108,6 +108,7 @@ public:
 	static const TCHAR ignoreEmptyLinesSetting[];
 	static const TCHAR ignoreCaseSetting[];
 	static const TCHAR detectMovesSetting[];
+	static const TCHAR ignoreLineNumbers[];
 
 	static const TCHAR showOnlySelSetting[];
 	static const TCHAR showOnlyDiffSetting[];
@@ -146,6 +147,7 @@ public:
 	bool           	IgnoreEmptyLines;
 	bool           	IgnoreCase;
 	bool           	DetectMoves;
+	bool           	IgnoreLineNumbers;
 
 	bool           	ShowOnlyDiffs;
 	bool           	ShowOnlySelections;
