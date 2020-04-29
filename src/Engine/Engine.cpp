@@ -413,12 +413,12 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 
 		if (lineEnd - lineStartmoved)
 		{
-			std::vector<char> line = getText(doc.view, lineStart, lineEnd);
+			std::vector<char> line = getText(doc.view, lineStartmoved, lineEnd);
 
 			if (options.ignoreCase)
 				toLowerCase(line);
 
-			for (int i = 0; i < lineEnd - lineStart; ++i)
+			for (int i = 0; i < lineEnd - lineStartmoved; ++i)
 			{
 				if (options.ignoreSpaces && (line[i] == ' ' || line[i] == '\t'))
 					continue;
