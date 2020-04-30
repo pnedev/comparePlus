@@ -397,12 +397,8 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 		int lineStartmoved = lineStart;
 		bool endfound = false;
 		while (options.ignoreLineNumbers && !endfound && lineStartmoved < lineEnd - 1) {
-
 			const std::vector<char> text = getText(doc.view, lineStartmoved, lineStartmoved + 1);
-
-
 			if (isdigit(text[0])) {
-
 				lineStartmoved++;
 			}
 			else
