@@ -2358,7 +2358,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		cmpPair->options.diffsBasedLineChanges		= Settings.DiffsBasedLineChanges;
 		cmpPair->options.ignoreSpaces				= Settings.IgnoreSpaces;
 		cmpPair->options.ignoreEmptyLines			= Settings.IgnoreEmptyLines;
-		cmpPair->options.ignoreLineNumbers = Settings.ignoreLineNumbers;
+		cmpPair->options.ignoreLineNumbers			= Settings.ignoreLineNumbers;
 		cmpPair->options.ignoreCase					= Settings.IgnoreCase;
 		cmpPair->options.detectMoves				= Settings.DetectMoves;
 		cmpPair->options.changedThresholdPercent	= Settings.ChangedThresholdPercent;
