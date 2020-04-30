@@ -1501,9 +1501,14 @@ void markSection(const DocCmpInfo& doc, const diffInfo& bd, const CompareOptions
 	}
 }
 
-bool isNumberStart(const int& viewd, int linePos) {
-	std::vector<char> text = getText(viewd, linePos, linePos + 1);
-	return (!isdigit(text[0]));
+bool isNumberFromStartOfLine(const int& viewd, int linePos, int offset) {
+	std::vector<char> text = getText(viewd, linePos, linePos + offset + 1);
+	for each (char digit in text)
+	{
+		if (digit != '\0' && !isdigit(digit))
+			return false;
+	}
+	return true;
 }
 
 void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, int lineIdx)
@@ -1515,7 +1520,7 @@ void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, int lineIdx)
 			Settings.colors.add_highlight : Settings.colors.rem_highlight;
 
 	for (const auto& change: bd.info.changedLines[lineIdx].changes)
-		if (!Settings.ignoreLineNumbers || change.off != 0 || !isNumberStart(cmpInfo.doc1.view,linePos))
+		if (!Settings.ignoreLineNumbers || !isNumberFromStartOfLine(cmpInfo.doc1.view,linePos, change.off))
 			markTextAsChanged(cmpInfo.doc1.view, linePos + change.off, change.len, color);
 
 	CallScintilla(cmpInfo.doc1.view, SCI_MARKERADDSET, line,
@@ -1528,7 +1533,7 @@ void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, int lineIdx)
 			Settings.colors.add_highlight : Settings.colors.rem_highlight;
 
 	for (const auto& change: bd.info.matchBlock->info.changedLines[lineIdx].changes)
-		if (!Settings.ignoreLineNumbers || change.off != 0 || !isNumberStart(cmpInfo.doc2.view, linePos))
+		if (!Settings.ignoreLineNumbers || !isNumberFromStartOfLine(cmpInfo.doc2.view, linePos, change.off))
 		    markTextAsChanged(cmpInfo.doc2.view, linePos + change.off, change.len, color);
 
 	CallScintilla(cmpInfo.doc2.view, SCI_MARKERADDSET, line,
