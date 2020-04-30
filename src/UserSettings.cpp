@@ -95,7 +95,7 @@ void UserSettings::load()
 
 	CharPrecision			= ::GetPrivateProfileInt(mainSection, charPrecisionSetting,		0, iniFile) != 0;
 	DiffsBasedLineChanges	= ::GetPrivateProfileInt(mainSection, diffsBasedChangesSetting,	0, iniFile) != 0;
-	IgnoreSpaces			= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,		0, iniFile) != 0;	
+	IgnoreSpaces			= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,		0, iniFile) != 0;
 	IgnoreEmptyLines		= ::GetPrivateProfileInt(mainSection, ignoreEmptyLinesSetting,	0, iniFile) != 0;
 	IgnoreCase				= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,		0, iniFile) != 0;
 	DetectMoves				= ::GetPrivateProfileInt(mainSection, detectMovesSetting,		1, iniFile) != 0;

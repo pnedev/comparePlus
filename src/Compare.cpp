@@ -1129,7 +1129,7 @@ void ComparedPair::setStatusInfo()
 					options.ignoreEmptyLines	? TEXT(" Ignore Empty Lines ,")	: TEXT(""),
 					options.ignoreCase			? TEXT(" Ignore Case ,")		: TEXT(""),
 					options.detectMoves			? TEXT(" Detect Moves ,")		: TEXT(""),
-					options.ignoreLineNumbers   ? TEXT(" Ignor Line Numbers ,") : TEXT(""));
+					options.ignoreLineNumbers   ? TEXT(" Ignore Line Numbers ,") : TEXT(""));
 
 			_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 			infoCurrentPos += len;
