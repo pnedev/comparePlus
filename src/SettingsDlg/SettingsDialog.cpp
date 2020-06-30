@@ -43,7 +43,7 @@ UINT SettingsDialog::doDialog(UserSettings* settings)
 }
 
 
-INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*lParam*/)
+INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
 {
 	switch (Message)
 	{
@@ -155,6 +155,31 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 
 				default:
 				return FALSE;
+			}
+		}
+		break;
+
+		case WM_NOTIFY:
+		{
+			if (((LPNMHDR)lParam)->code == UDN_DELTAPOS)
+			{
+				static constexpr int cStep = 5;
+
+				LPNMUPDOWN lpnmud = (LPNMUPDOWN) lParam;
+
+				int newPos = lpnmud->iPos / cStep;
+
+				if (lpnmud->iDelta < 0)
+				{
+					if ((lpnmud->iPos % cStep) == 0)
+						--newPos;
+				}
+				else
+				{
+					++newPos;
+				}
+
+				lpnmud->iDelta = (newPos * cStep) - lpnmud->iPos;
 			}
 		}
 		break;
