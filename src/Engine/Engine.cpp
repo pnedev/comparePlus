@@ -1075,13 +1075,18 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 
 						auto wordDiffs = DiffCalc<Word>(words1, words2[line2])(true);
 
+						const std::vector<Word>& rWord = wordDiffs.second ? words2[line2] : words1;
+
 						const int wordDiffsSize = static_cast<int>(wordDiffs.first.size());
 
 						for (int i = 0; i < wordDiffsSize; ++i)
 						{
 							if (wordDiffs.first[i].type == diff_type::DIFF_MATCH)
 							{
-								++matchesCount;
+								matchesCount += (
+										rWord[wordDiffs.first[i].off + wordDiffs.first[i].len - 1].pos +
+										rWord[wordDiffs.first[i].off + wordDiffs.first[i].len - 1].len -
+										rWord[wordDiffs.first[i].off].pos);
 							}
 							else
 							{
@@ -1100,8 +1105,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 							continue;
 						}
 					}
-
-					matchesCount = 0;
+					else
 					{
 						auto charDiffs = DiffCalc<Char>(chunk1[line1], chunk2[line2])();
 
