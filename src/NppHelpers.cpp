@@ -748,14 +748,15 @@ bool isAdjacentAnnotation(int view, int line, bool down)
 }
 
 
-bool isVisibleAdjacentAnnotation(int view, int line, bool down)
+bool isAdjacentAnnotationVisible(int view, int line, bool down)
 {
 	if (down)
 	{
 		if (!isLineAnnotated(view, line))
 			return false;
 
-		if (CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) + getWrapCount(view, line) > getLastVisibleLine(view))
+		if (CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) + getWrapCount(view, line) >
+				getLastVisibleLine(view))
 			return false;
 	}
 	else

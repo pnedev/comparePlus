@@ -601,7 +601,7 @@ void hideOutsideRange(int view, int startLine, int endLine);
 void hideUnmarked(int view, int markMask);
 
 bool isAdjacentAnnotation(int view, int line, bool down);
-bool isVisibleAdjacentAnnotation(int view, int line, bool down);
+bool isAdjacentAnnotationVisible(int view, int line, bool down);
 
 
 inline void clearAnnotation(int view, int line)

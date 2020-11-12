@@ -1376,15 +1376,13 @@ void setArrowMark(int view, int line, bool down)
 {
 	static std::unique_ptr<LineArrowMarkTimeout> lineArrowMark;
 
+	lineArrowMark = nullptr;
+
 	if (view < 0 || line < 0)
-	{
-		lineArrowMark = nullptr;
 		return;
-	}
 
 	const int markerHandle = showArrowSymbol(view, line, down);
 
-	lineArrowMark = nullptr;
 	lineArrowMark = std::make_unique<LineArrowMarkTimeout>(view, markerHandle);
 
 	if (lineArrowMark)
@@ -1403,7 +1401,7 @@ void showBlankAdjacentArrowMark(int view, int line, bool down)
 	if (line < 0 && Settings.FollowingCaret)
 		line = getCurrentLine(view);
 
-	if (line >= 0 && !isLineMarked(view, line, MARKER_MASK_LINE) && isVisibleAdjacentAnnotation(view, line, down))
+	if (line >= 0 && !isLineMarked(view, line, MARKER_MASK_LINE) && isAdjacentAnnotationVisible(view, line, down))
 		setArrowMark(view, line, down);
 	else
 		setArrowMark(-1);
@@ -1429,7 +1427,7 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 		// Make sure we don't miss it
 		if (!isLineMarked(view, currentLine, MARKER_MASK_LINE) &&
 			isAdjacentAnnotation(view, currentLine, down) &&
-			!isVisibleAdjacentAnnotation(view, currentLine, down) &&
+			!isAdjacentAnnotationVisible(view, currentLine, down) &&
 			isLineMarked(otherView, otherViewMatchingLine(view, currentLine) + 1, MARKER_MASK_LINE))
 		{
 			centerAt(view, currentLine);
@@ -1552,7 +1550,7 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 	// Line is not visible - scroll into view
 	if (!isLineVisible(view, line) ||
 		(!isLineMarked(view, line, MARKER_MASK_LINE) &&
-		isAdjacentAnnotation(view, line, down) && !isVisibleAdjacentAnnotation(view, line, down)))
+		isAdjacentAnnotation(view, line, down) && !isAdjacentAnnotationVisible(view, line, down)))
 	{
 		centerAt(view, line);
 		doNotBlink = true;
@@ -1626,15 +1624,15 @@ std::pair<int, int> jumpToChange(bool down, bool wrapAround)
 		}
 		else
 		{
-			const bool currentLineNotAnnotated = !isLineAnnotated(currentView, currentLine);
+			const bool currentLineAnnotated = isLineAnnotated(currentView, currentLine);
 
-			if (!currentLineNotAnnotated && isVisibleAdjacentAnnotation(currentView, currentLine, down))
+			if (currentLineAnnotated && isAdjacentAnnotationVisible(currentView, currentLine, down))
 				++currentLine;
 
 			otherLine = (Settings.FollowingCaret ?
 					otherViewMatchingLine(currentView, currentLine) : getLastLine(otherView));
 
-			if (currentLineNotAnnotated && isLineAnnotated(otherView, otherLine))
+			if (!currentLineAnnotated && isLineAnnotated(otherView, otherLine))
 				++otherLine;
 
 			viewLoc = jumpToNextChange(getNextUnmarkedLine(MAIN_VIEW, mainStartLine, MARKER_MASK_LINE),
@@ -1655,7 +1653,7 @@ std::pair<int, int> jumpToChange(bool down, bool wrapAround)
 		}
 		else
 		{
-			if (isVisibleAdjacentAnnotation(currentView, currentLine, down))
+			if (isAdjacentAnnotationVisible(currentView, currentLine, down))
 				--currentLine;
 
 			otherLine = (Settings.FollowingCaret ?
