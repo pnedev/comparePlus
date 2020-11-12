@@ -1818,10 +1818,8 @@ bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
 }
 
 
-void alignDiffs(const CompareList_t::iterator& cmpPair)
+void updateViewsFoldState(const CompareList_t::iterator& cmpPair)
 {
-	bool lineZeroAlignmentSkipped = false;
-
 	if (Settings.ShowOnlyDiffs)
 	{
 		hideUnmarked(MAIN_VIEW, MARKER_MASK_LINE);
@@ -1839,6 +1837,14 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 		CallScintilla(MAIN_VIEW, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
 		CallScintilla(SUB_VIEW, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
 	}
+}
+
+
+void alignDiffs(const CompareList_t::iterator& cmpPair)
+{
+	bool lineZeroAlignmentSkipped = false;
+
+	updateViewsFoldState(cmpPair);
 
 	const AlignmentInfo_t& alignmentInfo = cmpPair->summary.alignmentInfo;
 
@@ -2456,6 +2462,9 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 			setCompareView(MAIN_VIEW, Settings.colors.blank);
 			setCompareView(SUB_VIEW, Settings.colors.blank);
+
+			if (recompare)
+				updateViewsFoldState(cmpPair);
 
 			if (!storedLocation)
 			{
