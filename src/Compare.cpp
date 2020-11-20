@@ -3433,9 +3433,14 @@ void DelayedAlign::operator()()
 	else if (storedLocation)
 	{
 		if (!realign || (++_consecutiveAligns > 1))
+		{
 			_consecutiveAligns = 0;
+		}
 		else if (storedLocation->restore())
+		{
 			syncViews(storedLocation->getView());
+			storedLocation = nullptr;
+		}
 
 		// Retry re-alignment one more time - might be needed in case line number margin width has changed
 		if (_consecutiveAligns)
