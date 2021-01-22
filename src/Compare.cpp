@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017-2019 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2021 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1125,10 +1125,10 @@ void ComparedPair::setStatusInfo()
 		if (Settings.statusType == StatusType::COMPARE_OPTIONS)
 		{
 			const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%s%s%s%s"),
+					options.detectMoves			? TEXT(" Detect Moves ,")		: TEXT(""),
 					options.ignoreSpaces		? TEXT(" Ignore Spaces ,")		: TEXT(""),
 					options.ignoreEmptyLines	? TEXT(" Ignore Empty Lines ,")	: TEXT(""),
-					options.ignoreCase			? TEXT(" Ignore Case ,")		: TEXT(""),
-					options.detectMoves			? TEXT(" Detect Moves ,")		: TEXT(""));
+					options.ignoreCase			? TEXT(" Ignore Case ,")		: TEXT(""));
 
 			_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 			infoCurrentPos += len;
@@ -1156,17 +1156,17 @@ void ComparedPair::setStatusInfo()
 				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 				infoCurrentPos += len;
 			}
-			if (summary.changed)
-			{
-				const int len =
-						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Changed ,"), summary.changed);
-				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-				infoCurrentPos += len;
-			}
 			if (summary.moved)
 			{
 				const int len =
 						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Moved ,"), summary.moved);
+				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+				infoCurrentPos += len;
+			}
+			if (summary.changed)
+			{
+				const int len =
+						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Changed ,"), summary.changed);
 				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 				infoCurrentPos += len;
 			}
@@ -2424,12 +2424,12 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		cmpPair->options.findUniqueMode				= findUniqueMode;
 		cmpPair->options.alignAllMatches			= Settings.AlignAllMatches;
 		cmpPair->options.neverMarkIgnored			= Settings.NeverMarkIgnored;
-		cmpPair->options.charPrecision				= Settings.CharPrecision;
-		cmpPair->options.diffsBasedLineChanges		= Settings.DiffsBasedLineChanges;
+		cmpPair->options.detectMoves				= Settings.DetectMoves;
+		cmpPair->options.detectCharDiffs			= Settings.DetectCharDiffs;
+		cmpPair->options.bestSeqChangedLines		= Settings.BestSeqChangedLines;
 		cmpPair->options.ignoreSpaces				= Settings.IgnoreSpaces;
 		cmpPair->options.ignoreEmptyLines			= Settings.IgnoreEmptyLines;
 		cmpPair->options.ignoreCase					= Settings.IgnoreCase;
-		cmpPair->options.detectMoves				= Settings.DetectMoves;
 		cmpPair->options.changedThresholdPercent	= Settings.ChangedThresholdPercent;
 		cmpPair->options.selectionCompare			= selectionCompare;
 
@@ -2699,20 +2699,29 @@ void GitDiff()
 }
 
 
-void CharPrecision()
+void DetectMoves()
 {
-	Settings.CharPrecision = !Settings.CharPrecision;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_CHAR_HIGHLIGHTING]._cmdID,
-			(LPARAM)Settings.CharPrecision);
+	Settings.DetectMoves = !Settings.DetectMoves;
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID,
+			(LPARAM)Settings.DetectMoves);
 	Settings.markAsDirty();
 }
 
 
-void DiffsCountLineChanges()
+void DetectCharDiffs()
 {
-	Settings.DiffsBasedLineChanges = !Settings.DiffsBasedLineChanges;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DIFFS_BASED_LINE_CHANGES]._cmdID,
-			(LPARAM)Settings.DiffsBasedLineChanges);
+	Settings.DetectCharDiffs = !Settings.DetectCharDiffs;
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_CHAR_DIFFS]._cmdID,
+			(LPARAM)Settings.DetectCharDiffs);
+	Settings.markAsDirty();
+}
+
+
+void BestSeqChangedLines()
+{
+	Settings.BestSeqChangedLines = !Settings.BestSeqChangedLines;
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_BEST_SEQ_CHANGED_LINES]._cmdID,
+			(LPARAM)Settings.BestSeqChangedLines);
 	Settings.markAsDirty();
 }
 
@@ -2740,15 +2749,6 @@ void IgnoreCase()
 	Settings.IgnoreCase = !Settings.IgnoreCase;
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_CASE]._cmdID,
 			(LPARAM)Settings.IgnoreCase);
-	Settings.markAsDirty();
-}
-
-
-void DetectMoves()
-{
-	Settings.DetectMoves = !Settings.DetectMoves;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID,
-			(LPARAM)Settings.DetectMoves);
 	Settings.markAsDirty();
 }
 
@@ -3048,11 +3048,15 @@ void createMenu()
 	funcItem[CMD_GIT_DIFF]._pShKey->_isShift		= false;
 	funcItem[CMD_GIT_DIFF]._pShKey->_key 			= 'G';
 
-	_tcscpy_s(funcItem[CMD_CHAR_HIGHLIGHTING]._itemName, nbChar, TEXT("Detect Diffs on Character Level"));
-	funcItem[CMD_CHAR_HIGHLIGHTING]._pFunc = CharPrecision;
+	_tcscpy_s(funcItem[CMD_DETECT_MOVES]._itemName, nbChar, TEXT("Detect Moves"));
+	funcItem[CMD_DETECT_MOVES]._pFunc = DetectMoves;
 
-	_tcscpy_s(funcItem[CMD_DIFFS_BASED_LINE_CHANGES]._itemName, nbChar, TEXT("Base Changed Lines on Minimum Diffs"));
-	funcItem[CMD_DIFFS_BASED_LINE_CHANGES]._pFunc = DiffsCountLineChanges;
+	_tcscpy_s(funcItem[CMD_DETECT_CHAR_DIFFS]._itemName, nbChar, TEXT("Detect Character Diffs"));
+	funcItem[CMD_DETECT_CHAR_DIFFS]._pFunc = DetectCharDiffs;
+
+	_tcscpy_s(funcItem[CMD_BEST_SEQ_CHANGED_LINES]._itemName, nbChar,
+			TEXT("Detect Changed Lines by Best Matching Sequence"));
+	funcItem[CMD_BEST_SEQ_CHANGED_LINES]._pFunc = BestSeqChangedLines;
 
 	_tcscpy_s(funcItem[CMD_IGNORE_SPACES]._itemName, nbChar, TEXT("Ignore Spaces"));
 	funcItem[CMD_IGNORE_SPACES]._pFunc = IgnoreSpaces;
@@ -3062,9 +3066,6 @@ void createMenu()
 
 	_tcscpy_s(funcItem[CMD_IGNORE_CASE]._itemName, nbChar, TEXT("Ignore Case"));
 	funcItem[CMD_IGNORE_CASE]._pFunc = IgnoreCase;
-
-	_tcscpy_s(funcItem[CMD_DETECT_MOVES]._itemName, nbChar, TEXT("Detect Moves"));
-	funcItem[CMD_DETECT_MOVES]._pFunc = DetectMoves;
 
 	_tcscpy_s(funcItem[CMD_SHOW_ONLY_DIFF]._itemName, nbChar, TEXT("Show Only Diffs (Hide Matches)"));
 	funcItem[CMD_SHOW_ONLY_DIFF]._pFunc = ShowOnlyDiffs;
@@ -3348,18 +3349,18 @@ void onNppReady()
 
 	NppSettings::get().updatePluginMenu();
 
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_CHAR_HIGHLIGHTING]._cmdID,
-			(LPARAM)Settings.CharPrecision);
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DIFFS_BASED_LINE_CHANGES]._cmdID,
-			(LPARAM)Settings.DiffsBasedLineChanges);
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID,
+			(LPARAM)Settings.DetectMoves);
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_CHAR_DIFFS]._cmdID,
+			(LPARAM)Settings.DetectCharDiffs);
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_BEST_SEQ_CHANGED_LINES]._cmdID,
+			(LPARAM)Settings.BestSeqChangedLines);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACES]._cmdID,
 			(LPARAM)Settings.IgnoreSpaces);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_EMPTY_LINES]._cmdID,
 			(LPARAM)Settings.IgnoreEmptyLines);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_CASE]._cmdID,
 			(LPARAM)Settings.IgnoreCase);
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID,
-			(LPARAM)Settings.DetectMoves);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_SHOW_ONLY_DIFF]._cmdID,
 			(LPARAM)Settings.ShowOnlyDiffs);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_SHOW_ONLY_SEL]._cmdID,

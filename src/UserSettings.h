@@ -1,6 +1,6 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
- * Copyright (C)2017-2019 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2021 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -40,8 +40,8 @@
 
 #define DEFAULT_ADDED_COLOR				0xC6FFC6
 #define DEFAULT_REMOVED_COLOR			0xC6C6FF
-#define DEFAULT_CHANGED_COLOR			0x98E7E7
 #define DEFAULT_MOVED_COLOR				0xFFE6CC
+#define DEFAULT_CHANGED_COLOR			0x98E7E7
 #define DEFAULT_HIGHLIGHT_COLOR			0x683FF
 #define DEFAULT_HIGHLIGHT_TRANSP		0
 #define DEFAULT_CHANGED_THRESHOLD		30
@@ -102,12 +102,12 @@ public:
 	static const TCHAR gotoFirstDiffSetting[];
 	static const TCHAR promptCloseOnMatchSetting[];
 
-	static const TCHAR charPrecisionSetting[];
-	static const TCHAR diffsBasedChangesSetting[];
+	static const TCHAR detectMovesSetting[];
+	static const TCHAR detectCharDiffsSetting[];
+	static const TCHAR bestSeqChangedLinesSetting[];
 	static const TCHAR ignoreSpacesSetting[];
 	static const TCHAR ignoreEmptyLinesSetting[];
 	static const TCHAR ignoreCaseSetting[];
-	static const TCHAR detectMovesSetting[];
 
 	static const TCHAR showOnlySelSetting[];
 	static const TCHAR showOnlyDiffSetting[];
@@ -121,8 +121,8 @@ public:
 
 	static const TCHAR addedColorSetting[];
 	static const TCHAR removedColorSetting[];
-	static const TCHAR changedColorSetting[];
 	static const TCHAR movedColorSetting[];
+	static const TCHAR changedColorSetting[];
 	static const TCHAR addHighlightColorSetting[];
 	static const TCHAR remHighlightColorSetting[];
 	static const TCHAR highlightTranspSetting[];
@@ -140,12 +140,12 @@ public:
 	bool           	GotoFirstDiff;
 	bool           	PromptToCloseOnMatch;
 
-	bool           	CharPrecision;
-	bool           	DiffsBasedLineChanges;
+	bool           	DetectMoves;
+	bool           	DetectCharDiffs;
+	bool           	BestSeqChangedLines;
 	bool           	IgnoreSpaces;
 	bool           	IgnoreEmptyLines;
 	bool           	IgnoreCase;
-	bool           	DetectMoves;
 
 	bool           	ShowOnlyDiffs;
 	bool           	ShowOnlySelections;

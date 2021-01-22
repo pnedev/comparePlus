@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017-2019 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2021 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -799,7 +799,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 		diffInfo* pBlockDiff2 = &blockDiff2;
 
 		// First use word granularity (find matching words) for better precision
-		auto wordDiffRes = DiffCalc<Word>(lineWords1, lineWords2)(!options.charPrecision, true);
+		auto wordDiffRes = DiffCalc<Word>(lineWords1, lineWords2)(!options.detectCharDiffs, true);
 		const std::vector<diff_info<void>> lineDiffs = std::move(wordDiffRes.first);
 
 		if (wordDiffRes.second)
@@ -867,7 +867,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 					const std::vector<Char> sec2 =
 							getSectionChars(pDoc2->view, off2 + lineOff2, end2 + lineOff2, options);
 
-					if (options.charPrecision)
+					if (options.detectCharDiffs)
 					{
 						LOGD("Compare Sections " +
 								std::to_string(off1 + 1) + " to " +
@@ -1017,7 +1017,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 
 	std::vector<std::vector<Word>> words2(linesCount2);
 
-	if (!options.charPrecision)
+	if (!options.detectCharDiffs)
 	{
 		for (int line2 = 0; line2 < linesCount2; ++line2)
 			if (!chunk2[line2].empty())
@@ -1068,7 +1068,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 					int matchesCount	= 0;
 					int diffsCount		= 0;
 
-					if (!options.charPrecision)
+					if (!options.detectCharDiffs)
 					{
 						if (words1.empty())
 							words1 = getLineWords(doc1.view, doc1.lines[blockDiff1.off + line1].line, options);
@@ -1090,7 +1090,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 							}
 							else
 							{
-								if (options.diffsBasedLineChanges)
+								if (options.bestSeqChangedLines)
 									++diffsCount;
 
 								// Count replacement as a single diff
@@ -1974,8 +1974,8 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 	summary.diffLines	= 0;
 	summary.added		= 0;
 	summary.removed		= 0;
-	summary.changed		= 0;
 	summary.moved		= 0;
+	summary.changed		= 0;
 	summary.match		= 0;
 
 	DocCmpInfo doc1;

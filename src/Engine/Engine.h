@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017-2019 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2021 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,12 +60,12 @@ struct CompareOptions
 
 	bool	alignAllMatches;
 	bool	neverMarkIgnored;
-	bool	charPrecision;
-	bool	diffsBasedLineChanges;
+	bool	detectMoves;
+	bool	detectCharDiffs;
+	bool	bestSeqChangedLines;
 	bool	ignoreSpaces;
 	bool	ignoreEmptyLines;
 	bool	ignoreCase;
-	bool	detectMoves;
 
 	int		changedThresholdPercent;
 
@@ -99,8 +99,8 @@ struct CompareSummary
 		diffLines	= 0;
 		added		= 0;
 		removed		= 0;
-		changed		= 0;
 		moved		= 0;
+		changed		= 0;
 		match		= 0;
 
 		alignmentInfo.clear();
@@ -109,8 +109,8 @@ struct CompareSummary
 	int				diffLines;
 	int				added;
 	int				removed;
-	int				changed;
 	int				moved;
+	int				changed;
 	int				match;
 
 	AlignmentInfo_t	alignmentInfo;

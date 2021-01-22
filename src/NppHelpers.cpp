@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017-2019 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2021 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -433,8 +433,8 @@ void setStyles(UserSettings& settings)
 
 	defineColor(MARKER_ADDED_LINE,		settings.colors.added);
 	defineColor(MARKER_REMOVED_LINE,	settings.colors.removed);
-	defineColor(MARKER_CHANGED_LINE,	settings.colors.changed);
 	defineColor(MARKER_MOVED_LINE,		settings.colors.moved);
+	defineColor(MARKER_CHANGED_LINE,	settings.colors.changed);
 	defineColor(MARKER_BLANK,			settings.colors.blank);
 
 	defineRgbaSymbol(MARKER_CHANGED_SYMBOL,				icon_changed);

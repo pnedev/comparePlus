@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2009
- * Copyright (C)2017-2019 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2021 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -341,10 +341,10 @@ void NavDialog::createBitmap()
 			if (!marker && !reductionRatio)
 				continue;
 
-			if (marker & MARKER_MASK_CHANGED)		marker = m_clr.changed;
-			else if (marker & MARKER_MASK_ADDED)	marker = m_clr.added;
+			if (marker & MARKER_MASK_ADDED)			marker = m_clr.added;
 			else if (marker & MARKER_MASK_REMOVED)	marker = m_clr.removed;
 			else if (marker & MARKER_MASK_MOVED)	marker = m_clr.moved;
+			else if (marker & MARKER_MASK_CHANGED)	marker = m_clr.changed;
 			else if (reductionRatio)				marker = m_clr._default;
 			else
 				continue;
@@ -380,10 +380,10 @@ void NavDialog::createBitmap()
 			if (!marker && !reductionRatio)
 				continue;
 
-			if (marker & MARKER_MASK_CHANGED)		marker = m_clr.changed;
-			else if (marker & MARKER_MASK_ADDED)	marker = m_clr.added;
+			if (marker & MARKER_MASK_ADDED)			marker = m_clr.added;
 			else if (marker & MARKER_MASK_REMOVED)	marker = m_clr.removed;
 			else if (marker & MARKER_MASK_MOVED)	marker = m_clr.moved;
+			else if (marker & MARKER_MASK_CHANGED)	marker = m_clr.changed;
 			else if (reductionRatio)				marker = m_clr._default;
 			else
 				continue;

@@ -58,9 +58,9 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 				EnableDlgTheme(_hSelf, ETDT_ENABLETAB);
 
 			_ColorComboAdded.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_ADDED_COLOR));
-			_ColorComboChanged.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_CHANGED_COLOR));
-			_ColorComboMoved.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_MOVED_COLOR));
 			_ColorComboRemoved.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_REMOVED_COLOR));
+			_ColorComboMoved.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_MOVED_COLOR));
+			_ColorComboChanged.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_CHANGED_COLOR));
 			_ColorComboAddHighlight.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_ADD_HIGHLIGHT_COLOR));
 			_ColorComboRemHighlight.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_REM_HIGHLIGHT_COLOR));
 
@@ -117,8 +117,8 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 
 					settings.colors.added			= DEFAULT_ADDED_COLOR;
 					settings.colors.removed			= DEFAULT_REMOVED_COLOR;
-					settings.colors.changed			= DEFAULT_CHANGED_COLOR;
 					settings.colors.moved			= DEFAULT_MOVED_COLOR;
+					settings.colors.changed			= DEFAULT_CHANGED_COLOR;
 					settings.colors.add_highlight	= DEFAULT_HIGHLIGHT_COLOR;
 					settings.colors.rem_highlight	= DEFAULT_HIGHLIGHT_COLOR;
 					settings.colors.transparency	= DEFAULT_HIGHLIGHT_TRANSP;
@@ -133,16 +133,16 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					_ColorComboAdded.onSelect();
 				break;
 
-				case IDC_COMBO_CHANGED_COLOR:
-					_ColorComboChanged.onSelect();
+				case IDC_COMBO_REMOVED_COLOR:
+					_ColorComboRemoved.onSelect();
 				break;
 
 				case IDC_COMBO_MOVED_COLOR:
 					_ColorComboMoved.onSelect();
 				break;
 
-				case IDC_COMBO_REMOVED_COLOR:
-					_ColorComboRemoved.onSelect();
+				case IDC_COMBO_CHANGED_COLOR:
+					_ColorComboChanged.onSelect();
 				break;
 
 				case IDC_COMBO_ADD_HIGHLIGHT_COLOR:
@@ -223,8 +223,8 @@ void SettingsDialog::SetParams(UserSettings* settings)
 
 	// Set current colors configured in option dialog
 	_ColorComboAdded.setColor(settings->colors.added);
-	_ColorComboMoved.setColor(settings->colors.moved);
 	_ColorComboRemoved.setColor(settings->colors.removed);
+	_ColorComboMoved.setColor(settings->colors.moved);
 	_ColorComboChanged.setColor(settings->colors.changed);
 	_ColorComboAddHighlight.setColor(settings->colors.add_highlight);
 	_ColorComboRemHighlight.setColor(settings->colors.rem_highlight);
@@ -263,8 +263,8 @@ void SettingsDialog::GetParams()
 
 	// Get color chosen in dialog
 	_ColorComboAdded.getColor((LPCOLORREF)&_Settings->colors.added);
-	_ColorComboMoved.getColor((LPCOLORREF)&_Settings->colors.moved);
 	_ColorComboRemoved.getColor((LPCOLORREF)&_Settings->colors.removed);
+	_ColorComboMoved.getColor((LPCOLORREF)&_Settings->colors.moved);
 	_ColorComboChanged.getColor((LPCOLORREF)&_Settings->colors.changed);
 	_ColorComboAddHighlight.getColor((LPCOLORREF)&_Settings->colors.add_highlight);
 	_ColorComboRemHighlight.getColor((LPCOLORREF)&_Settings->colors.rem_highlight);

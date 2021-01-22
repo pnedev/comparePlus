@@ -60,10 +60,9 @@ private:
 
 	// Combo color picker
 	ColorCombo _ColorComboAdded;
-	ColorCombo _ColorComboMoved;
 	ColorCombo _ColorComboRemoved;
+	ColorCombo _ColorComboMoved;
 	ColorCombo _ColorComboChanged;
-	ColorCombo _ColorComboBlank;
 	ColorCombo _ColorComboAddHighlight;
 	ColorCombo _ColorComboRemHighlight;
 
