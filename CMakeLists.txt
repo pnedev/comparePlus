@@ -17,7 +17,7 @@ if (UNIX OR MINGW)
 
 	set (win32_inc_dir ${CMAKE_SYSROOT}/${toolchain_prefix}/include)
 	set (win32_lib_dir ${CMAKE_SYSROOT}/${toolchain_prefix}/lib)
-endif (UNIX OR MINGW)
+endif ()
 
 project (ComparePlus)
 
@@ -50,39 +50,40 @@ if (UNIX OR MINGW)
 	set (CMAKE_MODULE_LINKER_FLAGS
 		"-s"
 	)
-else (UNIX OR MINGW)
+
+	set (CMAKE_SHARED_MODULE_PREFIX "")
+else ()
 	set (defs
 		-DUNICODE -D_UNICODE -D_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES -D_WIN32 -DWIN32
 		-D_WIN32_WINNT=0x0501 -DWIN32_LEAN_AND_MEAN -DNOCOMM -DMULTITHREAD
 	)
 
 	set (CMAKE_CXX_FLAGS
-		"/EHsc /LD /MP /W4"
+		"/EHsc /LD /MT /MP /W4"
 	)
-endif (UNIX OR MINGW)
-
+endif ()
 
 set (project_rc_files
-    src/Compare.rc
+	src/Compare.rc
 )
 
 set (project_sources
-    src/NppAPI/StaticDialog.cpp
-    src/AboutDlg/URLCtrl.cpp
-    src/AboutDlg/AboutDialog.cpp
-    src/SettingsDlg/ColorCombo.cpp
-    src/SettingsDlg/ColorPopup.cpp
-    src/SettingsDlg/SettingsDialog.cpp
-    src/NavDlg/NavDialog.cpp
-    src/ProgressDlg/ProgressDlg.cpp
-    src/Engine/Engine.cpp
-    src/Tools.cpp
-    src/UserSettings.cpp
-    src/Compare.cpp
-    src/LibGit2/LibGit2Helper.cpp
-    src/NppHelpers.cpp
-    src/LibHelpers.cpp
-    src/SQLite/SqliteHelper.cpp
+	src/NppAPI/StaticDialog.cpp
+	src/AboutDlg/URLCtrl.cpp
+	src/AboutDlg/AboutDialog.cpp
+	src/SettingsDlg/ColorCombo.cpp
+	src/SettingsDlg/ColorPopup.cpp
+	src/SettingsDlg/SettingsDialog.cpp
+	src/NavDlg/NavDialog.cpp
+	src/ProgressDlg/ProgressDlg.cpp
+	src/Engine/Engine.cpp
+	src/Tools.cpp
+	src/UserSettings.cpp
+	src/Compare.cpp
+	src/LibGit2/LibGit2Helper.cpp
+	src/NppHelpers.cpp
+	src/LibHelpers.cpp
+	src/SQLite/SqliteHelper.cpp
 )
 
 include_directories (
@@ -130,12 +131,10 @@ if (UNIX OR MINGW)
 		"$ENV{HOME}/.wine/drive_c/Program Files/Notepad++/plugins/ComparePlus"
 	)
 
-	install (FILES ${CMAKE_BINARY_DIR}/libComparePlus.dll
+	install (FILES ${CMAKE_BINARY_DIR}/ComparePlus.dll
 		DESTINATION "${INSTALL_PATH}"
-		RENAME ComparePlus.dll
 	)
-
-else (UNIX OR MINGW)
+else ()
 	target_link_libraries (ComparePlus comctl32 comdlg32 shlwapi msimg32)
 
 	set (INSTALL_PATH
@@ -145,8 +144,7 @@ else (UNIX OR MINGW)
 	install (TARGETS ComparePlus
 		DESTINATION "${INSTALL_PATH}"
 	)
-
-endif (UNIX OR MINGW)
+endif ()
 
 message ("Install destination: ${INSTALL_PATH}")
 
