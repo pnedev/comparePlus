@@ -2462,7 +2462,10 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 			setCompareView(SUB_VIEW, Settings.colors.blank);
 
 			if (recompare)
+			{
 				updateViewsFoldState(cmpPair);
+				cmpPair->setStatus();
+			}
 
 			if (!storedLocation)
 			{
