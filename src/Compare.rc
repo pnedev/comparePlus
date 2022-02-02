@@ -54,14 +54,14 @@ END
 // Dialog
 //
 
-#define VER_FILEVERSION			2,0,1,0
-#define VER_FILEVERSION_STR		"2.0.1\0"
+#define VER_FILEVERSION			2,0,2,0
+#define VER_FILEVERSION_STR		"2.0.2\0"
 
 IDD_ABOUT_DIALOG DIALOGEX 0, 0, 190, 175
 STYLE DS_SETFONT | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_BORDER | WS_SYSMENU
 FONT 8, "MS Shell Dlg", 400, 0, 0x0
 BEGIN
-    CTEXT           "Compare Plugin v2.0.1",IDC_EMAIL_LINK5,7,7,176,13,0,WS_EX_DLGMODALFRAME
+    CTEXT           "Compare Plugin v2.0.2",IDC_EMAIL_LINK5,7,7,176,13,0,WS_EX_DLGMODALFRAME
     CTEXT           "Authors:",IDC_NPP_PLUGINS_URL3,7,28,176,8
     CTEXT           "Ty Landercasper",IDC_EMAIL_LINK_TYL,7,42,176,8
     CTEXT           "Jean-Sébastien Leroy",IDC_EMAIL_LINK_JSL,7,56,176,8
@@ -218,7 +218,7 @@ BEGIN
             VALUE "FileDescription",	"Compare Plugin for Notepad++"
             VALUE "FileVersion",		VER_FILEVERSION_STR
             VALUE "InternalName",		"ComparePlugin"
-            VALUE "LegalCopyright",		"Copyright (C) 2016"
+            VALUE "LegalCopyright",		"Copyright (C) 2022"
             VALUE "OriginalFilename",	"ComparePlugin.dll"
             VALUE "ProductName",		VER_PRODUCT_STR
             VALUE "ProductVersion",		VER_FILEVERSION_STR

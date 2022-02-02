@@ -3,8 +3,7 @@ image: Visual Studio 2015
 
 environment:
     matrix:
-        - PlatformToolset: v140_xp
-        - PlatformToolset: v120_xp
+        - PlatformToolset: v140
 
 platform:
     - x64
@@ -24,7 +23,7 @@ build:
     verbosity: minimal
 
 build_script:
-    - cd "%APPVEYOR_BUILD_FOLDER%"\projects\2013\
+    - cd "%APPVEYOR_BUILD_FOLDER%"\projects\2015\
     - msbuild Compare.vcxproj /p:configuration="%configuration%" /p:platform="%platform%" /p:PlatformToolset="%PlatformToolset%"
 
 after_build:
@@ -33,7 +32,7 @@ after_build:
 
         Push-AppveyorArtifact "Notepad++\plugins\ComparePlugin.dll" -FileName ComparePlugin.dll
 
-        if ($($env:APPVEYOR_REPO_TAG) -eq "true" -and $env:CONFIGURATION -eq "Release Unicode" -and $env:PLATFORMTOOLSET -eq "v120_xp") {
+        if ($($env:APPVEYOR_REPO_TAG) -eq "true" -and $env:CONFIGURATION -eq "Release Unicode" -and $env:PLATFORMTOOLSET -eq "v140") {
             $ZipFileName = "ComparePlugin_$($env:APPVEYOR_REPO_TAG_NAME)_$env:PLATFORM.zip"
             Remove-Item .\Notepad++\plugins\*.pdb
             7z a $ZipFileName .\Notepad++\plugins\*
@@ -43,15 +42,15 @@ artifacts:
   - path: ComparePlugin_*.zip
     name: releases
 
-deploy:
-    provider: GitHub
-    auth_token:
-        secure: 7/ifzsk2Tk/V63jr6/WyA4HdmukWhg2PD7pCgJma7f/QYuZCsyE6RZ5M3RIr6JVc
-    artifact: releases
-    draft: false
-    prerelease: false
-    force_update: true
-    on:
-        appveyor_repo_tag: true
-        PlatformToolset: v120_xp
-        configuration: Release Unicode
+# deploy:
+    # provider: GitHub
+    # auth_token:
+        # secure: 
+    # artifact: releases
+    # draft: false
+    # prerelease: false
+    # force_update: true
+    # on:
+        # appveyor_repo_tag: true
+        # PlatformToolset: v140
+        # configuration: Release Unicode
