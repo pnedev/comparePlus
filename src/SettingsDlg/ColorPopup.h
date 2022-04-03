@@ -21,7 +21,7 @@
 #pragma once
 
 
-#include "Window.h"
+#include "DockingFeature/Window.h"
 #include "resource.h"
 
 class ColorPopup : public Window

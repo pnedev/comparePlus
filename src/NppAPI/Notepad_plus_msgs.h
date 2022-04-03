@@ -1,33 +1,21 @@
 // This file is part of Notepad++ project
-// Copyright (C)2003 Don HO <don.h@free.fr>
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// Note that the GPL places important restrictions on "derived works", yet
-// it does not provide a detailed definition of that term.  To avoid
-// misunderstandings, we consider an application to constitute a
-// "derivative work" for the purpose of this license if it does any of the
-// following:
-// 1. Integrates source code from Notepad++.
-// 2. Integrates/includes/aggregates Notepad++ into a proprietary executable
-//    installer, such as those produced by InstallShield.
-// 3. Links to a library or executes a program that does any of the above.
+// Copyright (C)2021 Don HO <don.h@free.fr>
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// at your option any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-#ifndef NOTEPAD_PLUS_MSGS_H
-#define NOTEPAD_PLUS_MSGS_H
+#pragma once
 
 #include <windows.h>
 #include <tchar.h>
@@ -39,16 +27,21 @@ enum LangType {L_TEXT, L_PHP , L_C, L_CPP, L_CS, L_OBJC, L_JAVA, L_RC,\
 			   L_ASM, L_DIFF, L_PROPS, L_PS, L_RUBY, L_SMALLTALK, L_VHDL, L_KIX, L_AU3,\
 			   L_CAML, L_ADA, L_VERILOG, L_MATLAB, L_HASKELL, L_INNO, L_SEARCHRESULT,\
 			   L_CMAKE, L_YAML, L_COBOL, L_GUI4CLI, L_D, L_POWERSHELL, L_R, L_JSP,\
-			   L_COFFEESCRIPT, L_JSON, L_JAVASCRIPT, L_FORTRAN_77,\
+			   L_COFFEESCRIPT, L_JSON, L_JAVASCRIPT, L_FORTRAN_77, L_BAANC, L_SREC,\
+			   L_IHEX, L_TEHEX, L_SWIFT,\
+			   L_ASN1, L_AVS, L_BLITZBASIC, L_PUREBASIC, L_FREEBASIC, \
+			   L_CSOUND, L_ERLANG, L_ESCRIPT, L_FORTH, L_LATEX, \
+			   L_MMIXAL, L_NIM, L_NNCRONTAB, L_OSCRIPT, L_REBOL, \
+			   L_REGISTRY, L_RUST, L_SPICE, L_TXT2TAGS, L_VISUALPROLOG, L_TYPESCRIPT,\
 			   // Don't use L_JS, use L_JAVASCRIPT instead
 			   // The end of enumated language type, so it should be always at the end
 			   L_EXTERNAL};
 
-enum winVer{ WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, WV_S2003, WV_XPX64, WV_VISTA, WV_WIN7, WV_WIN8, WV_WIN81, WV_WIN10};
+enum winVer{ WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, WV_S2003, WV_XPX64, WV_VISTA, WV_WIN7, WV_WIN8, WV_WIN81, WV_WIN10 };
+enum Platform { PF_UNKNOWN, PF_X86, PF_X64, PF_IA64, PF_ARM64 };
 
 
 
-//Here you can find how to use these messages : http://docs.notepad-plus-plus.org/index.php/Messages_And_Notifications
 #define NPPMSG  (WM_USER + 1000)
 
 	#define NPPM_GETCURRENTSCINTILLA  (NPPMSG + 4)
@@ -152,8 +145,10 @@ enum winVer{ WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, W
 	#define NPPM_SETMENUITEMCHECK	(NPPMSG + 40)
 	//void WM_PIMENU_CHECK(UINT	funcItem[X]._cmdID, TRUE/FALSE)
 
-	#define NPPM_ADDTOOLBARICON (NPPMSG + 41)
-	//void WM_ADDTOOLBARICON(UINT funcItem[X]._cmdID, toolbarIcons icon)
+	#define NPPM_ADDTOOLBARICON_DEPRECATED (NPPMSG + 41)
+	//void NPPM_ADDTOOLBARICON(UINT funcItem[X]._cmdID, toolbarIcons iconHandles) -- DEPRECATED : use NPPM_ADDTOOLBARICON_FORDARKMODE instead
+	//2 formats of icon are needed: .ico & .bmp 
+	//Both handles below should be set so the icon will be displayed correctly if toolbar icon sets are changed by users
 		struct toolbarIcons {
 			HBITMAP	hToolbarBmp;
 			HICON	hToolbarIcon;
@@ -174,7 +169,11 @@ enum winVer{ WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, W
 	//BOOL NPPM_GETENABLETHEMETEXTUREFUNC(0, 0)
 
 	#define NPPM_GETPLUGINSCONFIGDIR (NPPMSG + 46)
-	//void NPPM_GETPLUGINSCONFIGDIR(int strLen, TCHAR *str)
+	//INT NPPM_GETPLUGINSCONFIGDIR(int strLen, TCHAR *str)
+	// Get user's plugin config directory path. It's useful if plugins want to save/load parameters for the current user
+	// Returns the number of TCHAR copied/to copy.
+	// Users should call it with "str" be NULL to get the required number of TCHAR (not including the terminating nul character),
+	// allocate "str" buffer with the return value + 1, then call it again to get the path.
 
 	#define NPPM_MSGTOPLUGIN (NPPMSG + 47)
 	//BOOL NPPM_MSGTOPLUGIN(TCHAR *destModuleName, CommunicationInfo *info)
@@ -213,7 +212,7 @@ enum winVer{ WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, W
 	// returned value : TRUE if tab bar is hidden, otherwise FALSE
 
 	#define NPPM_GETPOSFROMBUFFERID (NPPMSG + 57)
-	// INT NPPM_GETPOSFROMBUFFERID(INT bufferID, INT priorityView)
+	// INT NPPM_GETPOSFROMBUFFERID(UINT_PTR bufferID, INT priorityView)
 	// Return VIEW|INDEX from a buffer ID. -1 if the bufferID non existing
 	// if priorityView set to SUB_VIEW, then SUB_VIEW will be search firstly
 	//
@@ -223,11 +222,11 @@ enum winVer{ WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, W
 	//  SUB_VIEW  1
 
 	#define NPPM_GETFULLPATHFROMBUFFERID (NPPMSG + 58)
-	// INT NPPM_GETFULLPATHFROMBUFFERID(INT bufferID, TCHAR *fullFilePath)
+	// INT NPPM_GETFULLPATHFROMBUFFERID(UINT_PTR bufferID, TCHAR *fullFilePath)
 	// Get full path file name from a bufferID.
 	// Return -1 if the bufferID non existing, otherwise the number of TCHAR copied/to copy
 	// User should call it with fullFilePath be NULL to get the number of TCHAR (not including the nul character),
-	// allocate fullFilePath with the return values + 1, then call it again to get  full path file name
+	// allocate fullFilePath with the return values + 1, then call it again to get full path file name
 
 	#define NPPM_GETBUFFERIDFROMPOS (NPPMSG + 59)
 	// LRESULT NPPM_GETBUFFERIDFROMPOS(INT index, INT iView)
@@ -240,20 +239,19 @@ enum winVer{ WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, W
 	// Returns active Buffer
 
 	#define NPPM_RELOADBUFFERID (NPPMSG + 61)
-	// VOID NPPM_RELOADBUFFERID(0, 0)
+	// VOID NPPM_RELOADBUFFERID(UINT_PTR bufferID, BOOL alert)
 	// Reloads Buffer
 	// wParam: Buffer to reload
 	// lParam: 0 if no alert, else alert
 
-
 	#define NPPM_GETBUFFERLANGTYPE (NPPMSG + 64)
-	// INT NPPM_GETBUFFERLANGTYPE(INT bufferID, 0)
+	// INT NPPM_GETBUFFERLANGTYPE(UINT_PTR bufferID, 0)
 	// wParam: BufferID to get LangType from
 	// lParam: 0
 	// Returns as int, see LangType. -1 on error
 
 	#define NPPM_SETBUFFERLANGTYPE (NPPMSG + 65)
-	// BOOL NPPM_SETBUFFERLANGTYPE(INT bufferID, INT langType)
+	// BOOL NPPM_SETBUFFERLANGTYPE(UINT_PTR bufferID, INT langType)
 	// wParam: BufferID to set LangType of
 	// lParam: LangType
 	// Returns TRUE on success, FALSE otherwise
@@ -261,13 +259,13 @@ enum winVer{ WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, W
 	// L_USER and L_EXTERNAL are not supported
 
 	#define NPPM_GETBUFFERENCODING (NPPMSG + 66)
-	// INT NPPM_GETBUFFERENCODING(INT bufferID, 0)
+	// INT NPPM_GETBUFFERENCODING(UINT_PTR bufferID, 0)
 	// wParam: BufferID to get encoding from
 	// lParam: 0
 	// returns as int, see UniMode. -1 on error
 
 	#define NPPM_SETBUFFERENCODING (NPPMSG + 67)
-	// BOOL NPPM_SETBUFFERENCODING(INT bufferID, INT encoding)
+	// BOOL NPPM_SETBUFFERENCODING(UINT_PTR bufferID, INT encoding)
 	// wParam: BufferID to set encoding of
 	// lParam: encoding
 	// Returns TRUE on success, FALSE otherwise
@@ -275,29 +273,18 @@ enum winVer{ WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, W
 	// Can only be done on new, unedited files
 
 	#define NPPM_GETBUFFERFORMAT (NPPMSG + 68)
-	// INT NPPM_GETBUFFERFORMAT(INT bufferID, 0)
-	// wParam: BufferID to get format from
+	// INT NPPM_GETBUFFERFORMAT(UINT_PTR bufferID, 0)
+	// wParam: BufferID to get EolType format from
 	// lParam: 0
-	// returns as int, see formatType. -1 on error
+	// returns as int, see EolType format. -1 on error
 
 	#define NPPM_SETBUFFERFORMAT (NPPMSG + 69)
-	// BOOL NPPM_SETBUFFERFORMAT(INT bufferID, INT format)
-	// wParam: BufferID to set format of
+	// BOOL NPPM_SETBUFFERFORMAT(UINT_PTR bufferID, INT format)
+	// wParam: BufferID to set EolType format of
 	// lParam: format
 	// Returns TRUE on success, FALSE otherwise
-	// use int, see formatType
+	// use int, see EolType format
 
-/*
-	#define NPPM_ADDREBAR (NPPMSG + 57)
-	// BOOL NPPM_ADDREBAR(0, REBARBANDINFO *)
-	// Returns assigned ID in wID value of struct pointer
-	#define NPPM_UPDATEREBAR (NPPMSG + 58)
-	// BOOL NPPM_ADDREBAR(INT ID, REBARBANDINFO *)
-	//Use ID assigned with NPPM_ADDREBAR
-	#define NPPM_REMOVEREBAR (NPPMSG + 59)
-	// BOOL NPPM_ADDREBAR(INT ID, 0)
-	//Use ID assigned with NPPM_ADDREBAR
-*/
 
 	#define NPPM_HIDETOOLBAR (NPPMSG + 70)
 	// BOOL NPPM_HIDETOOLBAR(0, BOOL hideOrNot)
@@ -333,7 +320,7 @@ enum winVer{ WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, W
 	// BOOL NPPM_GETSHORTCUTBYCMDID(int cmdID, ShortcutKey *sk)
 	// get your plugin command current mapped shortcut into sk via cmdID
 	// You may need it after getting NPPN_READY notification
-	// returned value : TRUE if this function call is successful and shorcut is enable, otherwise FALSE
+	// returned value : TRUE if this function call is successful and shortcut is enable, otherwise FALSE
 
 	#define NPPM_DOOPEN (NPPMSG + 77)
 	// BOOL NPPM_DOOPEN(0, const TCHAR *fullPathName2Open)
@@ -345,7 +332,7 @@ enum winVer{ WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, W
 
     #define NPPM_GETCURRENTNATIVELANGENCODING (NPPMSG + 79)
 	// INT NPPM_GETCURRENTNATIVELANGENCODING(0, 0)
-	// returned value : the current native language enconding
+	// returned value : the current native language encoding
 
     #define NPPM_ALLOCATESUPPORTED   (NPPMSG + 80)
     // returns TRUE if NPPM_ALLOCATECMDID is supported
@@ -359,12 +346,13 @@ enum winVer{ WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, W
 	#define NPPM_ALLOCATEMARKER  (NPPMSG + 82)
     // BOOL NPPM_ALLOCATEMARKER(int numberRequested, int* startNumber)
     // sets startNumber to the initial command ID if successful
-    // Allocates a marker number to a plugin
+    // Allocates a marker number to a plugin: if a plugin need to add a marker on Notepad++'s Scintilla marker margin,
+	// it has to use this message to get marker number, in order to prevent from the conflict with the other plugins.
     // Returns: TRUE if successful, FALSE otherwise. startNumber will also be set to 0 if unsuccessful
 
 	#define NPPM_GETLANGUAGENAME  (NPPMSG + 83)
 	// INT NPPM_GETLANGUAGENAME(int langType, TCHAR *langName)
-	// Get programing language name from the given language type (LangType)
+	// Get programming language name from the given language type (LangType)
 	// Return value is the number of copied character / number of character to copy (\0 is not included)
 	// You should call this function 2 times - the first time you pass langName as NULL to get the number of characters to copy.
     // You allocate a buffer of the length of (the number of characters + 1) then call NPPM_GETLANGUAGENAME function the 2nd time
@@ -372,32 +360,36 @@ enum winVer{ WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, W
 
 	#define NPPM_GETLANGUAGEDESC  (NPPMSG + 84)
 	// INT NPPM_GETLANGUAGEDESC(int langType, TCHAR *langDesc)
-	// Get programing language short description from the given language type (LangType)
+	// Get programming language short description from the given language type (LangType)
 	// Return value is the number of copied character / number of character to copy (\0 is not included)
 	// You should call this function 2 times - the first time you pass langDesc as NULL to get the number of characters to copy.
     // You allocate a buffer of the length of (the number of characters + 1) then call NPPM_GETLANGUAGEDESC function the 2nd time
 	// by passing allocated buffer as argument langDesc
 
-	#define NPPM_SHOWDOCSWITCHER    (NPPMSG + 85)
-	// VOID NPPM_ISDOCSWITCHERSHOWN(0, BOOL toShowOrNot)
-	// Send this message to show or hide doc switcher.
-	// if toShowOrNot is TRUE then show doc switcher, otherwise hide it.
+	#define NPPM_SHOWDOCLIST    (NPPMSG + 85)
+	// VOID NPPM_SHOWDOCLIST(0, BOOL toShowOrNot)
+	// Send this message to show or hide Document List.
+	// if toShowOrNot is TRUE then show Document List, otherwise hide it.
 
-	#define NPPM_ISDOCSWITCHERSHOWN    (NPPMSG + 86)
-	// BOOL NPPM_ISDOCSWITCHERSHOWN(0, 0)
-	// Check to see if doc switcher is shown.
+	#define NPPM_ISDOCLISTSHOWN    (NPPMSG + 86)
+	// BOOL NPPM_ISDOCLISTSHOWN(0, 0)
+	// Check to see if Document List is shown.
 
 	#define NPPM_GETAPPDATAPLUGINSALLOWED    (NPPMSG + 87)
 	// BOOL NPPM_GETAPPDATAPLUGINSALLOWED(0, 0)
-	// Check to see if loading plugins from "%APPDATA%\Notepad++\plugins" is allowed.
+	// Check to see if loading plugins from "%APPDATA%\..\Local\Notepad++\plugins" is allowed.
 
 	#define NPPM_GETCURRENTVIEW    (NPPMSG + 88)
 	// INT NPPM_GETCURRENTVIEW(0, 0)
 	// Return: current edit view of Notepad++. Only 2 possible values: 0 = Main, 1 = Secondary
 
-	#define NPPM_DOCSWITCHERDISABLECOLUMN    (NPPMSG + 89)
-	// VOID NPPM_DOCSWITCHERDISABLECOLUMN(0, BOOL disableOrNot)
-	// Disable or enable extension column of doc switcher
+	#define NPPM_DOCLISTDISABLEEXTCOLUMN    (NPPMSG + 89)
+	// VOID NPPM_DOCLISTDISABLEEXTCOLUMN(0, BOOL disableOrNot)
+	// Disable or enable extension column of Document List
+
+	#define NPPM_DOCLISTDISABLEPATHCOLUMN    (NPPMSG + 102)
+	// VOID NPPM_DOCLISTDISABLEPATHCOLUMN(0, BOOL disableOrNot)
+	// Disable or enable path column of Document List
 
 	#define NPPM_GETEDITORDEFAULTFOREGROUNDCOLOR    (NPPMSG + 90)
 	// INT NPPM_GETEDITORDEFAULTFOREGROUNDCOLOR(0, 0)
@@ -419,6 +411,62 @@ enum winVer{ WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, W
 	#define NPPM_DISABLEAUTOUPDATE (NPPMSG + 95) // 2119 in decimal
 	// VOID NPPM_DISABLEAUTOUPDATE(0, 0)
 
+	#define NPPM_REMOVESHORTCUTBYCMDID (NPPMSG + 96) // 2120 in decimal
+	// BOOL NPPM_REMOVESHORTCUTASSIGNMENT(int cmdID)
+	// removes the assigned shortcut mapped to cmdID
+	// returned value : TRUE if function call is successful, otherwise FALSE
+
+	#define NPPM_GETPLUGINHOMEPATH (NPPMSG + 97)
+	// INT NPPM_GETPLUGINHOMEPATH(size_t strLen, TCHAR *pluginRootPath)
+	// Get plugin home root path. It's useful if plugins want to get its own path
+	// by appending <pluginFolderName> which is the name of plugin without extension part.
+	// Returns the number of TCHAR copied/to copy.
+	// Users should call it with pluginRootPath be NULL to get the required number of TCHAR (not including the terminating nul character),
+	// allocate pluginRootPath buffer with the return value + 1, then call it again to get the path.
+
+	#define NPPM_GETSETTINGSONCLOUDPATH (NPPMSG + 98)
+	// INT NPPM_GETSETTINGSCLOUDPATH(size_t strLen, TCHAR *settingsOnCloudPath)
+	// Get settings on cloud path. It's useful if plugins want to store its settings on Cloud, if this path is set.
+	// Returns the number of TCHAR copied/to copy. If the return value is 0, then this path is not set, or the "strLen" is not enough to copy the path.
+	// Users should call it with settingsCloudPath be NULL to get the required number of TCHAR (not including the terminating nul character),
+	// allocate settingsCloudPath buffer with the return value + 1, then call it again to get the path.
+
+	#define NPPM_SETLINENUMBERWIDTHMODE    (NPPMSG + 99)
+		#define LINENUMWIDTH_DYNAMIC     0
+		#define LINENUMWIDTH_CONSTANT    1
+	// BOOL NPPM_SETLINENUMBERWIDTHMODE(0, INT widthMode)
+	// Set line number margin width in dynamic width mode (LINENUMWIDTH_DYNAMIC) or constant width mode (LINENUMWIDTH_CONSTANT)
+	// It may help some plugins to disable non-dynamic line number margins width to have a smoothly visual effect while vertical scrolling the content in Notepad++
+	// If calling is successful return TRUE, otherwise return FALSE.
+
+	#define NPPM_GETLINENUMBERWIDTHMODE    (NPPMSG + 100)
+	// INT NPPM_GETLINENUMBERWIDTHMODE(0, 0)
+	// Get line number margin width in dynamic width mode (LINENUMWIDTH_DYNAMIC) or constant width mode (LINENUMWIDTH_CONSTANT)
+
+	#define NPPM_ADDTOOLBARICON_FORDARKMODE (NPPMSG + 101)
+	// VOID NPPM_ADDTOOLBARICON_FORDARKMODE(UINT funcItem[X]._cmdID, toolbarIconsWithDarkMode iconHandles)
+	// Use NPPM_ADDTOOLBARICON_FORDARKMODE instead obsolete NPPM_ADDTOOLBARICON which doesn't support the dark mode
+	// 2 formats / 3 icons are needed:  1 * BMP + 2 * ICO 
+	// All 3 handles below should be set so the icon will be displayed correctly if toolbar icon sets are changed by users, also in dark mode
+	struct toolbarIconsWithDarkMode {
+		HBITMAP	hToolbarBmp;
+		HICON	hToolbarIcon;
+		HICON	hToolbarIconDarkMode;
+	};
+
+#define VAR_NOT_RECOGNIZED 0
+#define FULL_CURRENT_PATH 1
+#define CURRENT_DIRECTORY 2
+#define FILE_NAME 3
+#define NAME_PART 4
+#define EXT_PART 5
+#define CURRENT_WORD 6
+#define NPP_DIRECTORY 7
+#define CURRENT_LINE 8
+#define CURRENT_COLUMN 9
+#define NPP_FULL_FILE_PATH 10
+#define GETFILENAMEATCURSOR 11
+
 #define	RUNCOMMAND_USER    (WM_USER + 3000)
 	#define NPPM_GETFULLCURRENTPATH		(RUNCOMMAND_USER + FULL_CURRENT_PATH)
 	#define NPPM_GETCURRENTDIRECTORY	(RUNCOMMAND_USER + CURRENT_DIRECTORY)
@@ -427,6 +475,7 @@ enum winVer{ WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, W
 	#define NPPM_GETEXTPART				(RUNCOMMAND_USER + EXT_PART)
 	#define NPPM_GETCURRENTWORD			(RUNCOMMAND_USER + CURRENT_WORD)
 	#define NPPM_GETNPPDIRECTORY		(RUNCOMMAND_USER + NPP_DIRECTORY)
+	#define NPPM_GETFILENAMEATCURSOR	(RUNCOMMAND_USER + GETFILENAMEATCURSOR)
 	// BOOL NPPM_GETXXXXXXXXXXXXXXXX(size_t strLen, TCHAR *str)
 	// where str is the allocated TCHAR array,
 	//	     strLen is the allocated array size
@@ -440,16 +489,8 @@ enum winVer{ WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, W
 	// INT NPPM_GETCURRENTCOLUMN(0, 0)
 	// return the caret current position column
 
-		#define VAR_NOT_RECOGNIZED 0
-		#define FULL_CURRENT_PATH 1
-		#define CURRENT_DIRECTORY 2
-		#define FILE_NAME 3
-		#define NAME_PART 4
-		#define EXT_PART 5
-		#define CURRENT_WORD 6
-		#define NPP_DIRECTORY 7
-		#define CURRENT_LINE 8
-		#define CURRENT_COLUMN 9
+	#define NPPM_GETNPPFULLFILEPATH			(RUNCOMMAND_USER + NPP_FULL_FILE_PATH)
+
 
 
 // Notification code
@@ -460,7 +501,7 @@ enum winVer{ WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, W
 	//scnNotification->nmhdr.idFrom = 0;
 
 	#define NPPN_TBMODIFICATION (NPPN_FIRST + 2) // To notify plugins that toolbar icons can be registered
-	//scnNotification->nmhdr.code = NPPN_TB_MODIFICATION;
+	//scnNotification->nmhdr.code = NPPN_TBMODIFICATION;
 	//scnNotification->nmhdr.hwndFrom = hwndNpp;
 	//scnNotification->nmhdr.idFrom = 0;
 
@@ -541,10 +582,10 @@ enum winVer{ WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, W
 	//scnNotification->nmhdr.hwndFrom = bufferID;
 	//scnNotification->nmhdr.idFrom = docStatus;
 		// where bufferID is BufferID
-		//       docStatus can be combined by DOCSTAUS_READONLY and DOCSTAUS_BUFFERDIRTY
+		//       docStatus can be combined by DOCSTATUS_READONLY and DOCSTATUS_BUFFERDIRTY
 
-		#define DOCSTAUS_READONLY 1
-		#define DOCSTAUS_BUFFERDIRTY 2
+		#define DOCSTATUS_READONLY 1
+		#define DOCSTATUS_BUFFERDIRTY 2
 
 	#define NPPN_DOCORDERCHANGED (NPPN_FIRST + 17)  // To notify plugins that document order is changed
 	//scnNotification->nmhdr.code = NPPN_DOCORDERCHANGED;
@@ -595,5 +636,3 @@ enum winVer{ WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, W
 	//scnNotification->nmhdr.code = NPPN_FILEDELETED;
 	//scnNotification->nmhdr.hwndFrom = hwndNpp;
 	//scnNotification->nmhdr.idFrom = BufferID;
-
-#endif //NOTEPAD_PLUS_MSGS_H

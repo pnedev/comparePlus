@@ -22,7 +22,7 @@
 
 #include "AboutDialog.h"
 #include "resource.h"
-#include "Window.h"
+#include "DockingFeature/Window.h"
 
 
 static const TCHAR cDonate_URL[]	= TEXT("https://paypal.me/pnedev");

@@ -3,30 +3,22 @@ image: Visual Studio 2017
 
 environment:
     matrix:
-        - PlatformToolset: v141
-        - PlatformToolset: v140
-
-platform:
-    - x64
-    - x86
+        - platform: Win32
+        - platform: x64
+        - platform: ARM64
 
 configuration:
-    - Release Unicode
-    - Debug Unicode
+    - Release
+    - Debug
 
-install:
-    - if "%platform%"=="x64" set archi=amd64
-    - if "%platform%"=="x64" set platform_input=x64
+before_build:
+    - ps: |
+        Write-Output "Platform : $env:platform"
+        Write-Output "Configuration : $env:configuration"
 
-    - if "%platform%"=="x86" set archi=x86
-    - if "%platform%"=="x86" set platform_input=x86
-
-    - if "%PlatformToolset%"=="v141" call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" %archi%
-    - if "%PlatformToolset%"=="v140" call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" %archi%
-
-build_script:
-    - cd "%APPVEYOR_BUILD_FOLDER%"\projects\2015\
-    - msbuild ComparePlus.vcxproj /m /p:configuration="%configuration%" /p:platform="%platform_input%" /p:PlatformToolset="%PlatformToolset%" /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+build:
+    parallel: true
+    project: projects\2017\ComparePlus.sln
 
 after_build:
     - cd "%APPVEYOR_BUILD_FOLDER%"
@@ -34,25 +26,12 @@ after_build:
 
         Push-AppveyorArtifact "Notepad++\plugins\ComparePlus\ComparePlus.dll" -FileName ComparePlus.dll
 
-        if ($($env:APPVEYOR_REPO_TAG) -eq "true" -and $env:CONFIGURATION -eq "Release Unicode" -and $env:PLATFORMTOOLSET -eq "v141") {
+        if ($($env:APPVEYOR_REPO_TAG) -eq "true" -and $env:configuration -eq "Release") {
             $ZipFileName = "ComparePlus_$($env:APPVEYOR_REPO_TAG_NAME)_$env:PLATFORM_INPUT.zip"
             Remove-Item .\Notepad++\plugins\ComparePlus\*.pdb
             7z a $ZipFileName .\Notepad++\plugins\ComparePlus\*
         }
 
 artifacts:
-  - path: ComparePlus_*.zip
-    name: releases
-
-deploy:
-    provider: GitHub
-    auth_token:
-        secure: 7/ifzsk2Tk/V63jr6/WyA4HdmukWhg2PD7pCgJma7f/QYuZCsyE6RZ5M3RIr6JVc
-    artifact: releases
-    draft: false
-    prerelease: false
-    force_update: true
-    on:
-        appveyor_repo_tag: true
-        PlatformToolset: v141
-        configuration: Release Unicode
+    - path: ComparePlus_*.zip
+      name: releases

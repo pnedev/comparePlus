@@ -19,7 +19,7 @@
 
 
 #include "PluginInterface.h"
-#include "StaticDialog.h"
+#include "DockingFeature/StaticDialog.h"
 #include "resource.h"
 #include "UserSettings.h"
 #include "ColorCombo.h"

@@ -24,7 +24,7 @@ project (ComparePlus)
 if (UNIX OR MINGW)
 	set (defs
 		-DUNICODE -D_UNICODE -DMINGW_HAS_SECURE_API=1 -D_WIN32 -DWIN32
-		-D_WIN32_WINNT=0x0501 -DWIN32_LEAN_AND_MEAN -DNOCOMM
+		-D_WIN32_WINNT=0x0600 -DWIN32_LEAN_AND_MEAN -DNOCOMM
 	)
 
 	if (NOT DEBUG)
@@ -55,7 +55,7 @@ if (UNIX OR MINGW)
 else ()
 	set (defs
 		-DUNICODE -D_UNICODE -D_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES -D_WIN32 -DWIN32
-		-D_WIN32_WINNT=0x0501 -DWIN32_LEAN_AND_MEAN -DNOCOMM -DMULTITHREAD
+		-D_WIN32_WINNT=0x0600 -DWIN32_LEAN_AND_MEAN -DNOCOMM -DMULTITHREAD
 	)
 
 	set (CMAKE_CXX_FLAGS
@@ -68,7 +68,7 @@ set (project_rc_files
 )
 
 set (project_sources
-	src/NppAPI/StaticDialog.cpp
+	src/NppAPI/DockingFeature/StaticDialog.cpp
 	src/AboutDlg/URLCtrl.cpp
 	src/AboutDlg/AboutDialog.cpp
 	src/SettingsDlg/ColorCombo.cpp
@@ -90,6 +90,7 @@ include_directories (
 	${win32_inc_dir}
 	src/
 	src/NppAPI/
+	src/NppAPI/DockingFeature/
 	src/Icons/
 	src/Engine/
 	src/AboutDlg/

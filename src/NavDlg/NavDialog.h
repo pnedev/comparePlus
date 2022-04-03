@@ -20,8 +20,8 @@
 #pragma once
 
 #include "Compare.h"
-#include "Window.h"
-#include "DockingDlgInterface.h"
+#include "DockingFeature/Window.h"
+#include "DockingFeature/DockingDlgInterface.h"
 
 #include <vector>
 

@@ -3321,25 +3321,25 @@ void onToolBarReady()
 	tbNavBar.hToolbarBmp =
 			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NAVBAR), IMAGE_BITMAP, x, y, style);
 
-	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON_DEPRECATED,
 			(WPARAM)funcItem[CMD_SET_FIRST]._cmdID,			(LPARAM)&tbSetFirst);
-	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON_DEPRECATED,
 			(WPARAM)funcItem[CMD_COMPARE]._cmdID,			(LPARAM)&tbCompare);
-	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON_DEPRECATED,
 			(WPARAM)funcItem[CMD_COMPARE_SEL]._cmdID,		(LPARAM)&tbCompareSel);
-	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON_DEPRECATED,
 			(WPARAM)funcItem[CMD_CLEAR_ACTIVE]._cmdID,		(LPARAM)&tbClearCompare);
-	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON_DEPRECATED,
 			(WPARAM)funcItem[CMD_FIRST]._cmdID,				(LPARAM)&tbFirst);
-	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON_DEPRECATED,
 			(WPARAM)funcItem[CMD_PREV]._cmdID,				(LPARAM)&tbPrev);
-	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON_DEPRECATED,
 			(WPARAM)funcItem[CMD_NEXT]._cmdID,				(LPARAM)&tbNext);
-	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON_DEPRECATED,
 			(WPARAM)funcItem[CMD_LAST]._cmdID,				(LPARAM)&tbLast);
-	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON_DEPRECATED,
 			(WPARAM)funcItem[CMD_SHOW_ONLY_DIFF]._cmdID,	(LPARAM)&tbDiffsOnly);
-	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON,
+	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON_DEPRECATED,
 			(WPARAM)funcItem[CMD_NAV_BAR]._cmdID,			(LPARAM)&tbNavBar);
 }
 

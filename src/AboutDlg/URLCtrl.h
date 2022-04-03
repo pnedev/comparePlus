@@ -19,7 +19,7 @@
 #pragma once
 
 #include <windows.h>
-#include "Window.h"
+#include "DockingFeature/Window.h"
 #include <tchar.h>
 
 

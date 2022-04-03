@@ -17,8 +17,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-
 #pragma comment (lib, "comdlg32")
+
 
 #include <windows.h>
 #include <commdlg.h>
@@ -41,9 +41,6 @@ void ColorPopup::create(int dialogID)
 {
 	_hSelf = ::CreateDialogParam(_hInst, MAKEINTRESOURCE(dialogID), _hParent,  (DLGPROC)dlgProc, (LPARAM)this);
 
-	if (!_hSelf)
-	{
-	}
 	Window::getClientRect(_rc);
 	display();
 }
