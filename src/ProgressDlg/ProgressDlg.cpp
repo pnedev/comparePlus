@@ -113,7 +113,7 @@ unsigned ProgressDlg::NextPhase()
 }
 
 
-bool ProgressDlg::SetMaxCount(unsigned max, unsigned phase)
+bool ProgressDlg::SetMaxCount(intptr_t max, unsigned phase)
 {
 	if (IsCancelled())
 		return false;
@@ -128,7 +128,7 @@ bool ProgressDlg::SetMaxCount(unsigned max, unsigned phase)
 }
 
 
-bool ProgressDlg::SetCount(unsigned cnt, unsigned phase)
+bool ProgressDlg::SetCount(intptr_t cnt, unsigned phase)
 {
 	if (IsCancelled())
 		return false;
@@ -143,7 +143,7 @@ bool ProgressDlg::SetCount(unsigned cnt, unsigned phase)
 }
 
 
-bool ProgressDlg::Advance(unsigned cnt, unsigned phase)
+bool ProgressDlg::Advance(intptr_t cnt, unsigned phase)
 {
 	if (IsCancelled())
 		return false;
@@ -260,7 +260,7 @@ void ProgressDlg::destroy()
 
 void ProgressDlg::update()
 {
-	const unsigned newPos = ((_count * _phaseRange) / _max) + _phasePosOffset;
+	const unsigned newPos = static_cast<unsigned>(((_count * _phaseRange) / _max) + _phasePosOffset);
 
 	if (newPos > _pos)
 	{
@@ -365,7 +365,8 @@ RECT ProgressDlg::adjustSizeAndPos(int width, int height)
 	win.right = win.left + width;
 	win.bottom = win.top + height;
 
-	::AdjustWindowRectEx(&win, ::GetWindowLongPtr(_hwnd, GWL_STYLE), FALSE, ::GetWindowLongPtr(_hwnd, GWL_EXSTYLE));
+	::AdjustWindowRectEx(&win, (DWORD)::GetWindowLongPtr(_hwnd, GWL_STYLE), FALSE,
+			(DWORD)::GetWindowLongPtr(_hwnd, GWL_EXSTYLE));
 
 	width = win.right - win.left;
 	height = win.bottom - win.top;

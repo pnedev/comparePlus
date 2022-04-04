@@ -14,7 +14,7 @@ public:
 
 	// Be very careful when using the returned Elem reference! It may become invalid on consecutive calls to get()
 	// because the vector memory might be reallocated!
-	inline Elem& get(unsigned int i)
+	inline Elem& get(size_t i)
 	{
 		if (_buf.size() <= i)
 			_buf.resize(i + 1, { 0 });

@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017-2019 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2022 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <vector>
 #include <utility>
 
@@ -142,7 +143,8 @@ struct ScopedViewWriteEnabler
 {
 	ScopedViewWriteEnabler(int view) : _view(view)
 	{
-		_isRO = CallScintilla(_view, SCI_GETREADONLY, 0, 0);
+		_isRO = static_cast<bool>(CallScintilla(_view, SCI_GETREADONLY, 0, 0));
+
 		if (_isRO)
 			CallScintilla(_view, SCI_SETREADONLY, false, 0);
 	}
@@ -154,8 +156,8 @@ struct ScopedViewWriteEnabler
 	}
 
 private:
-	int _view;
-	int _isRO;
+	int		_view;
+	bool	_isRO;
 };
 
 
@@ -168,7 +170,8 @@ struct ScopedViewUndoCollectionBlocker
 {
 	ScopedViewUndoCollectionBlocker(int view) : _view(view)
 	{
-		_isUndoOn = CallScintilla(_view, SCI_GETUNDOCOLLECTION, 0, 0);
+		_isUndoOn = static_cast<bool>(CallScintilla(_view, SCI_GETUNDOCOLLECTION, 0, 0));
+
 		if (_isUndoOn)
 		{
 			CallScintilla(_view, SCI_SETUNDOCOLLECTION, false, 0);
@@ -183,8 +186,8 @@ struct ScopedViewUndoCollectionBlocker
 	}
 
 private:
-	int	_view;
-	int	_isUndoOn;
+	int		_view;
+	bool	_isUndoOn;
 };
 
 
@@ -227,8 +230,8 @@ struct ScopedFirstVisibleLineStore
 	}
 
 private:
-	int	_view;
-	int	_firstVisibleLine;
+	int			_view;
+	intptr_t	_firstVisibleLine;
 };
 
 
@@ -240,7 +243,7 @@ struct ViewLocation
 {
 	ViewLocation() : _view(-1) {}
 
-	ViewLocation(int view, int centerLine)
+	ViewLocation(int view, intptr_t centerLine)
 	{
 		save(view, centerLine);
 	}
@@ -259,7 +262,7 @@ struct ViewLocation
 
 #endif
 
-	void save(int view, int centerLine = -1);
+	void save(int view, intptr_t centerLine = -1);
 	bool restore() const;
 
 	inline int getView() const
@@ -268,11 +271,11 @@ struct ViewLocation
 	}
 
 private:
-	int	_view;
-	int	_centerLine;
-	int	_caretLine;
-	int	_firstLine;
-	int	_visibleLineOffset;
+	int			_view;
+	intptr_t	_centerLine;
+	intptr_t	_caretLine;
+	intptr_t	_firstLine;
+	intptr_t	_visibleLineOffset;
 };
 
 
@@ -304,7 +307,7 @@ inline bool getWrapMode()
 
 inline int getNumberOfFiles()
 {
-	return ((::IsWindowVisible(nppData._scintillaMainHandle) ?
+	return static_cast<int>((::IsWindowVisible(nppData._scintillaMainHandle) ?
 				::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, PRIMARY_VIEW) : 0) +
 			(::IsWindowVisible(nppData._scintillaSecondHandle) ?
 				::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, SECOND_VIEW) : 0));
@@ -313,7 +316,8 @@ inline int getNumberOfFiles()
 
 inline int getNumberOfFiles(int viewId)
 {
-	return ::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, viewId == MAIN_VIEW ? PRIMARY_VIEW : SECOND_VIEW);
+	return static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0,
+			viewId == MAIN_VIEW ? PRIMARY_VIEW : SECOND_VIEW));
 }
 
 
@@ -331,7 +335,7 @@ inline int getViewId(HWND view)
 
 inline int getCurrentViewId()
 {
-	return ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0);
+	return static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0));
 }
 
 
@@ -376,14 +380,14 @@ inline HWND getOtherView(HWND view)
 inline int viewIdFromBuffId(LRESULT buffId)
 {
 	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);
-	return (index >> 30);
+	return static_cast<int>(index >> 30);
 }
 
 
 inline int posFromBuffId(LRESULT buffId)
 {
 	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);
-	return (index & 0x3FFFFFFF);
+	return static_cast<int>(index & 0x3FFFFFFF);
 }
 
 
@@ -395,71 +399,71 @@ inline LRESULT getCurrentBuffId()
 
 inline int getEncoding(LRESULT buffId)
 {
-	return ::SendMessage(nppData._nppHandle, NPPM_GETBUFFERENCODING, buffId, 0);
+	return static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETBUFFERENCODING, buffId, 0));
 }
 
 
-inline int getDocId(int view)
+inline intptr_t getDocId(int view)
 {
 	return CallScintilla(view, SCI_GETDOCPOINTER, 0, 0);
 }
 
 
-inline int getLineStart(int view, int line)
+inline intptr_t getLineStart(int view, intptr_t line)
 {
 	return CallScintilla(view, SCI_POSITIONFROMLINE, line, 0);
 }
 
 
-inline int getLineEnd(int view, int line)
+inline intptr_t getLineEnd(int view, intptr_t line)
 {
 	return CallScintilla(view, SCI_GETLINEENDPOSITION, line, 0);
 }
 
 
-inline int getCurrentLine(int view)
+inline intptr_t getCurrentLine(int view)
 {
 	return CallScintilla(view, SCI_LINEFROMPOSITION, CallScintilla(view, SCI_GETCURRENTPOS, 0, 0), 0);
 }
 
 
-inline int getCurrentVisibleLine(int view)
+inline intptr_t getCurrentVisibleLine(int view)
 {
 	return CallScintilla(view, SCI_VISIBLEFROMDOCLINE, getCurrentLine(view), 0);
 }
 
 
-inline int getFirstVisibleLine(int view)
+inline intptr_t getFirstVisibleLine(int view)
 {
 	return CallScintilla(view, SCI_GETFIRSTVISIBLELINE, 0, 0);
 }
 
 
-inline int getFirstLine(int view)
+inline intptr_t getFirstLine(int view)
 {
 	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE, getFirstVisibleLine(view), 0);
 }
 
 
-inline int getLastVisibleLine(int view)
+inline intptr_t getLastVisibleLine(int view)
 {
 	return (getFirstVisibleLine(view) + CallScintilla(view, SCI_LINESONSCREEN, 0, 0) - 1);
 }
 
 
-inline int getLastLine(int view)
+inline intptr_t getLastLine(int view)
 {
 	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE, getLastVisibleLine(view), 0);
 }
 
 
-inline int getUnhiddenLine(int view, int line)
+inline intptr_t getUnhiddenLine(int view, intptr_t line)
 {
 	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE, CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0), 0);
 }
 
 
-inline int getPreviousUnhiddenLine(int view, int line)
+inline intptr_t getPreviousUnhiddenLine(int view, intptr_t line)
 {
 	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE, CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - 1, 0);
 }
@@ -471,31 +475,31 @@ inline void gotoClosestUnhiddenLine(int view)
 }
 
 
-inline void gotoClosestUnhiddenLine(int view, int line)
+inline void gotoClosestUnhiddenLine(int view, intptr_t line)
 {
 	CallScintilla(view, SCI_GOTOLINE, getUnhiddenLine(view, line), 0);
 }
 
 
-inline int getWrapCount(int view, int line)
+inline intptr_t getWrapCount(int view, intptr_t line)
 {
 	return CallScintilla(view, SCI_WRAPCOUNT, line, 0);
 }
 
 
-inline int getLineAnnotation(int view, int line)
+inline intptr_t getLineAnnotation(int view, intptr_t line)
 {
 	return CallScintilla(view, SCI_ANNOTATIONGETLINES, line, 0);
 }
 
 
-inline int getFirstVisibleLineOffset(int view, int line)
+inline intptr_t getFirstVisibleLineOffset(int view, intptr_t line)
 {
 	return (CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - getFirstVisibleLine(view));
 }
 
 
-inline bool isLineVisible(int view, int line)
+inline bool isLineVisible(int view, intptr_t line)
 {
 	line = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0);
 
@@ -503,25 +507,25 @@ inline bool isLineVisible(int view, int line)
 }
 
 
-inline bool isLineWrapped(int view, int line)
+inline bool isLineWrapped(int view, intptr_t line)
 {
 	return (CallScintilla(view, SCI_WRAPCOUNT, line, 0) > 1);
 }
 
 
-inline bool isLineAnnotated(int view, int line)
+inline bool isLineAnnotated(int view, intptr_t line)
 {
 	return (getLineAnnotation(view, line) > 0);
 }
 
 
-inline bool isLineMarked(int view, int line, int markMask)
+inline bool isLineMarked(int view, intptr_t line, int markMask)
 {
 	return ((CallScintilla(view, SCI_MARKERGET, line, 0) & markMask) != 0);
 }
 
 
-inline bool isLineEmpty(int view, int line)
+inline bool isLineEmpty(int view, intptr_t line)
 {
 	return ((getLineEnd(view, line) - getLineStart(view, line)) == 0);
 }
@@ -533,13 +537,13 @@ inline bool isSelection(int view)
 }
 
 
-inline int isSelectionVertical(int view)
+inline bool isSelectionVertical(int view)
 {
-	return CallScintilla(view, SCI_SELECTIONISRECTANGLE, 0, 0);
+	return (CallScintilla(view, SCI_SELECTIONISRECTANGLE, 0, 0) != 0);
 }
 
 
-inline std::pair<int, int> getSelection(int view)
+inline std::pair<intptr_t, intptr_t> getSelection(int view)
 {
 	return std::make_pair(CallScintilla(view, SCI_GETSELECTIONSTART, 0, 0),
 			CallScintilla(view, SCI_GETSELECTIONEND, 0, 0));
@@ -548,12 +552,12 @@ inline std::pair<int, int> getSelection(int view)
 
 inline void clearSelection(int view)
 {
-	const int currentPos = CallScintilla(view, SCI_GETCURRENTPOS, 0, 0);
+	const intptr_t currentPos = CallScintilla(view, SCI_GETCURRENTPOS, 0, 0);
 	CallScintilla(view, SCI_SETEMPTYSELECTION, currentPos, 0);
 }
 
 
-inline void setSelection(int view, int start, int end, bool scrollView = false)
+inline void setSelection(int view, intptr_t start, intptr_t end, bool scrollView = false)
 {
 	if (scrollView)
 	{
@@ -567,19 +571,19 @@ inline void setSelection(int view, int start, int end, bool scrollView = false)
 }
 
 
-int otherViewMatchingLine(int view, int line, int adjustment = 0, bool check = false);
+intptr_t otherViewMatchingLine(int view, intptr_t line, intptr_t adjustment = 0, bool check = false);
 void activateBufferID(LRESULT buffId);
-std::pair<int, int> getSelectionLines(int view);
+std::pair<intptr_t, intptr_t> getSelectionLines(int view);
 
-int showArrowSymbol(int view, int line, bool down);
+int showArrowSymbol(int view, intptr_t line, bool down);
 
-void blinkLine(int view, int line);
-void blinkRange(int view, int startPos, int endPos);
+void blinkLine(int view, intptr_t line);
+void blinkRange(int view, intptr_t startPos, intptr_t endPos);
 
-void centerAt(int view, int line);
+void centerAt(int view, intptr_t line);
 
-void markTextAsChanged(int view, int start, int length, int color);
-void clearChangedIndicator(int view, int start, int length);
+void markTextAsChanged(int view, intptr_t start, intptr_t length, int color);
+void clearChangedIndicator(int view, intptr_t start, intptr_t length);
 
 void setNormalView(int view);
 void setCompareView(int view, int blankColor);
@@ -587,33 +591,35 @@ void setCompareView(int view, int blankColor);
 void setStyles(UserSettings& settings);
 
 void clearWindow(int view);
-void clearMarks(int view, int line);
-void clearMarks(int view, int startLine, int length);
-int getPrevUnmarkedLine(int view, int startLine, int markMask);
-int getNextUnmarkedLine(int view, int startLine, int markMask);
+void clearMarks(int view, intptr_t line);
+void clearMarks(int view, intptr_t startLine, intptr_t length);
+intptr_t getPrevUnmarkedLine(int view, intptr_t startLine, int markMask);
+intptr_t getNextUnmarkedLine(int view, intptr_t startLine, int markMask);
 
-std::pair<int, int> getMarkedSection(int view, int startLine, int endLine, int markMask, bool excludeNewLine = false);
-std::vector<int> getMarkers(int view, int startLine, int length, int markMask, bool clearMarkers = true);
-void setMarkers(int view, int startLine, const std::vector<int> &markers);
+std::pair<intptr_t, intptr_t> getMarkedSection(int view, intptr_t startLine, intptr_t endLine, int markMask,
+		bool excludeNewLine = false);
+std::vector<int> getMarkers(int view, intptr_t startLine, intptr_t length, int markMask, bool clearMarkers = true);
+void setMarkers(int view, intptr_t startLine, const std::vector<int> &markers);
 
-void showRange(int view, int line, int length);
-void hideOutsideRange(int view, int startLine, int endLine);
+void showRange(int view, intptr_t line, intptr_t length);
+void hideOutsideRange(int view, intptr_t startLine, intptr_t endLine);
 void hideUnmarked(int view, int markMask);
 
-bool isAdjacentAnnotation(int view, int line, bool down);
-bool isAdjacentAnnotationVisible(int view, int line, bool down);
+bool isAdjacentAnnotation(int view, intptr_t line, bool down);
+bool isAdjacentAnnotationVisible(int view, intptr_t line, bool down);
 
 
-inline void clearAnnotation(int view, int line)
+inline void clearAnnotation(int view, intptr_t line)
 {
 	CallScintilla(view, SCI_ANNOTATIONSETTEXT, line, (LPARAM)NULL);
 }
 
 
-void clearAnnotations(int view, int startLine, int length);
+void clearAnnotations(int view, intptr_t startLine, intptr_t length);
 
-std::vector<char> getText(int view, int startPos, int endPos);
+std::vector<char> getText(int view, intptr_t startPos, intptr_t endPos);
 void toLowerCase(std::vector<char>& text);
 
-void addBlankSection(int view, int line, int length, int selectionMarkPosition = 0, const char *text = nullptr);
-void addBlankSectionAfter(int view, int line, int length);
+void addBlankSection(int view, intptr_t line, intptr_t length, intptr_t selectionMarkPosition = 0,
+		const char *text = nullptr);
+void addBlankSectionAfter(int view, intptr_t line, intptr_t length);

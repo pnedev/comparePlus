@@ -18,6 +18,8 @@
 #pragma once
 
 
+#include <cstdint>
+
 #include <windows.h>
 #include <tchar.h>
 #include <commctrl.h>
@@ -62,9 +64,9 @@ public:
 	}
 
 	unsigned NextPhase();
-	bool SetMaxCount(unsigned max, unsigned phase = 0);
-	bool SetCount(unsigned cnt, unsigned phase = 0);
-	bool Advance(unsigned cnt = 1, unsigned phase = 0);
+	bool SetMaxCount(intptr_t max, unsigned phase = 0);
+	bool SetCount(intptr_t cnt, unsigned phase = 0);
+	bool Advance(intptr_t cnt = 1, unsigned phase = 0);
 
 private:
     static const TCHAR cClassName[];
@@ -94,7 +96,7 @@ private:
     void cancel();
     void destroy();
 
-    inline void setPos(unsigned pos) const
+    inline void setPos(intptr_t pos) const
 	{
 		if (_hwnd)
 			::PostMessage(_hPBar, PBM_SETPOS, (WPARAM)pos, 0);
@@ -118,8 +120,8 @@ private:
 	unsigned	_phase;
 	unsigned	_phaseRange;
 	unsigned	_phasePosOffset;
-	unsigned	_max;
-	unsigned	_count;
+	intptr_t	_max;
+	intptr_t	_count;
 
 	unsigned	_pos;
 };

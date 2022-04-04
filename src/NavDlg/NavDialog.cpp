@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2009
- * Copyright (C)2017-2021 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2022 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -45,7 +45,7 @@ void NavDialog::NavView::init(HDC hDC)
 
 	m_lines	= CallScintilla(m_view, SCI_GETLINECOUNT, 0, 0);
 
-	m_hViewBMP	= ::CreateCompatibleBitmap(hDC, 1, m_lines);
+	m_hViewBMP	= ::CreateCompatibleBitmap(hDC, 1, static_cast<int>(m_lines));
 	m_hSelBMP	= ::CreateCompatibleBitmap(hDC, 1, 1);
 
 	BITMAP bmpInfo;
@@ -125,8 +125,8 @@ void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int heigh
 	// Fill view
 	::StretchBlt(hDC, r.left + 1, r.top + 1, width, h, m_hViewDC, 0, hOffset, 1, h / hScale, SRCCOPY);
 
-	int firstVisible	= CallScintilla(m_view, SCI_DOCLINEFROMVISIBLE, m_firstVisible, 0);
-	int lastVisible		= m_firstVisible + CallScintilla(m_view, SCI_LINESONSCREEN, 0, 0);
+	intptr_t firstVisible	= CallScintilla(m_view, SCI_DOCLINEFROMVISIBLE, m_firstVisible, 0);
+	intptr_t lastVisible	= m_firstVisible + CallScintilla(m_view, SCI_LINESONSCREEN, 0, 0);
 
 	lastVisible = CallScintilla(m_view, SCI_DOCLINEFROMVISIBLE, lastVisible, 0);
 
@@ -151,8 +151,8 @@ void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int heigh
 	firstVisible	*= hScale;
 	lastVisible		*= hScale;
 
-	r.top		= firstVisible + yPos - hOffset;
-	r.bottom	= lastVisible + yPos - hOffset + 2;
+	r.top		= static_cast<int>(firstVisible + yPos - hOffset);
+	r.bottom	= static_cast<int>(lastVisible + yPos - hOffset + 2);
 
 	::Rectangle(hDC, r.left, r.top, r.right, r.bottom);
 
@@ -160,14 +160,15 @@ void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int heigh
 	blend.BlendOp = AC_SRC_OVER;
 	blend.SourceConstantAlpha = 40;
 
-	::AlphaBlend(hDC, r.left + 1, r.top + 1, width, lastVisible - firstVisible, m_hSelDC, 0, 0, 1, 1, blend);
+	::AlphaBlend(hDC, r.left + 1, r.top + 1, width, static_cast<int>(lastVisible - firstVisible),
+			m_hSelDC, 0, 0, 1, 1, blend);
 }
 
 
-int NavDialog::NavView::docToBmpLine(int docLine) const
+int NavDialog::NavView::docToBmpLine(intptr_t docLine) const
 {
 	if (m_lineMap.empty())
-		return docLine;
+		return static_cast<int>(docLine);
 
 	const int max = static_cast<int>(m_lineMap.size());
 
@@ -297,10 +298,10 @@ void NavDialog::createBitmap()
 	RECT r;
 	::GetClientRect(_hSelf, &r);
 
-	const int maxLines	= std::max(m_view[0].m_lines, m_view[1].m_lines);
-	const int maxHeight	= (r.bottom - r.top) - 2 * cSpace - 2;
+	const intptr_t maxLines	= std::max(m_view[0].m_lines, m_view[1].m_lines);
+	const int maxHeight		= (r.bottom - r.top) - 2 * cSpace - 2;
 
-	int reductionRatio = maxLines / maxHeight;
+	intptr_t reductionRatio = maxLines / maxHeight;
 
 	if (reductionRatio && (maxLines % maxHeight))
 		++reductionRatio;
@@ -320,10 +321,10 @@ void NavDialog::createBitmap()
 
 		hBrush = ::CreateSolidBrush(m_clr._default);
 
-		bmpRect.bottom = m_view[0].m_lines;
+		bmpRect.bottom = static_cast<int>(m_view[0].m_lines);
 		::FillRect(m_view[0].m_hViewDC, &bmpRect, hBrush);
 
-		bmpRect.bottom = m_view[1].m_lines;
+		bmpRect.bottom = static_cast<int>(m_view[1].m_lines);
 		::FillRect(m_view[1].m_hViewDC, &bmpRect, hBrush);
 
 		::DeleteObject(hBrush);
@@ -331,13 +332,13 @@ void NavDialog::createBitmap()
 		m_view[0].m_lineMap.clear();
 		m_view[1].m_lineMap.clear();
 
-		int skipLine = reductionRatio;
-		int prevMarker = m_clr._default;
-		int bmpLine = 0;
+		intptr_t skipLine	= reductionRatio;
+		int prevMarker		= m_clr._default;
+		int bmpLine			= 0;
 
-		for (int i = 0; i < m_view[0].m_lines; ++i)
+		for (intptr_t i = 0; i < m_view[0].m_lines; ++i)
 		{
-			int marker = CallScintilla(m_view[0].m_view, SCI_MARKERGET, i, 0);
+			int marker = static_cast<int>(CallScintilla(m_view[0].m_view, SCI_MARKERGET, i, 0));
 			if (!marker && !reductionRatio)
 				continue;
 
@@ -366,7 +367,7 @@ void NavDialog::createBitmap()
 			}
 			else
 			{
-				::SetPixel(m_view[0].m_hViewDC, 0, i, marker);
+				::SetPixel(m_view[0].m_hViewDC, 0, static_cast<int>(i), marker);
 			}
 		}
 
@@ -374,9 +375,9 @@ void NavDialog::createBitmap()
 		prevMarker = m_clr._default;
 		bmpLine = 0;
 
-		for (int i = 0; i < m_view[1].m_lines; ++i)
+		for (intptr_t i = 0; i < m_view[1].m_lines; ++i)
 		{
-			int marker = CallScintilla(m_view[1].m_view, SCI_MARKERGET, i, 0);
+			int marker = static_cast<int>(CallScintilla(m_view[1].m_view, SCI_MARKERGET, i, 0));
 			if (!marker && !reductionRatio)
 				continue;
 
@@ -405,7 +406,7 @@ void NavDialog::createBitmap()
 			}
 			else
 			{
-				::SetPixel(m_view[1].m_hViewDC, 0, i, marker);
+				::SetPixel(m_view[1].m_hViewDC, 0, static_cast<int>(i), marker);
 			}
 		}
 	}
@@ -513,7 +514,7 @@ void NavDialog::setPos(int x, int y)
 		currentView = &m_view[1];
 	}
 
-	const int currentLine = currentView->bmpToDocLine((y + scrollOffset) / m_pixelsPerLine);
+	const intptr_t currentLine = currentView->bmpToDocLine((y + scrollOffset) / m_pixelsPerLine);
 
 	if (!isLineVisible(currentView->m_view, currentLine))
 		centerAt(currentView->m_view, currentLine);
@@ -535,10 +536,10 @@ void NavDialog::setPos(int x, int y)
 
 void NavDialog::onMouseWheel(int rolls)
 {
-	const int linesOnScreen	= CallScintilla(m_syncView->m_view, SCI_LINESONSCREEN, 0, 0);
-	const int lastVisible	= CallScintilla(m_syncView->m_view, SCI_VISIBLEFROMDOCLINE, m_syncView->m_lines, 0);
+	const intptr_t linesOnScreen	= CallScintilla(m_syncView->m_view, SCI_LINESONSCREEN, 0, 0);
+	const intptr_t lastVisible		= CallScintilla(m_syncView->m_view, SCI_VISIBLEFROMDOCLINE, m_syncView->m_lines, 0);
 
-	int firstVisible = m_syncView->m_firstVisible - rolls * linesOnScreen;
+	intptr_t firstVisible = m_syncView->m_firstVisible - rolls * linesOnScreen;
 
 	if (firstVisible < 0)
 		firstVisible = 0;
@@ -553,19 +554,19 @@ int NavDialog::updateScroll()
 {
 	if (m_hScroll && ::IsWindowVisible(m_hScroll))
 	{
-		const int firstVisible1 =
+		const intptr_t firstVisible1 =
 				CallScintilla(m_view[0].m_view, SCI_DOCLINEFROMVISIBLE, m_view[0].m_firstVisible, 0);
-		const int firstVisible2 =
+		const intptr_t firstVisible2 =
 				CallScintilla(m_view[1].m_view, SCI_DOCLINEFROMVISIBLE, m_view[1].m_firstVisible, 0);
 
-		int lastVisible1 = m_view[0].m_firstVisible + CallScintilla(m_view[0].m_view, SCI_LINESONSCREEN, 0, 0);
-		int lastVisible2 = m_view[1].m_firstVisible + CallScintilla(m_view[1].m_view, SCI_LINESONSCREEN, 0, 0);
+		intptr_t lastVisible1 = m_view[0].m_firstVisible + CallScintilla(m_view[0].m_view, SCI_LINESONSCREEN, 0, 0);
+		intptr_t lastVisible2 = m_view[1].m_firstVisible + CallScintilla(m_view[1].m_view, SCI_LINESONSCREEN, 0, 0);
 
 		lastVisible1 = CallScintilla(m_view[0].m_view, SCI_DOCLINEFROMVISIBLE, lastVisible1, 0);
 		lastVisible2 = CallScintilla(m_view[1].m_view, SCI_DOCLINEFROMVISIBLE, lastVisible2, 0);
 
-		const int firstVisible	= std::min(firstVisible1, firstVisible2);
-		const int lastVisible	= std::max(lastVisible1, lastVisible2);
+		const intptr_t firstVisible	= std::min(firstVisible1, firstVisible2);
+		const intptr_t lastVisible	= std::max(lastVisible1, lastVisible2);
 
 		const NavView* const firstVisibleSyncView	= (firstVisible == firstVisible1) ? &m_view[0] : &m_view[1];
 		const NavView* const lastVisibleSyncView	= (lastVisible == lastVisible1) ? &m_view[0] : &m_view[1];

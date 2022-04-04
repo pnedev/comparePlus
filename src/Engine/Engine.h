@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017-2021 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2022 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #pragma once
 
 #include <windows.h>
+#include <cstdint>
 #include <vector>
 #include <utility>
 
@@ -39,10 +40,10 @@ enum class CompareResult
 struct section_t
 {
 	section_t() : off(0), len(0) {}
-	section_t(int o, int l) : off(o), len(l) {}
+	section_t(intptr_t o, intptr_t l) : off(o), len(l) {}
 
-	int off;
-	int len;
+	intptr_t off;
+	intptr_t len;
 };
 
 
@@ -71,14 +72,14 @@ struct CompareOptions
 
 	bool	selectionCompare;
 
-	std::pair<int, int>	selections[2];
+	std::pair<intptr_t, intptr_t>	selections[2];
 };
 
 
 struct AlignmentViewData
 {
-	int	line {0};
-	int	diffMask {0};
+	intptr_t	line {0};
+	int			diffMask {0};
 };
 
 
@@ -106,12 +107,12 @@ struct CompareSummary
 		alignmentInfo.clear();
 	}
 
-	int				diffLines;
-	int				added;
-	int				removed;
-	int				moved;
-	int				changed;
-	int				match;
+	intptr_t	diffLines;
+	intptr_t	added;
+	intptr_t	removed;
+	intptr_t	moved;
+	intptr_t	changed;
+	intptr_t	match;
 
 	AlignmentInfo_t	alignmentInfo;
 };

@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017-2021 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2022 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -93,7 +93,7 @@ BOOL CALLBACK NppTabHandleGetter::enumWindowsCB(HWND hwnd, LPARAM lParam)
 		RECT viewRect;
 
 		::GetWindowRect(hwnd, &tabRect);
-		::GetWindowRect(getView(lParam), &viewRect);
+		::GetWindowRect(getView(static_cast<int>(lParam)), &viewRect);
 
 		if ((tabRect.left <= viewRect.left) && (tabRect.top <= viewRect.top) &&
 			(tabRect.right >= viewRect.right) && (tabRect.bottom >= viewRect.bottom))
@@ -135,7 +135,7 @@ BOOL CALLBACK NppStatusBarHandleGetter::enumWindowsCB(HWND hwnd, LPARAM )
 }
 
 
-void ViewLocation::save(int view, int centerLine)
+void ViewLocation::save(int view, intptr_t centerLine)
 {
 	if (view != MAIN_VIEW && view != SUB_VIEW)
 	{
@@ -167,7 +167,7 @@ bool ViewLocation::restore() const
 
 	if (_centerLine < 0)
 	{
-		const int firstVisibleLine = (_firstLine < 0) ?
+		const intptr_t firstVisibleLine = (_firstLine < 0) ?
 				CallScintilla(_view, SCI_VISIBLEFROMDOCLINE, _caretLine, 0) - _visibleLineOffset :
 				CallScintilla(_view, SCI_VISIBLEFROMDOCLINE, _firstLine, 0);
 
@@ -238,7 +238,7 @@ void setTextStyle(int transparency)
 void setBlanksStyle(int view, int blankColor)
 {
 	if (blankStyle[view] == 0)
-		blankStyle[view] = CallScintilla(view, SCI_ALLOCATEEXTENDEDSTYLES, 1, 0);
+		blankStyle[view] = static_cast<int>(CallScintilla(view, SCI_ALLOCATEEXTENDEDSTYLES, 1, 0));
 
 	CallScintilla(view, SCI_ANNOTATIONSETSTYLEOFFSET,	blankStyle[view], 0);
 	CallScintilla(view, SCI_STYLESETEOLFILLED,			blankStyle[view], 1);
@@ -250,12 +250,12 @@ void setBlanksStyle(int view, int blankColor)
 } // anonymous namespace
 
 
-int otherViewMatchingLine(int view, int line, int adjustment, bool check)
+intptr_t otherViewMatchingLine(int view, intptr_t line, intptr_t adjustment, bool check)
 {
-	const int otherView			= getOtherViewId(view);
-	const int otherLineCount	= CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0);
+	const int		otherView		= getOtherViewId(view);
+	const intptr_t	otherLineCount	= CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0);
 
-	const int otherLine = CallScintilla(otherView, SCI_DOCLINEFROMVISIBLE,
+	const intptr_t otherLine = CallScintilla(otherView, SCI_DOCLINEFROMVISIBLE,
 			CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) + adjustment, 0);
 
 	if (check && (otherLine < otherLineCount) && (otherViewMatchingLine(otherView, otherLine, -adjustment) != line))
@@ -275,19 +275,19 @@ void activateBufferID(LRESULT buffId)
 }
 
 
-std::pair<int, int> getSelectionLines(int view)
+std::pair<intptr_t, intptr_t> getSelectionLines(int view)
 {
 	if (isSelectionVertical(view))
 		return std::make_pair(-1, -1);
 
-	const int selectionStart = CallScintilla(view, SCI_GETSELECTIONSTART, 0, 0);
-	const int selectionEnd = CallScintilla(view, SCI_GETSELECTIONEND, 0, 0);
+	const intptr_t selectionStart = CallScintilla(view, SCI_GETSELECTIONSTART, 0, 0);
+	const intptr_t selectionEnd = CallScintilla(view, SCI_GETSELECTIONEND, 0, 0);
 
 	if (selectionEnd - selectionStart == 0)
 		return std::make_pair(-1, -1);
 
-	int startLine	= CallScintilla(view, SCI_LINEFROMPOSITION, selectionStart, 0);
-	int endLine		= CallScintilla(view, SCI_LINEFROMPOSITION, selectionEnd, 0);
+	intptr_t startLine	= CallScintilla(view, SCI_LINEFROMPOSITION, selectionStart, 0);
+	intptr_t endLine	= CallScintilla(view, SCI_LINEFROMPOSITION, selectionEnd, 0);
 
 	if (selectionEnd == getLineStart(view, endLine))
 		--endLine;
@@ -296,7 +296,7 @@ std::pair<int, int> getSelectionLines(int view)
 }
 
 
-int showArrowSymbol(int view, int line, bool down)
+int showArrowSymbol(int view, intptr_t line, bool down)
 {
 	const bool isRTL = isRTLwindow(getView(view));
 	const unsigned char* rgba = down ?
@@ -304,11 +304,11 @@ int showArrowSymbol(int view, int line, bool down)
 
 	CallScintilla(view,	SCI_MARKERDEFINERGBAIMAGE,	MARKER_ARROW_SYMBOL, (LPARAM)rgba);
 
-	return CallScintilla(view, SCI_MARKERADD, line, MARKER_ARROW_SYMBOL);
+	return static_cast<int>(CallScintilla(view, SCI_MARKERADD, line, MARKER_ARROW_SYMBOL));
 }
 
 
-void blinkLine(int view, int line)
+void blinkLine(int view, intptr_t line)
 {
 	const int marker = CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_ALL;
 	HWND hView = getView(view);
@@ -338,10 +338,10 @@ void blinkLine(int view, int line)
 }
 
 
-void blinkRange(int view, int startPos, int endPos)
+void blinkRange(int view, intptr_t startPos, intptr_t endPos)
 {
 	ViewLocation loc(view);
-	const std::pair<int, int> sel = getSelection(view);
+	const std::pair<intptr_t, intptr_t> sel = getSelection(view);
 
 	for (int i = cBlinkCount; ;)
 	{
@@ -362,10 +362,10 @@ void blinkRange(int view, int startPos, int endPos)
 }
 
 
-void centerAt(int view, int line)
+void centerAt(int view, intptr_t line)
 {
-	const int linesOnScreen = CallScintilla(view, SCI_LINESONSCREEN, 0, 0);
-	const int firstVisible = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - linesOnScreen / 2;
+	const intptr_t linesOnScreen = CallScintilla(view, SCI_LINESONSCREEN, 0, 0);
+	const intptr_t firstVisible = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - linesOnScreen / 2;
 
 	CallScintilla(view, SCI_SETFIRSTVISIBLELINE, firstVisible, 0);
 }
@@ -411,7 +411,7 @@ void setCompareView(int view, int blankColor)
 
 void setStyles(UserSettings& settings)
 {
-	const int bg = ::SendMessage(nppData._nppHandle, NPPM_GETEDITORDEFAULTBACKGROUNDCOLOR, 0, 0);
+	const int bg = static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETEDITORDEFAULTBACKGROUNDCOLOR, 0, 0));
 
 	settings.colors._default = bg;
 
@@ -455,11 +455,11 @@ void setStyles(UserSettings& settings)
 }
 
 
-void markTextAsChanged(int view, int start, int length, int color)
+void markTextAsChanged(int view, intptr_t start, intptr_t length, int color)
 {
 	if (length > 0)
 	{
-		const int curIndic = CallScintilla(view, SCI_GETINDICATORCURRENT, 0, 0);
+		const int curIndic = static_cast<int>(CallScintilla(view, SCI_GETINDICATORCURRENT, 0, 0));
 		CallScintilla(view, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
 		CallScintilla(view, SCI_SETINDICATORVALUE, color | SC_INDICVALUEBIT, 0);
 		CallScintilla(view, SCI_INDICATORFILLRANGE, start, length);
@@ -468,11 +468,11 @@ void markTextAsChanged(int view, int start, int length, int color)
 }
 
 
-void clearChangedIndicator(int view, int start, int length)
+void clearChangedIndicator(int view, intptr_t start, intptr_t length)
 {
 	if (length > 0)
 	{
-		const int curIndic = CallScintilla(view, SCI_GETINDICATORCURRENT, 0, 0);
+		const int curIndic = static_cast<int>(CallScintilla(view, SCI_GETINDICATORCURRENT, 0, 0));
 		CallScintilla(view, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
 		CallScintilla(view, SCI_INDICATORCLEARRANGE, start, length);
 		CallScintilla(view, SCI_SETINDICATORCURRENT, curIndic, 0);
@@ -480,9 +480,9 @@ void clearChangedIndicator(int view, int start, int length)
 }
 
 
-std::vector<char> getText(int view, int startPos, int endPos)
+std::vector<char> getText(int view, intptr_t startPos, intptr_t endPos)
 {
-	const int len = endPos - startPos;
+	const intptr_t len = endPos - startPos;
 
 	if (len <= 0)
 		return std::vector<char>(1, 0);
@@ -546,7 +546,7 @@ void clearWindow(int view)
 }
 
 
-void clearMarks(int view, int line)
+void clearMarks(int view, intptr_t line)
 {
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_CHANGED_LINE);
 	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_ADDED_LINE);
@@ -566,14 +566,14 @@ void clearMarks(int view, int line)
 }
 
 
-void clearMarks(int view, int startLine, int length)
+void clearMarks(int view, intptr_t startLine, intptr_t length)
 {
-	int endLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+	intptr_t endLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
 
 	if (startLine + length < endLine)
 		endLine = startLine + length;
 
-	const int startPos = getLineStart(view, startLine);
+	const intptr_t startPos = getLineStart(view, startLine);
 
 	clearChangedIndicator(view, startPos, getLineEnd(view, endLine - 1) - startPos);
 
@@ -582,9 +582,9 @@ void clearMarks(int view, int startLine, int length)
 }
 
 
-int getPrevUnmarkedLine(int view, int startLine, int markMask)
+intptr_t getPrevUnmarkedLine(int view, intptr_t startLine, int markMask)
 {
-	int prevUnmarkedLine = startLine;
+	intptr_t prevUnmarkedLine = startLine;
 
 	for (; (prevUnmarkedLine >= 0) && isLineMarked(view, prevUnmarkedLine, markMask); --prevUnmarkedLine);
 
@@ -592,10 +592,10 @@ int getPrevUnmarkedLine(int view, int startLine, int markMask)
 }
 
 
-int getNextUnmarkedLine(int view, int startLine, int markMask)
+intptr_t getNextUnmarkedLine(int view, intptr_t startLine, int markMask)
 {
-	const int endLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
-	int nextUnmarkedLine = startLine;
+	const intptr_t endLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
+	intptr_t nextUnmarkedLine = startLine;
 
 	for (; (nextUnmarkedLine <= endLine) && isLineMarked(view, nextUnmarkedLine, markMask); ++nextUnmarkedLine);
 
@@ -603,9 +603,10 @@ int getNextUnmarkedLine(int view, int startLine, int markMask)
 }
 
 
-std::pair<int, int> getMarkedSection(int view, int startLine, int endLine, int markMask, bool excludeNewLine)
+std::pair<intptr_t, intptr_t> getMarkedSection(int view, intptr_t startLine, intptr_t endLine, int markMask,
+	bool excludeNewLine)
 {
-	const int lastLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
+	const intptr_t lastLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
 
 	if ((startLine < 0) || (endLine > lastLine) || (startLine > endLine) || !isLineMarked(view, startLine, markMask))
 		return std::make_pair(-1, -1);
@@ -613,40 +614,40 @@ std::pair<int, int> getMarkedSection(int view, int startLine, int endLine, int m
 	if ((startLine != endLine) && (!isLineMarked(view, endLine, markMask)))
 		return std::make_pair(-1, -1);
 
-	const int line1	= getPrevUnmarkedLine(view, startLine, markMask) + 1;
-	int line2		= getNextUnmarkedLine(view, endLine, markMask);
+	const intptr_t line1	= getPrevUnmarkedLine(view, startLine, markMask) + 1;
+	intptr_t line2			= getNextUnmarkedLine(view, endLine, markMask);
 
 	if (excludeNewLine)
 		--line2;
 
-	const int endPos = (line2 < 0) ? getLineEnd(view, lastLine) :
+	const intptr_t endPos = (line2 < 0) ? getLineEnd(view, lastLine) :
 			(excludeNewLine ? getLineEnd(view, line2) : getLineStart(view, line2));
 
 	return std::make_pair(getLineStart(view, line1), endPos);
 }
 
 
-std::vector<int> getMarkers(int view, int startLine, int length, int markMask, bool clearMarkers)
+std::vector<int> getMarkers(int view, intptr_t startLine, intptr_t length, int markMask, bool clearMarkers)
 {
 	std::vector<int> markers;
 
 	if (length <= 0 || startLine < 0)
 		return markers;
 
-	const int linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+	const intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
 
 	if (startLine + length > linesCount)
 		length = linesCount - startLine;
 
 	if (clearMarkers)
 	{
-		const int startPos = getLineStart(view, startLine);
+		const intptr_t startPos = getLineStart(view, startLine);
 		clearChangedIndicator(view, startPos, getLineEnd(view, startLine + length - 1) - startPos);
 	}
 
 	markers.resize(length, 0);
 
-	for (int line = CallScintilla(view, SCI_MARKERPREVIOUS, startLine + length - 1, markMask); line >= startLine;
+	for (intptr_t line = CallScintilla(view, SCI_MARKERPREVIOUS, startLine + length - 1, markMask); line >= startLine;
 		line = CallScintilla(view, SCI_MARKERPREVIOUS, line - 1, markMask))
 	{
 		markers[line - startLine] = CallScintilla(view, SCI_MARKERGET, line, 0) & markMask;
@@ -659,17 +660,17 @@ std::vector<int> getMarkers(int view, int startLine, int length, int markMask, b
 }
 
 
-void setMarkers(int view, int startLine, const std::vector<int> &markers)
+void setMarkers(int view, intptr_t startLine, const std::vector<int> &markers)
 {
-	const int linesCount = static_cast<int>(markers.size());
+	const intptr_t linesCount = static_cast<intptr_t>(markers.size());
 
 	if (startLine < 0 || linesCount == 0)
 		return;
 
-	const int startPos = getLineStart(view, startLine);
+	const intptr_t startPos = getLineStart(view, startLine);
 	clearChangedIndicator(view, startPos, getLineEnd(view, startLine + linesCount - 1) - startPos);
 
-	for (int i = 0; i < linesCount; ++i)
+	for (intptr_t i = 0; i < linesCount; ++i)
 	{
 		clearMarks(view, startLine + i);
 
@@ -679,11 +680,11 @@ void setMarkers(int view, int startLine, const std::vector<int> &markers)
 }
 
 
-void showRange(int view, int line, int length)
+void showRange(int view, intptr_t line, intptr_t length)
 {
 	if (line >= 0 && length > 0)
 	{
-		const int linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+		const intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
 
 		if (line + length > linesCount)
 			length = linesCount - line;
@@ -693,9 +694,9 @@ void showRange(int view, int line, int length)
 }
 
 
-void hideOutsideRange(int view, int startLine, int endLine)
+void hideOutsideRange(int view, intptr_t startLine, intptr_t endLine)
 {
-	const int linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+	const intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
 
 	// First line (0) cannot be hidden so start from line 1
 	if (startLine > 1)
@@ -711,10 +712,11 @@ void hideOutsideRange(int view, int startLine, int endLine)
 
 void hideUnmarked(int view, int markMask)
 {
-	const int linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+	const intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
 
 	// First line (0) cannot be hidden so start from line 1
-	for (int nextMarkedLine, nextUnmarkedLine = 1; nextUnmarkedLine < linesCount; nextUnmarkedLine = nextMarkedLine)
+	for (intptr_t nextMarkedLine, nextUnmarkedLine = 1; nextUnmarkedLine < linesCount;
+		nextUnmarkedLine = nextMarkedLine)
 	{
 		for (; (nextUnmarkedLine < linesCount) && isLineMarked(view, nextUnmarkedLine, markMask); ++nextUnmarkedLine);
 
@@ -731,7 +733,7 @@ void hideUnmarked(int view, int markMask)
 }
 
 
-bool isAdjacentAnnotation(int view, int line, bool down)
+bool isAdjacentAnnotation(int view, intptr_t line, bool down)
 {
 	if (down)
 	{
@@ -748,7 +750,7 @@ bool isAdjacentAnnotation(int view, int line, bool down)
 }
 
 
-bool isAdjacentAnnotationVisible(int view, int line, bool down)
+bool isAdjacentAnnotationVisible(int view, intptr_t line, bool down)
 {
 	if (down)
 	{
@@ -772,9 +774,9 @@ bool isAdjacentAnnotationVisible(int view, int line, bool down)
 }
 
 
-void clearAnnotations(int view, int startLine, int length)
+void clearAnnotations(int view, intptr_t startLine, intptr_t length)
 {
-	int endLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+	intptr_t endLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
 
 	if (startLine + length < endLine)
 		endLine = startLine + length;
@@ -784,7 +786,7 @@ void clearAnnotations(int view, int startLine, int length)
 }
 
 
-void addBlankSection(int view, int line, int length, int textLinePos, const char *text)
+void addBlankSection(int view, intptr_t line, intptr_t length, intptr_t textLinePos, const char *text)
 {
 	if (length <= 0)
 		return;
@@ -805,7 +807,7 @@ void addBlankSection(int view, int line, int length, int textLinePos, const char
 }
 
 
-void addBlankSectionAfter(int view, int line, int length)
+void addBlankSectionAfter(int view, intptr_t line, intptr_t length)
 {
 	if (length <= 0)
 		return;

@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017-2021 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2022 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -128,18 +128,18 @@ struct DeletedSection
 	 */
 	struct UndoData
 	{
-		AlignmentInfo_t		alignment;
-		std::pair<int, int>	selection {-1, -1};
-		std::vector<int>	otherViewMarks;
+		AlignmentInfo_t					alignment;
+		std::pair<intptr_t, intptr_t>	selection {-1, -1};
+		std::vector<int>				otherViewMarks;
 	};
 
-	DeletedSection(int action, int line, const std::shared_ptr<UndoData>& undo) :
+	DeletedSection(int action, intptr_t line, const std::shared_ptr<UndoData>& undo) :
 			startLine(line), lineReplace(false), nextLineMarker(0), undoInfo(undo)
 	{
 		restoreAction = (action == SC_PERFORMED_UNDO) ? SC_PERFORMED_REDO : SC_PERFORMED_UNDO;
 	}
 
-	int					startLine;
+	intptr_t			startLine;
 	bool				lineReplace;
 	int					restoreAction;
 	std::vector<int>	markers;
@@ -162,8 +162,9 @@ struct DeletedSectionsList
 		return sections;
 	}
 
-	bool push(int view, int currAction, int startLine, int len, const std::shared_ptr<DeletedSection::UndoData>& undo);
-	std::shared_ptr<DeletedSection::UndoData> pop(int view, int currAction, int startLine);
+	bool push(int view, int currAction, intptr_t startLine, intptr_t len,
+			const std::shared_ptr<DeletedSection::UndoData>& undo);
+	std::shared_ptr<DeletedSection::UndoData> pop(int view, int currAction, intptr_t startLine);
 
 	void clear()
 	{
@@ -176,8 +177,8 @@ private:
 };
 
 
-bool DeletedSectionsList::push(int view, int currAction, int startLine, int len,
-		const std::shared_ptr<DeletedSection::UndoData>& undo)
+bool DeletedSectionsList::push(int view, int currAction, intptr_t startLine, intptr_t len,
+	const std::shared_ptr<DeletedSection::UndoData>& undo)
 {
 	if (len < 1)
 		return false;
@@ -208,7 +209,7 @@ bool DeletedSectionsList::push(int view, int currAction, int startLine, int len,
 }
 
 
-std::shared_ptr<DeletedSection::UndoData> DeletedSectionsList::pop(int view, int currAction, int startLine)
+std::shared_ptr<DeletedSection::UndoData> DeletedSectionsList::pop(int view, int currAction, intptr_t startLine)
 {
 	if (sections.empty())
 		return nullptr;
@@ -273,13 +274,13 @@ public:
 	void restore() const;
 	bool isOpen() const;
 
-	bool pushDeletedSection(int sciAction, int startLine, int len,
+	bool pushDeletedSection(int sciAction, intptr_t startLine, intptr_t len,
 		const std::shared_ptr<DeletedSection::UndoData>& undo)
 	{
 		return deletedSections.push(compareViewId, sciAction, startLine, len, undo);
 	}
 
-	std::shared_ptr<DeletedSection::UndoData> popDeletedSection(int sciAction, int startLine)
+	std::shared_ptr<DeletedSection::UndoData> popDeletedSection(int sciAction, intptr_t startLine)
 	{
 		return deletedSections.pop(compareViewId, sciAction, startLine);
 	}
@@ -291,9 +292,9 @@ public:
 	int		originalPos;
 	int		compareViewId;
 
-	LRESULT	buffId;
-	int		sciDoc;
-	TCHAR	name[MAX_PATH];
+	LRESULT		buffId;
+	intptr_t	sciDoc;
+	TCHAR		name[MAX_PATH];
 
 private:
 	DeletedSectionsList deletedSections;
@@ -310,17 +311,17 @@ public:
 	inline ComparedFile& getFileByViewId(int viewId);
 	inline ComparedFile& getFileByBuffId(LRESULT buffId);
 	inline ComparedFile& getOtherFileByBuffId(LRESULT buffId);
-	inline ComparedFile& getFileBySciDoc(int sciDoc);
+	inline ComparedFile& getFileBySciDoc(intptr_t sciDoc);
 	inline ComparedFile& getOldFile();
 	inline ComparedFile& getNewFile();
 
 	void positionFiles();
-	void restoreFiles(int currentBuffId);
+	void restoreFiles(LRESULT currentBuffId);
 
 	void setStatusInfo();
 	void setStatus();
 
-	void adjustAlignment(int view, int line, int offset);
+	void adjustAlignment(int view, intptr_t line, intptr_t offset);
 
 	void setCompareDirty()
 	{
@@ -455,7 +456,7 @@ public:
 class SelectRangeTimeout : public DelayedWork
 {
 public:
-	SelectRangeTimeout(int view, int startPos, int endPos) : DelayedWork(), _view(view)
+	SelectRangeTimeout(int view, intptr_t startPos, intptr_t endPos) : DelayedWork(), _view(view)
 	{
 		_sel = getSelection(view);
 
@@ -469,7 +470,7 @@ public:
 private:
 	int	_view;
 
-	std::pair<int, int> _sel;
+	std::pair<intptr_t, intptr_t> _sel;
 };
 
 
@@ -554,10 +555,11 @@ FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
 LRESULT statusProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 void onBufferActivated(LRESULT buffId);
 void syncViews(int biasView);
-void temporaryRangeSelect(int view, int startPos = -1, int endPos = -1);
-void setArrowMark(int view, int line = -1, bool down = true);
-int getAlignmentIdxAfter(const AlignmentViewData AlignmentPair::*pView, const AlignmentInfo_t &alignInfo, int line);
-int getAlignmentLine(const AlignmentInfo_t &alignInfo, int view, int line);
+void temporaryRangeSelect(int view, intptr_t startPos = -1, intptr_t endPos = -1);
+void setArrowMark(int view, intptr_t line = -1, bool down = true);
+intptr_t getAlignmentIdxAfter(const AlignmentViewData AlignmentPair::*pView, const AlignmentInfo_t &alignInfo,
+		intptr_t line);
+intptr_t getAlignmentLine(const AlignmentInfo_t &alignInfo, int view, intptr_t line);
 
 
 void NppSettings::enableClearCommands(bool enable) const
@@ -635,10 +637,10 @@ void NppSettings::save()
 	_syncHScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
 
 	if (_mainZoom == 0)
-		_mainZoom	= CallScintilla(MAIN_VIEW, SCI_GETZOOM, 0, 0);
+		_mainZoom = static_cast<int>(CallScintilla(MAIN_VIEW, SCI_GETZOOM, 0, 0));
 
 	if (_subZoom == 0)
-		_subZoom	= CallScintilla(SUB_VIEW, SCI_GETZOOM, 0, 0);
+		_subZoom = static_cast<int>(CallScintilla(SUB_VIEW, SCI_GETZOOM, 0, 0));
 }
 
 
@@ -716,7 +718,7 @@ void NppSettings::setCompareMode(bool clearHorizontalScroll)
 	// synchronize zoom levels
 	if (_compareZoom == 0)
 	{
-		_compareZoom = CallScintilla(getCurrentViewId(), SCI_GETZOOM, 0, 0);
+		_compareZoom = static_cast<int>(CallScintilla(getCurrentViewId(), SCI_GETZOOM, 0, 0));
 		CallScintilla(getOtherViewId(), SCI_SETZOOM, _compareZoom, 0);
 	}
 	else
@@ -863,7 +865,7 @@ void ComparedFile::updateFromCurrent()
 			_tcscpy_s(tabName, _countof(tabName), ::PathFindFileName(name));
 			::PathRemoveExtension(tabName);
 
-			int i = _tcslen(tabName) - 1 - _tcslen(tempMark[isTemp].fileMark);
+			size_t i = _tcslen(tabName) - 1 - _tcslen(tempMark[isTemp].fileMark);
 			for (; i > 0 && tabName[i] != TEXT('_'); --i);
 
 			if (i > 0)
@@ -990,7 +992,7 @@ ComparedFile& ComparedPair::getOtherFileByBuffId(LRESULT buffId)
 }
 
 
-ComparedFile& ComparedPair::getFileBySciDoc(int sciDoc)
+ComparedFile& ComparedPair::getFileBySciDoc(intptr_t sciDoc)
 {
 	return (file[0].sciDoc == sciDoc) ? file[0] : file[1];
 }
@@ -1046,7 +1048,7 @@ void ComparedPair::positionFiles()
 }
 
 
-void ComparedPair::restoreFiles(int currentBuffId = -1)
+void ComparedPair::restoreFiles(LRESULT currentBuffId = -1)
 {
 	// Check if position update is needed -
 	// this is for relative re-positioning to keep files initial order consistent
@@ -1113,7 +1115,7 @@ void ComparedPair::setStatusInfo()
 
 		if (options.selectionCompare)
 		{
-			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Selections - %d-%d vs. %d-%d ***"),
+			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Selections - %Id-%Id vs. %Id-%Id ***"),
 					options.selections[MAIN_VIEW].first + 1, options.selections[MAIN_VIEW].second + 1,
 					options.selections[SUB_VIEW].first + 1, options.selections[SUB_VIEW].second + 1);
 		}
@@ -1138,42 +1140,42 @@ void ComparedPair::setStatusInfo()
 			if (summary.diffLines)
 			{
 				const int len =
-						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Diff Lines: "), summary.diffLines);
+						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Diff Lines: "), summary.diffLines);
 				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 				infoCurrentPos += len;
 			}
 			if (summary.added)
 			{
 				const int len =
-						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Added ,"), summary.added);
+						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Added ,"), summary.added);
 				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 				infoCurrentPos += len;
 			}
 			if (summary.removed)
 			{
 				const int len =
-						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Removed ,"), summary.removed);
+						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Removed ,"), summary.removed);
 				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 				infoCurrentPos += len;
 			}
 			if (summary.moved)
 			{
 				const int len =
-						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Moved ,"), summary.moved);
+						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Moved ,"), summary.moved);
 				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 				infoCurrentPos += len;
 			}
 			if (summary.changed)
 			{
 				const int len =
-						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %d Changed ,"), summary.changed);
+						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Changed ,"), summary.changed);
 				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 				infoCurrentPos += len;
 			}
 			if (summary.match)
 			{
 				const int len =
-						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(".  %d Match ,"), summary.match) - 2;
+						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(".  %Id Match ,"), summary.match) - 2;
 				_tcscpy_s(info + infoCurrentPos - 2, _countof(info) - infoCurrentPos + 2, buf);
 				infoCurrentPos += len;
 			}
@@ -1210,20 +1212,20 @@ void ComparedPair::setStatus()
 }
 
 
-void ComparedPair::adjustAlignment(int view, int line, int offset)
+void ComparedPair::adjustAlignment(int view, intptr_t line, intptr_t offset)
 {
 	AlignmentViewData AlignmentPair::*alignView = (view == MAIN_VIEW) ? &AlignmentPair::main : &AlignmentPair::sub;
 	AlignmentInfo_t& alignInfo = summary.alignmentInfo;
 
-	const int startIdx = getAlignmentIdxAfter(alignView, alignInfo, line);
+	const intptr_t startIdx = getAlignmentIdxAfter(alignView, alignInfo, line);
 
-	if ((startIdx < static_cast<int>(alignInfo.size())) && ((alignInfo[startIdx].*alignView).line >= line))
+	if ((startIdx < static_cast<intptr_t>(alignInfo.size())) && ((alignInfo[startIdx].*alignView).line >= line))
 	{
 		if (offset < 0)
 		{
-			int endIdx = startIdx;
+			intptr_t endIdx = startIdx;
 
-			while ((endIdx < static_cast<int>(alignInfo.size())) &&
+			while ((endIdx < static_cast<intptr_t>(alignInfo.size())) &&
 					(line > (alignInfo[endIdx].*alignView).line + offset))
 				++endIdx;
 
@@ -1231,7 +1233,7 @@ void ComparedPair::adjustAlignment(int view, int line, int offset)
 				alignInfo.erase(alignInfo.begin() + startIdx, alignInfo.begin() + endIdx);
 		}
 
-		for (int i = startIdx; i < static_cast<int>(alignInfo.size()); ++i)
+		for (intptr_t i = startIdx; i < static_cast<intptr_t>(alignInfo.size()); ++i)
 			(alignInfo[i].*alignView).line += offset;
 	}
 }
@@ -1342,7 +1344,7 @@ CompareList_t::iterator getCompare(LRESULT buffId)
 }
 
 
-CompareList_t::iterator getCompareBySciDoc(int sciDoc)
+CompareList_t::iterator getCompareBySciDoc(intptr_t sciDoc)
 {
 	for (CompareList_t::iterator it = compareList.begin(); it < compareList.end(); ++it)
 	{
@@ -1354,7 +1356,7 @@ CompareList_t::iterator getCompareBySciDoc(int sciDoc)
 }
 
 
-void temporaryRangeSelect(int view, int startPos, int endPos)
+void temporaryRangeSelect(int view, intptr_t startPos, intptr_t endPos)
 {
 	static std::unique_ptr<SelectRangeTimeout> range;
 
@@ -1372,7 +1374,7 @@ void temporaryRangeSelect(int view, int startPos, int endPos)
 }
 
 
-void setArrowMark(int view, int line, bool down)
+void setArrowMark(int view, intptr_t line, bool down)
 {
 	static std::unique_ptr<LineArrowMarkTimeout> lineArrowMark;
 
@@ -1390,7 +1392,7 @@ void setArrowMark(int view, int line, bool down)
 }
 
 
-void showBlankAdjacentArrowMark(int view, int line, bool down)
+void showBlankAdjacentArrowMark(int view, intptr_t line, bool down)
 {
 	if (view < 0)
 	{
@@ -1408,7 +1410,7 @@ void showBlankAdjacentArrowMark(int view, int line, bool down)
 }
 
 
-std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool down,
+std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subStartLine, bool down,
 		bool goToCornerDiff = false, bool doNotBlink = false)
 {
 	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
@@ -1420,8 +1422,8 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 
 	if (!cmpPair->options.findUniqueMode && !goToCornerDiff)
 	{
-		const int edgeLine		= (down ? getLastLine(view) : getFirstLine(view));
-		const int currentLine	= (Settings.FollowingCaret ? getCurrentLine(view) : edgeLine);
+		const intptr_t edgeLine		= (down ? getLastLine(view) : getFirstLine(view));
+		const intptr_t currentLine	= (Settings.FollowingCaret ? getCurrentLine(view) : edgeLine);
 
 		// Is the bias line manually positioned on a screen edge and adjacent to invisible blank diff?
 		// Make sure we don't miss it
@@ -1453,8 +1455,8 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 
 	const int nextMarker = down ? SCI_MARKERNEXT : SCI_MARKERPREVIOUS;
 
-	int mainNextLine	= CallScintilla(MAIN_VIEW, nextMarker, mainStartLine, MARKER_MASK_LINE);
-	int subNextLine		= CallScintilla(SUB_VIEW, nextMarker, subStartLine, MARKER_MASK_LINE);
+	intptr_t mainNextLine	= CallScintilla(MAIN_VIEW, nextMarker, mainStartLine, MARKER_MASK_LINE);
+	intptr_t subNextLine	= CallScintilla(SUB_VIEW, nextMarker, subStartLine, MARKER_MASK_LINE);
 
 	if ((mainNextLine == mainStartLine) && !isCornerDiff)
 		mainNextLine = -1;
@@ -1462,8 +1464,8 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 	if ((subNextLine == subStartLine) && !isCornerDiff)
 		subNextLine = -1;
 
-	int line			= (view == MAIN_VIEW) ? mainNextLine : subNextLine;
-	const int otherLine	= (view == MAIN_VIEW) ? subNextLine : mainNextLine;
+	intptr_t line				= (view == MAIN_VIEW) ? mainNextLine : subNextLine;
+	const intptr_t otherLine	= (view == MAIN_VIEW) ? subNextLine : mainNextLine;
 
 	if (line < 0)
 	{
@@ -1483,8 +1485,8 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 	}
 	else if (otherLine >= 0)
 	{
-		const int visibleLine		= CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0);
-		const int otherVisibleLine	= CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0);
+		const intptr_t visibleLine		= CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0);
+		const intptr_t otherVisibleLine	= CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0);
 
 		const bool switchViews = down ? (otherVisibleLine < visibleLine) : (otherVisibleLine > visibleLine);
 
@@ -1511,8 +1513,8 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 	// No explicit go to corner diff but we are there - diffs wrap has occurred - 'up/down' notion is inverted
 	if (!goToCornerDiff && isCornerDiff)
 	{
-		const int edgeLine		= (down ? getLastLine(view) : getFirstLine(view));
-		const int currentLine	= (Settings.FollowingCaret ? getCurrentLine(view) : edgeLine);
+		const intptr_t edgeLine		= (down ? getLastLine(view) : getFirstLine(view));
+		const intptr_t currentLine	= (Settings.FollowingCaret ? getCurrentLine(view) : edgeLine);
 
 		bool dontChangeLine = false;
 
@@ -1521,7 +1523,7 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 
 		if (dontChangeLine)
 		{
-			int lineToBlink;
+			intptr_t lineToBlink;
 
 			if (isLineVisible(view, line))
 			{
@@ -1558,7 +1560,7 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 
 	if (Settings.FollowingCaret && line != getCurrentLine(view))
 	{
-		int pos;
+		intptr_t pos;
 
 		if (down && (isLineAnnotated(view, line) && isLineWrapped(view, line) &&
 				!isLineMarked(view, line, MARKER_MASK_LINE)))
@@ -1579,18 +1581,18 @@ std::pair<int, int> jumpToNextChange(int mainStartLine, int subStartLine, bool d
 }
 
 
-std::pair<int, int> jumpToFirstChange(bool goToCornerDiff = false, bool doNotBlink = false)
+std::pair<int, intptr_t> jumpToFirstChange(bool goToCornerDiff = false, bool doNotBlink = false)
 {
-	std::pair<int, int> viewLoc = jumpToNextChange(0, 0, true, goToCornerDiff, doNotBlink);
+	std::pair<int, intptr_t> viewLoc = jumpToNextChange(0, 0, true, goToCornerDiff, doNotBlink);
 	showBlankAdjacentArrowMark(viewLoc.first, viewLoc.second, true);
 
 	return viewLoc;
 }
 
 
-std::pair<int, int> jumpToLastChange(bool goToCornerDiff = false, bool doNotBlink = false)
+std::pair<int, intptr_t> jumpToLastChange(bool goToCornerDiff = false, bool doNotBlink = false)
 {
-	std::pair<int, int> viewLoc = jumpToNextChange(CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0),
+	std::pair<int, intptr_t> viewLoc = jumpToNextChange(CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0),
 			CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0), false, goToCornerDiff, doNotBlink);
 	showBlankAdjacentArrowMark(viewLoc.first, viewLoc.second, false);
 
@@ -1598,18 +1600,18 @@ std::pair<int, int> jumpToLastChange(bool goToCornerDiff = false, bool doNotBlin
 }
 
 
-std::pair<int, int> jumpToChange(bool down, bool wrapAround)
+std::pair<int, intptr_t> jumpToChange(bool down, bool wrapAround)
 {
-	std::pair<int, int> viewLoc;
+	std::pair<int, intptr_t> viewLoc;
 
-	int mainStartLine	= 0;
-	int subStartLine	= 0;
+	intptr_t mainStartLine	= 0;
+	intptr_t subStartLine	= 0;
 
 	const int currentView	= getCurrentViewId();
 	const int otherView		= getOtherViewId(currentView);
 
-	int& currentLine	= (currentView == MAIN_VIEW) ? mainStartLine : subStartLine;
-	int& otherLine		= (currentView != MAIN_VIEW) ? mainStartLine : subStartLine;
+	intptr_t& currentLine	= (currentView == MAIN_VIEW) ? mainStartLine : subStartLine;
+	intptr_t& otherLine		= (currentView != MAIN_VIEW) ? mainStartLine : subStartLine;
 
 	if (down)
 	{
@@ -1709,33 +1711,34 @@ void resetCompareView(int view)
 }
 
 
-int getAlignmentIdxAfter(const AlignmentViewData AlignmentPair::*pView, const AlignmentInfo_t &alignInfo, int line)
+intptr_t getAlignmentIdxAfter(const AlignmentViewData AlignmentPair::*pView, const AlignmentInfo_t &alignInfo,
+	intptr_t line)
 {
-	int idx = 0;
+	intptr_t idx = 0;
 
-	for (int i = static_cast<int>(alignInfo.size()) / 2; i; i /= 2)
+	for (intptr_t i = static_cast<intptr_t>(alignInfo.size()) / 2; i; i /= 2)
 	{
 		if ((alignInfo[idx + i].*pView).line < line)
 			idx += i;
 	}
 
-	while ((idx < static_cast<int>(alignInfo.size())) && ((alignInfo[idx].*pView).line < line))
+	while ((idx < static_cast<intptr_t>(alignInfo.size())) && ((alignInfo[idx].*pView).line < line))
 		++idx;
 
 	return idx;
 }
 
 
-int getAlignmentLine(const AlignmentInfo_t &alignInfo, int view, int line)
+intptr_t getAlignmentLine(const AlignmentInfo_t &alignInfo, int view, intptr_t line)
 {
 	if (line < 0)
 		return -1;
 
 	AlignmentViewData AlignmentPair::*alignView = (view == MAIN_VIEW) ? &AlignmentPair::main : &AlignmentPair::sub;
 
-	const int alignIdx = getAlignmentIdxAfter(alignView, alignInfo, line);
+	const intptr_t alignIdx = getAlignmentIdxAfter(alignView, alignInfo, line);
 
-	if ((alignIdx >= static_cast<int>(alignInfo.size())) || ((alignInfo[alignIdx].*alignView).line != line))
+	if ((alignIdx >= static_cast<intptr_t>(alignInfo.size())) || ((alignInfo[alignIdx].*alignView).line != line))
 		return -1;
 
 	alignView = (view == MAIN_VIEW) ? &AlignmentPair::sub : &AlignmentPair::main;
@@ -1748,12 +1751,12 @@ bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
 {
 	const AlignmentViewData AlignmentPair::*pView = (view == MAIN_VIEW) ? &AlignmentPair::main : &AlignmentPair::sub;
 
-	const int firstLine = getFirstLine(view);
-	const int lastLine = getLastLine(view);
+	const intptr_t firstLine	= getFirstLine(view);
+	const intptr_t lastLine		= getLastLine(view);
 
-	const int maxSize = static_cast<int>(alignmentInfo.size());
+	const intptr_t maxSize = static_cast<intptr_t>(alignmentInfo.size());
 
-	int i = getAlignmentIdxAfter(pView, alignmentInfo, firstLine);
+	intptr_t i = getAlignmentIdxAfter(pView, alignmentInfo, firstLine);
 
 	if (i >= maxSize)
 		return false;
@@ -1786,8 +1789,8 @@ bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
 			return false;
 	}
 
-	int mainEndLine	= CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
-	int subEndLine	= CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
+	intptr_t mainEndLine	= CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
+	intptr_t subEndLine		= CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
 
 	if (Settings.ShowOnlyDiffs)
 	{
@@ -1800,9 +1803,9 @@ bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
 			subEndLine = 0;
 	}
 
-	const int mainEndVisible = CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, mainEndLine, 0) +
+	const intptr_t mainEndVisible = CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, mainEndLine, 0) +
 			getWrapCount(MAIN_VIEW, mainEndLine) - 1;
-	const int subEndVisible = CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subEndLine, 0) +
+	const intptr_t subEndVisible = CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subEndLine, 0) +
 			getWrapCount(SUB_VIEW, subEndLine) - 1;
 
 	if (((getLastVisibleLine(MAIN_VIEW) > mainEndVisible) || (getLastVisibleLine(SUB_VIEW) > subEndVisible)) &&
@@ -1846,16 +1849,16 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 
 	const AlignmentInfo_t& alignmentInfo = cmpPair->summary.alignmentInfo;
 
-	const int maxSize = static_cast<int>(alignmentInfo.size());
+	const intptr_t maxSize = static_cast<intptr_t>(alignmentInfo.size());
 
-	int mainEndLine	= CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
-	int subEndLine	= CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
+	intptr_t mainEndLine	= CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
+	intptr_t subEndLine		= CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
 
 	// Align diffs
-	for (int i = 0; i < maxSize &&
+	for (intptr_t i = 0; i < maxSize &&
 			alignmentInfo[i].main.line <= mainEndLine && alignmentInfo[i].sub.line <= subEndLine; ++i)
 	{
-		int previousUnhiddenLine = getPreviousUnhiddenLine(MAIN_VIEW, alignmentInfo[i].main.line);
+		intptr_t previousUnhiddenLine = getPreviousUnhiddenLine(MAIN_VIEW, alignmentInfo[i].main.line);
 
 		if (isLineAnnotated(MAIN_VIEW, previousUnhiddenLine))
 			clearAnnotation(MAIN_VIEW, previousUnhiddenLine);
@@ -1865,7 +1868,7 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 		if (isLineAnnotated(SUB_VIEW, previousUnhiddenLine))
 			clearAnnotation(SUB_VIEW, previousUnhiddenLine);
 
-		const int mismatchLen =
+		const intptr_t mismatchLen =
 				CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) -
 				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0);
 
@@ -1925,10 +1928,10 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 	{
 		if (cmpPair->options.selections[MAIN_VIEW].first > 0 && cmpPair->options.selections[SUB_VIEW].first > 0)
 		{
-			int mainAnnotation = getLineAnnotation(MAIN_VIEW,
+			intptr_t mainAnnotation = getLineAnnotation(MAIN_VIEW,
 					getPreviousUnhiddenLine(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first));
 
-			int subAnnotation = getLineAnnotation(SUB_VIEW,
+			intptr_t subAnnotation = getLineAnnotation(SUB_VIEW,
 					getPreviousUnhiddenLine(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first));
 
 			if (mainAnnotation == 0 || subAnnotation == 0)
@@ -1944,10 +1947,10 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 		}
 
 		{
-			int mainAnnotation = getLineAnnotation(MAIN_VIEW,
+			intptr_t mainAnnotation = getLineAnnotation(MAIN_VIEW,
 					getPreviousUnhiddenLine(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].second + 1));
 
-			int subAnnotation = getLineAnnotation(SUB_VIEW,
+			intptr_t subAnnotation = getLineAnnotation(SUB_VIEW,
 					getPreviousUnhiddenLine(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].second + 1));
 
 			if (mainAnnotation == 0 || subAnnotation == 0)
@@ -1975,16 +1978,16 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 				subEndLine = 0;
 		}
 
-		const int mainEndVisible = CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, mainEndLine, 0) +
+		const intptr_t mainEndVisible = CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, mainEndLine, 0) +
 				getWrapCount(MAIN_VIEW, mainEndLine) - 1;
-		const int subEndVisible = CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subEndLine, 0) +
+		const intptr_t subEndVisible = CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subEndLine, 0) +
 				getWrapCount(SUB_VIEW, subEndLine) - 1;
 
 		if (((getLastVisibleLine(MAIN_VIEW) > mainEndVisible) || (getLastVisibleLine(SUB_VIEW) > subEndVisible)) &&
 			((mainEndVisible + getLineAnnotation(MAIN_VIEW, mainEndLine)) !=
 			(subEndVisible + getLineAnnotation(SUB_VIEW, subEndLine))))
 		{
-			const int mismatchLen = mainEndVisible - subEndVisible;
+			const intptr_t mismatchLen = mainEndVisible - subEndVisible;
 
 			if (mismatchLen == 0)
 			{
@@ -2015,7 +2018,7 @@ void showNavBar()
 
 bool isFileCompared(int view)
 {
-	const int sciDoc = getDocId(view);
+	const intptr_t sciDoc = getDocId(view);
 
 	CompareList_t::iterator cmpPair = getCompareBySciDoc(sciDoc);
 	if (cmpPair != compareList.end())
@@ -2061,7 +2064,7 @@ bool areSelectionsValid(LRESULT currentBuffId = -1, LRESULT otherBuffId = -1)
 	if (view1 == view2)
 		activateBufferID(otherBuffId);
 
-	std::pair<int, int> viewSel = getSelectionLines(view2);
+	std::pair<intptr_t, intptr_t> viewSel = getSelectionLines(view2);
 	bool valid = !(viewSel.first < 0);
 
 	if (view1 == view2)
@@ -2138,7 +2141,7 @@ bool createTempFile(const TCHAR *file, Temp_t tempType)
 
 			_tcscat_s(tempFile, _countof(tempFile), tempMark[tempType].fileMark);
 
-			unsigned idxPos = _tcslen(tempFile);
+			size_t idxPos = _tcslen(tempFile);
 
 			// Make sure temp file is unique
 			for (int i = 1; ; ++i)
@@ -2166,8 +2169,8 @@ bool createTempFile(const TCHAR *file, Temp_t tempType)
 			{
 				::SetFileAttributes(tempFile, FILE_ATTRIBUTE_TEMPORARY);
 
-				const int langType = ::SendMessage(nppData._nppHandle, NPPM_GETBUFFERLANGTYPE,
-						newCompare->pair.file[0].buffId, 0);
+				const int langType = static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETBUFFERLANGTYPE,
+						newCompare->pair.file[0].buffId, 0));
 
 				ScopedIncrementer incr(notificationsLock);
 
@@ -2345,7 +2348,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 			}
 			else if (isSelection(MAIN_VIEW) && (cmpPair->options.selections[SUB_VIEW].first != -1))
 			{
-				std::pair<int, int> newSelection = getSelectionLines(MAIN_VIEW);
+				std::pair<intptr_t, intptr_t> newSelection = getSelectionLines(MAIN_VIEW);
 				checkSelections = (newSelection.first == -1);
 
 				if (!checkSelections)
@@ -2355,7 +2358,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 			}
 			else if (isSelection(SUB_VIEW) && (cmpPair->options.selections[MAIN_VIEW].first != -1))
 			{
-				std::pair<int, int> newSelection = getSelectionLines(SUB_VIEW);
+				std::pair<intptr_t, intptr_t> newSelection = getSelectionLines(SUB_VIEW);
 				checkSelections = (newSelection.first == -1);
 
 				if (!checkSelections)
@@ -2496,7 +2499,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 					}
 				}
 
-				const int wrap = CallScintilla(MAIN_VIEW, SCI_GETWRAPMODE, 0, 0);
+				const intptr_t wrap = CallScintilla(MAIN_VIEW, SCI_GETWRAPMODE, 0, 0);
 				if (wrap != SC_WRAP_NONE)
 				{
 					CallScintilla(MAIN_VIEW, SCI_SETWRAPMODE, SC_WRAP_NONE, 0);
@@ -2770,7 +2773,7 @@ void ShowOnlyDiffs()
 		ScopedIncrementer incr(notificationsLock);
 
 		const int view = getCurrentViewId();
-		int currentLine = getCurrentLine(view);
+		intptr_t currentLine = getCurrentLine(view);
 
 		if (Settings.ShowOnlyDiffs && !isLineMarked(view, currentLine, MARKER_MASK_LINE))
 		{
@@ -2784,7 +2787,7 @@ void ShowOnlyDiffs()
 
 		ViewLocation loc;
 
-		const int firstLine = isLineVisible(view, currentLine) ? -1 : getFirstLine(view);
+		const intptr_t firstLine = isLineVisible(view, currentLine) ? -1 : getFirstLine(view);
 
 		if (firstLine == -1)
 			loc.save(view);
@@ -2818,7 +2821,7 @@ void ShowOnlySelections()
 		ScopedIncrementer incr(notificationsLock);
 
 		const int view = getCurrentViewId();
-		int currentLine = getCurrentLine(view);
+		intptr_t currentLine = getCurrentLine(view);
 
 		if (Settings.ShowOnlySelections)
 		{
@@ -2830,7 +2833,7 @@ void ShowOnlySelections()
 
 		ViewLocation loc;
 
-		const int firstLine = isLineVisible(view, currentLine) ? -1 : getFirstLine(view);
+		const intptr_t firstLine = isLineVisible(view, currentLine) ? -1 : getFirstLine(view);
 
 		if (firstLine == -1)
 			loc.save(view);
@@ -3181,12 +3184,12 @@ void syncViews(int biasView)
 {
 	const int otherView = getOtherViewId(biasView);
 
-	const int firstVisible = getFirstVisibleLine(biasView);
-	const int otherFirstVisible = getFirstVisibleLine(otherView);
+	const intptr_t firstVisible			= getFirstVisibleLine(biasView);
+	const intptr_t otherFirstVisible	= getFirstVisibleLine(otherView);
 
-	const int firstLine = CallScintilla(biasView, SCI_DOCLINEFROMVISIBLE, firstVisible, 0);
+	const intptr_t firstLine = CallScintilla(biasView, SCI_DOCLINEFROMVISIBLE, firstVisible, 0);
 
-	int otherLine = -1;
+	intptr_t otherLine = -1;
 
 	if (firstLine < CallScintilla(biasView, SCI_GETLINECOUNT, 0, 0) - 1)
 	{
@@ -3195,7 +3198,7 @@ void syncViews(int biasView)
 			LOGD("Syncing to " + std::string(biasView == MAIN_VIEW ? "MAIN" : "SUB") + " view, visible doc line: " +
 					std::to_string(firstLine + 1) + "\n");
 
-			const int otherLastVisible = CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE,
+			const intptr_t otherLastVisible = CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE,
 					CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0) - 1, 0);
 
 			otherLine = (firstVisible > otherLastVisible) ? otherLastVisible : firstVisible;
@@ -3217,13 +3220,13 @@ void syncViews(int biasView)
 
 	if (Settings.FollowingCaret && biasView == getCurrentViewId())
 	{
-		const int line = getCurrentLine(biasView);
+		const intptr_t line = getCurrentLine(biasView);
 
 		otherLine = otherViewMatchingLine(biasView, line);
 
 		if ((otherLine != getCurrentLine(otherView)) && !isSelection(otherView))
 		{
-			int pos;
+			intptr_t pos;
 
 			if (isLineAnnotated(otherView, otherLine) && isLineWrapped(otherView, otherLine))
 				pos = getLineEnd(otherView, otherLine);
@@ -3425,7 +3428,7 @@ void DelayedAlign::operator()()
 
 		goToFirst = false;
 
-		std::pair<int, int> viewLoc = jumpToFirstChange(true, true);
+		std::pair<int, intptr_t> viewLoc = jumpToFirstChange(true, true);
 
 		if (viewLoc.first >= 0)
 			syncViews(viewLoc.first);
@@ -3491,7 +3494,7 @@ void DelayedUpdate::operator()()
 }
 
 
-void onMarginClick(HWND view, int pos, int keyMods)
+void onMarginClick(HWND view, intptr_t pos, int keyMods)
 {
 	if (keyMods & SCMOD_ALT)
 		return;
@@ -3505,7 +3508,7 @@ void onMarginClick(HWND view, int pos, int keyMods)
 	if (cmpPair == compareList.end())
 		return;
 
-	const int line = CallScintilla(viewId, SCI_LINEFROMPOSITION, pos, 0);
+	const intptr_t line = CallScintilla(viewId, SCI_LINEFROMPOSITION, pos, 0);
 
 	if (!isLineMarked(viewId, line, MARKER_MASK_LINE) && !isLineAnnotated(viewId, line))
 		return;
@@ -3514,7 +3517,7 @@ void onMarginClick(HWND view, int pos, int keyMods)
 
 	if (keyMods & SCMOD_SHIFT)
 	{
-		const int markerMask = CallScintilla(viewId, SCI_MARKERGET, line, 0);
+		const int markerMask = static_cast<int>(CallScintilla(viewId, SCI_MARKERGET, line, 0));
 
 		if (markerMask & (1 << MARKER_CHANGED_LINE))
 			mark = (1 << MARKER_CHANGED_LINE);
@@ -3526,9 +3529,9 @@ void onMarginClick(HWND view, int pos, int keyMods)
 
 	if ((keyMods & SCMOD_SHIFT) && (mark == (1 << MARKER_CHANGED_LINE)))
 	{
-		const int startPos	= getLineStart(viewId, line);
-		const int endPos	= getLineStart(viewId, line + 1);
-		const int otherLine = otherViewMatchingLine(viewId, line, 0, true);
+		const intptr_t startPos		= getLineStart(viewId, line);
+		const intptr_t endPos		= getLineStart(viewId, line + 1);
+		const intptr_t otherLine	= otherViewMatchingLine(viewId, line, 0, true);
 
 		if ((otherLine < 0) ||
 			!(CallScintilla(otherViewId, SCI_MARKERGET, otherLine, 0) & (1 << MARKER_CHANGED_LINE)))
@@ -3592,7 +3595,7 @@ void onMarginClick(HWND view, int pos, int keyMods)
 		return;
 	}
 
-	std::pair<int, int> markedRange = getMarkedSection(viewId, line, line, mark);
+	std::pair<intptr_t, intptr_t> markedRange = getMarkedSection(viewId, line, line, mark);
 
 	if ((markedRange.first < 0) && !(keyMods & SCMOD_SHIFT))
 		markedRange = getMarkedSection(viewId, line + 1, line + 1, mark);
@@ -3612,7 +3615,7 @@ void onMarginClick(HWND view, int pos, int keyMods)
 		return;
 	}
 
-	std::pair<int, int> otherMarkedRange;
+	std::pair<intptr_t, intptr_t> otherMarkedRange;
 
 	if (markedRange.first < 0)
 	{
@@ -3621,8 +3624,8 @@ void onMarginClick(HWND view, int pos, int keyMods)
 	}
 	else
 	{
-		int startLine	= CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.first, 0);
-		int startOffset	= 0;
+		intptr_t startLine		= CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.first, 0);
+		intptr_t startOffset	= 0;
 
 		if (!Settings.ShowOnlyDiffs && (startLine > 1) && isLineAnnotated(viewId, startLine - 1))
 		{
@@ -3630,12 +3633,12 @@ void onMarginClick(HWND view, int pos, int keyMods)
 			startOffset = getWrapCount(viewId, startLine);
 		}
 
-		int endLine = CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.second, 0);
+		intptr_t endLine = CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.second, 0);
 
 		if (getLineStart(viewId, endLine) == markedRange.second)
 			--endLine;
 
-		int endOffset = getWrapCount(viewId, endLine) - 1;
+		intptr_t endOffset = getWrapCount(viewId, endLine) - 1;
 
 		if (!Settings.ShowOnlyDiffs)
 			endOffset += getLineAnnotation(viewId, endLine);
@@ -3655,7 +3658,7 @@ void onMarginClick(HWND view, int pos, int keyMods)
 	}
 	else
 	{
-		int otherLine = otherMarkedRange.second;
+		intptr_t otherLine = otherMarkedRange.second;
 
 		for (; (otherLine > otherMarkedRange.first) && isLineMarked(otherViewId, otherLine, mark); --otherLine);
 
@@ -3707,8 +3710,8 @@ void onMarginClick(HWND view, int pos, int keyMods)
 
 	if (otherMarkedRange.first >= 0)
 	{
-		const int otherStartLine	= CallScintilla(otherViewId, SCI_LINEFROMPOSITION, otherMarkedRange.first, 0);
-		int otherEndLine			= CallScintilla(otherViewId, SCI_LINEFROMPOSITION, otherMarkedRange.second, 0);
+		const intptr_t otherStartLine	= CallScintilla(otherViewId, SCI_LINEFROMPOSITION, otherMarkedRange.first, 0);
+		intptr_t otherEndLine			= CallScintilla(otherViewId, SCI_LINEFROMPOSITION, otherMarkedRange.second, 0);
 
 		if (otherMarkedRange.second == CallScintilla(otherViewId, SCI_GETLENGTH, 0, 0))
 			++otherEndLine;
@@ -3727,7 +3730,7 @@ void onMarginClick(HWND view, int pos, int keyMods)
 
 	if (markedRange.first >= 0)
 	{
-		const int startLine	= CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.first, 0);
+		const intptr_t startLine = CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.first, 0);
 
 		if ((otherMarkedRange.first >= 0) && (startLine > 0))
 			clearAnnotation(viewId, startLine - 1);
@@ -3742,12 +3745,12 @@ void onMarginClick(HWND view, int pos, int keyMods)
 
 	if (otherMarkedRange.first >= 0)
 	{
-		const int lastLine			= CallScintilla(viewId, SCI_GETLINECOUNT, 0, 0) - 1;
-		const int otherStartLine	= CallScintilla(otherViewId, SCI_LINEFROMPOSITION, otherMarkedRange.first, 0);
+		const intptr_t lastLine			= CallScintilla(viewId, SCI_GETLINECOUNT, 0, 0) - 1;
+		const intptr_t otherStartLine	= CallScintilla(otherViewId, SCI_LINEFROMPOSITION, otherMarkedRange.first, 0);
 
 		bool copyOtherTillEnd = false;
 
-		int startPos = markedRange.first;
+		intptr_t startPos = markedRange.first;
 
 		if (startPos < 0)
 		{
@@ -3824,8 +3827,9 @@ void onSciModified(SCNotification* notifyCode)
 
 	if (notifyCode->modificationType & SC_MOD_BEFOREDELETE)
 	{
-		const int startLine	= CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
-		const int endLine	= CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position + notifyCode->length, 0);
+		const intptr_t startLine	= CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+		const intptr_t endLine		= CallScintilla(view, SCI_LINEFROMPOSITION,
+				notifyCode->position + notifyCode->length, 0);
 
 		// Change is on single line?
 		if (endLine <= startLine)
@@ -3888,7 +3892,7 @@ void onSciModified(SCNotification* notifyCode)
 
 	if ((notifyCode->modificationType & SC_MOD_INSERTTEXT) && notifyCode->linesAdded)
 	{
-		const int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+		const intptr_t startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 
 		const int action = notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
 
@@ -3922,7 +3926,7 @@ void onSciModified(SCNotification* notifyCode)
 
 				if (!undo->otherViewMarks.empty())
 				{
-					const int alignLine = getAlignmentLine(cmpPair->summary.alignmentInfo, view, startLine);
+					const intptr_t alignLine = getAlignmentLine(cmpPair->summary.alignmentInfo, view, startLine);
 
 					if (alignLine >= 0)
 					{
@@ -3960,7 +3964,7 @@ void onSciModified(SCNotification* notifyCode)
 				}
 				else
 				{
-					int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+					intptr_t startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 
 					if ((startLine >= cmpPair->options.selections[view].first) &&
 						(startLine <= cmpPair->options.selections[view].second))
@@ -3987,8 +3991,8 @@ void onSciModified(SCNotification* notifyCode)
 		// Adjust selections if in selection compare
 		if (cmpPair->options.selectionCompare && notifyCode->linesAdded && !undo && !selectionsAdjusted)
 		{
-			int startLine		= CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
-			const int endLine	= startLine + std::abs(notifyCode->linesAdded) - 1;
+			intptr_t startLine		= CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+			const intptr_t endLine	= startLine + std::abs(notifyCode->linesAdded) - 1;
 
 			if (cmpPair->options.selections[view].first > startLine)
 			{
@@ -4057,7 +4061,7 @@ void onSciModified(SCNotification* notifyCode)
 
 		if (notifyCode->linesAdded)
 		{
-			int startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+			intptr_t startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
 
 			if (!undo)
 			{
@@ -4096,7 +4100,7 @@ void onSciZoom()
 	ScopedIncrementer incr(notificationsLock);
 
 	// sync both views zoom
-	const int zoom = CallScintilla(getCurrentViewId(), SCI_GETZOOM, 0, 0);
+	const int zoom = static_cast<int>(CallScintilla(getCurrentViewId(), SCI_GETZOOM, 0, 0));
 	CallScintilla(getOtherViewId(), SCI_SETZOOM, zoom, 0);
 
 	NppSettings::get().setCompareZoom(zoom);
@@ -4113,8 +4117,8 @@ void DelayedActivate::operator()()
 
 	if (buffId != currentlyActiveBuffID)
 	{
-		const int viewId				= viewIdFromBuffId(buffId);
-		const std::pair<int, int> sel	= getSelection(viewId); // Used to refresh selection
+		const int viewId						= viewIdFromBuffId(buffId);
+		const std::pair<intptr_t, intptr_t> sel	= getSelection(viewId); // Used to refresh selection
 
 		ScopedIncrementer incr(notificationsLock);
 
@@ -4557,8 +4561,8 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 				}
 				else
 				{
-					NppSettings::get().setMainZoom(CallScintilla(MAIN_VIEW, SCI_GETZOOM, 0, 0));
-					NppSettings::get().setSubZoom(CallScintilla(SUB_VIEW, SCI_GETZOOM, 0, 0));
+					NppSettings::get().setMainZoom(static_cast<int>(CallScintilla(MAIN_VIEW, SCI_GETZOOM, 0, 0)));
+					NppSettings::get().setSubZoom(static_cast<int>(CallScintilla(SUB_VIEW, SCI_GETZOOM, 0, 0)));
 				}
 			}
 		break;

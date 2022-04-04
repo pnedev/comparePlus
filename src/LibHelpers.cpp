@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2013 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2022 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,7 +43,7 @@ void RelativePath(const char* fullFilePath, const char* baseDir, char* filePath,
 	char fullPath[MAX_PATH];
 
 	strcpy_s(fullPath, _countof(fullPath), fullFilePath);
-	for (int i = strlen(fullPath) - 1; i >= 0; --i)
+	for (int i = static_cast<int>(strlen(fullPath) - 1); i >= 0; --i)
 	{
 		if (fullPath[i] == '\\')
 			fullPath[i] = '/';
@@ -52,13 +52,13 @@ void RelativePath(const char* fullFilePath, const char* baseDir, char* filePath,
 	char basePath[MAX_PATH];
 
 	strcpy_s(basePath, sizeof(basePath), baseDir);
-	for (int i = strlen(basePath) - 1; i >= 0; --i)
+	for (int i = static_cast<int>(strlen(basePath) - 1); i >= 0; --i)
 	{
 		if (basePath[i] == '\\')
 			basePath[i] = '/';
 	}
 
-	int relativePathPos = strlen(basePath);
+	int relativePathPos = static_cast<int>(strlen(basePath));
 
 	if (!strncmp(fullPath, basePath, relativePathPos))
 	{
@@ -77,7 +77,7 @@ void RelativePath(const wchar_t* fullFilePath, const wchar_t* baseDir, wchar_t* 
 	wchar_t fullPath[MAX_PATH];
 
 	wcscpy_s(fullPath, _countof(fullPath), fullFilePath);
-	for (int i = wcslen(fullPath) - 1; i >= 0; --i)
+	for (int i = static_cast<int>(wcslen(fullPath) - 1); i >= 0; --i)
 	{
 		if (fullPath[i] == L'\\')
 			fullPath[i] = L'/';
@@ -86,13 +86,13 @@ void RelativePath(const wchar_t* fullFilePath, const wchar_t* baseDir, wchar_t* 
 	wchar_t basePath[MAX_PATH];
 
 	wcscpy_s(basePath, _countof(basePath), baseDir);
-	for (int i = wcslen(basePath) - 1; i >= 0; --i)
+	for (int i = static_cast<int>(wcslen(basePath) - 1); i >= 0; --i)
 	{
 		if (basePath[i] == L'\\')
 			basePath[i] = L'/';
 	}
 
-	int relativePathPos = wcslen(basePath);
+	int relativePathPos = static_cast<int>(wcslen(basePath));
 
 	if (!wcsncmp(fullPath, basePath, relativePathPos))
 	{

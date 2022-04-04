@@ -34,12 +34,13 @@
  */
 
 /* Modified into template class DiffCalc
- * Copyright (C) 2017-2019  Pavel Nedev <pg.nedev@gmail.com>
+ * Copyright (C) 2017-2022  Pavel Nedev <pg.nedev@gmail.com>
  */
 
 
 #pragma once
 
+#include <cstdint>
 #include <cstdlib>
 #include <climits>
 #include <utility>
@@ -59,8 +60,8 @@ template <typename UserDataT>
 struct diff_info
 {
 	diff_type	type;
-	int			off; // off into 1 if DIFF_MATCH and DIFF_IN_1 but into 2 if DIFF_IN_2
-	int			len;
+	intptr_t	off; // off into 1 if DIFF_MATCH and DIFF_IN_1 but into 2 if DIFF_IN_2
+	intptr_t	len;
 
 	UserDataT	info;
 };
@@ -70,8 +71,8 @@ template <>
 struct diff_info<void>
 {
 	diff_type	type;
-	int			off; // off into 1 if DIFF_MATCH and DIFF_IN_1 but into 2 if DIFF_IN_2
-	int			len;
+	intptr_t	off; // off into 1 if DIFF_MATCH and DIFF_IN_1 but into 2 if DIFF_IN_2
+	intptr_t	len;
 };
 
 
@@ -83,8 +84,8 @@ template <typename Elem, typename UserDataT = void>
 class DiffCalc
 {
 public:
-	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2, int max = INT_MAX);
-	DiffCalc(const Elem v1[], int v1_size, const Elem v2[], int v2_size, int max = INT_MAX);
+	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2, intptr_t max = INTPTR_MAX);
+	DiffCalc(const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size, intptr_t max = INTPTR_MAX);
 
 	// Runs the actual compare and returns the differences + swap flag indicating if the
 	// compared sequences have been swapped for better results (if true, _a and _b have been swapped,
@@ -97,55 +98,56 @@ public:
 
 private:
 	struct middle_snake {
-		int x, y, u, v;
+		intptr_t x, y, u, v;
 	};
 
-	inline int& _v(int k, int r);
-	void _edit(diff_type type, int off, int len);
-	int _find_middle_snake(int aoff, int aend, int boff, int bend, middle_snake& ms);
-	int _ses(int aoff, int aend, int boff, int bend);
+	inline intptr_t& _v(intptr_t k, intptr_t r);
+	void _edit(diff_type type, intptr_t off, intptr_t len);
+	intptr_t _find_middle_snake(intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend, middle_snake& ms);
+	intptr_t _ses(intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend);
 	void _combine_diffs();
 	void _shift_boundaries();
-	inline int _count_replaces();
+	inline intptr_t _count_replaces();
 
 	const Elem*	_a;
-	int _a_size;
+	intptr_t _a_size;
 	const Elem*	_b;
-	int _b_size;
+	intptr_t _b_size;
 
 	std::vector<diff_info<UserDataT>>	_diff;
 
-	const int	_dmax;
-	varray<int>	_buf;
+	const intptr_t		_dmax;
+	varray<intptr_t>	_buf;
 };
 
 
 template <typename Elem, typename UserDataT>
-DiffCalc<Elem, UserDataT>::DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2, int max) :
+DiffCalc<Elem, UserDataT>::DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2, intptr_t max) :
 	_a(v1.data()), _a_size(v1.size()), _b(v2.data()), _b_size(v2.size()), _dmax(max)
 {
 }
 
 
 template <typename Elem, typename UserDataT>
-DiffCalc<Elem, UserDataT>::DiffCalc(const Elem v1[], int v1_size, const Elem v2[], int v2_size, int max) :
+DiffCalc<Elem, UserDataT>::DiffCalc(const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size,
+		intptr_t max) :
 	_a(v1), _a_size(v1_size), _b(v2), _b_size(v2_size), _dmax(max)
 {
 }
 
 
 template <typename Elem, typename UserDataT>
-inline int& DiffCalc<Elem, UserDataT>::_v(int k, int r)
+inline intptr_t& DiffCalc<Elem, UserDataT>::_v(intptr_t k, intptr_t r)
 {
 	/* Pack -N to N into 0 to N * 2 */
-	const int j = (k <= 0) ? (-k * 4 + r) : (k * 4 + (r - 2));
+	const intptr_t j = (k <= 0) ? (-k * 4 + r) : (k * 4 + (r - 2));
 
 	return _buf.get(j);
 }
 
 
 template <typename Elem, typename UserDataT>
-void DiffCalc<Elem, UserDataT>::_edit(diff_type type, int off, int len)
+void DiffCalc<Elem, UserDataT>::_edit(diff_type type, intptr_t off, intptr_t len)
 {
 	if (len == 0)
 		return;
@@ -173,18 +175,19 @@ void DiffCalc<Elem, UserDataT>::_edit(diff_type type, int off, int len)
 
 
 template <typename Elem, typename UserDataT>
-int DiffCalc<Elem, UserDataT>::_find_middle_snake(int aoff, int aend, int boff, int bend, middle_snake& ms)
+intptr_t DiffCalc<Elem, UserDataT>::_find_middle_snake(intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend,
+	middle_snake& ms)
 {
-	const int delta = aend - bend;
-	const int odd = delta & 1;
-	const int mid = (aend + bend) / 2 + odd;
+	const intptr_t delta = aend - bend;
+	const intptr_t odd = delta & 1;
+	const intptr_t mid = (aend + bend) / 2 + odd;
 
 	_v(1, 0) = 0;
 	_v(delta - 1, 1) = aend;
 
-	for (int d = 0; d <= mid; ++d)
+	for (intptr_t d = 0; d <= mid; ++d)
 	{
-		int k, x, y;
+		intptr_t k, x, y;
 
 		if ((2 * d - 1) >= _dmax)
 			return _dmax;
@@ -222,7 +225,7 @@ int DiffCalc<Elem, UserDataT>::_find_middle_snake(int aoff, int aend, int boff, 
 
 		for (k = d; k >= -d; k -= 2)
 		{
-			int kr = (aend - bend) + k;
+			intptr_t kr = (aend - bend) + k;
 
 			if (k == d || (k != -d && _v(kr - 1, 1) < _v(kr + 1, 1)))
 			{
@@ -264,10 +267,10 @@ int DiffCalc<Elem, UserDataT>::_find_middle_snake(int aoff, int aend, int boff, 
 
 
 template <typename Elem, typename UserDataT>
-int DiffCalc<Elem, UserDataT>::_ses(int aoff, int aend, int boff, int bend)
+intptr_t DiffCalc<Elem, UserDataT>::_ses(intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend)
 {
 	middle_snake ms = { 0 };
-	int d;
+	intptr_t d;
 
 	if (aend == 0)
 	{
@@ -308,8 +311,8 @@ int DiffCalc<Elem, UserDataT>::_ses(int aoff, int aend, int boff, int bend)
 		}
 		else
 		{
-			int x = ms.x;
-			int u = ms.u;
+			intptr_t x = ms.x;
+			intptr_t u = ms.u;
 
 			/* There are only 4 base cases when the
 			 * edit distance is 1.
@@ -364,19 +367,19 @@ int DiffCalc<Elem, UserDataT>::_ses(int aoff, int aend, int boff, int bend)
 template <typename Elem, typename UserDataT>
 void DiffCalc<Elem, UserDataT>::_combine_diffs()
 {
-	for (int i = 1; i < static_cast<int>(_diff.size()); ++i)
+	for (intptr_t i = 1; i < static_cast<intptr_t>(_diff.size()); ++i)
 	{
 		if (_diff[i].type != diff_type::DIFF_MATCH)
 			continue;
 
-		if (i + 1 < static_cast<int>(_diff.size()))
+		if (i + 1 < static_cast<intptr_t>(_diff.size()))
 		{
 			const Elem*	el	= _b;
 
 			if (_diff[i + 1].type == diff_type::DIFF_IN_1)
 			{
 				// If there is DIFF_IN_2 after DIFF_IN_1 both sequences are changed - diff endings don't match for sure
-				if ((i + 2 < static_cast<int>(_diff.size())) && (_diff[i + 2].type == diff_type::DIFF_IN_2))
+				if ((i + 2 < static_cast<intptr_t>(_diff.size())) && (_diff[i + 2].type == diff_type::DIFF_IN_2))
 				{
 					i += 2;
 					continue;
@@ -394,10 +397,10 @@ void DiffCalc<Elem, UserDataT>::_combine_diffs()
 				continue;
 			}
 
-			int match_len = match.len;
+			intptr_t match_len = match.len;
 
-			int match_off = next_diff->off - 1;
-			int check_off = next_diff->off + next_diff->len - 1;
+			intptr_t match_off = next_diff->off - 1;
+			intptr_t check_off = next_diff->off + next_diff->len - 1;
 
 			while ((match_len > 0) && (el[match_off] == el[check_off]))
 			{
@@ -416,7 +419,7 @@ void DiffCalc<Elem, UserDataT>::_combine_diffs()
 			// move the match down linking the surrounding diffs and matches
 
 			// Link match to the next matching block
-			if (i + 2 < static_cast<int>(_diff.size()))
+			if (i + 2 < static_cast<intptr_t>(_diff.size()))
 			{
 				_diff[i + 2].off -= match.len;
 				_diff[i + 2].len += match.len;
@@ -439,7 +442,7 @@ void DiffCalc<Elem, UserDataT>::_combine_diffs()
 
 			next_diff = &_diff[i];
 
-			int k = i - 1;
+			intptr_t k = i - 1;
 
 			diff_info<UserDataT>* prev_diff = &_diff[k];
 
@@ -479,7 +482,7 @@ void DiffCalc<Elem, UserDataT>::_combine_diffs()
 template <typename Elem, typename UserDataT>
 void DiffCalc<Elem, UserDataT>::_shift_boundaries()
 {
-	for (int i = 0; i < static_cast<int>(_diff.size()); ++i)
+	for (intptr_t i = 0; i < static_cast<intptr_t>(_diff.size()); ++i)
 	{
 		if (_diff[i].type == diff_type::DIFF_MATCH)
 			continue;
@@ -489,7 +492,7 @@ void DiffCalc<Elem, UserDataT>::_shift_boundaries()
 		if (_diff[i].type == diff_type::DIFF_IN_1)
 		{
 			// If there is DIFF_IN_2 after DIFF_IN_1 both sequences are changed - boundaries do not match for sure
-			if ((i + 1 < static_cast<int>(_diff.size())) && (_diff[i + 1].type == diff_type::DIFF_IN_2))
+			if ((i + 1 < static_cast<intptr_t>(_diff.size())) && (_diff[i + 1].type == diff_type::DIFF_IN_2))
 			{
 				++i;
 				continue;
@@ -498,15 +501,15 @@ void DiffCalc<Elem, UserDataT>::_shift_boundaries()
 			el	= _a;
 		}
 
-		if (i + 1 < static_cast<int>(_diff.size()))
+		if (i + 1 < static_cast<intptr_t>(_diff.size()))
 		{
 			diff_info<UserDataT>& diff = _diff[i];
 			diff_info<UserDataT>* next_match_diff = &_diff[i + 1];
 
-			const int max_len = (diff.len > next_match_diff->len) ? next_match_diff->len : diff.len;
+			const intptr_t max_len = (diff.len > next_match_diff->len) ? next_match_diff->len : diff.len;
 
-			int check_off = diff.off + diff.len;
-			int shift_len = 0;
+			intptr_t check_off = diff.off + diff.len;
+			intptr_t shift_len = 0;
 
 			while (shift_len < max_len && el[diff.off] == el[check_off])
 			{
@@ -543,11 +546,11 @@ void DiffCalc<Elem, UserDataT>::_shift_boundaries()
 				// The whole match diff shifted - erase it and merge surrounding diff blocks
 				if (next_match_diff->len == 0)
 				{
-					int j = i + 1;
+					intptr_t j = i + 1;
 
 					_diff.erase(_diff.begin() + j);
 
-					if (j < static_cast<int>(_diff.size()) && _diff[i].type == _diff[j].type)
+					if (j < static_cast<intptr_t>(_diff.size()) && _diff[i].type == _diff[j].type)
 					{
 						_diff[i].len += _diff[j].len;
 						_diff.erase(_diff.begin() + j);
@@ -563,12 +566,12 @@ void DiffCalc<Elem, UserDataT>::_shift_boundaries()
 
 
 template <typename Elem, typename UserDataT>
-inline int DiffCalc<Elem, UserDataT>::_count_replaces()
+inline intptr_t DiffCalc<Elem, UserDataT>::_count_replaces()
 {
-	const int diffSize = static_cast<int>(_diff.size()) - 1;
-	int replaces = 0;
+	const intptr_t diffSize = static_cast<intptr_t>(_diff.size()) - 1;
+	intptr_t replaces = 0;
 
-	for (int i = 0; i < diffSize; ++i)
+	for (intptr_t i = 0; i < diffSize; ++i)
 	{
 		if ((_diff[i].type == diff_type::DIFF_IN_1) && (_diff[i + 1].type == diff_type::DIFF_IN_2))
 		{
@@ -596,10 +599,10 @@ std::pair<std::vector<diff_info<UserDataT>>, bool> DiffCalc<Elem, UserDataT>::op
 	/* The _ses function assumes we begin with a diff. The following ensures this is true by skipping any matches
 	 * in the beginning. This also helps to quickly process sequences that match entirely.
 	 */
-	int off = 0;
+	intptr_t off = 0;
 
-	int asize = _a_size;
-	int bsize = _b_size;
+	intptr_t asize = _a_size;
+	intptr_t bsize = _b_size;
 
 	while (off < asize && off < bsize && _a[off] == _b[off])
 		++off;
@@ -624,7 +627,7 @@ std::pair<std::vector<diff_info<UserDataT>>, bool> DiffCalc<Elem, UserDataT>::op
 	// Swap compared sequences and re-compare to see if result is more optimal
 	if (_a_size == _b_size)
 	{
-		const int replacesCount = _count_replaces();
+		const intptr_t replacesCount = _count_replaces();
 
 		// Store current compare result
 		std::vector<diff_info<UserDataT>> storedDiff = std::move(_diff);
@@ -635,7 +638,7 @@ std::pair<std::vector<diff_info<UserDataT>>, bool> DiffCalc<Elem, UserDataT>::op
 		if (storedDiff[0].type == diff_type::DIFF_MATCH)
 			_diff.push_back(storedDiff[0]);
 
-		int newReplacesCount = _ses(off, asize, off, bsize);
+		intptr_t newReplacesCount = _ses(off, asize, off, bsize);
 
 		// Wipe temporal buffer to free memory
 		_buf.get().clear();

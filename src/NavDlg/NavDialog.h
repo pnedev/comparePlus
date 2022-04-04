@@ -1,6 +1,6 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
- * Copyright (C)2017-2018 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2022 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,6 +23,7 @@
 #include "DockingFeature/Window.h"
 #include "DockingFeature/DockingDlgInterface.h"
 
+#include <cstdint>
 #include <vector>
 
 
@@ -87,10 +88,10 @@ private:
 
 		int maxBmpLines() const
 		{
-			return (m_lineMap.empty() ? m_lines : static_cast<int>(m_lineMap.size()));
+			return static_cast<int>(m_lineMap.empty() ? m_lines : m_lineMap.size());
 		}
 
-		int bmpToDocLine(int bmpLine) const
+		intptr_t bmpToDocLine(int bmpLine) const
 		{
 			if (bmpLine < 0)
 				return 0;
@@ -102,20 +103,20 @@ private:
 			return m_lineMap.back();
 		}
 
-		int docToBmpLine(int docLine) const;
+		int docToBmpLine(intptr_t docLine) const;
 
-		int		m_view;
+		int			m_view;
 
-		HDC		m_hViewDC;
-		HDC		m_hSelDC;
+		HDC			m_hViewDC;
+		HDC			m_hSelDC;
 
-		HBITMAP	m_hViewBMP;
-		HBITMAP	m_hSelBMP;
+		HBITMAP		m_hViewBMP;
+		HBITMAP		m_hSelBMP;
 
-		int		m_firstVisible;
-		int		m_lines;
+		intptr_t	m_firstVisible;
+		intptr_t	m_lines;
 
-		std::vector<int>	m_lineMap;
+		std::vector<intptr_t>	m_lineMap;
 	};
 
 	void doDialog();
