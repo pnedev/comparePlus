@@ -37,6 +37,8 @@
 #include "diff.h"
 #include "ProgressDlg.h"
 
+#define MULTITHREAD		1
+
 #ifdef MULTITHREAD
 
 #if defined(__MINGW32__) && !defined(_GLIBCXX_HAS_GTHREADS)
