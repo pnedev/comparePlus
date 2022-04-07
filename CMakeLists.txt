@@ -9,7 +9,11 @@ if (UNIX OR MINGW)
 	set (CMAKE_FIND_ROOT_PATH_MODE_LIBRARY  ONLY)
 	set (CMAKE_FIND_ROOT_PATH_MODE_INCLUDE  ONLY)
 
-	set (toolchain_prefix   i686-w64-mingw32)
+	if (WIN64)
+		set (toolchain_prefix   x86_64-w64-mingw32)
+	else ()
+		set (toolchain_prefix   i686-w64-mingw32)
+	endif ()
 
 	set (CMAKE_C_COMPILER   ${CMAKE_SYSROOT}/bin/${toolchain_prefix}-gcc)
 	set (CMAKE_CXX_COMPILER ${CMAKE_SYSROOT}/bin/${toolchain_prefix}-g++)
@@ -29,6 +33,10 @@ if (UNIX OR MINGW)
 
 	if (NOT DEBUG)
 		set (defs ${defs} -DNDEBUG)
+	endif ()
+
+	if (WIN64)
+		set (defs ${defs} -D_WIN64)
 	endif ()
 
 	if (MULTITHREAD)
@@ -129,7 +137,7 @@ if (UNIX OR MINGW)
 	target_link_libraries (ComparePlus ${comctl32} ${comdlg32} ${shlwapi} ${msimg32})
 
 	set (INSTALL_PATH
-		"$ENV{HOME}/.wine/drive_c/Program Files/Notepad++/plugins/ComparePlus"
+		"$ENV{HOME}/wine/drive_c/Program Files/Notepad++/plugins/ComparePlus"
 	)
 
 	install (FILES ${CMAKE_BINARY_DIR}/ComparePlus.dll
