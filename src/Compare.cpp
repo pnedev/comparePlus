@@ -60,6 +60,12 @@ static LRESULT	dLogBuf = -1;
 namespace // anonymous namespace
 {
 
+constexpr int MIN_NOTEPADPP_VERSION_MAJOR = 8;
+constexpr int MIN_NOTEPADPP_VERSION_MINOR = 30;
+
+constexpr int MIN_NOTEPADPP_VERSION = ((MIN_NOTEPADPP_VERSION_MAJOR << 16) | MIN_NOTEPADPP_VERSION_MINOR);
+
+
 /**
  *  \class
  *  \brief
@@ -3376,6 +3382,17 @@ void onNppReady()
 
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_AUTO_RECOMPARE]._cmdID,
 			(LPARAM)Settings.RecompareOnChange);
+
+	if (getNotepadVersion() < MIN_NOTEPADPP_VERSION)
+	{
+		TCHAR msg[256];
+
+		_sntprintf_s(msg, _countof(msg), _TRUNCATE,
+				TEXT("ComparePlus plugin version is for Notepad++ versions above v%d.%d (included). It might not function as expected and might cause instability or crash!"),
+				MIN_NOTEPADPP_VERSION_MAJOR, MIN_NOTEPADPP_VERSION_MINOR);
+
+		::MessageBox(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK | MB_ICONERROR);
+	}
 }
 
 
@@ -4435,22 +4452,19 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID)
 
 extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 {
-	nppData		= notpadPlusData;
+	// Check just in case
+	static_assert(MAIN_VIEW == 0 && SUB_VIEW == 1);
+
+	nppData = notpadPlusData;
+
 	sciFunc		= (SciFnDirect)::SendMessage(notpadPlusData._scintillaMainHandle, SCI_GETDIRECTFUNCTION, 0, 0);
 	sciPtr[0]	= (sptr_t)::SendMessage(notpadPlusData._scintillaMainHandle, SCI_GETDIRECTPOINTER, 0, 0);
 	sciPtr[1]	= (sptr_t)::SendMessage(notpadPlusData._scintillaSecondHandle, SCI_GETDIRECTPOINTER, 0, 0);
 
 	if (!sciFunc || !sciPtr[0] || !sciPtr[1])
 	{
-		::MessageBox(notpadPlusData._nppHandle,
-				TEXT("Error getting direct Scintilla call pointers, plugin init failed!"),
-				PLUGIN_NAME, MB_OK | MB_ICONERROR);
-
 		exit(EXIT_FAILURE);
 	}
-
-	// Check just in case
-	assert(MAIN_VIEW == 0 && SUB_VIEW == 1);
 
 	Settings.load();
 

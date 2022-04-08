@@ -297,6 +297,12 @@ inline bool isFileEmpty(int view)
 }
 
 
+inline int getNotepadVersion()
+{
+	return (int)::SendMessage(nppData._nppHandle, NPPM_GETNPPVERSION, 0, 0);
+}
+
+
 inline bool getWrapMode()
 {
 	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
