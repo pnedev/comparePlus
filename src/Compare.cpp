@@ -116,6 +116,8 @@ private:
 	bool	_syncVScroll;
 	bool	_syncHScroll;
 
+	int		_lineNumMode;
+
 	int		_mainZoom;
 	int		_subZoom;
 	int		_compareZoom;
@@ -642,6 +644,8 @@ void NppSettings::save()
 	_syncVScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLV, MF_BYCOMMAND) & MF_CHECKED) != 0;
 	_syncHScroll = (::GetMenuState(hMenu, IDM_VIEW_SYNSCROLLH, MF_BYCOMMAND) & MF_CHECKED) != 0;
 
+	_lineNumMode = (int)::SendMessage(nppData._nppHandle, NPPM_GETLINENUMBERWIDTHMODE, 0, 0);
+
 	if (_mainZoom == 0)
 		_mainZoom = static_cast<int>(CallScintilla(MAIN_VIEW, SCI_GETZOOM, 0, 0));
 
@@ -675,6 +679,9 @@ void NppSettings::setNormalMode(bool forceUpdate)
 			if (syncScroll != _syncHScroll)
 				::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLH);
 		}
+
+		if (_lineNumMode != LINENUMWIDTH_CONSTANT)
+			::SendMessage(nppData._nppHandle, NPPM_SETLINENUMBERWIDTHMODE, 0, _lineNumMode);
 
 		CallScintilla(MAIN_VIEW, SCI_SETZOOM, _mainZoom, 0);
 		CallScintilla(SUB_VIEW, SCI_SETZOOM, _subZoom, 0);
@@ -720,6 +727,9 @@ void NppSettings::setCompareMode(bool clearHorizontalScroll)
 	// Yaron - Enable N++ horizontal scroll sync
 	if (!_syncHScroll)
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_SYNSCROLLH);
+
+	if (_lineNumMode != LINENUMWIDTH_CONSTANT)
+		::SendMessage(nppData._nppHandle, NPPM_SETLINENUMBERWIDTHMODE, 0, LINENUMWIDTH_CONSTANT);
 
 	// synchronize zoom levels
 	if (_compareZoom == 0)
