@@ -3393,16 +3393,16 @@ void onNppReady()
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_AUTO_RECOMPARE]._cmdID,
 			(LPARAM)Settings.RecompareOnChange);
 
-	if (getNotepadVersion() < MIN_NOTEPADPP_VERSION)
-	{
-		TCHAR msg[256];
+	// if (getNotepadVersion() < MIN_NOTEPADPP_VERSION)
+	// {
+		// TCHAR msg[256];
 
-		_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-				TEXT("ComparePlus plugin version is for Notepad++ versions above v%d.%d (included). It might not function as expected and might cause instability or crash!"),
-				MIN_NOTEPADPP_VERSION_MAJOR, MIN_NOTEPADPP_VERSION_MINOR);
+		// _sntprintf_s(msg, _countof(msg), _TRUNCATE,
+				// TEXT("ComparePlus plugin version is for Notepad++ versions above v%d.%d (included). It might not function as expected and might cause instability or crash!"),
+				// MIN_NOTEPADPP_VERSION_MAJOR, MIN_NOTEPADPP_VERSION_MINOR);
 
-		::MessageBox(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK | MB_ICONERROR);
-	}
+		// ::MessageBox(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK | MB_ICONERROR);
+	// }
 }
 
 
