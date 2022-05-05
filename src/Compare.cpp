@@ -4462,9 +4462,6 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID)
 
 extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 {
-	// Check just in case
-	static_assert(MAIN_VIEW == 0 && SUB_VIEW == 1);
-
 	nppData = notpadPlusData;
 
 	sciFunc		= (SciFnDirect)::SendMessage(notpadPlusData._scintillaMainHandle, SCI_GETDIRECTFUNCTION, 0, 0);
