@@ -299,7 +299,7 @@ inline bool isFileEmpty(int view)
 
 inline int getNotepadVersion()
 {
-	return (int)::SendMessage(nppData._nppHandle, NPPM_GETNPPVERSION, 0, 0);
+	return (int)::SendMessage(nppData._nppHandle, NPPM_GETNPPVERSION, 1, 0);
 }
 
 
