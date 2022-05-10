@@ -61,7 +61,7 @@ namespace // anonymous namespace
 {
 
 constexpr int MIN_NOTEPADPP_VERSION_MAJOR = 8;
-constexpr int MIN_NOTEPADPP_VERSION_MINOR = 30;
+constexpr int MIN_NOTEPADPP_VERSION_MINOR = 410;
 
 constexpr int MIN_NOTEPADPP_VERSION = ((MIN_NOTEPADPP_VERSION_MAJOR << 16) | MIN_NOTEPADPP_VERSION_MINOR);
 
@@ -348,7 +348,7 @@ public:
 
 	bool			compareDirty	= false;
 	bool			manuallyChanged	= false;
-	unsigned		inEqualizeMode	= 0;
+	int				inEqualizeMode	= 0;
 
 	int				autoUpdateDelay	= 0;
 };
@@ -525,8 +525,8 @@ LRESULT (*nppNotificationProc)(HWND, UINT, WPARAM, LPARAM) = nullptr;
 CompareList_t compareList;
 std::unique_ptr<NewCompare> newCompare = nullptr;
 
-volatile unsigned	notificationsLock = 0;
-bool				isNppMinimized = false;
+int		notificationsLock = 0;
+bool	isNppMinimized = false;
 
 std::unique_ptr<ViewLocation> storedLocation = nullptr;
 std::vector<int> copiedSectionMarks;
@@ -2188,7 +2188,7 @@ bool createTempFile(const TCHAR *file, Temp_t tempType)
 				const int langType = static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETBUFFERLANGTYPE,
 						newCompare->pair.file[0].buffId, 0));
 
-				ScopedIncrementer incr(notificationsLock);
+				ScopedIncrementerInt incr(notificationsLock);
 
 				if (::SendMessage(nppData._nppHandle, NPPM_DOOPEN, 0, (LPARAM)tempFile))
 				{
@@ -2219,7 +2219,7 @@ void clearComparePair(LRESULT buffId)
 	if (cmpPair == compareList.end())
 		return;
 
-	ScopedIncrementer incr(notificationsLock);
+	ScopedIncrementerInt incr(notificationsLock);
 
 	cmpPair->restoreFiles(buffId);
 
@@ -2233,7 +2233,7 @@ void closeComparePair(CompareList_t::iterator cmpPair)
 {
 	HWND currentView = getCurrentView();
 
-	ScopedIncrementer incr(notificationsLock);
+	ScopedIncrementerInt incr(notificationsLock);
 
 	// First close the file in the SUB_VIEW as closing a file may lead to a single view mode
 	// and if that happens we want to be in single main view
@@ -2330,7 +2330,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 {
 	delayedUpdate.cancel();
 
-	ScopedIncrementer incr(notificationsLock);
+	ScopedIncrementerInt incr(notificationsLock);
 
 	// Just to be sure any old state is cleared
 	storedLocation = nullptr;
@@ -2645,7 +2645,7 @@ void ClearAllCompares()
 
 	const LRESULT buffId = getCurrentBuffId();
 
-	ScopedIncrementer incr(notificationsLock);
+	ScopedIncrementerInt incr(notificationsLock);
 
 	::SetFocus(getOtherView());
 
@@ -2786,7 +2786,7 @@ void ShowOnlyDiffs()
 
 	if (cmpPair != compareList.end())
 	{
-		ScopedIncrementer incr(notificationsLock);
+		ScopedIncrementerInt incr(notificationsLock);
 
 		const int view = getCurrentViewId();
 		intptr_t currentLine = getCurrentLine(view);
@@ -2834,7 +2834,7 @@ void ShowOnlySelections()
 
 	if (cmpPair != compareList.end())
 	{
-		ScopedIncrementer incr(notificationsLock);
+		ScopedIncrementerInt incr(notificationsLock);
 
 		const int view = getCurrentViewId();
 		intptr_t currentLine = getCurrentLine(view);
@@ -2890,7 +2890,7 @@ void Prev()
 {
 	if (NppSettings::get().compareMode)
 	{
-		ScopedIncrementer incr(notificationsLock);
+		ScopedIncrementerInt incr(notificationsLock);
 
 		jumpToChange(false, Settings.WrapAround);
 	}
@@ -2901,7 +2901,7 @@ void Next()
 {
 	if (NppSettings::get().compareMode)
 	{
-		ScopedIncrementer incr(notificationsLock);
+		ScopedIncrementerInt incr(notificationsLock);
 
 		jumpToChange(true, Settings.WrapAround);
 	}
@@ -2912,7 +2912,7 @@ void First()
 {
 	if (NppSettings::get().compareMode)
 	{
-		ScopedIncrementer incr(notificationsLock);
+		ScopedIncrementerInt incr(notificationsLock);
 
 		jumpToFirstChange(true);
 	}
@@ -2923,7 +2923,7 @@ void Last()
 {
 	if (NppSettings::get().compareMode)
 	{
-		ScopedIncrementer incr(notificationsLock);
+		ScopedIncrementerInt incr(notificationsLock);
 
 		jumpToLastChange(true);
 	}
@@ -3227,7 +3227,7 @@ void syncViews(int biasView)
 
 	if (otherLine >= 0)
 	{
-		ScopedIncrementer incr(notificationsLock);
+		ScopedIncrementerInt incr(notificationsLock);
 
 		CallScintilla(otherView, SCI_SETFIRSTVISIBLELINE, otherLine, 0);
 
@@ -3249,7 +3249,7 @@ void syncViews(int biasView)
 			else
 				pos = getLineStart(otherView, otherLine);
 
-			ScopedIncrementer incr(notificationsLock);
+			ScopedIncrementerInt incr(notificationsLock);
 
 			CallScintilla(otherView, SCI_SETEMPTYSELECTION, pos, 0);
 
@@ -3268,7 +3268,7 @@ void comparedFileActivated()
 		if (Settings.UseNavBar && !NavDlg.isVisible())
 			showNavBar();
 
-		ScopedIncrementer incr(notificationsLock);
+		ScopedIncrementerInt incr(notificationsLock);
 
 		NppSettings::get().setCompareMode();
 	}
@@ -3289,7 +3289,7 @@ void comparedFileActivated()
 		if ((cmpPair != compareList.end()) && (Settings.ShowOnlyDiffs ||
 			(cmpPair->options.selectionCompare && Settings.ShowOnlySelections)))
 		{
-			ScopedIncrementer incr(notificationsLock);
+			ScopedIncrementerInt incr(notificationsLock);
 
 			alignDiffs(cmpPair);
 		}
@@ -3369,8 +3369,6 @@ void onNppReady()
 	if (isSingleView())
 		NppSettings::get().enableNppScrollCommands(false);
 
-	NppSettings::get().updatePluginMenu();
-
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID,
 			(LPARAM)Settings.DetectMoves);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_CHAR_DIFFS]._cmdID,
@@ -3393,16 +3391,44 @@ void onNppReady()
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_AUTO_RECOMPARE]._cmdID,
 			(LPARAM)Settings.RecompareOnChange);
 
-	// if (getNotepadVersion() < MIN_NOTEPADPP_VERSION)
-	// {
-		// TCHAR msg[256];
+	if (getNotepadVersion() < MIN_NOTEPADPP_VERSION)
+	{
+		TCHAR msg[256];
 
-		// _sntprintf_s(msg, _countof(msg), _TRUNCATE,
-				// TEXT("ComparePlus plugin version is for Notepad++ versions above v%d.%d (included). It might not function as expected and might cause instability or crash!"),
-				// MIN_NOTEPADPP_VERSION_MAJOR, MIN_NOTEPADPP_VERSION_MINOR);
+		_sntprintf_s(msg, _countof(msg), _TRUNCATE,
+				_T("%s v%s is not compatible with current Notepad++ version.\nPlugin commands will be disabled."),
+				PLUGIN_NAME, PLUGIN_VERSION_STR);
 
-		// ::MessageBox(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK | MB_ICONERROR);
-	// }
+		MessageBox(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK | MB_ICONWARNING);
+
+		notificationsLock = 1;
+
+		HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
+
+		constexpr int flag = MF_BYCOMMAND | MF_DISABLED | MF_GRAYED;
+
+		for (size_t i = 0; i < NB_MENU_COMMANDS; ++i)
+		{
+			if (funcItem[i]._pFunc != nullptr)
+				::EnableMenuItem(hMenu, funcItem[i]._cmdID, flag);
+		}
+
+		::DrawMenuBar(nppData._nppHandle);
+
+		HWND hNppToolbar = NppToolbarHandleGetter::get();
+		if (hNppToolbar)
+		{
+			::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_CLEAR_ACTIVE]._cmdID, false);
+			::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_FIRST]._cmdID, false);
+			::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_PREV]._cmdID, false);
+			::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_NEXT]._cmdID, false);
+			::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_LAST]._cmdID, false);
+		}
+	}
+	else
+	{
+		NppSettings::get().updatePluginMenu();
+	}
 }
 
 
@@ -3428,7 +3454,7 @@ void DelayedAlign::operator()()
 
 	bool realign = goToFirst || selectionAutoRecompare;
 
-	ScopedIncrementer incr(notificationsLock);
+	ScopedIncrementerInt incr(notificationsLock);
 
 	if (!realign)
 	{
@@ -3505,7 +3531,7 @@ inline void onSciPaint()
 
 void onSciUpdateUI(HWND view)
 {
-	ScopedIncrementer incr(notificationsLock);
+	ScopedIncrementerInt incr(notificationsLock);
 
 	LOGD("onSciUpdateUI()\n");
 
@@ -3586,7 +3612,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 
 		const bool lastMarked = (endPos == CallScintilla(viewId, SCI_GETLENGTH, 0, 0));
 
-		ScopedIncrementer			inEqualize(cmpPair->inEqualizeMode);
+		ScopedIncrementerInt		inEqualize(cmpPair->inEqualizeMode);
 		ScopedViewUndoAction		scopedUndo(viewId);
 		ScopedFirstVisibleLineStore	firstVisLine(viewId);
 
@@ -3728,7 +3754,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 		return;
 	}
 
-	ScopedIncrementer			inEqualize(cmpPair->inEqualizeMode);
+	ScopedIncrementerInt		inEqualize(cmpPair->inEqualizeMode);
 	ScopedViewUndoAction		scopedUndo(viewId);
 	ScopedFirstVisibleLineStore	firstVisLine(viewId);
 
@@ -3867,7 +3893,7 @@ void onSciModified(SCNotification* notifyCode)
 
 		const int action = notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
 
-		ScopedIncrementer incr(notificationsLock);
+		ScopedIncrementerInt incr(notificationsLock);
 
 		if (cmpPair->options.selectionCompare)
 		{
@@ -3927,7 +3953,7 @@ void onSciModified(SCNotification* notifyCode)
 				" view, lines range: " + std::to_string(startLine + 1) + "-" +
 				std::to_string(startLine + notifyCode->linesAdded) + "\n");
 
-		ScopedIncrementer incr(notificationsLock);
+		ScopedIncrementerInt incr(notificationsLock);
 
 		notReverting = true;
 
@@ -4124,7 +4150,7 @@ void onSciZoom()
 	if (cmpPair == compareList.end())
 		return;
 
-	ScopedIncrementer incr(notificationsLock);
+	ScopedIncrementerInt incr(notificationsLock);
 
 	// sync both views zoom
 	const int zoom = static_cast<int>(CallScintilla(getCurrentViewId(), SCI_GETZOOM, 0, 0));
@@ -4147,7 +4173,7 @@ void DelayedActivate::operator()()
 		const int viewId						= viewIdFromBuffId(buffId);
 		const std::pair<intptr_t, intptr_t> sel	= getSelection(viewId); // Used to refresh selection
 
-		ScopedIncrementer incr(notificationsLock);
+		ScopedIncrementerInt incr(notificationsLock);
 
 		setSelection(viewId, sel.first, sel.first);
 
@@ -4191,7 +4217,7 @@ void onBufferActivated(LRESULT buffId)
 	delayedUpdate.cancel();
 	delayedActivation.cancel();
 
-	ScopedIncrementer incr(notificationsLock);
+	ScopedIncrementerInt incr(notificationsLock);
 
 	LOGDB(buffId, "onBufferActivated()\n");
 
@@ -4216,7 +4242,7 @@ void DelayedClose::operator()()
 {
 	const LRESULT currentBuffId = getCurrentBuffId();
 
-	ScopedIncrementer incr(notificationsLock);
+	ScopedIncrementerInt incr(notificationsLock);
 
 	for (int i = static_cast<int>(closedBuffs.size()) - 1; i >= 0; --i)
 	{
@@ -4283,7 +4309,7 @@ void onFileBeforeClose(LRESULT buffId)
 
 	const LRESULT currentBuffId = getCurrentBuffId();
 
-	ScopedIncrementer incr(notificationsLock);
+	ScopedIncrementerInt incr(notificationsLock);
 
 	ComparedFile& closedFile = cmpPair->getFileByBuffId(buffId);
 	closedFile.onBeforeClose();
@@ -4321,7 +4347,7 @@ void onFileSaved(LRESULT buffId)
 	const LRESULT currentBuffId = getCurrentBuffId();
 	const bool pairIsActive = (currentBuffId == buffId || currentBuffId == otherFile.buffId);
 
-	ScopedIncrementer incr(notificationsLock);
+	ScopedIncrementerInt incr(notificationsLock);
 
 	if (!pairIsActive)
 	{

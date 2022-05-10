@@ -1,6 +1,6 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
- * Copyright (C) 2016 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C) 2016-2022 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -27,9 +27,10 @@
  *  \struct
  *  \brief
  */
+template <typename T>
 struct ScopedIncrementer
 {
-	ScopedIncrementer(volatile unsigned& useCount) : _useCount(useCount)
+	ScopedIncrementer(T& useCount) : _useCount(useCount)
 	{
 		++_useCount;
 	}
@@ -42,8 +43,11 @@ struct ScopedIncrementer
 	ScopedIncrementer& operator=(const ScopedIncrementer&) = delete;
 
 private:
-	volatile unsigned&	_useCount;
+	T&	_useCount;
 };
+
+
+using ScopedIncrementerInt = ScopedIncrementer<int>;
 
 
 /**
