@@ -3397,7 +3397,7 @@ void onNppReady()
 
 		_sntprintf_s(msg, _countof(msg), _TRUNCATE,
 				_T("%s v%s is not compatible with current Notepad++ version.\nPlugin commands will be disabled."),
-				PLUGIN_NAME, PLUGIN_VERSION_STR);
+				PLUGIN_NAME, _T(TO_STR(PLUGIN_VERSION)));
 
 		MessageBox(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK | MB_ICONWARNING);
 

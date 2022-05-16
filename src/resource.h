@@ -29,7 +29,25 @@
 #define VER_FILEVERSION			1,0,0,0
 #define IS_PRERELEASE			1
 
-#define PLUGIN_VERSION_STR		_T(TO_STR(PLUGIN_VERSION))
+#if (IS_PRERELEASE == 1)
+#define VER_PRERELEASE	VS_FF_PRERELEASE
+#else
+#define VER_PRERELEASE	0
+#endif
+
+#ifdef _DEBUG
+#define VER_DEBUG		VS_FF_DEBUG
+#else
+#define VER_DEBUG		0
+#endif
+
+#define VER_FILEFLAGS	(VER_PRERELEASE | VER_DEBUG)
+
+#ifdef WIN64
+#define VER_PRODUCT_STR		"ComparePlus (64-bit)\0"
+#else
+#define VER_PRODUCT_STR		"ComparePlus (32-bit)\0"
+#endif
 
 
 #define IDDEFAULT						3

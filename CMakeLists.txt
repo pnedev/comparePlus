@@ -36,7 +36,7 @@ if (UNIX OR MINGW)
 	endif ()
 
 	if (WIN64)
-		set (defs ${defs} -D_WIN64)
+		set (defs ${defs} -DWIN64)
 	endif ()
 
 	if (MULTITHREAD)
