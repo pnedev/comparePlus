@@ -594,6 +594,8 @@ void clearChangedIndicator(int view, intptr_t start, intptr_t length);
 void setNormalView(int view);
 void setCompareView(int view, int blankColor);
 
+bool isDarkMode();
+
 void setStyles(UserSettings& settings);
 
 void clearWindow(int view);

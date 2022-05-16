@@ -1500,7 +1500,7 @@ void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, intptr_t line
 	intptr_t line = cmpInfo.doc1.lines[bd.off + bd.info.changedLines[lineIdx].line].line;
 	intptr_t linePos = getLineStart(cmpInfo.doc1.view, line);
 	int color = (cmpInfo.doc1.blockDiffMask == MARKER_MASK_ADDED) ?
-			Settings.colors.add_highlight : Settings.colors.rem_highlight;
+			Settings.colors().add_highlight : Settings.colors().rem_highlight;
 
 	for (const auto& change: bd.info.changedLines[lineIdx].changes)
 		markTextAsChanged(cmpInfo.doc1.view, linePos + change.off, change.len, color);
@@ -1512,7 +1512,7 @@ void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, intptr_t line
 	line = cmpInfo.doc2.lines[bd.info.matchBlock->off + bd.info.matchBlock->info.changedLines[lineIdx].line].line;
 	linePos = getLineStart(cmpInfo.doc2.view, line);
 	color = (cmpInfo.doc2.blockDiffMask == MARKER_MASK_ADDED) ?
-			Settings.colors.add_highlight : Settings.colors.rem_highlight;
+			Settings.colors().add_highlight : Settings.colors().rem_highlight;
 
 	for (const auto& change: bd.info.matchBlock->info.changedLines[lineIdx].changes)
 		markTextAsChanged(cmpInfo.doc2.view, linePos + change.off, change.len, color);

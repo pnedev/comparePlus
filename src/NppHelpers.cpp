@@ -409,33 +409,44 @@ void setCompareView(int view, int blankColor)
 }
 
 
+bool isDarkMode()
+{
+	if (::SendMessage(nppData._nppHandle, NPPM_ISDARKMODEENABLED, 0, 0))
+		return true;
+
+	const int bg = static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETEDITORDEFAULTBACKGROUNDCOLOR, 0, 0));
+
+	const int r = bg & 0xFF;
+	const int g = bg >> 8 & 0xFF;
+	const int b = bg >> 16 & 0xFF;
+
+	return (((r + g + b) / 3) < 128);
+}
+
+
 void setStyles(UserSettings& settings)
 {
 	const int bg = static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETEDITORDEFAULTBACKGROUNDCOLOR, 0, 0));
 
-	settings.colors._default = bg;
+	settings.colors()._default = bg;
 
-	unsigned int r = bg & 0xFF;
-	unsigned int g = bg >> 8 & 0xFF;
-	unsigned int b = bg >> 16 & 0xFF;
-	int colorShift = 0;
+	int r = bg & 0xFF;
+	int g = bg >> 8 & 0xFF;
+	int b = bg >> 16 & 0xFF;
 
-	if (((r + g + b) / 3) >= 128)
-		colorShift = -30;
-	else
-		colorShift = 30;
+	static const int colorShift = 20;
 
-	r = (r + colorShift) & 0xFF;
-	g = (g + colorShift) & 0xFF;
-	b = (b + colorShift) & 0xFF;
+	r = (r > colorShift) ? (r - colorShift) & 0xFF : 0;
+	g = (g > colorShift) ? (g - colorShift) & 0xFF : 0;
+	b = (b > colorShift) ? (b - colorShift) & 0xFF : 0;
 
-	settings.colors.blank = r | (g << 8) | (b << 16);
+	settings.colors().blank = r | (g << 8) | (b << 16);
 
-	defineColor(MARKER_ADDED_LINE,		settings.colors.added);
-	defineColor(MARKER_REMOVED_LINE,	settings.colors.removed);
-	defineColor(MARKER_MOVED_LINE,		settings.colors.moved);
-	defineColor(MARKER_CHANGED_LINE,	settings.colors.changed);
-	defineColor(MARKER_BLANK,			settings.colors.blank);
+	defineColor(MARKER_ADDED_LINE,		settings.colors().added);
+	defineColor(MARKER_REMOVED_LINE,	settings.colors().removed);
+	defineColor(MARKER_MOVED_LINE,		settings.colors().moved);
+	defineColor(MARKER_CHANGED_LINE,	settings.colors().changed);
+	defineColor(MARKER_BLANK,			settings.colors().blank);
 
 	defineRgbaSymbol(MARKER_CHANGED_SYMBOL,				icon_changed);
 	defineRgbaSymbol(MARKER_CHANGED_LOCAL_SYMBOL,		icon_changed_local);
@@ -448,10 +459,10 @@ void setStyles(UserSettings& settings)
 	defineRgbaSymbol(MARKER_MOVED_BLOCK_MID_SYMBOL,		icon_moved_block_middle);
 	defineRgbaSymbol(MARKER_MOVED_BLOCK_END_SYMBOL,		icon_moved_block_end);
 
-	setTextStyle(settings.colors.transparency);
+	setTextStyle(settings.colors().transparency);
 
-	setBlanksStyle(MAIN_VIEW,	settings.colors.blank);
-	setBlanksStyle(SUB_VIEW,	settings.colors.blank);
+	setBlanksStyle(MAIN_VIEW,	settings.colors().blank);
+	setBlanksStyle(SUB_VIEW,	settings.colors().blank);
 }
 
 

@@ -1723,7 +1723,7 @@ void resetCompareView(int view)
 
 	CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(view));
 	if (cmpPair != compareList.end())
-		setCompareView(view, Settings.colors.blank);
+		setCompareView(view, Settings.colors().blank);
 }
 
 
@@ -2027,7 +2027,7 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 
 void showNavBar()
 {
-	if (!NavDlg.SetColors(Settings.colors))
+	if (!NavDlg.SetColors(Settings.colors()))
 		NavDlg.Show();
 }
 
@@ -2477,8 +2477,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 			NppSettings::get().setCompareMode(true);
 
-			setCompareView(MAIN_VIEW, Settings.colors.blank);
-			setCompareView(SUB_VIEW, Settings.colors.blank);
+			setCompareView(MAIN_VIEW, Settings.colors().blank);
+			setCompareView(SUB_VIEW, Settings.colors().blank);
 
 			if (recompare)
 			{
@@ -2943,7 +2943,7 @@ void OpenSettingsDlg(void)
 		if (!compareList.empty())
 		{
 			setStyles(Settings);
-			NavDlg.SetColors(Settings.colors);
+			NavDlg.SetColors(Settings.colors());
 		}
 	}
 }
@@ -3279,8 +3279,8 @@ void comparedFileActivated()
 	temporaryRangeSelect(-1);
 	setArrowMark(-1);
 
-	setCompareView(MAIN_VIEW,	Settings.colors.blank);
-	setCompareView(SUB_VIEW,	Settings.colors.blank);
+	setCompareView(MAIN_VIEW,	Settings.colors().blank);
+	setCompareView(SUB_VIEW,	Settings.colors().blank);
 
 	if (Settings.ShowOnlyDiffs || Settings.ShowOnlySelections)
 	{
@@ -3427,6 +3427,11 @@ void onNppReady()
 	}
 	else
 	{
+		if (isDarkMode())
+			Settings.useDarkColors();
+		else
+			Settings.useLightColors();
+
 		NppSettings::get().updatePluginMenu();
 	}
 }
@@ -4624,8 +4629,14 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 		break;
 
 		case NPPN_WORDSTYLESUPDATED:
+		case NPPN_DARKMODECHANGED:
+			if (isDarkMode())
+				Settings.useDarkColors();
+			else
+				Settings.useLightColors();
+
 			setStyles(Settings);
-			NavDlg.SetColors(Settings.colors);
+			NavDlg.SetColors(Settings.colors());
 		break;
 
 		case NPPN_TBMODIFICATION:

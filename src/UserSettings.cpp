@@ -23,44 +23,53 @@
 #include <cstdlib>
 
 
-const TCHAR UserSettings::mainSection[]					= TEXT("main_settings");
+const TCHAR UserSettings::mainSection[]						= TEXT("main_settings");
 
-const TCHAR UserSettings::newFileViewSetting[]			= TEXT("new_in_sub_view");
-const TCHAR UserSettings::firstIsNewSetting[]			= TEXT("set_first_as_new");
-const TCHAR UserSettings::compareToPrevSetting[]		= TEXT("default_compare_to_prev");
+const TCHAR UserSettings::newFileViewSetting[]				= TEXT("new_in_sub_view");
+const TCHAR UserSettings::firstIsNewSetting[]				= TEXT("set_first_as_new");
+const TCHAR UserSettings::compareToPrevSetting[]			= TEXT("default_compare_to_prev");
 
-const TCHAR UserSettings::encodingsCheckSetting[]		= TEXT("check_encodings");
-const TCHAR UserSettings::alignAllMatchesSetting[]		= TEXT("align_all_matches");
-const TCHAR UserSettings::markIgnoredLinesSetting[]		= TEXT("never_colorize_ignored_lines");
-const TCHAR UserSettings::promptCloseOnMatchSetting[]	= TEXT("prompt_to_close_on_match");
-const TCHAR UserSettings::wrapAroundSetting[]			= TEXT("wrap_around");
-const TCHAR UserSettings::gotoFirstDiffSetting[]		= TEXT("go_to_first_on_recompare");
-const TCHAR UserSettings::followingCaretSetting[]		= TEXT("following_caret");
+const TCHAR UserSettings::encodingsCheckSetting[]			= TEXT("check_encodings");
+const TCHAR UserSettings::alignAllMatchesSetting[]			= TEXT("align_all_matches");
+const TCHAR UserSettings::markIgnoredLinesSetting[]			= TEXT("never_colorize_ignored_lines");
+const TCHAR UserSettings::promptCloseOnMatchSetting[]		= TEXT("prompt_to_close_on_match");
+const TCHAR UserSettings::wrapAroundSetting[]				= TEXT("wrap_around");
+const TCHAR UserSettings::gotoFirstDiffSetting[]			= TEXT("go_to_first_on_recompare");
+const TCHAR UserSettings::followingCaretSetting[]			= TEXT("following_caret");
 
-const TCHAR UserSettings::detectMovesSetting[]			= TEXT("detect_moves");
-const TCHAR UserSettings::detectCharDiffsSetting[]		= TEXT("detect_character_diffs");
-const TCHAR UserSettings::bestSeqChangedLinesSetting[]	= TEXT("best_seq_changed_lines");
-const TCHAR UserSettings::ignoreSpacesSetting[]			= TEXT("ignore_spaces");
-const TCHAR UserSettings::ignoreEmptyLinesSetting[]		= TEXT("ignore_empty_lines");
-const TCHAR UserSettings::ignoreCaseSetting[]			= TEXT("ignore_case");
-const TCHAR UserSettings::showOnlySelSetting[]			= TEXT("show_only_selections");
-const TCHAR UserSettings::showOnlyDiffSetting[]			= TEXT("show_only_diffs");
-const TCHAR UserSettings::navBarSetting[]				= TEXT("navigation_bar");
+const TCHAR UserSettings::detectMovesSetting[]				= TEXT("detect_moves");
+const TCHAR UserSettings::detectCharDiffsSetting[]			= TEXT("detect_character_diffs");
+const TCHAR UserSettings::bestSeqChangedLinesSetting[]		= TEXT("best_seq_changed_lines");
+const TCHAR UserSettings::ignoreSpacesSetting[]				= TEXT("ignore_spaces");
+const TCHAR UserSettings::ignoreEmptyLinesSetting[]			= TEXT("ignore_empty_lines");
+const TCHAR UserSettings::ignoreCaseSetting[]				= TEXT("ignore_case");
+const TCHAR UserSettings::showOnlySelSetting[]				= TEXT("show_only_selections");
+const TCHAR UserSettings::showOnlyDiffSetting[]				= TEXT("show_only_diffs");
+const TCHAR UserSettings::navBarSetting[]					= TEXT("navigation_bar");
 
-const TCHAR UserSettings::reCompareOnChangeSetting[]	= TEXT("recompare_on_change");
+const TCHAR UserSettings::reCompareOnChangeSetting[]		= TEXT("recompare_on_change");
 
-const TCHAR UserSettings::statusTypeSetting[]			= TEXT("status_type");
+const TCHAR UserSettings::statusTypeSetting[]				= TEXT("status_type");
 
-const TCHAR UserSettings::colorsSection[]				= TEXT("color_settings");
+const TCHAR UserSettings::colorsSection[]					= TEXT("color_settings");
 
-const TCHAR UserSettings::addedColorSetting[]			= TEXT("added");
-const TCHAR UserSettings::removedColorSetting[]			= TEXT("removed");
-const TCHAR UserSettings::movedColorSetting[]			= TEXT("moved");
-const TCHAR UserSettings::changedColorSetting[]			= TEXT("changed");
-const TCHAR UserSettings::addHighlightColorSetting[]	= TEXT("added_highlight");
-const TCHAR UserSettings::remHighlightColorSetting[]	= TEXT("removed_highlight");
-const TCHAR UserSettings::highlightTranspSetting[]		= TEXT("transparency");
-const TCHAR UserSettings::changedThresholdSetting[]		= TEXT("changed_threshold_percentage");
+const TCHAR UserSettings::addedColorSetting[]				= TEXT("added");
+const TCHAR UserSettings::removedColorSetting[]				= TEXT("removed");
+const TCHAR UserSettings::movedColorSetting[]				= TEXT("moved");
+const TCHAR UserSettings::changedColorSetting[]				= TEXT("changed");
+const TCHAR UserSettings::addHighlightColorSetting[]		= TEXT("added_highlight");
+const TCHAR UserSettings::remHighlightColorSetting[]		= TEXT("removed_highlight");
+const TCHAR UserSettings::highlightTranspSetting[]			= TEXT("transparency");
+
+const TCHAR UserSettings::addedColorDarkSetting[]			= TEXT("added_dark");
+const TCHAR UserSettings::removedColorDarkSetting[]			= TEXT("removed_dark");
+const TCHAR UserSettings::movedColorDarkSetting[]			= TEXT("moved_dark");
+const TCHAR UserSettings::changedColorDarkSetting[]			= TEXT("changed_dark");
+const TCHAR UserSettings::addHighlightColorDarkSetting[]	= TEXT("added_highlight_dark");
+const TCHAR UserSettings::remHighlightColorDarkSetting[]	= TEXT("removed_highlight_dark");
+const TCHAR UserSettings::highlightTranspDarkSetting[]		= TEXT("transparency_dark");
+
+const TCHAR UserSettings::changedThresholdSetting[]			= TEXT("changed_threshold_percentage");
 
 
 void UserSettings::load()
@@ -109,20 +118,35 @@ void UserSettings::load()
 
 	statusType = (SavedStatusType < STATUS_TYPE_END) ? SavedStatusType : static_cast<StatusType>(DEFAULT_STATUS_TYPE);
 
-	colors.added			= ::GetPrivateProfileInt(colorsSection, addedColorSetting,
+	colorsLight.added			= ::GetPrivateProfileInt(colorsSection, addedColorSetting,
 			DEFAULT_ADDED_COLOR, iniFile);
-	colors.removed			= ::GetPrivateProfileInt(colorsSection, removedColorSetting,
+	colorsLight.removed			= ::GetPrivateProfileInt(colorsSection, removedColorSetting,
 			DEFAULT_REMOVED_COLOR, iniFile);
-	colors.moved			= ::GetPrivateProfileInt(colorsSection, movedColorSetting,
+	colorsLight.moved			= ::GetPrivateProfileInt(colorsSection, movedColorSetting,
 			DEFAULT_MOVED_COLOR, iniFile);
-	colors.changed			= ::GetPrivateProfileInt(colorsSection, changedColorSetting,
+	colorsLight.changed			= ::GetPrivateProfileInt(colorsSection, changedColorSetting,
 			DEFAULT_CHANGED_COLOR, iniFile);
-	colors.add_highlight	= ::GetPrivateProfileInt(colorsSection, addHighlightColorSetting,
+	colorsLight.add_highlight	= ::GetPrivateProfileInt(colorsSection, addHighlightColorSetting,
 			DEFAULT_HIGHLIGHT_COLOR, iniFile);
-	colors.rem_highlight	= ::GetPrivateProfileInt(colorsSection, remHighlightColorSetting,
+	colorsLight.rem_highlight	= ::GetPrivateProfileInt(colorsSection, remHighlightColorSetting,
 			DEFAULT_HIGHLIGHT_COLOR, iniFile);
-	colors.transparency		= ::GetPrivateProfileInt(colorsSection, highlightTranspSetting,
+	colorsLight.transparency		= ::GetPrivateProfileInt(colorsSection, highlightTranspSetting,
 			DEFAULT_HIGHLIGHT_TRANSP, iniFile);
+
+	colorsDark.added			= ::GetPrivateProfileInt(colorsSection, addedColorDarkSetting,
+			DEFAULT_ADDED_COLOR_DARK, iniFile);
+	colorsDark.removed			= ::GetPrivateProfileInt(colorsSection, removedColorDarkSetting,
+			DEFAULT_REMOVED_COLOR_DARK, iniFile);
+	colorsDark.moved			= ::GetPrivateProfileInt(colorsSection, movedColorDarkSetting,
+			DEFAULT_MOVED_COLOR_DARK, iniFile);
+	colorsDark.changed			= ::GetPrivateProfileInt(colorsSection, changedColorDarkSetting,
+			DEFAULT_CHANGED_COLOR_DARK, iniFile);
+	colorsDark.add_highlight	= ::GetPrivateProfileInt(colorsSection, addHighlightColorDarkSetting,
+			DEFAULT_HIGHLIGHT_COLOR_DARK, iniFile);
+	colorsDark.rem_highlight	= ::GetPrivateProfileInt(colorsSection, remHighlightColorDarkSetting,
+			DEFAULT_HIGHLIGHT_COLOR_DARK, iniFile);
+	colorsDark.transparency		= ::GetPrivateProfileInt(colorsSection, highlightTranspDarkSetting,
+			DEFAULT_HIGHLIGHT_TRANSP_DARK, iniFile);
 
 	ChangedThresholdPercent	= ::GetPrivateProfileInt(colorsSection, changedThresholdSetting,
 			DEFAULT_CHANGED_THRESHOLD, iniFile);
@@ -216,26 +240,47 @@ void UserSettings::save()
 	_itot_s(static_cast<int>(SavedStatusType), buffer, 64, 10);
 	::WritePrivateProfileString(mainSection, statusTypeSetting, buffer, iniFile);
 
-	_itot_s(colors.added, buffer, 64, 10);
+	_itot_s(colorsLight.added, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, addedColorSetting, buffer, iniFile);
 
-	_itot_s(colors.removed, buffer, 64, 10);
+	_itot_s(colorsLight.removed, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, removedColorSetting, buffer, iniFile);
 
-	_itot_s(colors.moved, buffer, 64, 10);
+	_itot_s(colorsLight.moved, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, movedColorSetting, buffer, iniFile);
 
-	_itot_s(colors.changed, buffer, 64, 10);
+	_itot_s(colorsLight.changed, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, changedColorSetting, buffer, iniFile);
 
-	_itot_s(colors.add_highlight, buffer, 64, 10);
+	_itot_s(colorsLight.add_highlight, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, addHighlightColorSetting, buffer, iniFile);
 
-	_itot_s(colors.rem_highlight, buffer, 64, 10);
+	_itot_s(colorsLight.rem_highlight, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, remHighlightColorSetting, buffer, iniFile);
 
-	_itot_s(colors.transparency, buffer, 64, 10);
+	_itot_s(colorsLight.transparency, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, highlightTranspSetting, buffer, iniFile);
+
+	_itot_s(colorsDark.added, buffer, 64, 10);
+	::WritePrivateProfileString(colorsSection, addedColorDarkSetting, buffer, iniFile);
+
+	_itot_s(colorsDark.removed, buffer, 64, 10);
+	::WritePrivateProfileString(colorsSection, removedColorDarkSetting, buffer, iniFile);
+
+	_itot_s(colorsDark.moved, buffer, 64, 10);
+	::WritePrivateProfileString(colorsSection, movedColorDarkSetting, buffer, iniFile);
+
+	_itot_s(colorsDark.changed, buffer, 64, 10);
+	::WritePrivateProfileString(colorsSection, changedColorDarkSetting, buffer, iniFile);
+
+	_itot_s(colorsDark.add_highlight, buffer, 64, 10);
+	::WritePrivateProfileString(colorsSection, addHighlightColorDarkSetting, buffer, iniFile);
+
+	_itot_s(colorsDark.rem_highlight, buffer, 64, 10);
+	::WritePrivateProfileString(colorsSection, remHighlightColorDarkSetting, buffer, iniFile);
+
+	_itot_s(colorsDark.transparency, buffer, 64, 10);
+	::WritePrivateProfileString(colorsSection, highlightTranspDarkSetting, buffer, iniFile);
 
 	_itot_s(ChangedThresholdPercent, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, changedThresholdSetting, buffer, iniFile);

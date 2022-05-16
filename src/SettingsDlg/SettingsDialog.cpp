@@ -115,13 +115,30 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					settings.GotoFirstDiff			= (bool) DEFAULT_GOTO_FIRST_DIFF;
 					settings.PromptToCloseOnMatch	= (bool) DEFAULT_PROMPT_CLOSE_ON_MATCH;
 
-					settings.colors.added			= DEFAULT_ADDED_COLOR;
-					settings.colors.removed			= DEFAULT_REMOVED_COLOR;
-					settings.colors.moved			= DEFAULT_MOVED_COLOR;
-					settings.colors.changed			= DEFAULT_CHANGED_COLOR;
-					settings.colors.add_highlight	= DEFAULT_HIGHLIGHT_COLOR;
-					settings.colors.rem_highlight	= DEFAULT_HIGHLIGHT_COLOR;
-					settings.colors.transparency	= DEFAULT_HIGHLIGHT_TRANSP;
+					if (isDarkMode())
+					{
+						settings.useDarkColors();
+
+						settings.colors().added			= DEFAULT_ADDED_COLOR_DARK;
+						settings.colors().removed		= DEFAULT_REMOVED_COLOR_DARK;
+						settings.colors().moved			= DEFAULT_MOVED_COLOR_DARK;
+						settings.colors().changed		= DEFAULT_CHANGED_COLOR_DARK;
+						settings.colors().add_highlight	= DEFAULT_HIGHLIGHT_COLOR_DARK;
+						settings.colors().rem_highlight	= DEFAULT_HIGHLIGHT_COLOR_DARK;
+						settings.colors().transparency	= DEFAULT_HIGHLIGHT_TRANSP_DARK;
+					}
+					else
+					{
+						settings.useLightColors();
+
+						settings.colors().added			= DEFAULT_ADDED_COLOR;
+						settings.colors().removed		= DEFAULT_REMOVED_COLOR;
+						settings.colors().moved			= DEFAULT_MOVED_COLOR;
+						settings.colors().changed		= DEFAULT_CHANGED_COLOR;
+						settings.colors().add_highlight	= DEFAULT_HIGHLIGHT_COLOR;
+						settings.colors().rem_highlight	= DEFAULT_HIGHLIGHT_COLOR;
+						settings.colors().transparency	= DEFAULT_HIGHLIGHT_TRANSP;
+					}
 
 					settings.ChangedThresholdPercent	= DEFAULT_CHANGED_THRESHOLD;
 
@@ -222,20 +239,20 @@ void SettingsDialog::SetParams(UserSettings* settings)
 			settings->FollowingCaret ? BST_CHECKED : BST_UNCHECKED);
 
 	// Set current colors configured in option dialog
-	_ColorComboAdded.setColor(settings->colors.added);
-	_ColorComboRemoved.setColor(settings->colors.removed);
-	_ColorComboMoved.setColor(settings->colors.moved);
-	_ColorComboChanged.setColor(settings->colors.changed);
-	_ColorComboAddHighlight.setColor(settings->colors.add_highlight);
-	_ColorComboRemHighlight.setColor(settings->colors.rem_highlight);
+	_ColorComboAdded.setColor(settings->colors().added);
+	_ColorComboRemoved.setColor(settings->colors().removed);
+	_ColorComboMoved.setColor(settings->colors().moved);
+	_ColorComboChanged.setColor(settings->colors().changed);
+	_ColorComboAddHighlight.setColor(settings->colors().add_highlight);
+	_ColorComboRemHighlight.setColor(settings->colors().rem_highlight);
 
-	if (settings->colors.transparency < c_Highlight_transp_min)
-		settings->colors.transparency = c_Highlight_transp_min;
-	else if (settings->colors.transparency > c_Highlight_transp_max)
-		settings->colors.transparency = c_Highlight_transp_max;
+	if (settings->colors().transparency < c_Highlight_transp_min)
+		settings->colors().transparency = c_Highlight_transp_min;
+	else if (settings->colors().transparency > c_Highlight_transp_max)
+		settings->colors().transparency = c_Highlight_transp_max;
 
 	// Set transparency
-	::SetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, settings->colors.transparency, FALSE);
+	::SetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, settings->colors().transparency, FALSE);
 
 	if (settings->ChangedThresholdPercent < c_Threshold_perc_min)
 		settings->ChangedThresholdPercent = c_Threshold_perc_min;
@@ -262,24 +279,24 @@ void SettingsDialog::GetParams()
 	_Settings->FollowingCaret		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_FOLLOWING_CARET)) == BST_CHECKED);
 
 	// Get color chosen in dialog
-	_ColorComboAdded.getColor((LPCOLORREF)&_Settings->colors.added);
-	_ColorComboRemoved.getColor((LPCOLORREF)&_Settings->colors.removed);
-	_ColorComboMoved.getColor((LPCOLORREF)&_Settings->colors.moved);
-	_ColorComboChanged.getColor((LPCOLORREF)&_Settings->colors.changed);
-	_ColorComboAddHighlight.getColor((LPCOLORREF)&_Settings->colors.add_highlight);
-	_ColorComboRemHighlight.getColor((LPCOLORREF)&_Settings->colors.rem_highlight);
+	_ColorComboAdded.getColor((LPCOLORREF)&_Settings->colors().added);
+	_ColorComboRemoved.getColor((LPCOLORREF)&_Settings->colors().removed);
+	_ColorComboMoved.getColor((LPCOLORREF)&_Settings->colors().moved);
+	_ColorComboChanged.getColor((LPCOLORREF)&_Settings->colors().changed);
+	_ColorComboAddHighlight.getColor((LPCOLORREF)&_Settings->colors().add_highlight);
+	_ColorComboRemHighlight.getColor((LPCOLORREF)&_Settings->colors().rem_highlight);
 
 	// Get transparency
-	_Settings->colors.transparency = ::GetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, NULL, FALSE);
-	int setting = _Settings->colors.transparency;
+	_Settings->colors().transparency = ::GetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, NULL, FALSE);
+	int setting = _Settings->colors().transparency;
 
-	if (_Settings->colors.transparency < c_Highlight_transp_min)
-		_Settings->colors.transparency = c_Highlight_transp_min;
-	else if (_Settings->colors.transparency > c_Highlight_transp_max)
-		_Settings->colors.transparency = c_Highlight_transp_max;
+	if (_Settings->colors().transparency < c_Highlight_transp_min)
+		_Settings->colors().transparency = c_Highlight_transp_min;
+	else if (_Settings->colors().transparency > c_Highlight_transp_max)
+		_Settings->colors().transparency = c_Highlight_transp_max;
 
-	if (setting != _Settings->colors.transparency)
-		::SetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, _Settings->colors.transparency, FALSE);
+	if (setting != _Settings->colors().transparency)
+		::SetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, _Settings->colors().transparency, FALSE);
 
 	// Get changed threshold percentage
 	_Settings->ChangedThresholdPercent = ::GetDlgItemInt(_hSelf, IDC_THRESHOLD_SPIN_BOX, NULL, FALSE);
