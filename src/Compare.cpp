@@ -618,6 +618,7 @@ void NppSettings::updatePluginMenu()
 	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ALL]._cmdID,
 			MF_BYCOMMAND | ((compareList.empty() && !newCompare) ? (MF_DISABLED | MF_GRAYED) : MF_ENABLED));
 
+	::EnableMenuItem(hMenu, funcItem[CMD_COMPARE_STATS]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, flag);
@@ -2721,6 +2722,69 @@ void GitDiff()
 }
 
 
+void CompareStats()
+{
+	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
+	if (cmpPair == compareList.end())
+		return;
+
+	TCHAR info[512];
+
+	int infoCurrentPos = _sntprintf_s(info, _countof(info), _TRUNCATE, TEXT("%s Stats:\n\n"),
+			cmpPair->options.findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"));
+
+	TCHAR buf[256];
+
+	if (cmpPair->summary.diffLines)
+	{
+		const int len =
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Diff Lines:\n"), cmpPair->summary.diffLines);
+		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+		infoCurrentPos += len;
+	}
+	if (cmpPair->summary.added)
+	{
+		const int len =
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Added ,"), cmpPair->summary.added);
+		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+		infoCurrentPos += len;
+	}
+	if (cmpPair->summary.removed)
+	{
+		const int len =
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Removed ,"), cmpPair->summary.removed);
+		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+		infoCurrentPos += len;
+	}
+	if (cmpPair->summary.moved)
+	{
+		const int len =
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Moved ,"), cmpPair->summary.moved);
+		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+		infoCurrentPos += len;
+	}
+	if (cmpPair->summary.changed)
+	{
+		const int len =
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Changed ,"), cmpPair->summary.changed);
+		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+		infoCurrentPos += len;
+	}
+	if (cmpPair->summary.match)
+	{
+		const int len =
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(".\n%Id Match ,"), cmpPair->summary.match) - 2;
+		_tcscpy_s(info + infoCurrentPos - 2, _countof(info) - infoCurrentPos + 2, buf);
+		infoCurrentPos += len;
+	}
+
+	if (info[infoCurrentPos - 2] == TEXT(' '))
+		info[infoCurrentPos - 2] = TEXT('\0');
+
+	::MessageBox(nppData._nppHandle, info, PLUGIN_NAME, MB_OK);
+}
+
+
 void DetectMoves()
 {
 	Settings.DetectMoves = !Settings.DetectMoves;
@@ -3069,6 +3133,9 @@ void createMenu()
 	funcItem[CMD_GIT_DIFF]._pShKey->_isCtrl 		= true;
 	funcItem[CMD_GIT_DIFF]._pShKey->_isShift		= false;
 	funcItem[CMD_GIT_DIFF]._pShKey->_key 			= 'G';
+
+	_tcscpy_s(funcItem[CMD_COMPARE_STATS]._itemName, nbChar, TEXT("Compare Stats"));
+	funcItem[CMD_COMPARE_STATS]._pFunc = CompareStats;
 
 	_tcscpy_s(funcItem[CMD_DETECT_MOVES]._itemName, nbChar, TEXT("Detect Moves"));
 	funcItem[CMD_DETECT_MOVES]._pFunc = DetectMoves;
