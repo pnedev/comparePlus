@@ -3008,6 +3008,12 @@ void OpenSettingsDlg(void)
 		{
 			setStyles(Settings);
 			NavDlg.SetColors(Settings.colors());
+
+			if (NppSettings::get().compareMode)
+			{
+				setCompareView(MAIN_VIEW, Settings.colors().blank);
+				setCompareView(SUB_VIEW, Settings.colors().blank);
+			}
 		}
 	}
 }
@@ -4702,8 +4708,17 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 			else
 				Settings.useLightColors();
 
-			setStyles(Settings);
-			NavDlg.SetColors(Settings.colors());
+			if (!compareList.empty())
+			{
+				setStyles(Settings);
+				NavDlg.SetColors(Settings.colors());
+
+				if (NppSettings::get().compareMode)
+				{
+					setCompareView(MAIN_VIEW, Settings.colors().blank);
+					setCompareView(SUB_VIEW, Settings.colors().blank);
+				}
+			}
 		break;
 
 		case NPPN_TBMODIFICATION:

@@ -400,9 +400,9 @@ void setCompareView(int view, int blankColor)
 		CallScintilla(view, SCI_SETMARGINMASKN, MARGIN_NUM, (LPARAM)(MARKER_MASK_SYMBOL | MARKER_MASK_ARROW));
 		CallScintilla(view, SCI_SETMARGINWIDTHN, MARGIN_NUM, 16);
 		CallScintilla(view, SCI_SETMARGINSENSITIVEN, MARGIN_NUM, true);
-
-		CallScintilla(view, SCI_SETCARETLINEBACKALPHA, 96, 0);
 	}
+
+	CallScintilla(view, SCI_SETCARETLINEBACKALPHA, 64, 0);
 
 	// For some reason the annotation blank styling is lost on Sci doc switch thus we need to reapply it
 	setBlanksStyle(view, blankColor);
