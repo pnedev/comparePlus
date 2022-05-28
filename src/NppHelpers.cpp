@@ -388,7 +388,7 @@ void setNormalView(int view)
 }
 
 
-void setCompareView(int view, int blankColor)
+void setCompareView(int view, int blankColor, int currentLineTransp)
 {
 	if (!compareMode[view])
 	{
@@ -402,7 +402,9 @@ void setCompareView(int view, int blankColor)
 		CallScintilla(view, SCI_SETMARGINSENSITIVEN, MARGIN_NUM, true);
 	}
 
-	CallScintilla(view, SCI_SETCARETLINEBACKALPHA, 64, 0);
+	const int alpha = ((100 - currentLineTransp) * SC_ALPHA_OPAQUE / 100);
+
+	CallScintilla(view, SCI_SETCARETLINEBACKALPHA, alpha, 0);
 
 	// For some reason the annotation blank styling is lost on Sci doc switch thus we need to reapply it
 	setBlanksStyle(view, blankColor);
@@ -459,7 +461,7 @@ void setStyles(UserSettings& settings)
 	defineRgbaSymbol(MARKER_MOVED_BLOCK_MID_SYMBOL,		icon_moved_block_middle);
 	defineRgbaSymbol(MARKER_MOVED_BLOCK_END_SYMBOL,		icon_moved_block_end);
 
-	setTextStyle(settings.colors().transparency);
+	setTextStyle(settings.colors().highlight_transparency);
 
 	setBlanksStyle(MAIN_VIEW,	settings.colors().blank);
 	setBlanksStyle(SUB_VIEW,	settings.colors().blank);
