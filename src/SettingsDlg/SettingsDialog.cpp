@@ -27,6 +27,8 @@
 
 static const int c_Highlight_transp_min = 0;
 static const int c_Highlight_transp_max = 100;
+static const int c_Caret_line_transp_min = 0;
+static const int c_Caret_line_transp_max = 100;
 static const int c_Threshold_perc_min = 1;
 static const int c_Threshold_perc_max = 99;
 
@@ -67,11 +69,17 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 			HWND hCtrl = ::GetDlgItem(_hSelf, IDC_HIGHLIGHT_SPIN_BOX);
 			::SendMessage(hCtrl, EM_SETLIMITTEXT, 3L, 0);
 
+			hCtrl = ::GetDlgItem(_hSelf, IDC_CARET_LINE_SPIN_BOX);
+			::SendMessage(hCtrl, EM_SETLIMITTEXT, 3L, 0);
+
 			hCtrl = ::GetDlgItem(_hSelf, IDC_THRESHOLD_SPIN_BOX);
 			::SendMessage(hCtrl, EM_SETLIMITTEXT, 2L, 0);
 
 			hCtrl = ::GetDlgItem(_hSelf, IDC_HIGHLIGHT_SPIN_CTL);
 			::SendMessage(hCtrl, UDM_SETRANGE, 0L, MAKELONG(c_Highlight_transp_max, c_Highlight_transp_min));
+
+			hCtrl = ::GetDlgItem(_hSelf, IDC_CARET_LINE_SPIN_CTL);
+			::SendMessage(hCtrl, UDM_SETRANGE, 0L, MAKELONG(c_Caret_line_transp_max, c_Caret_line_transp_min));
 
 			hCtrl = ::GetDlgItem(_hSelf, IDC_THRESHOLD_SPIN_CTL);
 			::SendMessage(hCtrl, UDM_SETRANGE, 0L, MAKELONG(c_Threshold_perc_max, c_Threshold_perc_min));
@@ -119,25 +127,27 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					{
 						settings.useDarkColors();
 
-						settings.colors().added			= DEFAULT_ADDED_COLOR_DARK;
-						settings.colors().removed		= DEFAULT_REMOVED_COLOR_DARK;
-						settings.colors().moved			= DEFAULT_MOVED_COLOR_DARK;
-						settings.colors().changed		= DEFAULT_CHANGED_COLOR_DARK;
-						settings.colors().add_highlight	= DEFAULT_HIGHLIGHT_COLOR_DARK;
-						settings.colors().rem_highlight	= DEFAULT_HIGHLIGHT_COLOR_DARK;
-						settings.colors().transparency	= DEFAULT_HIGHLIGHT_TRANSP_DARK;
+						settings.colors().added						= DEFAULT_ADDED_COLOR_DARK;
+						settings.colors().removed					= DEFAULT_REMOVED_COLOR_DARK;
+						settings.colors().moved						= DEFAULT_MOVED_COLOR_DARK;
+						settings.colors().changed					= DEFAULT_CHANGED_COLOR_DARK;
+						settings.colors().add_highlight				= DEFAULT_HIGHLIGHT_COLOR_DARK;
+						settings.colors().rem_highlight				= DEFAULT_HIGHLIGHT_COLOR_DARK;
+						settings.colors().highlight_transparency	= DEFAULT_HIGHLIGHT_TRANSP_DARK;
+						settings.colors().caret_line_transparency	= DEFAULT_CARET_LINE_TRANSP_DARK;
 					}
 					else
 					{
 						settings.useLightColors();
 
-						settings.colors().added			= DEFAULT_ADDED_COLOR;
-						settings.colors().removed		= DEFAULT_REMOVED_COLOR;
-						settings.colors().moved			= DEFAULT_MOVED_COLOR;
-						settings.colors().changed		= DEFAULT_CHANGED_COLOR;
-						settings.colors().add_highlight	= DEFAULT_HIGHLIGHT_COLOR;
-						settings.colors().rem_highlight	= DEFAULT_HIGHLIGHT_COLOR;
-						settings.colors().transparency	= DEFAULT_HIGHLIGHT_TRANSP;
+						settings.colors().added						= DEFAULT_ADDED_COLOR;
+						settings.colors().removed					= DEFAULT_REMOVED_COLOR;
+						settings.colors().moved						= DEFAULT_MOVED_COLOR;
+						settings.colors().changed					= DEFAULT_CHANGED_COLOR;
+						settings.colors().add_highlight				= DEFAULT_HIGHLIGHT_COLOR;
+						settings.colors().rem_highlight				= DEFAULT_HIGHLIGHT_COLOR;
+						settings.colors().highlight_transparency	= DEFAULT_HIGHLIGHT_TRANSP;
+						settings.colors().caret_line_transparency	= DEFAULT_CARET_LINE_TRANSP;
 					}
 
 					settings.ChangedThresholdPercent	= DEFAULT_CHANGED_THRESHOLD;
@@ -246,13 +256,21 @@ void SettingsDialog::SetParams(UserSettings* settings)
 	_ColorComboAddHighlight.setColor(settings->colors().add_highlight);
 	_ColorComboRemHighlight.setColor(settings->colors().rem_highlight);
 
-	if (settings->colors().transparency < c_Highlight_transp_min)
-		settings->colors().transparency = c_Highlight_transp_min;
-	else if (settings->colors().transparency > c_Highlight_transp_max)
-		settings->colors().transparency = c_Highlight_transp_max;
+	if (settings->colors().highlight_transparency < c_Highlight_transp_min)
+		settings->colors().highlight_transparency = c_Highlight_transp_min;
+	else if (settings->colors().highlight_transparency > c_Highlight_transp_max)
+		settings->colors().highlight_transparency = c_Highlight_transp_max;
 
-	// Set transparency
-	::SetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, settings->colors().transparency, FALSE);
+	// Set highlight transparency
+	::SetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, settings->colors().highlight_transparency, FALSE);
+
+	if (settings->colors().caret_line_transparency < c_Caret_line_transp_min)
+		settings->colors().caret_line_transparency = c_Caret_line_transp_min;
+	else if (settings->colors().caret_line_transparency > c_Caret_line_transp_max)
+		settings->colors().caret_line_transparency = c_Caret_line_transp_max;
+
+	// Set caret line transparency
+	::SetDlgItemInt(_hSelf, IDC_CARET_LINE_SPIN_BOX, settings->colors().caret_line_transparency, FALSE);
 
 	if (settings->ChangedThresholdPercent < c_Threshold_perc_min)
 		settings->ChangedThresholdPercent = c_Threshold_perc_min;
@@ -286,17 +304,29 @@ void SettingsDialog::GetParams()
 	_ColorComboAddHighlight.getColor((LPCOLORREF)&_Settings->colors().add_highlight);
 	_ColorComboRemHighlight.getColor((LPCOLORREF)&_Settings->colors().rem_highlight);
 
-	// Get transparency
-	_Settings->colors().transparency = ::GetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, NULL, FALSE);
-	int setting = _Settings->colors().transparency;
+	// Get highlight transparency
+	_Settings->colors().highlight_transparency = ::GetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, NULL, FALSE);
+	int setting = _Settings->colors().highlight_transparency;
 
-	if (_Settings->colors().transparency < c_Highlight_transp_min)
-		_Settings->colors().transparency = c_Highlight_transp_min;
-	else if (_Settings->colors().transparency > c_Highlight_transp_max)
-		_Settings->colors().transparency = c_Highlight_transp_max;
+	if (_Settings->colors().highlight_transparency < c_Highlight_transp_min)
+		_Settings->colors().highlight_transparency = c_Highlight_transp_min;
+	else if (_Settings->colors().highlight_transparency > c_Highlight_transp_max)
+		_Settings->colors().highlight_transparency = c_Highlight_transp_max;
 
-	if (setting != _Settings->colors().transparency)
-		::SetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, _Settings->colors().transparency, FALSE);
+	if (setting != _Settings->colors().highlight_transparency)
+		::SetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, _Settings->colors().highlight_transparency, FALSE);
+
+	// Get caret line transparency
+	_Settings->colors().caret_line_transparency = ::GetDlgItemInt(_hSelf, IDC_CARET_LINE_SPIN_BOX, NULL, FALSE);
+	setting = _Settings->colors().caret_line_transparency;
+
+	if (_Settings->colors().caret_line_transparency < c_Caret_line_transp_min)
+		_Settings->colors().caret_line_transparency = c_Caret_line_transp_min;
+	else if (_Settings->colors().caret_line_transparency > c_Caret_line_transp_max)
+		_Settings->colors().caret_line_transparency = c_Caret_line_transp_max;
+
+	if (setting != _Settings->colors().caret_line_transparency)
+		::SetDlgItemInt(_hSelf, IDC_CARET_LINE_SPIN_BOX, _Settings->colors().caret_line_transparency, FALSE);
 
 	// Get changed threshold percentage
 	_Settings->ChangedThresholdPercent = ::GetDlgItemInt(_hSelf, IDC_THRESHOLD_SPIN_BOX, NULL, FALSE);

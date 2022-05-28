@@ -44,6 +44,7 @@
 #define DEFAULT_CHANGED_COLOR			0x98E7E7
 #define DEFAULT_HIGHLIGHT_COLOR			0x0683FF
 #define DEFAULT_HIGHLIGHT_TRANSP		0
+#define DEFAULT_CARET_LINE_TRANSP		60
 
 #define DEFAULT_ADDED_COLOR_DARK		0x055A05
 #define DEFAULT_REMOVED_COLOR_DARK		0x16164F
@@ -51,6 +52,7 @@
 #define DEFAULT_CHANGED_COLOR_DARK		0x145050
 #define DEFAULT_HIGHLIGHT_COLOR_DARK	0x0683FF
 #define DEFAULT_HIGHLIGHT_TRANSP_DARK	0
+#define DEFAULT_CARET_LINE_TRANSP_DARK	80
 
 #define DEFAULT_CHANGED_THRESHOLD		30
 
@@ -73,7 +75,8 @@ struct ColorSettings
     int _default;
 	int add_highlight;
 	int rem_highlight;
-	int transparency;
+	int highlight_transparency;
+	int caret_line_transparency;
 };
 
 
@@ -151,6 +154,7 @@ public:
 	static const TCHAR addHighlightColorSetting[];
 	static const TCHAR remHighlightColorSetting[];
 	static const TCHAR highlightTranspSetting[];
+	static const TCHAR caretLineTranspSetting[];
 
 	static const TCHAR addedColorDarkSetting[];
 	static const TCHAR removedColorDarkSetting[];
@@ -159,6 +163,7 @@ public:
 	static const TCHAR addHighlightColorDarkSetting[];
 	static const TCHAR remHighlightColorDarkSetting[];
 	static const TCHAR highlightTranspDarkSetting[];
+	static const TCHAR caretLineTranspDarkSetting[];
 
 	static const TCHAR changedThresholdSetting[];
 
