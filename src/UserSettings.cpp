@@ -59,7 +59,8 @@ const TCHAR UserSettings::movedColorSetting[]				= TEXT("moved");
 const TCHAR UserSettings::changedColorSetting[]				= TEXT("changed");
 const TCHAR UserSettings::addHighlightColorSetting[]		= TEXT("added_highlight");
 const TCHAR UserSettings::remHighlightColorSetting[]		= TEXT("removed_highlight");
-const TCHAR UserSettings::highlightTranspSetting[]			= TEXT("transparency");
+const TCHAR UserSettings::highlightTranspSetting[]			= TEXT("highlight_transparency");
+const TCHAR UserSettings::caretLineTranspSetting[]			= TEXT("caret_line_transparency");
 
 const TCHAR UserSettings::addedColorDarkSetting[]			= TEXT("added_dark");
 const TCHAR UserSettings::removedColorDarkSetting[]			= TEXT("removed_dark");
@@ -67,7 +68,8 @@ const TCHAR UserSettings::movedColorDarkSetting[]			= TEXT("moved_dark");
 const TCHAR UserSettings::changedColorDarkSetting[]			= TEXT("changed_dark");
 const TCHAR UserSettings::addHighlightColorDarkSetting[]	= TEXT("added_highlight_dark");
 const TCHAR UserSettings::remHighlightColorDarkSetting[]	= TEXT("removed_highlight_dark");
-const TCHAR UserSettings::highlightTranspDarkSetting[]		= TEXT("transparency_dark");
+const TCHAR UserSettings::highlightTranspDarkSetting[]		= TEXT("highlight_transparency_dark");
+const TCHAR UserSettings::caretLineTranspDarkSetting[]		= TEXT("caret_line_transparency_dark");
 
 const TCHAR UserSettings::changedThresholdSetting[]			= TEXT("changed_threshold_percentage");
 
@@ -118,35 +120,39 @@ void UserSettings::load()
 
 	statusType = (SavedStatusType < STATUS_TYPE_END) ? SavedStatusType : static_cast<StatusType>(DEFAULT_STATUS_TYPE);
 
-	colorsLight.added			= ::GetPrivateProfileInt(colorsSection, addedColorSetting,
+	colorsLight.added						= ::GetPrivateProfileInt(colorsSection, addedColorSetting,
 			DEFAULT_ADDED_COLOR, iniFile);
-	colorsLight.removed			= ::GetPrivateProfileInt(colorsSection, removedColorSetting,
+	colorsLight.removed						= ::GetPrivateProfileInt(colorsSection, removedColorSetting,
 			DEFAULT_REMOVED_COLOR, iniFile);
-	colorsLight.moved			= ::GetPrivateProfileInt(colorsSection, movedColorSetting,
+	colorsLight.moved						= ::GetPrivateProfileInt(colorsSection, movedColorSetting,
 			DEFAULT_MOVED_COLOR, iniFile);
-	colorsLight.changed			= ::GetPrivateProfileInt(colorsSection, changedColorSetting,
+	colorsLight.changed						= ::GetPrivateProfileInt(colorsSection, changedColorSetting,
 			DEFAULT_CHANGED_COLOR, iniFile);
-	colorsLight.add_highlight	= ::GetPrivateProfileInt(colorsSection, addHighlightColorSetting,
+	colorsLight.add_highlight				= ::GetPrivateProfileInt(colorsSection, addHighlightColorSetting,
 			DEFAULT_HIGHLIGHT_COLOR, iniFile);
-	colorsLight.rem_highlight	= ::GetPrivateProfileInt(colorsSection, remHighlightColorSetting,
+	colorsLight.rem_highlight				= ::GetPrivateProfileInt(colorsSection, remHighlightColorSetting,
 			DEFAULT_HIGHLIGHT_COLOR, iniFile);
-	colorsLight.transparency		= ::GetPrivateProfileInt(colorsSection, highlightTranspSetting,
+	colorsLight.highlight_transparency		= ::GetPrivateProfileInt(colorsSection, highlightTranspSetting,
 			DEFAULT_HIGHLIGHT_TRANSP, iniFile);
+	colorsLight.caret_line_transparency		= ::GetPrivateProfileInt(colorsSection, caretLineTranspSetting,
+			DEFAULT_CARET_LINE_TRANSP, iniFile);
 
-	colorsDark.added			= ::GetPrivateProfileInt(colorsSection, addedColorDarkSetting,
+	colorsDark.added						= ::GetPrivateProfileInt(colorsSection, addedColorDarkSetting,
 			DEFAULT_ADDED_COLOR_DARK, iniFile);
-	colorsDark.removed			= ::GetPrivateProfileInt(colorsSection, removedColorDarkSetting,
+	colorsDark.removed						= ::GetPrivateProfileInt(colorsSection, removedColorDarkSetting,
 			DEFAULT_REMOVED_COLOR_DARK, iniFile);
-	colorsDark.moved			= ::GetPrivateProfileInt(colorsSection, movedColorDarkSetting,
+	colorsDark.moved						= ::GetPrivateProfileInt(colorsSection, movedColorDarkSetting,
 			DEFAULT_MOVED_COLOR_DARK, iniFile);
-	colorsDark.changed			= ::GetPrivateProfileInt(colorsSection, changedColorDarkSetting,
+	colorsDark.changed						= ::GetPrivateProfileInt(colorsSection, changedColorDarkSetting,
 			DEFAULT_CHANGED_COLOR_DARK, iniFile);
-	colorsDark.add_highlight	= ::GetPrivateProfileInt(colorsSection, addHighlightColorDarkSetting,
+	colorsDark.add_highlight				= ::GetPrivateProfileInt(colorsSection, addHighlightColorDarkSetting,
 			DEFAULT_HIGHLIGHT_COLOR_DARK, iniFile);
-	colorsDark.rem_highlight	= ::GetPrivateProfileInt(colorsSection, remHighlightColorDarkSetting,
+	colorsDark.rem_highlight				= ::GetPrivateProfileInt(colorsSection, remHighlightColorDarkSetting,
 			DEFAULT_HIGHLIGHT_COLOR_DARK, iniFile);
-	colorsDark.transparency		= ::GetPrivateProfileInt(colorsSection, highlightTranspDarkSetting,
+	colorsDark.highlight_transparency		= ::GetPrivateProfileInt(colorsSection, highlightTranspDarkSetting,
 			DEFAULT_HIGHLIGHT_TRANSP_DARK, iniFile);
+	colorsDark.caret_line_transparency		= ::GetPrivateProfileInt(colorsSection, caretLineTranspDarkSetting,
+			DEFAULT_CARET_LINE_TRANSP_DARK, iniFile);
 
 	ChangedThresholdPercent	= ::GetPrivateProfileInt(colorsSection, changedThresholdSetting,
 			DEFAULT_CHANGED_THRESHOLD, iniFile);
@@ -258,8 +264,11 @@ void UserSettings::save()
 	_itot_s(colorsLight.rem_highlight, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, remHighlightColorSetting, buffer, iniFile);
 
-	_itot_s(colorsLight.transparency, buffer, 64, 10);
+	_itot_s(colorsLight.highlight_transparency, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, highlightTranspSetting, buffer, iniFile);
+
+	_itot_s(colorsLight.caret_line_transparency, buffer, 64, 10);
+	::WritePrivateProfileString(colorsSection, caretLineTranspSetting, buffer, iniFile);
 
 	_itot_s(colorsDark.added, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, addedColorDarkSetting, buffer, iniFile);
@@ -279,8 +288,11 @@ void UserSettings::save()
 	_itot_s(colorsDark.rem_highlight, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, remHighlightColorDarkSetting, buffer, iniFile);
 
-	_itot_s(colorsDark.transparency, buffer, 64, 10);
+	_itot_s(colorsDark.highlight_transparency, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, highlightTranspDarkSetting, buffer, iniFile);
+
+	_itot_s(colorsDark.caret_line_transparency, buffer, 64, 10);
+	::WritePrivateProfileString(colorsSection, caretLineTranspDarkSetting, buffer, iniFile);
 
 	_itot_s(ChangedThresholdPercent, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, changedThresholdSetting, buffer, iniFile);
