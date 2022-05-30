@@ -29,6 +29,8 @@ const TCHAR UserSettings::newFileViewSetting[]				= TEXT("new_in_sub_view");
 const TCHAR UserSettings::firstIsNewSetting[]				= TEXT("set_first_as_new");
 const TCHAR UserSettings::compareToPrevSetting[]			= TEXT("default_compare_to_prev");
 
+const TCHAR UserSettings::iconStandardSetting[]				= TEXT("default_icon_standard");
+
 const TCHAR UserSettings::encodingsCheckSetting[]			= TEXT("check_encodings");
 const TCHAR UserSettings::alignAllMatchesSetting[]			= TEXT("align_all_matches");
 const TCHAR UserSettings::markIgnoredLinesSetting[]			= TEXT("never_colorize_ignored_lines");
@@ -88,6 +90,8 @@ void UserSettings::load()
 			DEFAULT_FIRST_IS_NEW, iniFile) != 0;
 	CompareToPrev			= ::GetPrivateProfileInt(mainSection, compareToPrevSetting,
 			DEFAULT_COMPARE_TO_PREV, iniFile) != 0;
+	IconStandard			= ::GetPrivateProfileInt(mainSection, iconStandardSetting,
+			DEFAULT_ICON_STANDARD, iniFile) != 0;
 	EncodingsCheck			= ::GetPrivateProfileInt(mainSection, encodingsCheckSetting,
 			DEFAULT_ENCODINGS_CHECK, iniFile) != 0;
 	AlignAllMatches			= ::GetPrivateProfileInt(mainSection, alignAllMatchesSetting,
@@ -202,6 +206,8 @@ void UserSettings::save()
 			FirstFileIsNew ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, compareToPrevSetting,
 			CompareToPrev ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, iconStandardSetting,
+			IconStandard ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, encodingsCheckSetting,
 			EncodingsCheck ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, alignAllMatchesSetting,

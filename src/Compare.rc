@@ -96,10 +96,10 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSM
 CAPTION "ComparePlus Settings"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-	DEFPUSHBUTTON	"OK", IDOK, 50, 210, 44, 14
-	PUSHBUTTON		"Reset", IDDEFAULT, 129, 210, 44, 14
-	PUSHBUTTON		"Cancel", IDCANCEL, 208, 210, 44, 14
-	GROUPBOX		"Main Settings", IDC_STATIC, 7, 7, 295, 179
+	DEFPUSHBUTTON	"OK", IDOK, 50, 225, 44, 14
+	PUSHBUTTON		"Reset", IDDEFAULT, 129, 225, 44, 14
+	PUSHBUTTON		"Cancel", IDCANCEL, 208, 225, 44, 14
+	GROUPBOX		"Main Settings", IDC_STATIC, 7, 7, 295, 217
 	GROUPBOX		"Files Position", IDC_STATIC, 15, 22, 122, 42
 	AUTORADIOBUTTON	"New file in right/bottom view", IDC_NEW_IN_SUB, 21, 37, 107, 8, WS_GROUP | WS_TABSTOP
 	AUTORADIOBUTTON	"Old file in right/bottom view", IDC_OLD_IN_SUB, 21, 50, 107, 8
@@ -139,6 +139,9 @@ BEGIN
 	LTEXT			"Changed threshold percentage:", IDC_STATIC, 323, 205, 70, 16
 	EDITTEXT		IDC_THRESHOLD_SPIN_BOX, 410, 205, 33, 15, ES_AUTOHSCROLL | ES_NUMBER
 	CONTROL			"", IDC_THRESHOLD_SPIN_CTL, "msctls_updown32", UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS, 438, 211, 6, 15
+	GROUPBOX		"Icon Theme",IDC_STATIC,15,179,122,42
+	CONTROL			"Standard icons: small",IDC_ICON_STANDARD,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,22,194,107,8
+	CONTROL			"Fluent UI",IDC_ICON_FLUENT,"Button",BS_AUTORADIOBUTTON,22,208,107,8
 END
 
 
@@ -179,7 +182,7 @@ BEGIN
 		LEFTMARGIN, 7
 		RIGHTMARGIN, 158
 		TOPMARGIN, 7
-		BOTTOMMARGIN, 203
+		BOTTOMMARGIN, 239
 	END
 END
 #endif	// APSTUDIO_INVOKED
@@ -202,7 +205,36 @@ IDB_NEXT				BITMAP	"../res/Next.bmp"
 IDB_DIFFS_ONLY			BITMAP	"../res/DiffsOnly.bmp"
 IDB_NAVBAR				BITMAP	"../res/NavBar.bmp"
 
+IDB_SETFIRST_FL			BITMAP	"../res/Fluent/FirstToCompareFluent.bmp"
+IDB_SETFIRST_RTL_FL		BITMAP	"../res/Fluent/FirstToCompareRTLFluent.bmp"
+IDB_COMPARE_FL			BITMAP	"../res/Fluent/CompareFluent.bmp"
+IDB_COMPARE_LINES_FL	BITMAP	"../res/Fluent/CompareLinesFluent.bmp"
+IDB_CLEARCOMPARE_FL		BITMAP	"../res/Fluent/ClearCompareFluent.bmp"
+IDB_FIRST_FL			BITMAP	"../res/Fluent/FirstFluent.bmp"
+IDB_LAST_FL				BITMAP	"../res/Fluent/LastFluent.bmp"
+IDB_PREV_FL				BITMAP	"../res/Fluent/PreviousFluent.bmp"
+IDB_NEXT_FL				BITMAP	"../res/Fluent/NextFluent.bmp"
+IDB_DIFFS_ONLY_FL		BITMAP	"../res/Fluent/DiffsOnlyFluent.bmp"
+IDB_NAVBAR_FL			BITMAP	"../res/Fluent/NavBarFluent.bmp"
+
+IDB_SETFIRST_FL_DM		BITMAP	"../res/FluentDM/FirstToCompareFluentDM.bmp"
+IDB_SETFIRST_RTL_FL_DM	BITMAP	"../res/FluentDM/FirstToCompareRTLFluentDM.bmp"
+IDB_COMPARE_FL_DM		BITMAP	"../res/FluentDM/CompareFluentDM.bmp"
+IDB_COMPARE_LINES_FL_DM	BITMAP	"../res/FluentDM/CompareLinesFluentDM.bmp"
+IDB_CLEARCOMPARE_FL_DM	BITMAP	"../res/FluentDM/ClearCompareFluentDM.bmp"
+IDB_FIRST_FL_DM			BITMAP	"../res/FluentDM/FirstFluentDM.bmp"
+IDB_LAST_FL_DM			BITMAP	"../res/FluentDM/LastFluentDM.bmp"
+IDB_PREV_FL_DM			BITMAP	"../res/FluentDM/PreviousFluentDM.bmp"
+IDB_NEXT_FL_DM			BITMAP	"../res/FluentDM/NextFluentDM.bmp"
+IDB_DIFFS_ONLY_FL_DM	BITMAP	"../res/FluentDM/DiffsOnlyFluentDM.bmp"
+IDB_DIFFS_ONLY_FL_DM_ON	BITMAP	"../res/FluentDM/DiffsOnlyFluentDM_ON.bmp"
+IDB_NAVBAR_FL_DM		BITMAP	"../res/FluentDM/NavBarFluentDM.bmp"
+IDB_NAVBAR_FL_DM_ON		BITMAP	"../res/FluentDM/NavBarFluentDM_ON.bmp"
+
+
 IDB_ICON				ICON	"../res/Compare.ico"
+IDB_ICON_FL				ICON	"../res/Fluent/CompareFluent.ico"
+IDB_ICON_FL_DM			ICON	"../res/FluentDM/CompareFluentDM.ico"
 
 
 /////////////////////////////////////////////////////////////////////////////
