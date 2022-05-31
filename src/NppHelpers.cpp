@@ -383,7 +383,7 @@ void setNormalView(int view)
 		CallScintilla(view, SCI_SETMARGINWIDTHN, MARGIN_NUM, 0);
 		CallScintilla(view, SCI_SETMARGINSENSITIVEN, MARGIN_NUM, false);
 
-		const int caretLineColor = CallScintilla(view, SCI_GETELEMENTCOLOUR,  SC_ELEMENT_CARET_LINE_BACK, 0);
+		const intptr_t caretLineColor = CallScintilla(view, SCI_GETELEMENTCOLOUR,  SC_ELEMENT_CARET_LINE_BACK, 0);
 
 		if (caretLineColor)
 			CallScintilla(view, SCI_SETELEMENTCOLOUR, SC_ELEMENT_CARET_LINE_BACK, caretLineColor & 0xFFFFFF);
@@ -407,11 +407,11 @@ void setCompareView(int view, int blankColor, int caretLineTransp)
 		CallScintilla(view, SCI_SETMARGINSENSITIVEN, MARGIN_NUM, true);
 	}
 
-	const int caretLineColor = CallScintilla(view, SCI_GETELEMENTCOLOUR,  SC_ELEMENT_CARET_LINE_BACK, 0);
+	const intptr_t caretLineColor = CallScintilla(view, SCI_GETELEMENTCOLOUR,  SC_ELEMENT_CARET_LINE_BACK, 0);
 
 	if (caretLineColor)
 	{
-		const int alpha = ((100 - caretLineTransp) * SC_ALPHA_OPAQUE / 100);
+		const intptr_t alpha = ((100 - caretLineTransp) * SC_ALPHA_OPAQUE / 100);
 
 		CallScintilla(view, SCI_SETELEMENTCOLOUR, SC_ELEMENT_CARET_LINE_BACK,
 				(caretLineColor & 0xFFFFFF) | (alpha << 24));

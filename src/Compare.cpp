@@ -3352,7 +3352,6 @@ void comparedFileActivated()
 	temporaryRangeSelect(-1);
 	setArrowMark(-1);
 
-
 	setCompareView(MAIN_VIEW, Settings.colors().blank, Settings.colors().caret_line_transparency);
 	setCompareView(SUB_VIEW, Settings.colors().blank, Settings.colors().caret_line_transparency);
 
