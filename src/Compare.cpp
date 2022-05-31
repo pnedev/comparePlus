@@ -1724,7 +1724,7 @@ void resetCompareView(int view)
 
 	CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(view));
 	if (cmpPair != compareList.end())
-		setCompareView(view, Settings.colors().blank, Settings.colors().current_line_transparency);
+		setCompareView(view, Settings.colors().blank, Settings.colors().caret_line_transparency);
 }
 
 
@@ -2478,8 +2478,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 			NppSettings::get().setCompareMode(true);
 
-			setCompareView(MAIN_VIEW, Settings.colors().blank, Settings.colors().current_line_transparency);
-			setCompareView(SUB_VIEW, Settings.colors().blank, Settings.colors().current_line_transparency);
+			setCompareView(MAIN_VIEW, Settings.colors().blank, Settings.colors().caret_line_transparency);
+			setCompareView(SUB_VIEW, Settings.colors().blank, Settings.colors().caret_line_transparency);
 
 			if (recompare)
 			{
@@ -3011,8 +3011,8 @@ void OpenSettingsDlg(void)
 
 			if (NppSettings::get().compareMode)
 			{
-				setCompareView(MAIN_VIEW, Settings.colors().blank, Settings.colors().current_line_transparency);
-				setCompareView(SUB_VIEW, Settings.colors().blank, Settings.colors().current_line_transparency);
+				setCompareView(MAIN_VIEW, Settings.colors().blank, Settings.colors().caret_line_transparency);
+				setCompareView(SUB_VIEW, Settings.colors().blank, Settings.colors().caret_line_transparency);
 			}
 		}
 	}
@@ -3352,8 +3352,9 @@ void comparedFileActivated()
 	temporaryRangeSelect(-1);
 	setArrowMark(-1);
 
-	setCompareView(MAIN_VIEW, Settings.colors().blank, Settings.colors().current_line_transparency);
-	setCompareView(SUB_VIEW, Settings.colors().blank, Settings.colors().current_line_transparency);
+
+	setCompareView(MAIN_VIEW, Settings.colors().blank, Settings.colors().caret_line_transparency);
+	setCompareView(SUB_VIEW, Settings.colors().blank, Settings.colors().caret_line_transparency);
 
 	if (Settings.ShowOnlyDiffs || Settings.ShowOnlySelections)
 	{
@@ -4779,8 +4780,8 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 
 				if (NppSettings::get().compareMode)
 				{
-					setCompareView(MAIN_VIEW, Settings.colors().blank, Settings.colors().current_line_transparency);
-					setCompareView(SUB_VIEW, Settings.colors().blank, Settings.colors().current_line_transparency);
+					setCompareView(MAIN_VIEW, Settings.colors().blank, Settings.colors().caret_line_transparency);
+					setCompareView(SUB_VIEW, Settings.colors().blank, Settings.colors().caret_line_transparency);
 				}
 			}
 		break;

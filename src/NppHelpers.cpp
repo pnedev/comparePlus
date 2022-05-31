@@ -383,12 +383,17 @@ void setNormalView(int view)
 		CallScintilla(view, SCI_SETMARGINWIDTHN, MARGIN_NUM, 0);
 		CallScintilla(view, SCI_SETMARGINSENSITIVEN, MARGIN_NUM, false);
 
-		CallScintilla(view, SCI_SETCARETLINEBACKALPHA, SC_ALPHA_NOALPHA, 0);
+		const int caretLineColor = CallScintilla(view, SCI_GETELEMENTCOLOUR,  SC_ELEMENT_CARET_LINE_BACK, 0);
+
+		if (caretLineColor)
+			CallScintilla(view, SCI_SETELEMENTCOLOUR, SC_ELEMENT_CARET_LINE_BACK, caretLineColor & 0xFFFFFF);
+
+		CallScintilla(view, SCI_SETCARETLINELAYER, SC_LAYER_BASE, 0);
 	}
 }
 
 
-void setCompareView(int view, int blankColor, int currentLineTransp)
+void setCompareView(int view, int blankColor, int caretLineTransp)
 {
 	if (!compareMode[view])
 	{
@@ -402,9 +407,16 @@ void setCompareView(int view, int blankColor, int currentLineTransp)
 		CallScintilla(view, SCI_SETMARGINSENSITIVEN, MARGIN_NUM, true);
 	}
 
-	const int alpha = ((100 - currentLineTransp) * SC_ALPHA_OPAQUE / 100);
+	const int caretLineColor = CallScintilla(view, SCI_GETELEMENTCOLOUR,  SC_ELEMENT_CARET_LINE_BACK, 0);
 
-	CallScintilla(view, SCI_SETCARETLINEBACKALPHA, alpha, 0);
+	if (caretLineColor)
+	{
+		const int alpha = ((100 - caretLineTransp) * SC_ALPHA_OPAQUE / 100);
+
+		CallScintilla(view, SCI_SETELEMENTCOLOUR, SC_ELEMENT_CARET_LINE_BACK,
+				(caretLineColor & 0xFFFFFF) | (alpha << 24));
+		CallScintilla(view, SCI_SETCARETLINELAYER, SC_LAYER_UNDER_TEXT, 0);
+	}
 
 	// For some reason the annotation blank styling is lost on Sci doc switch thus we need to reapply it
 	setBlanksStyle(view, blankColor);
