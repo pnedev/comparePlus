@@ -69,6 +69,34 @@
 #define IDB_NAVBAR						130
 #define IDB_ICON						131
 
+#define IDB_SETFIRST_FL					140
+#define IDB_SETFIRST_RTL_FL				141
+#define IDB_COMPARE_FL					142
+#define IDB_COMPARE_LINES_FL			143
+#define IDB_CLEARCOMPARE_FL				144
+#define IDB_FIRST_FL					145
+#define IDB_LAST_FL						146
+#define IDB_PREV_FL						147
+#define IDB_NEXT_FL						148
+#define IDB_DIFFS_ONLY_FL				149
+#define IDB_NAVBAR_FL					150
+#define IDB_ICON_FL						151
+
+#define IDB_SETFIRST_FL_DM				160
+#define IDB_SETFIRST_RTL_FL_DM			161
+#define IDB_COMPARE_FL_DM				162
+#define IDB_COMPARE_LINES_FL_DM			163
+#define IDB_CLEARCOMPARE_FL_DM			164
+#define IDB_FIRST_FL_DM					165
+#define IDB_LAST_FL_DM					166
+#define IDB_PREV_FL_DM					167
+#define IDB_NEXT_FL_DM					168
+#define IDB_DIFFS_ONLY_FL_DM			169
+#define IDB_NAVBAR_FL_DM				170
+#define IDB_NAVBAR_FL_DM_ON				171
+#define IDB_ICON_FL_DM					172
+#define IDB_ICON_FL_DM_ON				173
+
 #define IDC_ABOUT_CLOSE_BUTTON			1001
 #define IDC_DONATE_BUTTON				1002
 #define IDC_COLOR_LIST					1003
@@ -103,6 +131,9 @@
 #define IDC_THRESHOLD_SPIN_BOX			1037
 #define IDC_THRESHOLD_SPIN_CTL			1038
 #define IDC_STATIC						-1
+
+#define IDC_ICON_STANDARD				2001
+#define IDC_ICON_FLUENT					2002
 
 #define COLOR_POPUP_OK		10000
 #define COLOR_POPUP_CANCEL	10001

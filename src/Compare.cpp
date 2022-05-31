@@ -3387,31 +3387,95 @@ void onToolBarReady()
 
 	UINT style = (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS);
 
-	if (isRTLwindow(nppData._nppHandle))
-		tbSetFirst.hToolbarBmp =
-				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_SETFIRST_RTL), IMAGE_BITMAP, x, y, style);
-	else
-		tbSetFirst.hToolbarBmp =
-				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_SETFIRST), IMAGE_BITMAP, x, y, style);
+	if (Settings.IconStandard)
+	{
+		if (isRTLwindow(nppData._nppHandle))
+			tbSetFirst.hToolbarBmp =
+			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_SETFIRST_RTL), IMAGE_BITMAP, x, y, style);
+		else
+			tbSetFirst.hToolbarBmp =
+			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_SETFIRST), IMAGE_BITMAP, x, y, style);
 
-	tbCompare.hToolbarBmp =
+		tbCompare.hToolbarBmp =
 			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_COMPARE), IMAGE_BITMAP, x, y, style);
-	tbCompareSel.hToolbarBmp =
+		tbCompareSel.hToolbarBmp =
 			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_COMPARE_LINES), IMAGE_BITMAP, x, y, style);
-	tbClearCompare.hToolbarBmp =
+		tbClearCompare.hToolbarBmp =
 			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_CLEARCOMPARE), IMAGE_BITMAP, x, y, style);
-	tbFirst.hToolbarBmp =
-			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_FIRST),	IMAGE_BITMAP, x, y, style);
-	tbPrev.hToolbarBmp =
-			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_PREV),	IMAGE_BITMAP, x, y, style);
-	tbNext.hToolbarBmp =
-			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NEXT),	IMAGE_BITMAP, x, y, style);
-	tbLast.hToolbarBmp =
-			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_LAST),	IMAGE_BITMAP, x, y, style);
-	tbDiffsOnly.hToolbarBmp =
+		tbFirst.hToolbarBmp =
+			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_FIRST), IMAGE_BITMAP, x, y, style);
+		tbPrev.hToolbarBmp =
+			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_PREV), IMAGE_BITMAP, x, y, style);
+		tbNext.hToolbarBmp =
+			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NEXT), IMAGE_BITMAP, x, y, style);
+		tbLast.hToolbarBmp =
+			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_LAST), IMAGE_BITMAP, x, y, style);
+		tbDiffsOnly.hToolbarBmp =
 			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_DIFFS_ONLY), IMAGE_BITMAP, x, y, style);
-	tbNavBar.hToolbarBmp =
+		tbNavBar.hToolbarBmp =
 			(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NAVBAR), IMAGE_BITMAP, x, y, style);
+	}
+	else
+	{
+		if (isDarkMode())
+		{
+			if (isRTLwindow(nppData._nppHandle))
+				tbSetFirst.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_SETFIRST_RTL_FL_DM), IMAGE_BITMAP, x*2, y*2, style);
+			else
+				tbSetFirst.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_SETFIRST_FL_DM), IMAGE_BITMAP, x*2, y*2, style);
+
+			tbCompare.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_COMPARE_FL_DM), IMAGE_BITMAP, x*2, y*2, style);
+			tbCompareSel.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_COMPARE_LINES_FL_DM), IMAGE_BITMAP, x*2, y*2, style);
+			tbClearCompare.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_CLEARCOMPARE_FL_DM), IMAGE_BITMAP, x*2, y*2, style);
+			tbFirst.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_FIRST_FL_DM), IMAGE_BITMAP, x*2, y*2, style);
+			tbPrev.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_PREV_FL_DM), IMAGE_BITMAP, x*2, y*2, style);
+			tbNext.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NEXT_FL_DM), IMAGE_BITMAP, x*2, y*2, style);
+			tbLast.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_LAST_FL_DM), IMAGE_BITMAP, x*2, y*2, style);
+			tbDiffsOnly.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_DIFFS_ONLY_FL_DM), IMAGE_BITMAP, x*2, y*2, style);
+			tbNavBar.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NAVBAR_FL_DM), IMAGE_BITMAP, x*2, y*2, style);
+		}
+		else
+		{
+			if (isRTLwindow(nppData._nppHandle))
+				tbSetFirst.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_SETFIRST_RTL_FL), IMAGE_BITMAP, x*2, y*2, style);
+			else
+				tbSetFirst.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_SETFIRST_FL), IMAGE_BITMAP, x*2, y*2, style);
+
+			tbCompare.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_COMPARE_FL), IMAGE_BITMAP, x*2, y*2, style);
+			tbCompareSel.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_COMPARE_LINES_FL), IMAGE_BITMAP, x*2, y*2, style);
+			tbClearCompare.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_CLEARCOMPARE_FL), IMAGE_BITMAP, x*2, y*2, style);
+			tbFirst.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_FIRST_FL), IMAGE_BITMAP, x*2, y*2, style);
+			tbPrev.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_PREV_FL), IMAGE_BITMAP, x*2, y*2, style);
+			tbNext.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NEXT_FL), IMAGE_BITMAP, x*2, y*2, style);
+			tbLast.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_LAST_FL), IMAGE_BITMAP, x*2, y*2, style);
+			tbDiffsOnly.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_DIFFS_ONLY_FL), IMAGE_BITMAP, x*2, y*2, style);
+			tbNavBar.hToolbarBmp =
+				(HBITMAP)::LoadImage(hInstance, MAKEINTRESOURCE(IDB_NAVBAR_FL), IMAGE_BITMAP, x*2, y*2, style);
+		}
+	}
+
+
 
 	::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON_DEPRECATED,
 			(WPARAM)funcItem[CMD_SET_FIRST]._cmdID,			(LPARAM)&tbSetFirst);
