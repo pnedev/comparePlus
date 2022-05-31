@@ -123,7 +123,7 @@ public:
 	static const TCHAR newFileViewSetting[];
 	static const TCHAR firstIsNewSetting[];
 	static const TCHAR compareToPrevSetting[];
-	
+
 	static const TCHAR iconStandardSetting[];
 
 	static const TCHAR encodingsCheckSetting[];
@@ -171,35 +171,35 @@ public:
 
 	static const TCHAR changedThresholdSetting[];
 
-	bool           	FirstFileIsNew;
-	int				NewFileViewId;
-	bool           	CompareToPrev;
+	bool		FirstFileIsNew;
+	int			NewFileViewId;
+	bool		CompareToPrev;
 
-	bool            IconStandard;
+	bool		IconStandard;
 
-	bool           	EncodingsCheck;
-	bool           	AlignAllMatches;
-	bool           	NeverMarkIgnored;
-	bool           	FollowingCaret;
-	bool           	WrapAround;
-	bool           	GotoFirstDiff;
-	bool           	PromptToCloseOnMatch;
+	bool		EncodingsCheck;
+	bool		AlignAllMatches;
+	bool		NeverMarkIgnored;
+	bool		FollowingCaret;
+	bool		WrapAround;
+	bool		GotoFirstDiff;
+	bool		PromptToCloseOnMatch;
 
-	bool           	DetectMoves;
-	bool           	DetectCharDiffs;
-	bool           	BestSeqChangedLines;
-	bool           	IgnoreSpaces;
-	bool           	IgnoreEmptyLines;
-	bool           	IgnoreCase;
+	bool		DetectMoves;
+	bool		DetectCharDiffs;
+	bool		BestSeqChangedLines;
+	bool		IgnoreSpaces;
+	bool		IgnoreEmptyLines;
+	bool		IgnoreCase;
 
-	bool           	ShowOnlyDiffs;
-	bool           	ShowOnlySelections;
-	bool           	UseNavBar;
+	bool		ShowOnlyDiffs;
+	bool		ShowOnlySelections;
+	bool		UseNavBar;
 
-	bool           	RecompareOnChange;
-	StatusType		statusType;
+	bool		RecompareOnChange;
+	StatusType	statusType;
 
-	int				ChangedThresholdPercent;
+	int			ChangedThresholdPercent;
 
 private:
 	bool dirty {false};

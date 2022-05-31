@@ -29,7 +29,7 @@ const TCHAR UserSettings::newFileViewSetting[]				= TEXT("new_in_sub_view");
 const TCHAR UserSettings::firstIsNewSetting[]				= TEXT("set_first_as_new");
 const TCHAR UserSettings::compareToPrevSetting[]			= TEXT("default_compare_to_prev");
 
-const TCHAR UserSettings::iconStandardSetting[]				= TEXT("default_icon_standard");
+const TCHAR UserSettings::iconStandardSetting[]				= TEXT("icons_standard");
 
 const TCHAR UserSettings::encodingsCheckSetting[]			= TEXT("check_encodings");
 const TCHAR UserSettings::alignAllMatchesSetting[]			= TEXT("align_all_matches");

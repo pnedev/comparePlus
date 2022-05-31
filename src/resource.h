@@ -132,8 +132,8 @@
 #define IDC_THRESHOLD_SPIN_CTL			1038
 #define IDC_STATIC						-1
 
-#define IDC_ICON_STANDARD				2001
-#define IDC_ICON_FLUENT					2002
+#define IDC_ICON_STANDARD				1060
+#define IDC_ICON_FLUENT					1061
 
 #define COLOR_POPUP_OK		10000
 #define COLOR_POPUP_CANCEL	10001
@@ -142,9 +142,9 @@
 //
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        140
+#define _APS_NEXT_RESOURCE_VALUE        180
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1060
+#define _APS_NEXT_CONTROL_VALUE         1100
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

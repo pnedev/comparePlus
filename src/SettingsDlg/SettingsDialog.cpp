@@ -235,9 +235,9 @@ void SettingsDialog::SetParams(UserSettings* settings)
 	Button_SetCheck(::GetDlgItem(_hSelf, settings->CompareToPrev ? IDC_COMPARE_TO_NEXT : IDC_COMPARE_TO_PREV),
 			BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, settings->IconStandard ? IDC_ICON_STANDARD : IDC_ICON_FLUENT),
-		BST_CHECKED);
+			BST_CHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, settings->IconStandard ? IDC_ICON_FLUENT : IDC_ICON_STANDARD),
-		BST_UNCHECKED);
+			BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ENCODING_CHECK),
 			settings->EncodingsCheck ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ALIGN_ALL_MATCHES),

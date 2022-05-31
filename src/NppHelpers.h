@@ -594,6 +594,13 @@ void clearChangedIndicator(int view, intptr_t start, intptr_t length);
 void setNormalView(int view);
 void setCompareView(int view, int blankColor, int caretLineTransp);
 
+
+inline bool isDarkModeNPP()
+{
+	return (bool)::SendMessage(nppData._nppHandle, NPPM_ISDARKMODEENABLED, 0, 0);
+}
+
+
 bool isDarkMode();
 
 void setStyles(UserSettings& settings);

@@ -91,15 +91,15 @@ BEGIN
 END
 
 
-IDD_SETTINGS_DIALOG DIALOGEX 0, 0, 460, 248
+IDD_SETTINGS_DIALOG DIALOGEX 0, 0, 460, 269
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "ComparePlus Settings"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-	DEFPUSHBUTTON	"OK", IDOK, 50, 225, 44, 14
-	PUSHBUTTON		"Reset", IDDEFAULT, 129, 225, 44, 14
-	PUSHBUTTON		"Cancel", IDCANCEL, 208, 225, 44, 14
-	GROUPBOX		"Main Settings", IDC_STATIC, 7, 7, 295, 217
+	DEFPUSHBUTTON	"OK", IDOK, 129, 245, 44, 14
+	PUSHBUTTON		"Reset", IDDEFAULT, 208, 245, 44, 14
+	PUSHBUTTON		"Cancel", IDCANCEL, 287, 245, 44, 14
+	GROUPBOX		"Main Settings", IDC_STATIC, 7, 7, 295, 228
 	GROUPBOX		"Files Position", IDC_STATIC, 15, 22, 122, 42
 	AUTORADIOBUTTON	"New file in right/bottom view", IDC_NEW_IN_SUB, 21, 37, 107, 8, WS_GROUP | WS_TABSTOP
 	AUTORADIOBUTTON	"Old file in right/bottom view", IDC_OLD_IN_SUB, 21, 50, 107, 8
@@ -109,6 +109,9 @@ BEGIN
 	GROUPBOX		"Default Compare in Single-View", IDC_STATIC, 15, 130, 122, 42
 	AUTORADIOBUTTON	"Current and previous files", IDC_COMPARE_TO_PREV, 21, 145, 107, 8, WS_GROUP | WS_TABSTOP
 	AUTORADIOBUTTON	"Current and next files", IDC_COMPARE_TO_NEXT, 21, 158, 107, 8
+	GROUPBOX		"Toolbar Icons Style (requires restart)", IDC_STATIC, 78, 184, 152, 42
+	AUTORADIOBUTTON	"Standard icons: small", IDC_ICON_STANDARD, 99, 199, 107, 8, WS_GROUP | WS_TABSTOP
+	AUTORADIOBUTTON	"Fluent UI", IDC_ICON_FLUENT, 99, 212, 107, 8
 	GROUPBOX		"Misc.", IDC_STATIC, 145, 22, 148, 150
 	AUTOCHECKBOX	"Warn about encodings mismatch", IDC_ENCODING_CHECK, 153, 36, 138, 14
 	AUTOCHECKBOX	"Align all matching lines", IDC_ALIGN_ALL_MATCHES, 153, 55, 138, 14
@@ -139,9 +142,6 @@ BEGIN
 	LTEXT			"Changed threshold percentage:", IDC_STATIC, 323, 205, 70, 16
 	EDITTEXT		IDC_THRESHOLD_SPIN_BOX, 410, 205, 33, 15, ES_AUTOHSCROLL | ES_NUMBER
 	CONTROL			"", IDC_THRESHOLD_SPIN_CTL, "msctls_updown32", UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS, 438, 211, 6, 15
-	GROUPBOX		"Icon Theme", IDC_STATIC, 15, 179, 122, 42
-	CONTROL			"Standard icons: small", IDC_ICON_STANDARD, "Button", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 22, 194, 107, 8
-	CONTROL			"Fluent UI", IDC_ICON_FLUENT, "Button", BS_AUTORADIOBUTTON, 22, 208, 107, 8
 END
 
 
@@ -193,17 +193,17 @@ END
 // Bitmap
 //
 
-IDB_SETFIRST			BITMAP	"../res/FirstToCompare.bmp"
-IDB_SETFIRST_RTL		BITMAP	"../res/FirstToCompareRTL.bmp"
-IDB_COMPARE				BITMAP	"../res/Compare.bmp"
-IDB_COMPARE_LINES		BITMAP	"../res/CompareLines.bmp"
-IDB_CLEARCOMPARE		BITMAP	"../res/ClearCompare.bmp"
-IDB_FIRST				BITMAP	"../res/First.bmp"
-IDB_LAST				BITMAP	"../res/Last.bmp"
-IDB_PREV				BITMAP	"../res/Previous.bmp"
-IDB_NEXT				BITMAP	"../res/Next.bmp"
-IDB_DIFFS_ONLY			BITMAP	"../res/DiffsOnly.bmp"
-IDB_NAVBAR				BITMAP	"../res/NavBar.bmp"
+IDB_SETFIRST			BITMAP	"../res/Standard/FirstToCompare.bmp"
+IDB_SETFIRST_RTL		BITMAP	"../res/Standard/FirstToCompareRTL.bmp"
+IDB_COMPARE				BITMAP	"../res/Standard/Compare.bmp"
+IDB_COMPARE_LINES		BITMAP	"../res/Standard/CompareLines.bmp"
+IDB_CLEARCOMPARE		BITMAP	"../res/Standard/ClearCompare.bmp"
+IDB_FIRST				BITMAP	"../res/Standard/First.bmp"
+IDB_LAST				BITMAP	"../res/Standard/Last.bmp"
+IDB_PREV				BITMAP	"../res/Standard/Previous.bmp"
+IDB_NEXT				BITMAP	"../res/Standard/Next.bmp"
+IDB_DIFFS_ONLY			BITMAP	"../res/Standard/DiffsOnly.bmp"
+IDB_NAVBAR				BITMAP	"../res/Standard/NavBar.bmp"
 
 IDB_SETFIRST_FL			BITMAP	"../res/Fluent/FirstToCompareFluent.bmp"
 IDB_SETFIRST_RTL_FL		BITMAP	"../res/Fluent/FirstToCompareRTLFluent.bmp"
@@ -232,9 +232,9 @@ IDB_NAVBAR_FL_DM		BITMAP	"../res/FluentDM/NavBarFluentDM.bmp"
 IDB_NAVBAR_FL_DM_ON		BITMAP	"../res/FluentDM/NavBarFluentDM_ON.bmp"
 
 
-IDB_ICON				ICON	"../res/Compare.ico"
-IDB_ICON_FL				ICON	"../res/Fluent/CompareFluent.ico"
-IDB_ICON_FL_DM			ICON	"../res/FluentDM/CompareFluentDM.ico"
+IDB_ICON				ICON	"../res/Standard/CompareDocking.ico"
+IDB_ICON_FL				ICON	"../res/Fluent/CompareDockingFluent.ico"
+IDB_ICON_FL_DM			ICON	"../res/FluentDM/CompareDockingFluentDM.ico"
 
 
 /////////////////////////////////////////////////////////////////////////////
