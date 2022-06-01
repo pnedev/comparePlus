@@ -1452,7 +1452,7 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 		const intptr_t edgeLine		= (down ? getLastLine(view) : getFirstLine(view));
 		const intptr_t currentLine	= (Settings.FollowingCaret ? getCurrentLine(view) : edgeLine);
 
-		// Is the bias line manually positioned on a screen edge and adjacent to invisible blank diff?
+		// Is the caret line manually positioned on a screen edge and adjacent to invisible blank diff?
 		// Make sure we don't miss it
 		if (!isLineMarked(view, currentLine, MARKER_MASK_LINE) &&
 			isAdjacentAnnotation(view, currentLine, down) &&
