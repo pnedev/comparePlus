@@ -115,7 +115,6 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					settings.FirstFileIsNew			= (bool) DEFAULT_FIRST_IS_NEW;
 					settings.NewFileViewId			= DEFAULT_NEW_IN_SUB_VIEW ? SUB_VIEW : MAIN_VIEW;
 					settings.CompareToPrev			= (bool) DEFAULT_COMPARE_TO_PREV;
-					settings.IconStandard			= (bool) DEFAULT_ICON_STANDARD;
 					settings.EncodingsCheck			= (bool) DEFAULT_ENCODINGS_CHECK;
 					settings.AlignAllMatches		= (bool) DEFAULT_ALIGN_ALL_MATCHES;
 					settings.NeverMarkIgnored		= (bool) DEFAULT_NEVER_MARK_IGNORED;
@@ -234,10 +233,6 @@ void SettingsDialog::SetParams(UserSettings* settings)
 			BST_CHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, settings->CompareToPrev ? IDC_COMPARE_TO_NEXT : IDC_COMPARE_TO_PREV),
 			BST_UNCHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, settings->IconStandard ? IDC_ICON_STANDARD : IDC_ICON_FLUENT),
-			BST_CHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, settings->IconStandard ? IDC_ICON_FLUENT : IDC_ICON_STANDARD),
-			BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ENCODING_CHECK),
 			settings->EncodingsCheck ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ALIGN_ALL_MATCHES),
@@ -293,7 +288,6 @@ void SettingsDialog::GetParams()
 	_Settings->NewFileViewId		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_NEW_IN_SUB)) == BST_CHECKED) ?
 			SUB_VIEW : MAIN_VIEW;
 	_Settings->CompareToPrev		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_COMPARE_TO_PREV)) == BST_CHECKED);
-	_Settings->IconStandard			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ICON_STANDARD)) == BST_CHECKED);
 	_Settings->EncodingsCheck		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENCODING_CHECK)) == BST_CHECKED);
 	_Settings->AlignAllMatches		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ALIGN_ALL_MATCHES)) == BST_CHECKED);
 	_Settings->NeverMarkIgnored		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_NEVER_MARK_IGNORED)) == BST_CHECKED);

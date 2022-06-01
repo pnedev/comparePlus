@@ -28,8 +28,6 @@
 #define DEFAULT_NEW_IN_SUB_VIEW			1
 #define DEFAULT_COMPARE_TO_PREV			1
 
-#define DEFAULT_ICON_STANDARD			1
-
 #define DEFAULT_ENCODINGS_CHECK			1
 #define DEFAULT_ALIGN_ALL_MATCHES		0
 #define DEFAULT_NEVER_MARK_IGNORED		0
@@ -124,8 +122,6 @@ public:
 	static const TCHAR firstIsNewSetting[];
 	static const TCHAR compareToPrevSetting[];
 
-	static const TCHAR iconStandardSetting[];
-
 	static const TCHAR encodingsCheckSetting[];
 	static const TCHAR alignAllMatchesSetting[];
 	static const TCHAR markIgnoredLinesSetting[];
@@ -174,8 +170,6 @@ public:
 	bool		FirstFileIsNew;
 	int			NewFileViewId;
 	bool		CompareToPrev;
-
-	bool		IconStandard;
 
 	bool		EncodingsCheck;
 	bool		AlignAllMatches;

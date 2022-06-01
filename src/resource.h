@@ -67,7 +67,8 @@
 #define IDB_NEXT						128
 #define IDB_DIFFS_ONLY					129
 #define IDB_NAVBAR						130
-#define IDB_ICON						131
+
+#define IDB_DOCKING_ICON				131
 
 #define IDB_SETFIRST_FL					140
 #define IDB_SETFIRST_RTL_FL				141
@@ -80,7 +81,6 @@
 #define IDB_NEXT_FL						148
 #define IDB_DIFFS_ONLY_FL				149
 #define IDB_NAVBAR_FL					150
-#define IDB_ICON_FL						151
 
 #define IDB_SETFIRST_FL_DM				160
 #define IDB_SETFIRST_RTL_FL_DM			161
@@ -93,9 +93,6 @@
 #define IDB_NEXT_FL_DM					168
 #define IDB_DIFFS_ONLY_FL_DM			169
 #define IDB_NAVBAR_FL_DM				170
-#define IDB_NAVBAR_FL_DM_ON				171
-#define IDB_ICON_FL_DM					172
-#define IDB_ICON_FL_DM_ON				173
 
 #define IDC_ABOUT_CLOSE_BUTTON			1001
 #define IDC_DONATE_BUTTON				1002
@@ -132,9 +129,6 @@
 #define IDC_THRESHOLD_SPIN_CTL			1038
 #define IDC_STATIC						-1
 
-#define IDC_ICON_STANDARD				1060
-#define IDC_ICON_FLUENT					1061
-
 #define COLOR_POPUP_OK		10000
 #define COLOR_POPUP_CANCEL	10001
 
@@ -142,7 +136,7 @@
 //
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        180
+#define _APS_NEXT_RESOURCE_VALUE        200
 #define _APS_NEXT_COMMAND_VALUE         40001
 #define _APS_NEXT_CONTROL_VALUE         1100
 #define _APS_NEXT_SYMED_VALUE           110

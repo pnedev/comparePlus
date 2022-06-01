@@ -223,16 +223,8 @@ void NavDialog::doDialog()
 		_data.pszName       = TEXT("ComparePlus NavBar");
 		_data.pszModuleName	= getPluginFileName();
 		_data.dlgID			= CMD_NAV_BAR;
-
-		if (Settings.IconStandard)
-			_data.hIconTab		= (HICON)::LoadImage(GetModuleHandle(TEXT("ComparePlus.dll")),
-					MAKEINTRESOURCE(IDB_ICON), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE);
-		else if (isDarkModeNPP())
-			_data.hIconTab		= (HICON)::LoadImage(GetModuleHandle(TEXT("ComparePlus.dll")),
-					MAKEINTRESOURCE(IDB_ICON_FL_DM), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE);
-		else
-			_data.hIconTab		= (HICON)::LoadImage(GetModuleHandle(TEXT("ComparePlus.dll")),
-					MAKEINTRESOURCE(IDB_ICON_FL), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE);
+		_data.hIconTab		= (HICON)::LoadImage(GetModuleHandle(TEXT("ComparePlus.dll")),
+									MAKEINTRESOURCE(IDB_DOCKING_ICON), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE);
 
 		::SendMessage(_hParent, NPPM_DMMREGASDCKDLG, 0, (LPARAM)&_data);
 	}

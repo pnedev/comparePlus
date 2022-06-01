@@ -91,15 +91,15 @@ BEGIN
 END
 
 
-IDD_SETTINGS_DIALOG DIALOGEX 0, 0, 460, 269
+IDD_SETTINGS_DIALOG DIALOGEX 0, 0, 460, 248
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "ComparePlus Settings"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-	DEFPUSHBUTTON	"OK", IDOK, 129, 245, 44, 14
-	PUSHBUTTON		"Reset", IDDEFAULT, 208, 245, 44, 14
-	PUSHBUTTON		"Cancel", IDCANCEL, 287, 245, 44, 14
-	GROUPBOX		"Main Settings", IDC_STATIC, 7, 7, 295, 228
+	DEFPUSHBUTTON	"OK", IDOK, 50, 210, 44, 14
+	PUSHBUTTON		"Reset", IDDEFAULT, 129, 210, 44, 14
+	PUSHBUTTON		"Cancel", IDCANCEL, 208, 210, 44, 14
+	GROUPBOX		"Main Settings", IDC_STATIC, 7, 7, 295, 179
 	GROUPBOX		"Files Position", IDC_STATIC, 15, 22, 122, 42
 	AUTORADIOBUTTON	"New file in right/bottom view", IDC_NEW_IN_SUB, 21, 37, 107, 8, WS_GROUP | WS_TABSTOP
 	AUTORADIOBUTTON	"Old file in right/bottom view", IDC_OLD_IN_SUB, 21, 50, 107, 8
@@ -109,9 +109,6 @@ BEGIN
 	GROUPBOX		"Default Compare in Single-View", IDC_STATIC, 15, 130, 122, 42
 	AUTORADIOBUTTON	"Current and previous files", IDC_COMPARE_TO_PREV, 21, 145, 107, 8, WS_GROUP | WS_TABSTOP
 	AUTORADIOBUTTON	"Current and next files", IDC_COMPARE_TO_NEXT, 21, 158, 107, 8
-	GROUPBOX		"Toolbar Icons Style (requires restart)", IDC_STATIC, 78, 184, 152, 42
-	AUTORADIOBUTTON	"Standard icons: small", IDC_ICON_STANDARD, 99, 199, 107, 8, WS_GROUP | WS_TABSTOP
-	AUTORADIOBUTTON	"Fluent UI", IDC_ICON_FLUENT, 99, 212, 107, 8
 	GROUPBOX		"Misc.", IDC_STATIC, 145, 22, 148, 150
 	AUTOCHECKBOX	"Warn about encodings mismatch", IDC_ENCODING_CHECK, 153, 36, 138, 14
 	AUTOCHECKBOX	"Align all matching lines", IDC_ALIGN_ALL_MATCHES, 153, 55, 138, 14
@@ -182,7 +179,7 @@ BEGIN
 		LEFTMARGIN, 7
 		RIGHTMARGIN, 158
 		TOPMARGIN, 7
-		BOTTOMMARGIN, 239
+		BOTTOMMARGIN, 203
 	END
 END
 #endif	// APSTUDIO_INVOKED
@@ -205,36 +202,31 @@ IDB_NEXT				BITMAP	"../res/Standard/Next.bmp"
 IDB_DIFFS_ONLY			BITMAP	"../res/Standard/DiffsOnly.bmp"
 IDB_NAVBAR				BITMAP	"../res/Standard/NavBar.bmp"
 
-IDB_SETFIRST_FL			BITMAP	"../res/Fluent/FirstToCompareFluent.bmp"
-IDB_SETFIRST_RTL_FL		BITMAP	"../res/Fluent/FirstToCompareRTLFluent.bmp"
-IDB_COMPARE_FL			BITMAP	"../res/Fluent/CompareFluent.bmp"
-IDB_COMPARE_LINES_FL	BITMAP	"../res/Fluent/CompareLinesFluent.bmp"
-IDB_CLEARCOMPARE_FL		BITMAP	"../res/Fluent/ClearCompareFluent.bmp"
-IDB_FIRST_FL			BITMAP	"../res/Fluent/FirstFluent.bmp"
-IDB_LAST_FL				BITMAP	"../res/Fluent/LastFluent.bmp"
-IDB_PREV_FL				BITMAP	"../res/Fluent/PreviousFluent.bmp"
-IDB_NEXT_FL				BITMAP	"../res/Fluent/NextFluent.bmp"
-IDB_DIFFS_ONLY_FL		BITMAP	"../res/Fluent/DiffsOnlyFluent.bmp"
-IDB_NAVBAR_FL			BITMAP	"../res/Fluent/NavBarFluent.bmp"
+IDB_DOCKING_ICON		ICON	"../res/Standard/CompareDocking.ico"
 
-IDB_SETFIRST_FL_DM		BITMAP	"../res/FluentDM/FirstToCompareFluentDM.bmp"
-IDB_SETFIRST_RTL_FL_DM	BITMAP	"../res/FluentDM/FirstToCompareRTLFluentDM.bmp"
-IDB_COMPARE_FL_DM		BITMAP	"../res/FluentDM/CompareFluentDM.bmp"
-IDB_COMPARE_LINES_FL_DM	BITMAP	"../res/FluentDM/CompareLinesFluentDM.bmp"
-IDB_CLEARCOMPARE_FL_DM	BITMAP	"../res/FluentDM/ClearCompareFluentDM.bmp"
-IDB_FIRST_FL_DM			BITMAP	"../res/FluentDM/FirstFluentDM.bmp"
-IDB_LAST_FL_DM			BITMAP	"../res/FluentDM/LastFluentDM.bmp"
-IDB_PREV_FL_DM			BITMAP	"../res/FluentDM/PreviousFluentDM.bmp"
-IDB_NEXT_FL_DM			BITMAP	"../res/FluentDM/NextFluentDM.bmp"
-IDB_DIFFS_ONLY_FL_DM	BITMAP	"../res/FluentDM/DiffsOnlyFluentDM.bmp"
-IDB_DIFFS_ONLY_FL_DM_ON	BITMAP	"../res/FluentDM/DiffsOnlyFluentDM_ON.bmp"
-IDB_NAVBAR_FL_DM		BITMAP	"../res/FluentDM/NavBarFluentDM.bmp"
-IDB_NAVBAR_FL_DM_ON		BITMAP	"../res/FluentDM/NavBarFluentDM_ON.bmp"
+IDB_SETFIRST_FL			ICON	"../res/Fluent/FirstToCompareFluent.ico"
+IDB_SETFIRST_RTL_FL		ICON	"../res/Fluent/FirstToCompareRTLFluent.ico"
+IDB_COMPARE_FL			ICON	"../res/Fluent/CompareFluent.ico"
+IDB_COMPARE_LINES_FL	ICON	"../res/Fluent/CompareLinesFluent.ico"
+IDB_CLEARCOMPARE_FL		ICON	"../res/Fluent/ClearCompareFluent.ico"
+IDB_FIRST_FL			ICON	"../res/Fluent/FirstFluent.ico"
+IDB_LAST_FL				ICON	"../res/Fluent/LastFluent.ico"
+IDB_PREV_FL				ICON	"../res/Fluent/PreviousFluent.ico"
+IDB_NEXT_FL				ICON	"../res/Fluent/NextFluent.ico"
+IDB_DIFFS_ONLY_FL		ICON	"../res/Fluent/DiffsOnlyFluent.ico"
+IDB_NAVBAR_FL			ICON	"../res/Fluent/NavBarFluent.ico"
 
-
-IDB_ICON				ICON	"../res/Standard/CompareDocking.ico"
-IDB_ICON_FL				ICON	"../res/Fluent/CompareDockingFluent.ico"
-IDB_ICON_FL_DM			ICON	"../res/FluentDM/CompareDockingFluentDM.ico"
+IDB_SETFIRST_FL_DM		ICON	"../res/FluentDM/FirstToCompareFluentDM.ico"
+IDB_SETFIRST_RTL_FL_DM	ICON	"../res/FluentDM/FirstToCompareRTLFluentDM.ico"
+IDB_COMPARE_FL_DM		ICON	"../res/FluentDM/CompareFluentDM.ico"
+IDB_COMPARE_LINES_FL_DM	ICON	"../res/FluentDM/CompareLinesFluentDM.ico"
+IDB_CLEARCOMPARE_FL_DM	ICON	"../res/FluentDM/ClearCompareFluentDM.ico"
+IDB_FIRST_FL_DM			ICON	"../res/FluentDM/FirstFluentDM.ico"
+IDB_LAST_FL_DM			ICON	"../res/FluentDM/LastFluentDM.ico"
+IDB_PREV_FL_DM			ICON	"../res/FluentDM/PreviousFluentDM.ico"
+IDB_NEXT_FL_DM			ICON	"../res/FluentDM/NextFluentDM.ico"
+IDB_DIFFS_ONLY_FL_DM	ICON	"../res/FluentDM/DiffsOnlyFluentDM.ico"
+IDB_NAVBAR_FL_DM		ICON	"../res/FluentDM/NavBarFluentDM.ico"
 
 
 /////////////////////////////////////////////////////////////////////////////
