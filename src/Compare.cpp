@@ -1420,10 +1420,20 @@ void showBlankAdjacentArrowMark(int view, intptr_t line, bool down)
 	if (line < 0 && Settings.FollowingCaret)
 		line = getCurrentLine(view);
 
-	if (line >= 0 && !isLineMarked(view, line, MARKER_MASK_LINE) && isAdjacentAnnotationVisible(view, line, down))
-		setArrowMark(view, line, down);
+	if (line >= 0 && !isLineMarked(view, line, MARKER_MASK_LINE))
+	{
+		if (isAdjacentAnnotationVisible(view, line, down))
+			setArrowMark(view, line, down);
+		else if ((line == CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1) &&
+				isAdjacentAnnotationVisible(view, line, true))
+			setArrowMark(view, line, true);
+		else
+			setArrowMark(-1);
+	}
 	else
+	{
 		setArrowMark(-1);
+	}
 }
 
 
@@ -1454,32 +1464,26 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 		}
 	}
 
-	const bool isCornerDiff = ((mainStartLine < 0) && (subStartLine < 0));
-
-	if (isCornerDiff)
-	{
-		if (down)
-		{
-			mainStartLine	= 0;
-			subStartLine	= 0;
-		}
-		else
-		{
-			mainStartLine	= CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
-			subStartLine	= CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
-		}
-	}
-
 	const int nextMarker = down ? SCI_MARKERNEXT : SCI_MARKERPREVIOUS;
 
-	intptr_t mainNextLine	= CallScintilla(MAIN_VIEW, nextMarker, mainStartLine, MARKER_MASK_LINE);
-	intptr_t subNextLine	= CallScintilla(SUB_VIEW, nextMarker, subStartLine, MARKER_MASK_LINE);
+	intptr_t mainNextLine = -1;
+	intptr_t subNextLine = -1;
 
-	if ((mainNextLine == mainStartLine) && !isCornerDiff)
-		mainNextLine = -1;
+	if (mainStartLine >= 0)
+	{
+		mainNextLine = CallScintilla(MAIN_VIEW, nextMarker, mainStartLine, MARKER_MASK_LINE);
 
-	if ((subNextLine == subStartLine) && !isCornerDiff)
-		subNextLine = -1;
+		if ((mainNextLine == mainStartLine) && !goToCornerDiff)
+			mainNextLine = -1;
+	}
+
+	if (subStartLine >= 0)
+	{
+		subNextLine = CallScintilla(SUB_VIEW, nextMarker, subStartLine, MARKER_MASK_LINE);
+
+		if ((subNextLine == subStartLine) && !goToCornerDiff)
+			subNextLine = -1;
+	}
 
 	intptr_t line				= (view == MAIN_VIEW) ? mainNextLine : subNextLine;
 	const intptr_t otherLine	= (view == MAIN_VIEW) ? subNextLine : mainNextLine;
@@ -1528,48 +1532,47 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 		++line;
 
 	// No explicit go to corner diff but we are there - diffs wrap has occurred - 'up/down' notion is inverted
-	if (!goToCornerDiff && isCornerDiff)
-	{
-		const intptr_t edgeLine		= (down ? getLastLine(view) : getFirstLine(view));
-		const intptr_t currentLine	= (Settings.FollowingCaret ? getCurrentLine(view) : edgeLine);
+	// if (!goToCornerDiff && isCornerDiff)
+	// {
+		// const intptr_t edgeLine		= (down ? getLastLine(view) : getFirstLine(view));
+		// const intptr_t currentLine	= (Settings.FollowingCaret ? getCurrentLine(view) : edgeLine);
 
-		bool dontChangeLine = false;
+		// bool dontChangeLine = false;
 
-		if ((down && (currentLine <= line)) || (!down && (currentLine >= line)))
-			dontChangeLine = true;
+		// if ((down && (currentLine <= line)) || (!down && (currentLine >= line)))
+			// dontChangeLine = true;
 
-		if (dontChangeLine)
-		{
-			intptr_t lineToBlink;
+		// if (dontChangeLine)
+		// {
+			// intptr_t lineToBlink;
 
-			if (isLineVisible(view, line))
-			{
-				lineToBlink = line;
-			}
-			else
-			{
-				lineToBlink = edgeLine;
+			// if (isLineVisible(view, line))
+			// {
+				// lineToBlink = line;
+			// }
+			// else
+			// {
+				// lineToBlink = edgeLine;
 
-				if ((down && (edgeLine > line)) || (!down && (edgeLine < line)))
-					dontChangeLine = false;
-			}
+				// if ((down && (edgeLine > line)) || (!down && (edgeLine < line)))
+					// dontChangeLine = false;
+			// }
 
-			if (dontChangeLine)
-			{
-				blinkLine(view, lineToBlink);
+			// if (dontChangeLine)
+			// {
+				// blinkLine(view, lineToBlink);
 
-				return std::make_pair(view, -1);
-			}
-		}
-	}
+				// return std::make_pair(view, -1);
+			// }
+		// }
+	// }
 
 	LOGD("Jump to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
 			" view, center doc line: " + std::to_string(line + 1) + "\n");
 
 	// Line is not visible - scroll into view
 	if (!isLineVisible(view, line) ||
-		(!isLineMarked(view, line, MARKER_MASK_LINE) &&
-		isAdjacentAnnotation(view, line, down) && !isAdjacentAnnotationVisible(view, line, down)))
+		(!isLineMarked(view, line, MARKER_MASK_LINE) && !isAdjacentAnnotationVisible(view, line, down)))
 	{
 		centerAt(view, line);
 		doNotBlink = true;
@@ -1609,8 +1612,8 @@ std::pair<int, intptr_t> jumpToFirstChange(bool goToCornerDiff = false, bool doN
 
 std::pair<int, intptr_t> jumpToLastChange(bool goToCornerDiff = false, bool doNotBlink = false)
 {
-	std::pair<int, intptr_t> viewLoc = jumpToNextChange(CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0),
-			CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0), false, goToCornerDiff, doNotBlink);
+	std::pair<int, intptr_t> viewLoc = jumpToNextChange(CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1,
+			CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1, false, goToCornerDiff, doNotBlink);
 	showBlankAdjacentArrowMark(viewLoc.first, viewLoc.second, false);
 
 	return viewLoc;
@@ -1639,25 +1642,22 @@ std::pair<int, intptr_t> jumpToChange(bool down, bool wrapAround)
 		{
 			// Current line is marked but invisible - get into view
 			centerAt(currentView, currentLine);
-			viewLoc = std::make_pair(currentView, currentLine);
-		}
-		else
-		{
-			const bool currentLineAnnotated = isLineAnnotated(currentView, currentLine);
-
-			if (currentLineAnnotated && isAdjacentAnnotationVisible(currentView, currentLine, down))
-				++currentLine;
-
-			otherLine = (Settings.FollowingCaret ?
-					otherViewMatchingLine(currentView, currentLine) : getLastLine(otherView));
-
-			if (!currentLineAnnotated && isLineAnnotated(otherView, otherLine))
-				++otherLine;
-
-			viewLoc = jumpToNextChange(getNextUnmarkedLine(MAIN_VIEW, mainStartLine, MARKER_MASK_LINE),
-					getNextUnmarkedLine(SUB_VIEW, subStartLine, MARKER_MASK_LINE), down);
+			return std::make_pair(currentView, currentLine);
 		}
 
+		const bool currentLineAnnotated = isLineAnnotated(currentView, currentLine);
+
+		if (currentLineAnnotated && isAdjacentAnnotationVisible(currentView, currentLine, down))
+			++currentLine;
+
+		otherLine = (Settings.FollowingCaret ?
+				otherViewMatchingLine(currentView, currentLine) : getLastLine(otherView));
+
+		if (!currentLineAnnotated && isLineAnnotated(otherView, otherLine))
+			++otherLine;
+
+		viewLoc = jumpToNextChange(getNextUnmarkedLine(MAIN_VIEW, mainStartLine, MARKER_MASK_LINE),
+				getNextUnmarkedLine(SUB_VIEW, subStartLine, MARKER_MASK_LINE), down);
 	}
 	else
 	{
@@ -1668,19 +1668,17 @@ std::pair<int, intptr_t> jumpToChange(bool down, bool wrapAround)
 		{
 			// Current line is marked but invisible - get into view
 			centerAt(currentView, currentLine);
-			viewLoc = std::make_pair(currentView, currentLine);
+			return std::make_pair(currentView, currentLine);
 		}
-		else
-		{
-			if (isAdjacentAnnotationVisible(currentView, currentLine, down))
-				--currentLine;
 
-			otherLine = (Settings.FollowingCaret ?
-					otherViewMatchingLine(currentView, currentLine) : getFirstLine(otherView));
+		if (isAdjacentAnnotationVisible(currentView, currentLine, down))
+			--currentLine;
 
-			viewLoc = jumpToNextChange(getPrevUnmarkedLine(MAIN_VIEW, mainStartLine, MARKER_MASK_LINE),
-					getPrevUnmarkedLine(SUB_VIEW, subStartLine, MARKER_MASK_LINE), down);
-		}
+		otherLine = (Settings.FollowingCaret ?
+				otherViewMatchingLine(currentView, currentLine) : getFirstLine(otherView));
+
+		viewLoc = jumpToNextChange(getPrevUnmarkedLine(MAIN_VIEW, mainStartLine, MARKER_MASK_LINE),
+				getPrevUnmarkedLine(SUB_VIEW, subStartLine, MARKER_MASK_LINE), down);
 	}
 
 	if (viewLoc.first < 0)
@@ -1703,9 +1701,9 @@ std::pair<int, intptr_t> jumpToChange(bool down, bool wrapAround)
 		else
 		{
 			if (down)
-				viewLoc = jumpToLastChange();
+				viewLoc = jumpToLastChange(true);
 			else
-				viewLoc = jumpToFirstChange();
+				viewLoc = jumpToFirstChange(true);
 		}
 	}
 	else
