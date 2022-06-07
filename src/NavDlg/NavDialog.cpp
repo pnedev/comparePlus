@@ -158,7 +158,7 @@ void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int heigh
 
 	BLENDFUNCTION blend = { 0 };
 	blend.BlendOp = AC_SRC_OVER;
-	blend.SourceConstantAlpha = 40;
+	blend.SourceConstantAlpha = 80;
 
 	::AlphaBlend(hDC, r.left + 1, r.top + 1, width, static_cast<int>(lastVisible - firstVisible),
 			m_hSelDC, 0, 0, 1, 1, blend);
