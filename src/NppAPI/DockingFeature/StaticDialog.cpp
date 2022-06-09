@@ -80,7 +80,7 @@ void StaticDialog::display(bool toShow, bool enhancedPositioningCheckWhenShowing
 
 			if ((testPositionRc.left != candidateRc.left) || (testPositionRc.top != candidateRc.top))
 			{
-				::MoveWindow(_hSelf, candidateRc.left, candidateRc.top, 
+				::MoveWindow(_hSelf, candidateRc.left, candidateRc.top,
 					candidateRc.right - candidateRc.left, candidateRc.bottom - candidateRc.top, TRUE);
 			}
 		}
@@ -88,8 +88,8 @@ void StaticDialog::display(bool toShow, bool enhancedPositioningCheckWhenShowing
 		{
 			// If the user has switched from a dual monitor to a single monitor since we last
 			// displayed the dialog, then ensure that it's still visible on the single monitor.
-			RECT workAreaRect = { 0 };
-			RECT rc = { 0 };
+			RECT workAreaRect = {};
+			RECT rc = {};
 			::SystemParametersInfo(SPI_GETWORKAREA, 0, &workAreaRect, 0);
 			::GetWindowRect(_hSelf, &rc);
 			int newLeft = rc.left;
@@ -128,7 +128,7 @@ RECT StaticDialog::getViewablePositionRect(RECT testPositionRc) const
 		// rect would be at least partially visible on a monitor
 
 		::GetMonitorInfo(hMon, &mi);
-		
+
 		int margin = ::GetSystemMetrics(SM_CYBORDER) + ::GetSystemMetrics(SM_CYSIZEFRAME) + ::GetSystemMetrics(SM_CYCAPTION);
 
 		// require that the title bar of the window be in a viewable place so the user can see it to grab it with the mouse
@@ -153,7 +153,7 @@ RECT StaticDialog::getViewablePositionRect(RECT testPositionRc) const
 	if (!rectPosViewableWithoutChange)
 	{
 		// reposition rect so that it would be viewable on current/nearest monitor, centering if reasonable
-		
+
 		LONG testRectWidth = testPositionRc.right - testPositionRc.left;
 		LONG testRectHeight = testPositionRc.bottom - testPositionRc.top;
 		LONG monWidth = mi.rcWork.right - mi.rcWork.left;
@@ -189,11 +189,16 @@ HGLOBAL StaticDialog::makeRTLResource(int dialogID, DLGTEMPLATE **ppMyDlgTemplat
 	// Duplicate Dlg Template resource
 	unsigned long sizeDlg = ::SizeofResource(_hInst, hDialogRC);
 	HGLOBAL hMyDlgTemplate = ::GlobalAlloc(GPTR, sizeDlg);
+	if (!hMyDlgTemplate) return nullptr;
+
 	*ppMyDlgTemplate = static_cast<DLGTEMPLATE *>(::GlobalLock(hMyDlgTemplate));
+	if (!*ppMyDlgTemplate) return nullptr;
 
 	::memcpy(*ppMyDlgTemplate, pDlgTemplate, sizeDlg);
 
 	DLGTEMPLATEEX *pMyDlgTemplateEx = reinterpret_cast<DLGTEMPLATEEX *>(*ppMyDlgTemplate);
+	if (!pMyDlgTemplateEx) return nullptr;
+
 	if (pMyDlgTemplateEx->signature == 0xFFFF)
 		pMyDlgTemplateEx->exStyle |= WS_EX_LAYOUTRTL;
 	else
@@ -248,7 +253,7 @@ void StaticDialog::create(int dialogID, bool isRTL, bool msgDestParent)
 	::SendMessage(msgDestParent ? _hParent : (::GetParent(_hParent)), NPPM_MODELESSDIALOG, MODELESSDIALOGADD, reinterpret_cast<WPARAM>(_hSelf));
 }
 
-INT_PTR CALLBACK StaticDialog::dlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+intptr_t CALLBACK StaticDialog::dlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
@@ -273,41 +278,3 @@ INT_PTR CALLBACK StaticDialog::dlgProc(HWND hwnd, UINT message, WPARAM wParam, L
 	}
 }
 
-void StaticDialog::alignWith(HWND handle, HWND handle2Align, PosAlign pos, POINT & point)
-{
-	RECT rc, rc2;
-	::GetWindowRect(handle, &rc);
-
-	point.x = rc.left;
-	point.y = rc.top;
-
-	switch (pos)
-	{
-		case PosAlign::left:
-		{
-			::GetWindowRect(handle2Align, &rc2);
-			point.x -= rc2.right - rc2.left;
-			break;
-		}
-		case PosAlign::right:
-		{
-			::GetWindowRect(handle, &rc2);
-			point.x += rc2.right - rc2.left;
-			break;
-		}
-		case PosAlign::top:
-		{
-			::GetWindowRect(handle2Align, &rc2);
-			point.y -= rc2.bottom - rc2.top;
-			break;
-		}
-		case PosAlign::bottom:
-		{
-			::GetWindowRect(handle, &rc2);
-			point.y += rc2.bottom - rc2.top;
-			break;
-		}
-	}
-
-	::ScreenToClient(_hSelf, &point);
-}

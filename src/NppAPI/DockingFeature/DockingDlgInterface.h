@@ -91,10 +91,10 @@ protected :
 	std::wstring _pluginName;
 	bool _isClosed = false;
 
-	virtual INT_PTR CALLBACK run_dlgProc(UINT message, WPARAM, LPARAM lParam) {
+	virtual intptr_t CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 		switch (message)
 		{
-			case WM_NOTIFY: 
+			case WM_NOTIFY:
 			{
 				LPNMHDR	pnmh = reinterpret_cast<LPNMHDR>(lParam);
 
