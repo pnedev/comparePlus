@@ -339,6 +339,13 @@ inline int getViewId(HWND view)
 }
 
 
+inline int getViewIdSafe(HWND view)
+{
+	return (view == nppData._scintillaMainHandle) ? MAIN_VIEW :
+			(view == nppData._scintillaSecondHandle) ? SUB_VIEW : -1;
+}
+
+
 inline int getCurrentViewId()
 {
 	return static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0));

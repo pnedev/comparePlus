@@ -2524,6 +2524,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 				}
 			}
 
+			currentlyActiveBuffID = getCurrentBuffId();
+
 			LOGD("COMPARE READY\n");
 		}
 		return;
@@ -4001,7 +4003,9 @@ void onSciModified(SCNotification* notifyCode)
 {
 	static bool notReverting = true;
 
-	const int view = getViewId((HWND)notifyCode->nmhdr.hwndFrom);
+	const int view = getViewIdSafe((HWND)notifyCode->nmhdr.hwndFrom);
+	if (view < 0)
+		return;
 
 	CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(view));
 	if (cmpPair == compareList.end())
@@ -4361,7 +4365,7 @@ void onBufferActivated(LRESULT buffId)
 
 		currentlyActiveBuffID = buffId;
 	}
-	else
+	else if (buffId != currentlyActiveBuffID)
 	{
 		delayedActivation.buffId = buffId;
 		delayedActivation.post(30);
@@ -4684,28 +4688,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 		case NPPN_BUFFERACTIVATED:
 			if (!compareList.empty() && !notificationsLock && !delayedClosure)
 				onBufferActivated(notifyCode->nmhdr.idFrom);
-		break;
-
-		// If file is opened from compared file some SCN_MODIFIED notifications are received from SUB_VIEW
-		// leading to erroneous behavior so temporarily disable notifications processing until file is fully opened
-		case NPPN_FILEBEFORELOAD:
-			if (NppSettings::get().compareMode)
-			{
-				++notificationsLock;
-
-				LOGD("NPPN_FILEBEFORELOAD: " +
-					std::string(getViewId((HWND)notifyCode->nmhdr.hwndFrom) == MAIN_VIEW ?
-					"MAIN view\n" : "SUB view\n"));
-			}
-		break;
-
-		case NPPN_FILEOPENED:
-			if (!compareList.empty() && (notificationsLock > 0) && !newCompare)
-			{
-				--notificationsLock;
-
-				LOGDB(notifyCode->nmhdr.idFrom, "NPPN_FILEOPENED\n");
-			}
 		break;
 
 		case NPPN_FILEBEFORECLOSE:
