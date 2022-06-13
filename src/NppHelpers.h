@@ -257,7 +257,7 @@ struct ViewLocation
 
 	~ViewLocation()
 	{
-		LOGD("Clear view location\n");
+		LOGD(LOG_SYNC, "Clear view location\n");
 	}
 
 #endif

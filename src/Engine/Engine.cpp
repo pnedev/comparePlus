@@ -634,7 +634,7 @@ bool resolveMatch(const CompareInfo& cmpInfo, diffInfo& lookupDiff, intptr_t loo
 
 		if ((reverseMi.matchDiff == &lookupDiff) && (reverseMi.matchOff == lookupMi.lookupOff))
 		{
-			LOGD("Move match found, len: " + std::to_string(lookupMi.matchLen) + "\n");
+			LOGD(LOG_ALGO, "Move match found, len: " + std::to_string(lookupMi.matchLen) + "\n");
 
 			lookupDiff.info.moves.emplace_back(lookupMi.lookupOff, lookupMi.matchLen);
 			lookupMi.matchDiff->info.moves.emplace_back(lookupMi.matchOff, lookupMi.matchLen);
@@ -653,7 +653,7 @@ bool resolveMatch(const CompareInfo& cmpInfo, diffInfo& lookupDiff, intptr_t loo
 
 void findMoves(CompareInfo& cmpInfo)
 {
-	LOGD("FIND MOVES\n");
+	LOGD(LOG_ALGO, "FIND MOVES\n");
 
 	bool repeat = true;
 
@@ -666,7 +666,7 @@ void findMoves(CompareInfo& cmpInfo)
 			if (lookupDiff.type != diff_type::DIFF_IN_1)
 				continue;
 
-			LOGD("Check D1 with off: " + std::to_string(cmpInfo.doc1.lines[lookupDiff.off].line + 1) + "\n");
+			LOGD(LOG_ALGO, "Check D1 with off: " + std::to_string(cmpInfo.doc1.lines[lookupDiff.off].line + 1) + "\n");
 
 			// Go through all lookupDiff's elements and check if each is matched
 			for (intptr_t lookupEi = 0; lookupEi < lookupDiff.len; ++lookupEi)
@@ -785,7 +785,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 		intptr_t line1 = lm.second;
 		intptr_t line2 = lm.first;
 
-		LOGD("Compare Lines " + std::to_string(doc1.lines[blockDiff1.off + line1].line + 1) + " and " +
+		LOGD(LOG_ALGO, "Compare Lines " + std::to_string(doc1.lines[blockDiff1.off + line1].line + 1) + " and " +
 				std::to_string(doc2.lines[blockDiff2.off + line2].line + 1) + "\n");
 
 		const std::vector<Word> lineWords1 = getLineWords(doc1.view, doc1.lines[blockDiff1.off + line1].line, options);
@@ -871,7 +871,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 
 					if (options.detectCharDiffs)
 					{
-						LOGD("Compare Sections " +
+						LOGD(LOG_ALGO, "Compare Sections " +
 								std::to_string(off1 + 1) + " to " +
 								std::to_string(end1 + 1) + " and " +
 								std::to_string(off2 + 1) + " to " +
@@ -911,7 +911,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 
 						if (matchSections)
 						{
-							LOGD("Matching sections found: " + std::to_string(matchSections) +
+							LOGD(LOG_ALGO, "Matching sections found: " + std::to_string(matchSections) +
 									", matched len: " + std::to_string(matchLen) + "\n");
 
 							// Are similarities a considerable portion of the diff?
@@ -942,7 +942,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 
 								totalLineMatchLen += matchLen;
 
-								LOGD("Whole section checked for matches\n");
+								LOGD(LOG_ALGO, "Whole section checked for matches\n");
 
 								++i;
 								continue;
@@ -1222,7 +1222,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 
 	if (threadsCount == 1)
 	{
-		LOGD("getOrderedConvergence(): only 1 worker thread available\n");
+		LOGD(LOG_ALGO, "getOrderedConvergence(): only 1 worker thread available\n");
 
 		workFn(0, linesCount1);
 	}
@@ -1239,7 +1239,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 
 		jobsPerThread = (totalJobs + threadsCount - 1) / threadsCount;
 
-		LOGD("getOrderedConvergence(): " + std::to_string(threadsCount) + " threads will be used, " +
+		LOGD(LOG_ALGO, "getOrderedConvergence(): " + std::to_string(threadsCount) + " threads will be used, " +
 				std::to_string(jobsPerThread) + " jobs per thread\n");
 
 		// Convert to line1 iterations per thread
@@ -1253,7 +1253,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 		{
 			const intptr_t endLine = ((th == (threadsCount - 1)) ? linesCount1 : (startLine + jobsPerThread));
 
-			LOGD("Thread " + std::to_string(th + 1) + " line1 range: " + std::to_string(startLine) + " to " +
+			LOGD(LOG_ALGO, "Thread " + std::to_string(th + 1) + " line1 range: " + std::to_string(startLine) + " to " +
 					std::to_string(endLine - 1) + "\n");
 
 			try
@@ -1300,8 +1300,9 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 	for (const auto& oc: orderedLinesConvergence)
 	{
 		if (!oc.empty())
-			LOGD("Best Matching Lines: " + std::to_string(doc1.lines[oc.begin()->line1 + blockDiff1.off].line + 1) +
-					" and " + std::to_string(doc2.lines[oc.begin()->line2 + blockDiff2.off].line + 1) + "\n");
+			LOGD(LOG_ALGO, "Best Matching Lines: " +
+					std::to_string(doc1.lines[oc.begin()->line1 + blockDiff1.off].line + 1) + " and " +
+					std::to_string(doc2.lines[oc.begin()->line2 + blockDiff2.off].line + 1) + "\n");
 	}
 #endif
 
@@ -1390,7 +1391,7 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 			{
 				groupedLines.emplace_back(std::move(subGroup));
 
-				LOGD("New lines group (" + std::to_string(groupedLines.size()) + " total). Last lines: " +
+				LOGD(LOG_ALGO, "New lines group (" + std::to_string(groupedLines.size()) + " total). Last lines: " +
 						std::to_string(doc1.lines[ocrItr->line1 + blockDiff1.off].line + 1) + " - " +
 						std::to_string(doc2.lines[ocrItr->line2 + blockDiff2.off].line + 1) + "\n");
 			}

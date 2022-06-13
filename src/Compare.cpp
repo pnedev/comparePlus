@@ -1567,7 +1567,7 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 		// }
 	// }
 
-	LOGD("Jump to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
+	LOGD(LOG_VISIT, "Jump to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
 			" view, center doc line: " + std::to_string(line + 1) + "\n");
 
 	// Line is not visible - scroll into view
@@ -2526,7 +2526,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 			currentlyActiveBuffID = getCurrentBuffId();
 
-			LOGD("COMPARE READY\n");
+			LOGD(LOG_ALL, "COMPARE READY\n");
 		}
 		return;
 
@@ -3276,8 +3276,8 @@ void syncViews(int biasView)
 	{
 		if (firstVisible != otherFirstVisible)
 		{
-			LOGD("Syncing to " + std::string(biasView == MAIN_VIEW ? "MAIN" : "SUB") + " view, visible doc line: " +
-					std::to_string(firstLine + 1) + "\n");
+			LOGD(LOG_SYNC, "Syncing to " + std::string(biasView == MAIN_VIEW ? "MAIN" : "SUB") +
+					" view, visible doc line: " + std::to_string(firstLine + 1) + "\n");
 
 			const intptr_t otherLastVisible = CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE,
 					CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0) - 1, 0);
@@ -3598,7 +3598,7 @@ void DelayedAlign::operator()()
 
 	if (realign)
 	{
-		LOGD("Aligning diffs\n");
+		LOGD(LOG_NOTIF, "Aligning diffs\n");
 
 		if (!storedLocation && !goToFirst)
 			storedLocation = std::make_unique<ViewLocation>(getCurrentViewId());
@@ -3610,7 +3610,7 @@ void DelayedAlign::operator()()
 
 	if (goToFirst)
 	{
-		LOGD("Go to first diff\n");
+		LOGD(LOG_NOTIF, "Go to first diff\n");
 
 		goToFirst = false;
 
@@ -3666,7 +3666,7 @@ void onSciUpdateUI(HWND view)
 {
 	ScopedIncrementerInt incr(notificationsLock);
 
-	LOGD("onSciUpdateUI()\n");
+	LOGD(LOG_NOTIF, "onSciUpdateUI()\n");
 
 	storedLocation = std::make_unique<ViewLocation>(getViewId(view));
 
@@ -4023,7 +4023,7 @@ void onSciModified(SCNotification* notifyCode)
 		if (endLine <= startLine)
 			return;
 
-		LOGD("SC_MOD_BEFOREDELETE: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
+		LOGD(LOG_NOTIF, "SC_MOD_BEFOREDELETE: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
 				" view, lines range: " + std::to_string(startLine + 1) + "-" + std::to_string(endLine) + "\n");
 
 		const int action = notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
@@ -4057,17 +4057,17 @@ void onSciModified(SCNotification* notifyCode)
 			{
 				if (undo->selection.first >= 0)
 				{
-					LOGD("Selection stored.\n");
+					LOGD(LOG_NOTIF, "Selection stored.\n");
 				}
 
 				if (!undo->alignment.empty())
 				{
-					LOGD("Alignment stored.\n");
+					LOGD(LOG_NOTIF, "Alignment stored.\n");
 				}
 
 				if (!undo->otherViewMarks.empty())
 				{
-					LOGD("Other view markers stored.\n");
+					LOGD(LOG_NOTIF, "Other view markers stored.\n");
 				}
 			}
 		}
@@ -4084,7 +4084,7 @@ void onSciModified(SCNotification* notifyCode)
 
 		const int action = notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
 
-		LOGD("SC_MOD_INSERTTEXT: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
+		LOGD(LOG_NOTIF, "SC_MOD_INSERTTEXT: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
 				" view, lines range: " + std::to_string(startLine + 1) + "-" +
 				std::to_string(startLine + notifyCode->linesAdded) + "\n");
 
@@ -4103,14 +4103,14 @@ void onSciModified(SCNotification* notifyCode)
 
 				selectionsAdjusted = true;
 
-				LOGD("Selection restored.\n");
+				LOGD(LOG_NOTIF, "Selection restored.\n");
 			}
 
 			if (!Settings.RecompareOnChange)
 			{
 				cmpPair->summary.alignmentInfo = std::move(undo->alignment);
 
-				LOGD("Alignment restored.\n");
+				LOGD(LOG_NOTIF, "Alignment restored.\n");
 
 				if (!undo->otherViewMarks.empty())
 				{
@@ -4123,7 +4123,7 @@ void onSciModified(SCNotification* notifyCode)
 						if (Settings.ShowOnlyDiffs)
 							showRange(getOtherViewId(view), alignLine, undo->otherViewMarks.size());
 
-						LOGD("Other view markers restored.\n");
+						LOGD(LOG_NOTIF, "Other view markers restored.\n");
 					}
 				}
 			}
@@ -4232,7 +4232,7 @@ void onSciModified(SCNotification* notifyCode)
 				return;
 			}
 
-			LOGDIF(selectionsAdjusted, "Selection adjusted.\n");
+			LOGDIF(LOG_NOTIF, selectionsAdjusted, "Selection adjusted.\n");
 		}
 
 		if (Settings.RecompareOnChange)
@@ -4257,7 +4257,7 @@ void onSciModified(SCNotification* notifyCode)
 				{
 					cmpPair->adjustAlignment(view, startLine, notifyCode->linesAdded);
 
-					LOGD("Alignment adjusted.\n");
+					LOGD(LOG_NOTIF, "Alignment adjusted.\n");
 				}
 			}
 
@@ -4301,7 +4301,7 @@ void DelayedActivate::operator()()
 	if (cmpPair == compareList.end())
 		return;
 
-	LOGDB(buffId, "Activate\n");
+	LOGDB(LOG_NOTIF, buffId, "Activate\n");
 
 	if (buffId != currentlyActiveBuffID)
 	{
@@ -4354,7 +4354,7 @@ void onBufferActivated(LRESULT buffId)
 
 	ScopedIncrementerInt incr(notificationsLock);
 
-	LOGDB(buffId, "onBufferActivated()\n");
+	LOGDB(LOG_NOTIF, buffId, "onBufferActivated()\n");
 
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
@@ -4395,7 +4395,7 @@ void DelayedClose::operator()()
 		{
 			if (otherFile.isOpen())
 			{
-				LOGDB(otherFile.buffId, "Close\n");
+				LOGDB(LOG_NOTIF, otherFile.buffId, "Close\n");
 
 				otherFile.close();
 			}

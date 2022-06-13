@@ -43,8 +43,14 @@ if (UNIX OR MINGW)
 		set (defs ${defs} -DMULTITHREAD)
 	endif ()
 
+	# On Cmake invokation if debug logging is desired set the value of DLOG to include the bit-flag of each desired
+	# function to log:
+	# bit 0 - log compare algorithm
+	# bit 1 - log views synchronization
+	# bit 2 - log Notepad++ and Scintilla notifications
+	# bit 3 - log navigation commands diff visiting
 	if (DLOG)
-		set (defs ${defs} -DDLOG)
+		set (defs ${defs} -DDLOG=${DLOG})
 	endif ()
 
 	if (OTHER_MOVED_ICONS)

@@ -156,7 +156,7 @@ void ViewLocation::save(int view, intptr_t centerLine)
 			_firstLine = getFirstLine(view);
 	}
 
-	LOGD("Store " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") + " view location\n");
+	LOGD(LOG_SYNC, "Store " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") + " view location\n");
 }
 
 
@@ -173,7 +173,7 @@ bool ViewLocation::restore() const
 
 		CallScintilla(_view, SCI_SETFIRSTVISIBLELINE, firstVisibleLine, 0);
 
-		LOGD("Restore " + std::string(_view == MAIN_VIEW ? "MAIN" : "SUB") +
+		LOGD(LOG_SYNC, "Restore " + std::string(_view == MAIN_VIEW ? "MAIN" : "SUB") +
 				" view location, first visible doc line: " +
 				std::to_string(CallScintilla(_view, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0) + 1) + "\n");
 	}
@@ -182,7 +182,7 @@ bool ViewLocation::restore() const
 		if (!isLineVisible(_view, _centerLine))
 			centerAt(_view, _centerLine);
 
-		LOGD("Restore " + std::string(_view == MAIN_VIEW ? "MAIN" : "SUB") +
+		LOGD(LOG_SYNC, "Restore " + std::string(_view == MAIN_VIEW ? "MAIN" : "SUB") +
 				" view location, center doc line: " + std::to_string(_centerLine + 1) + "\n");
 	}
 

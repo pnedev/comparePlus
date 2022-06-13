@@ -35,69 +35,67 @@
 	#include <string>
 	#include <shlwapi.h>
 
+	#define LOG_ALGO	(1 << 0)
+	#define LOG_SYNC	(1 << 1)
+	#define LOG_NOTIF	(1 << 2)
+	#define LOG_VISIT	(1 << 3)
+	#define LOG_ALL		0xFF
+
 	#define LOGD_GET_TIME \
-		for (;;) { \
+		if (1) { \
 			dLogTime_ms = ::GetTickCount(); \
-			break; \
 		}
 
-	#define LOGD(STR) \
-		for (;;) { \
+	#define LOGD(LOG_FILTER, STR) \
+		if (DLOG & LOG_FILTER) { \
 			const DWORD time_ms = ::GetTickCount(); \
 			TCHAR file[MAX_PATH]; \
 			char fileA[MAX_PATH]; \
 			::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, _countof(file), (LPARAM)file); \
 			::WideCharToMultiByte(CP_ACP, 0, file, -1, fileA, sizeof(fileA), NULL, NULL); \
-			if (dLogTime_ms) dLog += "+ "; \
 			std::string tmp_str { std::to_string(time_ms - dLogTime_ms) }; \
 			dLog += tmp_str; \
-			if (tmp_str.size() < 3) dLog += " ms\t\t- "; \
-			else dLog += " ms\t- "; \
+			if (tmp_str.size() < 5) dLog += " ms\t\t("; \
+			else dLog += " ms\t("; \
 			tmp_str = fileA; \
 			dLog += tmp_str; \
-			if (tmp_str.size() < 4) dLog += " -\t\t\t\t"; \
-			else if (tmp_str.size() < 8) dLog += " -\t\t\t"; \
-			else if (tmp_str.size() < 12) dLog += " -\t\t"; \
-			else dLog += " -\t"; \
+			if (tmp_str.size() < 7) dLog += ")\t\t\t"; \
+			else if (tmp_str.size() < 11) dLog += ")\t\t"; \
+			else dLog += ")\t"; \
 			dLog += (STR); \
-			break; \
 		}
 
-	#define LOGDIF(COND, STR) \
-		if (COND) \
-			LOGD(STR)
+	#define LOGDIF(LOG_FILTER, COND, STR) \
+		if ((DLOG & LOG_FILTER) && (COND)) \
+			LOGD(LOG_FILTER, STR)
 
-	#define LOGDB(BUFFID, STR) \
-		for (;;) { \
+	#define LOGDB(LOG_FILTER, BUFFID, STR) \
+		if (DLOG & LOG_FILTER) { \
 			const DWORD time_ms = ::GetTickCount(); \
 			TCHAR file[MAX_PATH]; \
 			char fileA[MAX_PATH]; \
 			::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, BUFFID, (LPARAM)file); \
 			::WideCharToMultiByte(CP_ACP, 0, ::PathFindFileName(file), -1, fileA, sizeof(fileA), NULL, NULL); \
-			if (dLogTime_ms) dLog += "+ "; \
 			std::string tmp_str { std::to_string(time_ms - dLogTime_ms) }; \
 			dLog += tmp_str; \
-			if (tmp_str.size() < 3) dLog += " ms\t\t- "; \
-			else dLog += " ms\t- "; \
+			if (tmp_str.size() < 5) dLog += " ms\t\t("; \
+			else dLog += " ms\t("; \
 			tmp_str = fileA; \
 			dLog += tmp_str; \
-			if (tmp_str.size() < 4) dLog += " -\t\t\t\t"; \
-			else if (tmp_str.size() < 8) dLog += " -\t\t\t"; \
-			else if (tmp_str.size() < 12) dLog += " -\t\t"; \
-			else dLog += " -\t"; \
+			if (tmp_str.size() < 7) dLog += ")\t\t\t"; \
+			else if (tmp_str.size() < 11) dLog += ")\t\t"; \
+			else dLog += ")\t"; \
 			dLog += (STR); \
-			break; \
 		}
 
 	#define PRINT_DIFFS(INFO, DIFFS) \
-		for (;;) { \
-			LOGD(INFO "\n"); \
+		if (DLOG & LOG_ALGO) { \
+			LOGD(LOG_ALGO, INFO "\n"); \
 			for (const auto& d: DIFFS) { \
-				LOGD("\t" + std::string((d.type == diff_type::DIFF_IN_1) ? "D1" : \
+				LOGD(LOG_ALGO, "\t" + std::string((d.type == diff_type::DIFF_IN_1) ? "D1" : \
 						(d.type == diff_type::DIFF_IN_2 ? "D2" : "M")) + \
 						" off: " + std::to_string(d.off + 1) + " len: " + std::to_string(d.len) + "\n"); \
 			} \
-			break; \
 		}
 
 	extern std::string	dLog;
@@ -106,9 +104,9 @@
 #else
 
 	#define LOGD_GET_TIME
-	#define LOGD(STR)
-	#define LOGDIF(COND, STR)
-	#define LOGDB(BUFFID, STR)
+	#define LOGD(LOG_FILTER, STR)
+	#define LOGDIF(LOG_FILTER, COND, STR)
+	#define LOGDB(LOG_FILTER, BUFFID, STR)
 	#define PRINT_DIFFS(INFO, DIFFS)
 
 #endif
