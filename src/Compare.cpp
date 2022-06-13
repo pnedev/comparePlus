@@ -433,20 +433,6 @@ public:
  *  \class
  *  \brief
  */
-class DelayedMaximize : public DelayedWork
-{
-public:
-	DelayedMaximize() : DelayedWork() {}
-	virtual ~DelayedMaximize() = default;
-
-	virtual void operator()();
-};
-
-
-/**
- *  \class
- *  \brief
- */
 class DelayedUpdate : public DelayedWork
 {
 public:
@@ -525,8 +511,7 @@ LRESULT (*nppNotificationProc)(HWND, UINT, WPARAM, LPARAM) = nullptr;
 CompareList_t compareList;
 std::unique_ptr<NewCompare> newCompare = nullptr;
 
-int		notificationsLock = 0;
-bool	isNppMinimized = false;
+int notificationsLock = 0;
 
 std::unique_ptr<ViewLocation> storedLocation = nullptr;
 std::vector<int> copiedSectionMarks;
@@ -541,7 +526,6 @@ DelayedAlign	delayedAlignment;
 DelayedActivate	delayedActivation;
 DelayedClose	delayedClosure;
 DelayedUpdate	delayedUpdate;
-DelayedMaximize	delayedMaximize;
 
 NavDialog		NavDlg;
 
@@ -4528,19 +4512,6 @@ void onFileSaved(LRESULT buffId)
 }
 
 
-void DelayedMaximize::operator()()
-{
-	isNppMinimized = false;
-
-	if (notificationsLock)
-		--notificationsLock;
-
-	::SetFocus(getCurrentView());
-
-	NavDlg.Update();
-}
-
-
 LRESULT statusProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	// Handle only status bar mouse left-click notification
@@ -4666,12 +4637,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 
 		// Vertical scroll sync
 		case SCN_UPDATEUI:
-			if (isNppMinimized)
-			{
-				delayedMaximize.cancel();
-				delayedMaximize.post(500);
-			}
-			else if (NppSettings::get().compareMode && !notificationsLock && !storedLocation && !goToFirst &&
+			if (NppSettings::get().compareMode && !notificationsLock && !storedLocation && !goToFirst &&
 				!delayedActivation && !delayedClosure && !delayedUpdate &&
 				(notifyCode->updated & (SC_UPDATE_SELECTION | SC_UPDATE_V_SCROLL)))
 			{
@@ -4778,27 +4744,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 
 extern "C" __declspec(dllexport) LRESULT messageProc(UINT msg, WPARAM wParam, LPARAM)
 {
-	if (msg == WM_SIZE)
-	{
-		if (wParam == SIZE_MINIMIZED)
-		{
-			if (!isNppMinimized && NppSettings::get().compareMode)
-			{
-				// On rare occasions Alignment is posted (Sci paint event is received)
-				// before minimize event is received
-				delayedAlignment.cancel();
-
-				isNppMinimized = true;
-				++notificationsLock;
-			}
-		}
-		else if (wParam == SIZE_MAXIMIZED)
-		{
-			if (isNppMinimized && !delayedMaximize)
-				delayedMaximize.post(500);
-		}
-	}
-
 	return TRUE;
 }
 
