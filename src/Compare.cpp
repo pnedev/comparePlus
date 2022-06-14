@@ -21,6 +21,7 @@
 #include <vector>
 #include <memory>
 #include <cmath>
+#include <cwchar>
 
 #include <windows.h>
 #include <tchar.h>
@@ -61,7 +62,7 @@ namespace // anonymous namespace
 {
 
 constexpr int MIN_NOTEPADPP_VERSION_MAJOR = 8;
-constexpr int MIN_NOTEPADPP_VERSION_MINOR = 410;
+constexpr int MIN_NOTEPADPP_VERSION_MINOR = 420;
 
 constexpr int MIN_NOTEPADPP_VERSION = ((MIN_NOTEPADPP_VERSION_MAJOR << 16) | MIN_NOTEPADPP_VERSION_MINOR);
 
@@ -3346,6 +3347,21 @@ void comparedFileActivated()
 }
 
 
+void checkCmdLine()
+{
+	const wchar_t compareRunCmd[]	= L"-pluginMessage=compare";
+	constexpr int minCmdLineLen		= sizeof(compareRunCmd) / sizeof(wchar_t);
+
+	TCHAR cmdLine[2048];
+
+	if (::SendMessage(nppData._nppHandle, NPPM_GETCURRENTCMDLINE, 2048, (LPARAM)cmdLine) > minCmdLineLen)
+	{
+		if (wcsstr(cmdLine, compareRunCmd) != nullptr)
+			compare();
+	}
+}
+
+
 void onToolBarReady()
 {
 	int bmpX = 0;
@@ -3545,6 +3561,8 @@ void onNppReady()
 			Settings.useLightColors();
 
 		NppSettings::get().updatePluginMenu();
+
+		checkCmdLine();
 	}
 }
 
