@@ -4321,11 +4321,16 @@ void DelayedActivate::operator()()
 
 		setSelection(viewId, sel.first, sel.second);
 	}
-	// File seems reloaded - re-compare pair
 	else
 	{
-		delayedAlignment.cancel();
-		delayedUpdate.post(30);
+		// NPPN_BUFFERACTIVATED for the same buffer is received if file is reloaded or if we try to close an
+		// unsaved file. We try to distinguish here the reason for the notification - if file is saved then it
+		// seems reloaded and we want to update the compare.
+		if (isCurrentFileSaved())
+		{
+			delayedAlignment.cancel();
+			delayedUpdate.post(30);
+		}
 	}
 }
 
@@ -4349,7 +4354,7 @@ void onBufferActivated(LRESULT buffId)
 
 		currentlyActiveBuffID = buffId;
 	}
-	else if (buffId != currentlyActiveBuffID)
+	else
 	{
 		delayedActivation.buffId = buffId;
 		delayedActivation.post(30);

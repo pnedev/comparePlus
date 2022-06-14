@@ -608,6 +608,8 @@ inline bool isDarkModeNPP()
 }
 
 
+bool isCurrentFileSaved();
+
 bool isDarkMode();
 
 void setStyles(UserSettings& settings);

@@ -423,6 +423,20 @@ void setCompareView(int view, int blankColor, int caretLineTransp)
 }
 
 
+bool isCurrentFileSaved()
+{
+	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
+
+	MENUITEMINFOA menuItemInfo	= { 0 };
+	menuItemInfo.cbSize			= sizeof(menuItemInfo);
+	menuItemInfo.fMask			= MIIM_STATE;
+
+	::GetMenuItemInfoA(hMenu, IDM_FILE_SAVE, FALSE, &menuItemInfo);
+
+	return (menuItemInfo.fState & MFS_DISABLED);
+}
+
+
 bool isDarkMode()
 {
 	if (::SendMessage(nppData._nppHandle, NPPM_ISDARKMODEENABLED, 0, 0))
