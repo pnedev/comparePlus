@@ -1747,8 +1747,10 @@ intptr_t getAlignmentLine(const AlignmentInfo_t &alignInfo, int view, intptr_t l
 }
 
 
-bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
+bool isAlignmentNeeded(int view, const CompareList_t::iterator& cmpPair)
 {
+	const AlignmentInfo_t& alignmentInfo = cmpPair->summary.alignmentInfo;
+
 	const AlignmentViewData AlignmentPair::*pView = (view == MAIN_VIEW) ? &AlignmentPair::main : &AlignmentPair::sub;
 
 	const intptr_t firstLine	= getFirstLine(view);
@@ -1768,29 +1770,46 @@ bool isAlignmentNeeded(int view, const AlignmentInfo_t& alignmentInfo)
 	while ((i < maxSize) && ((alignmentInfo[i].main.line == 0) || (alignmentInfo[i].sub.line == 0)))
 		++i;
 
-	for (; i < maxSize; ++i)
+	if (Settings.ShowOnlyDiffs)
 	{
-		if (Settings.ShowOnlyDiffs)
+		for (; i < maxSize; ++i)
 		{
 			if ((alignmentInfo[i].main.diffMask != 0) && (alignmentInfo[i].sub.diffMask != 0) &&
 					(CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) !=
 					CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0)))
 				return true;
+
+			if ((alignmentInfo[i].*pView).line > lastLine)
+				return false;
 		}
-		else
+	}
+	else
+	{
+		for (; i < maxSize; ++i)
 		{
 			if ((alignmentInfo[i].main.diffMask == alignmentInfo[i].sub.diffMask) &&
 					(CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) !=
 					CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0)))
 				return true;
-		}
 
-		if ((alignmentInfo[i].*pView).line > lastLine)
-			return false;
+			if ((alignmentInfo[i].*pView).line > lastLine)
+				return false;
+		}
 	}
 
-	intptr_t mainEndLine	= CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
-	intptr_t subEndLine		= CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
+	intptr_t mainEndLine;
+	intptr_t subEndLine;
+
+	if (!cmpPair->options.selectionCompare)
+	{
+		mainEndLine	= CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
+		subEndLine	= CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
+	}
+	else
+	{
+		mainEndLine	= cmpPair->options.selections[MAIN_VIEW].second;
+		subEndLine	= cmpPair->options.selections[SUB_VIEW].second;
+	}
 
 	if (Settings.ShowOnlyDiffs)
 	{
@@ -1851,8 +1870,19 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 
 	const intptr_t maxSize = static_cast<intptr_t>(alignmentInfo.size());
 
-	intptr_t mainEndLine	= CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
-	intptr_t subEndLine		= CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
+	intptr_t mainEndLine;
+	intptr_t subEndLine;
+
+	if (!cmpPair->options.selectionCompare)
+	{
+		mainEndLine	= CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
+		subEndLine	= CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
+	}
+	else
+	{
+		mainEndLine	= cmpPair->options.selections[MAIN_VIEW].second;
+		subEndLine	= cmpPair->options.selections[SUB_VIEW].second;
+	}
 
 	// Align diffs
 	for (intptr_t i = 0; i < maxSize &&
@@ -1873,9 +1903,9 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0);
 
 		// Ignore alignment on line 0 as it is currently not supported by Scintilla
-		if (mismatchLen != 0 && (alignmentInfo[i].main.line == 0 || alignmentInfo[i].sub.line == 0))
+		if (alignmentInfo[i].main.line == 0 || alignmentInfo[i].sub.line == 0)
 		{
-			lineZeroAlignmentSkipped = true;
+			lineZeroAlignmentSkipped = (mismatchLen != 0);
 			continue;
 		}
 
@@ -1923,6 +1953,45 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 		}
 	}
 
+	if (Settings.ShowOnlyDiffs)
+	{
+		mainEndLine	= CallScintilla(MAIN_VIEW, SCI_MARKERPREVIOUS, mainEndLine, MARKER_MASK_LINE);
+		subEndLine	= CallScintilla(SUB_VIEW, SCI_MARKERPREVIOUS, subEndLine, MARKER_MASK_LINE);
+
+		if (mainEndLine < 0)
+			mainEndLine = 0;
+		if (subEndLine < 0)
+			subEndLine = 0;
+	}
+
+	const intptr_t mainEndVisible = CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, mainEndLine, 0) +
+			getWrapCount(MAIN_VIEW, mainEndLine) - 1;
+	const intptr_t subEndVisible = CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subEndLine, 0) +
+			getWrapCount(SUB_VIEW, subEndLine) - 1;
+
+	if (((getLastVisibleLine(MAIN_VIEW) > mainEndVisible) || (getLastVisibleLine(SUB_VIEW) > subEndVisible)) &&
+		((mainEndVisible + getLineAnnotation(MAIN_VIEW, mainEndLine)) !=
+		(subEndVisible + getLineAnnotation(SUB_VIEW, subEndLine))))
+	{
+		const intptr_t mismatchLen = mainEndVisible - subEndVisible;
+
+		if (mismatchLen == 0)
+		{
+			clearAnnotation(MAIN_VIEW, mainEndLine);
+			clearAnnotation(SUB_VIEW, subEndLine);
+		}
+		else if (mismatchLen > 0)
+		{
+			clearAnnotation(MAIN_VIEW, mainEndLine);
+			addBlankSectionAfter(SUB_VIEW, subEndLine, mismatchLen);
+		}
+		else
+		{
+			addBlankSectionAfter(MAIN_VIEW, mainEndLine, -mismatchLen);
+			clearAnnotation(SUB_VIEW, subEndLine);
+		}
+	}
+
 	// Mark selections for clarity
 	if (cmpPair->options.selectionCompare)
 	{
@@ -1940,9 +2009,25 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 				++subAnnotation;
 			}
 
-			addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first, mainAnnotation, 1,
+			const intptr_t annotMismatch = mainAnnotation - subAnnotation;
+			const intptr_t visibleBlockStartMismatch =
+				CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, cmpPair->options.selections[MAIN_VIEW].first, 0) -
+				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, cmpPair->options.selections[SUB_VIEW].first, 0);
+
+			intptr_t mainAnnotPos = 1;
+			intptr_t subAnnotPos = 1;
+
+			if (visibleBlockStartMismatch == 0)
+			{
+				if (annotMismatch > 0)
+					mainAnnotPos += annotMismatch;
+				else
+					subAnnotPos += -annotMismatch;
+			}
+
+			addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first, mainAnnotation, mainAnnotPos,
 					"--- Selection Compare Block Start ---");
-			addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first, subAnnotation, 1,
+			addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first, subAnnotation, subAnnotPos,
 					"--- Selection Compare Block Start ---");
 		}
 
@@ -1963,47 +2048,6 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 					mainAnnotation, mainAnnotation, "--- Selection Compare Block End ---");
 			addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].second + 1,
 					subAnnotation, subAnnotation, "--- Selection Compare Block End ---");
-		}
-	}
-	else
-	{
-		if (Settings.ShowOnlyDiffs)
-		{
-			mainEndLine	= CallScintilla(MAIN_VIEW, SCI_MARKERPREVIOUS, mainEndLine, MARKER_MASK_LINE);
-			subEndLine	= CallScintilla(SUB_VIEW, SCI_MARKERPREVIOUS, subEndLine, MARKER_MASK_LINE);
-
-			if (mainEndLine < 0)
-				mainEndLine = 0;
-			if (subEndLine < 0)
-				subEndLine = 0;
-		}
-
-		const intptr_t mainEndVisible = CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, mainEndLine, 0) +
-				getWrapCount(MAIN_VIEW, mainEndLine) - 1;
-		const intptr_t subEndVisible = CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subEndLine, 0) +
-				getWrapCount(SUB_VIEW, subEndLine) - 1;
-
-		if (((getLastVisibleLine(MAIN_VIEW) > mainEndVisible) || (getLastVisibleLine(SUB_VIEW) > subEndVisible)) &&
-			((mainEndVisible + getLineAnnotation(MAIN_VIEW, mainEndLine)) !=
-			(subEndVisible + getLineAnnotation(SUB_VIEW, subEndLine))))
-		{
-			const intptr_t mismatchLen = mainEndVisible - subEndVisible;
-
-			if (mismatchLen == 0)
-			{
-				clearAnnotation(MAIN_VIEW, mainEndLine);
-				clearAnnotation(SUB_VIEW, subEndLine);
-			}
-			else if (mismatchLen > 0)
-			{
-				clearAnnotation(MAIN_VIEW, mainEndLine);
-				addBlankSectionAfter(SUB_VIEW, subEndLine, mismatchLen);
-			}
-			else
-			{
-				addBlankSectionAfter(MAIN_VIEW, mainEndLine, -mismatchLen);
-				clearAnnotation(SUB_VIEW, subEndLine);
-			}
 		}
 	}
 }
@@ -3595,7 +3639,7 @@ void DelayedAlign::operator()()
 	{
 		const int view = storedLocation ? storedLocation->getView() : getCurrentViewId();
 
-		realign = isAlignmentNeeded(view, alignmentInfo);
+		realign = isAlignmentNeeded(view, cmpPair);
 	}
 
 	if (realign)

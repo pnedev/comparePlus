@@ -1846,19 +1846,6 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 
 	summary.moved /= 2;
 
-	if (options.selectionCompare)
-	{
-		pMainAlignData->diffMask	= 0;
-		pMainAlignData->line		= options.selections[cmpInfo.doc1.view].second + 1;
-
-		pSubAlignData->diffMask		= 0;
-		pSubAlignData->line			= options.selections[cmpInfo.doc2.view].second + 1;
-
-		if ((pMainAlignData->line < CallScintilla(cmpInfo.doc1.view, SCI_GETLINECOUNT, 0, 0)) &&
-				(pSubAlignData->line < CallScintilla(cmpInfo.doc2.view, SCI_GETLINECOUNT, 0, 0)))
-			summary.alignmentInfo.emplace_back(alignPair);
-	}
-
 	if (progress && !progress->NextPhase())
 		return false;
 
