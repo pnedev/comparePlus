@@ -89,7 +89,7 @@ std::unique_ptr<LibGit>& LibGit::load()
 		int major, minor, rev;
 		Inst->version(&major, &minor, &rev);
 
-		if (major >=0 && minor >= 22 && rev >= 0)
+		if ((major > 0) || (major == 0 && minor >= 22)) // Those API functions are introduced after version 0.22
 		{
 			Inst->init = (PGITLIBINIT)::GetProcAddress(libGit2, "git_libgit2_init");
 			if (!Inst->init)
