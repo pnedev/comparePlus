@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2013 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2022 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,37 @@
 #include <tchar.h>
 #include <shlwapi.h>
 #include "LibGit2Helper.h"
+#include "Tools.h"
+
+
+namespace
+{
+
+inline bool getDllPath(TCHAR* dllPath, size_t bufLen)
+{
+	HMODULE hPlugin = ::GetModuleHandle(TEXT("ComparePlus.dll"));
+	if (!hPlugin)
+		return false;
+
+	::GetModuleFileName(hPlugin, (LPWSTR)dllPath, bufLen);
+	::PathRemoveExtension(dllPath);
+	_tcscat_s(dllPath, bufLen, TEXT("\\git2.dll"));
+
+	return true;
+}
+
+}
+
+
+bool isGITlibFound()
+{
+	TCHAR dllPath[MAX_PATH];
+
+	if (getDllPath(dllPath, _countof(dllPath)))
+		return fileExists(dllPath);
+
+	return false;
+}
 
 
 std::unique_ptr<LibGit>	LibGit::Inst;
@@ -34,13 +65,8 @@ std::unique_ptr<LibGit>& LibGit::load()
 
 	TCHAR dllPath[MAX_PATH];
 
-	HMODULE hPlugin = ::GetModuleHandle(TEXT("ComparePlus.dll"));
-	if (!hPlugin)
+	if (!getDllPath(dllPath, _countof(dllPath)))
 		return Inst;
-
-	::GetModuleFileName(hPlugin, (LPWSTR)dllPath, _countof(dllPath));
-	::PathRemoveExtension(dllPath);
-	_tcscat_s(dllPath, _countof(dllPath), TEXT("\\git2.dll"));
 
 	HMODULE libGit2 = ::LoadLibrary(dllPath);
 	if (!libGit2)

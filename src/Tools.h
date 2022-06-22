@@ -21,6 +21,7 @@
 
 #include <map>
 #include <windows.h>
+#include <tchar.h>
 
 
 /**
@@ -101,4 +102,14 @@ inline void flushMsgQueue()
 	MSG msg;
 
 	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE));
+}
+
+
+inline bool fileExists(const TCHAR* filePath)
+{
+	if (filePath == nullptr)
+		return false;
+
+	DWORD dwAttrib = ::GetFileAttributes(filePath);
+	return (bool)(dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }

@@ -3577,12 +3577,10 @@ void onNppReady()
 
 		HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
 
-		constexpr int flag = MF_BYCOMMAND | MF_DISABLED | MF_GRAYED;
-
 		for (size_t i = 0; i < NB_MENU_COMMANDS; ++i)
 		{
 			if (funcItem[i]._pFunc != nullptr)
-				::EnableMenuItem(hMenu, funcItem[i]._cmdID, flag);
+				::EnableMenuItem(hMenu, funcItem[i]._cmdID, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
 		}
 
 		::DrawMenuBar(nppData._nppHandle);
@@ -3603,6 +3601,20 @@ void onNppReady()
 			Settings.useDarkColors();
 		else
 			Settings.useLightColors();
+
+		if (!isSQLlibFound())
+		{
+			HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
+
+			::EnableMenuItem(hMenu, funcItem[CMD_SVN_DIFF]._cmdID, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+		}
+
+		if (!isGITlibFound())
+		{
+			HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
+
+			::EnableMenuItem(hMenu, funcItem[CMD_GIT_DIFF]._cmdID, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+		}
 
 		NppSettings::get().updatePluginMenu();
 

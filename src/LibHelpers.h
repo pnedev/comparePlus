@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2013 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2022 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,9 @@
 #include <windows.h>
 #include <tchar.h>
 #include <vector>
+
+bool isSQLlibFound();
+bool isGITlibFound();
 
 bool GetSvnFile(const TCHAR* fullFilePath, TCHAR* svnFile, unsigned svnFileSize);
 std::vector<char> GetGitFileContent(const TCHAR* fullFilePath);

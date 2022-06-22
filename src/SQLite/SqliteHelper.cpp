@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2013 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2022 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 #include <tchar.h>
 #include <shlwapi.h>
 #include "SqliteHelper.h"
+#include "Tools.h"
+
 
 PSQLOPEN16			sqlite3_open16;
 PSQLPREPARE16V2		sqlite3_prepare16_v2;
@@ -29,6 +31,37 @@ PSQLSTEP			sqlite3_step;
 PSQLCOLUMNTEXT16	sqlite3_column_text16;
 PSQLFINALZE			sqlite3_finalize;
 PSQLCLOSE			sqlite3_close;
+
+
+namespace
+{
+
+inline bool getDllPath(TCHAR* dllPath, size_t bufLen)
+{
+	HMODULE hPlugin = ::GetModuleHandle(TEXT("ComparePlus.dll"));
+	if (!hPlugin)
+		return false;
+
+	::GetModuleFileName(hPlugin, (LPWSTR)dllPath, bufLen);
+	::PathRemoveExtension(dllPath);
+	_tcscat_s(dllPath, bufLen, TEXT("\\sqlite3.dll"));
+
+	return true;
+}
+
+}
+
+
+bool isSQLlibFound()
+{
+	TCHAR dllPath[MAX_PATH];
+
+	if (getDllPath(dllPath, _countof(dllPath)))
+		return fileExists(dllPath);
+
+	return false;
+}
+
 
 bool InitSQLite()
 {
@@ -38,13 +71,8 @@ bool InitSQLite()
 	{
 		TCHAR dllPath[MAX_PATH];
 
-		HMODULE hPlugin = ::GetModuleHandle(TEXT("ComparePlus.dll"));
-		if (!hPlugin)
+		if (!getDllPath(dllPath, _countof(dllPath)))
 			return false;
-
-		::GetModuleFileName(hPlugin, (LPWSTR)dllPath, _countof(dllPath));
-		::PathRemoveExtension(dllPath);
-		_tcscat_s(dllPath, _countof(dllPath), TEXT("\\sqlite3.dll"));
 
 		HMODULE ligSQLite = ::LoadLibrary(dllPath);
 		if (!ligSQLite)
