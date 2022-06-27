@@ -556,6 +556,12 @@ inline bool isSelectionVertical(int view)
 }
 
 
+inline bool isMultiSelection(int view)
+{
+	return (CallScintilla(view, SCI_GETSELECTIONS, 0, 0) > 1);
+}
+
+
 inline std::pair<intptr_t, intptr_t> getSelection(int view)
 {
 	return std::make_pair(CallScintilla(view, SCI_GETSELECTIONSTART, 0, 0),

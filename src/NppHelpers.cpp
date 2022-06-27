@@ -277,7 +277,7 @@ void activateBufferID(LRESULT buffId)
 
 std::pair<intptr_t, intptr_t> getSelectionLines(int view)
 {
-	if (isSelectionVertical(view))
+	if (isSelectionVertical(view) || isMultiSelection(view))
 		return std::make_pair(-1, -1);
 
 	const intptr_t selectionStart = CallScintilla(view, SCI_GETSELECTIONSTART, 0, 0);

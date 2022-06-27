@@ -2121,7 +2121,7 @@ bool areSelectionsValid(LRESULT currentBuffId = -1, LRESULT otherBuffId = -1)
 	}
 
 	if (!valid)
-		::MessageBox(nppData._nppHandle, TEXT("No selected lines to compare - operation ignored."),
+		::MessageBox(nppData._nppHandle, TEXT("No valid selections to compare - operation ignored."),
 				PLUGIN_NAME, MB_OK);
 
 	return valid;
