@@ -43,6 +43,8 @@ const TCHAR UserSettings::bestSeqChangedLinesSetting[]		= TEXT("best_seq_changed
 const TCHAR UserSettings::ignoreSpacesSetting[]				= TEXT("ignore_spaces");
 const TCHAR UserSettings::ignoreEmptyLinesSetting[]			= TEXT("ignore_empty_lines");
 const TCHAR UserSettings::ignoreCaseSetting[]				= TEXT("ignore_case");
+const TCHAR UserSettings::ignoreRegexSetting[]				= TEXT("ignore_regex");
+const TCHAR UserSettings::ignoreRegexStrSetting[]			= TEXT("ignore_regex_string");
 const TCHAR UserSettings::showOnlySelSetting[]				= TEXT("show_only_selections");
 const TCHAR UserSettings::showOnlyDiffSetting[]				= TEXT("show_only_diffs");
 const TCHAR UserSettings::navBarSetting[]					= TEXT("navigation_bar");
@@ -109,6 +111,14 @@ void UserSettings::load()
 	IgnoreSpaces		= ::GetPrivateProfileInt(mainSection, ignoreSpacesSetting,			0, iniFile) != 0;
 	IgnoreEmptyLines	= ::GetPrivateProfileInt(mainSection, ignoreEmptyLinesSetting,		0, iniFile) != 0;
 	IgnoreCase			= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,			0, iniFile) != 0;
+	IgnoreRegex			= ::GetPrivateProfileInt(mainSection, ignoreRegexSetting,			0, iniFile) != 0;
+
+	TCHAR buf[1024];
+
+	::GetPrivateProfileString(mainSection, ignoreRegexStrSetting, NULL, buf, _countof(buf), iniFile);
+
+	IgnoreRegexStr = buf;
+
 	ShowOnlyDiffs		= ::GetPrivateProfileInt(mainSection, showOnlyDiffSetting,			0, iniFile) != 0;
 	ShowOnlySelections	= ::GetPrivateProfileInt(mainSection, showOnlySelSetting,			1, iniFile) != 0;
 	UseNavBar			= ::GetPrivateProfileInt(mainSection, navBarSetting,				1, iniFile) != 0;
@@ -187,6 +197,16 @@ void UserSettings::save()
 
 	::PathAppend(iniFile, TEXT("ComparePlus.ini"));
 
+	// Make sure the ini config file has UNICODE encoding to be able to store ignore regex Unicode string
+	{
+		FILE* fp;
+
+		_wfopen_s(&fp, iniFile, L"w, ccs=UNICODE");
+
+		if (fp)
+			fclose(fp);
+	}
+
 	if (!::WritePrivateProfileString(mainSection, newFileViewSetting,
 		NewFileViewId == SUB_VIEW ? TEXT("1") : TEXT("0"), iniFile))
 	{
@@ -229,6 +249,10 @@ void UserSettings::save()
 			IgnoreEmptyLines ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreCaseSetting,
 			IgnoreCase ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, ignoreRegexSetting,
+			IgnoreRegex ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, ignoreRegexStrSetting,
+			IgnoreRegexStr.c_str(), iniFile);
 	::WritePrivateProfileString(mainSection, showOnlyDiffSetting,
 			ShowOnlyDiffs ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, showOnlySelSetting,

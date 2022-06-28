@@ -37,7 +37,7 @@
 #include "diff.h"
 #include "ProgressDlg.h"
 
-#define MULTITHREAD		1
+// #define MULTITHREAD		1
 
 #ifdef MULTITHREAD
 
@@ -144,9 +144,9 @@ struct Word
 
 struct Char
 {
-	Char(char c, intptr_t p) : ch(c), pos(p) {}
+	Char(wchar_t c, intptr_t p) : ch(c), pos(p) {}
 
-	char ch;
+	wchar_t ch;
 	intptr_t pos;
 
 	inline bool operator==(const Char& rhs) const
@@ -159,12 +159,12 @@ struct Char
 		return (ch != rhs.ch);
 	}
 
-	inline bool operator==(char rhs) const
+	inline bool operator==(wchar_t rhs) const
 	{
 		return (ch == rhs);
 	}
 
-	inline bool operator!=(char rhs) const
+	inline bool operator!=(wchar_t rhs) const
 	{
 		return (ch != rhs);
 	}
@@ -325,7 +325,8 @@ struct LinesConv
 
 const uint64_t cHashSeed = 0x84222325;
 
-inline uint64_t Hash(uint64_t hval, char letter)
+template<typename CharT>
+inline uint64_t Hash(uint64_t hval, CharT letter)
 {
 	hval ^= static_cast<uint64_t>(letter);
 
@@ -358,6 +359,75 @@ void swap(DocCmpInfo& lhs, DocCmpInfo& rhs)
 }
 
 
+inline uint64_t lineRangeHash(uint64_t hashSeed, std::vector<wchar_t>& line, intptr_t pos, intptr_t endPos,
+		const CompareOptions& options)
+{
+	if (pos < endPos)
+	{
+		if (options.ignoreCase)
+		{
+			const wchar_t storedChar = line[endPos];
+
+			line[endPos] = L'\0';
+
+			::CharLowerW((LPWSTR)line.data() + pos);
+
+			line[endPos] = storedChar;
+		}
+
+		for (; pos < endPos; ++pos)
+		{
+			if (options.ignoreSpaces && (line[pos] == L' ' || line[pos] == L'\t'))
+				continue;
+
+			hashSeed = Hash(hashSeed, line[pos]);
+		}
+	}
+
+	return hashSeed;
+}
+
+
+uint64_t regexIgnoreLineHash(uint64_t hashSeed, const std::vector<char>& line, const CompareOptions& options)
+{
+	const intptr_t len = static_cast<intptr_t>(line.size());
+
+	if (len == 0)
+		return hashSeed;
+
+	const int wLen = ::MultiByteToWideChar(CP_UTF8, 0, line.data(), len, NULL, 0);
+
+	std::vector<wchar_t> wLine(wLen);
+
+	::MultiByteToWideChar(CP_UTF8, 0, line.data(), len, wLine.data(), wLen);
+
+#ifndef MULTITHREAD
+	LOGD(LOG_ALGO, "line len " + std::to_string(len) + " to wide char len " + std::to_string(wLen) + "\n");
+#endif
+
+	std::regex_iterator<std::vector<wchar_t>::iterator> rit(wLine.begin(), wLine.end(), *options.ignoreRegex);
+	std::regex_iterator<std::vector<wchar_t>::iterator> rend;
+
+	intptr_t pos = 0;
+
+	while (rit != rend)
+	{
+#ifndef MULTITHREAD
+		LOGD(LOG_ALGO, "pos " + std::to_string(rit->position()) + ", len " + std::to_string(rit->length()) + "\n");
+#endif
+
+		hashSeed = lineRangeHash(hashSeed, wLine, pos, rit->position(), options);
+
+		pos = rit->position() + rit->length();
+		++rit;
+	}
+
+	hashSeed = lineRangeHash(hashSeed, wLine, pos, len - 1, options);
+
+	return hashSeed;
+}
+
+
 void getLines(DocCmpInfo& doc, const CompareOptions& options)
 {
 	const int monitorCancelEveryXLine = 500;
@@ -381,34 +451,47 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 
 	doc.lines.reserve(doc.section.len);
 
-	for (intptr_t lineNum = 0; lineNum < doc.section.len; ++lineNum)
+	for (intptr_t secLine = 0; secLine < doc.section.len; ++secLine)
 	{
-		if (progress && (lineNum % monitorCancelEveryXLine == 0) && !progress->Advance())
+		if (progress && (secLine % monitorCancelEveryXLine == 0) && !progress->Advance())
 		{
 			doc.lines.clear();
 			return;
 		}
 
-		const intptr_t lineStart	= getLineStart(doc.view, lineNum + doc.section.off);
-		const intptr_t lineEnd		= getLineEnd(doc.view, lineNum + doc.section.off);
+		const intptr_t docLine		= secLine + doc.section.off;
+		const intptr_t lineStart	= getLineStart(doc.view, docLine);
+		const intptr_t lineEnd		= getLineEnd(doc.view, docLine);
 
 		Line newLine;
 		newLine.hash = cHashSeed;
-		newLine.line = lineNum + doc.section.off;
+		newLine.line = docLine;
 
-		if (lineEnd - lineStart)
+		if (lineStart < lineEnd)
 		{
 			std::vector<char> line = getText(doc.view, lineStart, lineEnd);
 
-			if (options.ignoreCase)
-				toLowerCase(line);
-
-			for (intptr_t i = 0; i < lineEnd - lineStart; ++i)
+			if (options.ignoreRegex)
 			{
-				if (options.ignoreSpaces && (line[i] == ' ' || line[i] == '\t'))
-					continue;
+#ifndef MULTITHREAD
+				LOGD(LOG_ALGO, "Regex Ignore on line " + std::to_string(docLine + 1) +
+						", view " + std::to_string(doc.view) + "\n");
+#endif
 
-				newLine.hash = Hash(newLine.hash, line[i]);
+				newLine.hash = regexIgnoreLineHash(newLine.hash, line, options);
+			}
+			else
+			{
+				if (options.ignoreCase)
+					toLowerCase(line);
+
+				for (intptr_t i = 0; i < lineEnd - lineStart; ++i)
+				{
+					if (options.ignoreSpaces && (line[i] == ' ' || line[i] == '\t'))
+						continue;
+
+					newLine.hash = Hash(newLine.hash, line[i]);
+				}
 			}
 		}
 
@@ -418,73 +501,68 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 }
 
 
-charType getCharType(char letter)
+charType getCharTypeW(wchar_t letter)
 {
-	if (letter == ' ' || letter == '\t')
+	if (letter == L' ' || letter == L'\t')
 		return charType::SPACECHAR;
 
-	if (::IsCharAlphaNumericA(letter) || letter == '_')
+	if (::IsCharAlphaNumericW(letter) || letter == L'_')
 		return charType::ALPHANUMCHAR;
 
 	return charType::OTHERCHAR;
 }
 
 
-std::vector<Char> getSectionChars(int view, intptr_t secStart, intptr_t secEnd, const CompareOptions& options)
+inline void recalculateWordPos(std::vector<Word>& words, const std::vector<wchar_t>& line)
 {
-	std::vector<Char> chars;
+	intptr_t bytePos = 0;
+	intptr_t currPos = 0;
 
-	if (secEnd - secStart)
+	for (auto& word : words)
 	{
-		std::vector<char>	line = getText(view, secStart, secEnd);
-		const intptr_t		lineLen = static_cast<intptr_t>(line.size()) - 1;
+		if (currPos < word.pos)
+			bytePos +=
+				::WideCharToMultiByte(CP_UTF8, 0, line.data() + currPos, word.pos - currPos, NULL, 0, NULL, NULL);
 
-		chars.reserve(lineLen);
-
-		if (options.ignoreCase)
-			toLowerCase(line);
-
-		for (intptr_t i = 0; i < lineLen; ++i)
-		{
-			if (!options.ignoreSpaces || getCharType(line[i]) != charType::SPACECHAR)
-				chars.emplace_back(line[i], i);
-		}
+		currPos = word.pos + word.len;
+		word.len = ::WideCharToMultiByte(CP_UTF8, 0, line.data() + word.pos, word.len, NULL, 0, NULL, NULL);
+		word.pos = bytePos;
+		bytePos += word.len;
 	}
-
-	return chars;
 }
 
 
-std::vector<Word> getLineWords(int view, intptr_t lineNum, const CompareOptions& options)
+inline void getLineRangeWords(std::vector<Word>& words, std::vector<wchar_t>& line, intptr_t pos, intptr_t endPos,
+		const CompareOptions& options)
 {
-	std::vector<Word> words;
-
-	const intptr_t docLineStart	= getLineStart(view, lineNum);
-	const intptr_t docLineEnd	= getLineEnd(view, lineNum);
-
-	if (docLineEnd - docLineStart)
+	if (pos < endPos)
 	{
-		std::vector<char>	line = getText(view, docLineStart, docLineEnd);
-		const intptr_t		lineLen = static_cast<intptr_t>(line.size()) - 1;
-
 		if (options.ignoreCase)
-			toLowerCase(line);
+		{
+			const wchar_t storedChar = line[endPos];
 
-		charType currentWordType = getCharType(line[0]);
+			line[endPos] = L'\0';
+
+			::CharLowerW((LPWSTR)line.data() + pos);
+
+			line[endPos] = storedChar;
+		}
+
+		charType currentWordType = getCharTypeW(line[pos]);
 
 		Word word;
-		word.hash = Hash(cHashSeed, line[0]);
-		word.pos = 0;
+		word.hash = Hash(cHashSeed, line[pos]);
+		word.pos = pos;
 		word.len = 1;
 
-		for (intptr_t i = 1; i < lineLen; ++i)
+		for (++pos; pos < endPos; ++pos)
 		{
-			charType newWordType = getCharType(line[i]);
+			charType newWordType = getCharTypeW(line[pos]);
 
 			if (newWordType == currentWordType)
 			{
 				++word.len;
-				word.hash = Hash(word.hash, line[i]);
+				word.hash = Hash(word.hash, line[pos]);
 			}
 			else
 			{
@@ -493,8 +571,8 @@ std::vector<Word> getLineWords(int view, intptr_t lineNum, const CompareOptions&
 
 				currentWordType = newWordType;
 
-				word.hash = Hash(cHashSeed, line[i]);
-				word.pos = i;
+				word.hash = Hash(cHashSeed, line[pos]);
+				word.pos = pos;
 				word.len = 1;
 			}
 		}
@@ -502,8 +580,182 @@ std::vector<Word> getLineWords(int view, intptr_t lineNum, const CompareOptions&
 		if (!options.ignoreSpaces || currentWordType != charType::SPACECHAR)
 			words.emplace_back(word);
 	}
+}
+
+
+std::vector<Word> getRegexIgnoreLineWords(std::vector<wchar_t>& line, const CompareOptions& options)
+{
+	std::vector<Word> words;
+
+	const intptr_t len = static_cast<intptr_t>(line.size());
+
+	if (len == 0)
+		return words;
+
+	std::regex_iterator<std::vector<wchar_t>::iterator> rit(line.begin(), line.end(), *options.ignoreRegex);
+	std::regex_iterator<std::vector<wchar_t>::iterator> rend;
+
+	intptr_t pos = 0;
+
+	while (rit != rend)
+	{
+		getLineRangeWords(words, line, pos, rit->position(), options);
+
+		pos = rit->position() + rit->length();
+		++rit;
+	}
+
+	getLineRangeWords(words, line, pos, len - 1, options);
 
 	return words;
+}
+
+
+std::vector<Word> getLineWords(int view, intptr_t docLine, const CompareOptions& options)
+{
+	std::vector<Word> words;
+
+	const intptr_t lineStart	= getLineStart(view, docLine);
+	const intptr_t lineEnd		= getLineEnd(view, docLine);
+
+	if (lineStart < lineEnd)
+	{
+		std::vector<char> line = getText(view, lineStart, lineEnd);
+
+		const intptr_t len = static_cast<intptr_t>(line.size());
+
+		const int wLen = ::MultiByteToWideChar(CP_UTF8, 0, line.data(), len, NULL, 0);
+
+		std::vector<wchar_t> wLine(wLen);
+
+		::MultiByteToWideChar(CP_UTF8, 0, line.data(), len, wLine.data(), wLen);
+
+		if (options.ignoreRegex)
+			words = getRegexIgnoreLineWords(wLine, options);
+		else
+			getLineRangeWords(words, wLine, 0, wLen - 1, options);
+
+		// In case of UTF-16 or UTF-32 find words byte positions and lengths because Scintilla uses those
+		if (wLen != len)
+			recalculateWordPos(words, wLine);
+	}
+
+	return words;
+}
+
+
+inline void recalculateCharPos(std::vector<Char>& chars, const std::vector<wchar_t>& sec)
+{
+	intptr_t bytePos = 0;
+	intptr_t currPos = 0;
+
+	for (auto& ch : chars)
+	{
+		if (currPos < ch.pos)
+			bytePos +=
+				::WideCharToMultiByte(CP_UTF8, 0, sec.data() + currPos, ch.pos - currPos, NULL, 0, NULL, NULL);
+
+		currPos = ch.pos + 1;
+		const int charLen = ::WideCharToMultiByte(CP_UTF8, 0, sec.data() + ch.pos, 1, NULL, 0, NULL, NULL);
+		ch.pos = bytePos;
+		bytePos += charLen;
+	}
+}
+
+
+void getSectionRangeChars(std::vector<Char>& chars, std::vector<wchar_t>& sec, intptr_t pos, intptr_t endPos,
+		const CompareOptions& options)
+{
+	if (pos < endPos)
+	{
+		if (options.ignoreCase)
+		{
+			const wchar_t storedChar = sec[endPos];
+
+			sec[endPos] = L'\0';
+
+			::CharLowerW((LPWSTR)sec.data() + pos);
+
+			sec[endPos] = storedChar;
+		}
+
+		for (; pos < endPos; ++pos)
+		{
+			if (!options.ignoreSpaces || getCharTypeW(sec[pos]) != charType::SPACECHAR)
+				chars.emplace_back(sec[pos], pos);
+		}
+	}
+}
+
+
+std::vector<Char> getSectionChars(int view, intptr_t secStart, intptr_t secEnd, const CompareOptions& options)
+{
+	std::vector<Char> chars;
+
+	if (secStart < secEnd)
+	{
+		std::vector<char> sec = getText(view, secStart, secEnd);
+
+		const intptr_t len = static_cast<intptr_t>(sec.size());
+
+		const int wLen = ::MultiByteToWideChar(CP_UTF8, 0, sec.data(), len, NULL, 0);
+
+		std::vector<wchar_t> wSec(wLen);
+
+		::MultiByteToWideChar(CP_UTF8, 0, sec.data(), len, wSec.data(), wLen);
+
+		chars.reserve(wLen - 1);
+
+		getSectionRangeChars(chars, wSec, 0, wLen - 1, options);
+
+		// In case of UTF-16 or UTF-32 find chars byte positions because Scintilla uses those
+		if (wLen != len)
+			recalculateCharPos(chars, wSec);
+	}
+
+	return chars;
+}
+
+
+std::vector<Char> getRegexIgnoreChars(int view, intptr_t secStart, intptr_t secEnd, const CompareOptions& options)
+{
+	std::vector<Char> chars;
+
+	if (secStart < secEnd)
+	{
+		std::vector<char> sec = getText(view, secStart, secEnd);
+
+		const intptr_t len = static_cast<intptr_t>(sec.size());
+
+		const int wLen = ::MultiByteToWideChar(CP_UTF8, 0, sec.data(), len, NULL, 0);
+
+		std::vector<wchar_t> wSec(wLen);
+
+		::MultiByteToWideChar(CP_UTF8, 0, sec.data(), len, wSec.data(), wLen);
+
+		chars.reserve(wLen - 1);
+
+		std::regex_iterator<std::vector<wchar_t>::iterator> rit(wSec.begin(), wSec.end(), *options.ignoreRegex);
+		std::regex_iterator<std::vector<wchar_t>::iterator> rend;
+
+		intptr_t pos = 0;
+
+		while (rit != rend)
+		{
+			getSectionRangeChars(chars, wSec, pos, rit->position(), options);
+
+			pos = rit->position() + rit->length();
+			++rit;
+		}
+
+		getSectionRangeChars(chars, wSec, pos, wLen - 1, options);
+
+		// In case of UTF-16 or UTF-32 find chars byte positions because Scintilla uses those
+		if (wLen != len)
+			recalculateCharPos(chars, wSec);
+	}
+
+	return chars;
 }
 
 
@@ -512,21 +764,26 @@ std::vector<std::vector<Char>> getChars(const DocCmpInfo& doc, const diffInfo& b
 {
 	std::vector<std::vector<Char>> chars(blockDiff.len);
 
-	for (intptr_t lineNum = 0; lineNum < blockDiff.len; ++lineNum)
+	for (intptr_t blockLine = 0; blockLine < blockDiff.len; ++blockLine)
 	{
 		// Don't get moved lines
-		if (blockDiff.info.getNextUnmoved(lineNum))
+		if (blockDiff.info.getNextUnmoved(blockLine))
 		{
-			--lineNum;
+			--blockLine;
 			continue;
 		}
 
-		const intptr_t docLineNum	= doc.lines[lineNum + blockDiff.off].line;
-		const intptr_t docLineStart	= getLineStart(doc.view, docLineNum);
-		const intptr_t docLineEnd	= getLineEnd(doc.view, docLineNum);
+		const intptr_t docLine		= doc.lines[blockLine + blockDiff.off].line;
+		const intptr_t lineStart	= getLineStart(doc.view, docLine);
+		const intptr_t lineEnd		= getLineEnd(doc.view, docLine);
 
-		if (docLineEnd - docLineStart)
-			chars[lineNum] = getSectionChars(doc.view, docLineStart, docLineEnd, options);
+		if (lineStart < lineEnd)
+		{
+			if (options.ignoreRegex)
+				chars[blockLine] = getRegexIgnoreChars(doc.view, lineStart, lineEnd, options);
+			else
+				chars[blockLine] = getSectionChars(doc.view, lineStart, lineEnd, options);
+		}
 	}
 
 	return chars;
@@ -952,7 +1209,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 							{
 								const intptr_t matches =
 										matchBeginEnd(*pBD1, *pBD2, *pSec1, *pSec2, off1, off2, end1, end2,
-												[](char) { return true; });
+												[](wchar_t) { return true; });
 
 								if (matches)
 								{
@@ -973,7 +1230,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 					{
 						const intptr_t matches =
 								matchBeginEnd(*pBlockDiff1, *pBlockDiff2, sec1, sec2, off1, off2, end1, end2,
-										[](char ch) { return (getCharType(ch) != charType::ALPHANUMCHAR); });
+										[](wchar_t ch) { return (getCharTypeW(ch) != charType::ALPHANUMCHAR); });
 
 						if (matches)
 						{
@@ -1239,8 +1496,8 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 
 		jobsPerThread = (totalJobs + threadsCount - 1) / threadsCount;
 
-		LOGD(LOG_ALGO, "getOrderedConvergence(): " + std::to_string(threadsCount) + " threads will be used, " +
-				std::to_string(jobsPerThread) + " jobs per thread\n");
+		LOGD(LOG_ALGO, "getOrderedConvergence(): threads to use: " + std::to_string(threadsCount) +
+				", jobs per thread: " + std::to_string(jobsPerThread) + "\n");
 
 		// Convert to line1 iterations per thread
 		jobsPerThread = (jobsPerThread + linesCount2 - 1) / linesCount2;
@@ -1253,8 +1510,8 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 		{
 			const intptr_t endLine = ((th == (threadsCount - 1)) ? linesCount1 : (startLine + jobsPerThread));
 
-			LOGD(LOG_ALGO, "Thread " + std::to_string(th + 1) + " line1 range: " + std::to_string(startLine) + " to " +
-					std::to_string(endLine - 1) + "\n");
+			LOGD(LOG_ALGO, "Thread " + std::to_string(th + 1) + " line1 range: " + std::to_string(startLine + 1) +
+					" to " + std::to_string(endLine) + "\n");
 
 			try
 			{
@@ -1873,6 +2130,8 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 
 	cmpInfo.doc1.blockDiffMask = (options.newFileViewId == MAIN_VIEW) ? MARKER_MASK_ADDED : MARKER_MASK_REMOVED;
 	cmpInfo.doc2.blockDiffMask = (options.newFileViewId == MAIN_VIEW) ? MARKER_MASK_REMOVED : MARKER_MASK_ADDED;
+
+	LOGD_GET_TIME;
 
 	getLines(cmpInfo.doc1, options);
 

@@ -33,9 +33,6 @@ static const int c_Threshold_perc_min = 1;
 static const int c_Threshold_perc_max = 99;
 
 
-typedef HRESULT (WINAPI *ETDTProc) (HWND, DWORD);
-
-
 UINT SettingsDialog::doDialog(UserSettings* settings)
 {
 	_Settings = settings;

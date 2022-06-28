@@ -22,23 +22,22 @@
 #include "DockingFeature/StaticDialog.h"
 #include "resource.h"
 #include "UserSettings.h"
-#include "ColorCombo.h"
 
 
 using namespace std;
 
 
-class SettingsDialog : public StaticDialog
+class IgnoreRegexDialog : public StaticDialog
 {
 
 public:
-	SettingsDialog(HINSTANCE hInst, NppData nppDataParam) : StaticDialog()
+	IgnoreRegexDialog(HINSTANCE hInst, NppData nppDataParam) : StaticDialog()
 	{
 		_nppData = nppDataParam;
 		Window::init(hInst, nppDataParam._nppHandle);
 	};
 
-	~SettingsDialog()
+	~IgnoreRegexDialog()
 	{
 		destroy();
 	}
@@ -50,20 +49,12 @@ public:
 protected :
 	INT_PTR CALLBACK run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam);
 
-	void SetParams(UserSettings* settings = nullptr);
+	void SetParams();
 	void GetParams();
 
 private:
 	/* Handles */
 	NppData _nppData;
-
-	// Combo color picker
-	ColorCombo _ColorComboAdded;
-	ColorCombo _ColorComboRemoved;
-	ColorCombo _ColorComboMoved;
-	ColorCombo _ColorComboChanged;
-	ColorCombo _ColorComboAddHighlight;
-	ColorCombo _ColorComboRemHighlight;
 
 	struct UserSettings* _Settings;
 };

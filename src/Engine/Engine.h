@@ -23,6 +23,9 @@
 #include <cstdint>
 #include <vector>
 #include <utility>
+#include <memory>
+#include <string>
+#include <regex>
 
 #include "Compare.h"
 #include "NppHelpers.h"
@@ -55,6 +58,19 @@ struct CompareOptions
 		selections[1] = std::make_pair(-1, -1);
 	}
 
+	inline void setIgnoreRegex(const std::wstring& regexStr)
+	{
+		if (!regexStr.empty())
+			ignoreRegex = std::make_unique<std::wregex>(regexStr, std::regex::ECMAScript | std::regex::optimize);
+		else
+			ignoreRegex = nullptr;
+	}
+
+	inline void clearIgnoreRegex()
+	{
+		ignoreRegex = nullptr;
+	}
+
 	int		newFileViewId;
 
 	bool	findUniqueMode;
@@ -67,6 +83,8 @@ struct CompareOptions
 	bool	ignoreSpaces;
 	bool	ignoreEmptyLines;
 	bool	ignoreCase;
+
+	std::unique_ptr<std::wregex>	ignoreRegex;
 
 	int		changedThresholdPercent;
 

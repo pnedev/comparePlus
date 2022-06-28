@@ -1,6 +1,6 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
- * Copyright (C)2017-2021 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2022 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,6 +21,7 @@
 
 #include <windows.h>
 #include <tchar.h>
+#include <string>
 
 
 // Those are interpreted as bool values
@@ -136,6 +137,8 @@ public:
 	static const TCHAR ignoreSpacesSetting[];
 	static const TCHAR ignoreEmptyLinesSetting[];
 	static const TCHAR ignoreCaseSetting[];
+	static const TCHAR ignoreRegexSetting[];
+	static const TCHAR ignoreRegexStrSetting[];
 
 	static const TCHAR showOnlySelSetting[];
 	static const TCHAR showOnlyDiffSetting[];
@@ -167,33 +170,35 @@ public:
 
 	static const TCHAR changedThresholdSetting[];
 
-	bool		FirstFileIsNew;
-	int			NewFileViewId;
-	bool		CompareToPrev;
+	bool			FirstFileIsNew;
+	int				NewFileViewId;
+	bool			CompareToPrev;
 
-	bool		EncodingsCheck;
-	bool		AlignAllMatches;
-	bool		NeverMarkIgnored;
-	bool		FollowingCaret;
-	bool		WrapAround;
-	bool		GotoFirstDiff;
-	bool		PromptToCloseOnMatch;
+	bool			EncodingsCheck;
+	bool			AlignAllMatches;
+	bool			NeverMarkIgnored;
+	bool			FollowingCaret;
+	bool			WrapAround;
+	bool			GotoFirstDiff;
+	bool			PromptToCloseOnMatch;
 
-	bool		DetectMoves;
-	bool		DetectCharDiffs;
-	bool		BestSeqChangedLines;
-	bool		IgnoreSpaces;
-	bool		IgnoreEmptyLines;
-	bool		IgnoreCase;
+	bool			DetectMoves;
+	bool			DetectCharDiffs;
+	bool			BestSeqChangedLines;
+	bool			IgnoreSpaces;
+	bool			IgnoreEmptyLines;
+	bool			IgnoreCase;
+	bool			IgnoreRegex;
+	std::wstring	IgnoreRegexStr;
 
-	bool		ShowOnlyDiffs;
-	bool		ShowOnlySelections;
-	bool		UseNavBar;
+	bool			ShowOnlyDiffs;
+	bool			ShowOnlySelections;
+	bool			UseNavBar;
 
-	bool		RecompareOnChange;
-	StatusType	statusType;
+	bool			RecompareOnChange;
+	StatusType		statusType;
 
-	int			ChangedThresholdPercent;
+	int				ChangedThresholdPercent;
 
 private:
 	bool dirty {false};

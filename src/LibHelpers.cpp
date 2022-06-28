@@ -32,7 +32,7 @@ namespace // anonymous namespace
 
 void TCharToChar(const wchar_t* src, char* dest, int destCharsCount)
 {
-	::WideCharToMultiByte(CP_ACP, 0, src, -1, dest, destCharsCount, NULL, NULL);
+	::WideCharToMultiByte(CP_UTF8, 0, src, -1, dest, destCharsCount, NULL, NULL);
 }
 
 
@@ -245,7 +245,7 @@ std::vector<char> GetGitFileContent(const TCHAR* fullFilePath)
 	char ansiGitFilePath[MAX_PATH];
 
 	{
-		char ansiPath[MAX_PATH];
+		char ansiPath[MAX_PATH * 2];
 
 		TCharToChar(fullFilePath, ansiPath, sizeof(ansiPath));
 		::PathRemoveFileSpecA(ansiPath);

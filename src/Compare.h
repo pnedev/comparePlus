@@ -50,9 +50,9 @@
 		if (DLOG & LOG_FILTER) { \
 			const DWORD time_ms = ::GetTickCount(); \
 			TCHAR file[MAX_PATH]; \
-			char fileA[MAX_PATH]; \
+			char fileA[MAX_PATH * 2]; \
 			::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, _countof(file), (LPARAM)file); \
-			::WideCharToMultiByte(CP_ACP, 0, file, -1, fileA, sizeof(fileA), NULL, NULL); \
+			::WideCharToMultiByte(CP_UTF8, 0, file, -1, fileA, sizeof(fileA), NULL, NULL); \
 			std::string tmp_str { std::to_string(time_ms - dLogTime_ms) }; \
 			dLog += tmp_str; \
 			if (tmp_str.size() < 5) dLog += " ms\t\t("; \
@@ -73,9 +73,9 @@
 		if (DLOG & LOG_FILTER) { \
 			const DWORD time_ms = ::GetTickCount(); \
 			TCHAR file[MAX_PATH]; \
-			char fileA[MAX_PATH]; \
+			char fileA[MAX_PATH * 2]; \
 			::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, BUFFID, (LPARAM)file); \
-			::WideCharToMultiByte(CP_ACP, 0, ::PathFindFileName(file), -1, fileA, sizeof(fileA), NULL, NULL); \
+			::WideCharToMultiByte(CP_UTF8, 0, ::PathFindFileName(file), -1, fileA, sizeof(fileA), NULL, NULL); \
 			std::string tmp_str { std::to_string(time_ms - dLogTime_ms) }; \
 			dLog += tmp_str; \
 			if (tmp_str.size() < 5) dLog += " ms\t\t("; \
@@ -135,6 +135,7 @@ enum MENU_COMMANDS
 	CMD_IGNORE_SPACES,
 	CMD_IGNORE_EMPTY_LINES,
 	CMD_IGNORE_CASE,
+	CMD_IGNORE_REGEX,
 	CMD_SEPARATOR_5,
 	CMD_SHOW_ONLY_DIFF,
 	CMD_SHOW_ONLY_SEL,

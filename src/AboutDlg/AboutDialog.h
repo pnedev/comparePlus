@@ -50,9 +50,6 @@ protected :
 	virtual INT_PTR CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
-	/* Handles */
-	HWND			_HSource;
-
 	/* for eMail */
 	URLCtrl			_emailLink;
 	URLCtrl			_urlRepo;

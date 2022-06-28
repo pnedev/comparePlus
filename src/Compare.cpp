@@ -35,6 +35,7 @@
 #include "LibHelpers.h"
 #include "AboutDialog.h"
 #include "SettingsDialog.h"
+#include "IgnoreRegexDialog.h"
 #include "NavDialog.h"
 #include "Engine.h"
 #include "NppInternalDefines.h"
@@ -1128,11 +1129,12 @@ void ComparedPair::setStatusInfo()
 		// Toggle shown status bar info
 		if (Settings.statusType == StatusType::COMPARE_OPTIONS)
 		{
-			const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%s%s%s%s"),
+			const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%s%s%s%s%s"),
 					options.detectMoves			? TEXT(" Detect Moves ,")		: TEXT(""),
 					options.ignoreSpaces		? TEXT(" Ignore Spaces ,")		: TEXT(""),
 					options.ignoreEmptyLines	? TEXT(" Ignore Empty Lines ,")	: TEXT(""),
-					options.ignoreCase			? TEXT(" Ignore Case ,")		: TEXT(""));
+					options.ignoreCase			? TEXT(" Ignore Case ,")		: TEXT(""),
+					options.ignoreRegex			? TEXT(" Ignore Regex ,")		: TEXT(""));
 
 			_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 			infoCurrentPos += len;
@@ -2331,7 +2333,7 @@ bool initNewCompare()
 
 CompareList_t::iterator addComparePair()
 {
-	compareList.push_back(newCompare->pair);
+	compareList.push_back(std::move(newCompare->pair));
 	newCompare = nullptr;
 
 	return compareList.end() - 1;
@@ -2477,6 +2479,12 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		cmpPair->options.ignoreSpaces				= Settings.IgnoreSpaces;
 		cmpPair->options.ignoreEmptyLines			= Settings.IgnoreEmptyLines;
 		cmpPair->options.ignoreCase					= Settings.IgnoreCase;
+
+		if (Settings.IgnoreRegex)
+			cmpPair->options.setIgnoreRegex(Settings.IgnoreRegexStr);
+		else
+			cmpPair->options.clearIgnoreRegex();
+
 		cmpPair->options.changedThresholdPercent	= Settings.ChangedThresholdPercent;
 		cmpPair->options.selectionCompare			= selectionCompare;
 
@@ -2868,6 +2876,29 @@ void IgnoreCase()
 }
 
 
+void IgnoreRegex()
+{
+	if (Settings.IgnoreRegex)
+	{
+		Settings.IgnoreRegex = false;
+		::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_REGEX]._cmdID, (LPARAM)false);
+		Settings.markAsDirty();
+	}
+	else
+	{
+		IgnoreRegexDialog IgnoreRegexDlg(hInstance, nppData);
+
+		if (IgnoreRegexDlg.doDialog(&Settings) == IDOK)
+		{
+			Settings.IgnoreRegex = !Settings.IgnoreRegexStr.empty();
+			::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_REGEX]._cmdID,
+					(LPARAM)Settings.IgnoreRegex);
+			Settings.markAsDirty();
+		}
+	}
+}
+
+
 void ShowOnlyDiffs()
 {
 	Settings.ShowOnlyDiffs = !Settings.ShowOnlyDiffs;
@@ -3190,6 +3221,9 @@ void createMenu()
 
 	_tcscpy_s(funcItem[CMD_IGNORE_CASE]._itemName, nbChar, TEXT("Ignore Case"));
 	funcItem[CMD_IGNORE_CASE]._pFunc = IgnoreCase;
+
+	_tcscpy_s(funcItem[CMD_IGNORE_REGEX]._itemName, nbChar, TEXT("Ignore Regex..."));
+	funcItem[CMD_IGNORE_REGEX]._pFunc = IgnoreRegex;
 
 	_tcscpy_s(funcItem[CMD_SHOW_ONLY_DIFF]._itemName, nbChar, TEXT("Show Only Diffs (Hide Matches)"));
 	funcItem[CMD_SHOW_ONLY_DIFF]._pFunc = ShowOnlyDiffs;
@@ -3553,6 +3587,8 @@ void onNppReady()
 			(LPARAM)Settings.IgnoreEmptyLines);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_CASE]._cmdID,
 			(LPARAM)Settings.IgnoreCase);
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_REGEX]._cmdID,
+			(LPARAM)Settings.IgnoreRegex);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_SHOW_ONLY_DIFF]._cmdID,
 			(LPARAM)Settings.ShowOnlyDiffs);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_SHOW_ONLY_SEL]._cmdID,
@@ -4627,8 +4663,7 @@ LRESULT statusProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 void ToggleNavigationBar()
 {
 	Settings.UseNavBar = !Settings.UseNavBar;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID,
-			(LPARAM)Settings.UseNavBar);
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID, (LPARAM)Settings.UseNavBar);
 	Settings.markAsDirty();
 
 	if (NppSettings::get().compareMode)

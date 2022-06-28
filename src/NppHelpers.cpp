@@ -21,7 +21,7 @@
 #include <tchar.h>
 #include <commctrl.h>
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <vector>
 #include <algorithm>
 
@@ -546,15 +546,17 @@ void toLowerCase(std::vector<char>& text)
 	if (len == 0)
 		return;
 
-	std::vector<wchar_t> wText(len);
+	const int wLen = ::MultiByteToWideChar(CP_UTF8, 0, text.data(), len, NULL, 0);
 
-	::MultiByteToWideChar(CP_UTF8, 0, text.data(), -1, wText.data(), len * sizeof(wchar_t));
+	std::vector<wchar_t> wText(wLen);
+
+	::MultiByteToWideChar(CP_UTF8, 0, text.data(), len, wText.data(), wLen);
 
 	wText.push_back(L'\0');
 	::CharLowerW((LPWSTR)wText.data());
 	wText.pop_back();
 
-	::WideCharToMultiByte(CP_UTF8, 0, wText.data(), -1, text.data(), len * sizeof(char), NULL, NULL);
+	::WideCharToMultiByte(CP_UTF8, 0, wText.data(), wLen, text.data(), len, NULL, NULL);
 }
 
 
