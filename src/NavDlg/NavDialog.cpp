@@ -224,7 +224,8 @@ void NavDialog::doDialog()
 		_data.pszModuleName	= getPluginFileName();
 		_data.dlgID			= CMD_NAV_BAR;
 		_data.hIconTab		= (HICON)::LoadImage(GetModuleHandle(TEXT("ComparePlus.dll")),
-									MAKEINTRESOURCE(IDB_DOCKING_ICON), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE);
+									MAKEINTRESOURCE(IDB_DOCKING_ICON), IMAGE_ICON, 14, 14,
+									LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
 
 		::SendMessage(_hParent, NPPM_DMMREGASDCKDLG, 0, (LPARAM)&_data);
 	}
