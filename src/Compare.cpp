@@ -261,6 +261,7 @@ enum Temp_t
 {
 	NO_TEMP = 0,
 	LAST_SAVED_TEMP,
+	CLIPBOARD_TEMP,
 	SVN_TEMP,
 	GIT_TEMP
 };
@@ -503,6 +504,7 @@ static const TempMark_t tempMark[] =
 {
 	{ TEXT(""),				TEXT("") },
 	{ TEXT("_LastSave"),	TEXT(" ** Last Save") },
+	{ TEXT("Clipboard_"),	TEXT(" ** Clipboard") },
 	{ TEXT("_SVN"),			TEXT(" ** SVN") },
 	{ TEXT("_Git"),			TEXT(" ** Git") }
 };
@@ -2178,13 +2180,22 @@ bool createTempFile(const TCHAR *file, Temp_t tempType)
 
 	if (::GetTempPath(_countof(tempFile), tempFile))
 	{
-		const TCHAR* fileName	= ::PathFindFileName(newCompare->pair.file[0].name);
-		const TCHAR* fileExt	= ::PathFindExtension(newCompare->pair.file[0].name);
+		const TCHAR* fileExt = ::PathFindExtension(newCompare->pair.file[0].name);
 
-		if (::PathAppend(tempFile, fileName))
+		BOOL success = (tempType == CLIPBOARD_TEMP);
+
+		if (tempType != CLIPBOARD_TEMP)
 		{
-			::PathRemoveExtension(tempFile);
+			const TCHAR* fileName = ::PathFindFileName(newCompare->pair.file[0].name);
 
+			success = ::PathAppend(tempFile, fileName);
+
+			if (success)
+				::PathRemoveExtension(tempFile);
+		}
+
+		if (success)
+		{
 			_tcscat_s(tempFile, _countof(tempFile), tempMark[tempType].fileMark);
 
 			size_t idxPos = _tcslen(tempFile);
@@ -2211,25 +2222,49 @@ bool createTempFile(const TCHAR *file, Temp_t tempType)
 				tempFile[idxPos] = 0;
 			}
 
-			if ((idxPos + 1 <= _countof(tempFile)) && ::CopyFile(file, tempFile, TRUE))
+			if (idxPos + 1 <= _countof(tempFile))
 			{
-				::SetFileAttributes(tempFile, FILE_ATTRIBUTE_TEMPORARY);
-
-				const int langType = static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETBUFFERLANGTYPE,
-						newCompare->pair.file[0].buffId, 0));
-
-				ScopedIncrementerInt incr(notificationsLock);
-
-				if (::SendMessage(nppData._nppHandle, NPPM_DOOPEN, 0, (LPARAM)tempFile))
+				if (file)
 				{
-					const LRESULT buffId = getCurrentBuffId();
+					success = ::CopyFile(file, tempFile, TRUE);
 
-					::SendMessage(nppData._nppHandle, NPPM_SETBUFFERLANGTYPE, buffId, langType);
-					::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_EDIT_SETREADONLY);
+					if (success)
+						::SetFileAttributes(tempFile, FILE_ATTRIBUTE_TEMPORARY);
+				}
+				else
+				{
+					HANDLE hFile = ::CreateFile(tempFile, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+							FILE_ATTRIBUTE_TEMPORARY, NULL);
 
-					newCompare->pair.file[1].isTemp = tempType;
+					success = (hFile != INVALID_HANDLE_VALUE);
 
-					return true;
+					if (success)
+						::CloseHandle(hFile);
+				}
+
+				if (success)
+				{
+					const int langType = static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETBUFFERLANGTYPE,
+							newCompare->pair.file[0].buffId, 0));
+
+					const int view = getCurrentViewId();
+					const int encoding = static_cast<int>(CallScintilla(view, SCI_GETCODEPAGE, 0, 0));
+
+					ScopedIncrementerInt incr(notificationsLock);
+
+					if (::SendMessage(nppData._nppHandle, NPPM_DOOPEN, 0, (LPARAM)tempFile))
+					{
+						const LRESULT buffId = getCurrentBuffId();
+
+						::SendMessage(nppData._nppHandle, NPPM_SETBUFFERLANGTYPE, buffId, langType);
+						::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_EDIT_SETREADONLY);
+
+						CallScintilla(view, SCI_SETCODEPAGE, encoding, 0);
+
+						newCompare->pair.file[1].isTemp = tempType;
+
+						return true;
+					}
 				}
 			}
 		}
@@ -2445,6 +2480,14 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		if (cmpPair->getOldFile().isTemp)
 		{
 			activateBufferID(cmpPair->getNewFile().buffId);
+
+			if (cmpPair->getOldFile().isTemp == CLIPBOARD_TEMP)
+			{
+				const int currentView = getCurrentViewId();
+
+				if (selectionCompare && (isSelectionVertical(currentView) || isMultiSelection(currentView)))
+					selectionCompare = false;
+			}
 		}
 		else
 		{
@@ -2492,8 +2535,20 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 		if (selectionCompare && !recompareSameSelections)
 		{
-			cmpPair->options.selections[MAIN_VIEW]	= getSelectionLines(MAIN_VIEW);
-			cmpPair->options.selections[SUB_VIEW]	= getSelectionLines(SUB_VIEW);
+			if (cmpPair->getOldFile().isTemp != CLIPBOARD_TEMP)
+			{
+				cmpPair->options.selections[MAIN_VIEW]	= getSelectionLines(MAIN_VIEW);
+				cmpPair->options.selections[SUB_VIEW]	= getSelectionLines(SUB_VIEW);
+			}
+			else
+			{
+				const int newView = cmpPair->getNewFile().compareViewId;
+				const int tmpView = cmpPair->getOldFile().compareViewId;
+
+				cmpPair->options.selections[newView] = getSelectionLines(newView);
+				cmpPair->options.selections[tmpView] =
+						std::make_pair(0, CallScintilla(tmpView, SCI_GETLINECOUNT, 0, 0) - 1);
+			}
 		}
 	}
 
@@ -2590,12 +2645,22 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 				else
 				{
 					if (oldFile.isTemp == LAST_SAVED_TEMP)
+					{
 						_sntprintf_s(msg, _countof(msg), _TRUNCATE,
 								TEXT("File \"%s\" has not been modified since last Save."), newName);
+					}
+					else if (oldFile.isTemp == CLIPBOARD_TEMP)
+					{
+						_sntprintf_s(msg, _countof(msg), _TRUNCATE,
+								TEXT("%s \"%s\" has no changes against clipboard."),
+								selectionCompare ? TEXT("Selection in file") : TEXT("File"), newName);
+					}
 					else
+					{
 						_sntprintf_s(msg, _countof(msg), _TRUNCATE,
 								TEXT("File \"%s\" has no changes against %s."), newName,
 								oldFile.isTemp == GIT_TEMP ? TEXT("Git") : TEXT("SVN"));
+					}
 				}
 
 				::MessageBox(nppData._nppHandle, msg, cmpPair->options.findUniqueMode ?
@@ -2631,6 +2696,38 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	}
 
 	storedLocation = nullptr;
+}
+
+
+std::vector<char> getClipboard()
+{
+	std::vector<char> content;
+
+	if (!::OpenClipboard(NULL))
+		return content;
+
+	HANDLE hData = ::GetClipboardData(CF_UNICODETEXT);
+
+	if (hData != NULL)
+	{
+		wchar_t* pText = static_cast<wchar_t*>(::GlobalLock(hData));
+
+		if (pText != NULL)
+		{
+			const size_t wLen	= wcslen(pText) + 1;
+			const size_t len	= ::WideCharToMultiByte(CP_UTF8, 0, pText, wLen, NULL, 0, NULL, NULL);
+
+			content.resize(len);
+
+			::WideCharToMultiByte(CP_UTF8, 0, pText, wLen, content.data(), len, NULL, NULL);
+		}
+
+		::GlobalUnlock(hData);
+	}
+
+	::CloseClipboard();
+
+	return content;
 }
 
 
@@ -2717,6 +2814,28 @@ void LastSaveDiff()
 }
 
 
+void ClipboardDiff()
+{
+	std::vector<char> content = getClipboard();
+
+	if (content.empty())
+	{
+		::MessageBox(nppData._nppHandle, TEXT("Clipboard does not contain any text to compare."), PLUGIN_NAME, MB_OK);
+		return;
+	}
+
+	const bool isSel = isSelection(getCurrentViewId());
+
+	if (!createTempFile(nullptr, CLIPBOARD_TEMP))
+		return;
+
+	setContent(content.data());
+	content.clear();
+
+	compare(isSel);
+}
+
+
 void SvnDiff()
 {
 	TCHAR file[MAX_PATH];
@@ -2749,7 +2868,7 @@ void GitDiff()
 	if (content.empty())
 		return;
 
-	if (!createTempFile(file, GIT_TEMP))
+	if (!createTempFile(nullptr, GIT_TEMP))
 		return;
 
 	setContent(content.data());
@@ -3183,6 +3302,14 @@ void createMenu()
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey->_isCtrl 	= true;
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey->_isShift	= false;
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey->_key 		= 'D';
+
+	_tcscpy_s(funcItem[CMD_CLIPBOARD_DIFF]._itemName, nbChar, TEXT("Compare file/selection to Clipboard"));
+	funcItem[CMD_CLIPBOARD_DIFF]._pFunc 			= ClipboardDiff;
+	funcItem[CMD_CLIPBOARD_DIFF]._pShKey 			= new ShortcutKey;
+	funcItem[CMD_CLIPBOARD_DIFF]._pShKey->_isAlt 	= true;
+	funcItem[CMD_CLIPBOARD_DIFF]._pShKey->_isCtrl 	= true;
+	funcItem[CMD_CLIPBOARD_DIFF]._pShKey->_isShift	= false;
+	funcItem[CMD_CLIPBOARD_DIFF]._pShKey->_key 		= 'M';
 
 	_tcscpy_s(funcItem[CMD_SVN_DIFF]._itemName, nbChar, TEXT("SVN Diff"));
 	funcItem[CMD_SVN_DIFF]._pFunc 					= SvnDiff;
