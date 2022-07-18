@@ -259,6 +259,9 @@ void NavDialog::Show()
 {
 	HWND hwnd = ::GetFocus();
 
+	if (hwnd == _hSelf)
+		hwnd = getCurrentView();
+
 	doDialog();
 
 	// Free resources if needed
@@ -284,6 +287,9 @@ void NavDialog::Show()
 void NavDialog::Hide()
 {
 	HWND hwnd = ::GetFocus();
+
+	if (hwnd == _hSelf)
+		hwnd = getCurrentView();
 
 	display(false);
 
@@ -726,12 +732,13 @@ INT_PTR CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lPar
 			if (pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_CLOSE)
 			{
 				ToggleNavigationBar();
+				::SetFocus(getCurrentView());
 			}
 			else if ((pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_FLOAT) ||
 					(pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_DOCK))
 			{
 				setScalingFactor();
-				::SetFocus(getView(m_syncView->m_view));
+				::SetFocus(getCurrentView());
 			}
 			else if (LOWORD(pnmh->code) == DMN_SWITCHIN)
 			{
