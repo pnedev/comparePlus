@@ -273,7 +273,6 @@ struct ViewLocation
 private:
 	int			_view;
 	intptr_t	_centerLine;
-	intptr_t	_caretLine;
 	intptr_t	_firstLine;
 	intptr_t	_visibleLineOffset;
 };

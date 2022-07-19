@@ -3044,22 +3044,14 @@ void ShowOnlyDiffs()
 			CallScintilla(view, SCI_GOTOLINE, currentLine, 0);
 		}
 
-		ViewLocation loc;
-
-		const intptr_t firstLine = isLineVisible(view, currentLine) ? -1 : getFirstLine(view);
-
-		if (firstLine == -1)
-			loc.save(view);
+		ViewLocation loc(view);
 
 		CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
 		CallScintilla(SUB_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
 
 		alignDiffs(cmpPair);
 
-		if (firstLine == -1)
-			loc.restore();
-		else
-			CallScintilla(view, SCI_SETFIRSTVISIBLELINE, CallScintilla(view, SCI_VISIBLEFROMDOCLINE, firstLine, 0), 0);
+		loc.restore();
 
 		NavDlg.Update();
 	}
@@ -3090,22 +3082,14 @@ void ShowOnlySelections()
 			CallScintilla(view, SCI_GOTOLINE, currentLine, 0);
 		}
 
-		ViewLocation loc;
-
-		const intptr_t firstLine = isLineVisible(view, currentLine) ? -1 : getFirstLine(view);
-
-		if (firstLine == -1)
-			loc.save(view);
+		ViewLocation loc(view);
 
 		CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
 		CallScintilla(SUB_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
 
 		alignDiffs(cmpPair);
 
-		if (firstLine == -1)
-			loc.restore();
-		else
-			CallScintilla(view, SCI_SETFIRSTVISIBLELINE, CallScintilla(view, SCI_VISIBLEFROMDOCLINE, firstLine, 0), 0);
+		loc.restore();
 
 		NavDlg.Update();
 	}

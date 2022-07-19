@@ -149,11 +149,8 @@ void ViewLocation::save(int view, intptr_t centerLine)
 
 	if (_centerLine < 0)
 	{
-		_caretLine			= getCurrentLine(view);
-		_visibleLineOffset	= getFirstVisibleLineOffset(view, _caretLine);
-
-		if ((_visibleLineOffset < 0) || (_visibleLineOffset > CallScintilla(view, SCI_LINESONSCREEN, 0, 0)))
-			_firstLine = getFirstLine(view);
+		_firstLine			= getFirstLine(view);
+		_visibleLineOffset	= getFirstVisibleLineOffset(view, _firstLine);
 	}
 
 	LOGD(LOG_SYNC, "Store " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") + " view location\n");
@@ -167,9 +164,8 @@ bool ViewLocation::restore() const
 
 	if (_centerLine < 0)
 	{
-		const intptr_t firstVisibleLine = (_firstLine < 0) ?
-				CallScintilla(_view, SCI_VISIBLEFROMDOCLINE, _caretLine, 0) - _visibleLineOffset :
-				CallScintilla(_view, SCI_VISIBLEFROMDOCLINE, _firstLine, 0);
+		const intptr_t firstVisibleLine =
+				CallScintilla(_view, SCI_VISIBLEFROMDOCLINE, _firstLine, 0) - _visibleLineOffset;
 
 		CallScintilla(_view, SCI_SETFIRSTVISIBLELINE, firstVisibleLine, 0);
 
