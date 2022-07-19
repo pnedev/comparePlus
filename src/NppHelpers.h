@@ -226,7 +226,13 @@ struct ScopedFirstVisibleLineStore
 
 	~ScopedFirstVisibleLineStore()
 	{
-		CallScintilla(_view, SCI_SETFIRSTVISIBLELINE, _firstVisibleLine, 0);
+		if (_firstVisibleLine >= 0)
+			CallScintilla(_view, SCI_SETFIRSTVISIBLELINE, _firstVisibleLine, 0);
+	}
+
+	void set(intptr_t newFirstVisible)
+	{
+		_firstVisibleLine = newFirstVisible;
 	}
 
 private:

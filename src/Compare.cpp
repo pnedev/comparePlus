@@ -3974,6 +3974,12 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 
 		CallScintilla(viewId, SCI_INSERTTEXT, startPos, (LPARAM)text.data());
 
+		if (Settings.FollowingCaret)
+			CallScintilla(viewId, SCI_SETEMPTYSELECTION, startPos, 0);
+
+		if (!isLineVisible(viewId, line))
+			firstVisLine.set(CallScintilla(viewId, SCI_VISIBLEFROMDOCLINE, line, 0));
+
 		if (!Settings.RecompareOnChange)
 		{
 			if (Settings.ShowOnlyDiffs)
@@ -4128,6 +4134,12 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 
 		const bool lastMarked = (markedRange.second == CallScintilla(viewId, SCI_GETLENGTH, 0, 0));
 
+		if (Settings.FollowingCaret)
+			CallScintilla(viewId, SCI_SETEMPTYSELECTION, markedRange.first, 0);
+
+		if (!isLineVisible(viewId, startLine))
+			firstVisLine.set(CallScintilla(viewId, SCI_VISIBLEFROMDOCLINE, startLine, 0));
+
 		CallScintilla(viewId, SCI_DELETERANGE, markedRange.first, markedRange.second - markedRange.first);
 
 		if (lastMarked)
@@ -4191,6 +4203,14 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 			clearAnnotation(otherViewId, otherStartLine - 1);
 
 		CallScintilla(viewId, SCI_INSERTTEXT, startPos, (LPARAM)text.data());
+
+		if (Settings.FollowingCaret)
+			CallScintilla(viewId, SCI_SETEMPTYSELECTION, startPos, 0);
+
+		const intptr_t firstLine = CallScintilla(viewId, SCI_LINEFROMPOSITION, startPos, 0);
+
+		if (!isLineVisible(viewId, firstLine))
+			firstVisLine.set(CallScintilla(viewId, SCI_VISIBLEFROMDOCLINE, firstLine, 0));
 	}
 
 	if (!Settings.RecompareOnChange)
