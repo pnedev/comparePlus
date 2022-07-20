@@ -2547,7 +2547,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 				cmpPair->options.selections[newView] = getSelectionLines(newView);
 				cmpPair->options.selections[tmpView] =
-						std::make_pair(0, CallScintilla(tmpView, SCI_GETLINECOUNT, 0, 0) - 1);
+						std::make_pair(1, CallScintilla(tmpView, SCI_GETLINECOUNT, 0, 0) - 1);
 			}
 		}
 	}
@@ -2699,7 +2699,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 }
 
 
-std::vector<char> getClipboard()
+std::vector<char> getClipboard(bool addLeadingNewLine = false)
 {
 	std::vector<char> content;
 
@@ -2717,9 +2717,19 @@ std::vector<char> getClipboard()
 			const size_t wLen	= wcslen(pText) + 1;
 			const size_t len	= ::WideCharToMultiByte(CP_UTF8, 0, pText, wLen, NULL, 0, NULL, NULL);
 
-			content.resize(len);
+			if (addLeadingNewLine)
+			{
+				content.resize(len + 1);
+				content[0] = '\n'; // Needed for selections alignment after comparing
 
-			::WideCharToMultiByte(CP_UTF8, 0, pText, wLen, content.data(), len, NULL, NULL);
+				::WideCharToMultiByte(CP_UTF8, 0, pText, wLen, content.data() + 1, len, NULL, NULL);
+			}
+			else
+			{
+				content.resize(len);
+
+				::WideCharToMultiByte(CP_UTF8, 0, pText, wLen, content.data(), len, NULL, NULL);
+			}
 		}
 
 		::GlobalUnlock(hData);
@@ -2816,15 +2826,15 @@ void LastSaveDiff()
 
 void ClipboardDiff()
 {
-	std::vector<char> content = getClipboard();
+	const bool isSel = isSelection(getCurrentViewId());
+
+	std::vector<char> content = getClipboard(isSel);
 
 	if (content.empty())
 	{
 		::MessageBox(nppData._nppHandle, TEXT("Clipboard does not contain any text to compare."), PLUGIN_NAME, MB_OK);
 		return;
 	}
-
-	const bool isSel = isSelection(getCurrentViewId());
 
 	if (!createTempFile(nullptr, CLIPBOARD_TEMP))
 		return;
