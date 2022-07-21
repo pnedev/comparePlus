@@ -79,7 +79,8 @@ private:
 
 		void init(HDC hDC);
 		void reset();
-		void paint(HDC hDC, int xPos, int yPos, int width, int height, int hScale, int hOffset);
+		void paint(HDC hDC, int xPos, int yPos, int width, int height, int heightTotal,
+				int hScale, int hOffset, int backColor);
 
 		void updateFirstVisible()
 		{
@@ -144,6 +145,7 @@ private:
 
 	int			m_navViewWidth;
 	int			m_navHeight;
+	int			m_navHeightTotal;
 
 	int			m_pixelsPerLine;
 	int			m_maxBmpLines;

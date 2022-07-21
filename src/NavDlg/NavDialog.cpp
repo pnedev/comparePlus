@@ -88,12 +88,12 @@ void NavDialog::NavView::reset()
 }
 
 
-void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int height, int hScale, int hOffset)
+void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int height, int heightTotal,
+	int hScale, int hOffset, int backColor)
 {
 	const int usefulHeight = (maxBmpLines() - hOffset) * hScale;
-	const bool emptyArea = (height - usefulHeight) > 0;
 
-	int h = emptyArea ? usefulHeight : height;
+	int h = (height - usefulHeight) > 0 ? usefulHeight : height;
 	if (h <= 0)
 		return;
 
@@ -106,16 +106,16 @@ void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int heigh
 	// Draw view border
 	::Rectangle(hDC, r.left, r.top, r.right, r.bottom);
 
-	if (emptyArea)
+	if ((heightTotal - height) > 0)
 	{
-		HBRUSH bkBrush = ::GetSysColorBrush(COLOR_3DFACE);
+		HBRUSH bkBrush = ::CreateSolidBrush(backColor);
 
 		RECT bkRect;
 
 		bkRect.left		= r.left;
 		bkRect.right	= r.right;
 		bkRect.top		= r.bottom;
-		bkRect.bottom	= r.top + height + 2;
+		bkRect.bottom	= r.top + heightTotal + 2;
 
 		::FillRect(hDC, &bkRect, bkBrush);
 
@@ -313,39 +313,30 @@ void NavDialog::createBitmap()
 	if (reductionRatio && (maxLines % maxHeight))
 		++reductionRatio;
 
-	{
-		RECT bmpRect = { 0 };
+	RECT bmpRect = { 0 };
+	bmpRect.right = 1;
 
-		bmpRect.right = 1;
+	HBRUSH hBackBrush			= ::CreateSolidBrush(m_clr._default);
+	HBRUSH hInverseBackBrush	= ::CreateSolidBrush(m_clr._default ^ 0xFFFFFF);
+
+	for (int viewId = 0; viewId < 2; ++viewId)
+	{
 		bmpRect.bottom = 1;
 
-		HBRUSH hBrush = ::CreateSolidBrush(m_clr._default ^ 0xFFFFFF);
+		::FillRect(m_view[viewId].m_hSelDC, &bmpRect, hInverseBackBrush);
 
-		::FillRect(m_view[0].m_hSelDC, &bmpRect, hBrush);
-		::FillRect(m_view[1].m_hSelDC, &bmpRect, hBrush);
+		bmpRect.bottom = static_cast<int>(m_view[viewId].m_lines);
+		::FillRect(m_view[viewId].m_hViewDC, &bmpRect, hBackBrush);
 
-		::DeleteObject(hBrush);
-
-		hBrush = ::CreateSolidBrush(m_clr._default);
-
-		bmpRect.bottom = static_cast<int>(m_view[0].m_lines);
-		::FillRect(m_view[0].m_hViewDC, &bmpRect, hBrush);
-
-		bmpRect.bottom = static_cast<int>(m_view[1].m_lines);
-		::FillRect(m_view[1].m_hViewDC, &bmpRect, hBrush);
-
-		::DeleteObject(hBrush);
-
-		m_view[0].m_lineMap.clear();
-		m_view[1].m_lineMap.clear();
+		m_view[viewId].m_lineMap.clear();
 
 		intptr_t skipLine	= reductionRatio;
 		int prevMarker		= m_clr._default;
 		int bmpLine			= 0;
 
-		for (intptr_t i = 0; i < m_view[0].m_lines; ++i)
+		for (intptr_t i = 0; i < m_view[viewId].m_lines; ++i)
 		{
-			int marker = static_cast<int>(CallScintilla(m_view[0].m_view, SCI_MARKERGET, i, 0));
+			int marker = static_cast<int>(CallScintilla(m_view[viewId].m_view, SCI_MARKERGET, i, 0));
 			if (!marker && !reductionRatio)
 				continue;
 
@@ -367,56 +358,20 @@ void NavDialog::createBitmap()
 					skipLine = reductionRatio;
 					prevMarker = marker;
 
-					m_view[0].m_lineMap.push_back(i);
+					m_view[viewId].m_lineMap.push_back(i);
 
-					::SetPixel(m_view[0].m_hViewDC, 0, bmpLine++, marker);
+					::SetPixel(m_view[viewId].m_hViewDC, 0, bmpLine++, marker);
 				}
 			}
 			else
 			{
-				::SetPixel(m_view[0].m_hViewDC, 0, static_cast<int>(i), marker);
-			}
-		}
-
-		skipLine = reductionRatio;
-		prevMarker = m_clr._default;
-		bmpLine = 0;
-
-		for (intptr_t i = 0; i < m_view[1].m_lines; ++i)
-		{
-			int marker = static_cast<int>(CallScintilla(m_view[1].m_view, SCI_MARKERGET, i, 0));
-			if (!marker && !reductionRatio)
-				continue;
-
-			if (marker & MARKER_MASK_ADDED)			marker = m_clr.added;
-			else if (marker & MARKER_MASK_REMOVED)	marker = m_clr.removed;
-			else if (marker & MARKER_MASK_MOVED)	marker = m_clr.moved;
-			else if (marker & MARKER_MASK_CHANGED)	marker = m_clr.changed;
-			else if (reductionRatio)				marker = m_clr._default;
-			else
-				continue;
-
-			if (reductionRatio)
-			{
-				if (prevMarker == marker)
-					--skipLine;
-
-				if (prevMarker != marker || !skipLine)
-				{
-					skipLine = reductionRatio;
-					prevMarker = marker;
-
-					m_view[1].m_lineMap.push_back(i);
-
-					::SetPixel(m_view[1].m_hViewDC, 0, bmpLine++, marker);
-				}
-			}
-			else
-			{
-				::SetPixel(m_view[1].m_hViewDC, 0, static_cast<int>(i), marker);
+				::SetPixel(m_view[viewId].m_hViewDC, 0, static_cast<int>(i), marker);
 			}
 		}
 	}
+
+	::DeleteObject(hBackBrush);
+	::DeleteObject(hInverseBackBrush);
 
 	setScalingFactor();
 }
@@ -468,8 +423,9 @@ void NavDialog::setScalingFactor()
 	m_maxBmpLines = std::max(m_view[0].maxBmpLines(), m_view[1].maxBmpLines());
 	m_syncView = (m_maxBmpLines == m_view[0].maxBmpLines()) ? &m_view[0] : &m_view[1];
 
-	m_navViewWidth = ((r.right - r.left) - 3 * cSpace - 4) / 2;
-	m_navHeight = (r.bottom - r.top) - 2 * cSpace - 2;
+	m_navViewWidth		= ((r.right - r.left) - 3 * cSpace - 4) / 2;
+	m_navHeightTotal	= (r.bottom - r.top) - 2 * cSpace - 2;
+	m_navHeight			= m_navHeightTotal;
 
 	m_pixelsPerLine = m_navHeight / m_maxBmpLines;
 
@@ -619,11 +575,12 @@ void NavDialog::onPaint()
 	::SelectObject(hDC, ::GetStockObject(NULL_BRUSH));
 
 	if (m_view[0].maxBmpLines() > scrollOffset)
-		m_view[0].paint(hDC, cSpace, cSpace, m_navViewWidth, m_navHeight, m_pixelsPerLine, scrollOffset);
+		m_view[0].paint(hDC, cSpace, cSpace, m_navViewWidth, m_navHeight, m_navHeightTotal,
+				m_pixelsPerLine, scrollOffset, m_clr._default);
 
 	if (m_view[1].maxBmpLines() > scrollOffset)
-		m_view[1].paint(hDC, m_navViewWidth + 2 * cSpace + 2, cSpace,
-				m_navViewWidth, m_navHeight, m_pixelsPerLine, scrollOffset);
+		m_view[1].paint(hDC, m_navViewWidth + 2 * cSpace + 2, cSpace, m_navViewWidth, m_navHeight, m_navHeightTotal,
+				m_pixelsPerLine, scrollOffset, m_clr._default);
 
 	::DeleteObject(hPenView);
 
