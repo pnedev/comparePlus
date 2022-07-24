@@ -3007,23 +3007,20 @@ void IgnoreCase()
 
 void IgnoreRegex()
 {
-	if (Settings.IgnoreRegex)
-	{
-		Settings.IgnoreRegex = false;
-		::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_REGEX]._cmdID, (LPARAM)false);
-		Settings.markAsDirty();
-	}
-	else
-	{
-		IgnoreRegexDialog IgnoreRegexDlg(hInstance, nppData);
+	const bool currentIgnoreRegexSwitch = Settings.IgnoreRegex;
 
-		if (IgnoreRegexDlg.doDialog(&Settings) == IDOK)
-		{
-			Settings.IgnoreRegex = !Settings.IgnoreRegexStr.empty();
-			::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_REGEX]._cmdID,
-					(LPARAM)Settings.IgnoreRegex);
-			Settings.markAsDirty();
-		}
+	IgnoreRegexDialog IgnoreRegexDlg(hInstance, nppData);
+
+	if (IgnoreRegexDlg.doDialog(&Settings) == IDOK)
+		Settings.IgnoreRegex = !Settings.IgnoreRegexStr.empty();
+	else
+		Settings.IgnoreRegex = false;
+
+	if (currentIgnoreRegexSwitch != Settings.IgnoreRegex)
+	{
+		::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_REGEX]._cmdID,
+				(LPARAM)Settings.IgnoreRegex);
+		Settings.markAsDirty();
 	}
 }
 

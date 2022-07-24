@@ -50,9 +50,13 @@ protected :
 	INT_PTR CALLBACK run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam);
 
 	void SetParams();
-	void GetParams();
+	bool GetParams();
 
 private:
+	static constexpr int cMaxRegexLen = 1023;
+
+	bool isRegexValid(const wchar_t* regexStr);
+
 	/* Handles */
 	NppData _nppData;
 

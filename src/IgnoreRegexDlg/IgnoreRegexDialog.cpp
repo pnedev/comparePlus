@@ -20,6 +20,7 @@
 #include <windowsx.h>
 #include <commctrl.h>
 #include <uxtheme.h>
+#include <regex>
 
 #include "NppHelpers.h"
 
@@ -56,9 +57,11 @@ INT_PTR CALLBACK IgnoreRegexDialog::run_dlgProc(UINT Message, WPARAM wParam, LPA
 			switch (wParam)
 			{
 				case IDOK:
-					GetParams();
-					_Settings->markAsDirty();
-					::EndDialog(_hSelf, IDOK);
+					if (GetParams())
+					{
+						_Settings->markAsDirty();
+						::EndDialog(_hSelf, IDOK);
+					}
 				return TRUE;
 
 				case IDCANCEL:
@@ -80,12 +83,14 @@ void IgnoreRegexDialog::SetParams()
 {
 	HWND hCtrl = ::GetDlgItem(_hSelf, IDC_IGNORE_REGEX);
 
+	::SendMessage(hCtrl, EM_SETLIMITTEXT, cMaxRegexLen, 0);
+
 	Edit_SetText(hCtrl, _Settings->IgnoreRegexStr.c_str());
 	Edit_SetSel(hCtrl, 0, -1);
 }
 
 
-void IgnoreRegexDialog::GetParams()
+bool IgnoreRegexDialog::GetParams()
 {
 	HWND hCtrl = ::GetDlgItem(_hSelf, IDC_IGNORE_REGEX);
 
@@ -93,29 +98,43 @@ void IgnoreRegexDialog::GetParams()
 
 	if (len > 0)
 	{
-		if (len > 1023)
+		wchar_t buf[cMaxRegexLen + 1];
+
+		Edit_GetLine(hCtrl, 0, buf, cMaxRegexLen);
+		buf[len] = L'\0';
+
+		if (isRegexValid(buf))
 		{
-			wchar_t* buf = new wchar_t[len + 1];
-
-			Edit_GetLine(hCtrl, 0, buf, len);
-			buf[len] = L'\0';
-
 			_Settings->IgnoreRegexStr = buf;
-
-			delete [] buf;
 		}
 		else
 		{
-			wchar_t buf[1024];
+			::SetFocus(hCtrl);
 
-			Edit_GetLine(hCtrl, 0, buf, _countof(buf) - 1);
-			buf[len] = L'\0';
-
-			_Settings->IgnoreRegexStr = buf;
+			return false;
 		}
 	}
 	else
 	{
 		_Settings->IgnoreRegexStr = L"";
 	}
+
+	return true;
+}
+
+
+bool IgnoreRegexDialog::isRegexValid(const wchar_t* regexStr)
+{
+	try
+	{
+		std::wregex testRegex(regexStr, std::regex::ECMAScript);
+	}
+	catch (std::regex_error& err)
+	{
+		::MessageBoxA(nppData._nppHandle, err.what(), "ComparePlus Bad Regex", MB_OK | MB_ICONWARNING);
+
+		return false;
+	}
+
+	return true;
 }
