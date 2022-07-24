@@ -19,6 +19,7 @@
  */
 
 #pragma comment (lib, "msimg32")
+#pragma comment (lib, "comctl32")
 
 
 #define NOMINMAX
@@ -33,8 +34,8 @@
 #include <algorithm>
 
 
-const int NavDialog::cSpace = 2;
-const int NavDialog::cScrollerWidth = 15;
+const int NavDialog::cSpace = 0;
+const int NavDialog::cScrollerWidth = 20;
 
 
 void NavDialog::NavView::init(HDC hDC)
@@ -216,6 +217,14 @@ void NavDialog::doDialog()
 {
 	if (!isCreated())
 	{
+		INITCOMMONCONTROLSEX icex;
+
+		::SecureZeroMemory(&icex, sizeof(icex));
+		icex.dwSize = sizeof(icex);
+		icex.dwICC  = ICC_STANDARD_CLASSES;
+
+		::InitCommonControlsEx(&icex);
+
 		create(&_data);
 
 		// define the default docking behaviour
@@ -276,7 +285,7 @@ void NavDialog::Show()
 	// Release DC
 	::ReleaseDC(_hSelf, hDC);
 
-	createBitmap();
+	createBitmaps();
 
 	display(true);
 
@@ -300,7 +309,7 @@ void NavDialog::Hide()
 }
 
 
-void NavDialog::createBitmap()
+void NavDialog::createBitmaps()
 {
 	RECT r;
 	::GetClientRect(_hSelf, &r);
@@ -456,7 +465,7 @@ void NavDialog::setScalingFactor()
 
 void NavDialog::setPos(int x, int y)
 {
-	y -= (cSpace + 2);
+	y -= (cSpace + 1);
 	if (y < 0 || x < cSpace || x > (2 * m_navViewWidth + 2 * cSpace + 4))
 		return;
 
@@ -493,6 +502,10 @@ void NavDialog::setPos(int x, int y)
 					getLineStart(currentView->m_view, currentLine), 0);
 
 		::UpdateWindow(getView(currentView->m_view));
+	}
+	else
+	{
+		::SetFocus(getCurrentView());
 	}
 }
 
@@ -564,7 +577,7 @@ void NavDialog::onPaint()
 
 	const int scrollOffset = (m_hScroll && ::IsWindowVisible(m_hScroll)) ? ::GetScrollPos(m_hScroll, SB_CTL) : 0;
 
-	HPEN hPenView = ::CreatePen(PS_SOLID, 1, RGB(180, 180, 180));
+	HPEN hPenView = ::CreatePen(PS_SOLID, 1, RGB(128, 128, 128));
 
 	PAINTSTRUCT ps;
 
@@ -579,7 +592,7 @@ void NavDialog::onPaint()
 				m_pixelsPerLine, scrollOffset, m_clr._default);
 
 	if (m_view[1].maxBmpLines() > scrollOffset)
-		m_view[1].paint(hDC, m_navViewWidth + 2 * cSpace + 2, cSpace, m_navViewWidth, m_navHeight, m_navHeightTotal,
+		m_view[1].paint(hDC, m_navViewWidth + 2 * cSpace + 1, cSpace, m_navViewWidth, m_navHeight, m_navHeightTotal,
 				m_pixelsPerLine, scrollOffset, m_clr._default);
 
 	::DeleteObject(hPenView);
@@ -590,8 +603,6 @@ void NavDialog::onPaint()
 
 void NavDialog::adjustScroll(int offset)
 {
-	::SetFocus(_hSelf);
-
 	int currentScroll = ::GetScrollPos(m_hScroll, SB_CTL) + offset;
 
 	if (currentScroll < 0)
@@ -650,8 +661,6 @@ INT_PTR CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lPar
 				{
 					const int currentScroll = HIWORD(wParam);
 
-					::SetFocus(_hSelf);
-
 					::SetScrollPos(m_hScroll, SB_CTL, currentScroll, TRUE);
 					::InvalidateRect(_hSelf, NULL, FALSE);
 				}
@@ -700,6 +709,7 @@ INT_PTR CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lPar
 			else if (LOWORD(pnmh->code) == DMN_SWITCHIN)
 			{
 				Update();
+				::SetFocus(getCurrentView());
 			}
 		}
 		break;

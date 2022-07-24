@@ -122,7 +122,7 @@ private:
 
 	void doDialog();
 
-	void createBitmap();
+	void createBitmaps();
 	void showScroller(RECT& r);
 
 	void setScalingFactor();
