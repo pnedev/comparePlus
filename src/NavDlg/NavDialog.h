@@ -143,7 +143,8 @@ private:
 
 	bool		m_mouseOver;
 
-	int			m_navViewWidth;
+	int			m_navViewWidth1;
+	int			m_navViewWidth2;
 	int			m_navHeight;
 	int			m_navHeightTotal;
 

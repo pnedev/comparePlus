@@ -408,7 +408,8 @@ void NavDialog::showScroller(RECT& r)
 
 	::SetScrollInfo(m_hScroll, SB_CTL, &si, TRUE);
 
-	m_navViewWidth = ((r.right - r.left) - 4 * cSpace - cScrollerWidth - 4) / 2;
+	m_navViewWidth1 = ((r.right - r.left) - 3 * cSpace - cScrollerWidth - 3) / 2;
+	m_navViewWidth2 = (r.right - r.left) - 3 * cSpace - cScrollerWidth - 3 - m_navViewWidth1;
 
 	::ShowScrollBar(m_hScroll, SB_CTL, TRUE);
 }
@@ -432,7 +433,8 @@ void NavDialog::setScalingFactor()
 	m_maxBmpLines = std::max(m_view[0].maxBmpLines(), m_view[1].maxBmpLines());
 	m_syncView = (m_maxBmpLines == m_view[0].maxBmpLines()) ? &m_view[0] : &m_view[1];
 
-	m_navViewWidth		= ((r.right - r.left) - 3 * cSpace - 4) / 2;
+	m_navViewWidth1		= ((r.right - r.left) - 2 * cSpace - 3) / 2;
+	m_navViewWidth2		= (r.right - r.left) - 2 * cSpace - 3 - m_navViewWidth1;
 	m_navHeightTotal	= (r.bottom - r.top) - 2 * cSpace - 2;
 	m_navHeight			= m_navHeightTotal;
 
@@ -466,14 +468,14 @@ void NavDialog::setScalingFactor()
 void NavDialog::setPos(int x, int y)
 {
 	y -= (cSpace + 1);
-	if (y < 0 || x < cSpace || x > (2 * m_navViewWidth + 2 * cSpace + 4))
+	if (y < 0 || x < (cSpace + 1) || x > (m_navViewWidth1 + m_navViewWidth2 + cSpace + 2))
 		return;
 
 	NavView* currentView;
 
 	const int scrollOffset = (m_hScroll && ::IsWindowVisible(m_hScroll)) ? ::GetScrollPos(m_hScroll, SB_CTL) : 0;
 
-	if (x < m_navViewWidth + cSpace + 2)
+	if (x < m_navViewWidth1 + cSpace + 1)
 	{
 		if (y > std::min((m_view[0].maxBmpLines() - scrollOffset) * m_pixelsPerLine, m_navHeight))
 			return;
@@ -572,7 +574,7 @@ int NavDialog::updateScroll()
 void NavDialog::onPaint()
 {
 	// If side bar is too small, don't draw anything
-	if ((m_navViewWidth < 5) || (m_navHeight < 5))
+	if ((m_navViewWidth1 < 5) || (m_navHeight < 5))
 		return;
 
 	const int scrollOffset = (m_hScroll && ::IsWindowVisible(m_hScroll)) ? ::GetScrollPos(m_hScroll, SB_CTL) : 0;
@@ -588,11 +590,11 @@ void NavDialog::onPaint()
 	::SelectObject(hDC, ::GetStockObject(NULL_BRUSH));
 
 	if (m_view[0].maxBmpLines() > scrollOffset)
-		m_view[0].paint(hDC, cSpace, cSpace, m_navViewWidth, m_navHeight, m_navHeightTotal,
+		m_view[0].paint(hDC, cSpace, cSpace, m_navViewWidth1, m_navHeight, m_navHeightTotal,
 				m_pixelsPerLine, scrollOffset, m_clr._default);
 
 	if (m_view[1].maxBmpLines() > scrollOffset)
-		m_view[1].paint(hDC, m_navViewWidth + 2 * cSpace + 1, cSpace, m_navViewWidth, m_navHeight, m_navHeightTotal,
+		m_view[1].paint(hDC, m_navViewWidth1 + cSpace + 1, cSpace, m_navViewWidth2, m_navHeight, m_navHeightTotal,
 				m_pixelsPerLine, scrollOffset, m_clr._default);
 
 	::DeleteObject(hPenView);
