@@ -90,7 +90,7 @@ void NavDialog::NavView::reset()
 
 
 void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int height, int heightTotal,
-	int hScale, int hOffset, int backColor)
+	int hScale, int hOffset, bool shrinkLeftSideOfEmptyArea, int backColor)
 {
 	const int usefulHeight = (maxBmpLines() - hOffset) * hScale;
 
@@ -107,7 +107,7 @@ void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int heigh
 	// Draw view border
 	::Rectangle(hDC, r.left, r.top, r.right, r.bottom);
 
-	if ((heightTotal - height) > 0)
+	if ((heightTotal - h) > 0)
 	{
 		HBRUSH bkBrush = ::CreateSolidBrush(backColor);
 
@@ -117,6 +117,10 @@ void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int heigh
 		bkRect.right	= r.right;
 		bkRect.top		= r.bottom;
 		bkRect.bottom	= r.top + heightTotal + 2;
+
+		// Make sure the border between panes is not wiped
+		if (shrinkLeftSideOfEmptyArea)
+			++bkRect.left;
 
 		::FillRect(hDC, &bkRect, bkBrush);
 
@@ -589,13 +593,16 @@ void NavDialog::onPaint()
 	::SelectObject(hDC, hPenView);
 	::SelectObject(hDC, ::GetStockObject(NULL_BRUSH));
 
-	if (m_view[0].maxBmpLines() > scrollOffset)
-		m_view[0].paint(hDC, cSpace, cSpace, m_navViewWidth1, m_navHeight, m_navHeightTotal,
-				m_pixelsPerLine, scrollOffset, m_clr._default);
+	const int maxBmpLines0 = m_view[0].maxBmpLines();
+	const int maxBmpLines1 = m_view[1].maxBmpLines();
 
-	if (m_view[1].maxBmpLines() > scrollOffset)
+	if (maxBmpLines0 > scrollOffset)
+		m_view[0].paint(hDC, cSpace, cSpace, m_navViewWidth1, m_navHeight, m_navHeightTotal,
+				m_pixelsPerLine, scrollOffset, false, m_clr._default);
+
+	if (maxBmpLines1 > scrollOffset)
 		m_view[1].paint(hDC, m_navViewWidth1 + cSpace + 1, cSpace, m_navViewWidth2, m_navHeight, m_navHeightTotal,
-				m_pixelsPerLine, scrollOffset, m_clr._default);
+				m_pixelsPerLine, scrollOffset, maxBmpLines0 > maxBmpLines1, m_clr._default);
 
 	::DeleteObject(hPenView);
 

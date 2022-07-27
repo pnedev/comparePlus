@@ -80,7 +80,7 @@ private:
 		void init(HDC hDC);
 		void reset();
 		void paint(HDC hDC, int xPos, int yPos, int width, int height, int heightTotal,
-				int hScale, int hOffset, int backColor);
+				int hScale, int hOffset, bool shrinkLeftSideOfEmptyArea, int backColor);
 
 		void updateFirstVisible()
 		{
