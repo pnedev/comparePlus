@@ -188,7 +188,7 @@ int NavDialog::NavView::docToBmpLine(intptr_t docLine) const
 
 
 NavDialog::NavDialog() : DockingDlgInterface(IDD_NAV_DIALOG),
-	m_hScroll(NULL), m_mouseOver(false)
+	m_hScroll(NULL), m_hBackBrush(NULL), m_hScrollerBackBrush(NULL), m_mouseOver(false)
 {
 	_data.hIconTab = NULL;
 }
@@ -309,6 +309,18 @@ void NavDialog::Hide()
 	m_view[0].reset();
 	m_view[1].reset();
 
+	if (m_hBackBrush != NULL)
+	{
+		::DeleteObject(m_hBackBrush);
+		m_hBackBrush = NULL;
+	}
+
+	if (m_hScrollerBackBrush != NULL)
+	{
+		::DeleteObject(m_hScrollerBackBrush);
+		m_hScrollerBackBrush = NULL;
+	}
+
 	::SetFocus(hwnd);
 }
 
@@ -329,7 +341,19 @@ void NavDialog::createBitmaps()
 	RECT bmpRect = { 0 };
 	bmpRect.right = 1;
 
-	HBRUSH hBackBrush			= ::CreateSolidBrush(m_clr._default);
+	if (m_hBackBrush != NULL)
+	{
+		::DeleteObject(m_hBackBrush);
+		m_hBackBrush = NULL;
+	}
+
+	if (m_hScrollerBackBrush != NULL)
+	{
+		::DeleteObject(m_hScrollerBackBrush);
+		m_hScrollerBackBrush = NULL;
+	}
+
+	m_hBackBrush				= ::CreateSolidBrush(m_clr._default);
 	HBRUSH hInverseBackBrush	= ::CreateSolidBrush(m_clr._default ^ 0xFFFFFF);
 
 	for (int viewId = 0; viewId < 2; ++viewId)
@@ -339,7 +363,7 @@ void NavDialog::createBitmaps()
 		::FillRect(m_view[viewId].m_hSelDC, &bmpRect, hInverseBackBrush);
 
 		bmpRect.bottom = static_cast<int>(m_view[viewId].m_lines);
-		::FillRect(m_view[viewId].m_hViewDC, &bmpRect, hBackBrush);
+		::FillRect(m_view[viewId].m_hViewDC, &bmpRect, m_hBackBrush);
 
 		m_view[viewId].m_lineMap.clear();
 
@@ -383,7 +407,6 @@ void NavDialog::createBitmaps()
 		}
 	}
 
-	::DeleteObject(hBackBrush);
 	::DeleteObject(hInverseBackBrush);
 
 	setScalingFactor();
@@ -396,6 +419,9 @@ void NavDialog::showScroller(RECT& r)
 	const int y = cSpace;
 	const int w = cScrollerWidth;
 	const int h = m_navHeight;
+
+	if (m_hScrollerBackBrush == NULL)
+		m_hScrollerBackBrush = ::CreateSolidBrush(m_clr.blank);
 
 	if (m_hScroll)
 		::MoveWindow(m_hScroll, x, y, w, h, TRUE);
@@ -635,6 +661,9 @@ INT_PTR CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lPar
 			onPaint();
 		break;
 
+		case WM_CTLCOLORSCROLLBAR:
+		return (INT_PTR)m_hScrollerBackBrush;
+
 		case WM_LBUTTONDOWN:
 			::SetCapture(_hSelf);
 			setPos(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
@@ -702,6 +731,8 @@ INT_PTR CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lPar
 
 		case WM_NOTIFY:
 		{
+			DockingDlgInterface::run_dlgProc(Message, wParam, lParam);
+
 			LPNMHDR	pnmh = (LPNMHDR)lParam;
 
 			if (pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_CLOSE)
