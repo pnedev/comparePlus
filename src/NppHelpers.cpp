@@ -535,24 +535,24 @@ std::vector<char> getText(int view, intptr_t startPos, intptr_t endPos)
 }
 
 
-void toLowerCase(std::vector<char>& text)
+void toLowerCase(std::vector<char>& text, int codepage)
 {
 	const int len = static_cast<int>(text.size());
 
 	if (len == 0)
 		return;
 
-	const int wLen = ::MultiByteToWideChar(CP_UTF8, 0, text.data(), len, NULL, 0);
+	const int wLen = ::MultiByteToWideChar(codepage, 0, text.data(), len, NULL, 0);
 
 	std::vector<wchar_t> wText(wLen);
 
-	::MultiByteToWideChar(CP_UTF8, 0, text.data(), len, wText.data(), wLen);
+	::MultiByteToWideChar(codepage, 0, text.data(), len, wText.data(), wLen);
 
 	wText.push_back(L'\0');
 	::CharLowerW((LPWSTR)wText.data());
 	wText.pop_back();
 
-	::WideCharToMultiByte(CP_UTF8, 0, wText.data(), wLen, text.data(), len, NULL, NULL);
+	::WideCharToMultiByte(codepage, 0, wText.data(), wLen, text.data(), len, NULL, NULL);
 }
 
 

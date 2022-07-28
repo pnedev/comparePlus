@@ -421,6 +421,18 @@ inline int getEncoding(LRESULT buffId)
 }
 
 
+inline int getCodepage(int view)
+{
+	return (int)CallScintilla(view, SCI_GETCODEPAGE, 0, 0);
+}
+
+
+inline int getCharacterSet(int view, int style = STYLE_DEFAULT)
+{
+	return (int)CallScintilla(view, SCI_STYLEGETCHARACTERSET, style, 0);
+}
+
+
 inline intptr_t getDocId(int view)
 {
 	return CallScintilla(view, SCI_GETDOCPOINTER, 0, 0);
@@ -653,7 +665,7 @@ inline void clearAnnotation(int view, intptr_t line)
 void clearAnnotations(int view, intptr_t startLine, intptr_t length);
 
 std::vector<char> getText(int view, intptr_t startPos, intptr_t endPos);
-void toLowerCase(std::vector<char>& text);
+void toLowerCase(std::vector<char>& text, int codepage = CP_UTF8);
 
 void addBlankSection(int view, intptr_t line, intptr_t length, intptr_t selectionMarkPosition = 0,
 		const char *text = nullptr);

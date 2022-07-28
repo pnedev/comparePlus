@@ -388,18 +388,19 @@ inline uint64_t lineRangeHash(uint64_t hashSeed, std::vector<wchar_t>& line, int
 }
 
 
-uint64_t regexIgnoreLineHash(uint64_t hashSeed, const std::vector<char>& line, const CompareOptions& options)
+uint64_t regexIgnoreLineHash(uint64_t hashSeed, int codepage, const std::vector<char>& line,
+	const CompareOptions& options)
 {
-	const intptr_t len = static_cast<intptr_t>(line.size());
+	const int len = static_cast<int>(line.size());
 
 	if (len == 0)
 		return hashSeed;
 
-	const int wLen = ::MultiByteToWideChar(CP_UTF8, 0, line.data(), static_cast<int>(len), NULL, 0);
+	const int wLen = ::MultiByteToWideChar(codepage, 0, line.data(), len, NULL, 0);
 
 	std::vector<wchar_t> wLine(wLen);
 
-	::MultiByteToWideChar(CP_UTF8, 0, line.data(), static_cast<int>(len), wLine.data(), wLen);
+	::MultiByteToWideChar(codepage, 0, line.data(), len, wLine.data(), wLen);
 
 #ifndef MULTITHREAD
 	LOGD(LOG_ALGO, "line len " + std::to_string(len) + " to wide char len " + std::to_string(wLen) + "\n");
@@ -459,6 +460,8 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 			return;
 		}
 
+		const int codepage			= getCodepage(doc.view);
+
 		const intptr_t docLine		= secLine + doc.section.off;
 		const intptr_t lineStart	= getLineStart(doc.view, docLine);
 		const intptr_t lineEnd		= getLineEnd(doc.view, docLine);
@@ -478,12 +481,12 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 						", view " + std::to_string(doc.view) + "\n");
 #endif
 
-				newLine.hash = regexIgnoreLineHash(newLine.hash, line, options);
+				newLine.hash = regexIgnoreLineHash(newLine.hash, codepage, line, options);
 			}
 			else
 			{
 				if (options.ignoreCase)
-					toLowerCase(line);
+					toLowerCase(line, codepage);
 
 				for (intptr_t i = 0; i < lineEnd - lineStart; ++i)
 				{
@@ -513,7 +516,7 @@ charType getCharTypeW(wchar_t letter)
 }
 
 
-inline void recalculateWordPos(std::vector<Word>& words, const std::vector<wchar_t>& line)
+inline void recalculateWordPos(int codepage, std::vector<Word>& words, const std::vector<wchar_t>& line)
 {
 	intptr_t bytePos = 0;
 	intptr_t currPos = 0;
@@ -521,11 +524,11 @@ inline void recalculateWordPos(std::vector<Word>& words, const std::vector<wchar
 	for (auto& word : words)
 	{
 		if (currPos < word.pos)
-			bytePos += ::WideCharToMultiByte(CP_UTF8, 0, line.data() + currPos, static_cast<int>(word.pos - currPos),
+			bytePos += ::WideCharToMultiByte(codepage, 0, line.data() + currPos, static_cast<int>(word.pos - currPos),
 					NULL, 0, NULL, NULL);
 
 		currPos = word.pos + word.len;
-		word.len = ::WideCharToMultiByte(CP_UTF8, 0, line.data() + word.pos, static_cast<int>(word.len),
+		word.len = ::WideCharToMultiByte(codepage, 0, line.data() + word.pos, static_cast<int>(word.len),
 				NULL, 0, NULL, NULL);
 		word.pos = bytePos;
 		bytePos += word.len;
@@ -616,6 +619,8 @@ std::vector<Word> getLineWords(int view, intptr_t docLine, const CompareOptions&
 {
 	std::vector<Word> words;
 
+	const int codepage			= getCodepage(view);
+
 	const intptr_t lineStart	= getLineStart(view, docLine);
 	const intptr_t lineEnd		= getLineEnd(view, docLine);
 
@@ -625,11 +630,11 @@ std::vector<Word> getLineWords(int view, intptr_t docLine, const CompareOptions&
 
 		const int len = static_cast<int>(line.size());
 
-		const int wLen = ::MultiByteToWideChar(CP_UTF8, 0, line.data(), len, NULL, 0);
+		const int wLen = ::MultiByteToWideChar(codepage, 0, line.data(), len, NULL, 0);
 
 		std::vector<wchar_t> wLine(wLen);
 
-		::MultiByteToWideChar(CP_UTF8, 0, line.data(), len, wLine.data(), wLen);
+		::MultiByteToWideChar(codepage, 0, line.data(), len, wLine.data(), wLen);
 
 		if (options.ignoreRegex)
 			words = getRegexIgnoreLineWords(wLine, options);
@@ -638,14 +643,14 @@ std::vector<Word> getLineWords(int view, intptr_t docLine, const CompareOptions&
 
 		// In case of UTF-16 or UTF-32 find words byte positions and lengths because Scintilla uses those
 		if (wLen != len)
-			recalculateWordPos(words, wLine);
+			recalculateWordPos(codepage, words, wLine);
 	}
 
 	return words;
 }
 
 
-inline void recalculateCharPos(std::vector<Char>& chars, const std::vector<wchar_t>& sec)
+inline void recalculateCharPos(int codepage, std::vector<Char>& chars, const std::vector<wchar_t>& sec)
 {
 	intptr_t bytePos = 0;
 	intptr_t currPos = 0;
@@ -653,11 +658,11 @@ inline void recalculateCharPos(std::vector<Char>& chars, const std::vector<wchar
 	for (auto& ch : chars)
 	{
 		if (currPos < ch.pos)
-			bytePos += ::WideCharToMultiByte(CP_UTF8, 0, sec.data() + currPos, static_cast<int>(ch.pos - currPos),
+			bytePos += ::WideCharToMultiByte(codepage, 0, sec.data() + currPos, static_cast<int>(ch.pos - currPos),
 					NULL, 0, NULL, NULL);
 
 		currPos = ch.pos + 1;
-		const int charLen = ::WideCharToMultiByte(CP_UTF8, 0, sec.data() + ch.pos, 1, NULL, 0, NULL, NULL);
+		const int charLen = ::WideCharToMultiByte(codepage, 0, sec.data() + ch.pos, 1, NULL, 0, NULL, NULL);
 		ch.pos = bytePos;
 		bytePos += charLen;
 	}
@@ -695,15 +700,17 @@ std::vector<Char> getSectionChars(int view, intptr_t secStart, intptr_t secEnd, 
 
 	if (secStart < secEnd)
 	{
+		const int codepage = getCodepage(view);
+
 		std::vector<char> sec = getText(view, secStart, secEnd);
 
 		const int len = static_cast<int>(sec.size());
 
-		const int wLen = ::MultiByteToWideChar(CP_UTF8, 0, sec.data(), len, NULL, 0);
+		const int wLen = ::MultiByteToWideChar(codepage, 0, sec.data(), len, NULL, 0);
 
 		std::vector<wchar_t> wSec(wLen);
 
-		::MultiByteToWideChar(CP_UTF8, 0, sec.data(), len, wSec.data(), wLen);
+		::MultiByteToWideChar(codepage, 0, sec.data(), len, wSec.data(), wLen);
 
 		chars.reserve(wLen - 1);
 
@@ -711,7 +718,7 @@ std::vector<Char> getSectionChars(int view, intptr_t secStart, intptr_t secEnd, 
 
 		// In case of UTF-16 or UTF-32 find chars byte positions because Scintilla uses those
 		if (wLen != len)
-			recalculateCharPos(chars, wSec);
+			recalculateCharPos(codepage, chars, wSec);
 	}
 
 	return chars;
@@ -722,17 +729,19 @@ std::vector<Char> getRegexIgnoreChars(int view, intptr_t secStart, intptr_t secE
 {
 	std::vector<Char> chars;
 
+	const int codepage = getCodepage(view);
+
 	if (secStart < secEnd)
 	{
 		std::vector<char> sec = getText(view, secStart, secEnd);
 
 		const int len = static_cast<int>(sec.size());
 
-		const int wLen = ::MultiByteToWideChar(CP_UTF8, 0, sec.data(), len, NULL, 0);
+		const int wLen = ::MultiByteToWideChar(codepage, 0, sec.data(), len, NULL, 0);
 
 		std::vector<wchar_t> wSec(wLen);
 
-		::MultiByteToWideChar(CP_UTF8, 0, sec.data(), len, wSec.data(), wLen);
+		::MultiByteToWideChar(codepage, 0, sec.data(), len, wSec.data(), wLen);
 
 		chars.reserve(wLen - 1);
 
@@ -753,7 +762,7 @@ std::vector<Char> getRegexIgnoreChars(int view, intptr_t secStart, intptr_t secE
 
 		// In case of UTF-16 or UTF-32 find chars byte positions because Scintilla uses those
 		if (wLen != len)
-			recalculateCharPos(chars, wSec);
+			recalculateCharPos(codepage, chars, wSec);
 	}
 
 	return chars;
