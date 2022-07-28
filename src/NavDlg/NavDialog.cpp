@@ -420,8 +420,8 @@ void NavDialog::showScroller(RECT& r)
 	const int w = cScrollerWidth;
 	const int h = m_navHeight;
 
-	if (m_hScrollerBackBrush == NULL)
-		m_hScrollerBackBrush = ::CreateSolidBrush(m_clr.blank);
+	// if (m_hScrollerBackBrush == NULL)
+		// m_hScrollerBackBrush = ::CreateSolidBrush(m_clr.blank);
 
 	if (m_hScroll)
 		::MoveWindow(m_hScroll, x, y, w, h, TRUE);
@@ -661,8 +661,8 @@ INT_PTR CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lPar
 			onPaint();
 		break;
 
-		case WM_CTLCOLORSCROLLBAR:
-		return (INT_PTR)m_hScrollerBackBrush;
+		// case WM_CTLCOLORSCROLLBAR:
+		// return (INT_PTR)m_hScrollerBackBrush;
 
 		case WM_LBUTTONDOWN:
 			::SetCapture(_hSelf);
