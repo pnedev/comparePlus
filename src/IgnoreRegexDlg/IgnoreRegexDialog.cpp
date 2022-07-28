@@ -34,7 +34,7 @@ UINT IgnoreRegexDialog::doDialog(UserSettings* settings)
 }
 
 
-INT_PTR CALLBACK IgnoreRegexDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK IgnoreRegexDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM)
 {
 	switch (Message)
 	{

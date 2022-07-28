@@ -4994,7 +4994,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 }
 
 
-extern "C" __declspec(dllexport) LRESULT messageProc(UINT msg, WPARAM wParam, LPARAM)
+extern "C" __declspec(dllexport) LRESULT messageProc(UINT, WPARAM, LPARAM)
 {
 	return TRUE;
 }

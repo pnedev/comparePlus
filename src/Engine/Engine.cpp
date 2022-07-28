@@ -985,7 +985,8 @@ void findUniqueLines(CompareInfo& cmpInfo)
 
 inline intptr_t matchBeginEnd(diffInfo& blockDiff1, diffInfo& blockDiff2,
 		const std::vector<Char>& sec1, const std::vector<Char>& sec2,
-		intptr_t off1, intptr_t off2, intptr_t end1, intptr_t end2, std::function<bool(char)>&& charFilter_fn)
+		intptr_t off1, intptr_t off2, intptr_t end1, intptr_t end2,
+		std::function<bool(const wchar_t)>&& charFilter_fn)
 {
 	const intptr_t minSecSize = std::min(sec1.size(), sec2.size());
 
@@ -1209,7 +1210,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 							{
 								const intptr_t matches =
 										matchBeginEnd(*pBD1, *pBD2, *pSec1, *pSec2, off1, off2, end1, end2,
-												[](wchar_t) { return true; });
+												[](const wchar_t) { return true; });
 
 								if (matches)
 								{
@@ -1230,7 +1231,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 					{
 						const intptr_t matches =
 								matchBeginEnd(*pBlockDiff1, *pBlockDiff2, sec1, sec2, off1, off2, end1, end2,
-										[](wchar_t ch) { return (getCharTypeW(ch) != charType::ALPHANUMCHAR); });
+										[](const wchar_t ch) { return (getCharTypeW(ch) != charType::ALPHANUMCHAR); });
 
 						if (matches)
 						{
