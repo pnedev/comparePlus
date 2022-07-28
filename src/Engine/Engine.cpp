@@ -395,11 +395,11 @@ uint64_t regexIgnoreLineHash(uint64_t hashSeed, const std::vector<char>& line, c
 	if (len == 0)
 		return hashSeed;
 
-	const int wLen = ::MultiByteToWideChar(CP_UTF8, 0, line.data(), len, NULL, 0);
+	const int wLen = ::MultiByteToWideChar(CP_UTF8, 0, line.data(), static_cast<int>(len), NULL, 0);
 
 	std::vector<wchar_t> wLine(wLen);
 
-	::MultiByteToWideChar(CP_UTF8, 0, line.data(), len, wLine.data(), wLen);
+	::MultiByteToWideChar(CP_UTF8, 0, line.data(), static_cast<int>(len), wLine.data(), wLen);
 
 #ifndef MULTITHREAD
 	LOGD(LOG_ALGO, "line len " + std::to_string(len) + " to wide char len " + std::to_string(wLen) + "\n");
@@ -521,11 +521,12 @@ inline void recalculateWordPos(std::vector<Word>& words, const std::vector<wchar
 	for (auto& word : words)
 	{
 		if (currPos < word.pos)
-			bytePos +=
-				::WideCharToMultiByte(CP_UTF8, 0, line.data() + currPos, word.pos - currPos, NULL, 0, NULL, NULL);
+			bytePos += ::WideCharToMultiByte(CP_UTF8, 0, line.data() + currPos, static_cast<int>(word.pos - currPos),
+					NULL, 0, NULL, NULL);
 
 		currPos = word.pos + word.len;
-		word.len = ::WideCharToMultiByte(CP_UTF8, 0, line.data() + word.pos, word.len, NULL, 0, NULL, NULL);
+		word.len = ::WideCharToMultiByte(CP_UTF8, 0, line.data() + word.pos, static_cast<int>(word.len),
+				NULL, 0, NULL, NULL);
 		word.pos = bytePos;
 		bytePos += word.len;
 	}
@@ -622,7 +623,7 @@ std::vector<Word> getLineWords(int view, intptr_t docLine, const CompareOptions&
 	{
 		std::vector<char> line = getText(view, lineStart, lineEnd);
 
-		const intptr_t len = static_cast<intptr_t>(line.size());
+		const int len = static_cast<int>(line.size());
 
 		const int wLen = ::MultiByteToWideChar(CP_UTF8, 0, line.data(), len, NULL, 0);
 
@@ -652,8 +653,8 @@ inline void recalculateCharPos(std::vector<Char>& chars, const std::vector<wchar
 	for (auto& ch : chars)
 	{
 		if (currPos < ch.pos)
-			bytePos +=
-				::WideCharToMultiByte(CP_UTF8, 0, sec.data() + currPos, ch.pos - currPos, NULL, 0, NULL, NULL);
+			bytePos += ::WideCharToMultiByte(CP_UTF8, 0, sec.data() + currPos, static_cast<int>(ch.pos - currPos),
+					NULL, 0, NULL, NULL);
 
 		currPos = ch.pos + 1;
 		const int charLen = ::WideCharToMultiByte(CP_UTF8, 0, sec.data() + ch.pos, 1, NULL, 0, NULL, NULL);
@@ -696,7 +697,7 @@ std::vector<Char> getSectionChars(int view, intptr_t secStart, intptr_t secEnd, 
 	{
 		std::vector<char> sec = getText(view, secStart, secEnd);
 
-		const intptr_t len = static_cast<intptr_t>(sec.size());
+		const int len = static_cast<int>(sec.size());
 
 		const int wLen = ::MultiByteToWideChar(CP_UTF8, 0, sec.data(), len, NULL, 0);
 
@@ -725,7 +726,7 @@ std::vector<Char> getRegexIgnoreChars(int view, intptr_t secStart, intptr_t secE
 	{
 		std::vector<char> sec = getText(view, secStart, secEnd);
 
-		const intptr_t len = static_cast<intptr_t>(sec.size());
+		const int len = static_cast<int>(sec.size());
 
 		const int wLen = ::MultiByteToWideChar(CP_UTF8, 0, sec.data(), len, NULL, 0);
 

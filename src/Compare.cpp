@@ -2715,20 +2715,23 @@ std::vector<char> getClipboard(bool addLeadingNewLine = false)
 		if (pText != NULL)
 		{
 			const size_t wLen	= wcslen(pText) + 1;
-			const size_t len	= ::WideCharToMultiByte(CP_UTF8, 0, pText, wLen, NULL, 0, NULL, NULL);
+			const size_t len	=
+					::WideCharToMultiByte(CP_UTF8, 0, pText, static_cast<int>(wLen), NULL, 0, NULL, NULL);
 
 			if (addLeadingNewLine)
 			{
 				content.resize(len + 1);
 				content[0] = '\n'; // Needed for selections alignment after comparing
 
-				::WideCharToMultiByte(CP_UTF8, 0, pText, wLen, content.data() + 1, len, NULL, NULL);
+				::WideCharToMultiByte(CP_UTF8, 0, pText, static_cast<int>(wLen), content.data() + 1,
+						static_cast<int>(len), NULL, NULL);
 			}
 			else
 			{
 				content.resize(len);
 
-				::WideCharToMultiByte(CP_UTF8, 0, pText, wLen, content.data(), len, NULL, NULL);
+				::WideCharToMultiByte(CP_UTF8, 0, pText, static_cast<int>(wLen), content.data(),
+						static_cast<int>(len), NULL, NULL);
 			}
 		}
 

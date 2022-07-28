@@ -34,7 +34,7 @@ inline bool getDllPath(TCHAR* dllPath, size_t bufLen)
 	if (!hPlugin)
 		return false;
 
-	::GetModuleFileName(hPlugin, (LPWSTR)dllPath, bufLen);
+	::GetModuleFileName(hPlugin, (LPWSTR)dllPath, (DWORD)bufLen);
 	::PathRemoveExtension(dllPath);
 	_tcscat_s(dllPath, bufLen, TEXT("\\git2.dll"));
 
