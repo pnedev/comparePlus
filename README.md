@@ -1,62 +1,92 @@
 ComparePlus plugin for Notepad++
 ------------
 
-A very useful diff plugin to show the difference between:
--  2 files (side by side)
--  Diff against Git (with the help of [libgit2](https://github.com/libgit2/libgit2) )
--  Diff against SVN (with the help of [sqlite](https://sqlite.org) )
--  Diff since last Save
+ComparePlus is a plugin for Notepad++ that allows the user to:
+
+-  Compare two files and show differences side by side
+-  Compare only parts (selections) of two files
+-  Find unique lines between two files
+-  Diff a file against Git (with the help of [libgit2](https://github.com/libgit2/libgit2) )
+-  Diff a file against SVN (with the help of [sqlite](https://sqlite.org) )
+-  Diff a changed file since it was last saved
+-  Diff a file or parts of it against clipboard text content
+
+It is highly customizable, can ignore spaces, empty lines, letter cases, regexes, can find moves and show character diffs.
+Several compared file pairs can be active and displayed at the same time.
+
 
 Build Status
 ------------
 
-- AppVeyor `VS2017`  [![Build status](https://ci.appveyor.com/api/projects/status/github/pnedev/compare-plugin?svg=true)](https://ci.appveyor.com/project/pnedev/compare-plugin)
+- AppVeyor [![Build status](https://ci.appveyor.com/api/projects/status/github/pnedev/comparePlus?svg=true)](https://ci.appveyor.com/project/pnedev/comparePlus)
 
-Build ComparePlus plugin for Notepad++ from source:
--------------------------------
-
- 1. Open [`plugin_compare\compare-plugin\projects\2017\ComparePlus.vcxproj`](https://github.com/pnedev/compare-plugin/blob/master/projects/2017/ComparePlus.vcxproj)
- 2. Build ComparePlus plugin [like a normal Visual Studio project](https://msdn.microsoft.com/en-us/library/7s88b19e.aspx). Available platforms are x86 win32 and x64 for Unicode Release and Debug.
- 3. CMake config is available and tested for the generators MinGW Makefiles, Visual Studio and NMake Makefiles
 
 Installation:
 ----------
 
-To install the plugin automatically use the Notepad++ PluginAdmin dialog (available since v7.6.3, find it in the `Plugins` menu).
+** ComparePlus plugin is available for Notepad++ versions above v8.4.2 (included) **
 
-To install the plugin manually follow the instructions below based on your current Notepad++ version.
+To install the plugin automatically use the Notepad++ PluginAdmin dialog (find it in the `Plugins` menu).
 
-** Important Note: ** ** If you are installing Compare plugin (not ComparePlus) replace all *ComparePlus* names in the instructions below with *ComparePlugin*. Please note that ComparePlus has not been released yet. **
+To install the plugin manually:
 
-7.6.3 and above:
 1. Create `ComparePlus` folder in Notepad++'s plugins installation folder (`%Notepad++_program_folder%\Plugins`).
-2. Copy the contents of the [Latest Release](https://github.com/pnedev/compare-plugin/releases/latest) zip file
+2. Copy the contents of the desired ComparePlus [release](https://github.com/pnedev/comparePlus/releases) zip file
 into the newly created folder. Please use the correct archive version based on your Notepad++ architecture - x86 or x64.
 - ComparePlus.dll : The core plugin DLL.
 - ComparePlus sub-folder : Contains the libs libgit2.dll and sqlite.dll needed for the Diff against Git and SVN commands.
 3. Restart Notepad++.
 
-Pre 7.6.0:
-1. Copy the contents of the [Latest Release](https://github.com/pnedev/compare-plugin/releases/latest) zip file
+
+-------------------------------
+** IMPORTANT NOTE: **
+** This GitHub project is also the home of the latest [source](https://github.com/pnedev/comparePlus/tree/Compare_v2) and [releases](https://github.com/pnedev/comparePlus/releases) of Compare-plugin for Notepad++. ComparePlus is its highly advanced successor and is meant to be its replacement so Compare-plugin will no longer be supported (at least by me) **
+
+To install Compare-plugin you can either use the Notepad++ PluginAdmin dialog that will it automatically
+or you can do it manually as described in the following steps based on your Notepad++ version:
+
+v7.6.3 and above:
+
+1. Create `ComparePlugin` folder in Notepad++'s plugins installation folder (`%Notepad++_program_folder%\Plugins`).
+2. Copy the contents of the desired Compare-plugin [release](https://github.com/pnedev/comparePlus/releases) zip file
+into the newly created folder. Please use the correct archive version based on your Notepad++ architecture - x86 or x64.
+- ComparePlugin.dll : The core plugin DLL.
+- ComparePlugin sub-folder : Contains the libs libgit2.dll and sqlite.dll needed for the Diff against Git and SVN commands.
+3. Restart Notepad++.
+
+Pre v7.6.0:
+
+1. Copy the contents of the desired Compare-plugin [release](https://github.com/pnedev/comparePlus/releases) zip file
 into Notepad++'s plugins installation folder (`%Notepad++_program_folder%\Plugins`).
 Please use the correct archive version based on your Notepad++ architecture - x86 or x64.
-- ComparePlus.dll : The core plugin DLL.
-- ComparePlus sub-folder : Contains the libs libgit2.dll and sqlite.dll needed for the Diff against Git and SVN commands.
+- ComparePlugin.dll : The core plugin DLL.
+- ComparePlugin sub-folder : Contains the libs libgit2.dll and sqlite.dll needed for the Diff against Git and SVN commands.
 2. Restart Notepad++.
+
+
+To build ComparePlus plugin for Notepad++ from source:
+-------------------------------
+
+ 1. Open [`comparePlus\projects\2017\ComparePlus.vcxproj`](https://github.com/pnedev/comparePlus/blob/master/projects/2017/ComparePlus.vcxproj)
+ 2. Build ComparePlus plugin like a normal Visual Studio project. Available platforms are x86 win32 and x64 for Unicode Release and Debug. Arm64 build is also available.
+ 3. CMake config is available and tested for the generators MinGW Makefiles, Visual Studio and NMake Makefiles
+
 
 Get ComparePlus plugin for Notepad++ at the web:
 -------------------------------
 
-- from GitHub project link [Releases section](https://github.com/pnedev/compare-plugin/releases)
-- manual download of continuous builds from [Appveyor](https://ci.appveyor.com/project/pnedev/compare-plugin/history)
+- from GitHub project [Releases section](https://github.com/pnedev/comparePlus/releases)
+- manual download of continuous builds from [Appveyor](https://ci.appveyor.com/project/pnedev/comparePlus/history)
+
 
 Additional information:
 ----------
 
-- ComparePlus plugin for Notepad++ [Contributors](https://github.com/pnedev/compare-plugin/graphs/contributors)
+- ComparePlus plugin for Notepad++ [Contributors](https://github.com/pnedev/comparePlus/graphs/contributors)
 - See also the [Notepad++ official site](http://notepad-plus-plus.org/) for more information.
+
 
 Changelog:
 ----------
 
-see [`ReleaseNotes.txt`](https://github.com/pnedev/compare-plugin/blob/master/ReleaseNotes.txt)
+see [`ReleaseNotes.txt`](https://github.com/pnedev/comparePlus/blob/master/ReleaseNotes.txt)

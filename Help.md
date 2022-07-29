@@ -105,5 +105,5 @@ You can set your own shortcuts to all CP commands via Notepad++ Settings -> Shor
 
 You can use the excellent **Customize Toolbar** plugin (by Dave) to add, move and remove any toolbar buttons.
 ***
-**[Requests and Issues-Report](https://github.com/pnedev/compare-plugin/issues)**
-**Thank you for [Donating](https://www.paypal.me/pnedev).**
+**[Requests and Issues-Report](https://github.com/pnedev/comparePlus/issues)**
+**Thank you for [Donating](https://www.paypal.com/paypalme/pnedev).**

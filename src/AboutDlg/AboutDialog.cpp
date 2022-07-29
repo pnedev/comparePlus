@@ -25,9 +25,9 @@
 #include "DockingFeature/Window.h"
 
 
-static const TCHAR cDonate_URL[]	= TEXT("https://paypal.me/pnedev");
-static const TCHAR cRepo_URL[]		= TEXT("https://github.com/pnedev/compare-plugin");
-static const TCHAR cHelp_URL[]		= TEXT("https://github.com/pnedev/compare-plugin/blob/master/Help.md");
+static const TCHAR cDonate_URL[]	= TEXT("https://www.paypal.com/paypalme/pnedev");
+static const TCHAR cRepo_URL[]		= TEXT("https://github.com/pnedev/comparePlus");
+static const TCHAR cHelp_URL[]		= TEXT("https://github.com/pnedev/comparePlus/blob/master/Help.md");
 
 
 UINT AboutDialog::doDialog()
