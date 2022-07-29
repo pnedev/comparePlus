@@ -1,5 +1,5 @@
 ComparePlus plugin for Notepad++
-------------
+-------------------------------
 
 ComparePlus is a plugin for Notepad++ that allows the user to:
 
@@ -16,14 +16,15 @@ Several compared file pairs can be active and displayed at the same time.
 
 
 Build Status
-------------
+-------------------------------
 
 - AppVeyor [![Build status](https://ci.appveyor.com/api/projects/status/github/pnedev/comparePlus?svg=true)](https://ci.appveyor.com/project/pnedev/comparePlus)
 
 
-Installation:
-----------
+Installation
+-------------------------------
 
+** IMPORTANT NOTE: **
 ** ComparePlus plugin is available for Notepad++ versions above v8.4.2 (included) **
 
 To install the plugin automatically use the Notepad++ PluginAdmin dialog (find it in the `Plugins` menu).
@@ -42,7 +43,7 @@ into the newly created folder. Please use the correct archive version based on y
 ** IMPORTANT NOTE: **
 ** This GitHub project is also the home of the latest [source](https://github.com/pnedev/comparePlus/tree/Compare_v2) and [releases](https://github.com/pnedev/comparePlus/releases) of Compare-plugin for Notepad++. ComparePlus is its highly advanced successor and is meant to be its replacement so Compare-plugin will no longer be supported (at least by me) **
 
-To install Compare-plugin you can either use the Notepad++ PluginAdmin dialog that will it automatically
+To install Compare-plugin you can either use the Notepad++ PluginAdmin dialog that will do it automatically
 or you can do it manually as described in the following steps based on your Notepad++ version:
 
 v7.6.3 and above:
@@ -64,7 +65,14 @@ Please use the correct archive version based on your Notepad++ architecture - x8
 2. Restart Notepad++.
 
 
-To build ComparePlus plugin for Notepad++ from source:
+Releases and continuous builds
+-------------------------------
+
+- [Releases](https://github.com/pnedev/comparePlus/releases)
+- [Continuous builds](https://ci.appveyor.com/project/pnedev/comparePlus/history)
+
+
+Manually building ComparePlus
 -------------------------------
 
  1. Open [`comparePlus\projects\2017\ComparePlus.vcxproj`](https://github.com/pnedev/comparePlus/blob/master/projects/2017/ComparePlus.vcxproj)
@@ -72,21 +80,14 @@ To build ComparePlus plugin for Notepad++ from source:
  3. CMake config is available and tested for the generators MinGW Makefiles, Visual Studio and NMake Makefiles
 
 
-Get ComparePlus plugin for Notepad++ at the web:
+Additional information
 -------------------------------
 
-- from GitHub project [Releases section](https://github.com/pnedev/comparePlus/releases)
-- manual download of continuous builds from [Appveyor](https://ci.appveyor.com/project/pnedev/comparePlus/history)
+- [Contributors](https://github.com/pnedev/comparePlus/graphs/contributors)
+- Check also the official [Notepad++ web site](https://notepad-plus-plus.org/).
 
 
-Additional information:
-----------
+Changelog
+-------------------------------
 
-- ComparePlus plugin for Notepad++ [Contributors](https://github.com/pnedev/comparePlus/graphs/contributors)
-- See also the [Notepad++ official site](http://notepad-plus-plus.org/) for more information.
-
-
-Changelog:
-----------
-
-see [`ReleaseNotes.txt`](https://github.com/pnedev/comparePlus/blob/master/ReleaseNotes.txt)
+See the [`ReleaseNotes.txt`](https://github.com/pnedev/comparePlus/blob/master/ReleaseNotes.txt)
