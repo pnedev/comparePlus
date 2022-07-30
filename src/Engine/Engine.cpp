@@ -423,7 +423,7 @@ uint64_t regexIgnoreLineHash(uint64_t hashSeed, int codepage, const std::vector<
 		++rit;
 	}
 
-	hashSeed = lineRangeHash(hashSeed, wLine, pos, len - 1, options);
+	hashSeed = lineRangeHash(hashSeed, wLine, pos, wLen - 1, options);
 
 	return hashSeed;
 }
