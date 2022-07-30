@@ -18,7 +18,7 @@ Several compared file pairs can be active and displayed at the same time.
 Build Status
 -------------------------------
 
-- AppVeyor [![Build status](https://ci.appveyor.com/api/projects/status/github/pnedev/comparePlus?svg=true)](https://ci.appveyor.com/project/pnedev/comparePlus)
+- [![Build status](https://ci.appveyor.com/api/projects/status/github/pnedev/comparePlus?svg=true)](https://ci.appveyor.com/project/pnedev/comparePlus)
 
 
 Installation
@@ -27,7 +27,7 @@ Installation
 ** IMPORTANT NOTE: **
 ** ComparePlus plugin is available for Notepad++ versions above v8.4.2 (included) **
 
-To install the plugin automatically use the Notepad++ PluginAdmin dialog (find it in the `Plugins` menu).
+To install the plugin automatically use the Notepad++ PluginAdmin dialog (find it in the `Plugins` menu in Notepad++ versions above v8.4.5).
 
 To install the plugin manually:
 
