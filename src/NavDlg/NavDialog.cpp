@@ -661,6 +661,10 @@ INT_PTR CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lPar
 			onPaint();
 		break;
 
+		case WM_SETFOCUS:
+			::SetFocus(getCurrentView());
+		return TRUE;
+
 		// case WM_CTLCOLORSCROLLBAR:
 		// return (INT_PTR)m_hScrollerBackBrush;
 
