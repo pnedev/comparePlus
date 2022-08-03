@@ -522,6 +522,7 @@ std::vector<int> copiedSectionMarks;
 
 // Re-compare flags
 bool goToFirst = false;
+bool justCompared = false;
 bool selectionAutoRecompare = false;
 
 LRESULT currentlyActiveBuffID = 0;
@@ -2400,6 +2401,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	// Just to be sure any old state is cleared
 	storedLocation = nullptr;
 	goToFirst = false;
+	justCompared = false;
 	copiedSectionMarks.clear();
 
 	temporaryRangeSelect(-1);
@@ -2563,6 +2565,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	{
 		case CompareResult::COMPARE_MISMATCH:
 		{
+			justCompared = true;
+
 			if (Settings.UseNavBar)
 				showNavBar();
 
@@ -3800,7 +3804,9 @@ void DelayedAlign::operator()()
 	if (alignmentInfo.empty())
 		return;
 
-	bool realign = goToFirst || selectionAutoRecompare;
+	bool realign = goToFirst || selectionAutoRecompare || justCompared;
+
+	justCompared = false;
 
 	ScopedIncrementerInt incr(notificationsLock);
 

@@ -153,7 +153,8 @@ void ViewLocation::save(int view, intptr_t centerLine)
 		_visibleLineOffset	= getFirstVisibleLineOffset(view, _firstLine);
 	}
 
-	LOGD(LOG_SYNC, "Store " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") + " view location\n");
+	LOGD(LOG_SYNC, "Store " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
+			" view location, first visible doc line: " + std::to_string(_firstLine + 1) + "\n");
 }
 
 
