@@ -31,7 +31,7 @@ To install the plugin automatically use the Notepad++ PluginAdmin dialog (find i
 
 To install the plugin manually:
 
-1. Create `ComparePlus` folder in Notepad++'s plugins installation folder (`%Notepad++_program_folder%\Plugins`).
+1. Create `ComparePlugin` folder in Notepad++'s plugins installation folder (`%Notepad++_program_folder%\Plugins`).
 2. Copy the contents of the desired ComparePlus [release](https://github.com/pnedev/comparePlus/releases) zip file
 into the newly created folder. Please use the correct archive version based on your Notepad++ architecture - x86 or x64.
 - ComparePlus.dll : The core plugin DLL.
