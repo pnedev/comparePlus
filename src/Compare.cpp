@@ -1640,10 +1640,7 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 
 	// Line is not visible - scroll into view
 	if ((!isLineVisible(view, line) ||
-		(!isLineMarked(view, line, MARKER_MASK_LINE) && !isAdjacentAnnotationVisible(view, line, down))) &&
-		(!cmpPair->options.selectionCompare ||
-		(cmpPair->options.selectionCompare &&
-		line != cmpPair->options.selections[view].first && line != cmpPair->options.selections[view].second)))
+		(!isLineMarked(view, line, MARKER_MASK_LINE) && !isAdjacentAnnotationVisible(view, line, down))))
 	{
 		centerAt(view, line);
 		doNotBlink = true;
