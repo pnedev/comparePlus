@@ -529,14 +529,6 @@ inline intptr_t getFirstVisibleLineOffset(int view, intptr_t line)
 }
 
 
-inline bool isLineVisible(int view, intptr_t line)
-{
-	line = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0);
-
-	return ((line >= getFirstVisibleLine(view)) && (line <= getLastVisibleLine(view)));
-}
-
-
 inline bool isLineWrapped(int view, intptr_t line)
 {
 	return (CallScintilla(view, SCI_WRAPCOUNT, line, 0) > 1);
@@ -558,6 +550,15 @@ inline bool isLineMarked(int view, intptr_t line, int markMask)
 inline bool isLineEmpty(int view, intptr_t line)
 {
 	return ((getLineEnd(view, line) - getLineStart(view, line)) == 0);
+}
+
+
+inline bool isLineVisible(int view, intptr_t line)
+{
+	intptr_t lineStart	= CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0);
+	intptr_t lineEnd	= lineStart + getWrapCount(view, line) - 1;
+
+	return (getFirstVisibleLine(view) <= lineEnd && getLastVisibleLine(view) >= lineStart);
 }
 
 
