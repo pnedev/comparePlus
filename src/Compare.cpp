@@ -1427,6 +1427,29 @@ void showBlankAdjacentArrowMark(int view, intptr_t line, bool down)
 }
 
 
+intptr_t getCornerStartingLine(int view, bool down, const CompareList_t::iterator& cmpPair)
+{
+	intptr_t startingLine;
+
+	if (cmpPair->options.selectionCompare)
+	{
+		if (down)
+			startingLine = cmpPair->options.selections[view].first;
+		else
+			startingLine = cmpPair->options.selections[view].second;
+	}
+	else
+	{
+		if (down)
+			startingLine = 0;
+		else
+			startingLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
+	}
+
+	return startingLine;
+}
+
+
 std::pair<int, intptr_t> findNextChange(intptr_t mainStartLine, intptr_t subStartLine, bool down,
 		bool goToCornerDiff = false)
 {
@@ -1502,21 +1525,36 @@ std::pair<int, intptr_t> findNextChange(intptr_t mainStartLine, intptr_t subStar
 			(line < CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1))
 		++line;
 
-	if (cmpPair->options.selectionCompare)
+	if (cmpPair->options.selectionCompare &&!isLineMarked(view, line, MARKER_MASK_LINE))
 	{
 		if (goToCornerDiff)
 		{
-			if (down && (line < cmpPair->options.selections[view].first))
-				line = cmpPair->options.selections[view].first;
-			else if (!down && (line > cmpPair->options.selections[view].second))
+			if (down && isLineHidden(view, line))
+			{
+				line = getPreviousUnhiddenLine(view, line);
+			}
+			else if (!down && (line > cmpPair->options.selections[view].second) &&
+				(isLineMarked(view, cmpPair->options.selections[view].second, MARKER_MASK_LINE) ||
+				Settings.ShowOnlySelections))
+			{
 				line = cmpPair->options.selections[view].second;
+			}
 		}
 		else
 		{
-			if (down && (line > cmpPair->options.selections[view].second))
-				line = cmpPair->options.selections[view].second;
-			else if (!down && (line < cmpPair->options.selections[view].first))
-				line = cmpPair->options.selections[view].first;
+			if (!down)
+			{
+				if (line > cmpPair->options.selections[view].second &&
+					(isLineMarked(view, cmpPair->options.selections[view].second, MARKER_MASK_LINE) ||
+					Settings.ShowOnlySelections))
+				{
+					line = cmpPair->options.selections[view].second;
+				}
+				else if (line < cmpPair->options.selections[view].first)
+				{
+					line = cmpPair->options.selections[view].first;
+				}
+			}
 		}
 	}
 
@@ -1524,7 +1562,7 @@ std::pair<int, intptr_t> findNextChange(intptr_t mainStartLine, intptr_t subStar
 }
 
 
-std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subStartLine, bool& down,
+std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subStartLine, bool down,
 		bool goToCornerDiff = false, bool doNotBlink = false)
 {
 	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
@@ -1533,7 +1571,7 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 
 	if (!cmpPair->options.findUniqueMode && !goToCornerDiff)
 	{
-		int view			= getCurrentViewId();
+		const int view		= getCurrentViewId();
 		const int otherView	= getOtherViewId(view);
 
 		const intptr_t edgeLine		= (down ? getLastLine(view) : getFirstLine(view));
@@ -1547,38 +1585,30 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 			isLineMarked(otherView, otherViewMatchingLine(view, currentLine) + 1, MARKER_MASK_LINE))
 		{
 			centerAt(view, currentLine);
+
+			showBlankAdjacentArrowMark(view, currentLine, down);
+
 			return std::make_pair(view, currentLine);
+		}
+	}
+
+	if (!goToCornerDiff && cmpPair->options.selectionCompare && Settings.ShowOnlySelections && !down)
+	{
+		const int view				= getCurrentViewId();
+		const intptr_t startLine	= (view == MAIN_VIEW) ? mainStartLine : subStartLine;
+
+		// Special selections compare corner case
+		if (!isLineMarked(view, startLine, MARKER_MASK_LINE) && (startLine == cmpPair->options.selections[view].first))
+		{
+			down = !down;
+			goToCornerDiff = true;
 		}
 	}
 
 	if (goToCornerDiff)
 	{
-		if (cmpPair->options.selectionCompare)
-		{
-			if (down)
-			{
-				mainStartLine	= cmpPair->options.selections[MAIN_VIEW].first;
-				subStartLine	= cmpPair->options.selections[SUB_VIEW].first;
-			}
-			else
-			{
-				mainStartLine	= cmpPair->options.selections[MAIN_VIEW].second;
-				subStartLine	= cmpPair->options.selections[SUB_VIEW].second;
-			}
-		}
-		else
-		{
-			if (down)
-			{
-				mainStartLine	= 0;
-				subStartLine	= 0;
-			}
-			else
-			{
-				mainStartLine	= CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
-				subStartLine	= CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
-			}
-		}
+		mainStartLine	= getCornerStartingLine(MAIN_VIEW, down, cmpPair);
+		subStartLine	= getCornerStartingLine(SUB_VIEW, down, cmpPair);
 	}
 
 	std::pair<int, intptr_t> nextDiff = findNextChange(mainStartLine, subStartLine, down, goToCornerDiff);
@@ -1591,23 +1621,14 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 		if (goToCornerDiff || Settings.WrapAround)
 			return nextDiff;
 
-		if (down)
-		{
-			if (cmpPair->options.selectionCompare)
-				nextDiff = findNextChange(cmpPair->options.selections[MAIN_VIEW].second,
-						cmpPair->options.selections[SUB_VIEW].second, false, true);
-			else
-				nextDiff = findNextChange(CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1,
-						CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1, false, true);
-		}
-		else
-		{
-			if (cmpPair->options.selectionCompare)
-				nextDiff = findNextChange(cmpPair->options.selections[MAIN_VIEW].first,
-						cmpPair->options.selections[SUB_VIEW].first, true, true);
-			else
-				nextDiff = findNextChange(0, 0, true, true);
-		}
+		// Last diff reached and direction was inverted to find the corner diff
+		down = !down;
+		goToCornerDiff = true;
+
+		mainStartLine	= getCornerStartingLine(MAIN_VIEW, down, cmpPair);
+		subStartLine	= getCornerStartingLine(SUB_VIEW, down, cmpPair);
+
+		nextDiff = findNextChange(mainStartLine, subStartLine, down, goToCornerDiff);
 
 		view = nextDiff.first;
 		line = nextDiff.second;
@@ -1615,28 +1636,41 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 		if (view < 0)
 			return nextDiff;
 
-		const intptr_t edgeLine		= (down ? getLastLine(view) : getFirstLine(view));
+		const intptr_t edgeLine		= (down ? getFirstLine(view) : getLastLine(view));
 		const intptr_t currentLine	= (Settings.FollowingCaret ? getCurrentLine(view) : edgeLine);
 
-		if ((down && (line <= currentLine) && (line < edgeLine)) ||
-			(!down && (line >= currentLine) && (line > edgeLine)))
+		if ((down && (line >= currentLine) && (line > edgeLine)) ||
+			(!down && (line <= currentLine) && (line < edgeLine)))
 		{
 			if (isLineVisible(view, line))
 				blinkLine(view, line);
 			else
-				blinkLine(view, down ? getFirstLine(view) : getLastLine(view));
+				blinkLine(view, down ? getLastLine(view) : getFirstLine(view));
 
-			return std::make_pair(view, line);
+			// Adjust the direction of the blank annotation mark in case of selections compare corners
+			if (cmpPair->options.selectionCompare && Settings.ShowOnlySelections && !down &&
+					!isLineMarked(view, line, MARKER_MASK_LINE))
+				down = !down;
+
+			showBlankAdjacentArrowMark(view, line, down);
+
+			return nextDiff;
 		}
-
-		down = !down; // Last diff reached and direction is inverted to find the corner diff
 	}
+
+	LOGD(LOG_VISIT, "Jump to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
+			" view, center doc line: " + std::to_string(line + 1) + "\n");
 
 	if (cmpPair->options.findUniqueMode && Settings.FollowingCaret)
 		::SetFocus(getView(view));
 
-	LOGD(LOG_VISIT, "Jump to " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
-			" view, center doc line: " + std::to_string(line + 1) + "\n");
+	// Adjust the direction of the blank annotation mark in case of selections compare corners
+	if (goToCornerDiff && cmpPair->options.selectionCompare && Settings.ShowOnlySelections && !down &&
+			!isLineMarked(view, line, MARKER_MASK_LINE))
+		down = !down;
+
+	if (Settings.ShowOnlyDiffs && isLineHidden(view, line))
+		line = down ? getUnhiddenLine(view, line) : getPreviousUnhiddenLine(view, line);
 
 	// Line is not visible - scroll into view
 	if ((!isLineVisible(view, line) ||
@@ -1659,35 +1693,28 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 		CallScintilla(view, SCI_SETEMPTYSELECTION, pos, 0);
 
 		doNotBlink = true;
-		line = -1;
 	}
 
 	if (!doNotBlink)
 		blinkLine(view, line);
 
+	showBlankAdjacentArrowMark(view, line, down);
+
 	return std::make_pair(view, line);
 }
 
 
-std::pair<int, intptr_t> jumpToFirstChange(bool doNotBlink = false)
+inline std::pair<int, intptr_t> jumpToFirstChange(bool doNotBlink = false)
 {
-	bool down = true;
-
-	std::pair<int, intptr_t> viewLoc = jumpToNextChange(0, 0, down, true, doNotBlink);
-	showBlankAdjacentArrowMark(viewLoc.first, viewLoc.second, down);
+	std::pair<int, intptr_t> viewLoc = jumpToNextChange(0, 0, true, true, doNotBlink);
 
 	return viewLoc;
 }
 
 
-std::pair<int, intptr_t> jumpToLastChange(bool doNotBlink = false)
+inline void jumpToLastChange(bool doNotBlink = false)
 {
-	bool down = false;
-
-	std::pair<int, intptr_t> viewLoc = jumpToNextChange(0, 0, down, true, doNotBlink);
-	showBlankAdjacentArrowMark(viewLoc.first, viewLoc.second, down);
-
-	return viewLoc;
+	jumpToNextChange(0, 0, false, true, doNotBlink);
 }
 
 
@@ -1743,7 +1770,24 @@ void jumpToChange(bool down)
 		}
 
 		if (isAdjacentAnnotationVisible(currentView, currentLine, down))
-			--currentLine;
+		{
+			CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
+			if (cmpPair == compareList.end())
+				return;
+
+			if (!(cmpPair->options.selectionCompare && Settings.ShowOnlySelections &&
+				!isLineMarked(currentView, currentLine, MARKER_MASK_LINE) &&
+				(currentLine == cmpPair->options.selections[currentView].first)))
+			{
+				--currentLine;
+
+				// Special selections compare corner case
+				if (cmpPair->options.selectionCompare && Settings.ShowOnlySelections &&
+						!isLineMarked(currentView, currentLine, MARKER_MASK_LINE) &&
+						(currentLine == cmpPair->options.selections[currentView].first))
+					--currentLine;
+			}
+		}
 
 		otherLine = (Settings.FollowingCaret ?
 				otherViewMatchingLine(currentView, currentLine) : getFirstLine(otherView));
@@ -1769,10 +1813,6 @@ void jumpToChange(bool down)
 			flashInfo.dwFlags	= FLASHW_ALL;
 			::FlashWindowEx(&flashInfo);
 		}
-	}
-	else
-	{
-		showBlankAdjacentArrowMark(viewLoc.first, viewLoc.second, down);
 	}
 }
 
@@ -1939,8 +1979,6 @@ void updateViewsFoldState(const CompareList_t::iterator& cmpPair)
 
 void alignDiffs(const CompareList_t::iterator& cmpPair)
 {
-	bool lineZeroAlignmentSkipped = false;
-
 	updateViewsFoldState(cmpPair);
 
 	const AlignmentInfo_t& alignmentInfo = cmpPair->summary.alignmentInfo;
@@ -1961,9 +1999,82 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 		subEndLine	= cmpPair->options.selections[SUB_VIEW].second;
 	}
 
-	// Align diffs
-	for (intptr_t i = 0; i < maxSize &&
-			alignmentInfo[i].main.line <= mainEndLine && alignmentInfo[i].sub.line <= subEndLine; ++i)
+	intptr_t i = 0;
+
+	// Handle zero line diffs that cannot be aligned because annotation on line 0 is not supported by Scintilla
+	for (; i < maxSize && alignmentInfo[i].main.line <= mainEndLine && alignmentInfo[i].sub.line <= subEndLine; ++i)
+	{
+		intptr_t previousUnhiddenLine = getPreviousUnhiddenLine(MAIN_VIEW, alignmentInfo[i].main.line);
+
+		if (isLineAnnotated(MAIN_VIEW, previousUnhiddenLine))
+			clearAnnotation(MAIN_VIEW, previousUnhiddenLine);
+
+		previousUnhiddenLine = getPreviousUnhiddenLine(SUB_VIEW, alignmentInfo[i].sub.line);
+
+		if (isLineAnnotated(SUB_VIEW, previousUnhiddenLine))
+			clearAnnotation(SUB_VIEW, previousUnhiddenLine);
+
+		if (alignmentInfo[i].main.line == 0 || alignmentInfo[i].sub.line == 0)
+			continue;
+
+		if (i == 0)
+			break;
+
+		const intptr_t mismatchLen =
+				CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) -
+				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0);
+
+		if (cmpPair->options.selectionCompare)
+		{
+			const intptr_t mainOffset	= (mismatchLen < 0) ? -mismatchLen : 0;
+			const intptr_t subOffset	= (mismatchLen > 0) ? mismatchLen : 0;
+
+			if (alignmentInfo[i - 1].main.line != 0)
+			{
+				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, mainOffset + 1, mainOffset + 1,
+						"--- Selection Compare Block Start ---");
+				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, subOffset + 1, subOffset + 1,
+						"Lines above cannot be properly aligned.");
+			}
+			else if (alignmentInfo[i - 1].sub.line != 0)
+			{
+				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, mainOffset + 1, mainOffset + 1,
+						"Lines above cannot be properly aligned.");
+				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, subOffset + 1, subOffset + 1,
+						"--- Selection Compare Block Start ---");
+			}
+			else
+			{
+				break;
+			}
+		}
+		else
+		{
+			static const char *lineZeroAlignInfo =
+						"Lines above cannot be properly aligned.\n"
+						"To see them aligned, please manually insert one empty line\n"
+						"in the beginning of each file and then re-compare.";
+
+			if (mismatchLen > 0)
+			{
+				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, 1, 1, lineZeroAlignInfo);
+				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, mismatchLen + 1, mismatchLen + 1,
+						lineZeroAlignInfo);
+			}
+			else if (mismatchLen < 0)
+			{
+				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, -mismatchLen + 1, -mismatchLen + 1,
+						lineZeroAlignInfo);
+				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, 1, 1, lineZeroAlignInfo);
+			}
+		}
+
+		++i;
+		break;
+	}
+
+	// Align all other diffs
+	for (; i < maxSize && alignmentInfo[i].main.line <= mainEndLine && alignmentInfo[i].sub.line <= subEndLine; ++i)
 	{
 		intptr_t previousUnhiddenLine = getPreviousUnhiddenLine(MAIN_VIEW, alignmentInfo[i].main.line);
 
@@ -1979,54 +2090,19 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 				CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) -
 				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0);
 
-		// Ignore alignment on line 0 as it is currently not supported by Scintilla
-		if (alignmentInfo[i].main.line == 0 || alignmentInfo[i].sub.line == 0)
-		{
-			lineZeroAlignmentSkipped = (mismatchLen != 0);
-			continue;
-		}
-
-		static const char *lineZeroAlignInfo =
-					"Lines above cannot be properly aligned.\n"
-					"If you want to see them aligned,\n"
-					"please manually insert one empty line\n"
-					"in the beginning of each file and re-compare.";
-
 		if (mismatchLen > 0)
 		{
 			if ((i + 1 < maxSize) && (alignmentInfo[i].sub.line == alignmentInfo[i + 1].sub.line))
 				continue;
 
-			if (lineZeroAlignmentSkipped)
-			{
-				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, 1, 1, lineZeroAlignInfo);
-				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, mismatchLen + 1, mismatchLen + 1,
-						lineZeroAlignInfo);
-
-				lineZeroAlignmentSkipped = false;
-			}
-			else
-			{
-				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, mismatchLen);
-			}
+			addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, mismatchLen);
 		}
 		else if (mismatchLen < 0)
 		{
 			if ((i + 1 < maxSize) && (alignmentInfo[i].main.line == alignmentInfo[i + 1].main.line))
 				continue;
 
-			if (lineZeroAlignmentSkipped)
-			{
-				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, -mismatchLen + 1, -mismatchLen + 1,
-						lineZeroAlignInfo);
-				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, 1, 1, lineZeroAlignInfo);
-
-				lineZeroAlignmentSkipped = false;
-			}
-			else
-			{
-				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, -mismatchLen);
-			}
+			addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, -mismatchLen);
 		}
 	}
 
@@ -2072,6 +2148,7 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 	// Mark selections for clarity
 	if (cmpPair->options.selectionCompare)
 	{
+		// Line zero selections are already covered
 		if (cmpPair->options.selections[MAIN_VIEW].first > 0 && cmpPair->options.selections[SUB_VIEW].first > 0)
 		{
 			intptr_t mainAnnotation = getLineAnnotation(MAIN_VIEW,
@@ -2080,27 +2157,20 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 			intptr_t subAnnotation = getLineAnnotation(SUB_VIEW,
 					getPreviousUnhiddenLine(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first));
 
-			if (mainAnnotation == 0 || subAnnotation == 0)
-			{
-				++mainAnnotation;
-				++subAnnotation;
-			}
-
-			const intptr_t annotMismatch = mainAnnotation - subAnnotation;
 			const intptr_t visibleBlockStartMismatch =
 				CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, cmpPair->options.selections[MAIN_VIEW].first, 0) -
 				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, cmpPair->options.selections[SUB_VIEW].first, 0);
 
-			intptr_t mainAnnotPos = 1;
-			intptr_t subAnnotPos = 1;
+			++mainAnnotation;
+			++subAnnotation;
 
-			if (visibleBlockStartMismatch == 0)
-			{
-				if (annotMismatch > 0)
-					mainAnnotPos += annotMismatch;
-				else
-					subAnnotPos += -annotMismatch;
-			}
+			intptr_t mainAnnotPos	= mainAnnotation;
+			intptr_t subAnnotPos	= subAnnotation;
+
+			if (visibleBlockStartMismatch > 0)
+				mainAnnotPos -= visibleBlockStartMismatch;
+			else if (visibleBlockStartMismatch < 0)
+				subAnnotPos += visibleBlockStartMismatch;
 
 			addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first, mainAnnotation, mainAnnotPos,
 					"--- Selection Compare Block Start ---");
@@ -3117,20 +3187,23 @@ void ShowOnlyDiffs()
 	{
 		ScopedIncrementerInt incr(notificationsLock);
 
-		const int view = getCurrentViewId();
-		intptr_t currentLine = getCurrentLine(view);
+		const int view			= getCurrentViewId();
+		intptr_t currentLine	= (Settings.FollowingCaret ? getCurrentLine(view) : getFirstLine(view));
 
-		if (Settings.ShowOnlyDiffs && !isLineMarked(view, currentLine, MARKER_MASK_LINE))
+		if (!isLineMarked(view, currentLine, MARKER_MASK_LINE))
 		{
-			currentLine = CallScintilla(view, SCI_MARKERNEXT, currentLine, MARKER_MASK_LINE);
+			const intptr_t  nextMarkedLine = CallScintilla(view, SCI_MARKERNEXT, currentLine, MARKER_MASK_LINE);
 
-			if (!isLineVisible(view, currentLine))
-				centerAt(view, currentLine);
+			if (nextMarkedLine >= 0)
+				currentLine = nextMarkedLine;
+			else
+				currentLine = CallScintilla(view, SCI_MARKERPREVIOUS, currentLine, MARKER_MASK_LINE);
 
-			CallScintilla(view, SCI_GOTOLINE, currentLine, 0);
+			if (Settings.FollowingCaret)
+				CallScintilla(view, SCI_GOTOLINE, currentLine, 0);
 		}
 
-		ViewLocation loc(view);
+		ViewLocation loc(view, currentLine);
 
 		CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
 		CallScintilla(SUB_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
@@ -3157,18 +3230,18 @@ void ShowOnlySelections()
 	{
 		ScopedIncrementerInt incr(notificationsLock);
 
-		const int view = getCurrentViewId();
-		intptr_t currentLine = getCurrentLine(view);
+		const int view			= getCurrentViewId();
+		intptr_t currentLine	= (Settings.FollowingCaret ? getCurrentLine(view) : getFirstLine(view));
 
-		if (Settings.ShowOnlySelections)
-		{
-			if (!isLineVisible(view, currentLine))
-				centerAt(view, currentLine);
+		if (currentLine < cmpPair->options.selections[view].first)
+			currentLine = cmpPair->options.selections[view].first;
+		else if (currentLine > cmpPair->options.selections[view].second)
+			currentLine = cmpPair->options.selections[view].second;
 
+		if (Settings.FollowingCaret)
 			CallScintilla(view, SCI_GOTOLINE, currentLine, 0);
-		}
 
-		ViewLocation loc(view);
+		ViewLocation loc(view, currentLine);
 
 		CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
 		CallScintilla(SUB_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);

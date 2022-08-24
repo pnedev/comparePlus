@@ -247,11 +247,11 @@ private:
  */
 struct ViewLocation
 {
-	ViewLocation() : _view(-1) {}
+	ViewLocation() = default;
 
-	ViewLocation(int view, intptr_t centerLine)
+	ViewLocation(int view, intptr_t firstLine)
 	{
-		save(view, centerLine);
+		save(view, firstLine);
 	}
 
 	ViewLocation(int view)
@@ -268,7 +268,7 @@ struct ViewLocation
 
 #endif
 
-	void save(int view, intptr_t centerLine = -1);
+	void save(int view, intptr_t firstLine = -1);
 	bool restore() const;
 
 	inline int getView() const
@@ -277,10 +277,9 @@ struct ViewLocation
 	}
 
 private:
-	int			_view;
-	intptr_t	_centerLine;
-	intptr_t	_firstLine;
-	intptr_t	_visibleLineOffset;
+	int			_view {-1};
+	intptr_t	_firstLine {-1};
+	intptr_t	_visibleLineOffset {0};
 };
 
 
@@ -550,6 +549,12 @@ inline bool isLineMarked(int view, intptr_t line, int markMask)
 inline bool isLineEmpty(int view, intptr_t line)
 {
 	return ((getLineEnd(view, line) - getLineStart(view, line)) == 0);
+}
+
+
+inline bool isLineHidden(int view, intptr_t line)
+{
+	return (CallScintilla(view, SCI_GETLINEVISIBLE, line, 0) == 0);
 }
 
 

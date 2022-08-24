@@ -135,7 +135,7 @@ BOOL CALLBACK NppStatusBarHandleGetter::enumWindowsCB(HWND hwnd, LPARAM )
 }
 
 
-void ViewLocation::save(int view, intptr_t centerLine)
+void ViewLocation::save(int view, intptr_t firstLine)
 {
 	if (view != MAIN_VIEW && view != SUB_VIEW)
 	{
@@ -144,13 +144,16 @@ void ViewLocation::save(int view, intptr_t centerLine)
 	}
 
 	_view		= view;
-	_centerLine	= centerLine;
-	_firstLine	= -1;
+	_firstLine	= firstLine;
 
-	if (_centerLine < 0)
+	if (_firstLine < 0)
 	{
 		_firstLine			= getFirstLine(view);
 		_visibleLineOffset	= getFirstVisibleLineOffset(view, _firstLine);
+	}
+	else
+	{
+		_visibleLineOffset = 0;
 	}
 
 	LOGD(LOG_SYNC, "Store " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
@@ -163,25 +166,14 @@ bool ViewLocation::restore() const
 	if (_view < 0)
 		return false;
 
-	if (_centerLine < 0)
-	{
-		const intptr_t firstVisibleLine =
-				CallScintilla(_view, SCI_VISIBLEFROMDOCLINE, _firstLine, 0) - _visibleLineOffset;
+	const intptr_t firstVisibleLine =
+			CallScintilla(_view, SCI_VISIBLEFROMDOCLINE, _firstLine, 0) - _visibleLineOffset;
 
-		CallScintilla(_view, SCI_SETFIRSTVISIBLELINE, firstVisibleLine, 0);
+	CallScintilla(_view, SCI_SETFIRSTVISIBLELINE, firstVisibleLine, 0);
 
-		LOGD(LOG_SYNC, "Restore " + std::string(_view == MAIN_VIEW ? "MAIN" : "SUB") +
-				" view location, first visible doc line: " +
-				std::to_string(CallScintilla(_view, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0) + 1) + "\n");
-	}
-	else
-	{
-		if (!isLineVisible(_view, _centerLine))
-			centerAt(_view, _centerLine);
-
-		LOGD(LOG_SYNC, "Restore " + std::string(_view == MAIN_VIEW ? "MAIN" : "SUB") +
-				" view location, center doc line: " + std::to_string(_centerLine + 1) + "\n");
-	}
+	LOGD(LOG_SYNC, "Restore " + std::string(_view == MAIN_VIEW ? "MAIN" : "SUB") +
+			" view location, first visible doc line: " +
+			std::to_string(CallScintilla(_view, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0) + 1) + "\n");
 
 	return true;
 }
@@ -780,7 +772,7 @@ bool isAdjacentAnnotation(int view, intptr_t line, bool down)
 	}
 	else
 	{
-		if (line && isLineAnnotated(view, line - 1))
+		if (line && isLineAnnotated(view, getPreviousUnhiddenLine(view, line)))
 			return true;
 	}
 
@@ -800,7 +792,7 @@ bool isAdjacentAnnotationVisible(int view, intptr_t line, bool down)
 	}
 	else
 	{
-		if (!line || !isLineAnnotated(view, line - 1))
+		if (!line || !isLineAnnotated(view, getPreviousUnhiddenLine(view, line)))
 			return false;
 
 		if (CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - 1 < getFirstVisibleLine(view))
