@@ -33,7 +33,7 @@ To install the plugin manually:
 
 1. Create `ComparePlus` folder in Notepad++'s plugins installation folder (`%Notepad++_program_folder%\Plugins`).
 2. Copy the contents of the desired ComparePlus [release](https://github.com/pnedev/comparePlus/releases) zip file
-into the newly created folder. Please use the correct archive version based on your Notepad++ architecture - x86 or x64.
+into the newly created folder. Please use the correct archive version based on your Notepad++ architecture - x86, x64 or ARM64.
 - ComparePlus.dll : The core plugin DLL.
 - ComparePlus sub-folder : Contains the libs libgit2.dll and sqlite.dll needed for the Diff against Git and SVN commands.
 3. Restart Notepad++.
@@ -41,7 +41,7 @@ into the newly created folder. Please use the correct archive version based on y
 
 -------------------------------
 ** IMPORTANT NOTE: **
-** This GitHub project is also the home of the latest [source](https://github.com/pnedev/comparePlus/tree/Compare_v2) and [releases](https://github.com/pnedev/comparePlus/releases) of Compare-plugin for Notepad++. ComparePlus is its highly advanced successor and is meant to be its replacement so Compare-plugin will no longer be supported (at least by me) **
+** This GitHub project is also the home of the latest [source](https://github.com/pnedev/comparePlus/tree/Compare_v2) and [releases](https://github.com/pnedev/comparePlus/releases) of Compare-plugin for Notepad++. ComparePlus is its highly advanced successor and is meant to be its replacement so Compare-plugin will no longer be supported by me **
 
 To install Compare-plugin you can either use the Notepad++ PluginAdmin dialog that will do it automatically
 or you can do it manually as described in the following steps based on your Notepad++ version:
@@ -76,7 +76,7 @@ Manually building ComparePlus
 -------------------------------
 
  1. Open [`comparePlus\projects\2017\ComparePlus.vcxproj`](https://github.com/pnedev/comparePlus/blob/master/projects/2017/ComparePlus.vcxproj)
- 2. Build ComparePlus plugin like a normal Visual Studio project. Available platforms are x86 win32 and x64 for Unicode Release and Debug. Arm64 build is also available.
+ 2. Build ComparePlus plugin like a normal Visual Studio project. Available platforms are x86 (Win32) and x64 for Unicode Release and Debug. ARM64 build is also available.
  3. CMake config is available and tested for the generators MinGW Makefiles, Visual Studio and NMake Makefiles
 
 
