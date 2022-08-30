@@ -1427,26 +1427,26 @@ void showBlankAdjacentArrowMark(int view, intptr_t line, bool down)
 }
 
 
-intptr_t getCornerStartingLine(int view, bool down, const CompareList_t::iterator& cmpPair)
+intptr_t getCornerLine(int view, bool down, const CompareList_t::iterator& cmpPair)
 {
-	intptr_t startingLine;
+	intptr_t cornerLine;
 
 	if (cmpPair->options.selectionCompare)
 	{
 		if (down)
-			startingLine = cmpPair->options.selections[view].first;
+			cornerLine = cmpPair->options.selections[view].first;
 		else
-			startingLine = cmpPair->options.selections[view].second;
+			cornerLine = cmpPair->options.selections[view].second;
 	}
 	else
 	{
 		if (down)
-			startingLine = 0;
+			cornerLine = 0;
 		else
-			startingLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
+			cornerLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
 	}
 
-	return startingLine;
+	return cornerLine;
 }
 
 
@@ -1607,8 +1607,8 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 
 	if (goToCornerDiff)
 	{
-		mainStartLine	= getCornerStartingLine(MAIN_VIEW, down, cmpPair);
-		subStartLine	= getCornerStartingLine(SUB_VIEW, down, cmpPair);
+		mainStartLine	= getCornerLine(MAIN_VIEW, down, cmpPair);
+		subStartLine	= getCornerLine(SUB_VIEW, down, cmpPair);
 	}
 
 	std::pair<int, intptr_t> nextDiff = findNextChange(mainStartLine, subStartLine, down, goToCornerDiff);
@@ -1625,8 +1625,8 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 		down = !down;
 		goToCornerDiff = true;
 
-		mainStartLine	= getCornerStartingLine(MAIN_VIEW, down, cmpPair);
-		subStartLine	= getCornerStartingLine(SUB_VIEW, down, cmpPair);
+		mainStartLine	= getCornerLine(MAIN_VIEW, down, cmpPair);
+		subStartLine	= getCornerLine(SUB_VIEW, down, cmpPair);
 
 		nextDiff = findNextChange(mainStartLine, subStartLine, down, goToCornerDiff);
 
