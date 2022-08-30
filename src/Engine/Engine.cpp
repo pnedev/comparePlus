@@ -37,7 +37,7 @@
 #include "diff.h"
 #include "ProgressDlg.h"
 
-// #define MULTITHREAD		1
+#define MULTITHREAD		1
 
 #ifdef MULTITHREAD
 
