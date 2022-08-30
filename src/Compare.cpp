@@ -3642,7 +3642,8 @@ void syncViews(int biasView)
 		{
 			intptr_t pos;
 
-			if (isLineAnnotated(otherView, otherLine) && isLineWrapped(otherView, otherLine))
+			if (!isLineMarked(otherView, otherLine, MARKER_MASK_LINE) && isLineAnnotated(otherView, otherLine) &&
+					isLineWrapped(otherView, otherLine))
 				pos = getLineEnd(otherView, otherLine);
 			else
 				pos = getLineStart(otherView, otherLine);
