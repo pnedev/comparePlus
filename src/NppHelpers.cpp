@@ -373,14 +373,14 @@ void setNormalView(int view)
 		CallScintilla(view, SCI_SETMARGINWIDTHN, MARGIN_NUM, 0);
 		CallScintilla(view, SCI_SETMARGINSENSITIVEN, MARGIN_NUM, false);
 
-		const intptr_t caretLineColor = CallScintilla(view, SCI_GETELEMENTCOLOUR,  SC_ELEMENT_CARET_LINE_BACK, 0);
+		const intptr_t caretLineColor = CallScintilla(view, SCI_GETELEMENTCOLOUR, SC_ELEMENT_CARET_LINE_BACK, 0);
 
 		if (caretLineColor)
 			CallScintilla(view, SCI_SETELEMENTCOLOUR, SC_ELEMENT_CARET_LINE_BACK, caretLineColor & 0xFFFFFF);
 
 		CallScintilla(view, SCI_SETCARETLINELAYER, SC_LAYER_BASE, 0);
 
-		CallScintilla(view, SCI_SETELEMENTCOLOUR,  SC_ELEMENT_HIDDEN_LINE, hiddenLinesColor[view]);
+		CallScintilla(view, SCI_SETELEMENTCOLOUR, SC_ELEMENT_HIDDEN_LINE, hiddenLinesColor[view]);
 	}
 }
 
@@ -398,10 +398,11 @@ void setCompareView(int view, int blankColor, int caretLineTransp)
 		CallScintilla(view, SCI_SETMARGINWIDTHN, MARGIN_NUM, 16);
 		CallScintilla(view, SCI_SETMARGINSENSITIVEN, MARGIN_NUM, true);
 
-		hiddenLinesColor[view] = CallScintilla(view, SCI_GETELEMENTCOLOUR,  SC_ELEMENT_HIDDEN_LINE, 0);
+		hiddenLinesColor[view] =
+			static_cast<int>(CallScintilla(view, SCI_GETELEMENTCOLOUR, SC_ELEMENT_HIDDEN_LINE, 0));
 	}
 
-	const intptr_t caretLineColor = CallScintilla(view, SCI_GETELEMENTCOLOUR,  SC_ELEMENT_CARET_LINE_BACK, 0);
+	const intptr_t caretLineColor = CallScintilla(view, SCI_GETELEMENTCOLOUR, SC_ELEMENT_CARET_LINE_BACK, 0);
 
 	if (caretLineColor)
 	{
