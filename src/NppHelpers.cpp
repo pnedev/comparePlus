@@ -188,6 +188,7 @@ const int cBlinkInterval_ms	= 100;
 bool compareMode[2]		= { false, false };
 int blankStyle[2]		= { 0, 0 };
 bool endAtLastLine[2]	= { true, true };
+int hiddenLinesColor[2]	= { 0, 0 };
 
 
 void defineColor(int type, int color)
@@ -378,6 +379,8 @@ void setNormalView(int view)
 			CallScintilla(view, SCI_SETELEMENTCOLOUR, SC_ELEMENT_CARET_LINE_BACK, caretLineColor & 0xFFFFFF);
 
 		CallScintilla(view, SCI_SETCARETLINELAYER, SC_LAYER_BASE, 0);
+
+		CallScintilla(view, SCI_SETELEMENTCOLOUR,  SC_ELEMENT_HIDDEN_LINE, hiddenLinesColor[view]);
 	}
 }
 
@@ -394,6 +397,8 @@ void setCompareView(int view, int blankColor, int caretLineTransp)
 		CallScintilla(view, SCI_SETMARGINMASKN, MARGIN_NUM, (LPARAM)(MARKER_MASK_SYMBOL | MARKER_MASK_ARROW));
 		CallScintilla(view, SCI_SETMARGINWIDTHN, MARGIN_NUM, 16);
 		CallScintilla(view, SCI_SETMARGINSENSITIVEN, MARGIN_NUM, true);
+
+		hiddenLinesColor[view] = CallScintilla(view, SCI_GETELEMENTCOLOUR,  SC_ELEMENT_HIDDEN_LINE, 0);
 	}
 
 	const intptr_t caretLineColor = CallScintilla(view, SCI_GETELEMENTCOLOUR,  SC_ELEMENT_CARET_LINE_BACK, 0);
@@ -406,6 +411,10 @@ void setCompareView(int view, int blankColor, int caretLineTransp)
 				(caretLineColor & 0xFFFFFF) | (alpha << 24));
 		CallScintilla(view, SCI_SETCARETLINELAYER, SC_LAYER_UNDER_TEXT, 0);
 	}
+
+	const int hiddenColor = isDarkMode() ? 0xD0D0D0 : 0x202020;
+
+	CallScintilla(view, SCI_SETELEMENTCOLOUR, SC_ELEMENT_HIDDEN_LINE, hiddenColor | (SC_ALPHA_OPAQUE << 24));
 
 	// For some reason the annotation blank styling is lost on Sci doc switch thus we need to reapply it
 	setBlanksStyle(view, blankColor);
