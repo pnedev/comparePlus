@@ -166,11 +166,17 @@ endif ()
 message ("Install destination: ${INSTALL_PATH}")
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-	install (DIRECTORY libs/x64/
-		DESTINATION "${INSTALL_PATH}/ComparePlus"
-	)
+	if (CMAKE_SYSTEM_PROCESSOR MATCHES "arm" OR CMAKE_SYSTEM_PROCESSOR MATCHES "aarch")
+		install (DIRECTORY libs/arm64/
+			DESTINATION "${INSTALL_PATH}/libs"
+		)
+	else()
+		install (DIRECTORY libs/x64/
+			DESTINATION "${INSTALL_PATH}/libs"
+		)
+	endif()
 else()
 	install (DIRECTORY libs/x86/
-		DESTINATION "${INSTALL_PATH}/ComparePlus"
+		DESTINATION "${INSTALL_PATH}/libs"
 	)
 endif()

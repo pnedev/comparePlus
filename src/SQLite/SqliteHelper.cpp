@@ -43,8 +43,8 @@ inline bool getDllPath(TCHAR* dllPath, size_t bufLen)
 		return false;
 
 	::GetModuleFileName(hPlugin, (LPWSTR)dllPath, (DWORD)bufLen);
-	::PathRemoveExtension(dllPath);
-	_tcscat_s(dllPath, bufLen, TEXT("\\sqlite3.dll"));
+	::PathRemoveFileSpec(dllPath);
+	_tcscat_s(dllPath, bufLen, TEXT("\\libs\\sqlite3.dll"));
 
 	return true;
 }

@@ -159,9 +159,9 @@
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>echo Copying additional libs to plugins\ComparePlus\ComparePlus
-if not exist "$(OutDir)ComparePlus" mkdir "$(OutDir)ComparePlus"
-copy "..\..\libs\x86\*.dll" "$(OutDir)ComparePlus"</Command>
+      <Command>echo Copying additional libs to plugins\ComparePlus\libs
+if not exist "$(OutDir)libs" mkdir "$(OutDir)libs"
+copy "..\..\libs\x86\*.dll" "$(OutDir)libs"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -192,9 +192,9 @@ copy "..\..\libs\x86\*.dll" "$(OutDir)ComparePlus"</Command>
       <ImportLibrary>ComparePlus.lib</ImportLibrary>
     </Link>
     <PostBuildEvent>
-      <Command>echo Copying additional libs to plugins\ComparePlus\ComparePlus
-if not exist "$(OutDir)ComparePlus" mkdir "$(OutDir)ComparePlus"
-copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlus"</Command>
+      <Command>echo Copying additional libs to plugins\ComparePlus\libs
+if not exist "$(OutDir)libs" mkdir "$(OutDir)libs"
+copy "..\..\libs\x64\*.dll" "$(OutDir)libs"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
@@ -225,6 +225,9 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlus"</Command>
       <ImportLibrary>ComparePlus.lib</ImportLibrary>
     </Link>
     <PostBuildEvent>
+      <Command>echo Copying additional libs to plugins\ComparePlus\libs
+if not exist "$(OutDir)libs" mkdir "$(OutDir)libs"
+copy "..\..\libs\arm64\*.dll" "$(OutDir)libs"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -263,9 +266,9 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlus"</Command>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>echo Copying additional libs to plugins\ComparePlus\ComparePlus
-if not exist "$(OutDir)ComparePlus" mkdir "$(OutDir)ComparePlus"
-copy "..\..\libs\x86\*.dll" "$(OutDir)ComparePlus"</Command>
+      <Command>echo Copying additional libs to plugins\ComparePlus\libs
+if not exist "$(OutDir)libs" mkdir "$(OutDir)libs"
+copy "..\..\libs\x86\*.dll" "$(OutDir)libs"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -303,9 +306,9 @@ copy "..\..\libs\x86\*.dll" "$(OutDir)ComparePlus"</Command>
       <ImportLibrary>ComparePlus.lib</ImportLibrary>
     </Link>
     <PostBuildEvent>
-      <Command>echo Copying additional libs to plugins\ComparePlus\ComparePlus
-if not exist "$(OutDir)ComparePlus" mkdir "$(OutDir)ComparePlus"
-copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlus"</Command>
+      <Command>echo Copying additional libs to plugins\ComparePlus\libs
+if not exist "$(OutDir)libs" mkdir "$(OutDir)libs"
+copy "..\..\libs\x64\*.dll" "$(OutDir)libs"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
@@ -343,6 +346,9 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)ComparePlus"</Command>
       <ImportLibrary>ComparePlus.lib</ImportLibrary>
     </Link>
     <PostBuildEvent>
+      <Command>echo Copying additional libs to plugins\ComparePlus\libs
+if not exist "$(OutDir)libs" mkdir "$(OutDir)libs"
+copy "..\..\libs\arm64\*.dll" "$(OutDir)libs"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
