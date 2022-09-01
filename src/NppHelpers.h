@@ -269,7 +269,7 @@ struct ViewLocation
 #endif
 
 	void save(int view, intptr_t firstLine = -1);
-	bool restore() const;
+	bool restore(bool ensureCaretVisisble = false) const;
 
 	inline int getView() const
 	{

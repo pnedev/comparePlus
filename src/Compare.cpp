@@ -951,10 +951,14 @@ void ComparedFile::restore() const
 
 	const int view = getCurrentViewId();
 
+	ViewLocation loc(view);
+
 	clearWindow(view);
 	setNormalView(view);
 	temporaryRangeSelect(-1);
 	setArrowMark(-1);
+
+	loc.restore(Settings.FollowingCaret);
 
 	if (viewIdFromBuffId(buffId) != originalViewId)
 	{
@@ -3210,7 +3214,7 @@ void ShowOnlyDiffs()
 
 		alignDiffs(cmpPair);
 
-		loc.restore();
+		loc.restore(Settings.FollowingCaret);
 
 		NavDlg.Update();
 	}
@@ -3248,7 +3252,7 @@ void ShowOnlySelections()
 
 		alignDiffs(cmpPair);
 
-		loc.restore();
+		loc.restore(Settings.FollowingCaret);
 
 		NavDlg.Update();
 	}

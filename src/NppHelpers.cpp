@@ -147,21 +147,16 @@ void ViewLocation::save(int view, intptr_t firstLine)
 	_firstLine	= firstLine;
 
 	if (_firstLine < 0)
-	{
-		_firstLine			= getFirstLine(view);
-		_visibleLineOffset	= getFirstVisibleLineOffset(view, _firstLine);
-	}
-	else
-	{
-		_visibleLineOffset = 0;
-	}
+		_firstLine = getFirstLine(view);
+
+	_visibleLineOffset = getFirstVisibleLineOffset(view, _firstLine);
 
 	LOGD(LOG_SYNC, "Store " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
 			" view location, first visible doc line: " + std::to_string(_firstLine + 1) + "\n");
 }
 
 
-bool ViewLocation::restore() const
+bool ViewLocation::restore(bool ensureCaretVisisble) const
 {
 	if (_view < 0)
 		return false;
@@ -170,6 +165,9 @@ bool ViewLocation::restore() const
 			CallScintilla(_view, SCI_VISIBLEFROMDOCLINE, _firstLine, 0) - _visibleLineOffset;
 
 	CallScintilla(_view, SCI_SETFIRSTVISIBLELINE, firstVisibleLine, 0);
+
+	if (ensureCaretVisisble)
+		CallScintilla(_view, SCI_SCROLLCARET, 0, 0);
 
 	LOGD(LOG_SYNC, "Restore " + std::string(_view == MAIN_VIEW ? "MAIN" : "SUB") +
 			" view location, first visible doc line: " +
