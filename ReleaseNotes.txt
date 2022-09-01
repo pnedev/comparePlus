@@ -21,4 +21,5 @@ v1.0.0
 	- Has various settings to customize behavior (including control over "mark lines as changed" decision)
 	- Compare progress is more smooth and informative and cancelling ongoing compare is much more responsive
 	- Has "equalize diffs" feature - try mouse left-clicking on a diff's compare margin (symbol) and the same but holding Ctrl or Shift keys (or both)
+	- Can run files compare directly when starting Notepad++ from the command line (notepad++ -pluginMessage="compare" old_file.txt new_file.txt)
 	- Has also ARM64 build (except the SVN diff command that depends on external library which doesn't have ARM64 variant)
