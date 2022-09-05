@@ -473,6 +473,13 @@ void setStyles(UserSettings& settings)
 	defineColor(MARKER_CHANGED_LINE,	settings.colors().changed);
 	defineColor(MARKER_BLANK,			settings.colors().blank);
 
+	// Currently all icons are 14x14
+	CallScintilla(MAIN_VIEW, SCI_RGBAIMAGESETWIDTH, 14, 0);
+	CallScintilla(MAIN_VIEW, SCI_RGBAIMAGESETHEIGHT, 14, 0);
+
+	CallScintilla(SUB_VIEW, SCI_RGBAIMAGESETWIDTH, 14, 0);
+	CallScintilla(SUB_VIEW, SCI_RGBAIMAGESETHEIGHT, 14, 0);
+
 	defineRgbaSymbol(MARKER_CHANGED_SYMBOL,				icon_changed);
 	defineRgbaSymbol(MARKER_CHANGED_LOCAL_SYMBOL,		icon_changed_local);
 	defineRgbaSymbol(MARKER_ADDED_SYMBOL,				icon_added);
