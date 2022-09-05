@@ -50,6 +50,8 @@ sptr_t			sciPtr[2];
 
 UserSettings	Settings;
 
+int gMarginWidth = 0;
+
 #ifdef DLOG
 
 std::string		dLog("ComparePlus debug log\n\n");
@@ -3729,6 +3731,8 @@ void onToolBarReady()
 		// Bitmaps are 16x16
 		bmpX = ::MulDiv(16, GetDeviceCaps(hdc, LOGPIXELSX), 96);
 		bmpY = ::MulDiv(16, GetDeviceCaps(hdc, LOGPIXELSY), 96);
+
+		gMarginWidth = bmpX;
 
 		// Icons are 32x32
 		icoX = ::MulDiv(32, GetDeviceCaps(hdc, LOGPIXELSX), 96);

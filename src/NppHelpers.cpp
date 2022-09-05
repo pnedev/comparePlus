@@ -39,6 +39,9 @@
 #define INDIC_HIGHLIGHT		INDIC_CONTAINER + 7
 
 
+extern int gMarginWidth;
+
+
 HWND NppToolbarHandleGetter::hNppToolbar = NULL;
 
 
@@ -393,11 +396,11 @@ void setCompareView(int view, int blankColor, int caretLineTransp)
 		CallScintilla(view, SCI_SETENDATLASTLINE, false, 0);
 
 		CallScintilla(view, SCI_SETMARGINMASKN, MARGIN_NUM, (LPARAM)(MARKER_MASK_SYMBOL | MARKER_MASK_ARROW));
-		CallScintilla(view, SCI_SETMARGINWIDTHN, MARGIN_NUM, 16);
+		CallScintilla(view, SCI_SETMARGINWIDTHN, MARGIN_NUM, gMarginWidth);
 		CallScintilla(view, SCI_SETMARGINSENSITIVEN, MARGIN_NUM, true);
 
 		hiddenLinesColor[view] =
-			static_cast<int>(CallScintilla(view, SCI_GETELEMENTCOLOUR, SC_ELEMENT_HIDDEN_LINE, 0));
+				static_cast<int>(CallScintilla(view, SCI_GETELEMENTCOLOUR, SC_ELEMENT_HIDDEN_LINE, 0));
 	}
 
 	const intptr_t caretLineColor = CallScintilla(view, SCI_GETELEMENTCOLOUR, SC_ELEMENT_CARET_LINE_BACK, 0);
