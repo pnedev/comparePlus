@@ -1464,7 +1464,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 #ifdef MULTITHREAD
 
 	auto threadFn =
-		[&](intptr_t startLine, intptr_t endLine)
+		[&workFn](intptr_t startLine, intptr_t endLine)
 		{
 			try
 			{
@@ -1483,7 +1483,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 			}
 		};
 
-	int threadsCount = std::thread::hardware_concurrency() - 2;
+	int threadsCount = std::thread::hardware_concurrency() - 1;
 
 	if (threadsCount < 1)
 		threadsCount = 1;
@@ -1496,45 +1496,44 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 	}
 	else
 	{
-		const intptr_t totalJobs = linesCount1 * linesCount2;
+		constexpr intptr_t jobsPerThread = 50;
 
-		intptr_t jobsPerThread = 50;
+		const intptr_t totalJobs		= linesCount1 * linesCount2;
+		const intptr_t threadsNeeded	= (totalJobs + jobsPerThread - 1) / jobsPerThread;
 
-		const intptr_t threadsNeeded = (totalJobs + jobsPerThread - 1) / jobsPerThread;
-
-		if (threadsCount > static_cast<int>(threadsNeeded))
+		if (static_cast<intptr_t>(threadsCount) > threadsNeeded)
 			threadsCount = static_cast<int>(threadsNeeded);
 
-		jobsPerThread = (totalJobs + threadsCount - 1) / threadsCount;
+		if (static_cast<intptr_t>(threadsCount) > linesCount1)
+			threadsCount = static_cast<int>(linesCount1);
+
+		const intptr_t linesPerThread = (linesCount1 + threadsCount - 1) / threadsCount;
 
 		LOGD(LOG_ALGO, "getOrderedConvergence(): threads to use: " + std::to_string(threadsCount) +
-				", jobs per thread: " + std::to_string(jobsPerThread) + "\n");
-
-		// Convert to line1 iterations per thread
-		jobsPerThread = (jobsPerThread + linesCount2 - 1) / linesCount2;
+				", jobs per thread: " + std::to_string(linesPerThread * linesCount2) + "\n");
 
 		std::vector<std::thread> threads;
 
-		intptr_t startLine = 0;
+		intptr_t startLine1 = 0;
 
 		for (int th = 0; th < threadsCount; ++th)
 		{
-			const intptr_t endLine = ((th == (threadsCount - 1)) ? linesCount1 : (startLine + jobsPerThread));
+			intptr_t endLine1 = (th == threadsCount - 1) ? linesCount1 : (startLine1 + linesPerThread);
 
-			LOGD(LOG_ALGO, "Thread " + std::to_string(th + 1) + " line1 range: " + std::to_string(startLine + 1) +
-					" to " + std::to_string(endLine) + "\n");
+			LOGD(LOG_ALGO, "Thread " + std::to_string(th + 1) + " line1 range: " + std::to_string(startLine1 + 1) +
+					" to " + std::to_string(endLine1) + "\n");
 
 			try
 			{
-				threads.emplace_back(std::bind(threadFn, startLine, endLine));
+				threads.emplace_back(std::bind(threadFn, startLine1, endLine1));
 			}
 			catch (...)
 			{
-				workFn(startLine, linesCount1);
+				workFn(startLine1, linesCount1);
 				break;
 			}
 
-			startLine += jobsPerThread;
+			startLine1 = endLine1;
 		}
 
 		for (auto& th : threads)
