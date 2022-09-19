@@ -754,19 +754,18 @@ void NppSettings::refreshTabBar(HWND hTabBar)
 
 void NppSettings::refreshTabBars()
 {
-	HWND currentView = getCurrentView();
+	HWND hNppMainTabBar	= NppTabHandleGetter::get(MAIN_VIEW);
+	HWND hNppSubTabBar	= NppTabHandleGetter::get(SUB_VIEW);
 
-	HWND hNppTabBar = NppTabHandleGetter::get(SUB_VIEW);
+	if (hNppMainTabBar && hNppSubTabBar)
+	{
+		HWND currentView = getCurrentView();
 
-	if (hNppTabBar)
-		refreshTabBar(hNppTabBar);
+		refreshTabBar(hNppSubTabBar);
+		refreshTabBar(hNppMainTabBar);
 
-	hNppTabBar = NppTabHandleGetter::get(MAIN_VIEW);
-
-	if (hNppTabBar)
-		refreshTabBar(hNppTabBar);
-
-	::SetFocus(currentView);
+		::SetFocus(currentView);
+	}
 }
 
 

@@ -75,6 +75,9 @@ HWND NppTabHandleGetter::hNppTab[2] = { NULL, NULL };
 
 HWND NppTabHandleGetter::get(int viewId)
 {
+	if (::SendMessage(nppData._nppHandle, NPPM_ISTABBARHIDDEN, 0, 0))
+		return NULL;
+
 	const int idx = (viewId == MAIN_VIEW) ? 0 : 1;
 
 	if (hNppTab[idx] == NULL)
