@@ -4706,16 +4706,8 @@ void DelayedActivate::operator()()
 		// When compared file is activated make sure its corresponding pair file is also active in the other view
 		if (getDocId(getOtherViewId()) != otherFile.sciDoc)
 		{
-			HWND hCaptureWnd = ::GetCapture();
-
-			if (hCaptureWnd)
-				::ReleaseCapture();
-
 			activateBufferID(otherFile.buffId);
 			activateBufferID(buffId);
-
-			if (hCaptureWnd)
-				::SetFocus(hCaptureWnd);
 		}
 
 		currentlyActiveBuffID = buffId;
