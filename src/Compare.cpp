@@ -3703,8 +3703,8 @@ void comparedFileActivated()
 
 void checkCmdLine()
 {
-	const wchar_t compareRunCmd[]	= L"-pluginMessage=compare";
-	constexpr int minCmdLineLen		= sizeof(compareRunCmd) / sizeof(wchar_t);
+	constexpr wchar_t compareRunCmd[]	= L"-pluginMessage=compare";
+	constexpr int minCmdLineLen			= sizeof(compareRunCmd) / sizeof(wchar_t);
 
 	TCHAR cmdLine[2048];
 
@@ -4699,16 +4699,9 @@ void DelayedActivate::operator()()
 
 	if (buffId != currentlyActiveBuffID)
 	{
-		const int viewId						= viewIdFromBuffId(buffId);
-		const std::pair<intptr_t, intptr_t> sel	= getSelection(viewId); // Used to refresh selection
+		const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
 
 		ScopedIncrementerInt incr(notificationsLock);
-
-		setSelection(viewId, sel.first, sel.first);
-
-		onSciUpdateUI(getView(viewId));
-
-		const ComparedFile& otherFile = cmpPair->getOtherFileByBuffId(buffId);
 
 		// When compared file is activated make sure its corresponding pair file is also active in the other view
 		if (getDocId(getOtherViewId()) != otherFile.sciDoc)
@@ -4729,7 +4722,7 @@ void DelayedActivate::operator()()
 
 		comparedFileActivated();
 
-		setSelection(viewId, sel.first, sel.second);
+		onSciUpdateUI(getView(viewIdFromBuffId(buffId)));
 	}
 	else
 	{
