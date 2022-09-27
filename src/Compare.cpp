@@ -18,8 +18,10 @@
  */
 
 #include <cstdlib>
+#include <string>
 #include <vector>
 #include <memory>
+#include <utility>
 #include <cmath>
 #include <cwchar>
 
@@ -3701,6 +3703,139 @@ void comparedFileActivated()
 }
 
 
+std::pair<std::wstring, std::wstring> getTwoFilenamesFromCmdLine(const TCHAR* cmdLine)
+{
+	if (cmdLine == nullptr)
+		return std::make_pair(std::wstring{}, std::wstring{});
+
+	std::wstring firstFile;
+	std::wstring secondFile;
+
+	for (; *cmdLine != _T('\0'); ++cmdLine)
+	{
+		if (*cmdLine == _T(' '))
+			continue;
+
+		TCHAR sectionEnd = _T(' ');
+
+		if (*cmdLine == _T('-'))
+		{
+			for (++cmdLine; *cmdLine != _T('\0'); ++cmdLine)
+			{
+				if (*cmdLine == sectionEnd)
+					break;
+
+				if (*cmdLine == _T('"') && sectionEnd == _T(' '))
+					sectionEnd = _T('"');
+				else if (*cmdLine == _T('\'') && sectionEnd == _T(' '))
+					sectionEnd = _T('\'');
+			}
+		}
+		else
+		{
+			if (*cmdLine == _T('"'))
+			{
+				sectionEnd = _T('"');
+				++cmdLine;
+			}
+			else if (*cmdLine == _T('\''))
+			{
+				sectionEnd = _T('\'');
+				++cmdLine;
+			}
+
+			if (*cmdLine == _T('\0'))
+				break;
+
+			const TCHAR* startPos = cmdLine;
+
+			for (++cmdLine; *cmdLine != sectionEnd && *cmdLine != _T('\0'); ++cmdLine);
+
+			if (firstFile.empty())
+			{
+				firstFile.assign(startPos, cmdLine);
+
+				for (size_t i = 0; i < firstFile.size(); ++i)
+					if (firstFile.at(i) == L'/')
+						firstFile.at(i) = L'\\';
+			}
+			else
+			{
+				secondFile.assign(startPos, cmdLine);
+
+				for (size_t i = 0; i < secondFile.size(); ++i)
+					if (secondFile.at(i) == L'/')
+						secondFile.at(i) = L'\\';
+
+				break;
+			}
+
+			if (*cmdLine == _T('\0'))
+				break;
+		}
+	}
+
+	return std::make_pair(firstFile, secondFile);
+}
+
+
+// Find command line files full paths
+// Because Notepad++ uses ::SetCurrentDirectory() the folder from which it was started is lost so no way to
+// retrieve easily the command line files relative paths. That's why we try to parse all opened files to
+// try to construct the command line files full paths
+bool constructFullFilePaths(std::pair<std::wstring, std::wstring>& files)
+{
+	const int openedFilesCount =
+			static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, ALL_OPEN_FILES));
+
+	TCHAR** openedFiles = new TCHAR*[openedFilesCount];
+
+	for (int i = 0; i < openedFilesCount; ++i)
+		openedFiles[i] = new TCHAR[1024];
+
+	::SendMessage(nppData._nppHandle, NPPM_GETOPENFILENAMES, (WPARAM)openedFiles, (LPARAM)openedFilesCount);
+
+	std::wstring* longerFileName  = files.first.size() >= files.second.size() ? &(files.first) : &(files.second);
+	std::wstring* shorterFileName = &(files.first) == longerFileName ? &(files.second) : &(files.first);
+
+	int longerFound = 0;
+	int shorterFound = 0;
+
+	std::wstring longer;
+	std::wstring shorter;
+
+	for (int i = 0; i < openedFilesCount; ++i)
+	{
+		size_t pathLen = wcslen(openedFiles[i]);
+
+		if (pathLen >= longerFileName->size() &&
+			wcsstr(openedFiles[i] + pathLen - longerFileName->size(), longerFileName->c_str()))
+		{
+			if (++longerFound == 1)
+				longer = openedFiles[i];
+		}
+		else if (pathLen >= shorterFileName->size() &&
+			wcsstr(openedFiles[i] + pathLen - shorterFileName->size(), shorterFileName->c_str()))
+		{
+			if (++shorterFound == 1)
+				shorter = openedFiles[i];
+		}
+
+		delete [] openedFiles[i];
+	}
+
+	delete [] openedFiles;
+
+	if (longerFound > 1 || shorterFound > 1)
+		return false;
+
+	*longerFileName = std::move(longer);
+	*shorterFileName = std::move(shorter);
+
+	return true;
+}
+
+
 void checkCmdLine()
 {
 	constexpr wchar_t compareRunCmd[]	= L"-pluginMessage=compare";
@@ -3708,11 +3843,58 @@ void checkCmdLine()
 
 	TCHAR cmdLine[2048];
 
-	if (::SendMessage(nppData._nppHandle, NPPM_GETCURRENTCMDLINE, 2048, (LPARAM)cmdLine) > minCmdLineLen)
+	if (::SendMessage(nppData._nppHandle, NPPM_GETCURRENTCMDLINE, 2048, (LPARAM)cmdLine) <= minCmdLineLen)
+		return;
+
+	wchar_t* pos = wcsstr(cmdLine, compareRunCmd);
+
+	if (pos == nullptr)
+		return;
+
+	if (pos == cmdLine)
+		pos += minCmdLineLen;
+	else
+		pos = cmdLine;
+
+	auto files = getTwoFilenamesFromCmdLine(pos);
+
+	if (files.first.empty() || files.second.empty())
+		return;
+
 	{
-		if (wcsstr(cmdLine, compareRunCmd) != nullptr)
-			compare();
+		TCHAR tmp[MAX_PATH];
+
+		::PathCanonicalize(tmp, files.first.c_str());
+
+		files.first = tmp;
+
+		::PathCanonicalize(tmp, files.second.c_str());
+
+		files.second = tmp;
 	}
+
+	if (!constructFullFilePaths(files))
+	{
+		::MessageBox(nppData._nppHandle,
+				TEXT("Command line file name ambiguous (several openned files with that name). Compare aborted.") \
+				TEXT("\nEither use full file paths or add '-nosession' option to command line."),
+				PLUGIN_NAME, MB_OK);
+
+		return;
+	}
+
+	{
+		ScopedIncrementerInt incr(notificationsLock);
+
+		::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)files.first.c_str());
+
+		// First file on the command line is the new one
+		setFirst(true);
+
+		::SendMessage(nppData._nppHandle, NPPM_SWITCHTOFILE, 0, (LPARAM)files.second.c_str());
+	}
+
+	compare();
 }
 
 
