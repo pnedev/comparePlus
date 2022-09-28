@@ -1486,15 +1486,10 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 	int threadsCount = std::thread::hardware_concurrency() - 1;
 
 	if (threadsCount < 1)
-		threadsCount = 1;
-
-	if (threadsCount == 1)
 	{
-		LOGD(LOG_ALGO, "getOrderedConvergence(): only 1 worker thread available\n");
-
-		workFn(0, linesCount1);
+		threadsCount = 1;
 	}
-	else
+	else if (threadsCount > 1)
 	{
 		constexpr intptr_t jobsPerThread = 50;
 
@@ -1506,7 +1501,10 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 
 		if (static_cast<intptr_t>(threadsCount) > linesCount1)
 			threadsCount = static_cast<int>(linesCount1);
+	}
 
+	if (threadsCount > 1)
+	{
 		const intptr_t linesPerThread = (linesCount1 + threadsCount - 1) / threadsCount;
 
 		LOGD(LOG_ALGO, "getOrderedConvergence(): threads to use: " + std::to_string(threadsCount) +
@@ -1538,6 +1536,12 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 
 		for (auto& th : threads)
 			th.join();
+	}
+	else
+	{
+		LOGD(LOG_ALGO, "getOrderedConvergence(): using 1 thread\n");
+
+		workFn(0, linesCount1);
 	}
 
 #else
