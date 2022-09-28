@@ -75,6 +75,17 @@ const TCHAR UserSettings::caretLineTranspDarkSetting[]		= TEXT("caret_line_trans
 
 const TCHAR UserSettings::changedThresholdSetting[]			= TEXT("changed_threshold_percentage");
 
+const TCHAR UserSettings::toolbarSection[]					= TEXT("toolbar_settings");
+
+const TCHAR UserSettings::enableToolbarSetting[]			= TEXT("enable_toolbar");
+const TCHAR UserSettings::setAsFirstTBSetting[]				= TEXT("set_as_first_tb");
+const TCHAR UserSettings::compareTBSetting[]				= TEXT("compare_tb");
+const TCHAR UserSettings::compareSelTBSetting[]				= TEXT("compare_selection_tb");
+const TCHAR UserSettings::clearCompareTBSetting[]			= TEXT("clear_compare_tb");
+const TCHAR UserSettings::navigationTBSetting[]				= TEXT("navigation_tb");
+const TCHAR UserSettings::showOnlyDiffsTBSetting[]			= TEXT("show_only_diffs_tb");
+const TCHAR UserSettings::navBarTBSetting[]					= TEXT("nav_bar_tb");
+
 
 void UserSettings::load()
 {
@@ -166,6 +177,23 @@ void UserSettings::load()
 
 	ChangedThresholdPercent	= ::GetPrivateProfileInt(colorsSection, changedThresholdSetting,
 			DEFAULT_CHANGED_THRESHOLD, iniFile);
+
+	EnableToolbar		= ::GetPrivateProfileInt(toolbarSection, enableToolbarSetting,
+			DEFAULT_ENABLE_TOOLBAR_TB, iniFile) != 0;
+	SetAsFirstTB		= ::GetPrivateProfileInt(toolbarSection, setAsFirstTBSetting,
+			DEFAULT_SET_AS_FIRST_TB, iniFile) != 0;
+	CompareTB			= ::GetPrivateProfileInt(toolbarSection, compareTBSetting,
+			DEFAULT_COMPARE_TB, iniFile) != 0;
+	CompareSelTB		= ::GetPrivateProfileInt(toolbarSection, compareSelTBSetting,
+			DEFAULT_COMPARE_SEL_TB, iniFile) != 0;
+	ClearCompareTB		= ::GetPrivateProfileInt(toolbarSection, clearCompareTBSetting,
+			DEFAULT_CLEAR_COMPARE_TB, iniFile) != 0;
+	NavigationTB		= ::GetPrivateProfileInt(toolbarSection, navigationTBSetting,
+			DEFAULT_NAVIGATION_TB, iniFile) != 0;
+	ShowOnlyDiffsTB		= ::GetPrivateProfileInt(toolbarSection, showOnlyDiffsTBSetting,
+			DEFAULT_SHOW_ONLY_DIFFS_TB, iniFile) != 0;
+	NavBarTB			= ::GetPrivateProfileInt(toolbarSection, navBarTBSetting,
+			DEFAULT_NAV_BAR_TB, iniFile) != 0;
 
 	dirty = false;
 }
@@ -320,6 +348,23 @@ void UserSettings::save()
 
 	_itot_s(ChangedThresholdPercent, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, changedThresholdSetting, buffer, iniFile);
+
+	::WritePrivateProfileString(toolbarSection, enableToolbarSetting,
+			EnableToolbar ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(toolbarSection, setAsFirstTBSetting,
+			SetAsFirstTB ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(toolbarSection, compareTBSetting,
+			CompareTB ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(toolbarSection, compareSelTBSetting,
+			CompareSelTB ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(toolbarSection, clearCompareTBSetting,
+			ClearCompareTB ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(toolbarSection, navigationTBSetting,
+			NavigationTB ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(toolbarSection, showOnlyDiffsTBSetting,
+			ShowOnlyDiffsTB ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(toolbarSection, navBarTBSetting,
+			NavBarTB ? TEXT("1") : TEXT("0"), iniFile);
 
 	dirty = false;
 }

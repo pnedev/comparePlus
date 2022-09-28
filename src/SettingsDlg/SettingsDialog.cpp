@@ -149,6 +149,15 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 
 					settings.ChangedThresholdPercent	= DEFAULT_CHANGED_THRESHOLD;
 
+					settings.EnableToolbar		= (bool) DEFAULT_ENABLE_TOOLBAR_TB;
+					settings.SetAsFirstTB		= (bool) DEFAULT_SET_AS_FIRST_TB;
+					settings.CompareTB			= (bool) DEFAULT_COMPARE_TB;
+					settings.CompareSelTB		= (bool) DEFAULT_COMPARE_SEL_TB;
+					settings.ClearCompareTB		= (bool) DEFAULT_CLEAR_COMPARE_TB;
+					settings.NavigationTB		= (bool) DEFAULT_NAVIGATION_TB;
+					settings.ShowOnlyDiffsTB	= (bool) DEFAULT_SHOW_ONLY_DIFFS_TB;
+					settings.NavBarTB			= (bool) DEFAULT_NAV_BAR_TB;
+
 					SetParams(&settings);
 				}
 				break;
@@ -175,6 +184,20 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 
 				case IDC_COMBO_REM_HIGHLIGHT_COLOR:
 					_ColorComboRemHighlight.onSelect();
+				break;
+
+				case IDC_ENABLE_TOOLBAR:
+				{
+					bool enableToolbar = (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_TOOLBAR)) == BST_CHECKED);
+
+					Button_Enable(::GetDlgItem(_hSelf, IDC_SET_AS_FIRST_TB),		enableToolbar);
+					Button_Enable(::GetDlgItem(_hSelf, IDC_COMPARE_TB),				enableToolbar);
+					Button_Enable(::GetDlgItem(_hSelf, IDC_COMPARE_SELECTIONS_TB),	enableToolbar);
+					Button_Enable(::GetDlgItem(_hSelf, IDC_CLEAR_COMPARE_TB),		enableToolbar);
+					Button_Enable(::GetDlgItem(_hSelf, IDC_NAVIGATION_TB),			enableToolbar);
+					Button_Enable(::GetDlgItem(_hSelf, IDC_SHOW_ONLY_DIFFS_TB),		enableToolbar);
+					Button_Enable(::GetDlgItem(_hSelf, IDC_NAV_BAR_TB),				enableToolbar);
+				}
 				break;
 
 				default:
@@ -276,6 +299,31 @@ void SettingsDialog::SetParams(UserSettings* settings)
 
 	// Set changed threshold percentage
 	::SetDlgItemInt(_hSelf, IDC_THRESHOLD_SPIN_BOX, settings->ChangedThresholdPercent, FALSE);
+
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_TOOLBAR),
+			settings->EnableToolbar ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_SET_AS_FIRST_TB),
+			settings->SetAsFirstTB ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_COMPARE_TB),
+			settings->CompareTB ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_COMPARE_SELECTIONS_TB),
+			settings->CompareSelTB ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_CLEAR_COMPARE_TB),
+			settings->ClearCompareTB ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_NAVIGATION_TB),
+			settings->NavigationTB ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_SHOW_ONLY_DIFFS_TB),
+			settings->ShowOnlyDiffsTB ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_NAV_BAR_TB),
+			settings->NavBarTB ? BST_CHECKED : BST_UNCHECKED);
+
+	Button_Enable(::GetDlgItem(_hSelf, IDC_SET_AS_FIRST_TB),		settings->EnableToolbar);
+	Button_Enable(::GetDlgItem(_hSelf, IDC_COMPARE_TB),				settings->EnableToolbar);
+	Button_Enable(::GetDlgItem(_hSelf, IDC_COMPARE_SELECTIONS_TB),	settings->EnableToolbar);
+	Button_Enable(::GetDlgItem(_hSelf, IDC_CLEAR_COMPARE_TB),		settings->EnableToolbar);
+	Button_Enable(::GetDlgItem(_hSelf, IDC_NAVIGATION_TB),			settings->EnableToolbar);
+	Button_Enable(::GetDlgItem(_hSelf, IDC_SHOW_ONLY_DIFFS_TB),		settings->EnableToolbar);
+	Button_Enable(::GetDlgItem(_hSelf, IDC_NAV_BAR_TB),				settings->EnableToolbar);
 }
 
 
@@ -336,4 +384,13 @@ void SettingsDialog::GetParams()
 
 	if (setting != _Settings->ChangedThresholdPercent)
 		::SetDlgItemInt(_hSelf, IDC_THRESHOLD_SPIN_BOX, _Settings->ChangedThresholdPercent, FALSE);
+
+	_Settings->EnableToolbar	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_TOOLBAR)) == BST_CHECKED);
+	_Settings->SetAsFirstTB		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_SET_AS_FIRST_TB)) == BST_CHECKED);
+	_Settings->CompareTB		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_COMPARE_TB)) == BST_CHECKED);
+	_Settings->CompareSelTB		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_COMPARE_SELECTIONS_TB)) == BST_CHECKED);
+	_Settings->ClearCompareTB	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_CLEAR_COMPARE_TB)) == BST_CHECKED);
+	_Settings->NavigationTB		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_NAVIGATION_TB)) == BST_CHECKED);
+	_Settings->ShowOnlyDiffsTB	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_SHOW_ONLY_DIFFS_TB)) == BST_CHECKED);
+	_Settings->NavBarTB			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_NAV_BAR_TB)) == BST_CHECKED);
 }

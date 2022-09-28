@@ -57,6 +57,15 @@
 
 #define DEFAULT_CHANGED_THRESHOLD		30
 
+#define DEFAULT_ENABLE_TOOLBAR_TB		1
+#define DEFAULT_SET_AS_FIRST_TB			1
+#define DEFAULT_COMPARE_TB				1
+#define DEFAULT_COMPARE_SEL_TB			1
+#define DEFAULT_CLEAR_COMPARE_TB		1
+#define DEFAULT_NAVIGATION_TB			1
+#define DEFAULT_SHOW_ONLY_DIFFS_TB		1
+#define DEFAULT_NAV_BAR_TB				1
+
 
 enum StatusType
 {
@@ -170,6 +179,17 @@ public:
 
 	static const TCHAR changedThresholdSetting[];
 
+	static const TCHAR toolbarSection[];
+
+	static const TCHAR enableToolbarSetting[];
+	static const TCHAR setAsFirstTBSetting[];
+	static const TCHAR compareTBSetting[];
+	static const TCHAR compareSelTBSetting[];
+	static const TCHAR clearCompareTBSetting[];
+	static const TCHAR navigationTBSetting[];
+	static const TCHAR showOnlyDiffsTBSetting[];
+	static const TCHAR navBarTBSetting[];
+
 	bool			FirstFileIsNew;
 	int				NewFileViewId;
 	bool			CompareToPrev;
@@ -199,6 +219,15 @@ public:
 	StatusType		statusType;
 
 	int				ChangedThresholdPercent;
+
+	bool			EnableToolbar;
+	bool			SetAsFirstTB;
+	bool			CompareTB;
+	bool			CompareSelTB;
+	bool			ClearCompareTB;
+	bool			NavigationTB;
+	bool			ShowOnlyDiffsTB;
+	bool			NavBarTB;
 
 private:
 	bool dirty {false};
