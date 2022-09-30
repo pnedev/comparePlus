@@ -1285,15 +1285,6 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 	const intptr_t linesCount1 = static_cast<intptr_t>(chunk1.size());
 	const intptr_t linesCount2 = static_cast<intptr_t>(chunk2.size());
 
-	std::vector<std::vector<Word>> words2(linesCount2);
-
-	if (!options.detectCharDiffs)
-	{
-		for (intptr_t line2 = 0; line2 < linesCount2; ++line2)
-			if (!chunk2[line2].empty())
-				words2[line2] = getLineWords(doc2.view, doc2.lines[blockDiff2.off + line2].line, options);
-	}
-
 	std::vector<std::set<LinesConv>> lines1Convergence(linesCount1);
 	std::vector<std::set<LinesConv>> lines2Convergence(linesCount2);
 
@@ -1338,58 +1329,29 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 					intptr_t matchesCount	= 0;
 					intptr_t diffsCount		= 0;
 
-					if (!options.detectCharDiffs)
+					auto charDiffs = DiffCalc<Char>(chunk1[line1], chunk2[line2])();
+
+					const intptr_t charDiffsSize = static_cast<intptr_t>(charDiffs.first.size());
+
+					for (intptr_t i = 0; i < charDiffsSize; ++i)
 					{
-						if (words1.empty())
-							words1 = getLineWords(doc1.view, doc1.lines[blockDiff1.off + line1].line, options);
-
-						auto wordDiffs = DiffCalc<Word>(words1, words2[line2])(true);
-
-						const std::vector<Word>& rWord = wordDiffs.second ? words2[line2] : words1;
-
-						const intptr_t wordDiffsSize = static_cast<intptr_t>(wordDiffs.first.size());
-
-						for (intptr_t i = 0; i < wordDiffsSize; ++i)
+						if (charDiffs.first[i].type == diff_type::DIFF_MATCH)
 						{
-							if (wordDiffs.first[i].type == diff_type::DIFF_MATCH)
-							{
-								matchesCount += (
-										rWord[wordDiffs.first[i].off + wordDiffs.first[i].len - 1].pos +
-										rWord[wordDiffs.first[i].off + wordDiffs.first[i].len - 1].len -
-										rWord[wordDiffs.first[i].off].pos);
-							}
-							else
-							{
-								if (options.bestSeqChangedLines)
-									++diffsCount;
-
-								// Count replacement as a single diff
-								if ((i + 1 < wordDiffsSize) && (wordDiffs.first[i + 1].type == diff_type::DIFF_IN_2))
-									++i;
-							}
+							matchesCount += charDiffs.first[i].len;
 						}
-
-						if (matchesCount == 0)
+						else if (options.bestSeqChangedLines)
 						{
-							++linesProgress;
-							continue;
-						}
-					}
-					else
-					{
-						auto charDiffs = DiffCalc<Char>(chunk1[line1], chunk2[line2])();
+							++diffsCount;
 
-						for (const auto& ld: charDiffs.first)
-						{
-							if (ld.type == diff_type::DIFF_MATCH)
-								matchesCount += ld.len;
+							// Count replacement as a single diff
+							if ((i + 1 < charDiffsSize) && (charDiffs.first[i + 1].type == diff_type::DIFF_IN_2))
+								++i;
 						}
 					}
 
-					if (((matchesCount * 100) / minSize) >= options.changedThresholdPercent)
+					if (((matchesCount * 100) / maxSize) >= options.changedThresholdPercent)
 					{
-						const float lineConvergence = ((static_cast<float>(matchesCount) * 100) / minSize) +
-								((static_cast<float>(matchesCount) * 100) / maxSize);
+						const float lineConvergence = (static_cast<float>(matchesCount) * 100) / maxSize;
 
 						Conv conv(lineConvergence, diffsCount);
 
