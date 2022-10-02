@@ -1,5 +1,5 @@
 version: Build {build}
-image: Visual Studio 2017
+image: Visual Studio 2022
 
 environment:
     matrix:
@@ -18,7 +18,7 @@ before_build:
 
 build:
     parallel: true
-    project: projects\2017\ComparePlus.sln
+    project: projects\2022\ComparePlus.sln
 
 after_build:
     - cd "%APPVEYOR_BUILD_FOLDER%"

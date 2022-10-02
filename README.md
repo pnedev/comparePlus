@@ -75,7 +75,7 @@ Releases and continuous builds
 Manually building ComparePlus
 -------------------------------
 
- 1. Open [`comparePlus\projects\2017\ComparePlus.vcxproj`](https://github.com/pnedev/comparePlus/blob/master/projects/2017/ComparePlus.vcxproj)
+ 1. Open [`comparePlus\projects\2022\ComparePlus.vcxproj`](https://github.com/pnedev/comparePlus/blob/master/projects/2022/ComparePlus.vcxproj)
  2. Build ComparePlus plugin like a normal Visual Studio project. Available platforms are x86 (Win32) and x64 for Unicode Release and Debug. ARM64 build is also available.
  3. CMake config is available and tested for the generators MinGW Makefiles, Visual Studio and NMake Makefiles
 
