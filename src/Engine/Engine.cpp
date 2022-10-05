@@ -54,29 +54,6 @@
 
 namespace {
 
-#if defined(MULTITHREAD) && (MULTITHREAD != 0)
-
-struct Autolock
-{
-	Autolock(std::mutex& m) : _mtx(m)
-	{
-		m.lock();
-	}
-
-	~Autolock()
-	{
-		_mtx.unlock();
-	}
-
-	Autolock& operator=(const Autolock&) = delete;
-
-private:
-	std::mutex& _mtx;
-};
-
-#endif // MULTITHREAD
-
-
 enum class charType
 {
 	SPACECHAR,
@@ -1356,7 +1333,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 						Conv conv(lineConvergence, diffsCount);
 
 #if defined(MULTITHREAD) && (MULTITHREAD != 0)
-						Autolock lock(mtx);
+						std::lock_guard<std::mutex> lock(mtx);
 #endif
 
 						if (progress && !progress->Advance(linesProgress + 1))
@@ -1411,7 +1388,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 					else
 					{
 #if defined(MULTITHREAD) && (MULTITHREAD != 0)
-						Autolock lock(mtx);
+						std::lock_guard<std::mutex> lock(mtx);
 #endif
 
 						if (progress && !progress->Advance(linesProgress + 1))
@@ -1448,10 +1425,11 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 	int threadsCount = std::thread::hardware_concurrency() - 1;
 
 	if (threadsCount < 1)
-	{
 		threadsCount = 1;
-	}
-	else if (threadsCount > 1)
+	else if (static_cast<intptr_t>(threadsCount) > linesCount1)
+		threadsCount = static_cast<int>(linesCount1);
+
+	if (threadsCount > 1)
 	{
 		constexpr intptr_t jobsPerThread = 50;
 
@@ -1460,9 +1438,6 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 
 		if (static_cast<intptr_t>(threadsCount) > threadsNeeded)
 			threadsCount = static_cast<int>(threadsNeeded);
-
-		if (static_cast<intptr_t>(threadsCount) > linesCount1)
-			threadsCount = static_cast<int>(linesCount1);
 	}
 
 	if (threadsCount > 1)
@@ -1474,26 +1449,22 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 
 		std::vector<std::thread> threads;
 
-		intptr_t startLine1 = 0;
-
-		for (int th = 0; th < threadsCount; ++th)
+		for (intptr_t startLine1 = 0; startLine1 < linesCount1; startLine1 += linesPerThread)
 		{
-			intptr_t endLine1 = (th == threadsCount - 1) ? linesCount1 : (startLine1 + linesPerThread);
+			const intptr_t endLine1 = std::min(startLine1 + linesPerThread, linesCount1);
 
-			LOGD(LOG_ALGO, "Thread " + std::to_string(th + 1) + " line1 range: " + std::to_string(startLine1 + 1) +
+			LOGD(LOG_ALGO, "Thread line1 range: " + std::to_string(startLine1 + 1) +
 					" to " + std::to_string(endLine1) + "\n");
 
 			try
 			{
-				threads.emplace_back(std::bind(threadFn, startLine1, endLine1));
+				threads.emplace_back(threadFn, startLine1, endLine1);
 			}
 			catch (...)
 			{
 				workFn(startLine1, linesCount1);
 				break;
 			}
-
-			startLine1 = endLine1;
 		}
 
 		for (auto& th : threads)
