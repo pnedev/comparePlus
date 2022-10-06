@@ -2984,22 +2984,16 @@ void ClipboardDiff()
 {
 	const int view = getCurrentViewId();
 
-	const int openedFilesCount =
-			static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, ALL_OPEN_FILES));
+	TCHAR file[MAX_PATH];
 
-	if (openedFilesCount == 2) // One empty file openned per view by default
+	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
+
+	if (::PathFileExists(file) == FALSE && CallScintilla(view, SCI_GETLENGTH, 0, 0) == 0)
 	{
-		TCHAR file[MAX_PATH];
+		::MessageBox(nppData._nppHandle,
+				TEXT("File is empty - operation ignored."), PLUGIN_NAME, MB_OK);
 
-		::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
-
-		if (::PathFileExists(file) == FALSE && CallScintilla(view, SCI_GETLENGTH, 0, 0) == 0)
-		{
-			::MessageBox(nppData._nppHandle,
-					TEXT("No opened files in Notepad++, nothing to compare to."), PLUGIN_NAME, MB_OK);
-
-			return;
-		}
+		return;
 	}
 
 	const bool isSel = isSelection(view);
