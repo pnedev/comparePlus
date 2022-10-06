@@ -2982,7 +2982,27 @@ void LastSaveDiff()
 
 void ClipboardDiff()
 {
-	const bool isSel = isSelection(getCurrentViewId());
+	const int view = getCurrentViewId();
+
+	const int openedFilesCount =
+			static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, ALL_OPEN_FILES));
+
+	if (openedFilesCount == 2) // One empty file openned per view by default
+	{
+		TCHAR file[MAX_PATH];
+
+		::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
+
+		if (::PathFileExists(file) == FALSE && CallScintilla(view, SCI_GETLENGTH, 0, 0) == 0)
+		{
+			::MessageBox(nppData._nppHandle,
+					TEXT("No opened files in Notepad++, nothing to compare to."), PLUGIN_NAME, MB_OK);
+
+			return;
+		}
+	}
+
+	const bool isSel = isSelection(view);
 
 	std::vector<char> content = getClipboard(isSel);
 
