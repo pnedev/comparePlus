@@ -2984,16 +2984,19 @@ void ClipboardDiff()
 {
 	const int view = getCurrentViewId();
 
-	TCHAR file[MAX_PATH];
-
-	::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
-
-	if (::PathFileExists(file) == FALSE && CallScintilla(view, SCI_GETLENGTH, 0, 0) == 0)
+	if (CallScintilla(view, SCI_GETLENGTH, 0, 0) == 0)
 	{
-		::MessageBox(nppData._nppHandle,
-				TEXT("File is empty - operation ignored."), PLUGIN_NAME, MB_OK);
+		TCHAR file[MAX_PATH];
 
-		return;
+		::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
+
+		if (::PathFileExists(file) == FALSE)
+		{
+			::MessageBox(nppData._nppHandle,
+					TEXT("File is empty - operation ignored."), PLUGIN_NAME, MB_OK);
+
+			return;
+		}
 	}
 
 	const bool isSel = isSelection(view);
