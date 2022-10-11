@@ -1491,6 +1491,8 @@ std::pair<int, intptr_t> findNextChange(intptr_t mainStartLine, intptr_t subStar
 	intptr_t line				= (view == MAIN_VIEW)		? mainNextLine : subNextLine;
 	const intptr_t otherLine	= (otherView == MAIN_VIEW)	? mainNextLine : subNextLine;
 
+	bool isChangedDiff = false;
+
 	if (line < 0)
 	{
 		// End of doc reached - no more diffs
@@ -1512,23 +1514,29 @@ std::pair<int, intptr_t> findNextChange(intptr_t mainStartLine, intptr_t subStar
 		const intptr_t visibleLine		= CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0);
 		const intptr_t otherVisibleLine	= CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0);
 
-		const bool switchViews = down ? (otherVisibleLine < visibleLine) : (otherVisibleLine > visibleLine);
+		isChangedDiff = (CallScintilla(view, SCI_MARKERGET, line, 0) & MARKER_MASK_CHANGED) &&
+				(CallScintilla(otherView, SCI_MARKERGET, otherLine, 0) & MARKER_MASK_CHANGED);
 
-		if (switchViews)
+		if (!isChangedDiff)
 		{
-			if (cmpPair->options.findUniqueMode)
+			const bool switchViews = down ? (otherVisibleLine < visibleLine) : (otherVisibleLine > visibleLine);
+
+			if (switchViews)
 			{
-				view = otherView;
-				line = otherLine;
-			}
-			else
-			{
-				line = otherViewMatchingLine(otherView, otherLine);
+				if (cmpPair->options.findUniqueMode)
+				{
+					view = otherView;
+					line = otherLine;
+				}
+				else
+				{
+					line = otherViewMatchingLine(otherView, otherLine);
+				}
 			}
 		}
 	}
 
-	if (!down && !Settings.ShowOnlyDiffs && isLineAnnotated(view, line) &&
+	if (!isChangedDiff && !down && !Settings.ShowOnlyDiffs && isLineAnnotated(view, line) &&
 			(line < CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1))
 		++line;
 
