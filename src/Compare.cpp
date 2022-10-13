@@ -1712,6 +1712,8 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 		doNotBlink = true;
 	}
 
+	syncViews(view);
+
 	if (!doNotBlink)
 		blinkLine(view, line);
 
