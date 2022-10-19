@@ -1798,7 +1798,9 @@ void jumpToChange(bool down)
 				!isLineMarked(currentView, currentLine, MARKER_MASK_LINE) &&
 				(currentLine == cmpPair->options.selections[currentView].first)))
 			{
-				if (!(CallScintilla(currentView, SCI_MARKERGET, currentLine - 1, 0) & MARKER_MASK_CHANGED))
+				if (!(CallScintilla(currentView, SCI_MARKERGET, currentLine - 1, 0) & MARKER_MASK_CHANGED) ||
+						!(CallScintilla(otherView, SCI_MARKERGET,
+						otherViewMatchingLine(currentView, currentLine) - 1, 0) & MARKER_MASK_CHANGED))
 					--currentLine;
 
 				// Special selections compare corner case
