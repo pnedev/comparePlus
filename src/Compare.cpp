@@ -1540,7 +1540,7 @@ std::pair<int, intptr_t> findNextChange(intptr_t mainStartLine, intptr_t subStar
 			(line < CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1))
 		++line;
 
-	if (cmpPair->options.selectionCompare &&!isLineMarked(view, line, MARKER_MASK_LINE))
+	if (cmpPair->options.selectionCompare && !isLineMarked(view, line, MARKER_MASK_LINE))
 	{
 		if (goToCornerDiff)
 		{
@@ -1688,8 +1688,8 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 		line = down ? getUnhiddenLine(view, line) : getPreviousUnhiddenLine(view, line);
 
 	// Line is not visible - scroll into view
-	if ((!isLineVisible(view, line) ||
-		(!isLineMarked(view, line, MARKER_MASK_LINE) && !isAdjacentAnnotationVisible(view, line, down))))
+	if (!isLineVisible(view, line) || (!isLineMarked(view, line, MARKER_MASK_LINE) &&
+		!isAdjacentAnnotationVisible(view, line, down) && (down || !goToCornerDiff || !isLineAnnotated(view, line))))
 	{
 		centerAt(view, line);
 		doNotBlink = true;
