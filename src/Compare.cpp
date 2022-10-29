@@ -2021,6 +2021,8 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 		subEndLine	= cmpPair->options.selections[SUB_VIEW].second;
 	}
 
+	bool skipFirst = false;
+
 	intptr_t i = 0;
 
 	// Handle zero line diffs that cannot be aligned because annotation on line 0 is not supported by Scintilla
@@ -2037,9 +2039,12 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 			clearAnnotation(SUB_VIEW, previousUnhiddenLine);
 
 		if (alignmentInfo[i].main.line == 0 || alignmentInfo[i].sub.line == 0)
+		{
+			skipFirst = (alignmentInfo[i].main.line == alignmentInfo[i].sub.line);
 			continue;
+		}
 
-		if (i == 0)
+		if (i == 0 || skipFirst)
 			break;
 
 		const intptr_t mismatchLen =
