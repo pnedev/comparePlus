@@ -111,11 +111,14 @@ bool LocateDirUp(const TCHAR* dirName, const TCHAR* currentDir, TCHAR* fullDirPa
 
 	_tcscpy_s(fullDirPath, fullDirPathSize, currentDir);
 
-	while (!::PathIsRoot(fullDirPath))
+	while (true)
 	{
 		::PathCombine(testPath, fullDirPath, dirName);
 		if (::PathIsDirectory(testPath))
 			return true;
+
+		if (::PathIsRoot(fullDirPath))
+			break;
 
 		// up one folder
 		::PathCombine(testPath, fullDirPath, TEXT(".."));
