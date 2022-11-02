@@ -538,7 +538,7 @@ std::vector<char> getText(int view, intptr_t startPos, intptr_t endPos)
 
 	std::vector<char> text(len + 1, 0);
 
-	Sci_TextRange tr;
+	Sci_TextRangeFull tr;
 	tr.chrg.cpMin = startPos;
 	tr.chrg.cpMax = endPos;
 	tr.lpstrText = text.data();

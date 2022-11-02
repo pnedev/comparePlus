@@ -18,7 +18,8 @@ typedef ptrdiff_t Sci_Position;
 typedef size_t Sci_PositionU;
 
 // For Sci_CharacterRange  which is defined as long to be compatible with Win32 CHARRANGE
-typedef intptr_t Sci_PositionCR;
+// Note from Notepad++ : Sci_PositionCR is disableed for Notepad++. Please use Sci_Position instead.
+// typedef long Sci_PositionCR;
 
 #ifdef _WIN32
 	#define SCI_METHOD __stdcall

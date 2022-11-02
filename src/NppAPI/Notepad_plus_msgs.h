@@ -1,5 +1,5 @@
 // This file is part of Notepad++ project
-// Copyright (C)2021 Don HO <don.h@free.fr>
+// Copyright (C)2022 Don HO <don.h@free.fr>
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@ enum LangType {L_TEXT, L_PHP , L_C, L_CPP, L_CS, L_OBJC, L_JAVA, L_RC,\
 enum class ExternalLexerAutoIndentMode { Standard, C_Like, Custom };
 enum class MacroStatus { Idle, RecordInProgress, RecordingStopped, PlayingBack };
 
-enum winVer{ WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, WV_S2003, WV_XPX64, WV_VISTA, WV_WIN7, WV_WIN8, WV_WIN81, WV_WIN10 };
+enum winVer { WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, WV_S2003, WV_XPX64, WV_VISTA, WV_WIN7, WV_WIN8, WV_WIN81, WV_WIN10, WV_WIN11 };
 enum Platform { PF_UNKNOWN, PF_X86, PF_X64, PF_IA64, PF_ARM64 };
 
 
@@ -540,22 +540,33 @@ enum Platform { PF_UNKNOWN, PF_X86, PF_X64, PF_IA64, PF_ARM64 };
 	// Users should call it with commandLineStr as NULL to get the required number of TCHAR (not including the terminating nul character),
 	// allocate commandLineStr buffer with the return value + 1, then call it again to get the current command line string.
 
+	#define NPPM_CREATELEXER (NPPMSG + 110)
+	// void* NPPN_CREATELEXER(0, const TCHAR *lexer_name)
+	// Returns the ILexer pointer created by Lexilla
 
-#define VAR_NOT_RECOGNIZED 0
-#define FULL_CURRENT_PATH 1
-#define CURRENT_DIRECTORY 2
-#define FILE_NAME 3
-#define NAME_PART 4
-#define EXT_PART 5
-#define CURRENT_WORD 6
-#define NPP_DIRECTORY 7
-#define CURRENT_LINE 8
-#define CURRENT_COLUMN 9
-#define NPP_FULL_FILE_PATH 10
-#define GETFILENAMEATCURSOR 11
-#define CURRENT_LINESTR 12
+	#define NPPM_GETBOOKMARKID (NPPMSG + 111)
+	// void* NPPM_GETBOOKMARKID(0, 0)
+	// Returns the bookmark ID
 
-#define	RUNCOMMAND_USER    (WM_USER + 3000)
+
+
+	// For RUNCOMMAND_USER
+	#define VAR_NOT_RECOGNIZED 0
+	#define FULL_CURRENT_PATH 1
+	#define CURRENT_DIRECTORY 2
+	#define FILE_NAME 3
+	#define NAME_PART 4
+	#define EXT_PART 5
+	#define CURRENT_WORD 6
+	#define NPP_DIRECTORY 7
+	#define CURRENT_LINE 8
+	#define CURRENT_COLUMN 9
+	#define NPP_FULL_FILE_PATH 10
+	#define GETFILENAMEATCURSOR 11
+	#define CURRENT_LINESTR 12
+
+	#define	RUNCOMMAND_USER    (WM_USER + 3000)
+
 	#define NPPM_GETFULLCURRENTPATH		(RUNCOMMAND_USER + FULL_CURRENT_PATH)
 	#define NPPM_GETCURRENTDIRECTORY	(RUNCOMMAND_USER + CURRENT_DIRECTORY)
 	#define NPPM_GETFILENAME			(RUNCOMMAND_USER + FILE_NAME)
@@ -734,4 +745,3 @@ enum Platform { PF_UNKNOWN, PF_X86, PF_X64, PF_IA64, PF_ARM64 };
 	//scnNotification->nmhdr.code = NPPN_CMDLINEPLUGINMSG;
 	//scnNotification->nmhdr.hwndFrom = hwndNpp;
 	//scnNotification->nmhdr.idFrom = pluginMessage; //where pluginMessage is pointer of type wchar_t
-
