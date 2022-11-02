@@ -27,7 +27,7 @@ after_build:
         Push-AppveyorArtifact "Notepad++\plugins\ComparePlus\ComparePlus.dll" -FileName ComparePlus.dll
 
         if ($($env:APPVEYOR_REPO_TAG) -eq "true" -and $env:configuration -eq "Release") {
-            $ZipFileName = "ComparePlus_$($env:APPVEYOR_REPO_TAG_NAME)_$env:PLATFORM_INPUT.zip"
+            $ZipFileName = "ComparePlus_$($env:APPVEYOR_REPO_TAG_NAME)_$env:platform.zip"
             Remove-Item .\Notepad++\plugins\ComparePlus\*.pdb
             7z a $ZipFileName .\Notepad++\plugins\ComparePlus\*
         }
