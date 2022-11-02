@@ -543,7 +543,7 @@ std::vector<char> getText(int view, intptr_t startPos, intptr_t endPos)
 	tr.chrg.cpMax = endPos;
 	tr.lpstrText = text.data();
 
-	CallScintilla(view, SCI_GETTEXTRANGE, 0, (LPARAM)&tr);
+	CallScintilla(view, SCI_GETTEXTRANGEFULL, 0, (LPARAM)&tr);
 
 	return text;
 }
