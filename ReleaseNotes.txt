@@ -1,6 +1,23 @@
 ComparePlus Changelog:
 ----------------------
 
+
+02.10.2022
+v1.1.0
+
+	- Update Notepad++ and Scintilla plugin API headers
+	- Fix possible crash due to multithreading
+	- Fix margin diff symbols for high DPI displays
+	- Fix tabs handling if tabs are hidden in Notepad++
+	- Fix position and caret glitch when changing files in compare mode
+	- Improve command line triggered compare so restored session does not interfere
+		(command line compare syntax is `notepad++ -pluginMessage=compare new_file.txt old_file.txt`)
+	- Add settings for enabling / disabling toolbar buttons
+	- Update build to VS2022
+	- Fix several minor navigation commands and alignment on first line issues
+	- Update SQLite3 library to v3.39.4
+
+
 01.09.2022
 v1.0.0
 
