@@ -2058,7 +2058,7 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 
 			if (alignmentInfo[i - 1].main.line != 0)
 			{
-				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, mainOffset + 1, mainOffset + 1,
+				addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first, mainOffset + 1, mainOffset + 1,
 						"--- Selection Compare Block Start ---");
 				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, subOffset + 1, subOffset + 1,
 						"Lines above cannot be properly aligned.");
@@ -2067,7 +2067,7 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 			{
 				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, mainOffset + 1, mainOffset + 1,
 						"Lines above cannot be properly aligned.");
-				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, subOffset + 1, subOffset + 1,
+				addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first, subOffset + 1, subOffset + 1,
 						"--- Selection Compare Block Start ---");
 			}
 			else
