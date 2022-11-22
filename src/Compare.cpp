@@ -4985,6 +4985,19 @@ void onBufferActivated(LRESULT buffId)
 	delayedUpdate.cancel();
 	delayedActivation.cancel();
 
+	// If compared pair was not active explicitly release mouse key as it might have been pressed and make a
+	// false selection when files are activated and compare mode is set
+	if (!NppSettings::get().compareMode)
+	{
+		INPUT inputs[1] = {};
+		::ZeroMemory(inputs, sizeof(inputs));
+
+		inputs[0].type = INPUT_MOUSE;
+		inputs[0].mi.dwFlags = ::GetSystemMetrics(SM_SWAPBUTTON) ? MOUSEEVENTF_RIGHTUP : MOUSEEVENTF_LEFTUP;
+
+		::SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+	}
+
 	ScopedIncrementerInt incr(notificationsLock);
 
 	LOGDB(LOG_NOTIF, buffId, "onBufferActivated()\n");
