@@ -1966,11 +1966,16 @@ bool isAlignmentNeeded(int view, const CompareList_t::iterator& cmpPair)
 	const intptr_t subEndVisible = CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subEndLine, 0) +
 			getWrapCount(SUB_VIEW, subEndLine) - 1;
 
-	if (((getLastVisibleLine(MAIN_VIEW) > mainEndVisible) || (getLastVisibleLine(SUB_VIEW) > subEndVisible)) &&
-		((mainEndVisible + getLineAnnotation(MAIN_VIEW, mainEndLine)) !=
-		(subEndVisible + getLineAnnotation(SUB_VIEW, subEndLine))))
+	if ((getLastVisibleLine(MAIN_VIEW) > mainEndVisible) || (getLastVisibleLine(SUB_VIEW) > subEndVisible))
 	{
-		return true;
+		const intptr_t mismatchLen = mainEndVisible - subEndVisible;
+		const intptr_t endMisalignment = std::min(mismatchLen,
+				std::max(CallScintilla(MAIN_VIEW, SCI_LINESONSCREEN, 0, 0),
+						CallScintilla(SUB_VIEW, SCI_LINESONSCREEN, 0, 0)));
+
+		if (std::abs((mainEndVisible + getLineAnnotation(MAIN_VIEW, mainEndLine)) -
+				(subEndVisible + getLineAnnotation(SUB_VIEW, subEndLine))) != endMisalignment)
+			return true;
 	}
 
 	return false;
@@ -2149,26 +2154,31 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 	const intptr_t subEndVisible = CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subEndLine, 0) +
 			getWrapCount(SUB_VIEW, subEndLine) - 1;
 
-	if (((getLastVisibleLine(MAIN_VIEW) > mainEndVisible) || (getLastVisibleLine(SUB_VIEW) > subEndVisible)) &&
-		((mainEndVisible + getLineAnnotation(MAIN_VIEW, mainEndLine)) !=
-		(subEndVisible + getLineAnnotation(SUB_VIEW, subEndLine))))
+	if ((getLastVisibleLine(MAIN_VIEW) > mainEndVisible) || (getLastVisibleLine(SUB_VIEW) > subEndVisible))
 	{
 		const intptr_t mismatchLen = mainEndVisible - subEndVisible;
+		const intptr_t endMisalignment = std::min(mismatchLen,
+				std::max(CallScintilla(MAIN_VIEW, SCI_LINESONSCREEN, 0, 0),
+						CallScintilla(SUB_VIEW, SCI_LINESONSCREEN, 0, 0)));
 
-		if (mismatchLen == 0)
+		if (std::abs((mainEndVisible + getLineAnnotation(MAIN_VIEW, mainEndLine)) -
+			(subEndVisible + getLineAnnotation(SUB_VIEW, subEndLine))) != endMisalignment)
 		{
-			clearAnnotation(MAIN_VIEW, mainEndLine);
-			clearAnnotation(SUB_VIEW, subEndLine);
-		}
-		else if (mismatchLen > 0)
-		{
-			clearAnnotation(MAIN_VIEW, mainEndLine);
-			addBlankSectionAfter(SUB_VIEW, subEndLine, mismatchLen);
-		}
-		else
-		{
-			addBlankSectionAfter(MAIN_VIEW, mainEndLine, -mismatchLen);
-			clearAnnotation(SUB_VIEW, subEndLine);
+			if (mismatchLen == 0)
+			{
+				clearAnnotation(MAIN_VIEW, mainEndLine);
+				clearAnnotation(SUB_VIEW, subEndLine);
+			}
+			else if (mismatchLen > 0)
+			{
+				clearAnnotation(MAIN_VIEW, mainEndLine);
+				addBlankSectionAfter(SUB_VIEW, subEndLine, endMisalignment);
+			}
+			else
+			{
+				addBlankSectionAfter(MAIN_VIEW, mainEndLine, endMisalignment);
+				clearAnnotation(SUB_VIEW, subEndLine);
+			}
 		}
 	}
 
@@ -3645,33 +3655,48 @@ void syncViews(int biasView)
 	const intptr_t firstVisible			= getFirstVisibleLine(biasView);
 	const intptr_t otherFirstVisible	= getFirstVisibleLine(otherView);
 
-	const intptr_t firstLine = CallScintilla(biasView, SCI_DOCLINEFROMVISIBLE, firstVisible, 0);
+	const intptr_t endLine = CallScintilla(biasView, SCI_GETLINECOUNT, 0, 0) - 1;
+	const intptr_t endVisible =
+			CallScintilla(biasView, SCI_VISIBLEFROMDOCLINE, endLine, 0) + getWrapCount(biasView, endLine);
 
-	intptr_t otherLine = -1;
+	intptr_t otherNewFirstVisible = -1;
 
-	if (firstLine < CallScintilla(biasView, SCI_GETLINECOUNT, 0, 0) - 1)
+	if (firstVisible <= endVisible)
 	{
 		if (firstVisible != otherFirstVisible)
 		{
-			LOGD(LOG_SYNC, "Syncing to " + std::string(biasView == MAIN_VIEW ? "MAIN" : "SUB") +
-					" view, visible doc line: " + std::to_string(firstLine + 1) + "\n");
+			const intptr_t otherEndLine		= CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0) - 1;
+			const intptr_t otherEndVisible	= CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE,
+					otherEndLine, 0) + getWrapCount(otherView, otherEndLine);
 
-			const intptr_t otherLastVisible = CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE,
-					CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0) - 1, 0);
+			otherNewFirstVisible = (firstVisible > otherEndVisible) ? otherEndVisible : firstVisible;
 
-			otherLine = (firstVisible > otherLastVisible) ? otherLastVisible : firstVisible;
+			if (otherNewFirstVisible == otherFirstVisible)
+			{
+				otherNewFirstVisible = -1;
+			}
+			else
+			{
+				LOGD(LOG_SYNC, "Syncing to " + std::string(biasView == MAIN_VIEW ? "MAIN" : "SUB") +
+						" view, visible doc line: " + std::to_string(
+						CallScintilla(biasView, SCI_DOCLINEFROMVISIBLE, firstVisible, 0) + 1) + "\n");
+			}
 		}
 	}
-	else if (firstVisible > otherFirstVisible)
+	else
 	{
-		otherLine = firstVisible;
+		otherNewFirstVisible = endVisible;
+
+		ScopedIncrementerInt incr(notificationsLock);
+
+		CallScintilla(biasView, SCI_SETFIRSTVISIBLELINE, endVisible, 0);
 	}
 
-	if (otherLine >= 0)
+	if (otherNewFirstVisible >= 0)
 	{
 		ScopedIncrementerInt incr(notificationsLock);
 
-		CallScintilla(otherView, SCI_SETFIRSTVISIBLELINE, otherLine, 0);
+		CallScintilla(otherView, SCI_SETFIRSTVISIBLELINE, otherNewFirstVisible, 0);
 
 		::UpdateWindow(getView(otherView));
 	}
@@ -3680,17 +3705,17 @@ void syncViews(int biasView)
 	{
 		const intptr_t line = getCurrentLine(biasView);
 
-		otherLine = otherViewMatchingLine(biasView, line);
+		otherNewFirstVisible = otherViewMatchingLine(biasView, line);
 
-		if ((otherLine != getCurrentLine(otherView)) && !isSelection(otherView))
+		if ((otherNewFirstVisible != getCurrentLine(otherView)) && !isSelection(otherView))
 		{
 			intptr_t pos;
 
-			if (!isLineMarked(otherView, otherLine, MARKER_MASK_LINE) && isLineAnnotated(otherView, otherLine) &&
-					isLineWrapped(otherView, otherLine))
-				pos = getLineEnd(otherView, otherLine);
+			if (!isLineMarked(otherView, otherNewFirstVisible, MARKER_MASK_LINE) &&
+					isLineAnnotated(otherView, otherNewFirstVisible) && isLineWrapped(otherView, otherNewFirstVisible))
+				pos = getLineEnd(otherView, otherNewFirstVisible);
 			else
-				pos = getLineStart(otherView, otherLine);
+				pos = getLineStart(otherView, otherNewFirstVisible);
 
 			ScopedIncrementerInt incr(notificationsLock);
 
