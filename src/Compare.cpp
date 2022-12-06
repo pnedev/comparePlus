@@ -1966,17 +1966,13 @@ bool isAlignmentNeeded(int view, const CompareList_t::iterator& cmpPair)
 	const intptr_t subEndVisible = CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subEndLine, 0) +
 			getWrapCount(SUB_VIEW, subEndLine) - 1;
 
-	if ((getLastVisibleLine(MAIN_VIEW) > mainEndVisible) || (getLastVisibleLine(SUB_VIEW) > subEndVisible))
-	{
-		const intptr_t mismatchLen = mainEndVisible - subEndVisible;
-		const intptr_t endMisalignment = std::min(mismatchLen,
-				std::max(CallScintilla(MAIN_VIEW, SCI_LINESONSCREEN, 0, 0),
-						CallScintilla(SUB_VIEW, SCI_LINESONSCREEN, 0, 0)));
+	const intptr_t mismatchLen = std::abs(mainEndVisible - subEndVisible);
+	const intptr_t linesOnScreen = CallScintilla(MAIN_VIEW, SCI_LINESONSCREEN, 0, 0);
+	const intptr_t endMisalignment = (mismatchLen < linesOnScreen) ? mismatchLen : linesOnScreen;
 
-		if (std::abs((mainEndVisible + getLineAnnotation(MAIN_VIEW, mainEndLine)) -
-				(subEndVisible + getLineAnnotation(SUB_VIEW, subEndLine))) != endMisalignment)
-			return true;
-	}
+	if (std::abs(getLineAnnotation(MAIN_VIEW, mainEndLine) - getLineAnnotation(SUB_VIEW, subEndLine)) !=
+			endMisalignment)
+		return true;
 
 	return false;
 }
@@ -2154,31 +2150,28 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 	const intptr_t subEndVisible = CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subEndLine, 0) +
 			getWrapCount(SUB_VIEW, subEndLine) - 1;
 
-	if ((getLastVisibleLine(MAIN_VIEW) > mainEndVisible) || (getLastVisibleLine(SUB_VIEW) > subEndVisible))
-	{
-		const intptr_t mismatchLen = mainEndVisible - subEndVisible;
-		const intptr_t endMisalignment = std::min(mismatchLen,
-				std::max(CallScintilla(MAIN_VIEW, SCI_LINESONSCREEN, 0, 0),
-						CallScintilla(SUB_VIEW, SCI_LINESONSCREEN, 0, 0)));
+	const intptr_t mismatchLen = mainEndVisible - subEndVisible;
+	const intptr_t absMismatchLen = std::abs(mismatchLen);
+	const intptr_t linesOnScreen = CallScintilla(MAIN_VIEW, SCI_LINESONSCREEN, 0, 0);
+	const intptr_t endMisalignment = (absMismatchLen < linesOnScreen) ? absMismatchLen : linesOnScreen;
 
-		if (std::abs((mainEndVisible + getLineAnnotation(MAIN_VIEW, mainEndLine)) -
-			(subEndVisible + getLineAnnotation(SUB_VIEW, subEndLine))) != endMisalignment)
+	if (std::abs(getLineAnnotation(MAIN_VIEW, mainEndLine) - getLineAnnotation(SUB_VIEW, subEndLine)) !=
+		endMisalignment)
+	{
+		if (mismatchLen == 0)
 		{
-			if (mismatchLen == 0)
-			{
-				clearAnnotation(MAIN_VIEW, mainEndLine);
-				clearAnnotation(SUB_VIEW, subEndLine);
-			}
-			else if (mismatchLen > 0)
-			{
-				clearAnnotation(MAIN_VIEW, mainEndLine);
-				addBlankSectionAfter(SUB_VIEW, subEndLine, endMisalignment);
-			}
-			else
-			{
-				addBlankSectionAfter(MAIN_VIEW, mainEndLine, endMisalignment);
-				clearAnnotation(SUB_VIEW, subEndLine);
-			}
+			clearAnnotation(MAIN_VIEW, mainEndLine);
+			clearAnnotation(SUB_VIEW, subEndLine);
+		}
+		else if (mismatchLen > 0)
+		{
+			clearAnnotation(MAIN_VIEW, mainEndLine);
+			addBlankSectionAfter(SUB_VIEW, subEndLine, endMisalignment);
+		}
+		else
+		{
+			addBlankSectionAfter(MAIN_VIEW, mainEndLine, endMisalignment);
+			clearAnnotation(SUB_VIEW, subEndLine);
 		}
 	}
 
@@ -3655,7 +3648,7 @@ void syncViews(int biasView)
 	const intptr_t firstVisible			= getFirstVisibleLine(biasView);
 	const intptr_t otherFirstVisible	= getFirstVisibleLine(otherView);
 
-	const intptr_t endLine = CallScintilla(biasView, SCI_GETLINECOUNT, 0, 0) - 1;
+	const intptr_t endLine = getPreviousUnhiddenLine(biasView, CallScintilla(biasView, SCI_GETLINECOUNT, 0, 0) - 1);
 	const intptr_t endVisible =
 			CallScintilla(biasView, SCI_VISIBLEFROMDOCLINE, endLine, 0) + getWrapCount(biasView, endLine);
 
@@ -3665,8 +3658,9 @@ void syncViews(int biasView)
 	{
 		if (firstVisible != otherFirstVisible)
 		{
-			const intptr_t otherEndLine		= CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0) - 1;
-			const intptr_t otherEndVisible	= CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE,
+			const intptr_t otherEndLine =
+					getPreviousUnhiddenLine(otherView, CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0) - 1);
+			const intptr_t otherEndVisible = CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE,
 					otherEndLine, 0) + getWrapCount(otherView, otherEndLine);
 
 			otherNewFirstVisible = (firstVisible > otherEndVisible) ? otherEndVisible : firstVisible;
@@ -4459,8 +4453,14 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 
 	if (markedRange.first < 0)
 	{
+		const intptr_t lastLine = CallScintilla(viewId, SCI_GETLINECOUNT, 0, 0) - 1;
+
 		otherMarkedRange.first	= otherViewMatchingLine(viewId, line, getWrapCount(viewId, line));
-		otherMarkedRange.second	= otherViewMatchingLine(viewId, line + 1, -1);
+
+		if (line < lastLine)
+			otherMarkedRange.second	= otherViewMatchingLine(viewId, line + 1, -1);
+		else
+			otherMarkedRange.second = CallScintilla(otherViewId, SCI_GETLINECOUNT, 0, 0) - 1;
 	}
 	else
 	{
