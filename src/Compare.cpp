@@ -1712,8 +1712,6 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 		doNotBlink = true;
 	}
 
-	syncViews(view);
-
 	if (!doNotBlink)
 		blinkLine(view, line);
 
@@ -3645,54 +3643,55 @@ void syncViews(int biasView)
 {
 	const int otherView = getOtherViewId(biasView);
 
-	const intptr_t firstVisible			= getFirstVisibleLine(biasView);
+	intptr_t firstVisible				= getFirstVisibleLine(biasView);
 	const intptr_t otherFirstVisible	= getFirstVisibleLine(otherView);
 
 	const intptr_t endLine = getPreviousUnhiddenLine(biasView, CallScintilla(biasView, SCI_GETLINECOUNT, 0, 0) - 1);
 	const intptr_t endVisible =
-			CallScintilla(biasView, SCI_VISIBLEFROMDOCLINE, endLine, 0) + getWrapCount(biasView, endLine);
+			CallScintilla(biasView, SCI_VISIBLEFROMDOCLINE, endLine, 0) + getWrapCount(biasView, endLine) + 1;
 
-	intptr_t otherNewFirstVisible = -1;
+	intptr_t otherNewFirstVisible = otherFirstVisible;
 
-	if (firstVisible <= endVisible)
+	if (firstVisible > endVisible)
 	{
-		if (firstVisible != otherFirstVisible)
-		{
-			const intptr_t otherEndLine =
-					getPreviousUnhiddenLine(otherView, CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0) - 1);
-			const intptr_t otherEndVisible = CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE,
-					otherEndLine, 0) + getWrapCount(otherView, otherEndLine);
-
-			otherNewFirstVisible = (firstVisible > otherEndVisible) ? otherEndVisible : firstVisible;
-
-			if (otherNewFirstVisible == otherFirstVisible)
-			{
-				otherNewFirstVisible = -1;
-			}
-			else
-			{
-				LOGD(LOG_SYNC, "Syncing to " + std::string(biasView == MAIN_VIEW ? "MAIN" : "SUB") +
-						" view, visible doc line: " + std::to_string(
-						CallScintilla(biasView, SCI_DOCLINEFROMVISIBLE, firstVisible, 0) + 1) + "\n");
-			}
-		}
-	}
-	else
-	{
-		otherNewFirstVisible = endVisible;
+		firstVisible = endVisible;
 
 		ScopedIncrementerInt incr(notificationsLock);
 
-		CallScintilla(biasView, SCI_SETFIRSTVISIBLELINE, endVisible, 0);
+		CallScintilla(biasView, SCI_SETFIRSTVISIBLELINE, firstVisible, 0);
 	}
 
-	if (otherNewFirstVisible >= 0)
+	if (firstVisible != otherFirstVisible)
+	{
+		const intptr_t otherEndLine =
+				getPreviousUnhiddenLine(otherView, CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0) - 1);
+		const intptr_t otherEndVisible = CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE,
+				otherEndLine, 0) + getWrapCount(otherView, otherEndLine) + 1;
+
+		if (firstVisible > otherEndVisible)
+		{
+			if (endVisible - firstVisible < CallScintilla(biasView, SCI_LINESONSCREEN, 0, 0))
+				otherNewFirstVisible = firstVisible;
+			else
+				otherNewFirstVisible = otherEndVisible;
+		}
+		else
+		{
+			otherNewFirstVisible = firstVisible;
+		}
+	}
+
+	if (otherNewFirstVisible != otherFirstVisible)
 	{
 		ScopedIncrementerInt incr(notificationsLock);
 
 		CallScintilla(otherView, SCI_SETFIRSTVISIBLELINE, otherNewFirstVisible, 0);
 
 		::UpdateWindow(getView(otherView));
+
+		LOGD(LOG_SYNC, "Syncing to " + std::string(biasView == MAIN_VIEW ? "MAIN" : "SUB") +
+				" view, visible doc line: " + std::to_string(
+				CallScintilla(biasView, SCI_DOCLINEFROMVISIBLE, firstVisible, 0) + 1) + "\n");
 	}
 
 	if (Settings.FollowingCaret && biasView == getCurrentViewId())
@@ -4220,11 +4219,6 @@ void DelayedAlign::operator()()
 		return;
 	}
 
-	const AlignmentInfo_t& alignmentInfo = cmpPair->summary.alignmentInfo;
-
-	if (alignmentInfo.empty())
-		return;
-
 	bool realign = goToFirst || selectionAutoRecompare || justCompared;
 
 	justCompared = false;
@@ -4311,8 +4305,6 @@ void onSciUpdateUI(HWND view)
 	LOGD(LOG_NOTIF, "onSciUpdateUI()\n");
 
 	storedLocation = std::make_unique<ViewLocation>(getViewId(view));
-
-	syncViews(storedLocation->getView());
 }
 
 
