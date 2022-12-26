@@ -3648,7 +3648,7 @@ void syncViews(int biasView)
 
 	const intptr_t endLine = getPreviousUnhiddenLine(biasView, CallScintilla(biasView, SCI_GETLINECOUNT, 0, 0) - 1);
 	const intptr_t endVisible =
-			CallScintilla(biasView, SCI_VISIBLEFROMDOCLINE, endLine, 0) + getWrapCount(biasView, endLine) + 1;
+			CallScintilla(biasView, SCI_VISIBLEFROMDOCLINE, endLine, 0) + getWrapCount(biasView, endLine);
 
 	intptr_t otherNewFirstVisible = otherFirstVisible;
 
@@ -3666,7 +3666,7 @@ void syncViews(int biasView)
 		const intptr_t otherEndLine =
 				getPreviousUnhiddenLine(otherView, CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0) - 1);
 		const intptr_t otherEndVisible = CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE,
-				otherEndLine, 0) + getWrapCount(otherView, otherEndLine) + 1;
+				otherEndLine, 0) + getWrapCount(otherView, otherEndLine);
 
 		if (firstVisible > otherEndVisible)
 		{
