@@ -954,7 +954,12 @@ void ComparedFile::restore() const
 
 	const int view = getCurrentViewId();
 
-	ViewLocation loc(view);
+	intptr_t biasLine = getFirstLine(view);
+	biasLine = CallScintilla(view, SCI_DOCLINEFROMVISIBLE,
+			getFirstVisibleLine(view) + getLineAnnotation(view, biasLine) +
+			getWrapCount(view, biasLine), 0);
+
+	ViewLocation loc(view, biasLine);
 
 	clearWindow(view);
 	setNormalView(view);
@@ -1091,16 +1096,19 @@ void ComparedPair::restoreFiles(LRESULT currentBuffId = -1)
 		}
 	}
 
-	if (currentBuffId == -1)
+	if (file[0].originalViewId == file[0].compareViewId)
 	{
 		file[0].restore();
 		file[1].restore();
 	}
 	else
 	{
-		getOtherFileByBuffId(currentBuffId).restore();
-		getFileByBuffId(currentBuffId).restore();
+		file[1].restore();
+		file[0].restore();
 	}
+
+	if (currentBuffId != -1)
+		activateBufferID(currentBuffId);
 }
 
 
