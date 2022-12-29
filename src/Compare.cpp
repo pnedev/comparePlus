@@ -2731,6 +2731,37 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 						std::make_pair(1, CallScintilla(tmpView, SCI_GETLINECOUNT, 0, 0) - 1);
 			}
 		}
+
+		// New compare?
+		if (!recompare)
+		{
+			constexpr int cLinesCountWarningLimit = 50000;
+
+			bool largeFilesWarning = false;
+
+			if (selectionCompare)
+				largeFilesWarning =
+					(cmpPair->options.selections[MAIN_VIEW].second -
+					cmpPair->options.selections[MAIN_VIEW].first + 1 > cLinesCountWarningLimit) &&
+					(cmpPair->options.selections[SUB_VIEW].second -
+					cmpPair->options.selections[SUB_VIEW].first + 1 > cLinesCountWarningLimit);
+			else
+				largeFilesWarning =
+					(CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) > cLinesCountWarningLimit) &&
+					(CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) > cLinesCountWarningLimit);
+
+			if (largeFilesWarning)
+			{
+				if (::MessageBox(nppData._nppHandle,
+					TEXT("Comparing large files such as these might take significant time ")
+					TEXT("especially if they differ a lot.\n\n")
+					TEXT("Compare anyway?"), PLUGIN_NAME, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES)
+				{
+					clearComparePair(getCurrentBuffId());
+					return;
+				}
+			}
+		}
 	}
 
 	selectionAutoRecompare = autoUpdating && cmpPair->options.selectionCompare;
