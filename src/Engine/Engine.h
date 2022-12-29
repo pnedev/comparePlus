@@ -84,6 +84,8 @@ struct CompareOptions
 	bool	ignoreEmptyLines;
 	bool	ignoreCase;
 
+	bool	recompareOnChange;
+
 	std::unique_ptr<std::wregex>	ignoreRegex;
 
 	int		changedThresholdPercent;

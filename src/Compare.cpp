@@ -24,6 +24,7 @@
 #include <utility>
 #include <cmath>
 #include <cwchar>
+#include <ctime>
 
 #include <windows.h>
 #include <tchar.h>
@@ -177,7 +178,7 @@ struct DeletedSectionsList
 	}
 
 	bool push(int view, int currAction, intptr_t startLine, intptr_t len,
-			const std::shared_ptr<DeletedSection::UndoData>& undo);
+			const std::shared_ptr<DeletedSection::UndoData>& undo, bool recompareOnChange);
 	std::shared_ptr<DeletedSection::UndoData> pop(int view, int currAction, intptr_t startLine);
 
 	void clear()
@@ -192,7 +193,7 @@ private:
 
 
 bool DeletedSectionsList::push(int view, int currAction, intptr_t startLine, intptr_t len,
-	const std::shared_ptr<DeletedSection::UndoData>& undo)
+	const std::shared_ptr<DeletedSection::UndoData>& undo, bool recompareOnChange)
 {
 	if (len < 1)
 		return false;
@@ -203,7 +204,7 @@ bool DeletedSectionsList::push(int view, int currAction, intptr_t startLine, int
 
 	DeletedSection delSection(currAction, startLine, undo);
 
-	if (!Settings.RecompareOnChange)
+	if (!recompareOnChange)
 	{
 		delSection.markers = getMarkers(view, startLine, len, MARKER_MASK_ALL);
 
@@ -290,9 +291,9 @@ public:
 	bool isOpen() const;
 
 	bool pushDeletedSection(int sciAction, intptr_t startLine, intptr_t len,
-		const std::shared_ptr<DeletedSection::UndoData>& undo)
+		const std::shared_ptr<DeletedSection::UndoData>& undo, bool recompareOnChange)
 	{
-		return deletedSections.push(compareViewId, sciAction, startLine, len, undo);
+		return deletedSections.push(compareViewId, sciAction, startLine, len, undo, recompareOnChange);
 	}
 
 	std::shared_ptr<DeletedSection::UndoData> popDeletedSection(int sciAction, intptr_t startLine)
@@ -2734,6 +2735,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 	selectionAutoRecompare = autoUpdating && cmpPair->options.selectionCompare;
 
+	time_t startTime = time(0);
+
 	const CompareResult cmpResult = runCompare(cmpPair);
 
 	cmpPair->compareDirty		= false;
@@ -2743,6 +2746,9 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	{
 		case CompareResult::COMPARE_MISMATCH:
 		{
+			// Honour 'Auto Re-compare On Change' user setting only if compare time is less than 5 sec.
+			cmpPair->options.recompareOnChange = Settings.RecompareOnChange && (difftime(time(0), startTime) < 5.0);
+
 			justCompared = true;
 
 			if (Settings.UseNavBar)
@@ -3319,7 +3325,7 @@ void AutoRecompare()
 	{
 		CompareList_t::iterator cmpPair = getCompare(getCurrentBuffId());
 
-		if ((cmpPair != compareList.end()) && cmpPair->compareDirty)
+		if ((cmpPair != compareList.end()) && cmpPair->compareDirty && cmpPair->options.recompareOnChange)
 			delayedUpdate.post(30);
 	}
 }
@@ -4394,7 +4400,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 		clearSelection(viewId);
 		temporaryRangeSelect(-1);
 
-		if (!Settings.RecompareOnChange)
+		if (!cmpPair->options.recompareOnChange)
 		{
 			copiedSectionMarks = getMarkers(otherViewId, otherLine, 1, MARKER_MASK_ALL);
 			clearAnnotation(otherViewId, otherLine);
@@ -4417,7 +4423,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 		if (!isLineVisible(viewId, line))
 			firstVisLine.set(CallScintilla(viewId, SCI_VISIBLEFROMDOCLINE, line, 0));
 
-		if (!Settings.RecompareOnChange)
+		if (!cmpPair->options.recompareOnChange)
 		{
 			if (Settings.ShowOnlyDiffs)
 				alignDiffs(cmpPair);
@@ -4556,7 +4562,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 		if (otherMarkedRange.second == CallScintilla(otherViewId, SCI_GETLENGTH, 0, 0))
 			++otherEndLine;
 
-		if (!Settings.RecompareOnChange)
+		if (!cmpPair->options.recompareOnChange)
 		{
 			copiedSectionMarks =
 					getMarkers(otherViewId, otherStartLine, otherEndLine - otherStartLine, MARKER_MASK_ALL);
@@ -4656,7 +4662,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 			firstVisLine.set(CallScintilla(viewId, SCI_VISIBLEFROMDOCLINE, firstLine, 0));
 	}
 
-	if (!Settings.RecompareOnChange)
+	if (!cmpPair->options.recompareOnChange)
 	{
 		if (Settings.ShowOnlyDiffs)
 			alignDiffs(cmpPair);
@@ -4705,7 +4711,7 @@ void onSciModified(SCNotification* notifyCode)
 			undo->selection = cmpPair->options.selections[view];
 		}
 
-		if (!Settings.RecompareOnChange)
+		if (!cmpPair->options.recompareOnChange)
 		{
 			if (!undo)
 				undo = std::make_shared<DeletedSection::UndoData>();
@@ -4716,7 +4722,8 @@ void onSciModified(SCNotification* notifyCode)
 				undo->otherViewMarks = std::move(copiedSectionMarks);
 		}
 
-		notReverting = cmpPair->getFileByViewId(view).pushDeletedSection(action, startLine, endLine - startLine, undo);
+		notReverting = cmpPair->getFileByViewId(view).pushDeletedSection(action, startLine, endLine - startLine, undo,
+				cmpPair->options.recompareOnChange);
 
 #ifdef DLOG
 		if (notReverting)
@@ -4774,7 +4781,7 @@ void onSciModified(SCNotification* notifyCode)
 				LOGD(LOG_NOTIF, "Selection restored.\n");
 			}
 
-			if (!Settings.RecompareOnChange)
+			if (!cmpPair->options.recompareOnChange)
 			{
 				cmpPair->summary.alignmentInfo = std::move(undo->alignment);
 
@@ -4809,7 +4816,7 @@ void onSciModified(SCNotification* notifyCode)
 		bool updateStatus = false;
 
 		// Set compare dirty flag if needed
-		if (!Settings.RecompareOnChange && notReverting && !undo)
+		if (!cmpPair->options.recompareOnChange && notReverting && !undo)
 		{
 			if (!cmpPair->compareDirty || (!cmpPair->inEqualizeMode && !cmpPair->manuallyChanged))
 			{
@@ -4903,7 +4910,7 @@ void onSciModified(SCNotification* notifyCode)
 			LOGDIF(LOG_NOTIF, selectionsAdjusted, "Selection adjusted.\n");
 		}
 
-		if (Settings.RecompareOnChange)
+		if (cmpPair->options.recompareOnChange)
 		{
 			if (notifyCode->linesAdded)
 				cmpPair->autoUpdateDelay = 500;
@@ -5159,7 +5166,7 @@ void onFileSaved(LRESULT buffId)
 	{
 		activateBufferID(buffId);
 	}
-	else if (Settings.RecompareOnChange && cmpPair->autoUpdateDelay)
+	else if (cmpPair->options.recompareOnChange && cmpPair->autoUpdateDelay)
 	{
 		delayedAlignment.cancel();
 		delayedUpdate.post(30);
