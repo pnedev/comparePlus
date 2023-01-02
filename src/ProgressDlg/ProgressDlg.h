@@ -28,7 +28,7 @@
 
 
 class ProgressDlg;
-using progress_ptr = std::unique_ptr<ProgressDlg>;
+using progress_ptr = std::shared_ptr<ProgressDlg>;
 
 
 class ProgressDlg
@@ -50,18 +50,12 @@ public:
 
 	inline void SetInfo(const TCHAR *info) const
 	{
-		if (_hwnd)
-			::SendMessage(_hPText, WM_SETTEXT, 0, (LPARAM)info);
+		::SendMessage(_hPText, WM_SETTEXT, 0, (LPARAM)info);
 	}
 
 	void Show() const;
 
-	inline bool IsCancelled() const
-	{
-		if (_hwnd)
-			return (::WaitForSingleObject(_hActiveState, 0) != WAIT_OBJECT_0);
-		return false;
-	}
+	bool IsCancelled() const;
 
 	unsigned NextPhase();
 	bool SetMaxCount(intptr_t max, unsigned phase = 0);
@@ -98,8 +92,7 @@ private:
 
     inline void setPos(intptr_t pos) const
 	{
-		if (_hwnd)
-			::PostMessage(_hPBar, PBM_SETPOS, (WPARAM)pos, 0);
+		::PostMessage(_hPBar, PBM_SETPOS, (WPARAM)pos, 0);
 	}
 
     void update();

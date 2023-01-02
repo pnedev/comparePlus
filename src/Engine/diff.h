@@ -44,6 +44,7 @@
 #include <cstdlib>
 #include <climits>
 #include <utility>
+#include <functional>
 
 #include "varray.h"
 
@@ -76,6 +77,9 @@ struct diff_info<void>
 };
 
 
+typedef std::function<bool()> IsCancelledFn;
+
+
 /**
  *  \class  DiffCalc
  *  \brief  Compares and makes a differences list between two vectors (elements are template, must have operator==)
@@ -84,8 +88,10 @@ template <typename Elem, typename UserDataT = void>
 class DiffCalc
 {
 public:
-	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2, intptr_t max = INTPTR_MAX);
-	DiffCalc(const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size, intptr_t max = INTPTR_MAX);
+	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
+		IsCancelledFn isCancelled = nullptr, intptr_t max = INTPTR_MAX);
+	DiffCalc(const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size,
+		IsCancelledFn isCancelled = nullptr, intptr_t max = INTPTR_MAX);
 
 	// Runs the actual compare and returns the differences + swap flag indicating if the
 	// compared sequences have been swapped for better results (if true, _a and _b have been swapped,
@@ -97,6 +103,8 @@ public:
 	const DiffCalc& operator=(const DiffCalc&) = delete;
 
 private:
+	static constexpr int _cCancelCheckItrInterval {3000};
+
 	struct middle_snake {
 		intptr_t x, y, u, v;
 	};
@@ -114,6 +122,9 @@ private:
 	const Elem*	_b;
 	intptr_t _b_size;
 
+	IsCancelledFn _isCancelled;
+	int _cancelCheckCount;
+
 	std::vector<diff_info<UserDataT>>	_diff;
 
 	const intptr_t		_dmax;
@@ -122,16 +133,19 @@ private:
 
 
 template <typename Elem, typename UserDataT>
-DiffCalc<Elem, UserDataT>::DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2, intptr_t max) :
-	_a(v1.data()), _a_size(v1.size()), _b(v2.data()), _b_size(v2.size()), _dmax(max)
+DiffCalc<Elem, UserDataT>::DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
+		IsCancelledFn isCancelled, intptr_t max) :
+	_a(v1.data()), _a_size(v1.size()), _b(v2.data()), _b_size(v2.size()),
+	_isCancelled(isCancelled), _cancelCheckCount(_cCancelCheckItrInterval), _dmax(max)
 {
 }
 
 
 template <typename Elem, typename UserDataT>
 DiffCalc<Elem, UserDataT>::DiffCalc(const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size,
-		intptr_t max) :
-	_a(v1), _a_size(v1_size), _b(v2), _b_size(v2_size), _dmax(max)
+		IsCancelledFn isCancelled, intptr_t max) :
+	_a(v1), _a_size(v1_size), _b(v2), _b_size(v2_size),
+	_isCancelled(isCancelled), _cancelCheckCount(_cCancelCheckItrInterval), _dmax(max)
 {
 }
 
@@ -191,6 +205,14 @@ intptr_t DiffCalc<Elem, UserDataT>::_find_middle_snake(intptr_t aoff, intptr_t a
 
 		if ((2 * d - 1) >= _dmax)
 			return _dmax;
+
+		if (!--_cancelCheckCount)
+		{
+			if (_isCancelled && _isCancelled())
+				return -1;
+
+			_cancelCheckCount = _cCancelCheckItrInterval;
+		}
 
 		for (k = d; k >= -d; k -= 2)
 		{

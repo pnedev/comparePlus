@@ -424,14 +424,13 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 	if ((doc.section.len <= 0) || (doc.section.off + doc.section.len > linesCount))
 		doc.section.len = linesCount - doc.section.off;
 
-	if (progress)
-		progress->SetMaxCount((doc.section.len / monitorCancelEveryXLine) + 1);
+	progress->SetMaxCount((doc.section.len / monitorCancelEveryXLine) + 1);
 
 	doc.lines.reserve(doc.section.len);
 
 	for (intptr_t secLine = 0; secLine < doc.section.len; ++secLine)
 	{
-		if (progress && (secLine % monitorCancelEveryXLine == 0) && !progress->Advance())
+		if ((secLine % monitorCancelEveryXLine == 0) && !progress->Advance())
 		{
 			doc.lines.clear();
 			return;
@@ -1306,7 +1305,11 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 					intptr_t matchesCount	= 0;
 					intptr_t diffsCount		= 0;
 
-					auto charDiffs = DiffCalc<Char>(chunk1[line1], chunk2[line2])();
+					auto charDiffs = DiffCalc<Char>(chunk1[line1], chunk2[line2],
+							std::bind(&ProgressDlg::IsCancelled, progress))();
+
+					if (progress->IsCancelled())
+						return;
 
 					const intptr_t charDiffsSize = static_cast<intptr_t>(charDiffs.first.size());
 
@@ -1336,7 +1339,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 						std::lock_guard<std::mutex> lock(mtx);
 #endif
 
-						if (progress && !progress->Advance(linesProgress + 1))
+						if (!progress->Advance(linesProgress + 1))
 							return;
 
 						linesProgress = 0;
@@ -1391,7 +1394,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 						std::lock_guard<std::mutex> lock(mtx);
 #endif
 
-						if (progress && !progress->Advance(linesProgress + 1))
+						if (!progress->Advance(linesProgress + 1))
 							return;
 
 						linesProgress = 0;
@@ -1496,7 +1499,7 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 	{
 		progress_ptr& progress = ProgressDlg::Get();
 
-		if (progress && progress->IsCancelled())
+		if (progress->IsCancelled())
 			return false;
 	}
 
@@ -1736,8 +1739,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 
 	const intptr_t blockDiffSize = static_cast<intptr_t>(cmpInfo.blockDiffs.size());
 
-	if (progress)
-		progress->SetMaxCount(blockDiffSize);
+	progress->SetMaxCount(blockDiffSize);
 
 	std::pair<intptr_t, intptr_t> alignLines {0, 0};
 
@@ -2044,13 +2046,13 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 			}
 		}
 
-		if (progress && !progress->Advance())
+		if (!progress->Advance())
 			return false;
 	}
 
 	summary.moved /= 2;
 
-	if (progress && !progress->NextPhase())
+	if (!progress->NextPhase())
 		return false;
 
 	return true;
@@ -2082,15 +2084,20 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 
 	getLines(cmpInfo.doc1, options);
 
-	if (progress && !progress->NextPhase())
+	if (!progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
 	getLines(cmpInfo.doc2, options);
 
-	if (progress && !progress->NextPhase())
+	if (!progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
-	auto diffRes = DiffCalc<Line, blockDiffInfo>(cmpInfo.doc1.lines, cmpInfo.doc2.lines)(true, true);
+	auto diffRes = DiffCalc<Line, blockDiffInfo>(cmpInfo.doc1.lines, cmpInfo.doc2.lines,
+			std::bind(&ProgressDlg::IsCancelled, progress))(true, true);
+
+	if (progress->IsCancelled())
+		return CompareResult::COMPARE_CANCELLED;
+
 	cmpInfo.blockDiffs = std::move(diffRes.first);
 
 	if (diffRes.second)
@@ -2109,7 +2116,7 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 	if (options.detectMoves)
 		findMoves(cmpInfo);
 
-	if (progress && !progress->NextPhase())
+	if (!progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
 	std::vector<intptr_t> changedBlockIdx;
@@ -2127,13 +2134,10 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 		}
 	}
 
-	if (progress)
-	{
-		progress->SetMaxCount(changedProgressCount);
+	progress->SetMaxCount(changedProgressCount);
 
-		if (changedProgressCount > 10000)
-			progress->Show();
-	}
+	if (changedProgressCount > 10000)
+		progress->Show();
 
 	// Do block compares
 	for (intptr_t i: changedBlockIdx)
@@ -2148,7 +2152,7 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 			return CompareResult::COMPARE_CANCELLED;
 	}
 
-	if (progress && !progress->NextPhase())
+	if (!progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
 	clearWindow(MAIN_VIEW);
@@ -2202,12 +2206,12 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 
 	getLines(doc1, options);
 
-	if (progress && !progress->NextPhase())
+	if (!progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
 	getLines(doc2, options);
 
-	if (progress && !progress->NextPhase())
+	if (!progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
 	std::unordered_map<uint64_t, std::vector<intptr_t>> doc1UniqueLines;
@@ -2221,7 +2225,7 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 
 	doc1.lines.clear();
 
-	if (progress && !progress->NextPhase())
+	if (!progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
 	std::unordered_map<uint64_t, std::vector<intptr_t>> doc2UniqueLines;
@@ -2235,7 +2239,7 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 
 	doc2.lines.clear();
 
-	if (progress && !progress->NextPhase())
+	if (!progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
 	clearWindow(MAIN_VIEW);
@@ -2297,8 +2301,8 @@ CompareResult compareViews(const CompareOptions& options, const TCHAR* progressI
 {
 	CompareResult result = CompareResult::COMPARE_ERROR;
 
-	if (progressInfo)
-		ProgressDlg::Open(progressInfo);
+	if (!progressInfo || !ProgressDlg::Open(progressInfo))
+		return CompareResult::COMPARE_ERROR;
 
 	try
 	{

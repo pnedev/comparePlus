@@ -91,6 +91,12 @@ void ProgressDlg::Show() const
 }
 
 
+bool ProgressDlg::IsCancelled() const
+{
+	return (::WaitForSingleObject(_hActiveState, 0) != WAIT_OBJECT_0);
+}
+
+
 unsigned ProgressDlg::NextPhase()
 {
 	if (IsCancelled())

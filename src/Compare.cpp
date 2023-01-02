@@ -2910,6 +2910,10 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		}
 		break;
 
+		case CompareResult::COMPARE_ERROR:
+			::MessageBox(nppData._nppHandle, TEXT("Failure allocating resources, compare aborted"),
+					PLUGIN_NAME, MB_OK | MB_ICONERROR);
+
 		default:
 			clearComparePair(getCurrentBuffId());
 	}
