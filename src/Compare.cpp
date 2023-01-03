@@ -2808,31 +2808,6 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 				}
 
 				goToFirst = true;
-
-				// Move the view so the Notepad++ line number area width is updated now and we avoid getting
-				// second alignment request on Scintilla paint notification
-				for (const AlignmentPair& alignment: cmpPair->summary.alignmentInfo)
-				{
-					if (alignment.main.diffMask)
-					{
-						if (!isLineVisible(MAIN_VIEW, alignment.main.line))
-							centerAt(MAIN_VIEW, alignment.main.line);
-
-						if (!isLineVisible(SUB_VIEW, alignment.sub.line))
-							centerAt(SUB_VIEW, alignment.sub.line);
-
-						break;
-					}
-				}
-
-				const intptr_t wrap = CallScintilla(MAIN_VIEW, SCI_GETWRAPMODE, 0, 0);
-				if (wrap != SC_WRAP_NONE)
-				{
-					CallScintilla(MAIN_VIEW, SCI_SETWRAPMODE, SC_WRAP_NONE, 0);
-					CallScintilla(SUB_VIEW, SCI_SETWRAPMODE, SC_WRAP_NONE, 0);
-					CallScintilla(MAIN_VIEW, SCI_SETWRAPMODE, wrap, 0);
-					CallScintilla(SUB_VIEW, SCI_SETWRAPMODE, wrap, 0);
-				}
 			}
 
 			currentlyActiveBuffID = getCurrentBuffId();
