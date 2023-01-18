@@ -143,7 +143,8 @@ public:
 	static const TCHAR detectMovesSetting[];
 	static const TCHAR detectCharDiffsSetting[];
 	static const TCHAR bestSeqChangedLinesSetting[];
-	static const TCHAR ignoreSpacesSetting[];
+	static const TCHAR ignoreChangedSpacesSetting[];
+	static const TCHAR ignoreAllSpacesSetting[];
 	static const TCHAR ignoreEmptyLinesSetting[];
 	static const TCHAR ignoreCaseSetting[];
 	static const TCHAR ignoreRegexSetting[];
@@ -205,7 +206,8 @@ public:
 	bool			DetectMoves;
 	bool			DetectCharDiffs;
 	bool			BestSeqChangedLines;
-	bool			IgnoreSpaces;
+	bool			IgnoreChangedSpaces;
+	bool			IgnoreAllSpaces;
 	bool			IgnoreEmptyLines;
 	bool			IgnoreCase;
 	bool			IgnoreRegex;

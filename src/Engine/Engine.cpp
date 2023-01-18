@@ -354,8 +354,18 @@ inline uint64_t lineRangeHash(uint64_t hashSeed, std::vector<wchar_t>& line, int
 
 		for (; pos < endPos; ++pos)
 		{
-			if (options.ignoreSpaces && (line[pos] == L' ' || line[pos] == L'\t'))
+			if (options.ignoreAllSpaces && (line[pos] == L' ' || line[pos] == L'\t'))
 				continue;
+
+			if (options.ignoreChangedSpaces && (line[pos] == L' ' || line[pos] == L'\t'))
+			{
+				hashSeed = Hash(hashSeed, L' ');
+
+				while (++pos < endPos && (line[pos] == L' ' || line[pos] == L'\t'));
+
+				if (pos == endPos)
+					return hashSeed;
+			}
 
 			hashSeed = Hash(hashSeed, line[pos]);
 		}
@@ -408,7 +418,7 @@ uint64_t regexIgnoreLineHash(uint64_t hashSeed, int codepage, const std::vector<
 
 void getLines(DocCmpInfo& doc, const CompareOptions& options)
 {
-	const int monitorCancelEveryXLine = 500;
+	static constexpr int monitorCancelEveryXLine = 500;
 
 	progress_ptr& progress = ProgressDlg::Get();
 
@@ -428,15 +438,22 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 
 	doc.lines.reserve(doc.section.len);
 
+	int cancelCheckCount = monitorCancelEveryXLine;
+
+	const int codepage = getCodepage(doc.view);
+
 	for (intptr_t secLine = 0; secLine < doc.section.len; ++secLine)
 	{
-		if ((secLine % monitorCancelEveryXLine == 0) && !progress->Advance())
+		if (!(--cancelCheckCount))
 		{
-			doc.lines.clear();
-			return;
-		}
+			if (!progress->Advance())
+			{
+				doc.lines.clear();
+				return;
+			}
 
-		const int codepage			= getCodepage(doc.view);
+			cancelCheckCount = monitorCancelEveryXLine;
+		}
 
 		const intptr_t docLine		= secLine + doc.section.off;
 		const intptr_t lineStart	= getLineStart(doc.view, docLine);
@@ -464,10 +481,22 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 				if (options.ignoreCase)
 					toLowerCase(line, codepage);
 
-				for (intptr_t i = 0; i < lineEnd - lineStart; ++i)
+				const intptr_t endPos = lineEnd - lineStart;
+
+				for (intptr_t i = 0; i < endPos; ++i)
 				{
-					if (options.ignoreSpaces && (line[i] == ' ' || line[i] == '\t'))
+					if (options.ignoreAllSpaces && (line[i] == ' ' || line[i] == '\t'))
 						continue;
+
+					if (options.ignoreChangedSpaces && (line[i] == ' ' || line[i] == '\t'))
+					{
+						newLine.hash = Hash(newLine.hash, ' ');
+
+						while (++i < endPos && (line[i] == ' ' || line[i] == '\t'));
+
+						if (i == endPos)
+							break;
+					}
 
 					newLine.hash = Hash(newLine.hash, line[i]);
 				}
@@ -531,33 +560,43 @@ inline void getLineRangeWords(std::vector<Word>& words, std::vector<wchar_t>& li
 		charType currentWordType = getCharTypeW(line[pos]);
 
 		Word word;
-		word.hash = Hash(cHashSeed, line[pos]);
 		word.pos = pos;
 		word.len = 1;
 
+		if (options.ignoreChangedSpaces && currentWordType == charType::SPACECHAR)
+			word.hash = Hash(cHashSeed, L' ');
+		else
+			word.hash = Hash(cHashSeed, line[pos]);
+
 		for (++pos; pos < endPos; ++pos)
 		{
-			charType newWordType = getCharTypeW(line[pos]);
+			const charType newWordType = getCharTypeW(line[pos]);
 
 			if (newWordType == currentWordType)
 			{
 				++word.len;
-				word.hash = Hash(word.hash, line[pos]);
+
+				if (currentWordType != charType::SPACECHAR || !options.ignoreChangedSpaces)
+					word.hash = Hash(word.hash, line[pos]);
 			}
 			else
 			{
-				if (!options.ignoreSpaces || currentWordType != charType::SPACECHAR)
+				if (!options.ignoreAllSpaces || currentWordType != charType::SPACECHAR)
 					words.emplace_back(word);
 
 				currentWordType = newWordType;
 
-				word.hash = Hash(cHashSeed, line[pos]);
 				word.pos = pos;
 				word.len = 1;
+
+				if (options.ignoreChangedSpaces && currentWordType == charType::SPACECHAR)
+					word.hash = Hash(cHashSeed, L' ');
+				else
+					word.hash = Hash(cHashSeed, line[pos]);
 			}
 		}
 
-		if (!options.ignoreSpaces || currentWordType != charType::SPACECHAR)
+		if (!options.ignoreAllSpaces || currentWordType != charType::SPACECHAR)
 			words.emplace_back(word);
 	}
 }
@@ -663,8 +702,22 @@ void getSectionRangeChars(std::vector<Char>& chars, std::vector<wchar_t>& sec, i
 
 		for (; pos < endPos; ++pos)
 		{
-			if (!options.ignoreSpaces || getCharTypeW(sec[pos]) != charType::SPACECHAR)
-				chars.emplace_back(sec[pos], pos);
+			const charType typeOfChar = getCharTypeW(sec[pos]);
+
+			if (options.ignoreAllSpaces && typeOfChar == charType::SPACECHAR)
+				continue;
+
+			if (options.ignoreChangedSpaces && typeOfChar == charType::SPACECHAR)
+			{
+				chars.emplace_back(L' ', pos);
+
+				while (++pos < endPos && getCharTypeW(sec[pos]) == charType::SPACECHAR);
+
+				if (pos == endPos)
+					break;
+			}
+
+			chars.emplace_back(sec[pos], pos);
 		}
 	}
 }

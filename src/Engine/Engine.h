@@ -80,7 +80,8 @@ struct CompareOptions
 	bool	detectMoves;
 	bool	detectCharDiffs;
 	bool	bestSeqChangedLines;
-	bool	ignoreSpaces;
+	bool	ignoreChangedSpaces;
+	bool	ignoreAllSpaces;
 	bool	ignoreEmptyLines;
 	bool	ignoreCase;
 

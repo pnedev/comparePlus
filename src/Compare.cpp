@@ -1150,7 +1150,8 @@ void ComparedPair::setStatusInfo()
 		{
 			const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%s%s%s%s%s"),
 					options.detectMoves			? TEXT(" Detect Moves ,")		: TEXT(""),
-					options.ignoreSpaces		? TEXT(" Ignore Spaces ,")		: TEXT(""),
+					options.ignoreAllSpaces		? TEXT(" Ignore All Spaces ,")	:
+						options.ignoreChangedSpaces	? TEXT(" Ignore Changed Spaces ,") : TEXT(""),
 					options.ignoreEmptyLines	? TEXT(" Ignore Empty Lines ,")	: TEXT(""),
 					options.ignoreCase			? TEXT(" Ignore Case ,")		: TEXT(""),
 					options.ignoreRegex			? TEXT(" Ignore Regex ,")		: TEXT(""));
@@ -2700,7 +2701,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		cmpPair->options.detectMoves				= Settings.DetectMoves;
 		cmpPair->options.detectCharDiffs			= Settings.DetectCharDiffs;
 		cmpPair->options.bestSeqChangedLines		= Settings.BestSeqChangedLines;
-		cmpPair->options.ignoreSpaces				= Settings.IgnoreSpaces;
+		cmpPair->options.ignoreChangedSpaces		= Settings.IgnoreChangedSpaces;
+		cmpPair->options.ignoreAllSpaces			= Settings.IgnoreAllSpaces;
 		cmpPair->options.ignoreEmptyLines			= Settings.IgnoreEmptyLines;
 		cmpPair->options.ignoreCase					= Settings.IgnoreCase;
 
@@ -3196,11 +3198,20 @@ void BestSeqChangedLines()
 }
 
 
-void IgnoreSpaces()
+void IgnoreChangedSpaces()
 {
-	Settings.IgnoreSpaces = !Settings.IgnoreSpaces;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACES]._cmdID,
-			(LPARAM)Settings.IgnoreSpaces);
+	Settings.IgnoreChangedSpaces = !Settings.IgnoreChangedSpaces;
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_CHANGED_SPACES]._cmdID,
+			(LPARAM)Settings.IgnoreChangedSpaces);
+	Settings.markAsDirty();
+}
+
+
+void IgnoreAllSpaces()
+{
+	Settings.IgnoreAllSpaces = !Settings.IgnoreAllSpaces;
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_ALL_SPACES]._cmdID,
+			(LPARAM)Settings.IgnoreAllSpaces);
 	Settings.markAsDirty();
 }
 
@@ -3552,8 +3563,11 @@ void createMenu()
 			TEXT("Detect Changed Lines by Best Matching Sequence"));
 	funcItem[CMD_BEST_SEQ_CHANGED_LINES]._pFunc = BestSeqChangedLines;
 
-	_tcscpy_s(funcItem[CMD_IGNORE_SPACES]._itemName, nbChar, TEXT("Ignore Spaces"));
-	funcItem[CMD_IGNORE_SPACES]._pFunc = IgnoreSpaces;
+	_tcscpy_s(funcItem[CMD_IGNORE_CHANGED_SPACES]._itemName, nbChar, TEXT("Ignore Changed Spaces"));
+	funcItem[CMD_IGNORE_CHANGED_SPACES]._pFunc = IgnoreChangedSpaces;
+
+	_tcscpy_s(funcItem[CMD_IGNORE_ALL_SPACES]._itemName, nbChar, TEXT("Ignore All Spaces"));
+	funcItem[CMD_IGNORE_ALL_SPACES]._pFunc = IgnoreAllSpaces;
 
 	_tcscpy_s(funcItem[CMD_IGNORE_EMPTY_LINES]._itemName, nbChar, TEXT("Ignore Empty Lines"));
 	funcItem[CMD_IGNORE_EMPTY_LINES]._pFunc = IgnoreEmptyLines;
@@ -4150,8 +4164,10 @@ void onNppReady()
 			(LPARAM)Settings.DetectCharDiffs);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_BEST_SEQ_CHANGED_LINES]._cmdID,
 			(LPARAM)Settings.BestSeqChangedLines);
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_SPACES]._cmdID,
-			(LPARAM)Settings.IgnoreSpaces);
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_CHANGED_SPACES]._cmdID,
+			(LPARAM)Settings.IgnoreChangedSpaces);
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_ALL_SPACES]._cmdID,
+			(LPARAM)Settings.IgnoreAllSpaces);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_EMPTY_LINES]._cmdID,
 			(LPARAM)Settings.IgnoreEmptyLines);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_CASE]._cmdID,
