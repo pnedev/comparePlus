@@ -3203,6 +3203,14 @@ void IgnoreChangedSpaces()
 	Settings.IgnoreChangedSpaces = !Settings.IgnoreChangedSpaces;
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_CHANGED_SPACES]._cmdID,
 			(LPARAM)Settings.IgnoreChangedSpaces);
+
+	if (Settings.IgnoreChangedSpaces)
+	{
+		Settings.IgnoreAllSpaces = false;
+		::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_ALL_SPACES]._cmdID,
+				(LPARAM)false);
+	}
+
 	Settings.markAsDirty();
 }
 
@@ -3212,6 +3220,14 @@ void IgnoreAllSpaces()
 	Settings.IgnoreAllSpaces = !Settings.IgnoreAllSpaces;
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_ALL_SPACES]._cmdID,
 			(LPARAM)Settings.IgnoreAllSpaces);
+
+	if (Settings.IgnoreAllSpaces)
+	{
+		Settings.IgnoreChangedSpaces = false;
+		::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_CHANGED_SPACES]._cmdID,
+				(LPARAM)false);
+	}
+
 	Settings.markAsDirty();
 }
 
