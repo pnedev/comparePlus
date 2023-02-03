@@ -55,7 +55,12 @@ UserSettings	Settings;
 
 int gMarginWidth = 0;
 
+#ifndef NDEBUG
+#warning "Building in Debug mode."
+#endif
+
 #ifdef DLOG
+#warning "Building with debug log."
 
 std::string		dLog("ComparePlus debug log\n\n");
 DWORD			dLogTime_ms = 0;
