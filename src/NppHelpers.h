@@ -260,12 +260,10 @@ struct ViewLocation
 	}
 
 #ifdef DLOG
-
 	~ViewLocation()
 	{
 		LOGD(LOG_SYNC, "Clear view location\n");
 	}
-
 #endif
 
 	void save(int view, intptr_t firstLine = -1);
@@ -555,6 +553,14 @@ inline bool isLineEmpty(int view, intptr_t line)
 inline bool isLineHidden(int view, intptr_t line)
 {
 	return (CallScintilla(view, SCI_GETLINEVISIBLE, line, 0) == 0);
+}
+
+
+inline bool isLineFolded(int view, intptr_t line)
+{
+	const intptr_t foldLine = CallScintilla(view, SCI_GETFOLDPARENT, line, 0);
+
+	return (CallScintilla(view, SCI_GETFOLDEXPANDED, foldLine, 0) != 0);
 }
 
 
