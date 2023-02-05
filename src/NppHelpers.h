@@ -492,7 +492,12 @@ inline intptr_t getUnhiddenLine(int view, intptr_t line)
 
 inline intptr_t getPreviousUnhiddenLine(int view, intptr_t line)
 {
-	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE, CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - 1, 0);
+    intptr_t visibleLine = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - 1;
+
+    if (visibleLine < 0)
+        visibleLine = 0;
+
+	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE, visibleLine, 0);
 }
 
 
