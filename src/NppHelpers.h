@@ -531,6 +531,19 @@ inline intptr_t getFirstVisibleLineOffset(int view, intptr_t line)
 }
 
 
+inline bool getNextFoldPointIfFolded(int view, intptr_t* line)
+{
+	const intptr_t foldParent = CallScintilla(view, SCI_GETFOLDPARENT, *line, 0);
+
+	if (CallScintilla(view, SCI_GETFOLDEXPANDED, foldParent, 0) != 0)
+		return false;
+
+	while (foldParent == CallScintilla(view, SCI_GETFOLDPARENT, ++(*line), 0));
+
+	return true;
+}
+
+
 inline bool isLineWrapped(int view, intptr_t line)
 {
 	return (CallScintilla(view, SCI_WRAPCOUNT, line, 0) > 1);
@@ -565,7 +578,7 @@ inline bool isLineFolded(int view, intptr_t line)
 {
 	const intptr_t foldLine = CallScintilla(view, SCI_GETFOLDPARENT, line, 0);
 
-	return (CallScintilla(view, SCI_GETFOLDEXPANDED, foldLine, 0) != 0);
+	return (CallScintilla(view, SCI_GETFOLDEXPANDED, foldLine, 0) == 0);
 }
 
 
