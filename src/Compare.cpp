@@ -4616,6 +4616,8 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 		}
 	}
 
+	const intptr_t lastLine = CallScintilla(viewId, SCI_GETLINECOUNT, 0, 0) - 1;
+
 	if (markedRange.first >= 0)
 	{
 		const intptr_t startLine = CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.first, 0);
@@ -4639,8 +4641,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 
 	if (otherMarkedRange.first >= 0)
 	{
-		const intptr_t lastLine			= CallScintilla(viewId, SCI_GETLINECOUNT, 0, 0) - 1;
-		const intptr_t otherStartLine	= CallScintilla(otherViewId, SCI_LINEFROMPOSITION, otherMarkedRange.first, 0);
+		const intptr_t otherStartLine = CallScintilla(otherViewId, SCI_LINEFROMPOSITION, otherMarkedRange.first, 0);
 
 		bool copyOtherTillEnd = false;
 
