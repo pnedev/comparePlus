@@ -647,7 +647,6 @@ std::pair<std::vector<diff_info<UserDataT>>, bool> DiffCalc<Elem, UserDataT>::op
 	_buf.get().clear();
 
 	// Swap compared sequences and re-compare to see if result is more optimal
-	if (_a_size == _b_size)
 	{
 		const intptr_t replacesCount = _count_replaces();
 
@@ -660,7 +659,7 @@ std::pair<std::vector<diff_info<UserDataT>>, bool> DiffCalc<Elem, UserDataT>::op
 		if (storedDiff[0].type == diff_type::DIFF_MATCH)
 			_diff.push_back(storedDiff[0]);
 
-		intptr_t newReplacesCount = _ses(off, asize, off, bsize);
+		intptr_t newReplacesCount = _ses(off, bsize, off, asize);
 
 		// Wipe temporal buffer to free memory
 		_buf.get().clear();
