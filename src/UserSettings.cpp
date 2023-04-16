@@ -40,9 +40,9 @@ const TCHAR UserSettings::followingCaretSetting[]			= TEXT("following_caret");
 const TCHAR UserSettings::detectMovesSetting[]				= TEXT("detect_moves");
 const TCHAR UserSettings::detectCharDiffsSetting[]			= TEXT("detect_character_diffs");
 const TCHAR UserSettings::bestSeqChangedLinesSetting[]		= TEXT("best_seq_changed_lines");
+const TCHAR UserSettings::ignoreEmptyLinesSetting[]			= TEXT("ignore_empty_lines");
 const TCHAR UserSettings::ignoreChangedSpacesSetting[]		= TEXT("ignore_changed_spaces");
 const TCHAR UserSettings::ignoreAllSpacesSetting[]			= TEXT("ignore_all_spaces");
-const TCHAR UserSettings::ignoreEmptyLinesSetting[]			= TEXT("ignore_empty_lines");
 const TCHAR UserSettings::ignoreCaseSetting[]				= TEXT("ignore_case");
 const TCHAR UserSettings::ignoreRegexSetting[]				= TEXT("ignore_regex");
 const TCHAR UserSettings::ignoreRegexStrSetting[]			= TEXT("ignore_regex_string");
@@ -120,9 +120,9 @@ void UserSettings::load()
 	DetectMoves			= ::GetPrivateProfileInt(mainSection, detectMovesSetting,			1, iniFile) != 0;
 	DetectCharDiffs		= ::GetPrivateProfileInt(mainSection, detectCharDiffsSetting,		0, iniFile) != 0;
 	BestSeqChangedLines	= ::GetPrivateProfileInt(mainSection, bestSeqChangedLinesSetting,	0, iniFile) != 0;
+	IgnoreEmptyLines	= ::GetPrivateProfileInt(mainSection, ignoreEmptyLinesSetting,		0, iniFile) != 0;
 	IgnoreChangedSpaces	= ::GetPrivateProfileInt(mainSection, ignoreChangedSpacesSetting,	0, iniFile) != 0;
 	IgnoreAllSpaces		= ::GetPrivateProfileInt(mainSection, ignoreAllSpacesSetting,		0, iniFile) != 0;
-	IgnoreEmptyLines	= ::GetPrivateProfileInt(mainSection, ignoreEmptyLinesSetting,		0, iniFile) != 0;
 	IgnoreCase			= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,			0, iniFile) != 0;
 	IgnoreRegex			= ::GetPrivateProfileInt(mainSection, ignoreRegexSetting,			0, iniFile) != 0;
 
@@ -273,12 +273,12 @@ void UserSettings::save()
 			DetectCharDiffs ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, bestSeqChangedLinesSetting,
 			BestSeqChangedLines ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, ignoreEmptyLinesSetting,
+			IgnoreEmptyLines ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreChangedSpacesSetting,
 			IgnoreChangedSpaces ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreAllSpacesSetting,
 			IgnoreAllSpaces ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(mainSection, ignoreEmptyLinesSetting,
-			IgnoreEmptyLines ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreCaseSetting,
 			IgnoreCase ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreRegexSetting,
