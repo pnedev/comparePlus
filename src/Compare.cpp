@@ -609,7 +609,7 @@ void NppSettings::updatePluginMenu()
 			MF_BYCOMMAND | ((compareList.empty() && !newCompare) ? (MF_DISABLED | MF_GRAYED) : MF_ENABLED));
 
 	::EnableMenuItem(hMenu, funcItem[CMD_COMPARE_OPTIONS]._cmdID, flag);
-	::EnableMenuItem(hMenu, funcItem[CMD_COMPARE_STATS]._cmdID, flag);
+	::EnableMenuItem(hMenu, funcItem[CMD_COMPARE_SUMMARY]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, flag);
@@ -1137,7 +1137,7 @@ void ComparedPair::setStatus()
 		// Toggle shown status bar info
 		if (Settings.statusType == StatusType::COMPARE_OPTIONS)
 		{
-			if (options.detectMoves)
+			if (!options.findUniqueMode && options.detectMoves)
 			{
 				static constexpr TCHAR detectMovesStr[] = TEXT(" Detect Moves ,");
 
@@ -3098,9 +3098,9 @@ void ActiveCompareOptions()
 
 	TCHAR buf[256];
 
-	if (cmpPair->options.detectMoves)
+	if (!cmpPair->options.findUniqueMode && cmpPair->options.detectMoves)
 	{
-		static constexpr TCHAR detectMovesStr[] = TEXT(" Detect Moves ,");
+		static constexpr TCHAR detectMovesStr[] = TEXT("Detect Moves\n");
 
 		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, detectMovesStr);
 		infoCurrentPos += _countof(detectMovesStr) - 1;
@@ -3109,7 +3109,7 @@ void ActiveCompareOptions()
 	if (cmpPair->options.ignoreEmptyLines || cmpPair->options.ignoreAllSpaces ||
 		cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreCase || cmpPair->options.ignoreRegex)
 	{
-		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Ignore:%s%s%s%s"),
+		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Ignore:%s%s%s%s"),
 				cmpPair->options.ignoreEmptyLines	? TEXT(" Empty Lines ,")	: TEXT(""),
 				cmpPair->options.ignoreAllSpaces	? TEXT(" All Spaces ,")	: cmpPair->options.ignoreChangedSpaces
 													? TEXT(" Changed Spaces ,") : TEXT(""),
@@ -3123,13 +3123,13 @@ void ActiveCompareOptions()
 	if (info[infoCurrentPos - 2] == TEXT(' '))
 		info[infoCurrentPos - 2] = TEXT('\0');
 	else
-		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, TEXT(" No specific options used."));
+		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, TEXT("No specific options used."));
 
 	::MessageBox(nppData._nppHandle, info, PLUGIN_NAME, MB_OK);
 }
 
 
-void CompareStats()
+void ActiveCompareSummary()
 {
 	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
 	if (cmpPair == compareList.end())
@@ -3137,7 +3137,7 @@ void CompareStats()
 
 	TCHAR info[512];
 
-	int infoCurrentPos = _sntprintf_s(info, _countof(info), _TRUNCATE, TEXT("%s Stats:\n\n"),
+	int infoCurrentPos = _sntprintf_s(info, _countof(info), _TRUNCATE, TEXT("%s Summary:\n\n"),
 			cmpPair->options.findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"));
 
 	TCHAR buf[256];
@@ -3145,7 +3145,7 @@ void CompareStats()
 	if (cmpPair->summary.diffLines)
 	{
 		const int len =
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Diff Lines:\n"), cmpPair->summary.diffLines);
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%Id Diff Lines:\n"), cmpPair->summary.diffLines);
 		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 		infoCurrentPos += len;
 	}
@@ -3590,8 +3590,8 @@ void createMenu()
 	_tcscpy_s(funcItem[CMD_COMPARE_OPTIONS]._itemName, nbChar, TEXT("Active Compare Options"));
 	funcItem[CMD_COMPARE_OPTIONS]._pFunc = ActiveCompareOptions;
 
-	_tcscpy_s(funcItem[CMD_COMPARE_STATS]._itemName, nbChar, TEXT("Compare Stats"));
-	funcItem[CMD_COMPARE_STATS]._pFunc = CompareStats;
+	_tcscpy_s(funcItem[CMD_COMPARE_SUMMARY]._itemName, nbChar, TEXT("Active Compare Summary"));
+	funcItem[CMD_COMPARE_SUMMARY]._pFunc = ActiveCompareSummary;
 
 	_tcscpy_s(funcItem[CMD_DETECT_MOVES]._itemName, nbChar, TEXT("Detect Moves"));
 	funcItem[CMD_DETECT_MOVES]._pFunc = DetectMoves;
