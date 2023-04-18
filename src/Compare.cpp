@@ -608,6 +608,7 @@ void NppSettings::updatePluginMenu()
 	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ALL]._cmdID,
 			MF_BYCOMMAND | ((compareList.empty() && !newCompare) ? (MF_DISABLED | MF_GRAYED) : MF_ENABLED));
 
+	::EnableMenuItem(hMenu, funcItem[CMD_COMPARE_OPTIONS]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_COMPARE_STATS]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, flag);
@@ -1149,10 +1150,10 @@ void ComparedPair::setStatus()
 			{
 				const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Ignore:%s%s%s%s"),
 						options.ignoreEmptyLines	? TEXT(" Empty Lines ,")	: TEXT(""),
-						options.ignoreAllSpaces		? TEXT(" All Spaces ,")	:
-							options.ignoreChangedSpaces	? TEXT(" Changed Spaces ,") : TEXT(""),
-						options.ignoreCase			? TEXT(" Case ,")		: TEXT(""),
-						options.ignoreRegex			? TEXT(" Regex ,")		: TEXT(""));
+						options.ignoreAllSpaces		? TEXT(" All Spaces ,")	: options.ignoreChangedSpaces
+													? TEXT(" Changed Spaces ,") : TEXT(""),
+						options.ignoreCase			? TEXT(" Case ,")			: TEXT(""),
+						options.ignoreRegex			? TEXT(" Regex ,")			: TEXT(""));
 
 				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 				infoCurrentPos += len;
@@ -3084,6 +3085,50 @@ void GitDiff()
 }
 
 
+void ActiveCompareOptions()
+{
+	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
+	if (cmpPair == compareList.end())
+		return;
+
+	TCHAR info[512];
+
+	int infoCurrentPos = _sntprintf_s(info, _countof(info), _TRUNCATE, TEXT("%s Options:\n\n"),
+			cmpPair->options.findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"));
+
+	TCHAR buf[256];
+
+	if (cmpPair->options.detectMoves)
+	{
+		static constexpr TCHAR detectMovesStr[] = TEXT(" Detect Moves ,");
+
+		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, detectMovesStr);
+		infoCurrentPos += _countof(detectMovesStr) - 1;
+	}
+
+	if (cmpPair->options.ignoreEmptyLines || cmpPair->options.ignoreAllSpaces ||
+		cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreCase || cmpPair->options.ignoreRegex)
+	{
+		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Ignore:%s%s%s%s"),
+				cmpPair->options.ignoreEmptyLines	? TEXT(" Empty Lines ,")	: TEXT(""),
+				cmpPair->options.ignoreAllSpaces	? TEXT(" All Spaces ,")	: cmpPair->options.ignoreChangedSpaces
+													? TEXT(" Changed Spaces ,") : TEXT(""),
+				cmpPair->options.ignoreCase			? TEXT(" Case ,")			: TEXT(""),
+				cmpPair->options.ignoreRegex		? TEXT(" Regex ,")			: TEXT(""));
+
+		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+		infoCurrentPos += len;
+	}
+
+	if (info[infoCurrentPos - 2] == TEXT(' '))
+		info[infoCurrentPos - 2] = TEXT('\0');
+	else
+		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, TEXT(" No specific options used."));
+
+	::MessageBox(nppData._nppHandle, info, PLUGIN_NAME, MB_OK);
+}
+
+
 void CompareStats()
 {
 	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
@@ -3541,6 +3586,9 @@ void createMenu()
 	funcItem[CMD_GIT_DIFF]._pShKey->_isCtrl 		= true;
 	funcItem[CMD_GIT_DIFF]._pShKey->_isShift		= false;
 	funcItem[CMD_GIT_DIFF]._pShKey->_key 			= 'G';
+
+	_tcscpy_s(funcItem[CMD_COMPARE_OPTIONS]._itemName, nbChar, TEXT("Active Compare Options"));
+	funcItem[CMD_COMPARE_OPTIONS]._pFunc = ActiveCompareOptions;
 
 	_tcscpy_s(funcItem[CMD_COMPARE_STATS]._itemName, nbChar, TEXT("Compare Stats"));
 	funcItem[CMD_COMPARE_STATS]._pFunc = CompareStats;
