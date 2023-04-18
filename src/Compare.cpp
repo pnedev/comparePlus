@@ -334,7 +334,6 @@ public:
 	void positionFiles();
 	void restoreFiles(LRESULT currentBuffId);
 
-	void setStatusInfo();
 	void setStatus();
 
 	void adjustAlignment(int view, intptr_t line, intptr_t offset);
@@ -515,8 +514,6 @@ static const TempMark_t tempMark[] =
 };
 
 
-LRESULT (*nppNotificationProc)(HWND, UINT, WPARAM, LPARAM) = nullptr;
-
 CompareList_t compareList;
 std::unique_ptr<NewCompare> newCompare = nullptr;
 
@@ -554,7 +551,6 @@ HINSTANCE hInstance;
 FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
 
 // Declare local functions that appear before they are defined
-LRESULT statusProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 void onBufferActivated(LRESULT buffId);
 void syncViews(int biasView);
 void temporaryRangeSelect(int view, intptr_t startPos = -1, intptr_t endPos = -1);
@@ -692,9 +688,6 @@ void NppSettings::setNormalMode(bool forceUpdate)
 
 		updatePluginMenu();
 	}
-
-	if (nppNotificationProc != nullptr)
-		::SetWindowLongPtr(nppData._nppHandle, GWLP_WNDPROC, static_cast<LPARAM>((LONG_PTR)nppNotificationProc));
 }
 
 
@@ -1113,13 +1106,8 @@ void ComparedPair::restoreFiles(LRESULT currentBuffId = -1)
 }
 
 
-void ComparedPair::setStatusInfo()
+void ComparedPair::setStatus()
 {
-	HWND hStatusBar = NppStatusBarHandleGetter::get();
-
-	if (hStatusBar == nullptr)
-		return;
-
 	TCHAR info[512];
 
 	if (compareDirty)
@@ -1148,16 +1136,27 @@ void ComparedPair::setStatusInfo()
 		// Toggle shown status bar info
 		if (Settings.statusType == StatusType::COMPARE_OPTIONS)
 		{
-			const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%s%s%s%s%s"),
-					options.detectMoves			? TEXT(" Detect Moves ,")		: TEXT(""),
-					options.ignoreEmptyLines	? TEXT(" Ignore Empty Lines ,")	: TEXT(""),
-					options.ignoreAllSpaces		? TEXT(" Ignore All Spaces ,")	:
-						options.ignoreChangedSpaces	? TEXT(" Ignore Changed Spaces ,") : TEXT(""),
-					options.ignoreCase			? TEXT(" Ignore Case ,")		: TEXT(""),
-					options.ignoreRegex			? TEXT(" Ignore Regex ,")		: TEXT(""));
+			if (options.detectMoves)
+			{
+				static constexpr TCHAR detectMovesStr[] = TEXT(" Detect Moves ,");
 
-			_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-			infoCurrentPos += len;
+				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, detectMovesStr);
+				infoCurrentPos += _countof(detectMovesStr) - 1;
+			}
+
+			if (options.ignoreEmptyLines || options.ignoreAllSpaces || options.ignoreChangedSpaces ||
+				options.ignoreCase || options.ignoreRegex)
+			{
+				const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Ignore:%s%s%s%s"),
+						options.ignoreEmptyLines	? TEXT(" Empty Lines ,")	: TEXT(""),
+						options.ignoreAllSpaces		? TEXT(" All Spaces ,")	:
+							options.ignoreChangedSpaces	? TEXT(" Changed Spaces ,") : TEXT(""),
+						options.ignoreCase			? TEXT(" Case ,")		: TEXT(""),
+						options.ignoreRegex			? TEXT(" Regex ,")		: TEXT(""));
+
+				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+				infoCurrentPos += len;
+			}
 		}
 		else if (Settings.statusType == StatusType::COMPARE_SUMMARY)
 		{
@@ -1209,30 +1208,7 @@ void ComparedPair::setStatusInfo()
 			info[infoCurrentPos - 2] = TEXT('\0');
 	}
 
-	::SendMessage(hStatusBar, SB_SETTEXT, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)info));
-	::SendMessage(hStatusBar, SB_SETTIPTEXT, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)info));
-}
-
-
-void ComparedPair::setStatus()
-{
-	HWND hStatusBar = NppStatusBarHandleGetter::get();
-
-	if (hStatusBar != nullptr)
-	{
-		const LRESULT style = ::GetWindowLongPtr(hStatusBar, GWL_STYLE) | SBARS_TOOLTIPS;
-
-		::SetWindowLongPtr(hStatusBar, GWL_STYLE, style);
-
-		if (nppNotificationProc == nullptr)
-			nppNotificationProc =
-					(LRESULT (*)(HWND, UINT, WPARAM, LPARAM))::GetWindowLongPtr(nppData._nppHandle, GWLP_WNDPROC);
-
-		if (nppNotificationProc != nullptr)
-			::SetWindowLongPtr(nppData._nppHandle, GWLP_WNDPROC, static_cast<LPARAM>((LONG_PTR)statusProc));
-
-		setStatusInfo();
-	}
+	::SendMessage(nppData._nppHandle, NPPM_SETSTATUSBAR, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)info));
 }
 
 
@@ -5248,37 +5224,6 @@ void onFileSaved(LRESULT buffId)
 	}
 }
 
-
-LRESULT statusProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	// Handle only status bar mouse left-click notification
-	if ((msg == WM_NOTIFY) && (((LPNMHDR)lParam)->hwndFrom == NppStatusBarHandleGetter::get()) &&
-		(((LPNMMOUSE)lParam)->dwItemSpec == DWORD(STATUSBAR_DOC_TYPE)))
-	{
-		if (((LPNMHDR)lParam)->code == NM_CLICK)
-		{
-			const LRESULT			currentBuffId	= getCurrentBuffId();
-			CompareList_t::iterator	cmpPair			= getCompare(currentBuffId);
-
-			if (cmpPair != compareList.end())
-			{
-				if (!cmpPair->compareDirty)
-					Settings.toggleStatusType();
-
-				cmpPair->setStatusInfo();
-
-				return TRUE;
-			}
-		}
-		else if (((LPNMHDR)lParam)->code == NM_DBLCLK)
-		{
-			return TRUE;
-		}
-	}
-
-	return nppNotificationProc(hwnd, msg, wParam, lParam);
-}
-
 } // anonymous namespace
 
 
@@ -5434,7 +5379,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 			{
 				CompareList_t::iterator	cmpPair = getCompare(notifyCode->nmhdr.idFrom);
 				if (cmpPair != compareList.end())
-					cmpPair->setStatusInfo();
+					cmpPair->setStatus();
 			}
 		break;
 

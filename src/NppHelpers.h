@@ -119,22 +119,6 @@ private:
 
 
 /**
- *  \class
- *  \brief
- */
-class NppStatusBarHandleGetter
-{
-public:
-	static HWND get();
-
-private:
-	static HWND	hNppStatusBar;
-
-	static BOOL CALLBACK enumWindowsCB(HWND hwnd, LPARAM lParam);
-};
-
-
-/**
  *  \struct
  *  \brief
  *  \warning  Don't use that helper struct if somewhere in its scope the view document is changed!!!

@@ -103,14 +103,6 @@ public:
 		dirty = true;
 	}
 
-	void toggleStatusType()
-	{
-		statusType = static_cast<StatusType>(static_cast<int>(statusType) + 1);
-
-		if (statusType == StatusType::STATUS_TYPE_END)
-			statusType = StatusType::COMPARE_SUMMARY;
-	}
-
 	inline void useLightColors()
 	{
 		_colors = &colorsLight;
