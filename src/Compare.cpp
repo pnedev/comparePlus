@@ -722,8 +722,8 @@ void NppSettings::setCompareMode(bool clearHorizontalScroll)
 	// synchronize zoom levels
 	if (_compareZoom == 0)
 	{
-		_compareZoom = static_cast<int>(CallScintilla(getCurrentViewId(), SCI_GETZOOM, 0, 0));
-		CallScintilla(getOtherViewId(), SCI_SETZOOM, _compareZoom, 0);
+		_compareZoom = static_cast<int>(CallScintilla(MAIN_VIEW, SCI_GETZOOM, 0, 0));
+		CallScintilla(SUB_VIEW, SCI_SETZOOM, _compareZoom, 0);
 	}
 	else
 	{
