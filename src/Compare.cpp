@@ -1108,6 +1108,9 @@ void ComparedPair::restoreFiles(LRESULT currentBuffId = -1)
 
 void ComparedPair::setStatus()
 {
+	if (Settings.StatusInfo == StatusType::STATUS_DISABLED)
+		return;
+
 	TCHAR info[512];
 
 	if (compareDirty)
@@ -1133,8 +1136,7 @@ void ComparedPair::setStatus()
 		infoCurrentPos = _sntprintf_s(info, _countof(info), _TRUNCATE, TEXT("%s%s"),
 				options.findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"), buf);
 
-		// Toggle shown status bar info
-		if (Settings.statusType == StatusType::COMPARE_OPTIONS)
+		if (Settings.StatusInfo == StatusType::COMPARE_OPTIONS)
 		{
 			if (!options.findUniqueMode && options.detectMoves)
 			{
@@ -1158,7 +1160,7 @@ void ComparedPair::setStatus()
 				infoCurrentPos += len;
 			}
 		}
-		else if (Settings.statusType == StatusType::COMPARE_SUMMARY)
+		else if (Settings.StatusInfo == StatusType::DIFFS_SUMMARY)
 		{
 			if (summary.diffLines)
 			{

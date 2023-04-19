@@ -37,7 +37,7 @@
 #define DEFAULT_GOTO_FIRST_DIFF			1
 #define DEFAULT_PROMPT_CLOSE_ON_MATCH	0
 
-#define DEFAULT_STATUS_TYPE				0
+#define DEFAULT_STATUS_INFO				0
 
 #define DEFAULT_ADDED_COLOR				0xC6FFC6
 #define DEFAULT_REMOVED_COLOR			0xC6C6FF
@@ -69,8 +69,9 @@
 
 enum StatusType
 {
-	COMPARE_SUMMARY = 0,
+	DIFFS_SUMMARY = 0,
 	COMPARE_OPTIONS,
+	STATUS_DISABLED,
 	STATUS_TYPE_END
 };
 
@@ -148,7 +149,7 @@ public:
 
 	static const TCHAR reCompareOnChangeSetting[];
 
-	static const TCHAR statusTypeSetting[];
+	static const TCHAR statusInfoSetting[];
 
 	static const TCHAR colorsSection[];
 
@@ -210,7 +211,7 @@ public:
 	bool			UseNavBar;
 
 	bool			RecompareOnChange;
-	StatusType		statusType;
+	StatusType		StatusInfo;
 
 	int				ChangedThresholdPercent;
 
@@ -230,6 +231,4 @@ private:
 	ColorSettings	colorsDark;
 
 	ColorSettings*	_colors;
-
-	StatusType		SavedStatusType;
 };

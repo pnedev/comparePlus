@@ -253,6 +253,26 @@ void SettingsDialog::SetParams(UserSettings* settings)
 			BST_CHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, settings->CompareToPrev ? IDC_COMPARE_TO_NEXT : IDC_COMPARE_TO_PREV),
 			BST_UNCHECKED);
+
+	if (settings->StatusInfo == StatusType::DIFFS_SUMMARY)
+	{
+		Button_SetCheck(::GetDlgItem(_hSelf, IDC_DIFFS_SUMMARY),	BST_CHECKED);
+		Button_SetCheck(::GetDlgItem(_hSelf, IDC_COMPARE_OPTIONS),	BST_UNCHECKED);
+		Button_SetCheck(::GetDlgItem(_hSelf, IDC_STATUS_DISABLED),	BST_UNCHECKED);
+	}
+	else if (settings->StatusInfo == StatusType::COMPARE_OPTIONS)
+	{
+		Button_SetCheck(::GetDlgItem(_hSelf, IDC_DIFFS_SUMMARY),	BST_UNCHECKED);
+		Button_SetCheck(::GetDlgItem(_hSelf, IDC_COMPARE_OPTIONS),	BST_CHECKED);
+		Button_SetCheck(::GetDlgItem(_hSelf, IDC_STATUS_DISABLED),	BST_UNCHECKED);
+	}
+	else
+	{
+		Button_SetCheck(::GetDlgItem(_hSelf, IDC_DIFFS_SUMMARY),	BST_UNCHECKED);
+		Button_SetCheck(::GetDlgItem(_hSelf, IDC_COMPARE_OPTIONS),	BST_UNCHECKED);
+		Button_SetCheck(::GetDlgItem(_hSelf, IDC_STATUS_DISABLED),	BST_CHECKED);
+	}
+
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ENCODING_CHECK),
 			settings->EncodingsCheck ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ALIGN_ALL_MATCHES),
@@ -333,6 +353,14 @@ void SettingsDialog::GetParams()
 	_Settings->NewFileViewId		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_NEW_IN_SUB)) == BST_CHECKED) ?
 			SUB_VIEW : MAIN_VIEW;
 	_Settings->CompareToPrev		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_COMPARE_TO_PREV)) == BST_CHECKED);
+
+	if (Button_GetCheck(::GetDlgItem(_hSelf, IDC_DIFFS_SUMMARY)) == BST_CHECKED)
+		_Settings->StatusInfo = StatusType::DIFFS_SUMMARY;
+	else if (Button_GetCheck(::GetDlgItem(_hSelf, IDC_COMPARE_OPTIONS)) == BST_CHECKED)
+		_Settings->StatusInfo = StatusType::COMPARE_OPTIONS;
+	else
+		_Settings->StatusInfo = StatusType::STATUS_DISABLED;
+
 	_Settings->EncodingsCheck		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENCODING_CHECK)) == BST_CHECKED);
 	_Settings->AlignAllMatches		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ALIGN_ALL_MATCHES)) == BST_CHECKED);
 	_Settings->NeverMarkIgnored		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_NEVER_MARK_IGNORED)) == BST_CHECKED);

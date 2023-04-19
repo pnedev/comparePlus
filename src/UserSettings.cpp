@@ -52,7 +52,7 @@ const TCHAR UserSettings::navBarSetting[]					= TEXT("navigation_bar");
 
 const TCHAR UserSettings::reCompareOnChangeSetting[]		= TEXT("recompare_on_change");
 
-const TCHAR UserSettings::statusTypeSetting[]				= TEXT("status_type");
+const TCHAR UserSettings::statusInfoSetting[]				= TEXT("status_info");
 
 const TCHAR UserSettings::colorsSection[]					= TEXT("color_settings");
 
@@ -138,10 +138,11 @@ void UserSettings::load()
 
 	RecompareOnChange	= ::GetPrivateProfileInt(mainSection, reCompareOnChangeSetting,	1, iniFile) != 0;
 
-	SavedStatusType	= static_cast<StatusType>(::GetPrivateProfileInt(mainSection, statusTypeSetting,
-			DEFAULT_STATUS_TYPE, iniFile));
+	StatusInfo = static_cast<StatusType>(::GetPrivateProfileInt(mainSection, statusInfoSetting,
+			DEFAULT_STATUS_INFO, iniFile));
 
-	statusType = (SavedStatusType < STATUS_TYPE_END) ? SavedStatusType : static_cast<StatusType>(DEFAULT_STATUS_TYPE);
+	if (StatusInfo >= STATUS_TYPE_END)
+		StatusInfo = static_cast<StatusType>(DEFAULT_STATUS_INFO);
 
 	colorsLight.added						= ::GetPrivateProfileInt(colorsSection, addedColorSetting,
 			DEFAULT_ADDED_COLOR, iniFile);
@@ -203,7 +204,7 @@ void UserSettings::load()
 
 void UserSettings::save()
 {
-	if (!dirty && (SavedStatusType == statusType))
+	if (!dirty)
 		return;
 
 	TCHAR iniFile[MAX_PATH];
@@ -297,10 +298,8 @@ void UserSettings::save()
 
 	TCHAR buffer[64];
 
-	SavedStatusType = statusType;
-
-	_itot_s(static_cast<int>(SavedStatusType), buffer, 64, 10);
-	::WritePrivateProfileString(mainSection, statusTypeSetting, buffer, iniFile);
+	_itot_s(static_cast<int>(StatusInfo), buffer, 64, 10);
+	::WritePrivateProfileString(mainSection, statusInfoSetting, buffer, iniFile);
 
 	_itot_s(colorsLight.added, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, addedColorSetting, buffer, iniFile);
