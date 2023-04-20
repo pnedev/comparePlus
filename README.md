@@ -15,6 +15,8 @@ It is highly customizable, can ignore spaces, empty lines, letter cases, regexes
 Several compared file pairs can be active and displayed at the same time.
 
 
+![ComparePlus_screenshot1](https://user-images.githubusercontent.com/6064913/233389533-02125b89-60a8-451f-984b-dc3bfd1f2fc3.png)
+
 Build Status
 -------------------------------
 
