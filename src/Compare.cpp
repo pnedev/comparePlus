@@ -4265,6 +4265,8 @@ void onNppReady()
 			::EnableMenuItem(hMenu, funcItem[CMD_GIT_DIFF]._cmdID, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
 		}
 
+		readNppBookmarkID();
+
 		NppSettings::get().updatePluginMenu();
 
 		checkCmdLine();

@@ -86,6 +86,9 @@ constexpr int MARKER_MASK_ALL			=	MARKER_MASK_LINE | MARKER_MASK_SYMBOL;
 constexpr int MARGIN_NUM = 4;
 
 
+extern int nppBookmarkMarker;
+
+
 /**
  *  \class
  *  \brief
@@ -620,6 +623,29 @@ inline void setSelection(int view, intptr_t start, intptr_t end, bool scrollView
 	}
 }
 
+
+inline void readNppBookmarkID()
+{
+	nppBookmarkMarker = 1 << static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETBOOKMARKID, 0, 0));
+}
+
+
+// Make sure you have called at least once readNppBookmarkID() before using that functions!
+inline bool isLineBookmarked(int view, intptr_t line)
+{
+	return isLineMarked(view, line, nppBookmarkMarker);
+}
+
+
+// Make sure you have called at least once readNppBookmarkID() before using that functions!
+inline intptr_t getNextBookmarkedLine(int view, intptr_t currentLine)
+{
+	return CallScintilla(view, SCI_MARKERNEXT, currentLine, nppBookmarkMarker);
+}
+
+
+// Make sure you have called at least once readNppBookmarkID() before using that functions!
+std::vector<intptr_t> getAllBookmarkedLines(int view);
 
 intptr_t otherViewMatchingLine(int view, intptr_t line, intptr_t adjustment = 0, bool check = false);
 void activateBufferID(LRESULT buffId);

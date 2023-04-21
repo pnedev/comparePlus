@@ -41,6 +41,8 @@
 
 extern int gMarginWidth;
 
+int nppBookmarkMarker = -1;
+
 
 HWND NppToolbarHandleGetter::hNppToolbar = NULL;
 
@@ -214,6 +216,28 @@ void setBlanksStyle(int view, int blankColor)
 }
 
 } // anonymous namespace
+
+
+// Make sure you have called at least once readNppBookmarkID() before using that functions!
+std::vector<intptr_t> getAllBookmarkedLines(int view)
+{
+	std::vector<intptr_t> bookmarkedLines;
+
+	const intptr_t	linesCount	= CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+	intptr_t		line		= CallScintilla(view, SCI_MARKERNEXT, 0, nppBookmarkMarker);
+
+	while (line >= 0)
+	{
+		bookmarkedLines.emplace_back(line);
+
+		if (++line < linesCount)
+			line = CallScintilla(view, SCI_MARKERNEXT, line, nppBookmarkMarker);
+		else
+			break;
+	}
+
+	return bookmarkedLines;
+}
 
 
 intptr_t otherViewMatchingLine(int view, intptr_t line, intptr_t adjustment, bool check)
