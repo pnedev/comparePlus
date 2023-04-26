@@ -89,9 +89,9 @@ class DiffCalc
 {
 public:
 	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
-		IsCancelledFn isCancelled = nullptr, intptr_t max = INTPTR_MAX);
+		IsCancelledFn isCancelled = nullptr);
 	DiffCalc(const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size,
-		IsCancelledFn isCancelled = nullptr, intptr_t max = INTPTR_MAX);
+		IsCancelledFn isCancelled = nullptr);
 
 	// Runs the actual compare and returns the differences + swap flag indicating if the
 	// compared sequences have been swapped for better results (if true, _a and _b have been swapped,
@@ -103,7 +103,8 @@ public:
 	const DiffCalc& operator=(const DiffCalc&) = delete;
 
 private:
-	static constexpr int _cCancelCheckItrInterval {3000};
+	static constexpr int		_cCancelCheckItrInterval {3000};
+	static constexpr intptr_t	_cDmax {INTPTR_MAX};
 
 	struct middle_snake {
 		intptr_t x, y, u, v;
@@ -125,27 +126,26 @@ private:
 	IsCancelledFn _isCancelled;
 	int _cancelCheckCount;
 
-	std::vector<diff_info<UserDataT>>	_diff;
+	std::vector<diff_info<UserDataT>> _diff;
 
-	const intptr_t		_dmax;
-	varray<intptr_t>	_buf;
+	varray<intptr_t> _buf;
 };
 
 
 template <typename Elem, typename UserDataT>
 DiffCalc<Elem, UserDataT>::DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
-		IsCancelledFn isCancelled, intptr_t max) :
+		IsCancelledFn isCancelled) :
 	_a(v1.data()), _a_size(v1.size()), _b(v2.data()), _b_size(v2.size()),
-	_isCancelled(isCancelled), _cancelCheckCount(_cCancelCheckItrInterval), _dmax(max)
+	_isCancelled(isCancelled), _cancelCheckCount(_cCancelCheckItrInterval)
 {
 }
 
 
 template <typename Elem, typename UserDataT>
 DiffCalc<Elem, UserDataT>::DiffCalc(const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size,
-		IsCancelledFn isCancelled, intptr_t max) :
+		IsCancelledFn isCancelled) :
 	_a(v1), _a_size(v1_size), _b(v2), _b_size(v2_size),
-	_isCancelled(isCancelled), _cancelCheckCount(_cCancelCheckItrInterval), _dmax(max)
+	_isCancelled(isCancelled), _cancelCheckCount(_cCancelCheckItrInterval)
 {
 }
 
@@ -203,8 +203,8 @@ intptr_t DiffCalc<Elem, UserDataT>::_find_middle_snake(intptr_t aoff, intptr_t a
 	{
 		intptr_t k, x, y;
 
-		if ((2 * d - 1) >= _dmax)
-			return _dmax;
+		if ((2 * d - 1) >= _cDmax)
+			return _cDmax;
 
 		if (!--_cancelCheckCount)
 		{
@@ -313,8 +313,8 @@ intptr_t DiffCalc<Elem, UserDataT>::_ses(intptr_t aoff, intptr_t aend, intptr_t 
 		if (d == -1)
 			return -1;
 
-		if (d >= _dmax)
-			return _dmax;
+		if (d >= _cDmax)
+			return _cDmax;
 
 		if (d > 1)
 		{
