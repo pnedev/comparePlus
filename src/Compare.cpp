@@ -1140,7 +1140,7 @@ void ComparedPair::setStatus()
 		{
 			if (!options.findUniqueMode && options.detectMoves)
 			{
-				static constexpr TCHAR detectMovesStr[] = TEXT(" Detect Moves ,");
+				static constexpr TCHAR detectMovesStr[] = TEXT(" Detect Moves |");
 
 				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, detectMovesStr);
 				infoCurrentPos += _countof(detectMovesStr) - 1;
@@ -1149,7 +1149,7 @@ void ComparedPair::setStatus()
 			if (options.ignoreEmptyLines || options.ignoreAllSpaces || options.ignoreChangedSpaces ||
 				options.ignoreCase || options.ignoreRegex)
 			{
-				const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Ignore:%s%s%s%s"),
+				const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Ignore :%s%s%s%s"),
 						options.ignoreEmptyLines	? TEXT(" Empty Lines ,")	: TEXT(""),
 						options.ignoreAllSpaces		? TEXT(" All Spaces ,")	: options.ignoreChangedSpaces
 													? TEXT(" Changed Spaces ,") : TEXT(""),
@@ -3163,7 +3163,7 @@ void ActiveCompareSummary()
 	if (cmpPair->options.ignoreEmptyLines || cmpPair->options.ignoreAllSpaces ||
 		cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreCase || cmpPair->options.ignoreRegex)
 	{
-		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Ignore:%s%s%s%s"),
+		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Ignore :%s%s%s%s"),
 				cmpPair->options.ignoreEmptyLines	? TEXT(" Empty Lines ,")	: TEXT(""),
 				cmpPair->options.ignoreAllSpaces	? TEXT(" All Spaces ,")	: cmpPair->options.ignoreChangedSpaces
 													? TEXT(" Changed Spaces ,") : TEXT(""),
