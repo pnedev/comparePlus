@@ -41,6 +41,7 @@ const TCHAR UserSettings::detectMovesSetting[]				= TEXT("detect_moves");
 const TCHAR UserSettings::detectCharDiffsSetting[]			= TEXT("detect_character_diffs");
 const TCHAR UserSettings::bestSeqChangedLinesSetting[]		= TEXT("best_seq_changed_lines");
 const TCHAR UserSettings::ignoreEmptyLinesSetting[]			= TEXT("ignore_empty_lines");
+const TCHAR UserSettings::ignoreFoldedLinesSetting[]		= TEXT("ignore_folded_lines");
 const TCHAR UserSettings::ignoreChangedSpacesSetting[]		= TEXT("ignore_changed_spaces");
 const TCHAR UserSettings::ignoreAllSpacesSetting[]			= TEXT("ignore_all_spaces");
 const TCHAR UserSettings::ignoreCaseSetting[]				= TEXT("ignore_case");
@@ -121,6 +122,7 @@ void UserSettings::load()
 	DetectCharDiffs		= ::GetPrivateProfileInt(mainSection, detectCharDiffsSetting,		0, iniFile) != 0;
 	BestSeqChangedLines	= ::GetPrivateProfileInt(mainSection, bestSeqChangedLinesSetting,	0, iniFile) != 0;
 	IgnoreEmptyLines	= ::GetPrivateProfileInt(mainSection, ignoreEmptyLinesSetting,		0, iniFile) != 0;
+	IgnoreFoldedLines	= ::GetPrivateProfileInt(mainSection, ignoreFoldedLinesSetting,		0, iniFile) != 0;
 	IgnoreChangedSpaces	= ::GetPrivateProfileInt(mainSection, ignoreChangedSpacesSetting,	0, iniFile) != 0;
 	IgnoreAllSpaces		= ::GetPrivateProfileInt(mainSection, ignoreAllSpacesSetting,		0, iniFile) != 0;
 	IgnoreCase			= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,			0, iniFile) != 0;
@@ -276,6 +278,8 @@ void UserSettings::save()
 			BestSeqChangedLines ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreEmptyLinesSetting,
 			IgnoreEmptyLines ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, ignoreFoldedLinesSetting,
+			IgnoreFoldedLines ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreChangedSpacesSetting,
 			IgnoreChangedSpaces ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreAllSpacesSetting,

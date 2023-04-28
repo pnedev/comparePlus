@@ -567,7 +567,10 @@ void toLowerCase(std::vector<char>& text, int codepage)
 
 void clearWindow(int view)
 {
+	auto foldedLines = getFoldedLines(view);
 	CallScintilla(view, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
+	setFoldedLines(view, foldedLines);
+
 	CallScintilla(view, SCI_ANNOTATIONCLEARALL, 0, 0);
 
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_CHANGED_LINE, 0);
@@ -744,15 +747,19 @@ void hideOutsideRange(int view, intptr_t startLine, intptr_t endLine)
 {
 	const intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
 
+	if (startLine >= 0 && (endLine > startLine && endLine < linesCount))
+	{
+		auto foldedLines = getFoldedLines(view);
+		CallScintilla(view, SCI_SHOWLINES, startLine, endLine);
+		setFoldedLines(view, foldedLines);
+	}
+
 	// First line (0) cannot be hidden so start from line 1
 	if (startLine > 1)
 		CallScintilla(view, SCI_HIDELINES, 1, startLine - 1);
 
 	if (endLine > 0 && endLine + 1 < linesCount)
 		CallScintilla(view, SCI_HIDELINES, endLine + 1, linesCount - 1);
-
-	if (startLine >= 0 && (endLine > startLine && endLine < linesCount))
-		CallScintilla(view, SCI_SHOWLINES, startLine, endLine);
 }
 
 
@@ -861,4 +868,43 @@ void addBlankSectionAfter(int view, intptr_t line, intptr_t length)
 	blank.push_back('\0');
 
 	CallScintilla(view, SCI_ANNOTATIONSETTEXT, getUnhiddenLine(view, line), (LPARAM)blank.data());
+}
+
+
+std::vector<intptr_t> getFoldedLines(int view)
+{
+	const intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+
+	std::vector<intptr_t> foldedLines;
+
+	for (intptr_t line = 0; line < linesCount; ++line)
+	{
+		line = CallScintilla(view, SCI_CONTRACTEDFOLDNEXT, line, 0);
+
+		if (line < 0)
+			break;
+
+		foldedLines.emplace_back(line);
+	}
+
+	return foldedLines;
+}
+
+
+void setFoldedLines(int view, const std::vector<intptr_t>& foldedLines)
+{
+	for (auto line: foldedLines)
+		CallScintilla(view, SCI_FOLDLINE, line, SC_FOLDACTION_CONTRACT);
+}
+
+
+void moveFileToOtherView()
+{
+	const int view = getCurrentViewId();
+
+	auto foldedLines = getFoldedLines(view);
+
+	::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
+
+	setFoldedLines(getOtherViewId(view), foldedLines);
 }

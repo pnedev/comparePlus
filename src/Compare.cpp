@@ -272,6 +272,14 @@ enum Temp_t
 };
 
 
+enum FoldType_t
+{
+	NO_FOLD = 0,
+	FOLD_MATCHES,
+	FOLD_OUTSIDE_SELECTIONS
+};
+
+
 /**
  *  \class
  *  \brief
@@ -352,6 +360,8 @@ public:
 	CompareOptions	options;
 
 	CompareSummary	summary;
+
+	FoldType_t		foldType		= NO_FOLD;
 
 	bool			compareDirty	= false;
 	bool			manuallyChanged	= false;
@@ -964,7 +974,7 @@ void ComparedFile::restore() const
 
 	if (viewIdFromBuffId(buffId) != originalViewId)
 	{
-		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
+		moveFileToOtherView();
 
 		if (!isOpen())
 			return;
@@ -1039,15 +1049,27 @@ void ComparedPair::positionFiles()
 	if (viewIdFromBuffId(oldFile.buffId) != oldFile.compareViewId)
 	{
 		activateBufferID(oldFile.buffId);
-		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
+		moveFileToOtherView();
 		oldFile.updateFromCurrent();
 	}
+
+	// If compare type is LastSaved or Git or SVN diff and folds are to be ignored then expand all folds in the
+	// new (updated) file as its old version is restored unfolded and we shouldn't ignore folds
+	const bool expandNewFileFolds = (options.ignoreFoldedLines && oldFile.isTemp && oldFile.isTemp != CLIPBOARD_TEMP);
 
 	if (viewIdFromBuffId(newFile.buffId) != newFile.compareViewId)
 	{
 		activateBufferID(newFile.buffId);
-		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
+
+		if (expandNewFileFolds)
+			CallScintilla(newFile.originalViewId, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
+
+		moveFileToOtherView();
 		newFile.updateFromCurrent();
+	}
+	else if (expandNewFileFolds)
+	{
+		CallScintilla(newFile.originalViewId, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
 	}
 
 	if (oldFile.sciDoc != getDocId(oldFile.compareViewId))
@@ -1146,11 +1168,12 @@ void ComparedPair::setStatus()
 				infoCurrentPos += _countof(detectMovesStr) - 1;
 			}
 
-			if (options.ignoreEmptyLines || options.ignoreAllSpaces || options.ignoreChangedSpaces ||
-				options.ignoreCase || options.ignoreRegex)
+			if (options.ignoreEmptyLines || options.ignoreFoldedLines || options.ignoreAllSpaces ||
+				options.ignoreChangedSpaces || options.ignoreCase || options.ignoreRegex)
 			{
-				const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Ignore :%s%s%s%s"),
+				const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Ignore :%s%s%s%s%s"),
 						options.ignoreEmptyLines	? TEXT(" Empty Lines ,")	: TEXT(""),
+						options.ignoreFoldedLines	? TEXT(" Folded Lines ,")	: TEXT(""),
 						options.ignoreAllSpaces		? TEXT(" All Spaces ,")	: options.ignoreChangedSpaces
 													? TEXT(" Changed Spaces ,") : TEXT(""),
 						options.ignoreCase			? TEXT(" Case ,")			: TEXT(""),
@@ -1899,6 +1922,10 @@ bool isAlignmentNeeded(int view, const CompareList_t::iterator& cmpPair)
 	{
 		for (; i < maxSize; ++i)
 		{
+			if (isLineFolded(MAIN_VIEW, alignmentInfo[i].main.line) ||
+				isLineFolded(SUB_VIEW, alignmentInfo[i].sub.line))
+				continue;
+
 			if ((alignmentInfo[i].main.diffMask != 0) && (alignmentInfo[i].sub.diffMask != 0) &&
 					(CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) !=
 					CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0)))
@@ -1912,6 +1939,10 @@ bool isAlignmentNeeded(int view, const CompareList_t::iterator& cmpPair)
 	{
 		for (; i < maxSize; ++i)
 		{
+			if (isLineFolded(MAIN_VIEW, alignmentInfo[i].main.line) ||
+				isLineFolded(SUB_VIEW, alignmentInfo[i].sub.line))
+				continue;
+
 			if ((alignmentInfo[i].main.diffMask == alignmentInfo[i].sub.diffMask) &&
 					(CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) !=
 					CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0)))
@@ -1964,29 +1995,40 @@ bool isAlignmentNeeded(int view, const CompareList_t::iterator& cmpPair)
 }
 
 
-void updateViewsFoldState(const CompareList_t::iterator& cmpPair)
+void updateViewsFoldState(CompareList_t::iterator& cmpPair)
 {
 	if (Settings.ShowOnlyDiffs)
 	{
+		cmpPair->foldType = FOLD_MATCHES;
+
 		hideUnmarked(MAIN_VIEW, MARKER_MASK_LINE);
 		hideUnmarked(SUB_VIEW, MARKER_MASK_LINE);
 	}
 	else if (cmpPair->options.selectionCompare && Settings.ShowOnlySelections)
 	{
+		cmpPair->foldType = FOLD_OUTSIDE_SELECTIONS;
+
 		hideOutsideRange(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first,
 				cmpPair->options.selections[MAIN_VIEW].second);
 		hideOutsideRange(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first,
 				cmpPair->options.selections[SUB_VIEW].second);
 	}
-	else
+	else if (cmpPair->foldType != NO_FOLD)
 	{
+		cmpPair->foldType = NO_FOLD;
+
+		auto foldedLines = getFoldedLines(MAIN_VIEW);
 		CallScintilla(MAIN_VIEW, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
+		setFoldedLines(MAIN_VIEW, foldedLines);
+
+		foldedLines = getFoldedLines(SUB_VIEW);
 		CallScintilla(SUB_VIEW, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
+		setFoldedLines(SUB_VIEW, foldedLines);
 	}
 }
 
 
-void alignDiffs(const CompareList_t::iterator& cmpPair)
+void alignDiffs(CompareList_t::iterator& cmpPair)
 {
 	updateViewsFoldState(cmpPair);
 
@@ -2099,6 +2141,9 @@ void alignDiffs(const CompareList_t::iterator& cmpPair)
 
 		if (isLineAnnotated(SUB_VIEW, previousUnhiddenLine))
 			clearAnnotation(SUB_VIEW, previousUnhiddenLine);
+
+		if (isLineFolded(MAIN_VIEW, alignmentInfo[i].main.line) || isLineFolded(SUB_VIEW, alignmentInfo[i].sub.line))
+			continue;
 
 		const intptr_t mismatchLen =
 				CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) -
@@ -2680,6 +2725,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		cmpPair->options.detectCharDiffs			= Settings.DetectCharDiffs;
 		cmpPair->options.bestSeqChangedLines		= Settings.BestSeqChangedLines;
 		cmpPair->options.ignoreEmptyLines			= Settings.IgnoreEmptyLines;
+		cmpPair->options.ignoreFoldedLines			= Settings.IgnoreFoldedLines;
 		cmpPair->options.ignoreChangedSpaces		= Settings.IgnoreChangedSpaces;
 		cmpPair->options.ignoreAllSpaces			= Settings.IgnoreAllSpaces;
 		cmpPair->options.ignoreCase					= Settings.IgnoreCase;
@@ -2711,6 +2757,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 						std::make_pair(1, CallScintilla(tmpView, SCI_GETLINECOUNT, 0, 0) - 1);
 			}
 		}
+
+		cmpPair->foldType = NO_FOLD;
 
 		// New compare?
 		if (!recompare)
@@ -3160,11 +3208,12 @@ void ActiveCompareSummary()
 		infoCurrentPos += _countof(detectMovesStr) - 1;
 	}
 
-	if (cmpPair->options.ignoreEmptyLines || cmpPair->options.ignoreAllSpaces ||
+	if (cmpPair->options.ignoreEmptyLines || cmpPair->options.ignoreFoldedLines || cmpPair->options.ignoreAllSpaces ||
 		cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreCase || cmpPair->options.ignoreRegex)
 	{
-		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Ignore :%s%s%s%s"),
+		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Ignore :%s%s%s%s%s"),
 				cmpPair->options.ignoreEmptyLines	? TEXT(" Empty Lines ,")	: TEXT(""),
+				cmpPair->options.ignoreFoldedLines	? TEXT(" Folded Lines ,")	: TEXT(""),
 				cmpPair->options.ignoreAllSpaces	? TEXT(" All Spaces ,")	: cmpPair->options.ignoreChangedSpaces
 													? TEXT(" Changed Spaces ,") : TEXT(""),
 				cmpPair->options.ignoreCase			? TEXT(" Case ,")			: TEXT(""),
@@ -3215,6 +3264,15 @@ void IgnoreEmptyLines()
 	Settings.IgnoreEmptyLines = !Settings.IgnoreEmptyLines;
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_EMPTY_LINES]._cmdID,
 			(LPARAM)Settings.IgnoreEmptyLines);
+	Settings.markAsDirty();
+}
+
+
+void IgnoreFoldedLines()
+{
+	Settings.IgnoreFoldedLines = !Settings.IgnoreFoldedLines;
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_FOLDED_LINES]._cmdID,
+			(LPARAM)Settings.IgnoreFoldedLines);
 	Settings.markAsDirty();
 }
 
@@ -3593,6 +3651,9 @@ void createMenu()
 
 	_tcscpy_s(funcItem[CMD_IGNORE_EMPTY_LINES]._itemName, nbChar, TEXT("Ignore Empty Lines"));
 	funcItem[CMD_IGNORE_EMPTY_LINES]._pFunc = IgnoreEmptyLines;
+
+	_tcscpy_s(funcItem[CMD_IGNORE_FOLDED_LINES]._itemName, nbChar, TEXT("Ignore Folded Lines"));
+	funcItem[CMD_IGNORE_FOLDED_LINES]._pFunc = IgnoreFoldedLines;
 
 	_tcscpy_s(funcItem[CMD_IGNORE_CHANGED_SPACES]._itemName, nbChar, TEXT("Ignore Changed Spaces"));
 	funcItem[CMD_IGNORE_CHANGED_SPACES]._pFunc = IgnoreChangedSpaces;
@@ -4194,6 +4255,8 @@ void onNppReady()
 			(LPARAM)Settings.BestSeqChangedLines);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_EMPTY_LINES]._cmdID,
 			(LPARAM)Settings.IgnoreEmptyLines);
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_FOLDED_LINES]._cmdID,
+			(LPARAM)Settings.IgnoreFoldedLines);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_CHANGED_SPACES]._cmdID,
 			(LPARAM)Settings.IgnoreChangedSpaces);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_ALL_SPACES]._cmdID,
@@ -4447,6 +4510,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 		const auto text =
 				getText(otherViewId, getLineStart(otherViewId, otherLine), getLineStart(otherViewId, otherLine + 1));
 
+		const bool lineFolded = isLineFoldedFoldPoint(otherViewId, otherLine);
 		const bool lastMarked = (endPos == CallScintilla(viewId, SCI_GETLENGTH, 0, 0));
 
 		ScopedIncrementerInt		inEqualize(cmpPair->inEqualizeMode);
@@ -4472,6 +4536,9 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 			clearMarks(viewId, line);
 
 		CallScintilla(viewId, SCI_INSERTTEXT, startPos, (LPARAM)text.data());
+
+		if (lineFolded)
+			CallScintilla(viewId, SCI_FOLDLINE, line, SC_FOLDACTION_CONTRACT);
 
 		if (Settings.FollowingCaret)
 			CallScintilla(viewId, SCI_SETEMPTYSELECTION, startPos, 0);
@@ -4699,9 +4766,11 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 			copyOtherTillEnd = true;
 		}
 
+		const bool endLineFolded = (!copyOtherTillEnd && isLineFoldedFoldPoint(otherViewId,
+				CallScintilla(otherViewId, SCI_LINEFROMPOSITION, otherMarkedRange.second, 0) - 1));
+
 		if (copyOtherTillEnd)
-			otherMarkedRange.second =
-					getLineEnd(otherViewId, CallScintilla(otherViewId, SCI_GETLINECOUNT, 0, 0) - 1);
+			otherMarkedRange.second = getLineEnd(otherViewId, CallScintilla(otherViewId, SCI_GETLINECOUNT, 0, 0) - 1);
 
 		const auto text = getText(otherViewId, otherMarkedRange.first, otherMarkedRange.second);
 
@@ -4709,6 +4778,10 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 			clearAnnotation(otherViewId, otherStartLine - 1);
 
 		CallScintilla(viewId, SCI_INSERTTEXT, startPos, (LPARAM)text.data());
+
+		if (endLineFolded)
+			CallScintilla(viewId, SCI_FOLDLINE, CallScintilla(viewId, SCI_LINEFROMPOSITION,
+					startPos + otherMarkedRange.second - otherMarkedRange.first, 0) - 1, SC_FOLDACTION_CONTRACT);
 
 		if (Settings.FollowingCaret)
 			CallScintilla(viewId, SCI_SETEMPTYSELECTION, startPos, 0);
@@ -4741,6 +4814,21 @@ void onSciModified(SCNotification* notifyCode)
 	CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(view));
 	if (cmpPair == compareList.end())
 		return;
+
+	// For some reason this notification is never sent by Notepad++ and Scintilla eventhough it is allowed
+	// by SCI_SETMODEVENTMASK
+	// if (notifyCode->modificationType & SC_MOD_CHANGEFOLD)
+	// {
+		// CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
+		// CallScintilla(SUB_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
+
+		// // Use that flag to trigger force re-alignment (nothing to do with selections actually, just reuse the flag)
+		// selectionAutoRecompare = true;
+
+		// delayedAlignment.post(30);
+
+		// return;
+	// }
 
 	std::shared_ptr<DeletedSection::UndoData> undo = nullptr;
 
@@ -4995,8 +5083,8 @@ void onSciModified(SCNotification* notifyCode)
 
 			if (selectionsAdjusted)
 			{
-				CallScintilla(view, SCI_ANNOTATIONCLEARALL, 0, 0);
-				CallScintilla(getOtherViewId(view), SCI_ANNOTATIONCLEARALL, 0, 0);
+				CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
+				CallScintilla(SUB_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
 
 				selectionAutoRecompare = true; // Force re-alignment in onSciPaint()
 			}
@@ -5157,7 +5245,7 @@ void DelayedClose::operator()()
 		const LRESULT newBuffId = getCurrentBuffId();
 
 		activateBufferID(currentBuffId);
-		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
+		moveFileToOtherView();
 		activateBufferID(newBuffId);
 		::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_CLOSE);
 	}
@@ -5391,7 +5479,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 				onFileSaved(notifyCode->nmhdr.idFrom);
 		break;
 
-		// This is used to monitor deletion of lines to properly clear their compare markings
+		// This is used to monitor fold state and deletion of lines to properly clear their compare markings
 		case SCN_MODIFIED:
 			if (NppSettings::get().compareMode && !notificationsLock)
 				onSciModified(notifyCode);

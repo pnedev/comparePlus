@@ -518,14 +518,14 @@ inline intptr_t getFirstVisibleLineOffset(int view, intptr_t line)
 }
 
 
-inline bool getNextFoldPointIfFolded(int view, intptr_t* line)
+inline bool getNextLineAfterFold(int view, intptr_t* line)
 {
 	const intptr_t foldParent = CallScintilla(view, SCI_GETFOLDPARENT, *line, 0);
 
-	if (CallScintilla(view, SCI_GETFOLDEXPANDED, foldParent, 0) != 0)
+	if ((foldParent < 0) || (CallScintilla(view, SCI_GETFOLDEXPANDED, foldParent, 0) != 0))
 		return false;
 
-	while (foldParent == CallScintilla(view, SCI_GETFOLDPARENT, ++(*line), 0));
+	*line = CallScintilla(view, SCI_GETLASTCHILD, foldParent, -1) + 1;
 
 	return true;
 }
@@ -563,9 +563,17 @@ inline bool isLineHidden(int view, intptr_t line)
 
 inline bool isLineFolded(int view, intptr_t line)
 {
-	const intptr_t foldLine = CallScintilla(view, SCI_GETFOLDPARENT, line, 0);
+	const intptr_t foldParent = CallScintilla(view, SCI_GETFOLDPARENT, line, 0);
 
-	return (CallScintilla(view, SCI_GETFOLDEXPANDED, foldLine, 0) == 0);
+	return (foldParent >= 0 && CallScintilla(view, SCI_GETFOLDEXPANDED, foldParent, 0) == 0);
+}
+
+
+inline bool isLineFoldedFoldPoint(int view, intptr_t line)
+{
+	const intptr_t contractedFold = CallScintilla(view, SCI_CONTRACTEDFOLDNEXT, line, 0);
+
+	return (contractedFold >= 0 && contractedFold == line);
 }
 
 
@@ -717,3 +725,8 @@ void toLowerCase(std::vector<char>& text, int codepage = CP_UTF8);
 void addBlankSection(int view, intptr_t line, intptr_t length, intptr_t selectionMarkPosition = 0,
 		const char *text = nullptr);
 void addBlankSectionAfter(int view, intptr_t line, intptr_t length);
+
+std::vector<intptr_t> getFoldedLines(int view);
+void setFoldedLines(int view, const std::vector<intptr_t>& foldedLines);
+
+void moveFileToOtherView();

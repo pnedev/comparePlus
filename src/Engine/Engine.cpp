@@ -437,7 +437,7 @@ uint64_t getRegexIgnoreLineHash(uint64_t hashSeed, int codepage, const std::vect
 
 void getLines(DocCmpInfo& doc, const CompareOptions& options)
 {
-	static constexpr int monitorCancelEveryXLine = 500;
+	static constexpr int monitorCancelEveryXLine = 1000;
 
 	progress_ptr& progress = ProgressDlg::Get();
 
@@ -474,7 +474,15 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 			cancelCheckCount = monitorCancelEveryXLine;
 		}
 
-		const intptr_t docLine		= secLine + doc.section.off;
+		intptr_t docLine = secLine + doc.section.off;
+
+		if (options.ignoreFoldedLines && getNextLineAfterFold(doc.view, &docLine))
+		{
+			--docLine;
+			secLine = docLine - doc.section.off;
+			continue;
+		}
+
 		const intptr_t lineStart	= getLineStart(doc.view, docLine);
 		const intptr_t lineEnd		= getLineEnd(doc.view, docLine);
 
@@ -1784,6 +1792,13 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 }
 
 
+inline void markLine(int view, intptr_t line, int mark)
+{
+	CallScintilla(view, SCI_ENSUREVISIBLE, line, 0);
+	CallScintilla(view, SCI_MARKERADDSET, line, mark);
+}
+
+
 void markSection(const DocCmpInfo& doc, const diffInfo& bd, const CompareOptions& options)
 {
 	const intptr_t endOff = doc.section.off + doc.section.len;
@@ -1805,12 +1820,12 @@ void markSection(const DocCmpInfo& doc, const diffInfo& bd, const CompareOptions
 				const int mark = (doc.nonUniqueLines.find(docLine) == doc.nonUniqueLines.end()) ? doc.blockDiffMask :
 						(doc.blockDiffMask == MARKER_MASK_ADDED) ? MARKER_MASK_ADDED_LOCAL : MARKER_MASK_REMOVED_LOCAL;
 
-				CallScintilla(doc.view, SCI_MARKERADDSET, docLine, mark);
+				markLine(doc.view, docLine, mark);
 
 				if (options.ignoreEmptyLines && !options.neverMarkIgnored)
 				{
 					for (; prevLine < docLine; ++prevLine)
-						CallScintilla(doc.view, SCI_MARKERADDSET, prevLine, doc.blockDiffMask & MARKER_MASK_LINE);
+						markLine(doc.view, prevLine, doc.blockDiffMask & MARKER_MASK_LINE);
 
 					prevLine = docLine + 1;
 				}
@@ -1821,11 +1836,11 @@ void markSection(const DocCmpInfo& doc, const diffInfo& bd, const CompareOptions
 		}
 		else if (movedLen == 1)
 		{
-			CallScintilla(doc.view, SCI_MARKERADDSET, doc.lines[line].line, MARKER_MASK_MOVED_LINE);
+			markLine(doc.view, doc.lines[line].line, MARKER_MASK_MOVED_LINE);
 		}
 		else
 		{
-			CallScintilla(doc.view, SCI_MARKERADDSET, doc.lines[line].line, MARKER_MASK_MOVED_BEGIN);
+			markLine(doc.view, doc.lines[line].line, MARKER_MASK_MOVED_BEGIN);
 
 			i += --movedLen;
 
@@ -1835,24 +1850,24 @@ void markSection(const DocCmpInfo& doc, const diffInfo& bd, const CompareOptions
 			for (++line; line < endLine; ++line)
 			{
 				const intptr_t docLine = doc.lines[line].line;
-				CallScintilla(doc.view, SCI_MARKERADDSET, docLine, MARKER_MASK_MOVED_MID);
+				markLine(doc.view, docLine, MARKER_MASK_MOVED_MID);
 
 				if (options.ignoreEmptyLines && !options.neverMarkIgnored)
 				{
 					for (; prevLine < docLine; ++prevLine)
-						CallScintilla(doc.view, SCI_MARKERADDSET, prevLine, MARKER_MASK_MOVED_MID & MARKER_MASK_LINE);
+						markLine(doc.view, prevLine, MARKER_MASK_MOVED_MID & MARKER_MASK_LINE);
 
 					prevLine = docLine + 1;
 				}
 			}
 
 			const intptr_t docLine = doc.lines[line].line;
-			CallScintilla(doc.view, SCI_MARKERADDSET, docLine, MARKER_MASK_MOVED_END);
+			markLine(doc.view, docLine, MARKER_MASK_MOVED_END);
 
 			if (options.ignoreEmptyLines && !options.neverMarkIgnored)
 			{
 				for (; prevLine < docLine; ++prevLine)
-					CallScintilla(doc.view, SCI_MARKERADDSET, prevLine, MARKER_MASK_MOVED_MID & MARKER_MASK_LINE);
+					markLine(doc.view, prevLine, MARKER_MASK_MOVED_MID & MARKER_MASK_LINE);
 			}
 		}
 	}
@@ -1869,8 +1884,7 @@ void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, intptr_t line
 	for (const auto& change: bd.info.changedLines[lineIdx].changes)
 		markTextAsChanged(cmpInfo.doc1.view, linePos + change.off, change.len, color);
 
-	CallScintilla(cmpInfo.doc1.view, SCI_MARKERADDSET, line,
-			cmpInfo.doc1.nonUniqueLines.find(line) == cmpInfo.doc1.nonUniqueLines.end() ?
+	markLine(cmpInfo.doc1.view, line, cmpInfo.doc1.nonUniqueLines.find(line) == cmpInfo.doc1.nonUniqueLines.end() ?
 			MARKER_MASK_CHANGED : MARKER_MASK_CHANGED_LOCAL);
 
 	line = cmpInfo.doc2.lines[bd.info.matchBlock->off + bd.info.matchBlock->info.changedLines[lineIdx].line].line;
@@ -1881,8 +1895,7 @@ void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, intptr_t line
 	for (const auto& change: bd.info.matchBlock->info.changedLines[lineIdx].changes)
 		markTextAsChanged(cmpInfo.doc2.view, linePos + change.off, change.len, color);
 
-	CallScintilla(cmpInfo.doc2.view, SCI_MARKERADDSET, line,
-			cmpInfo.doc2.nonUniqueLines.find(line) == cmpInfo.doc2.nonUniqueLines.end() ?
+	markLine(cmpInfo.doc2.view, line, cmpInfo.doc2.nonUniqueLines.find(line) == cmpInfo.doc2.nonUniqueLines.end() ?
 			MARKER_MASK_CHANGED : MARKER_MASK_CHANGED_LOCAL);
 }
 
@@ -2416,7 +2429,7 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 		{
 			for (const auto& line: uniqueLine.second)
 			{
-				CallScintilla(doc1.view, SCI_MARKERADDSET, line, doc1.blockDiffMask);
+				markLine(doc1.view, line, doc1.blockDiffMask);
 				++doc1UniqueLinesCount;
 			}
 		}
@@ -2433,7 +2446,7 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 	for (const auto& uniqueLine: doc2UniqueLines)
 	{
 		for (const auto& line: uniqueLine.second)
-			CallScintilla(doc2.view, SCI_MARKERADDSET, line, doc2.blockDiffMask);
+			markLine(doc2.view, line, doc2.blockDiffMask);
 
 		if (doc2.blockDiffMask == MARKER_MASK_ADDED)
 			summary.added += uniqueLine.second.size();
