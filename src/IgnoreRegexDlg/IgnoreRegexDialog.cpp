@@ -40,13 +40,19 @@ INT_PTR CALLBACK IgnoreRegexDialog::run_dlgProc(UINT Message, WPARAM wParam, LPA
 	{
 		case WM_INITDIALOG:
 		{
+			registerDlgForDarkMode(_hSelf);
+
 			goToCenter();
 
+#ifdef UNIX
 			ETDTProc EnableDlgTheme =
-					(ETDTProc)::SendMessage(_nppData._nppHandle, NPPM_GETENABLETHEMETEXTUREFUNC, 0, 0);
+					(ETDTProc)::SendMessage(_nppData._nppHandle, NPPM_GETENABLETHEMETEXTUREFUNC_DEPRECATED, 0, 0);
 
 			if (EnableDlgTheme != NULL)
 				EnableDlgTheme(_hSelf, ETDT_ENABLETAB);
+#else
+			::EnableThemeDialogTexture(_hSelf, ETDT_ENABLETAB);
+#endif
 
 			SetParams();
 		}

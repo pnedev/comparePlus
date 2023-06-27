@@ -63,6 +63,7 @@ typedef sptr_t (*SciFnDirectStatus)(sptr_t ptr, unsigned int iMessage, uptr_t wP
 #define SCI_SELECTALL 2013
 #define SCI_SETSAVEPOINT 2014
 #define SCI_GETSTYLEDTEXT 2015
+#define SCI_GETSTYLEDTEXTFULL 2778
 #define SCI_CANREDO 2016
 #define SCI_MARKERLINEFROMHANDLE 2017
 #define SCI_MARKERDELETEHANDLE 2018
@@ -557,6 +558,7 @@ typedef sptr_t (*SciFnDirectStatus)(sptr_t ptr, unsigned int iMessage, uptr_t wP
 #define SCI_TARGETWHOLEDOCUMENT 2690
 #define SCI_REPLACETARGET 2194
 #define SCI_REPLACETARGETRE 2195
+#define SCI_REPLACETARGETMINIMAL 2779
 #define SCI_SEARCHINTARGET 2197
 #define SCI_SETSEARCHFLAGS 2198
 #define SCI_GETSEARCHFLAGS 2199
@@ -1240,6 +1242,7 @@ typedef sptr_t (*SciFnDirectStatus)(sptr_t ptr, unsigned int iMessage, uptr_t wP
 #define SC_AC_TAB 3
 #define SC_AC_NEWLINE 4
 #define SC_AC_COMMAND 5
+#define SC_AC_SINGLE_CHOICE 6
 #define SC_CHARACTERSOURCE_DIRECT_INPUT 0
 #define SC_CHARACTERSOURCE_TENTATIVE_INPUT 1
 #define SC_CHARACTERSOURCE_IME_RESULT 2
@@ -1293,39 +1296,33 @@ typedef sptr_t (*SciFnDirectStatus)(sptr_t ptr, unsigned int iMessage, uptr_t wP
 /* These structures are defined to be exactly the same shape as the Win32
  * CHARRANGE, TEXTRANGE, FINDTEXTEX, FORMATRANGE, and NMHDR structs.
  * So older code that treats Scintilla as a RichEdit will work. */
-/*
-* Note from Notepad++ : Sci_CharacterRange is disableed for Notepad++. Please use Sci_CharacterRangeFull instead.
-*
+
 struct Sci_CharacterRange {
 	Sci_PositionCR cpMin;
 	Sci_PositionCR cpMax;
 };
-*/
+
 struct Sci_CharacterRangeFull {
 	Sci_Position cpMin;
 	Sci_Position cpMax;
 };
-/*
-* Note from Notepad++ : Sci_TextRange is disableed for Notepad++. Please use Sci_TextRangeFull instead.
-*
+
 struct Sci_TextRange {
 	struct Sci_CharacterRange chrg;
 	char *lpstrText;
 };
-*/
+
 struct Sci_TextRangeFull {
 	struct Sci_CharacterRangeFull chrg;
 	char *lpstrText;
 };
-/*
-* Note from Notepad++ : Sci_TextToFind is disableed for Notepad++. Please use Sci_TextToFindFull instead.
-*
+
 struct Sci_TextToFind {
 	struct Sci_CharacterRange chrg;
 	const char *lpstrText;
 	struct Sci_CharacterRange chrgText;
 };
-*/
+
 struct Sci_TextToFindFull {
 	struct Sci_CharacterRangeFull chrg;
 	const char *lpstrText;
@@ -1343,9 +1340,7 @@ struct Sci_Rectangle {
 
 /* This structure is used in printing and requires some of the graphics types
  * from Platform.h.  Not needed by most client code. */
-/*
-* Note from Notepad++ : Sci_RangeToFormat is disableed for Notepad++. Please use Sci_RangeToFormatFull instead.
-*
+
 struct Sci_RangeToFormat {
 	Sci_SurfaceID hdc;
 	Sci_SurfaceID hdcTarget;
@@ -1353,7 +1348,7 @@ struct Sci_RangeToFormat {
 	struct Sci_Rectangle rcPage;
 	struct Sci_CharacterRange chrg;
 };
-*/
+
 struct Sci_RangeToFormatFull {
 	Sci_SurfaceID hdc;
 	Sci_SurfaceID hdcTarget;

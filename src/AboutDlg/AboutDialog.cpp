@@ -24,6 +24,8 @@
 #include "resource.h"
 #include "DockingFeature/Window.h"
 
+#include "NppHelpers.h"
+
 
 static const TCHAR cDonate_URL[]	= TEXT("https://www.paypal.com/paypalme/pnedev");
 static const TCHAR cRepo_URL[]		= TEXT("https://github.com/pnedev/comparePlus");
@@ -42,6 +44,8 @@ INT_PTR CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*
 	{
 		case WM_INITDIALOG :
 		{
+			registerDlgForDarkMode(_hSelf);
+
 			goToCenter();
 
 			TCHAR buildTimeStr[256];

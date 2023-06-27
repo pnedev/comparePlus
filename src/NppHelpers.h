@@ -671,6 +671,13 @@ inline bool isDarkModeNPP()
 }
 
 
+inline void registerDlgForDarkMode(HWND hwnd)
+{
+	::SendMessage(nppData._nppHandle, NPPM_DARKMODESUBCLASSANDTHEME,
+			static_cast<WPARAM>(NppDarkMode::dmfInit), reinterpret_cast<LPARAM>(hwnd));
+}
+
+
 bool isCurrentFileSaved();
 
 bool isDarkMode();
