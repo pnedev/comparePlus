@@ -15,6 +15,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma comment (lib, "uxtheme")
+
+
 #include "IgnoreRegexDialog.h"
 
 #include <windowsx.h>
@@ -44,15 +47,7 @@ INT_PTR CALLBACK IgnoreRegexDialog::run_dlgProc(UINT Message, WPARAM wParam, LPA
 
 			goToCenter();
 
-#ifdef UNIX
-			ETDTProc EnableDlgTheme =
-					(ETDTProc)::SendMessage(_nppData._nppHandle, NPPM_GETENABLETHEMETEXTUREFUNC_DEPRECATED, 0, 0);
-
-			if (EnableDlgTheme != NULL)
-				EnableDlgTheme(_hSelf, ETDT_ENABLETAB);
-#else
 			::EnableThemeDialogTexture(_hSelf, ETDT_ENABLETAB);
-#endif
 
 			SetParams();
 		}
