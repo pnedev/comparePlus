@@ -255,18 +255,18 @@ struct Conv
 		return *this;
 	}
 
-	void Set(float c, intptr_t dc)
+	inline void Set(float c, intptr_t dc)
 	{
 		convergence = c;
 		diffsCount = dc;
 	}
 
-	bool operator>(const Conv& rhs) const
+	inline bool operator>(const Conv& rhs) const
 	{
-		return ((diffsCount < rhs.diffsCount) || ((diffsCount == rhs.diffsCount) && (convergence > rhs.convergence)));
+		return (((diffsCount == rhs.diffsCount) && (convergence > rhs.convergence)) || (diffsCount < rhs.diffsCount));
 	}
 
-	bool operator==(const Conv& rhs) const
+	inline bool operator==(const Conv& rhs) const
 	{
 		return ((diffsCount == rhs.diffsCount) && (convergence == rhs.convergence));
 	}
@@ -286,14 +286,14 @@ struct LinesConv
 	LinesConv(const Conv& c, intptr_t l1, intptr_t l2) : conv(c), line1(l1), line2(l2)
 	{}
 
-	void Set(const Conv& c, intptr_t l1, intptr_t l2)
+	inline void Set(const Conv& c, intptr_t l1, intptr_t l2)
 	{
 		conv = c;
 		line1 = l1;
 		line2 = l2;
 	}
 
-	bool operator<(const LinesConv& rhs) const
+	inline bool operator<(const LinesConv& rhs) const
 	{
 		return ((conv > rhs.conv) || ((conv == rhs.conv) && (line2 < rhs.line2)));
 	}
@@ -1425,6 +1425,15 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 	const intptr_t linesCount1 = static_cast<intptr_t>(chunk1.size());
 	const intptr_t linesCount2 = static_cast<intptr_t>(chunk2.size());
 
+	std::vector<std::vector<Word>> words2(linesCount2);
+
+	if (!options.detectCharDiffs)
+	{
+		for (intptr_t line2 = 0; line2 < linesCount2; ++line2)
+			if (!chunk2[line2].empty())
+				words2[line2] = getLineWords(doc2.view, doc2.lines[blockDiff2.off + line2].line, options);
+	}
+
 	std::vector<std::set<LinesConv>> lines1Convergence(linesCount1);
 	std::vector<std::set<LinesConv>> lines2Convergence(linesCount2);
 
@@ -1469,39 +1478,76 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 					intptr_t matchesCount	= 0;
 					intptr_t diffsCount		= 0;
 
-					auto charDiffs = DiffCalc<Char>(chunk1[line1], chunk2[line2],
-							std::bind(&ProgressDlg::IsCancelled, progress))();
-
-					if (progress->IsCancelled())
-						return;
-
-					const intptr_t charDiffsSize = static_cast<intptr_t>(charDiffs.first.size());
-
-					for (intptr_t i = 0; i < charDiffsSize; ++i)
+					if (!options.detectCharDiffs)
 					{
-						if (charDiffs.first[i].type == diff_type::DIFF_MATCH)
-						{
-							matchesCount += charDiffs.first[i].len;
-						}
-						else if (options.bestSeqChangedLines)
-						{
-							++diffsCount;
+						if (words1.empty())
+							words1 = getLineWords(doc1.view, doc1.lines[blockDiff1.off + line1].line, options);
 
-							// Count replacement as a single diff
-							if ((i + 1 < charDiffsSize) && (charDiffs.first[i + 1].type == diff_type::DIFF_IN_2))
-								++i;
+						auto wordDiffs = DiffCalc<Word>(words1, words2[line2],
+								std::bind(&ProgressDlg::IsCancelled, progress))(true);
+
+						if (progress->IsCancelled())
+							return;
+
+						const std::vector<Word>& rWord = wordDiffs.second ? words2[line2] : words1;
+
+						const intptr_t wordDiffsSize = static_cast<intptr_t>(wordDiffs.first.size());
+
+						for (intptr_t i = 0; i < wordDiffsSize; ++i)
+						{
+							if (wordDiffs.first[i].type == diff_type::DIFF_MATCH)
+							{
+								for (intptr_t n = 0; n < wordDiffs.first[i].len; ++n)
+									matchesCount += rWord[wordDiffs.first[i].off + n].len;
+							}
+							else
+							{
+								if (options.bestSeqChangedLines)
+									++diffsCount;
+
+								// Count replacement as a single diff
+								if ((i + 1 < wordDiffsSize) && (wordDiffs.first[i + 1].type == diff_type::DIFF_IN_2))
+									++i;
+							}
 						}
 					}
+					else
+					{
+						auto charDiffs = DiffCalc<Char>(chunk1[line1], chunk2[line2],
+								std::bind(&ProgressDlg::IsCancelled, progress))();
+
+						if (progress->IsCancelled())
+							return;
+
+						const intptr_t charDiffsSize = static_cast<intptr_t>(charDiffs.first.size());
+
+						for (intptr_t i = 0; i < charDiffsSize; ++i)
+						{
+							if (charDiffs.first[i].type == diff_type::DIFF_MATCH)
+							{
+								matchesCount += charDiffs.first[i].len;
+							}
+							else if (options.bestSeqChangedLines)
+							{
+								if (options.bestSeqChangedLines)
+									++diffsCount;
+
+								// Count replacement as a single diff
+								if ((i + 1 < charDiffsSize) && (charDiffs.first[i + 1].type == diff_type::DIFF_IN_2))
+									++i;
+							}
+						}
+					}
+
+#if defined(MULTITHREAD) && (MULTITHREAD != 0)
+					std::lock_guard<std::mutex> lock(mtx);
+#endif
 
 					if (((matchesCount * 100) / maxSize) >= options.changedThresholdPercent)
 					{
 						const float lineConvergence = (static_cast<float>(matchesCount) * 100) / maxSize;
 
-						Conv conv(lineConvergence, diffsCount);
-
-#if defined(MULTITHREAD) && (MULTITHREAD != 0)
-						std::lock_guard<std::mutex> lock(mtx);
-#endif
+						const Conv conv(lineConvergence, diffsCount);
 
 						if (!progress->Advance(linesProgress + 1))
 							return;
@@ -1554,10 +1600,6 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 					}
 					else
 					{
-#if defined(MULTITHREAD) && (MULTITHREAD != 0)
-						std::lock_guard<std::mutex> lock(mtx);
-#endif
-
 						if (!progress->Advance(linesProgress + 1))
 							return;
 
