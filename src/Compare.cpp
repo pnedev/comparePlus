@@ -3702,6 +3702,8 @@ void deinitPlugin()
 			funcItem[i]._pShKey = NULL;
 		}
 	}
+
+	releaseExtendedStyles();
 }
 
 
