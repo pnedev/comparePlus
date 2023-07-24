@@ -381,6 +381,8 @@ void setNormalView(int view)
 		CallScintilla(view, SCI_SETCARETLINELAYER, SC_LAYER_BASE, 0);
 
 		CallScintilla(view, SCI_SETELEMENTCOLOUR, SC_ELEMENT_HIDDEN_LINE, hiddenLinesColor[view]);
+
+		CallScintilla(view, SCI_ANNOTATIONSETSTYLEOFFSET, 0, 0);
 	}
 }
 
