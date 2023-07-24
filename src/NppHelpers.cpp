@@ -496,9 +496,6 @@ void setStyles(UserSettings& settings)
 	defineRgbaSymbol(MARKER_MOVED_BLOCK_END_SYMBOL,		icon_moved_block_end);
 
 	setTextStyle(settings.colors().highlight_transparency);
-
-	setBlanksStyle(MAIN_VIEW,	settings.colors().blank);
-	setBlanksStyle(SUB_VIEW,	settings.colors().blank);
 }
 
 
