@@ -238,37 +238,44 @@ struct MatchInfo
 
 struct Conv
 {
-	float		convergence;
-	intptr_t	diffsCount;
+	float convergence;
+	float longestMatchRatio;
 
-	Conv(float c = 0, intptr_t dc = 0) : convergence(c), diffsCount(dc)
+	Conv(float c = 0, float lm = 0) : convergence(c), longestMatchRatio(lm)
 	{}
 
-	Conv(const Conv& c) : convergence(c.convergence), diffsCount(c.diffsCount)
+	Conv(const Conv& c) : convergence(c.convergence), longestMatchRatio(c.longestMatchRatio)
 	{}
 
 	const Conv& operator=(const Conv& rhs)
 	{
 		if (&rhs != this)
-			Set(rhs.convergence, rhs.diffsCount);
+			Set(rhs.convergence, rhs.longestMatchRatio);
 
 		return *this;
 	}
 
-	inline void Set(float c, intptr_t dc)
+	inline void Set(float c, float lm)
 	{
 		convergence = c;
-		diffsCount = dc;
+		longestMatchRatio = lm;
 	}
 
 	inline bool operator>(const Conv& rhs) const
 	{
-		return (((diffsCount == rhs.diffsCount) && (convergence > rhs.convergence)) || (diffsCount < rhs.diffsCount));
+		return ((convergence > rhs.convergence) ||
+				((convergence == rhs.convergence) && (longestMatchRatio > rhs.longestMatchRatio)));
 	}
 
 	inline bool operator==(const Conv& rhs) const
 	{
-		return ((diffsCount == rhs.diffsCount) && (convergence == rhs.convergence));
+		return ((convergence == rhs.convergence) && (longestMatchRatio == rhs.longestMatchRatio));
+	}
+
+	inline bool operator>=(const Conv& rhs) const
+	{
+		return ((convergence > rhs.convergence) ||
+				((convergence == rhs.convergence) && (longestMatchRatio >= rhs.longestMatchRatio)));
 	}
 };
 
@@ -1476,7 +1483,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 					}
 
 					intptr_t matchesCount	= 0;
-					intptr_t diffsCount		= 0;
+					intptr_t longestMatch	= 0;
 
 					if (!options.detectCharDiffs)
 					{
@@ -1497,17 +1504,15 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 						{
 							if (wordDiffs.first[i].type == diff_type::DIFF_MATCH)
 							{
-								for (intptr_t n = 0; n < wordDiffs.first[i].len; ++n)
-									matchesCount += rWord[wordDiffs.first[i].off + n].len;
-							}
-							else
-							{
-								if (options.bestSeqChangedLines)
-									++diffsCount;
+								intptr_t matchLen = 0;
 
-								// Count replacement as a single diff
-								if ((i + 1 < wordDiffsSize) && (wordDiffs.first[i + 1].type == diff_type::DIFF_IN_2))
-									++i;
+								for (intptr_t n = 0; n < wordDiffs.first[i].len; ++n)
+									matchLen += rWord[wordDiffs.first[i].off + n].len;
+
+								matchesCount += matchLen;
+
+								if (matchLen > longestMatch)
+									longestMatch = matchLen;
 							}
 						}
 					}
@@ -1527,15 +1532,6 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 							{
 								matchesCount += charDiffs.first[i].len;
 							}
-							else if (options.bestSeqChangedLines)
-							{
-								if (options.bestSeqChangedLines)
-									++diffsCount;
-
-								// Count replacement as a single diff
-								if ((i + 1 < charDiffsSize) && (charDiffs.first[i + 1].type == diff_type::DIFF_IN_2))
-									++i;
-							}
 						}
 					}
 
@@ -1545,9 +1541,10 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 
 					if (((matchesCount * 100) / maxSize) >= options.changedThresholdPercent)
 					{
-						const float lineConvergence = (static_cast<float>(matchesCount) * 100) / maxSize;
+						const float lineConvergence		= (static_cast<float>(matchesCount) * 100) / maxSize;
+						const float longestMatchRatio	= (static_cast<float>(longestMatch) * 100) / maxSize;
 
-						const Conv conv(lineConvergence, diffsCount);
+						const Conv conv(lineConvergence, longestMatchRatio);
 
 						if (!progress->Advance(linesProgress + 1))
 							return;
