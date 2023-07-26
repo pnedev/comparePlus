@@ -862,10 +862,3 @@ void addBlankSectionAfter(int view, intptr_t line, intptr_t length)
 
 	CallScintilla(view, SCI_ANNOTATIONSETTEXT, getUnhiddenLine(view, line), (LPARAM)blank.data());
 }
-
-
-void releaseExtendedStyles()
-{
-	CallScintilla(MAIN_VIEW, SCI_RELEASEALLEXTENDEDSTYLES, 0, 0);
-	CallScintilla(SUB_VIEW, SCI_RELEASEALLEXTENDEDSTYLES, 0, 0);
-}

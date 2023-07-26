@@ -717,5 +717,3 @@ void toLowerCase(std::vector<char>& text, int codepage = CP_UTF8);
 void addBlankSection(int view, intptr_t line, intptr_t length, intptr_t selectionMarkPosition = 0,
 		const char *text = nullptr);
 void addBlankSectionAfter(int view, intptr_t line, intptr_t length);
-
-void releaseExtendedStyles();
