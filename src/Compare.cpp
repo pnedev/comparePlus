@@ -2723,7 +2723,6 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		cmpPair->options.neverMarkIgnored			= Settings.NeverMarkIgnored;
 		cmpPair->options.detectMoves				= Settings.DetectMoves;
 		cmpPair->options.detectCharDiffs			= Settings.DetectCharDiffs;
-		cmpPair->options.bestSeqChangedLines		= Settings.BestSeqChangedLines;
 		cmpPair->options.ignoreEmptyLines			= Settings.IgnoreEmptyLines;
 		cmpPair->options.ignoreFoldedLines			= Settings.IgnoreFoldedLines;
 		cmpPair->options.ignoreChangedSpaces		= Settings.IgnoreChangedSpaces;
@@ -3250,15 +3249,6 @@ void DetectCharDiffs()
 }
 
 
-void BestSeqChangedLines()
-{
-	Settings.BestSeqChangedLines = !Settings.BestSeqChangedLines;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_BEST_SEQ_CHANGED_LINES]._cmdID,
-			(LPARAM)Settings.BestSeqChangedLines);
-	Settings.markAsDirty();
-}
-
-
 void IgnoreEmptyLines()
 {
 	Settings.IgnoreEmptyLines = !Settings.IgnoreEmptyLines;
@@ -3644,10 +3634,6 @@ void createMenu()
 
 	_tcscpy_s(funcItem[CMD_DETECT_CHAR_DIFFS]._itemName, nbChar, TEXT("Detect Character Diffs"));
 	funcItem[CMD_DETECT_CHAR_DIFFS]._pFunc = DetectCharDiffs;
-
-	_tcscpy_s(funcItem[CMD_BEST_SEQ_CHANGED_LINES]._itemName, nbChar,
-			TEXT("Detect Changed Lines by Best Matching Sequence"));
-	funcItem[CMD_BEST_SEQ_CHANGED_LINES]._pFunc = BestSeqChangedLines;
 
 	_tcscpy_s(funcItem[CMD_IGNORE_EMPTY_LINES]._itemName, nbChar, TEXT("Ignore Empty Lines"));
 	funcItem[CMD_IGNORE_EMPTY_LINES]._pFunc = IgnoreEmptyLines;
@@ -4251,8 +4237,6 @@ void onNppReady()
 			(LPARAM)Settings.DetectMoves);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_CHAR_DIFFS]._cmdID,
 			(LPARAM)Settings.DetectCharDiffs);
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_BEST_SEQ_CHANGED_LINES]._cmdID,
-			(LPARAM)Settings.BestSeqChangedLines);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_EMPTY_LINES]._cmdID,
 			(LPARAM)Settings.IgnoreEmptyLines);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_FOLDED_LINES]._cmdID,
