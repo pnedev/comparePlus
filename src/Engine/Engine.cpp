@@ -1216,7 +1216,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 		diffInfo* pBlockDiff2 = &blockDiff2;
 
 		// First use word granularity (find matching words) for better precision
-		auto wordDiffRes = DiffCalc<Word>(lineWords1, lineWords2)(!options.detectCharDiffs, true);
+		auto wordDiffRes = DiffCalc<Word>(lineWords1, lineWords2)(false, true);
 		const std::vector<diff_info<void>> lineDiffs = std::move(wordDiffRes.first);
 
 		if (wordDiffRes.second)
@@ -1491,7 +1491,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 							words1 = getLineWords(doc1.view, doc1.lines[blockDiff1.off + line1].line, options);
 
 						auto wordDiffs = DiffCalc<Word>(words1, words2[line2],
-								std::bind(&ProgressDlg::IsCancelled, progress))(true);
+								std::bind(&ProgressDlg::IsCancelled, progress))();
 
 						if (progress->IsCancelled())
 							return;
@@ -2301,7 +2301,7 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 		return CompareResult::COMPARE_CANCELLED;
 
 	auto diffRes = DiffCalc<Line, blockDiffInfo>(cmpInfo.doc1.lines, cmpInfo.doc2.lines,
-			std::bind(&ProgressDlg::IsCancelled, progress))(true, true);
+		std::bind(&ProgressDlg::IsCancelled, progress))(options.ignoreAllSpaces || options.ignoreChangedSpaces, true);
 
 	if (progress->IsCancelled())
 		return CompareResult::COMPARE_CANCELLED;
