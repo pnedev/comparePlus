@@ -1637,7 +1637,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 
 	if (threadsCount > 1)
 	{
-		constexpr intptr_t jobsPerThread = 50;
+		constexpr intptr_t jobsPerThread = 200;
 
 		const intptr_t totalJobs		= linesCount1 * linesCount2;
 		const intptr_t threadsNeeded	= (totalJobs + jobsPerThread - 1) / jobsPerThread;
@@ -1664,7 +1664,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 
 			try
 			{
-				threads.emplace_back(threadFn, startLine1, endLine1);
+				threads.emplace_back(std::bind(threadFn, startLine1, endLine1));
 			}
 			catch (...)
 			{
