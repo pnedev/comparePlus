@@ -4293,6 +4293,13 @@ void onNppReady()
 	}
 	else
 	{
+		if (!allocateIndicator())
+			::MessageBox(nppData._nppHandle,
+				TEXT("Notepad++ marker allocation for visualizing diff changes failed - ")
+				TEXT("\nusing default one but conflicts with other plugins might appear.")
+				TEXT("\nPlease switch to Notepad++ version 8.5.6 or newer."),
+				PLUGIN_NAME, MB_OK);
+
 		if (isDarkMode())
 			Settings.useDarkColors();
 		else

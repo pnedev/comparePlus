@@ -87,6 +87,7 @@ constexpr int MARGIN_NUM = 4;
 
 
 extern int nppBookmarkMarker;
+extern int indicatorHighlight;
 
 
 /**
@@ -289,6 +290,21 @@ inline bool isFileEmpty(int view)
 inline int getNotepadVersion()
 {
 	return (int)::SendMessage(nppData._nppHandle, NPPM_GETNPPVERSION, 1, 0);
+}
+
+
+inline BOOL allocateIndicator()
+{
+	if (indicatorHighlight >= 0)
+		return TRUE;
+
+	BOOL res = (BOOL)::SendMessage(nppData._nppHandle, NPPM_ALLOCATEINDICATOR, 1, (LPARAM)&indicatorHighlight);
+
+	// Set default indicator marker but don't use "INDIC_CONTAINER + 1" since it conflicts with DSpellCheck plugin
+	if (!res)
+		indicatorHighlight = INDIC_CONTAINER + 7;
+
+	return res;
 }
 
 

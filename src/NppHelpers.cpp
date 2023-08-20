@@ -35,13 +35,10 @@
 #include "icon_arrows.h"
 
 
-// Don't use "INDIC_CONTAINER + 1" since it conflicts with DSpellCheck plugin
-#define INDIC_HIGHLIGHT		INDIC_CONTAINER + 7
-
-
 extern int gMarginWidth;
 
-int nppBookmarkMarker = -1;
+int nppBookmarkMarker	= -1;
+int indicatorHighlight	= -1;
 
 
 HWND NppToolbarHandleGetter::hNppToolbar = NULL;
@@ -195,13 +192,13 @@ void setTextStyle(int transparency)
 
 	const int alpha = ((100 - transparency) * (cMaxAlpha - cMinAlpha) / 100) + cMinAlpha;
 
-	CallScintilla(MAIN_VIEW, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT,	INDIC_ROUNDBOX);
-	CallScintilla(MAIN_VIEW, SCI_INDICSETFLAGS,	INDIC_HIGHLIGHT,	SC_INDICFLAG_VALUEFORE);
-	CallScintilla(MAIN_VIEW, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT,	alpha);
+	CallScintilla(MAIN_VIEW, SCI_INDICSETSTYLE,	indicatorHighlight,	INDIC_ROUNDBOX);
+	CallScintilla(MAIN_VIEW, SCI_INDICSETFLAGS,	indicatorHighlight,	SC_INDICFLAG_VALUEFORE);
+	CallScintilla(MAIN_VIEW, SCI_INDICSETALPHA,	indicatorHighlight,	alpha);
 
-	CallScintilla(SUB_VIEW, SCI_INDICSETSTYLE,	INDIC_HIGHLIGHT,	INDIC_ROUNDBOX);
-	CallScintilla(SUB_VIEW, SCI_INDICSETFLAGS,	INDIC_HIGHLIGHT,	SC_INDICFLAG_VALUEFORE);
-	CallScintilla(SUB_VIEW, SCI_INDICSETALPHA,	INDIC_HIGHLIGHT,	alpha);
+	CallScintilla(SUB_VIEW, SCI_INDICSETSTYLE,	indicatorHighlight,	INDIC_ROUNDBOX);
+	CallScintilla(SUB_VIEW, SCI_INDICSETFLAGS,	indicatorHighlight,	SC_INDICFLAG_VALUEFORE);
+	CallScintilla(SUB_VIEW, SCI_INDICSETALPHA,	indicatorHighlight,	alpha);
 }
 
 
@@ -499,7 +496,7 @@ void markTextAsChanged(int view, intptr_t start, intptr_t length, int color)
 	if (length > 0)
 	{
 		const int curIndic = static_cast<int>(CallScintilla(view, SCI_GETINDICATORCURRENT, 0, 0));
-		CallScintilla(view, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
+		CallScintilla(view, SCI_SETINDICATORCURRENT, indicatorHighlight, 0);
 		CallScintilla(view, SCI_SETINDICATORVALUE, color | SC_INDICVALUEBIT, 0);
 		CallScintilla(view, SCI_INDICATORFILLRANGE, start, length);
 		CallScintilla(view, SCI_SETINDICATORCURRENT, curIndic, 0);
@@ -512,7 +509,7 @@ void clearChangedIndicator(int view, intptr_t start, intptr_t length)
 	if (length > 0)
 	{
 		const int curIndic = static_cast<int>(CallScintilla(view, SCI_GETINDICATORCURRENT, 0, 0));
-		CallScintilla(view, SCI_SETINDICATORCURRENT, INDIC_HIGHLIGHT, 0);
+		CallScintilla(view, SCI_SETINDICATORCURRENT, indicatorHighlight, 0);
 		CallScintilla(view, SCI_INDICATORCLEARRANGE, start, length);
 		CallScintilla(view, SCI_SETINDICATORCURRENT, curIndic, 0);
 	}
