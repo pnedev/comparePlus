@@ -239,6 +239,23 @@ std::vector<intptr_t> getAllBookmarkedLines(int view)
 }
 
 
+void bookmarkMarkedLines(int view, int markMask)
+{
+	const intptr_t	linesCount	= CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+	intptr_t		line		= CallScintilla(view, SCI_MARKERNEXT, 0, markMask);
+
+	while (line >= 0)
+	{
+		CallScintilla(view, SCI_MARKERADDSET, line, nppBookmarkMarker);
+
+		if (++line < linesCount)
+			line = CallScintilla(view, SCI_MARKERNEXT, line, markMask);
+		else
+			break;
+	}
+}
+
+
 intptr_t otherViewMatchingLine(int view, intptr_t line, intptr_t adjustment, bool check)
 {
 	const int		otherView		= getOtherViewId(view);

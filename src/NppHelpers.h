@@ -65,6 +65,15 @@ constexpr int MARKER_MASK_MOVED			=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVE
 constexpr int MARKER_MASK_BLANK			=	(1 << MARKER_BLANK);
 constexpr int MARKER_MASK_ARROW			=	(1 << MARKER_ARROW_SYMBOL);
 
+constexpr int MARKER_MASK_DIFF_LINE		=	(1 << MARKER_CHANGED_LINE) |
+											(1 << MARKER_ADDED_LINE) |
+											(1 << MARKER_REMOVED_LINE);
+
+constexpr int MARKER_MASK_NEW_LINE		=	(1 << MARKER_ADDED_LINE) |
+											(1 << MARKER_REMOVED_LINE);
+
+constexpr int MARKER_MASK_CHANGED_LINE	=	(1 << MARKER_CHANGED_LINE);
+
 constexpr int MARKER_MASK_LINE			=	(1 << MARKER_CHANGED_LINE) |
 											(1 << MARKER_ADDED_LINE) |
 											(1 << MARKER_REMOVED_LINE) |
@@ -669,7 +678,15 @@ inline intptr_t getNextBookmarkedLine(int view, intptr_t currentLine)
 
 
 // Make sure you have called at least once readNppBookmarkID() before using that functions!
+inline void bookmarkLine(int view, intptr_t line)
+{
+	CallScintilla(view, SCI_MARKERADDSET, line, nppBookmarkMarker);
+}
+
+
+// Make sure you have called at least once readNppBookmarkID() before using that functions!
 std::vector<intptr_t> getAllBookmarkedLines(int view);
+void bookmarkMarkedLines(int view, int markMask);
 
 intptr_t otherViewMatchingLine(int view, intptr_t line, intptr_t adjustment = 0, bool check = false);
 void activateBufferID(LRESULT buffId);

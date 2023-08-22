@@ -618,6 +618,9 @@ void NppSettings::updatePluginMenu()
 	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ALL]._cmdID,
 			MF_BYCOMMAND | ((compareList.empty() && !newCompare) ? (MF_DISABLED | MF_GRAYED) : MF_ENABLED));
 
+	::EnableMenuItem(hMenu, funcItem[CMD_BOOKMARK_DIFFS]._cmdID, flag);
+	::EnableMenuItem(hMenu, funcItem[CMD_BOOKMARK_ADD_REM]._cmdID, flag);
+	::EnableMenuItem(hMenu, funcItem[CMD_BOOKMARK_CHANGED]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_COMPARE_SUMMARY]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, flag);
@@ -3133,6 +3136,36 @@ void GitDiff()
 }
 
 
+void BookmarkDiffs()
+{
+	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
+	if (cmpPair == compareList.end())
+		return;
+
+	bookmarkMarkedLines(getCurrentViewId(), MARKER_MASK_DIFF_LINE);
+}
+
+
+void BookmarkAddedRemoved()
+{
+	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
+	if (cmpPair == compareList.end())
+		return;
+
+	bookmarkMarkedLines(getCurrentViewId(), MARKER_MASK_NEW_LINE);
+}
+
+
+void BookmarkChanged()
+{
+	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
+	if (cmpPair == compareList.end())
+		return;
+
+	bookmarkMarkedLines(getCurrentViewId(), MARKER_MASK_CHANGED_LINE);
+}
+
+
 void ActiveCompareSummary()
 {
 	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
@@ -3625,6 +3658,15 @@ void createMenu()
 	funcItem[CMD_GIT_DIFF]._pShKey->_isCtrl 		= true;
 	funcItem[CMD_GIT_DIFF]._pShKey->_isShift		= false;
 	funcItem[CMD_GIT_DIFF]._pShKey->_key 			= 'G';
+
+	_tcscpy_s(funcItem[CMD_BOOKMARK_DIFFS]._itemName, nbChar, TEXT("Bookmark All Diffs in Current View"));
+	funcItem[CMD_BOOKMARK_DIFFS]._pFunc = BookmarkDiffs;
+
+	_tcscpy_s(funcItem[CMD_BOOKMARK_ADD_REM]._itemName, nbChar, TEXT("Bookmark Added/Removed Lines in Current View"));
+	funcItem[CMD_BOOKMARK_ADD_REM]._pFunc = BookmarkAddedRemoved;
+
+	_tcscpy_s(funcItem[CMD_BOOKMARK_CHANGED]._itemName, nbChar, TEXT("Bookmark Changed Lines in Current View"));
+	funcItem[CMD_BOOKMARK_CHANGED]._pFunc = BookmarkChanged;
 
 	_tcscpy_s(funcItem[CMD_COMPARE_SUMMARY]._itemName, nbChar, TEXT("Active Compare Summary"));
 	funcItem[CMD_COMPARE_SUMMARY]._pFunc = ActiveCompareSummary;
