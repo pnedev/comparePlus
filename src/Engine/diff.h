@@ -597,7 +597,7 @@ inline intptr_t DiffCalc<Elem, UserDataT>::_count_replaces()
 	{
 		if ((_diff[i].type == diff_type::DIFF_IN_1) && (_diff[i + 1].type == diff_type::DIFF_IN_2))
 		{
-			++replaces;
+			replaces += std::min(_diff[i].len, _diff[i + 1].len);
 			++i;
 		}
 	}
