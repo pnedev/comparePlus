@@ -1147,13 +1147,13 @@ void ComparedPair::setStatus()
 	}
 	else
 	{
-		TCHAR buf[256] = TEXT(" ***");
+		TCHAR buf[256] = TEXT("    ");
 
 		int infoCurrentPos = 0;
 
 		if (options.selectionCompare)
 		{
-			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Selections - %Id-%Id vs. %Id-%Id ***"),
+			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Selections: %Id-%Id vs. %Id-%Id    "),
 					options.selections[MAIN_VIEW].first + 1, options.selections[MAIN_VIEW].second + 1,
 					options.selections[SUB_VIEW].first + 1, options.selections[SUB_VIEW].second + 1);
 		}
@@ -1163,77 +1163,92 @@ void ComparedPair::setStatus()
 
 		if (Settings.StatusInfo == StatusType::COMPARE_OPTIONS)
 		{
-			if (!options.findUniqueMode && options.detectMoves)
-			{
-				static constexpr TCHAR detectMovesStr[] = TEXT(" Detect Moves |");
+			const bool hasDetectOpts = (!options.findUniqueMode && (options.detectMoves || options.detectCharDiffs));
 
-				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, detectMovesStr);
-				infoCurrentPos += _countof(detectMovesStr) - 1;
+			if (hasDetectOpts)
+			{
+				const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Detect:%s%s"),
+						options.detectMoves		? TEXT(" Moves,")		: TEXT(""),
+						options.detectCharDiffs	? TEXT(" Char Diffs,")	: TEXT("")) - 1;
+
+				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+				infoCurrentPos += len;
 			}
 
 			if (options.ignoreEmptyLines || options.ignoreFoldedLines || options.ignoreAllSpaces ||
 				options.ignoreChangedSpaces || options.ignoreCase || options.ignoreRegex)
 			{
-				const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" Ignore :%s%s%s%s%s"),
-						options.ignoreEmptyLines	? TEXT(" Empty Lines ,")	: TEXT(""),
-						options.ignoreFoldedLines	? TEXT(" Folded Lines ,")	: TEXT(""),
-						options.ignoreAllSpaces		? TEXT(" All Spaces ,")	: options.ignoreChangedSpaces
-													? TEXT(" Changed Spaces ,") : TEXT(""),
-						options.ignoreCase			? TEXT(" Case ,")			: TEXT(""),
-						options.ignoreRegex			? TEXT(" Regex ,")			: TEXT(""));
+				const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%sIgnore:%s%s%s%s%s"),
+						hasDetectOpts				? TEXT("    ")				: TEXT(""),
+						options.ignoreEmptyLines	? TEXT(" Empty Lines,")		: TEXT(""),
+						options.ignoreFoldedLines	? TEXT(" Folded Lines,")	: TEXT(""),
+						options.ignoreAllSpaces		? TEXT(" All Spaces,")		:
+						options.ignoreChangedSpaces	? TEXT(" Changed Spaces,")	: TEXT(""),
+						options.ignoreCase			? TEXT(" Case,")			: TEXT(""),
+						options.ignoreRegex			? TEXT(" Regex,")			: TEXT("")) - 1;
 
 				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 				infoCurrentPos += len;
 			}
+
+			info[infoCurrentPos] = TEXT('\0');
 		}
 		else if (Settings.StatusInfo == StatusType::DIFFS_SUMMARY)
 		{
-			if (summary.diffLines)
+			if (options.findUniqueMode || summary.diffLines)
 			{
 				const int len =
-						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Diff Lines: "), summary.diffLines);
+					_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%Id Diff Lines:"),
+							options.findUniqueMode ? summary.added + summary.removed : summary.diffLines);
+
 				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 				infoCurrentPos += len;
 			}
 			if (summary.added)
 			{
 				const int len =
-						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Added ,"), summary.added);
+					_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Added,"), summary.added);
+
 				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 				infoCurrentPos += len;
 			}
 			if (summary.removed)
 			{
 				const int len =
-						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Removed ,"), summary.removed);
+					_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Removed,"), summary.removed);
+
 				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 				infoCurrentPos += len;
 			}
 			if (summary.moved)
 			{
 				const int len =
-						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Moved ,"), summary.moved);
+					_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Moved,"), summary.moved);
+
 				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 				infoCurrentPos += len;
 			}
 			if (summary.changed)
 			{
 				const int len =
-						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Changed ,"), summary.changed);
+					_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Changed,"), summary.changed);
+
 				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 				infoCurrentPos += len;
 			}
+
+			--infoCurrentPos;
+
 			if (summary.match)
 			{
-				const int len =
-						_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(".  %Id Match ,"), summary.match) - 2;
-				_tcscpy_s(info + infoCurrentPos - 2, _countof(info) - infoCurrentPos + 2, buf);
-				infoCurrentPos += len;
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(".  %Id Match"), summary.match);
+				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+			}
+			else
+			{
+				info[infoCurrentPos] = TEXT('\0');
 			}
 		}
-
-		if (info[infoCurrentPos - 2] == TEXT(' '))
-			info[infoCurrentPos - 2] = TEXT('\0');
 	}
 
 	::SendMessage(nppData._nppHandle, NPPM_SETSTATUSBAR, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)info));
@@ -3179,51 +3194,59 @@ void ActiveCompareSummary()
 
 	TCHAR buf[256];
 
-	if (cmpPair->summary.diffLines)
+	if (cmpPair->options.findUniqueMode || cmpPair->summary.diffLines)
 	{
 		const int len =
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%Id Diff Lines:\n"), cmpPair->summary.diffLines);
+			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%Id Diff Lines:\n"),
+					cmpPair->options.findUniqueMode ?
+							cmpPair->summary.added + cmpPair->summary.removed : cmpPair->summary.diffLines);
+
 		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 		infoCurrentPos += len;
 	}
 	if (cmpPair->summary.added)
 	{
 		const int len =
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Added ,"), cmpPair->summary.added);
+			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Added,"), cmpPair->summary.added);
+
 		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 		infoCurrentPos += len;
 	}
 	if (cmpPair->summary.removed)
 	{
 		const int len =
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Removed ,"), cmpPair->summary.removed);
+			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Removed,"), cmpPair->summary.removed);
+
 		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 		infoCurrentPos += len;
 	}
 	if (cmpPair->summary.moved)
 	{
 		const int len =
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Moved ,"), cmpPair->summary.moved);
+			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Moved,"), cmpPair->summary.moved);
+
 		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 		infoCurrentPos += len;
 	}
 	if (cmpPair->summary.changed)
 	{
 		const int len =
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Changed ,"), cmpPair->summary.changed);
+			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(" %Id Changed,"), cmpPair->summary.changed);
+
 		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 		infoCurrentPos += len;
 	}
+
+	--infoCurrentPos;
+
 	if (cmpPair->summary.match)
 	{
 		const int len =
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(".\n%Id Match ,"), cmpPair->summary.match) - 2;
-		_tcscpy_s(info + infoCurrentPos - 2, _countof(info) - infoCurrentPos + 2, buf);
+			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(".\n%Id Match"), cmpPair->summary.match);
+
+		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 		infoCurrentPos += len;
 	}
-
-	if (info[infoCurrentPos - 2] == TEXT(' '))
-		infoCurrentPos -= 2;
 
 	{
 		static constexpr TCHAR comparisonOptStr[] = TEXT("\n\nComparison options:\n\n");
@@ -3232,33 +3255,48 @@ void ActiveCompareSummary()
 		infoCurrentPos += _countof(comparisonOptStr) - 1;
 	}
 
-	if (!cmpPair->options.findUniqueMode && cmpPair->options.detectMoves)
-	{
-		static constexpr TCHAR detectMovesStr[] = TEXT("Detect Moves\n");
+	const bool hasDetectOpts =
+		(!cmpPair->options.findUniqueMode && (cmpPair->options.detectMoves || cmpPair->options.detectCharDiffs));
 
-		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, detectMovesStr);
-		infoCurrentPos += _countof(detectMovesStr) - 1;
-	}
-
-	if (cmpPair->options.ignoreEmptyLines || cmpPair->options.ignoreFoldedLines || cmpPair->options.ignoreAllSpaces ||
-		cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreCase || cmpPair->options.ignoreRegex)
+	if (hasDetectOpts)
 	{
-		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Ignore :%s%s%s%s%s"),
-				cmpPair->options.ignoreEmptyLines	? TEXT(" Empty Lines ,")	: TEXT(""),
-				cmpPair->options.ignoreFoldedLines	? TEXT(" Folded Lines ,")	: TEXT(""),
-				cmpPair->options.ignoreAllSpaces	? TEXT(" All Spaces ,")	: cmpPair->options.ignoreChangedSpaces
-													? TEXT(" Changed Spaces ,") : TEXT(""),
-				cmpPair->options.ignoreCase			? TEXT(" Case ,")			: TEXT(""),
-				cmpPair->options.ignoreRegex		? TEXT(" Regex ,")			: TEXT(""));
+		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Detect:%s%s"),
+				cmpPair->options.detectMoves		? TEXT(" Moves,")		: TEXT(""),
+				cmpPair->options.detectCharDiffs	? TEXT(" Char Diffs,")	: TEXT("")) - 1;
 
 		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 		infoCurrentPos += len;
 	}
 
-	if (info[infoCurrentPos - 2] == TEXT(' '))
-		info[infoCurrentPos - 2] = TEXT('\0');
+	const bool hasIgnoreOpts =
+		(cmpPair->options.ignoreEmptyLines || cmpPair->options.ignoreFoldedLines || cmpPair->options.ignoreAllSpaces ||
+		cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreCase || cmpPair->options.ignoreRegex);
+
+	if (hasIgnoreOpts)
+	{
+		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%sIgnore:%s%s%s%s%s"),
+				hasDetectOpts							? TEXT("\n")				: TEXT(""),
+				cmpPair->options.ignoreEmptyLines		? TEXT(" Empty Lines,")		: TEXT(""),
+				cmpPair->options.ignoreFoldedLines		? TEXT(" Folded Lines,")	: TEXT(""),
+				cmpPair->options.ignoreAllSpaces		? TEXT(" All Spaces,")		:
+				cmpPair->options.ignoreChangedSpaces	? TEXT(" Changed Spaces,")	: TEXT(""),
+				cmpPair->options.ignoreCase				? TEXT(" Case,")			: TEXT(""),
+				cmpPair->options.ignoreRegex			? TEXT(" Regex,")			: TEXT("")) - 1;
+
+		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+		infoCurrentPos += len;
+	}
+
+	if (hasDetectOpts || hasIgnoreOpts)
+	{
+		info[infoCurrentPos] = TEXT('\0');
+	}
 	else
-		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, TEXT("No specific options used."));
+	{
+		_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("No%s Ignore options used."),
+				cmpPair->options.findUniqueMode ? TEXT("") : TEXT(" Detect and"));
+		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+	}
 
 	::MessageBox(nppData._nppHandle, info, PLUGIN_NAME, MB_OK);
 }
