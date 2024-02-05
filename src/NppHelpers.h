@@ -525,6 +525,18 @@ inline void gotoClosestUnhiddenLine(int view, intptr_t line)
 }
 
 
+inline intptr_t getIndicatorStartPos(int view, intptr_t pos)
+{
+	return CallScintilla(view, SCI_INDICATORSTART, indicatorHighlight, pos);
+}
+
+
+inline intptr_t getIndicatorEndPos(int view, intptr_t pos)
+{
+	return CallScintilla(view, SCI_INDICATOREND, indicatorHighlight, pos);
+}
+
+
 inline intptr_t getWrapCount(int view, intptr_t line)
 {
 	return CallScintilla(view, SCI_WRAPCOUNT, line, 0);

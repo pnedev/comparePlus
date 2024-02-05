@@ -626,6 +626,8 @@ void NppSettings::updatePluginMenu()
 	::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, flag);
+	::EnableMenuItem(hMenu, funcItem[CMD_PREV_CHANGE_POS]._cmdID, flag);
+	::EnableMenuItem(hMenu, funcItem[CMD_NEXT_CHANGE_POS]._cmdID, flag);
 
 	::DrawMenuBar(nppData._nppHandle);
 
@@ -637,6 +639,8 @@ void NppSettings::updatePluginMenu()
 		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_PREV]._cmdID, compareMode);
 		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_NEXT]._cmdID, compareMode);
 		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_LAST]._cmdID, compareMode);
+		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_PREV_CHANGE_POS]._cmdID, compareMode);
+		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_NEXT_CHANGE_POS]._cmdID, compareMode);
 	}
 }
 
@@ -3543,6 +3547,36 @@ void Last()
 }
 
 
+void PrevChangePos()
+{
+	if (NppSettings::get().compareMode)
+	{
+		ScopedIncrementerInt incr(notificationsLock);
+
+		const int view = getCurrentViewId();
+		const intptr_t pos = getIndicatorStartPos(view, CallScintilla(view, SCI_GETCURRENTPOS, 0, 0) - 1);
+
+		if (pos)
+			CallScintilla(view, SCI_GOTOPOS, pos, 0);
+	}
+}
+
+
+void NextChangePos()
+{
+	if (NppSettings::get().compareMode)
+	{
+		ScopedIncrementerInt incr(notificationsLock);
+
+		const int view = getCurrentViewId();
+		const intptr_t pos = getIndicatorEndPos(view, CallScintilla(view, SCI_GETCURRENTPOS, 0, 0));
+
+		if (pos)
+			CallScintilla(view, SCI_GOTOPOS, pos, 0);
+	}
+}
+
+
 void OpenSettingsDlg(void)
 {
 	SettingsDialog SettingsDlg(hInstance, nppData);
@@ -3776,6 +3810,22 @@ void createMenu()
 	funcItem[CMD_LAST]._pShKey->_isCtrl 	= true;
 	funcItem[CMD_LAST]._pShKey->_isShift	= false;
 	funcItem[CMD_LAST]._pShKey->_key 		= VK_NEXT;
+
+	_tcscpy_s(funcItem[CMD_PREV_CHANGE_POS]._itemName, nbChar, TEXT("Prev Change Position"));
+	funcItem[CMD_PREV_CHANGE_POS]._pFunc 			= PrevChangePos;
+	funcItem[CMD_PREV_CHANGE_POS]._pShKey 			= new ShortcutKey;
+	funcItem[CMD_PREV_CHANGE_POS]._pShKey->_isAlt 	= true;
+	funcItem[CMD_PREV_CHANGE_POS]._pShKey->_isCtrl 	= true;
+	funcItem[CMD_PREV_CHANGE_POS]._pShKey->_isShift	= true;
+	funcItem[CMD_PREV_CHANGE_POS]._pShKey->_key 	= VK_PRIOR;
+
+	_tcscpy_s(funcItem[CMD_NEXT_CHANGE_POS]._itemName, nbChar, TEXT("Next Change Position"));
+	funcItem[CMD_NEXT_CHANGE_POS]._pFunc 			= NextChangePos;
+	funcItem[CMD_NEXT_CHANGE_POS]._pShKey 			= new ShortcutKey;
+	funcItem[CMD_NEXT_CHANGE_POS]._pShKey->_isAlt 	= true;
+	funcItem[CMD_NEXT_CHANGE_POS]._pShKey->_isCtrl 	= true;
+	funcItem[CMD_NEXT_CHANGE_POS]._pShKey->_isShift	= true;
+	funcItem[CMD_NEXT_CHANGE_POS]._pShKey->_key 	= VK_NEXT;
 
 	_tcscpy_s(funcItem[CMD_SETTINGS]._itemName, nbChar, TEXT("Settings..."));
 	funcItem[CMD_SETTINGS]._pFunc = OpenSettingsDlg;
