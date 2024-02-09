@@ -3555,10 +3555,20 @@ void PrevChangePos()
 
 		const int viewId = getCurrentViewId();
 		const intptr_t line = getCurrentLine(viewId);
-		const intptr_t pos = getIndicatorStartPos(viewId, CallScintilla(viewId, SCI_GETCURRENTPOS, 0, 0) - 1);
+		const intptr_t currentPos = CallScintilla(viewId, SCI_GETCURRENTPOS, 0, 0);
+		const intptr_t pos = getIndicatorStartPos(viewId, currentPos - 1);
 
-		if (pos && line == CallScintilla(viewId, SCI_LINEFROMPOSITION, pos, 0))
-			CallScintilla(viewId, SCI_GOTOPOS, pos, 0);
+		if (pos)
+		{
+			if (line == CallScintilla(viewId, SCI_LINEFROMPOSITION, pos, 0))
+				CallScintilla(viewId, SCI_GOTOPOS, pos, 0);
+			else
+				blinkLine(viewId, line);
+		}
+		else
+		{
+			blinkLine(viewId, line);
+		}
 	}
 }
 
@@ -3571,10 +3581,20 @@ void NextChangePos()
 
 		const int viewId = getCurrentViewId();
 		const intptr_t line = getCurrentLine(viewId);
-		const intptr_t pos = getIndicatorEndPos(viewId, CallScintilla(viewId, SCI_GETCURRENTPOS, 0, 0));
+		const intptr_t currentPos = CallScintilla(viewId, SCI_GETCURRENTPOS, 0, 0);
+		const intptr_t pos = getIndicatorEndPos(viewId, currentPos);
 
-		if (pos && line == CallScintilla(viewId, SCI_LINEFROMPOSITION, pos, 0))
-			CallScintilla(viewId, SCI_GOTOPOS, pos, 0);
+		if (pos)
+		{
+			if (line == CallScintilla(viewId, SCI_LINEFROMPOSITION, pos, 0))
+				CallScintilla(viewId, SCI_GOTOPOS, pos, 0);
+			else
+				blinkLine(viewId, line);
+		}
+		else
+		{
+			blinkLine(viewId, line);
+		}
 	}
 }
 
