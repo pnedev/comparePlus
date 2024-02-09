@@ -3670,7 +3670,7 @@ void OpenAboutDlg()
 
 void createMenu()
 {
-	_tcscpy_s(funcItem[CMD_SET_FIRST]._itemName, nbChar, TEXT("Set as First to Compare"));
+	_tcscpy_s(funcItem[CMD_SET_FIRST]._itemName, menuItemSize, TEXT("Set as First to Compare"));
 	funcItem[CMD_SET_FIRST]._pFunc					= SetAsFirst;
 	funcItem[CMD_SET_FIRST]._pShKey					= new ShortcutKey;
 	funcItem[CMD_SET_FIRST]._pShKey->_isAlt			= true;
@@ -3678,7 +3678,7 @@ void createMenu()
 	funcItem[CMD_SET_FIRST]._pShKey->_isShift		= false;
 	funcItem[CMD_SET_FIRST]._pShKey->_key			= '1';
 
-	_tcscpy_s(funcItem[CMD_COMPARE]._itemName, nbChar, TEXT("Compare"));
+	_tcscpy_s(funcItem[CMD_COMPARE]._itemName, menuItemSize, TEXT("Compare"));
 	funcItem[CMD_COMPARE]._pFunc					= CompareWhole;
 	funcItem[CMD_COMPARE]._pShKey					= new ShortcutKey;
 	funcItem[CMD_COMPARE]._pShKey->_isAlt			= true;
@@ -3686,7 +3686,7 @@ void createMenu()
 	funcItem[CMD_COMPARE]._pShKey->_isShift			= false;
 	funcItem[CMD_COMPARE]._pShKey->_key				= 'C';
 
-	_tcscpy_s(funcItem[CMD_COMPARE_SEL]._itemName, nbChar, TEXT("Compare Selections"));
+	_tcscpy_s(funcItem[CMD_COMPARE_SEL]._itemName, menuItemSize, TEXT("Compare Selections"));
 	funcItem[CMD_COMPARE_SEL]._pFunc				= CompareSelections;
 	funcItem[CMD_COMPARE_SEL]._pShKey				= new ShortcutKey;
 	funcItem[CMD_COMPARE_SEL]._pShKey->_isAlt		= true;
@@ -3694,7 +3694,7 @@ void createMenu()
 	funcItem[CMD_COMPARE_SEL]._pShKey->_isShift		= false;
 	funcItem[CMD_COMPARE_SEL]._pShKey->_key			= 'N';
 
-	_tcscpy_s(funcItem[CMD_FIND_UNIQUE]._itemName, nbChar, TEXT("Find Unique Lines"));
+	_tcscpy_s(funcItem[CMD_FIND_UNIQUE]._itemName, menuItemSize, TEXT("Find Unique Lines"));
 	funcItem[CMD_FIND_UNIQUE]._pFunc				= FindUnique;
 	funcItem[CMD_FIND_UNIQUE]._pShKey				= new ShortcutKey;
 	funcItem[CMD_FIND_UNIQUE]._pShKey->_isAlt		= true;
@@ -3702,7 +3702,7 @@ void createMenu()
 	funcItem[CMD_FIND_UNIQUE]._pShKey->_isShift		= true;
 	funcItem[CMD_FIND_UNIQUE]._pShKey->_key			= 'C';
 
-	_tcscpy_s(funcItem[CMD_FIND_UNIQUE_SEL]._itemName, nbChar, TEXT("Find Unique Lines in Selections"));
+	_tcscpy_s(funcItem[CMD_FIND_UNIQUE_SEL]._itemName, menuItemSize, TEXT("Find Unique Lines in Selections"));
 	funcItem[CMD_FIND_UNIQUE_SEL]._pFunc			= FindSelectionsUnique;
 	funcItem[CMD_FIND_UNIQUE_SEL]._pShKey			= new ShortcutKey;
 	funcItem[CMD_FIND_UNIQUE_SEL]._pShKey->_isAlt	= true;
@@ -3710,7 +3710,7 @@ void createMenu()
 	funcItem[CMD_FIND_UNIQUE_SEL]._pShKey->_isShift	= true;
 	funcItem[CMD_FIND_UNIQUE_SEL]._pShKey->_key		= 'N';
 
-	_tcscpy_s(funcItem[CMD_CLEAR_ACTIVE]._itemName, nbChar, TEXT("Clear Active Compare"));
+	_tcscpy_s(funcItem[CMD_CLEAR_ACTIVE]._itemName, menuItemSize, TEXT("Clear Active Compare"));
 	funcItem[CMD_CLEAR_ACTIVE]._pFunc				= ClearActiveCompare;
 	funcItem[CMD_CLEAR_ACTIVE]._pShKey 				= new ShortcutKey;
 	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_isAlt 		= true;
@@ -3718,10 +3718,10 @@ void createMenu()
 	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_isShift	= false;
 	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_key 		= 'X';
 
-	_tcscpy_s(funcItem[CMD_CLEAR_ALL]._itemName, nbChar, TEXT("Clear All Compares"));
+	_tcscpy_s(funcItem[CMD_CLEAR_ALL]._itemName, menuItemSize, TEXT("Clear All Compares"));
 	funcItem[CMD_CLEAR_ALL]._pFunc	= ClearAllCompares;
 
-	_tcscpy_s(funcItem[CMD_LAST_SAVE_DIFF]._itemName, nbChar, TEXT("Diff since last Save"));
+	_tcscpy_s(funcItem[CMD_LAST_SAVE_DIFF]._itemName, menuItemSize, TEXT("Diff since last Save"));
 	funcItem[CMD_LAST_SAVE_DIFF]._pFunc				= LastSaveDiff;
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey->_isAlt 	= true;
@@ -3729,7 +3729,7 @@ void createMenu()
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey->_isShift	= false;
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey->_key 		= 'D';
 
-	_tcscpy_s(funcItem[CMD_CLIPBOARD_DIFF]._itemName, nbChar, TEXT("Compare file/selection to Clipboard"));
+	_tcscpy_s(funcItem[CMD_CLIPBOARD_DIFF]._itemName, menuItemSize, TEXT("Compare file/selection to Clipboard"));
 	funcItem[CMD_CLIPBOARD_DIFF]._pFunc 			= ClipboardDiff;
 	funcItem[CMD_CLIPBOARD_DIFF]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_CLIPBOARD_DIFF]._pShKey->_isAlt 	= true;
@@ -3737,7 +3737,7 @@ void createMenu()
 	funcItem[CMD_CLIPBOARD_DIFF]._pShKey->_isShift	= false;
 	funcItem[CMD_CLIPBOARD_DIFF]._pShKey->_key 		= 'M';
 
-	_tcscpy_s(funcItem[CMD_SVN_DIFF]._itemName, nbChar, TEXT("SVN Diff"));
+	_tcscpy_s(funcItem[CMD_SVN_DIFF]._itemName, menuItemSize, TEXT("SVN Diff"));
 	funcItem[CMD_SVN_DIFF]._pFunc 					= SvnDiff;
 	funcItem[CMD_SVN_DIFF]._pShKey 					= new ShortcutKey;
 	funcItem[CMD_SVN_DIFF]._pShKey->_isAlt 			= true;
@@ -3745,7 +3745,7 @@ void createMenu()
 	funcItem[CMD_SVN_DIFF]._pShKey->_isShift		= false;
 	funcItem[CMD_SVN_DIFF]._pShKey->_key 			= 'V';
 
-	_tcscpy_s(funcItem[CMD_GIT_DIFF]._itemName, nbChar, TEXT("Git Diff"));
+	_tcscpy_s(funcItem[CMD_GIT_DIFF]._itemName, menuItemSize, TEXT("Git Diff"));
 	funcItem[CMD_GIT_DIFF]._pFunc 					= GitDiff;
 	funcItem[CMD_GIT_DIFF]._pShKey 					= new ShortcutKey;
 	funcItem[CMD_GIT_DIFF]._pShKey->_isAlt 			= true;
@@ -3753,55 +3753,56 @@ void createMenu()
 	funcItem[CMD_GIT_DIFF]._pShKey->_isShift		= false;
 	funcItem[CMD_GIT_DIFF]._pShKey->_key 			= 'G';
 
-	_tcscpy_s(funcItem[CMD_BOOKMARK_DIFFS]._itemName, nbChar, TEXT("Bookmark All Diffs in Current View"));
+	_tcscpy_s(funcItem[CMD_BOOKMARK_DIFFS]._itemName, menuItemSize, TEXT("Bookmark All Diffs in Current View"));
 	funcItem[CMD_BOOKMARK_DIFFS]._pFunc = BookmarkDiffs;
 
-	_tcscpy_s(funcItem[CMD_BOOKMARK_ADD_REM]._itemName, nbChar, TEXT("Bookmark Added/Removed Lines in Current View"));
+	_tcscpy_s(funcItem[CMD_BOOKMARK_ADD_REM]._itemName, menuItemSize,
+			TEXT("Bookmark Added/Removed Lines in Current View"));
 	funcItem[CMD_BOOKMARK_ADD_REM]._pFunc = BookmarkAddedRemoved;
 
-	_tcscpy_s(funcItem[CMD_BOOKMARK_CHANGED]._itemName, nbChar, TEXT("Bookmark Changed Lines in Current View"));
+	_tcscpy_s(funcItem[CMD_BOOKMARK_CHANGED]._itemName, menuItemSize, TEXT("Bookmark Changed Lines in Current View"));
 	funcItem[CMD_BOOKMARK_CHANGED]._pFunc = BookmarkChanged;
 
-	_tcscpy_s(funcItem[CMD_COMPARE_SUMMARY]._itemName, nbChar, TEXT("Active Compare Summary"));
+	_tcscpy_s(funcItem[CMD_COMPARE_SUMMARY]._itemName, menuItemSize, TEXT("Active Compare Summary"));
 	funcItem[CMD_COMPARE_SUMMARY]._pFunc = ActiveCompareSummary;
 
-	_tcscpy_s(funcItem[CMD_DETECT_MOVES]._itemName, nbChar, TEXT("Detect Moves"));
+	_tcscpy_s(funcItem[CMD_DETECT_MOVES]._itemName, menuItemSize, TEXT("Detect Moves"));
 	funcItem[CMD_DETECT_MOVES]._pFunc = DetectMoves;
 
-	_tcscpy_s(funcItem[CMD_DETECT_CHAR_DIFFS]._itemName, nbChar, TEXT("Detect Character Diffs"));
+	_tcscpy_s(funcItem[CMD_DETECT_CHAR_DIFFS]._itemName, menuItemSize, TEXT("Detect Character Diffs"));
 	funcItem[CMD_DETECT_CHAR_DIFFS]._pFunc = DetectCharDiffs;
 
-	_tcscpy_s(funcItem[CMD_IGNORE_EMPTY_LINES]._itemName, nbChar, TEXT("Ignore Empty Lines"));
+	_tcscpy_s(funcItem[CMD_IGNORE_EMPTY_LINES]._itemName, menuItemSize, TEXT("Ignore Empty Lines"));
 	funcItem[CMD_IGNORE_EMPTY_LINES]._pFunc = IgnoreEmptyLines;
 
-	_tcscpy_s(funcItem[CMD_IGNORE_FOLDED_LINES]._itemName, nbChar, TEXT("Ignore Folded Lines"));
+	_tcscpy_s(funcItem[CMD_IGNORE_FOLDED_LINES]._itemName, menuItemSize, TEXT("Ignore Folded Lines"));
 	funcItem[CMD_IGNORE_FOLDED_LINES]._pFunc = IgnoreFoldedLines;
 
-	_tcscpy_s(funcItem[CMD_IGNORE_CHANGED_SPACES]._itemName, nbChar, TEXT("Ignore Changed Spaces"));
+	_tcscpy_s(funcItem[CMD_IGNORE_CHANGED_SPACES]._itemName, menuItemSize, TEXT("Ignore Changed Spaces"));
 	funcItem[CMD_IGNORE_CHANGED_SPACES]._pFunc = IgnoreChangedSpaces;
 
-	_tcscpy_s(funcItem[CMD_IGNORE_ALL_SPACES]._itemName, nbChar, TEXT("Ignore All Spaces"));
+	_tcscpy_s(funcItem[CMD_IGNORE_ALL_SPACES]._itemName, menuItemSize, TEXT("Ignore All Spaces"));
 	funcItem[CMD_IGNORE_ALL_SPACES]._pFunc = IgnoreAllSpaces;
 
-	_tcscpy_s(funcItem[CMD_IGNORE_CASE]._itemName, nbChar, TEXT("Ignore Case"));
+	_tcscpy_s(funcItem[CMD_IGNORE_CASE]._itemName, menuItemSize, TEXT("Ignore Case"));
 	funcItem[CMD_IGNORE_CASE]._pFunc = IgnoreCase;
 
-	_tcscpy_s(funcItem[CMD_IGNORE_REGEX]._itemName, nbChar, TEXT("Ignore Regex..."));
+	_tcscpy_s(funcItem[CMD_IGNORE_REGEX]._itemName, menuItemSize, TEXT("Ignore Regex..."));
 	funcItem[CMD_IGNORE_REGEX]._pFunc = IgnoreRegex;
 
-	_tcscpy_s(funcItem[CMD_SHOW_ONLY_DIFF]._itemName, nbChar, TEXT("Show Only Diffs (Hide Matches)"));
+	_tcscpy_s(funcItem[CMD_SHOW_ONLY_DIFF]._itemName, menuItemSize, TEXT("Show Only Diffs (Hide Matches)"));
 	funcItem[CMD_SHOW_ONLY_DIFF]._pFunc = ShowOnlyDiffs;
 
-	_tcscpy_s(funcItem[CMD_SHOW_ONLY_SEL]._itemName, nbChar, TEXT("Show Only Compared Selections"));
+	_tcscpy_s(funcItem[CMD_SHOW_ONLY_SEL]._itemName, menuItemSize, TEXT("Show Only Compared Selections"));
 	funcItem[CMD_SHOW_ONLY_SEL]._pFunc = ShowOnlySelections;
 
-	_tcscpy_s(funcItem[CMD_NAV_BAR]._itemName, nbChar, TEXT("Navigation Bar"));
+	_tcscpy_s(funcItem[CMD_NAV_BAR]._itemName, menuItemSize, TEXT("Navigation Bar"));
 	funcItem[CMD_NAV_BAR]._pFunc = ToggleNavigationBar;
 
-	_tcscpy_s(funcItem[CMD_AUTO_RECOMPARE]._itemName, nbChar, TEXT("Auto Re-Compare on Change"));
+	_tcscpy_s(funcItem[CMD_AUTO_RECOMPARE]._itemName, menuItemSize, TEXT("Auto Re-Compare on Change"));
 	funcItem[CMD_AUTO_RECOMPARE]._pFunc = AutoRecompare;
 
-	_tcscpy_s(funcItem[CMD_PREV]._itemName, nbChar, TEXT("Previous"));
+	_tcscpy_s(funcItem[CMD_PREV]._itemName, menuItemSize, TEXT("Previous"));
 	funcItem[CMD_PREV]._pFunc 				= Prev;
 	funcItem[CMD_PREV]._pShKey 				= new ShortcutKey;
 	funcItem[CMD_PREV]._pShKey->_isAlt 		= true;
@@ -3809,7 +3810,7 @@ void createMenu()
 	funcItem[CMD_PREV]._pShKey->_isShift	= false;
 	funcItem[CMD_PREV]._pShKey->_key 		= VK_PRIOR;
 
-	_tcscpy_s(funcItem[CMD_NEXT]._itemName, nbChar, TEXT("Next"));
+	_tcscpy_s(funcItem[CMD_NEXT]._itemName, menuItemSize, TEXT("Next"));
 	funcItem[CMD_NEXT]._pFunc 				= Next;
 	funcItem[CMD_NEXT]._pShKey 				= new ShortcutKey;
 	funcItem[CMD_NEXT]._pShKey->_isAlt 		= true;
@@ -3817,7 +3818,7 @@ void createMenu()
 	funcItem[CMD_NEXT]._pShKey->_isShift	= false;
 	funcItem[CMD_NEXT]._pShKey->_key 		= VK_NEXT;
 
-	_tcscpy_s(funcItem[CMD_FIRST]._itemName, nbChar, TEXT("First"));
+	_tcscpy_s(funcItem[CMD_FIRST]._itemName, menuItemSize, TEXT("First"));
 	funcItem[CMD_FIRST]._pFunc 				= First;
 	funcItem[CMD_FIRST]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_FIRST]._pShKey->_isAlt 	= true;
@@ -3825,7 +3826,7 @@ void createMenu()
 	funcItem[CMD_FIRST]._pShKey->_isShift	= false;
 	funcItem[CMD_FIRST]._pShKey->_key 		= VK_PRIOR;
 
-	_tcscpy_s(funcItem[CMD_LAST]._itemName, nbChar, TEXT("Last"));
+	_tcscpy_s(funcItem[CMD_LAST]._itemName, menuItemSize, TEXT("Last"));
 	funcItem[CMD_LAST]._pFunc 				= Last;
 	funcItem[CMD_LAST]._pShKey 				= new ShortcutKey;
 	funcItem[CMD_LAST]._pShKey->_isAlt 		= true;
@@ -3833,7 +3834,7 @@ void createMenu()
 	funcItem[CMD_LAST]._pShKey->_isShift	= false;
 	funcItem[CMD_LAST]._pShKey->_key 		= VK_NEXT;
 
-	_tcscpy_s(funcItem[CMD_PREV_CHANGE_POS]._itemName, nbChar, TEXT("Prev Change Position"));
+	_tcscpy_s(funcItem[CMD_PREV_CHANGE_POS]._itemName, menuItemSize, TEXT("Prev Change Position"));
 	funcItem[CMD_PREV_CHANGE_POS]._pFunc 			= PrevChangePos;
 	funcItem[CMD_PREV_CHANGE_POS]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_PREV_CHANGE_POS]._pShKey->_isAlt 	= true;
@@ -3841,7 +3842,7 @@ void createMenu()
 	funcItem[CMD_PREV_CHANGE_POS]._pShKey->_isShift	= true;
 	funcItem[CMD_PREV_CHANGE_POS]._pShKey->_key 	= VK_PRIOR;
 
-	_tcscpy_s(funcItem[CMD_NEXT_CHANGE_POS]._itemName, nbChar, TEXT("Next Change Position"));
+	_tcscpy_s(funcItem[CMD_NEXT_CHANGE_POS]._itemName, menuItemSize, TEXT("Next Change Position"));
 	funcItem[CMD_NEXT_CHANGE_POS]._pFunc 			= NextChangePos;
 	funcItem[CMD_NEXT_CHANGE_POS]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_NEXT_CHANGE_POS]._pShKey->_isAlt 	= true;
@@ -3849,13 +3850,13 @@ void createMenu()
 	funcItem[CMD_NEXT_CHANGE_POS]._pShKey->_isShift	= true;
 	funcItem[CMD_NEXT_CHANGE_POS]._pShKey->_key 	= VK_NEXT;
 
-	_tcscpy_s(funcItem[CMD_SETTINGS]._itemName, nbChar, TEXT("Settings..."));
+	_tcscpy_s(funcItem[CMD_SETTINGS]._itemName, menuItemSize, TEXT("Settings..."));
 	funcItem[CMD_SETTINGS]._pFunc = OpenSettingsDlg;
 
 #ifdef DLOG
-	_tcscpy_s(funcItem[CMD_ABOUT]._itemName, nbChar, TEXT("Show debug log"));
+	_tcscpy_s(funcItem[CMD_ABOUT]._itemName, menuItemSize, TEXT("Show debug log"));
 #else
-	_tcscpy_s(funcItem[CMD_ABOUT]._itemName, nbChar, TEXT("Help / About..."));
+	_tcscpy_s(funcItem[CMD_ABOUT]._itemName, menuItemSize, TEXT("Help / About..."));
 #endif
 	funcItem[CMD_ABOUT]._pFunc = OpenAboutDlg;
 }

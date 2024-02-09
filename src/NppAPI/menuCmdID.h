@@ -1,5 +1,5 @@
 // This file is part of Notepad++ project
-// Copyright (C)2021 Don HO <don.h@free.fr>
+// Copyright (C)2024 Don HO <don.h@free.fr>
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -171,6 +171,16 @@
     #define    IDM_EDIT_COPY_ALL_NAMES                          (IDM_EDIT + 87)
     #define    IDM_EDIT_COPY_ALL_PATHS                          (IDM_EDIT + 88)
     #define    IDM_EDIT_BEGINENDSELECT_COLUMNMODE               (IDM_EDIT + 89)
+    #define    IDM_EDIT_MULTISELECTALL                          (IDM_EDIT + 90)
+    #define    IDM_EDIT_MULTISELECTALLMATCHCASE                 (IDM_EDIT + 91)
+    #define    IDM_EDIT_MULTISELECTALLWHOLEWORD                 (IDM_EDIT + 92)
+    #define    IDM_EDIT_MULTISELECTALLMATCHCASEWHOLEWORD        (IDM_EDIT + 93)
+    #define    IDM_EDIT_MULTISELECTNEXT                         (IDM_EDIT + 94)
+    #define    IDM_EDIT_MULTISELECTNEXTMATCHCASE                (IDM_EDIT + 95)
+    #define    IDM_EDIT_MULTISELECTNEXTWHOLEWORD                (IDM_EDIT + 96)
+    #define    IDM_EDIT_MULTISELECTNEXTMATCHCASEWHOLEWORD       (IDM_EDIT + 97)
+    #define    IDM_EDIT_MULTISELECTUNDO                         (IDM_EDIT + 98)
+    #define    IDM_EDIT_MULTISELECTSSKIP                        (IDM_EDIT + 99)
 
     #define    IDM_EDIT_AUTOCOMPLETE                            (50000 + 0)
     #define    IDM_EDIT_AUTOCOMPLETE_CURRENTFILE                (50000 + 1)
@@ -378,6 +388,8 @@
     #define    IDM_VIEW_TAB_COLOUR_3              (IDM_VIEW + 113)
     #define    IDM_VIEW_TAB_COLOUR_4              (IDM_VIEW + 114)
     #define    IDM_VIEW_TAB_COLOUR_5              (IDM_VIEW + 115)
+    #define    IDM_VIEW_TAB_START                 (IDM_VIEW + 116)
+    #define    IDM_VIEW_TAB_END                   (IDM_VIEW + 117)
 
     #define    IDM_VIEW_NPC                       (IDM_VIEW + 130)
     #define    IDM_VIEW_NPC_CCUNIEOL              (IDM_VIEW + 131)
@@ -386,7 +398,8 @@
     #define    IDM_VIEW_CLONE_TO_ANOTHER_VIEW    10002
     #define    IDM_VIEW_GOTO_NEW_INSTANCE        10003
     #define    IDM_VIEW_LOAD_IN_NEW_INSTANCE     10004
-
+    #define    IDM_VIEW_GOTO_START               10005
+    #define    IDM_VIEW_GOTO_END                 10006
 
 #define    IDM_FORMAT    (IDM + 5000)
     #define    IDM_FORMAT_TODOS             (IDM_FORMAT + 1)
