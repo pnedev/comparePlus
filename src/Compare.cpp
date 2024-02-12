@@ -3802,7 +3802,7 @@ void createMenu()
 	_tcscpy_s(funcItem[CMD_AUTO_RECOMPARE]._itemName, menuItemSize, TEXT("Auto Re-Compare on Change"));
 	funcItem[CMD_AUTO_RECOMPARE]._pFunc = AutoRecompare;
 
-	_tcscpy_s(funcItem[CMD_PREV]._itemName, menuItemSize, TEXT("Previous"));
+	_tcscpy_s(funcItem[CMD_PREV]._itemName, menuItemSize, TEXT("Previous Diff Block"));
 	funcItem[CMD_PREV]._pFunc 				= Prev;
 	funcItem[CMD_PREV]._pShKey 				= new ShortcutKey;
 	funcItem[CMD_PREV]._pShKey->_isAlt 		= true;
@@ -3810,7 +3810,7 @@ void createMenu()
 	funcItem[CMD_PREV]._pShKey->_isShift	= false;
 	funcItem[CMD_PREV]._pShKey->_key 		= VK_PRIOR;
 
-	_tcscpy_s(funcItem[CMD_NEXT]._itemName, menuItemSize, TEXT("Next"));
+	_tcscpy_s(funcItem[CMD_NEXT]._itemName, menuItemSize, TEXT("Next Diff Block"));
 	funcItem[CMD_NEXT]._pFunc 				= Next;
 	funcItem[CMD_NEXT]._pShKey 				= new ShortcutKey;
 	funcItem[CMD_NEXT]._pShKey->_isAlt 		= true;
@@ -3818,7 +3818,7 @@ void createMenu()
 	funcItem[CMD_NEXT]._pShKey->_isShift	= false;
 	funcItem[CMD_NEXT]._pShKey->_key 		= VK_NEXT;
 
-	_tcscpy_s(funcItem[CMD_FIRST]._itemName, menuItemSize, TEXT("First"));
+	_tcscpy_s(funcItem[CMD_FIRST]._itemName, menuItemSize, TEXT("First Diff Block"));
 	funcItem[CMD_FIRST]._pFunc 				= First;
 	funcItem[CMD_FIRST]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_FIRST]._pShKey->_isAlt 	= true;
@@ -3826,7 +3826,7 @@ void createMenu()
 	funcItem[CMD_FIRST]._pShKey->_isShift	= false;
 	funcItem[CMD_FIRST]._pShKey->_key 		= VK_PRIOR;
 
-	_tcscpy_s(funcItem[CMD_LAST]._itemName, menuItemSize, TEXT("Last"));
+	_tcscpy_s(funcItem[CMD_LAST]._itemName, menuItemSize, TEXT("Last Diff Block"));
 	funcItem[CMD_LAST]._pFunc 				= Last;
 	funcItem[CMD_LAST]._pShKey 				= new ShortcutKey;
 	funcItem[CMD_LAST]._pShKey->_isAlt 		= true;
