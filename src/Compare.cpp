@@ -3834,7 +3834,7 @@ void createMenu()
 	funcItem[CMD_LAST]._pShKey->_isShift	= false;
 	funcItem[CMD_LAST]._pShKey->_key 		= VK_NEXT;
 
-	_tcscpy_s(funcItem[CMD_PREV_CHANGE_POS]._itemName, menuItemSize, TEXT("Prev Change Position"));
+	_tcscpy_s(funcItem[CMD_PREV_CHANGE_POS]._itemName, menuItemSize, TEXT("Previous Diff in Changed Line"));
 	funcItem[CMD_PREV_CHANGE_POS]._pFunc 			= PrevChangePos;
 	funcItem[CMD_PREV_CHANGE_POS]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_PREV_CHANGE_POS]._pShKey->_isAlt 	= true;
@@ -3842,7 +3842,7 @@ void createMenu()
 	funcItem[CMD_PREV_CHANGE_POS]._pShKey->_isShift	= true;
 	funcItem[CMD_PREV_CHANGE_POS]._pShKey->_key 	= VK_PRIOR;
 
-	_tcscpy_s(funcItem[CMD_NEXT_CHANGE_POS]._itemName, menuItemSize, TEXT("Next Change Position"));
+	_tcscpy_s(funcItem[CMD_NEXT_CHANGE_POS]._itemName, menuItemSize, TEXT("Next Diff in Changed Line"));
 	funcItem[CMD_NEXT_CHANGE_POS]._pFunc 			= NextChangePos;
 	funcItem[CMD_NEXT_CHANGE_POS]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_NEXT_CHANGE_POS]._pShKey->_isAlt 	= true;
