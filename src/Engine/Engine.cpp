@@ -1712,7 +1712,9 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 		if (!oc.empty())
 			LOGD(LOG_ALGO, "Best Matching Lines: " +
 					std::to_string(doc1.lines[oc.begin()->line1 + blockDiff1.off].line + 1) + " and " +
-					std::to_string(doc2.lines[oc.begin()->line2 + blockDiff2.off].line + 1) + "\n");
+					std::to_string(doc2.lines[oc.begin()->line2 + blockDiff2.off].line + 1) + ", Conv (" +
+					std::to_string(oc.begin()->conv.convergence) + ", " +
+					std::to_string(oc.begin()->conv.longestMatchRatio) + ")\n");
 	}
 #endif
 
