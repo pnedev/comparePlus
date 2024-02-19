@@ -1564,15 +1564,12 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 							{
 								auto& l1c = lines1Convergence[l2c.line1];
 
-								if (!l1c.empty())
+								for (auto l1cI = l1c.begin(); l1cI != l1c.end(); ++l1cI)
 								{
-									for (auto l1cI = l1c.begin(); l1cI != l1c.end(); ++l1cI)
+									if (l1cI->line2 == line2)
 									{
-										if (l1cI->line2 == line2)
-										{
-											l1c.erase(l1cI);
-											break;
-										}
+										l1c.erase(l1cI);
+										break;
 									}
 								}
 							}
@@ -1699,12 +1696,8 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 	std::vector<std::set<LinesConv>> orderedLinesConvergence =
 			getOrderedConvergence(doc1, doc2, blockDiff1, blockDiff2, options);
 
-	{
-		progress_ptr& progress = ProgressDlg::Get();
-
-		if (progress->IsCancelled())
-			return false;
-	}
+	if (ProgressDlg::Get()->IsCancelled())
+		return false;
 
 #ifdef DLOG
 	for (const auto& oc: orderedLinesConvergence)
