@@ -35,11 +35,12 @@
 	#include <string>
 	#include <shlwapi.h>
 
-	#define LOG_ALGO	(1 << 0)
-	#define LOG_SYNC	(1 << 1)
-	#define LOG_NOTIF	(1 << 2)
-	#define LOG_VISIT	(1 << 3)
-	#define LOG_ALL		0xFF
+	#define LOG_ALGO			(1 << 0)
+	#define LOG_SYNC			(1 << 1)
+	#define LOG_NOTIF			(1 << 2)
+	#define LOG_VISIT			(1 << 3)
+	#define LOG_CHANGE_ALGO		(1 << 8)
+	#define LOG_ALL				0xFFFF
 
 	#define LOGD_GET_TIME \
 		if (1) { \

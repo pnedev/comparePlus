@@ -302,7 +302,9 @@ struct LinesConv
 
 	inline bool operator<(const LinesConv& rhs) const
 	{
-		return ((conv > rhs.conv) || ((conv == rhs.conv) && (line2 < rhs.line2)));
+		return ((conv > rhs.conv) ||
+				((conv == rhs.conv) && ((line2 < rhs.line2) ||
+										((line2 == rhs.line2) && (line1 < rhs.line1)))));
 	}
 };
 
@@ -1555,19 +1557,31 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 
 						if (lines2Convergence[line2].empty() || (conv == lines2Convergence[line2].begin()->conv))
 						{
+							LOGD(LOG_CHANGE_ALGO, "Add L2: " + std::to_string(line1) + ", " + std::to_string(line2) +
+									", " + std::to_string(conv.convergence) + "\n");
+
 							lines2Convergence[line2].emplace(conv, line1, line2);
 							addL1C = true;
 						}
 						else if (conv > lines2Convergence[line2].begin()->conv)
 						{
+							LOGD(LOG_CHANGE_ALGO, "Replace L2: " + std::to_string(line1) + ", " +
+									std::to_string(line2) + ", " + std::to_string(conv.convergence) + "\n");
+
 							for (const auto& l2c : lines2Convergence[line2])
 							{
 								auto& l1c = lines1Convergence[l2c.line1];
 
 								for (auto l1cI = l1c.begin(); l1cI != l1c.end(); ++l1cI)
 								{
+									LOGD(LOG_CHANGE_ALGO, "Check L1: " + std::to_string(l2c.line1) + ", " +
+											std::to_string(l1cI->line2) + ", " +
+											std::to_string(l1cI->conv.convergence) + "\n");
+
 									if (l1cI->line2 == line2)
 									{
+										LOGD(LOG_CHANGE_ALGO, "Erase\n");
+
 										l1c.erase(l1cI);
 										break;
 									}
