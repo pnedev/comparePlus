@@ -2,6 +2,18 @@ cmake_minimum_required (VERSION 3.12)
 
 set (CMAKE_SYSTEM_NAME Windows)
 
+option (WIN64				"Win 64-bit build"						ON)
+option (MULTITHREAD			"Multithread change detection"			OFF)
+option (OTHER_MOVED_ICONS	"Use alternative moves lines icons"		ON)
+
+# On Cmake invokation if debug logging is desired set the value of DLOG to include the bit-flag of each desired
+# function to log:
+# bit 0 - log compare algorithm
+# bit 1 - log views synchronization
+# bit 2 - log Notepad++ and Scintilla notifications
+# bit 3 - log navigation commands diff visiting
+set (DLOG	0	CACHE STRING	"Flags for debug log messages")
+
 if (UNIX OR MINGW)
 	set (CMAKE_SYSROOT "/usr")
 
@@ -37,24 +49,22 @@ if (UNIX OR MINGW)
 
 	if (WIN64)
 		set (defs ${defs} -DWIN64)
+		message ("Win64 build is ON")
 	endif ()
 
 	if (MULTITHREAD)
 		set (defs ${defs} -DMULTITHREAD)
+		message ("Multithread change detection is ON")
 	endif ()
 
-	# On Cmake invokation if debug logging is desired set the value of DLOG to include the bit-flag of each desired
-	# function to log:
-	# bit 0 - log compare algorithm
-	# bit 1 - log views synchronization
-	# bit 2 - log Notepad++ and Scintilla notifications
-	# bit 3 - log navigation commands diff visiting
 	if (DLOG)
 		set (defs ${defs} -DDLOG=${DLOG})
+		message ("Debug log flags value: ${DLOG}")
 	endif ()
 
 	if (OTHER_MOVED_ICONS)
 		set (defs ${defs} -DOTHER_MOVED_ICONS)
+		message ("Using alternative moved lines icons.")
 	endif ()
 
 	set (CMAKE_CXX_FLAGS
