@@ -236,53 +236,9 @@ struct MatchInfo
 };
 
 
-struct Conv
-{
-	float convergence;
-	float longestMatchRatio;
-
-	Conv(float c = 0, float lm = 0) : convergence(c), longestMatchRatio(lm)
-	{}
-
-	Conv(const Conv& c) : convergence(c.convergence), longestMatchRatio(c.longestMatchRatio)
-	{}
-
-	const Conv& operator=(const Conv& rhs)
-	{
-		if (&rhs != this)
-			Set(rhs.convergence, rhs.longestMatchRatio);
-
-		return *this;
-	}
-
-	inline void Set(float c, float lm)
-	{
-		convergence = c;
-		longestMatchRatio = lm;
-	}
-
-	inline bool operator>(const Conv& rhs) const
-	{
-		return ((convergence > rhs.convergence) ||
-				((convergence == rhs.convergence) && (longestMatchRatio > rhs.longestMatchRatio)));
-	}
-
-	inline bool operator==(const Conv& rhs) const
-	{
-		return ((convergence == rhs.convergence) && (longestMatchRatio == rhs.longestMatchRatio));
-	}
-
-	inline bool operator>=(const Conv& rhs) const
-	{
-		return ((convergence > rhs.convergence) ||
-				((convergence == rhs.convergence) && (longestMatchRatio >= rhs.longestMatchRatio)));
-	}
-};
-
-
 struct LinesConv
 {
-	Conv conv;
+	float conv;
 
 	intptr_t line1;
 	intptr_t line2;
@@ -290,10 +246,10 @@ struct LinesConv
 	LinesConv() : line1(-1), line2(-1)
 	{}
 
-	LinesConv(const Conv& c, intptr_t l1, intptr_t l2) : conv(c), line1(l1), line2(l2)
+	LinesConv(float c, intptr_t l1, intptr_t l2) : conv(c), line1(l1), line2(l2)
 	{}
 
-	inline void Set(const Conv& c, intptr_t l1, intptr_t l2)
+	inline void Set(float c, intptr_t l1, intptr_t l2)
 	{
 		conv = c;
 		line1 = l1;
@@ -1543,10 +1499,9 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 
 					if (((matchesCount * 100) / maxSize) >= options.changedThresholdPercent)
 					{
-						const float lineConvergence		= (static_cast<float>(matchesCount) * 100) / maxSize;
-						const float longestMatchRatio	= (static_cast<float>(longestMatch) * 100) / maxSize;
-
-						const Conv conv(lineConvergence, longestMatchRatio);
+						const float conv =
+								(static_cast<float>(matchesCount) * 100) / maxSize +
+								(static_cast<float>(longestMatch) * 100) / maxSize;
 
 						if (!progress->Advance(linesProgress + 1))
 							return;
@@ -1558,7 +1513,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 						if (lines2Convergence[line2].empty() || (conv == lines2Convergence[line2].begin()->conv))
 						{
 							LOGD(LOG_CHANGE_ALGO, "Add L2: " + std::to_string(line1) + ", " + std::to_string(line2) +
-									", " + std::to_string(conv.convergence) + "\n");
+									", " + std::to_string(conv) + "\n");
 
 							lines2Convergence[line2].emplace(conv, line1, line2);
 							addL1C = true;
@@ -1566,7 +1521,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 						else if (conv > lines2Convergence[line2].begin()->conv)
 						{
 							LOGD(LOG_CHANGE_ALGO, "Replace L2: " + std::to_string(line1) + ", " +
-									std::to_string(line2) + ", " + std::to_string(conv.convergence) + "\n");
+									std::to_string(line2) + ", " + std::to_string(conv) + "\n");
 
 							for (const auto& l2c : lines2Convergence[line2])
 							{
@@ -1576,7 +1531,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 								{
 									LOGD(LOG_CHANGE_ALGO, "Check L1: " + std::to_string(l2c.line1) + ", " +
 											std::to_string(l1cI->line2) + ", " +
-											std::to_string(l1cI->conv.convergence) + "\n");
+											std::to_string(l1cI->conv) + "\n");
 
 									if (l1cI->line2 == line2)
 									{
@@ -1720,8 +1675,7 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 			LOGD(LOG_ALGO, "Best Matching Lines: " +
 					std::to_string(doc1.lines[oc.begin()->line1 + blockDiff1.off].line + 1) + " and " +
 					std::to_string(doc2.lines[oc.begin()->line2 + blockDiff2.off].line + 1) + ", Conv (" +
-					std::to_string(oc.begin()->conv.convergence) + ", " +
-					std::to_string(oc.begin()->conv.longestMatchRatio) + ")\n");
+					std::to_string(oc.begin()->conv) + ")\n");
 	}
 #endif
 
