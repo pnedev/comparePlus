@@ -346,9 +346,12 @@ public:
 
 	void adjustAlignment(int view, intptr_t line, intptr_t offset);
 
-	void setCompareDirty()
+	void setCompareDirty(bool nppReplace = false)
 	{
 		compareDirty = true;
+
+		if (nppReplace)
+			nppReplaceDone = true;
 
 		if (!inEqualizeMode)
 			manuallyChanged = true;
@@ -364,6 +367,7 @@ public:
 	FoldType_t		foldType		= NO_FOLD;
 
 	bool			compareDirty	= false;
+	bool			nppReplaceDone	= false;
 	bool			manuallyChanged	= false;
 	int				inEqualizeMode	= 0;
 
@@ -2820,6 +2824,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	const CompareResult cmpResult = runCompare(cmpPair);
 
 	cmpPair->compareDirty		= false;
+	cmpPair->nppReplaceDone		= false;
 	cmpPair->manuallyChanged	= false;
 
 	switch (cmpResult)
@@ -4566,6 +4571,16 @@ void DelayedAlign::operator()()
 	{
 		syncViews(getCurrentViewId());
 	}
+
+	if (cmpPair->nppReplaceDone)
+	{
+		cmpPair->nppReplaceDone = false;
+
+		::MessageBox(nppData._nppHandle,
+				TEXT("Compared file text replaced by Notepad++. Please manually re-compare\n")
+				TEXT("to make sure compare results are valid!"),
+				PLUGIN_NAME, MB_ICONEXCLAMATION);
+	}
 }
 
 
@@ -5204,9 +5219,9 @@ void onSciModified(SCNotification* notifyCode)
 			if (notifyCode->linesAdded)
 				cmpPair->autoUpdateDelay = 500;
 			else
-				// Leave bigger delay before re-compare if change is on single line because the user might be typing
-				// and we shouldn't interrupt / interfere
-				cmpPair->autoUpdateDelay = 1000;
+				// Leave bigger delay before re-comparing if change is on single line because the user might be typing
+				// and we should try to avoid interrupting / interfering
+				cmpPair->autoUpdateDelay = 1500;
 
 			return;
 		}
@@ -5627,6 +5642,30 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 		case SCN_MODIFIED:
 			if (NppSettings::get().compareMode && !notificationsLock)
 				onSciModified(notifyCode);
+		break;
+
+		case NPPN_GLOBALMODIFIED:
+			if (!compareList.empty() && !notificationsLock)
+			{
+				const LRESULT changedBuffId = reinterpret_cast<LRESULT>(notifyCode->nmhdr.hwndFrom);
+
+				CompareList_t::iterator cmpPair = getCompare(changedBuffId);
+
+				if (cmpPair != compareList.end())
+				{
+					if (cmpPair->options.recompareOnChange)
+					{
+						cmpPair->autoUpdateDelay = 200;
+					}
+					else
+					{
+						cmpPair->setCompareDirty(true);
+
+						if (changedBuffId == getCurrentBuffId())
+							cmpPair->setStatus();
+					}
+				}
+			}
 		break;
 
 		case SCN_ZOOM:
