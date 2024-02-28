@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2022 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2022-2024 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,10 +23,10 @@
 #define TO_STR(X)				PARAM_TO_STR(X)
 
 
-#define VER_COPYRIGHT			"Copyright (C) 2022\0"
+#define VER_COPYRIGHT			"Copyright (C) 2024\0"
 
-#define PLUGIN_VERSION			1.1.0
-#define VER_FILEVERSION			1,1,0,0
+#define PLUGIN_VERSION			1.2.0
+#define VER_FILEVERSION			1,2,0,0
 #define IS_PRERELEASE			0
 
 #if (IS_PRERELEASE == 1)

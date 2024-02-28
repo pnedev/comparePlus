@@ -2,6 +2,33 @@ ComparePlus Changelog:
 ----------------------
 
 
+28.02.2024
+v1.2.0
+
+	- Update Notepad++ and Scintilla plugin API headers
+	- Let Notepad++ handle dialogs dark mode
+	- Allocate diff changes indicator number via Notepad++ API
+	- Handle 'Replace All' Notepad++ notifications
+	- Improve diffs post-processing steps (better diffs presentation in some specific cases)
+	- Fixed bug and improvements in the change detection algo
+	- Add commands to bookmark diffs
+	- Add commands to jump to changes positions within changed line
+	- Add option to ignore folded lines and also allow folding in compare state
+	- Add 'Ignore Changed Spaces' option, the current 'Ignore Space' is actually the 'Ignore All Spaces'
+	- Remove "Best Sequence Change Detect" option - does not bring any added value anymore
+	- Add compare status info type setting
+	- Make 'Cancel Compare' much more responsive
+	- Disable auto-recompare if compare took more than 5 seconds
+	- Add warning message before comparing very large files
+	- Change Notepad++ status bar compare info implementation (avoids crashes due to TextFX interoperation)
+	- Save and restore each view caret line color and layer on compare (improves plugins interoperability)
+	- Fix unwanted selection when activating compared file
+	- Fix last line alignment and sync
+	- Fix selection compare zero line alignment
+	- Restore view properly after selections compare close
+	- Changes to some menu items names for more clarity
+
+
 02.10.2022
 v1.1.0
 
