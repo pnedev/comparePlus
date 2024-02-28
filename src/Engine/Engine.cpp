@@ -1394,7 +1394,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 
 	std::vector<std::vector<Word>> words2(linesCount2);
 
-	if (!options.detectCharDiffs)
+	if (!options.detectCharDiffs || !options.ignoreAllSpaces)
 	{
 		for (intptr_t line2 = 0; line2 < linesCount2; ++line2)
 			if (!chunk2[line2].empty())
@@ -1445,7 +1445,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 					intptr_t matchesCount	= 0;
 					intptr_t longestMatch	= 0;
 
-					if (!options.detectCharDiffs)
+					if (!options.detectCharDiffs || !options.ignoreAllSpaces)
 					{
 						if (words1.empty())
 							words1 = getLineWords(doc1.view, doc1.lines[blockDiff1.off + line1].line, options);
@@ -1490,7 +1490,12 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 						{
 							if (charDiffs.first[i].type == diff_type::DIFF_MATCH)
 							{
-								matchesCount += charDiffs.first[i].len;
+								const intptr_t matchLen = charDiffs.first[i].len;
+
+								matchesCount += matchLen;
+
+								if (matchLen > longestMatch)
+									longestMatch = matchLen;
 							}
 						}
 					}
