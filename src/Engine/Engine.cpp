@@ -34,7 +34,8 @@
 #include <windows.h>
 
 #include "Engine.h"
-#include "diff.h"
+// #include "diff.h"
+#include "fast_myers_diff.h"
 #include "ProgressDlg.h"
 
 
