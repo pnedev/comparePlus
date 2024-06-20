@@ -629,7 +629,8 @@ std::pair<std::vector<diff_info<UserDataT>>, bool> DiffCalc<Elem, UserDataT>::op
 	while (off < asize && off < bsize && _a[off] == _b[off])
 		++off;
 
-	_edit(diff_type::DIFF_MATCH, 0, off);
+	if (off)
+		_edit(diff_type::DIFF_MATCH, 0, off);
 
 	if (asize == bsize && off == asize)
 		return std::make_pair(_diff, swapped);
