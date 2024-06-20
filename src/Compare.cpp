@@ -2827,6 +2827,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	cmpPair->nppReplaceDone		= false;
 	cmpPair->manuallyChanged	= false;
 
+	LOGD(LOG_ALL, "COMPARE took " + std::to_string((int)difftime(time(0), startTime)) + " seconds\n");
+
 	switch (cmpResult)
 	{
 		case CompareResult::COMPARE_MISMATCH:
