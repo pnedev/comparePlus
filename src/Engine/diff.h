@@ -111,9 +111,10 @@ private:
 	};
 
 	inline intptr_t& _v(intptr_t k, intptr_t r);
-	void _edit(diff_type type, intptr_t off, intptr_t len);
+	void _add(diff_type type, intptr_t off, intptr_t len);
 	intptr_t _find_middle_snake(intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend, middle_snake& ms);
 	intptr_t _ses(intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend);
+
 	void _combine_diffs();
 	void _shift_boundaries();
 	inline intptr_t _count_replaces();
@@ -151,9 +152,106 @@ DiffCalc<Elem, UserDataT>::DiffCalc(const Elem v1[], intptr_t v1_size, const Ele
 
 
 template <typename Elem, typename UserDataT>
+std::pair<std::vector<diff_info<UserDataT>>, bool> DiffCalc<Elem, UserDataT>::operator()(bool doDiffsCombine,
+		bool doBoundaryShift)
+{
+	bool swapped = false;
+
+	/* The diff algorithm assumes we begin with a diff. The following ensures this is true by skipping any matches
+	 * in the beginning. This also helps to quickly process sequences that match entirely.
+	 */
+	intptr_t off_s = 0;
+
+	intptr_t asize = _a_size;
+	intptr_t bsize = _b_size;
+
+	while (off_s < asize && off_s < bsize && _a[off_s] == _b[off_s])
+		++off_s;
+
+	if (off_s)
+		_add(diff_type::DIFF_MATCH, 0, off_s);
+
+	if (asize == bsize && off_s == asize)
+		return std::make_pair(_diff, swapped);
+
+	intptr_t aend = asize - 1;
+	intptr_t bend = bsize - 1;
+
+	asize -= off_s;
+	bsize -= off_s;
+
+	intptr_t off_e = 0;
+
+	while (off_e < asize && off_e < bsize && _a[aend - off_e] == _b[bend - off_e])
+		++off_e;
+
+	if (off_e)
+	{
+		asize -= off_e;
+		bsize -= off_e;
+	}
+
+	if (_ses(off_s, asize, off_s, bsize) == -1)
+	{
+		_diff.clear();
+		return std::make_pair(_diff, swapped);
+	}
+
+	// Wipe temporal buffer to free memory
+	_buf.get().clear();
+
+	// Swap compared sequences and re-compare to see if result is more optimal
+	{
+		const intptr_t replacesCount = _count_replaces();
+
+		// Store current compare result
+		std::vector<diff_info<UserDataT>> storedDiff = std::move(_diff);
+		std::swap(_a, _b);
+		std::swap(asize, bsize);
+		swapped = !swapped;
+
+		// Restore first matching block before continuing
+		if (storedDiff[0].type == diff_type::DIFF_MATCH)
+			_diff.push_back(storedDiff[0]);
+
+		intptr_t newReplacesCount = _ses(off_s, asize, off_s, bsize);
+
+		// Wipe temporal buffer to free memory
+		_buf.get().clear();
+
+		if (newReplacesCount != -1)
+			newReplacesCount = _count_replaces();
+
+		// If re-compare result is not more optimal - restore the previous state
+		if (newReplacesCount < replacesCount)
+		{
+			_diff = std::move(storedDiff);
+			std::swap(_a, _b);
+			swapped = !swapped;
+		}
+		else
+		{
+			std::swap(aend, bend);
+		}
+	}
+
+	if (off_e)
+		_add(diff_type::DIFF_MATCH, aend - off_e + 1, off_e);
+
+	if (doDiffsCombine)
+		_combine_diffs();
+
+	if (doBoundaryShift)
+		_shift_boundaries();
+
+	return std::make_pair(_diff, swapped);
+}
+
+
+template <typename Elem, typename UserDataT>
 inline intptr_t& DiffCalc<Elem, UserDataT>::_v(intptr_t k, intptr_t r)
 {
-	/* Pack -N to N into 0 to N * 2 */
+	/* Pack -N to N into 0 to 2 * N */
 	const intptr_t j = (k <= 0) ? (-k * 4 + r) : (k * 4 + (r - 2));
 
 	return _buf.get(j);
@@ -161,7 +259,7 @@ inline intptr_t& DiffCalc<Elem, UserDataT>::_v(intptr_t k, intptr_t r)
 
 
 template <typename Elem, typename UserDataT>
-void DiffCalc<Elem, UserDataT>::_edit(diff_type type, intptr_t off, intptr_t len)
+void DiffCalc<Elem, UserDataT>::_add(diff_type type, intptr_t off, intptr_t len)
 {
 	if (len == 0)
 		return;
@@ -296,12 +394,12 @@ intptr_t DiffCalc<Elem, UserDataT>::_ses(intptr_t aoff, intptr_t aend, intptr_t 
 
 	if (aend == 0)
 	{
-		_edit(diff_type::DIFF_IN_2, boff, bend);
+		_add(diff_type::DIFF_IN_2, boff, bend);
 		d = bend;
 	}
 	else if (bend == 0)
 	{
-		_edit(diff_type::DIFF_IN_1, aoff, aend);
+		_add(diff_type::DIFF_IN_1, aoff, aend);
 		d = aend;
 	}
 	else
@@ -321,7 +419,7 @@ intptr_t DiffCalc<Elem, UserDataT>::_ses(intptr_t aoff, intptr_t aend, intptr_t 
 			if (_ses(aoff, ms.x, boff, ms.y) == -1)
 				return -1;
 
-			_edit(diff_type::DIFF_MATCH, aoff + ms.x, ms.u - ms.x);
+			_add(diff_type::DIFF_MATCH, aoff + ms.x, ms.u - ms.x);
 
 			aoff += ms.u;
 			boff += ms.v;
@@ -354,26 +452,26 @@ intptr_t DiffCalc<Elem, UserDataT>::_ses(intptr_t aoff, intptr_t aend, intptr_t 
 			{
 				if (x == u)
 				{
-					_edit(diff_type::DIFF_MATCH, aoff, aend);
-					_edit(diff_type::DIFF_IN_2, boff + (bend - 1), 1);
+					_add(diff_type::DIFF_MATCH, aoff, aend);
+					_add(diff_type::DIFF_IN_2, boff + (bend - 1), 1);
 				}
 				else
 				{
-					_edit(diff_type::DIFF_IN_2, boff, 1);
-					_edit(diff_type::DIFF_MATCH, aoff, aend);
+					_add(diff_type::DIFF_IN_2, boff, 1);
+					_add(diff_type::DIFF_MATCH, aoff, aend);
 				}
 			}
 			else
 			{
 				if (x == u)
 				{
-					_edit(diff_type::DIFF_MATCH, aoff, bend);
-					_edit(diff_type::DIFF_IN_1, aoff + (aend - 1), 1);
+					_add(diff_type::DIFF_MATCH, aoff, bend);
+					_add(diff_type::DIFF_IN_1, aoff + (aend - 1), 1);
 				}
 				else
 				{
-					_edit(diff_type::DIFF_IN_1, aoff, 1);
-					_edit(diff_type::DIFF_MATCH, aoff + 1, bend);
+					_add(diff_type::DIFF_IN_1, aoff, 1);
+					_add(diff_type::DIFF_MATCH, aoff + 1, bend);
 				}
 			}
 		}
@@ -603,101 +701,4 @@ inline intptr_t DiffCalc<Elem, UserDataT>::_count_replaces()
 	}
 
 	return replaces;
-}
-
-
-template <typename Elem, typename UserDataT>
-std::pair<std::vector<diff_info<UserDataT>>, bool> DiffCalc<Elem, UserDataT>::operator()(bool doDiffsCombine,
-		bool doBoundaryShift)
-{
-	bool swapped = false;
-
-	/* The diff algorithm assumes we begin with a diff. The following ensures this is true by skipping any matches
-	 * in the beginning. This also helps to quickly process sequences that match entirely.
-	 */
-	intptr_t off_s = 0;
-
-	intptr_t asize = _a_size;
-	intptr_t bsize = _b_size;
-
-	while (off_s < asize && off_s < bsize && _a[off_s] == _b[off_s])
-		++off_s;
-
-	if (off_s)
-		_edit(diff_type::DIFF_MATCH, 0, off_s);
-
-	if (asize == bsize && off_s == asize)
-		return std::make_pair(_diff, swapped);
-
-	intptr_t aend = asize - 1;
-	intptr_t bend = bsize - 1;
-
-	asize -= off_s;
-	bsize -= off_s;
-
-	intptr_t off_e = 0;
-
-	while (off_e < asize && off_e < bsize && _a[aend - off_e] == _b[bend - off_e])
-		++off_e;
-
-	if (off_e)
-	{
-		asize -= off_e;
-		bsize -= off_e;
-	}
-
-	if (_ses(off_s, asize, off_s, bsize) == -1)
-	{
-		_diff.clear();
-		return std::make_pair(_diff, swapped);
-	}
-
-	// Wipe temporal buffer to free memory
-	_buf.get().clear();
-
-	// Swap compared sequences and re-compare to see if result is more optimal
-	{
-		const intptr_t replacesCount = _count_replaces();
-
-		// Store current compare result
-		std::vector<diff_info<UserDataT>> storedDiff = std::move(_diff);
-		std::swap(_a, _b);
-		std::swap(asize, bsize);
-		swapped = !swapped;
-
-		// Restore first matching block before continuing
-		if (storedDiff[0].type == diff_type::DIFF_MATCH)
-			_diff.push_back(storedDiff[0]);
-
-		intptr_t newReplacesCount = _ses(off_s, asize, off_s, bsize);
-
-		// Wipe temporal buffer to free memory
-		_buf.get().clear();
-
-		if (newReplacesCount != -1)
-			newReplacesCount = _count_replaces();
-
-		// If re-compare result is not more optimal - restore the previous state
-		if (newReplacesCount < replacesCount)
-		{
-			_diff = std::move(storedDiff);
-			std::swap(_a, _b);
-			swapped = !swapped;
-		}
-		else
-		{
-			std::swap(aend, bend);
-		}
-	}
-
-	if (off_e)
-		_edit(diff_type::DIFF_MATCH, aend - off_e + 1, off_e);
-
-	if (doDiffsCombine)
-		_combine_diffs();
-
-	if (doBoundaryShift)
-		_shift_boundaries();
-
-	return std::make_pair(_diff, swapped);
 }
