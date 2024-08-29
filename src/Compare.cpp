@@ -2013,8 +2013,11 @@ bool isAlignmentNeeded(int view, const CompareList_t::iterator& cmpPair)
 	const intptr_t linesOnScreen = CallScintilla(MAIN_VIEW, SCI_LINESONSCREEN, 0, 0);
 	const intptr_t endMisalignment = (mismatchLen < linesOnScreen) ? mismatchLen : linesOnScreen;
 
-	if (std::abs(getLineAnnotation(MAIN_VIEW, mainEndLine) - getLineAnnotation(SUB_VIEW, subEndLine)) !=
-			endMisalignment)
+	const intptr_t mainEndLineAnnotation	= getLineAnnotation(MAIN_VIEW, mainEndLine);
+	const intptr_t subEndLineAnnotation		= getLineAnnotation(SUB_VIEW, subEndLine);
+
+	if ((mainEndLineAnnotation && subEndLineAnnotation) ||
+		(std::abs(mainEndLineAnnotation - subEndLineAnnotation) != endMisalignment))
 		return true;
 
 	return false;
@@ -2202,18 +2205,21 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 			subEndLine = 0;
 	}
 
-	const intptr_t mainEndVisible = CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, mainEndLine, 0) +
+	const intptr_t mainEndVisible	= CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, mainEndLine, 0) +
 			getWrapCount(MAIN_VIEW, mainEndLine) - 1;
-	const intptr_t subEndVisible = CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subEndLine, 0) +
+	const intptr_t subEndVisible	= CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subEndLine, 0) +
 			getWrapCount(SUB_VIEW, subEndLine) - 1;
 
-	const intptr_t mismatchLen = mainEndVisible - subEndVisible;
-	const intptr_t absMismatchLen = std::abs(mismatchLen);
-	const intptr_t linesOnScreen = CallScintilla(MAIN_VIEW, SCI_LINESONSCREEN, 0, 0);
-	const intptr_t endMisalignment = (absMismatchLen < linesOnScreen) ? absMismatchLen : linesOnScreen;
+	const intptr_t mismatchLen		= mainEndVisible - subEndVisible;
+	const intptr_t absMismatchLen	= std::abs(mismatchLen);
+	const intptr_t linesOnScreen	= CallScintilla(MAIN_VIEW, SCI_LINESONSCREEN, 0, 0);
+	const intptr_t endMisalignment	= (absMismatchLen < linesOnScreen) ? absMismatchLen : linesOnScreen;
 
-	if (std::abs(getLineAnnotation(MAIN_VIEW, mainEndLine) - getLineAnnotation(SUB_VIEW, subEndLine)) !=
-		endMisalignment)
+	const intptr_t mainEndLineAnnotation	= getLineAnnotation(MAIN_VIEW, mainEndLine);
+	const intptr_t subEndLineAnnotation		= getLineAnnotation(SUB_VIEW, subEndLine);
+
+	if ((mainEndLineAnnotation && subEndLineAnnotation) ||
+		(std::abs(mainEndLineAnnotation - subEndLineAnnotation) != endMisalignment))
 	{
 		if (mismatchLen == 0)
 		{
