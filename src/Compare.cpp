@@ -2016,7 +2016,7 @@ bool isAlignmentNeeded(int view, const CompareList_t::iterator& cmpPair)
 	const intptr_t mainEndLineAnnotation	= getLineAnnotation(MAIN_VIEW, mainEndLine);
 	const intptr_t subEndLineAnnotation		= getLineAnnotation(SUB_VIEW, subEndLine);
 
-	if ((mainEndLineAnnotation && subEndLineAnnotation) ||
+	if ((!cmpPair->options.selectionCompare && mainEndLineAnnotation && subEndLineAnnotation) ||
 		(std::abs(mainEndLineAnnotation - subEndLineAnnotation) != endMisalignment))
 		return true;
 
@@ -2218,7 +2218,7 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 	const intptr_t mainEndLineAnnotation	= getLineAnnotation(MAIN_VIEW, mainEndLine);
 	const intptr_t subEndLineAnnotation		= getLineAnnotation(SUB_VIEW, subEndLine);
 
-	if ((mainEndLineAnnotation && subEndLineAnnotation) ||
+	if ((!cmpPair->options.selectionCompare && mainEndLineAnnotation && subEndLineAnnotation) ||
 		(std::abs(mainEndLineAnnotation - subEndLineAnnotation) != endMisalignment))
 	{
 		if (mismatchLen == 0)
