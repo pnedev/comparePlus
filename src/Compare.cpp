@@ -2794,6 +2794,14 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		// New compare?
 		if (!recompare)
 		{
+			if ((cmpPair->getOldFile().isTemp != CLIPBOARD_TEMP) &&
+				(CallScintilla(MAIN_VIEW, SCI_GETEOLMODE, 0, 0) != CallScintilla(SUB_VIEW, SCI_GETEOLMODE, 0, 0)))
+			{
+				::MessageBox(nppData._nppHandle,
+						TEXT("Files differ in line endings - this will be ignored in the compare process."),
+						cmpPair->options.findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"), MB_ICONWARNING);
+			}
+
 			constexpr int cLinesCountWarningLimit = 50000;
 
 			bool largeFilesWarning = false;
