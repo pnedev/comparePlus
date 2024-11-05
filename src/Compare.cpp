@@ -5720,6 +5720,8 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 					setCompareView(SUB_VIEW, Settings.colors().blank, Settings.colors().caret_line_transparency);
 				}
 			}
+
+			NppSettings::get().updatePluginMenu();
 		break;
 
 		case NPPN_TBMODIFICATION:
