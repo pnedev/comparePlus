@@ -38,7 +38,7 @@
 #include "LibHelpers.h"
 #include "AboutDialog.h"
 #include "SettingsDialog.h"
-#include "IgnoreRegexDialog.h"
+#include "CompareOptionsDialog.h"
 #include "NavDialog.h"
 #include "Engine.h"
 #include "NppInternalDefines.h"
@@ -3327,102 +3327,11 @@ void ActiveCompareSummary()
 }
 
 
-void DetectMoves()
+void OpenCompareOptionsDlg()
 {
-	Settings.DetectMoves = !Settings.DetectMoves;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID,
-			(LPARAM)Settings.DetectMoves);
-	Settings.markAsDirty();
-}
+	CompareOptionsDialog CompareOptionsDlg(hInstance, nppData);
 
-
-void DetectCharDiffs()
-{
-	Settings.DetectCharDiffs = !Settings.DetectCharDiffs;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_CHAR_DIFFS]._cmdID,
-			(LPARAM)Settings.DetectCharDiffs);
-	Settings.markAsDirty();
-}
-
-
-void IgnoreEmptyLines()
-{
-	Settings.IgnoreEmptyLines = !Settings.IgnoreEmptyLines;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_EMPTY_LINES]._cmdID,
-			(LPARAM)Settings.IgnoreEmptyLines);
-	Settings.markAsDirty();
-}
-
-
-void IgnoreFoldedLines()
-{
-	Settings.IgnoreFoldedLines = !Settings.IgnoreFoldedLines;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_FOLDED_LINES]._cmdID,
-			(LPARAM)Settings.IgnoreFoldedLines);
-	Settings.markAsDirty();
-}
-
-
-void IgnoreChangedSpaces()
-{
-	Settings.IgnoreChangedSpaces = !Settings.IgnoreChangedSpaces;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_CHANGED_SPACES]._cmdID,
-			(LPARAM)Settings.IgnoreChangedSpaces);
-
-	if (Settings.IgnoreChangedSpaces)
-	{
-		Settings.IgnoreAllSpaces = false;
-		::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_ALL_SPACES]._cmdID,
-				(LPARAM)false);
-	}
-
-	Settings.markAsDirty();
-}
-
-
-void IgnoreAllSpaces()
-{
-	Settings.IgnoreAllSpaces = !Settings.IgnoreAllSpaces;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_ALL_SPACES]._cmdID,
-			(LPARAM)Settings.IgnoreAllSpaces);
-
-	if (Settings.IgnoreAllSpaces)
-	{
-		Settings.IgnoreChangedSpaces = false;
-		::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_CHANGED_SPACES]._cmdID,
-				(LPARAM)false);
-	}
-
-	Settings.markAsDirty();
-}
-
-
-void IgnoreCase()
-{
-	Settings.IgnoreCase = !Settings.IgnoreCase;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_CASE]._cmdID,
-			(LPARAM)Settings.IgnoreCase);
-	Settings.markAsDirty();
-}
-
-
-void IgnoreRegex()
-{
-	const bool currentIgnoreRegexSwitch = Settings.IgnoreRegex;
-
-	IgnoreRegexDialog IgnoreRegexDlg(hInstance, nppData);
-
-	if (IgnoreRegexDlg.doDialog(&Settings) == IDOK)
-		Settings.IgnoreRegex = !Settings.IgnoreRegexStr.empty();
-	else
-		Settings.IgnoreRegex = false;
-
-	if (currentIgnoreRegexSwitch != Settings.IgnoreRegex)
-	{
-		::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_REGEX]._cmdID,
-				(LPARAM)Settings.IgnoreRegex);
-		Settings.markAsDirty();
-	}
+	CompareOptionsDlg.doDialog(&Settings);
 }
 
 
@@ -3787,29 +3696,8 @@ void createMenu()
 	_tcscpy_s(funcItem[CMD_COMPARE_SUMMARY]._itemName, menuItemSize, TEXT("Active Compare Summary"));
 	funcItem[CMD_COMPARE_SUMMARY]._pFunc = ActiveCompareSummary;
 
-	_tcscpy_s(funcItem[CMD_DETECT_MOVES]._itemName, menuItemSize, TEXT("Detect Moves"));
-	funcItem[CMD_DETECT_MOVES]._pFunc = DetectMoves;
-
-	_tcscpy_s(funcItem[CMD_DETECT_CHAR_DIFFS]._itemName, menuItemSize, TEXT("Detect Character Diffs"));
-	funcItem[CMD_DETECT_CHAR_DIFFS]._pFunc = DetectCharDiffs;
-
-	_tcscpy_s(funcItem[CMD_IGNORE_EMPTY_LINES]._itemName, menuItemSize, TEXT("Ignore Empty Lines"));
-	funcItem[CMD_IGNORE_EMPTY_LINES]._pFunc = IgnoreEmptyLines;
-
-	_tcscpy_s(funcItem[CMD_IGNORE_FOLDED_LINES]._itemName, menuItemSize, TEXT("Ignore Folded Lines"));
-	funcItem[CMD_IGNORE_FOLDED_LINES]._pFunc = IgnoreFoldedLines;
-
-	_tcscpy_s(funcItem[CMD_IGNORE_CHANGED_SPACES]._itemName, menuItemSize, TEXT("Ignore Changed Spaces"));
-	funcItem[CMD_IGNORE_CHANGED_SPACES]._pFunc = IgnoreChangedSpaces;
-
-	_tcscpy_s(funcItem[CMD_IGNORE_ALL_SPACES]._itemName, menuItemSize, TEXT("Ignore All Spaces"));
-	funcItem[CMD_IGNORE_ALL_SPACES]._pFunc = IgnoreAllSpaces;
-
-	_tcscpy_s(funcItem[CMD_IGNORE_CASE]._itemName, menuItemSize, TEXT("Ignore Case"));
-	funcItem[CMD_IGNORE_CASE]._pFunc = IgnoreCase;
-
-	_tcscpy_s(funcItem[CMD_IGNORE_REGEX]._itemName, menuItemSize, TEXT("Ignore Regex..."));
-	funcItem[CMD_IGNORE_REGEX]._pFunc = IgnoreRegex;
+	_tcscpy_s(funcItem[CMD_COMPARE_OPTIONS]._itemName, menuItemSize, TEXT("Compare Options (ignore, etc.)..."));
+	funcItem[CMD_COMPARE_OPTIONS]._pFunc = OpenCompareOptionsDlg;
 
 	_tcscpy_s(funcItem[CMD_SHOW_ONLY_DIFF]._itemName, menuItemSize, TEXT("Show Only Diffs (Hide Matches)"));
 	funcItem[CMD_SHOW_ONLY_DIFF]._pFunc = ShowOnlyDiffs;
@@ -4409,22 +4297,6 @@ void onNppReady()
 	if (isSingleView())
 		NppSettings::get().enableNppScrollCommands(false);
 
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_MOVES]._cmdID,
-			(LPARAM)Settings.DetectMoves);
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DETECT_CHAR_DIFFS]._cmdID,
-			(LPARAM)Settings.DetectCharDiffs);
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_EMPTY_LINES]._cmdID,
-			(LPARAM)Settings.IgnoreEmptyLines);
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_FOLDED_LINES]._cmdID,
-			(LPARAM)Settings.IgnoreFoldedLines);
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_CHANGED_SPACES]._cmdID,
-			(LPARAM)Settings.IgnoreChangedSpaces);
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_ALL_SPACES]._cmdID,
-			(LPARAM)Settings.IgnoreAllSpaces);
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_CASE]._cmdID,
-			(LPARAM)Settings.IgnoreCase);
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_IGNORE_REGEX]._cmdID,
-			(LPARAM)Settings.IgnoreRegex);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_SHOW_ONLY_DIFF]._cmdID,
 			(LPARAM)Settings.ShowOnlyDiffs);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_SHOW_ONLY_SEL]._cmdID,

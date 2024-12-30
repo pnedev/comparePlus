@@ -27,17 +27,17 @@
 using namespace std;
 
 
-class IgnoreRegexDialog : public StaticDialog
+class CompareOptionsDialog : public StaticDialog
 {
 
 public:
-	IgnoreRegexDialog(HINSTANCE hInst, NppData nppDataParam) : StaticDialog()
+	CompareOptionsDialog(HINSTANCE hInst, NppData nppDataParam) : StaticDialog()
 	{
 		_nppData = nppDataParam;
 		Window::init(hInst, nppDataParam._nppHandle);
 	};
 
-	~IgnoreRegexDialog()
+	~CompareOptionsDialog()
 	{
 		destroy();
 	}

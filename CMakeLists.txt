@@ -98,7 +98,7 @@ set (project_sources
 	src/SettingsDlg/ColorCombo.cpp
 	src/SettingsDlg/ColorPopup.cpp
 	src/SettingsDlg/SettingsDialog.cpp
-	src/IgnoreRegexDlg/IgnoreRegexDialog.cpp
+	src/CompareOptionsDlg/CompareOptionsDialog.cpp
 	src/NavDlg/NavDialog.cpp
 	src/ProgressDlg/ProgressDlg.cpp
 	src/Engine/Engine.cpp
@@ -120,7 +120,7 @@ include_directories (
 	src/Engine/
 	src/AboutDlg/
 	src/SettingsDlg/
-	src/IgnoreRegexDlg/
+	src/CompareOptionsDlg/
 	src/NavDlg/
 	src/ProgressDlg/
 	src/SQLite/
