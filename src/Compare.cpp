@@ -2760,6 +2760,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		cmpPair->options.ignoreChangedSpaces		= Settings.IgnoreChangedSpaces;
 		cmpPair->options.ignoreAllSpaces			= Settings.IgnoreAllSpaces;
 		cmpPair->options.ignoreCase					= Settings.IgnoreCase;
+		cmpPair->options.recompareOnChange			= Settings.RecompareOnChange;
 
 		if (Settings.IgnoreRegex)
 			cmpPair->options.setIgnoreRegex(Settings.IgnoreRegexStr);
@@ -2848,7 +2849,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		case CompareResult::COMPARE_MISMATCH:
 		{
 			// Honour 'Auto Re-compare On Change' user setting only if compare time is less than 5 sec.
-			cmpPair->options.recompareOnChange = Settings.RecompareOnChange && (difftime(time(0), startTime) < 5.0);
+			cmpPair->options.recompareOnChange =
+					cmpPair->options.recompareOnChange && (difftime(time(0), startTime) < 5.0);
 
 			justCompared = true;
 
