@@ -141,6 +141,7 @@ public:
 	static const TCHAR ignoreAllSpacesSetting[];
 	static const TCHAR ignoreCaseSetting[];
 	static const TCHAR ignoreRegexSetting[];
+	static const TCHAR invertRegexSetting[];
 	static const TCHAR ignoreRegexStrSetting[];
 
 	static const TCHAR showOnlySelSetting[];
@@ -204,6 +205,7 @@ public:
 	bool			IgnoreAllSpaces;
 	bool			IgnoreCase;
 	bool			IgnoreRegex;
+	bool			InvertRegex;
 	std::wstring	IgnoreRegexStr;
 
 	bool			ShowOnlyDiffs;

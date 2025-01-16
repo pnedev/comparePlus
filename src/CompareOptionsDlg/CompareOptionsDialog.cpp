@@ -91,12 +91,14 @@ INT_PTR CALLBACK CompareOptionsDialog::run_dlgProc(UINT Message, WPARAM wParam, 
 				}
 				break;
 
-				case IDC_ENABLE_IGNORE_REGEX:
+				case IDC_IGNORE_REGEX:
 				{
-					bool enableIgnoreRegex =
-							(Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_IGNORE_REGEX)) == BST_CHECKED);
+					bool ignoreRegex = (Button_GetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_REGEX)) == BST_CHECKED);
 
-					Edit_Enable(::GetDlgItem(_hSelf, IDC_IGNORE_REGEX), enableIgnoreRegex);
+					Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_MODE_IGNORE),	ignoreRegex);
+					Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_MODE_MATCH),	ignoreRegex);
+
+					Edit_Enable(::GetDlgItem(_hSelf, IDC_IGNORE_REGEX_STR), ignoreRegex);
 				}
 				break;
 
@@ -113,8 +115,7 @@ INT_PTR CALLBACK CompareOptionsDialog::run_dlgProc(UINT Message, WPARAM wParam, 
 
 void CompareOptionsDialog::SetParams()
 {
-	Button_SetCheck(::GetDlgItem(_hSelf, IDC_DETECT_MOVES),
-			_Settings->DetectMoves ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_DETECT_MOVES), _Settings->DetectMoves ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_DETECT_CHAR_DIFFS),
 			_Settings->DetectCharDiffs ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_EMPTY_LINES),
@@ -125,12 +126,16 @@ void CompareOptionsDialog::SetParams()
 			!_Settings->IgnoreAllSpaces && _Settings->IgnoreChangedSpaces ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_ALL_SPACES),
 			_Settings->IgnoreAllSpaces ? BST_CHECKED : BST_UNCHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_CASE),
-			_Settings->IgnoreCase ? BST_CHECKED : BST_UNCHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_IGNORE_REGEX),
-			_Settings->IgnoreRegex ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_CASE),  _Settings->IgnoreCase  ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_REGEX), _Settings->IgnoreRegex ? BST_CHECKED : BST_UNCHECKED);
 
-	HWND hCtrl = ::GetDlgItem(_hSelf, IDC_IGNORE_REGEX);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_REGEX_MODE_IGNORE), !_Settings->InvertRegex ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_REGEX_MODE_MATCH),   _Settings->InvertRegex ? BST_CHECKED : BST_UNCHECKED);
+
+	Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_MODE_IGNORE),	_Settings->IgnoreRegex);
+	Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_MODE_MATCH),	_Settings->IgnoreRegex);
+
+	HWND hCtrl = ::GetDlgItem(_hSelf, IDC_IGNORE_REGEX_STR);
 
 	::SendMessage(hCtrl, EM_SETLIMITTEXT, cMaxRegexLen, 0);
 
@@ -148,11 +153,11 @@ bool CompareOptionsDialog::GetParams()
 	_Settings->IgnoreChangedSpaces	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_CHANGED_SPACES)) == BST_CHECKED);
 	_Settings->IgnoreAllSpaces		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_ALL_SPACES)) == BST_CHECKED);
 	_Settings->IgnoreCase			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_CASE)) == BST_CHECKED);
-	_Settings->IgnoreRegex			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_IGNORE_REGEX)) == BST_CHECKED);
+	_Settings->IgnoreRegex			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_REGEX)) == BST_CHECKED);
 
 	if (_Settings->IgnoreRegex)
 	{
-		HWND hCtrl = ::GetDlgItem(_hSelf, IDC_IGNORE_REGEX);
+		HWND hCtrl = ::GetDlgItem(_hSelf, IDC_IGNORE_REGEX_STR);
 
 		int len = Edit_LineLength(hCtrl, 0);
 
@@ -178,6 +183,8 @@ bool CompareOptionsDialog::GetParams()
 		{
 			_Settings->IgnoreRegexStr = L"";
 		}
+
+		_Settings->InvertRegex = (Button_GetCheck(::GetDlgItem(_hSelf, IDC_REGEX_MODE_MATCH)) == BST_CHECKED);
 	}
 
 	return true;

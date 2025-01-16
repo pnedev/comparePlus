@@ -2763,7 +2763,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		cmpPair->options.recompareOnChange			= Settings.RecompareOnChange;
 
 		if (Settings.IgnoreRegex)
-			cmpPair->options.setIgnoreRegex(Settings.IgnoreRegexStr);
+			cmpPair->options.setIgnoreRegex(Settings.IgnoreRegexStr, Settings.InvertRegex);
 		else
 			cmpPair->options.clearIgnoreRegex();
 

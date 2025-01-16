@@ -58,12 +58,17 @@ struct CompareOptions
 		selections[1] = std::make_pair(-1, -1);
 	}
 
-	inline void setIgnoreRegex(const std::wstring& regexStr)
+	inline void setIgnoreRegex(const std::wstring& regexStr, bool invert)
 	{
 		if (!regexStr.empty())
+		{
 			ignoreRegex = std::make_unique<std::wregex>(regexStr, std::regex::ECMAScript | std::regex::optimize);
+			invertRegex = invert;
+		}
 		else
+		{
 			ignoreRegex = nullptr;
+		}
 	}
 
 	inline void clearIgnoreRegex()
@@ -88,6 +93,7 @@ struct CompareOptions
 	bool	recompareOnChange;
 
 	std::unique_ptr<std::wregex>	ignoreRegex;
+	bool							invertRegex;
 
 	int		changedThresholdPercent;
 

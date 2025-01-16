@@ -364,40 +364,54 @@ uint64_t getRegexIgnoreLineHash(uint64_t hashSeed, int codepage, const std::vect
 	std::regex_iterator<std::vector<wchar_t>::iterator> rit(wLine.begin(), wLine.end(), *options.ignoreRegex);
 	std::regex_iterator<std::vector<wchar_t>::iterator> rend;
 
-	intptr_t pos = 0;
-	intptr_t endPos = wLen - 1;
-
-	if (options.ignoreChangedSpaces && (wLine[pos] == L' ' || wLine[pos] == L'\t'))
+	if (options.invertRegex)
 	{
-		while (++pos < endPos && (wLine[pos] == L' ' || wLine[pos] == L'\t'));
-
-		if (pos == endPos)
-			return hashSeed;
-	}
-
-	while (rit != rend)
-	{
+		for (; rit != rend; ++rit)
+		{
 #if !defined(MULTITHREAD) || (MULTITHREAD == 0)
-		LOGD(LOG_ALGO, "pos " + std::to_string(rit->position()) + ", len " + std::to_string(rit->length()) + "\n");
+			LOGD(LOG_ALGO, "pos " + std::to_string(rit->position()) + ", len " + std::to_string(rit->length()) + "\n");
 #endif
 
-		hashSeed = getSectionRangeHash(hashSeed, wLine, pos, rit->position(), options);
-
-		pos = rit->position() + rit->length();
-		++rit;
+			hashSeed = getSectionRangeHash(hashSeed, wLine, rit->position(), rit->position() + rit->length(), options);
+		}
 	}
-
-	--endPos;
-
-	if (options.ignoreChangedSpaces && (wLine[endPos] == L' ' || wLine[endPos] == L'\t'))
+	else
 	{
-		while (--endPos >= pos && (wLine[endPos] == L' ' || wLine[endPos] == L'\t'));
+		intptr_t pos = 0;
+		intptr_t endPos = wLen - 1;
 
-		if (endPos < pos)
-			return hashSeed;
+		if (options.ignoreChangedSpaces && (wLine[pos] == L' ' || wLine[pos] == L'\t'))
+		{
+			while (++pos < endPos && (wLine[pos] == L' ' || wLine[pos] == L'\t'));
+
+			if (pos == endPos)
+				return hashSeed;
+		}
+
+		while (rit != rend)
+		{
+#if !defined(MULTITHREAD) || (MULTITHREAD == 0)
+			LOGD(LOG_ALGO, "pos " + std::to_string(rit->position()) + ", len " + std::to_string(rit->length()) + "\n");
+#endif
+
+			hashSeed = getSectionRangeHash(hashSeed, wLine, pos, rit->position(), options);
+
+			pos = rit->position() + rit->length();
+			++rit;
+		}
+
+		--endPos;
+
+		if (options.ignoreChangedSpaces && (wLine[endPos] == L' ' || wLine[endPos] == L'\t'))
+		{
+			while (--endPos >= pos && (wLine[endPos] == L' ' || wLine[endPos] == L'\t'));
+
+			if (endPos < pos)
+				return hashSeed;
+		}
+
+		hashSeed = getSectionRangeHash(hashSeed, wLine, pos, endPos + 1, options);
 	}
-
-	hashSeed = getSectionRangeHash(hashSeed, wLine, pos, endPos + 1, options);
 
 	return hashSeed;
 }
@@ -575,7 +589,7 @@ inline void getSectionRangeWords(std::vector<Word>& words, std::vector<wchar_t>&
 	else
 		word.hash = Hash(cHashSeed, line[pos]);
 
-	for (++pos; pos < endPos; ++pos)
+	for (; ++pos < endPos;)
 	{
 		const charType newWordType = getCharTypeW(line[pos]);
 
@@ -620,36 +634,44 @@ std::vector<Word> getRegexIgnoreLineWords(std::vector<wchar_t>& line, const Comp
 	std::regex_iterator<std::vector<wchar_t>::iterator> rit(line.begin(), line.end(), *options.ignoreRegex);
 	std::regex_iterator<std::vector<wchar_t>::iterator> rend;
 
-	intptr_t pos = 0;
-	intptr_t endPos = len - 1;
-
-	if (options.ignoreChangedSpaces && (line[pos] == L' ' || line[pos] == L'\t'))
+	if (options.invertRegex)
 	{
-		while (++pos < endPos && (line[pos] == L' ' || line[pos] == L'\t'));
-
-		if (pos == endPos)
-			return words;
+		for (; rit != rend; ++rit)
+			getSectionRangeWords(words, line, rit->position(), rit->position() + rit->length(), options);
 	}
-
-	while (rit != rend)
+	else
 	{
-		getSectionRangeWords(words, line, pos, rit->position(), options);
+		intptr_t pos = 0;
+		intptr_t endPos = len - 1;
 
-		pos = rit->position() + rit->length();
-		++rit;
+		if (options.ignoreChangedSpaces && (line[pos] == L' ' || line[pos] == L'\t'))
+		{
+			while (++pos < endPos && (line[pos] == L' ' || line[pos] == L'\t'));
+
+			if (pos == endPos)
+				return words;
+		}
+
+		while (rit != rend)
+		{
+			getSectionRangeWords(words, line, pos, rit->position(), options);
+
+			pos = rit->position() + rit->length();
+			++rit;
+		}
+
+		--endPos;
+
+		if (options.ignoreChangedSpaces && (line[endPos] == L' ' || line[endPos] == L'\t'))
+		{
+			while (--endPos >= pos && (line[endPos] == L' ' || line[endPos] == L'\t'));
+
+			if (endPos < pos)
+				return words;
+		}
+
+		getSectionRangeWords(words, line, pos, endPos + 1, options);
 	}
-
-	--endPos;
-
-	if (options.ignoreChangedSpaces && (line[endPos] == L' ' || line[endPos] == L'\t'))
-	{
-		while (--endPos >= pos && (line[endPos] == L' ' || line[endPos] == L'\t'));
-
-		if (endPos < pos)
-			return words;
-	}
-
-	getSectionRangeWords(words, line, pos, endPos + 1, options);
 
 	return words;
 }
@@ -821,32 +843,40 @@ std::vector<Char> getRegexIgnoreLineChars(int view, intptr_t lineStart, intptr_t
 	std::regex_iterator<std::vector<wchar_t>::iterator> rit(wLine.begin(), wLine.end(), *options.ignoreRegex);
 	std::regex_iterator<std::vector<wchar_t>::iterator> rend;
 
-	intptr_t pos = 0;
-	intptr_t endPos = wLen - 1;
-
-	if (options.ignoreChangedSpaces && (wLine[pos] == L' ' || wLine[pos] == L'\t'))
+	if (options.invertRegex)
 	{
-		while (++pos < endPos && (wLine[pos] == L' ' || wLine[pos] == L'\t'));
-
-		if (pos == endPos)
-			return chars;
+		for (; rit != rend; ++rit)
+			getSectionRangeChars(chars, wLine, rit->position(), rit->position() + rit->length(), options);
 	}
-
-	while (rit != rend)
+	else
 	{
-		getSectionRangeChars(chars, wLine, pos, rit->position(), options);
+		intptr_t pos = 0;
+		intptr_t endPos = wLen - 1;
 
-		pos = rit->position() + rit->length();
-		++rit;
+		if (options.ignoreChangedSpaces && (wLine[pos] == L' ' || wLine[pos] == L'\t'))
+		{
+			while (++pos < endPos && (wLine[pos] == L' ' || wLine[pos] == L'\t'));
+
+			if (pos == endPos)
+				return chars;
+		}
+
+		while (rit != rend)
+		{
+			getSectionRangeChars(chars, wLine, pos, rit->position(), options);
+
+			pos = rit->position() + rit->length();
+			++rit;
+		}
+
+		--endPos;
+
+		if (options.ignoreChangedSpaces && (wLine[endPos] == L' ' || wLine[endPos] == L'\t'))
+			while (--endPos >= pos && (wLine[endPos] == L' ' || wLine[endPos] == L'\t'));
+
+		if (endPos >= pos)
+			getSectionRangeChars(chars, wLine, pos, endPos + 1, options);
 	}
-
-	--endPos;
-
-	if (options.ignoreChangedSpaces && (wLine[endPos] == L' ' || wLine[endPos] == L'\t'))
-		while (--endPos >= pos && (wLine[endPos] == L' ' || wLine[endPos] == L'\t'));
-
-	if (endPos >= pos)
-		getSectionRangeChars(chars, wLine, pos, endPos + 1, options);
 
 	// In case of UTF-16 or UTF-32 find chars byte positions because Scintilla uses those
 	if (wLen != len)

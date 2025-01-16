@@ -45,6 +45,7 @@ const TCHAR UserSettings::ignoreChangedSpacesSetting[]		= TEXT("ignore_changed_s
 const TCHAR UserSettings::ignoreAllSpacesSetting[]			= TEXT("ignore_all_spaces");
 const TCHAR UserSettings::ignoreCaseSetting[]				= TEXT("ignore_case");
 const TCHAR UserSettings::ignoreRegexSetting[]				= TEXT("ignore_regex");
+const TCHAR UserSettings::invertRegexSetting[]				= TEXT("invert_regex");
 const TCHAR UserSettings::ignoreRegexStrSetting[]			= TEXT("ignore_regex_string");
 const TCHAR UserSettings::showOnlySelSetting[]				= TEXT("show_only_selections");
 const TCHAR UserSettings::showOnlyDiffSetting[]				= TEXT("show_only_diffs");
@@ -125,6 +126,7 @@ void UserSettings::load()
 	IgnoreAllSpaces		= ::GetPrivateProfileInt(mainSection, ignoreAllSpacesSetting,		0, iniFile) != 0;
 	IgnoreCase			= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,			0, iniFile) != 0;
 	IgnoreRegex			= ::GetPrivateProfileInt(mainSection, ignoreRegexSetting,			0, iniFile) != 0;
+	InvertRegex			= ::GetPrivateProfileInt(mainSection, invertRegexSetting,			0, iniFile) != 0;
 
 	TCHAR buf[1024];
 
@@ -284,6 +286,8 @@ void UserSettings::save()
 			IgnoreCase ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreRegexSetting,
 			IgnoreRegex ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, invertRegexSetting,
+			InvertRegex ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreRegexStrSetting,
 			IgnoreRegexStr.c_str(), iniFile);
 	::WritePrivateProfileString(mainSection, showOnlyDiffSetting,
