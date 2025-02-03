@@ -72,6 +72,10 @@ constexpr int MIN_NOTEPADPP_VERSION_MINOR = 420;
 
 constexpr int MIN_NOTEPADPP_VERSION = ((MIN_NOTEPADPP_VERSION_MAJOR << 16) | MIN_NOTEPADPP_VERSION_MINOR);
 
+constexpr intptr_t SCN_MODIFIED_NOTIF_FLAGS_USED =
+	SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT | SC_MOD_BEFOREDELETE |
+	SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO;
+
 
 /**
  *  \class
@@ -4370,6 +4374,9 @@ void onNppReady()
 		}
 
 		readNppBookmarkID();
+
+		if (getNotepadVersion() >= ((8 << 16) | 760)) // Necessary for Notepad++ versions above 8.7.6 (included)
+			::SendMessage(nppData._nppHandle, NPPM_ADDSCNMODIFIEDFLAGS, 0, (LPARAM)SCN_MODIFIED_NOTIF_FLAGS_USED);
 
 		NppSettings::get().updatePluginMenu();
 
