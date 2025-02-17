@@ -2565,7 +2565,7 @@ bool initNewCompare()
 	if (!firstIsSet)
 	{
 		const bool singleView = isSingleView();
-		const bool isNew = singleView ? true : getCurrentViewId() == Settings.NewFileViewId;
+		const bool isNew = singleView ? Settings.FirstFileIsNew : getCurrentViewId() == Settings.NewFileViewId;
 
 		if (!setFirst(isNew))
 			return false;
