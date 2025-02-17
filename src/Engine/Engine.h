@@ -58,11 +58,16 @@ struct CompareOptions
 		selections[1] = std::make_pair(-1, -1);
 	}
 
-	inline void setIgnoreRegex(const std::wstring& regexStr, bool invert)
+	inline void setIgnoreRegex(const std::wstring& regexStr, bool invert, bool ignoreCase)
 	{
 		if (!regexStr.empty())
 		{
-			ignoreRegex = std::make_unique<std::wregex>(regexStr, std::regex::ECMAScript | std::regex::optimize);
+			auto regexOptions = std::regex::ECMAScript | std::regex::optimize;
+
+			if (ignoreCase)
+				regexOptions |= std::regex::icase;
+
+			ignoreRegex = std::make_unique<std::wregex>(regexStr, regexOptions);
 			invertRegex = invert;
 		}
 		else

@@ -268,7 +268,7 @@ struct LinesConv
 };
 
 
-const uint64_t cHashSeed = 0x84222325;
+static constexpr uint64_t cHashSeed = 0x84222325;
 
 template<typename CharT>
 inline uint64_t Hash(uint64_t hval, CharT letter)
@@ -521,10 +521,14 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 					newLine.hash = Hash(newLine.hash, line[pos]);
 				}
 			}
-		}
 
-		if (!options.ignoreEmptyLines || newLine.hash != cHashSeed)
+			if (newLine.hash != cHashSeed)
+				doc.lines.emplace_back(newLine);
+		}
+		else if (!options.ignoreEmptyLines)
+		{
 			doc.lines.emplace_back(newLine);
+		}
 	}
 }
 
@@ -1862,7 +1866,7 @@ void markSection(const DocCmpInfo& doc, const diffInfo& bd, const CompareOptions
 
 				markLine(doc.view, docLine, mark);
 
-				if (options.ignoreEmptyLines && !options.neverMarkIgnored)
+				if (!options.neverMarkIgnored)
 				{
 					for (; prevLine < docLine; ++prevLine)
 						markLine(doc.view, prevLine, doc.blockDiffMask & MARKER_MASK_LINE);
@@ -1892,7 +1896,7 @@ void markSection(const DocCmpInfo& doc, const diffInfo& bd, const CompareOptions
 				const intptr_t docLine = doc.lines[line].line;
 				markLine(doc.view, docLine, MARKER_MASK_MOVED_MID);
 
-				if (options.ignoreEmptyLines && !options.neverMarkIgnored)
+				if (!options.neverMarkIgnored)
 				{
 					for (; prevLine < docLine; ++prevLine)
 						markLine(doc.view, prevLine, MARKER_MASK_MOVED_MID & MARKER_MASK_LINE);
@@ -1904,7 +1908,7 @@ void markSection(const DocCmpInfo& doc, const diffInfo& bd, const CompareOptions
 			const intptr_t docLine = doc.lines[line].line;
 			markLine(doc.view, docLine, MARKER_MASK_MOVED_END);
 
-			if (options.ignoreEmptyLines && !options.neverMarkIgnored)
+			if (!options.neverMarkIgnored)
 			{
 				for (; prevLine < docLine; ++prevLine)
 					markLine(doc.view, prevLine, MARKER_MASK_MOVED_MID & MARKER_MASK_LINE);
@@ -2074,8 +2078,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 
 						summary.alignmentInfo.emplace_back(alignPair);
 
-						if (options.ignoreEmptyLines && options.neverMarkIgnored &&
-							cmpInfo.doc1.section.len && cmpInfo.doc2.section.len)
+						if (options.neverMarkIgnored && cmpInfo.doc1.section.len && cmpInfo.doc2.section.len)
 						{
 							std::vector<intptr_t> alignLines1;
 							intptr_t maxLines = cmpInfo.doc1.section.len + alignLines.first;
@@ -2154,8 +2157,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 
 					summary.alignmentInfo.emplace_back(alignPair);
 
-					if (options.ignoreEmptyLines && options.neverMarkIgnored &&
-						cmpInfo.doc1.section.len && cmpInfo.doc2.section.len)
+					if (options.neverMarkIgnored && cmpInfo.doc1.section.len && cmpInfo.doc2.section.len)
 					{
 						std::vector<intptr_t> alignLines1;
 						intptr_t maxLines = cmpInfo.doc1.section.len + alignLines.first;
