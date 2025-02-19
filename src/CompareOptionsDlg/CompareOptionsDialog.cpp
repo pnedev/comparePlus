@@ -23,7 +23,7 @@
 #include <windowsx.h>
 #include <commctrl.h>
 #include <uxtheme.h>
-#include <regex>
+#include <boost/regex.hpp>
 
 #include "NppHelpers.h"
 
@@ -195,9 +195,9 @@ bool CompareOptionsDialog::isRegexValid(const wchar_t* regexStr)
 {
 	try
 	{
-		std::wregex testRegex(regexStr, std::regex::ECMAScript);
+		boost::wregex testRegex(regexStr, boost::regex::perl);
 	}
-	catch (std::regex_error& err)
+	catch (boost::regex_error& err)
 	{
 		::MessageBoxA(nppData._nppHandle, err.what(), "ComparePlus Bad Regex", MB_OK | MB_ICONWARNING);
 

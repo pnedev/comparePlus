@@ -25,7 +25,7 @@
 #include <utility>
 #include <memory>
 #include <string>
-#include <regex>
+#include <boost/regex.hpp>
 
 #include "Compare.h"
 #include "NppHelpers.h"
@@ -62,12 +62,12 @@ struct CompareOptions
 	{
 		if (!regexStr.empty())
 		{
-			auto regexOptions = std::regex::ECMAScript | std::regex::optimize;
+			auto regexOptions = boost::regex::perl | boost::regex::optimize;
 
 			if (ignoreCase)
-				regexOptions |= std::regex::icase;
+				regexOptions |= boost::regex::icase;
 
-			ignoreRegex = std::make_unique<std::wregex>(regexStr, regexOptions);
+			ignoreRegex = std::make_unique<boost::wregex>(regexStr, regexOptions);
 			invertRegex = invert;
 		}
 		else
@@ -97,7 +97,7 @@ struct CompareOptions
 
 	bool	recompareOnChange;
 
-	std::unique_ptr<std::wregex>	ignoreRegex;
+	std::unique_ptr<boost::wregex>	ignoreRegex;
 	bool							invertRegex;
 
 	int		changedThresholdPercent;

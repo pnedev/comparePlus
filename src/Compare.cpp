@@ -2139,7 +2139,7 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 		}
 		else
 		{
-			static const char *lineZeroAlignInfo =
+			constexpr char lineZeroAlignInfo[] =
 						"Lines above cannot be properly aligned.\n"
 						"To see them aligned, please manually insert one empty line\n"
 						"in the beginning of each file and then re-compare.";
@@ -3280,7 +3280,7 @@ void ActiveCompareSummary()
 	}
 
 	{
-		static constexpr TCHAR comparisonOptStr[] = TEXT("\n\nComparison options:\n\n");
+		constexpr TCHAR comparisonOptStr[] = TEXT("\n\nComparison options:\n\n");
 
 		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, comparisonOptStr);
 		infoCurrentPos += _countof(comparisonOptStr) - 1;

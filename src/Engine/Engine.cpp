@@ -361,8 +361,8 @@ uint64_t getRegexIgnoreLineHash(uint64_t hashSeed, int codepage, const std::vect
 	LOGD(LOG_ALGO, "line len " + std::to_string(len) + " to wide char len " + std::to_string(wLen) + "\n");
 #endif
 
-	std::regex_iterator<std::vector<wchar_t>::iterator> rit(wLine.begin(), wLine.end(), *options.ignoreRegex);
-	std::regex_iterator<std::vector<wchar_t>::iterator> rend;
+	boost::regex_iterator<std::vector<wchar_t>::iterator> rit(wLine.begin(), wLine.end(), *options.ignoreRegex);
+	boost::regex_iterator<std::vector<wchar_t>::iterator> rend;
 
 	if (options.invertRegex)
 	{
@@ -419,7 +419,7 @@ uint64_t getRegexIgnoreLineHash(uint64_t hashSeed, int codepage, const std::vect
 
 void getLines(DocCmpInfo& doc, const CompareOptions& options)
 {
-	static constexpr int monitorCancelEveryXLine = 1000;
+	constexpr int monitorCancelEveryXLine = 1000;
 
 	progress_ptr& progress = ProgressDlg::Get();
 
@@ -525,7 +525,7 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 			if (newLine.hash != cHashSeed)
 				doc.lines.emplace_back(newLine);
 		}
-		else if (!options.ignoreEmptyLines)
+		else if (!options.ignoreEmptyLines && (!options.ignoreRegex || !options.invertRegex))
 		{
 			doc.lines.emplace_back(newLine);
 		}
@@ -635,8 +635,8 @@ std::vector<Word> getRegexIgnoreLineWords(std::vector<wchar_t>& line, const Comp
 	if (len == 0)
 		return words;
 
-	std::regex_iterator<std::vector<wchar_t>::iterator> rit(line.begin(), line.end(), *options.ignoreRegex);
-	std::regex_iterator<std::vector<wchar_t>::iterator> rend;
+	boost::regex_iterator<std::vector<wchar_t>::iterator> rit(line.begin(), line.end(), *options.ignoreRegex);
+	boost::regex_iterator<std::vector<wchar_t>::iterator> rend;
 
 	if (options.invertRegex)
 	{
@@ -844,8 +844,8 @@ std::vector<Char> getRegexIgnoreLineChars(int view, intptr_t lineStart, intptr_t
 
 	chars.reserve(wLen - 1);
 
-	std::regex_iterator<std::vector<wchar_t>::iterator> rit(wLine.begin(), wLine.end(), *options.ignoreRegex);
-	std::regex_iterator<std::vector<wchar_t>::iterator> rend;
+	boost::regex_iterator<std::vector<wchar_t>::iterator> rit(wLine.begin(), wLine.end(), *options.ignoreRegex);
+	boost::regex_iterator<std::vector<wchar_t>::iterator> rend;
 
 	if (options.invertRegex)
 	{
