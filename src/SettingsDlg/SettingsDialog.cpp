@@ -211,7 +211,7 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 		{
 			if (((LPNMHDR)lParam)->code == UDN_DELTAPOS)
 			{
-				static constexpr int cStep = 5;
+				constexpr int cStep = 5;
 
 				LPNMUPDOWN lpnmud = (LPNMUPDOWN) lParam;
 

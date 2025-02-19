@@ -187,8 +187,8 @@ void defineRgbaSymbol(int type, const unsigned char* rgba)
 
 void setTextStyle(int transparency)
 {
-	static const int cMinAlpha = 0;
-	static const int cMaxAlpha = 100;
+	constexpr int cMinAlpha = 0;
+	constexpr int cMaxAlpha = 100;
 
 	const int alpha = ((100 - transparency) * (cMaxAlpha - cMinAlpha) / 100) + cMinAlpha;
 
@@ -472,7 +472,7 @@ void setStyles(UserSettings& settings)
 	int g = bg >> 8 & 0xFF;
 	int b = bg >> 16 & 0xFF;
 
-	static const int colorShift = 20;
+	constexpr int colorShift = 20;
 
 	r = (r > colorShift) ? (r - colorShift) & 0xFF : 0;
 	g = (g > colorShift) ? (g - colorShift) & 0xFF : 0;
