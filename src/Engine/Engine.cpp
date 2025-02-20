@@ -39,10 +39,14 @@
 #include "ProgressDlg.h"
 
 
-#define MULTITHREAD		0
+// #undef MULTITHREAD // Until properly analyzed, implemented and debugged
+
+#ifdef MULTITHREAD
+#pragma message "Multithread change detection enabled."
+#endif
 
 
-#if defined(MULTITHREAD) && (MULTITHREAD != 0)
+#ifdef MULTITHREAD
 
 #if defined(__MINGW32__) && !defined(_GLIBCXX_HAS_GTHREADS)
 #include "../mingw-std-threads/mingw.thread.h"
@@ -357,7 +361,7 @@ uint64_t getRegexIgnoreLineHash(uint64_t hashSeed, int codepage, const std::vect
 
 	::MultiByteToWideChar(codepage, 0, line.data(), len, wLine.data(), wLen);
 
-#if !defined(MULTITHREAD) || (MULTITHREAD == 0)
+#ifndef MULTITHREAD
 	LOGD(LOG_ALGO, "line len " + std::to_string(len) + " to wide char len " + std::to_string(wLen) + "\n");
 #endif
 
@@ -368,7 +372,7 @@ uint64_t getRegexIgnoreLineHash(uint64_t hashSeed, int codepage, const std::vect
 	{
 		for (; rit != rend; ++rit)
 		{
-#if !defined(MULTITHREAD) || (MULTITHREAD == 0)
+#ifndef MULTITHREAD
 			LOGD(LOG_ALGO, "pos " + std::to_string(rit->position()) + ", len " + std::to_string(rit->length()) + "\n");
 #endif
 
@@ -390,7 +394,7 @@ uint64_t getRegexIgnoreLineHash(uint64_t hashSeed, int codepage, const std::vect
 
 		while (rit != rend)
 		{
-#if !defined(MULTITHREAD) || (MULTITHREAD == 0)
+#ifndef MULTITHREAD
 			LOGD(LOG_ALGO, "pos " + std::to_string(rit->position()) + ", len " + std::to_string(rit->length()) + "\n");
 #endif
 
@@ -478,7 +482,7 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 
 			if (options.ignoreRegex)
 			{
-#if !defined(MULTITHREAD) || (MULTITHREAD == 0)
+#ifndef MULTITHREAD
 				LOGD(LOG_ALGO, "Regex Ignore on line " + std::to_string(docLine + 1) +
 						", view " + std::to_string(doc.view) + "\n");
 #endif
@@ -1439,7 +1443,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 	std::vector<std::set<LinesConv>> lines1Convergence(linesCount1);
 	std::vector<std::set<LinesConv>> lines2Convergence(linesCount2);
 
-#if defined(MULTITHREAD) && (MULTITHREAD != 0)
+#ifdef MULTITHREAD
 	std::mutex mtx;
 #endif
 
@@ -1535,7 +1539,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 						}
 					}
 
-#if defined(MULTITHREAD) && (MULTITHREAD != 0)
+#ifdef MULTITHREAD
 					std::lock_guard<std::mutex> lock(mtx);
 #endif
 
@@ -1614,7 +1618,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 			}
 		};
 
-#if defined(MULTITHREAD) && (MULTITHREAD != 0)
+#ifdef MULTITHREAD
 
 	auto threadFn =
 		[&workFn](intptr_t startLine, intptr_t endLine)
@@ -1645,7 +1649,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 
 	if (threadsCount > 1)
 	{
-		constexpr intptr_t jobsPerThread = 200;
+		constexpr intptr_t jobsPerThread = 500;
 
 		const intptr_t totalJobs		= linesCount1 * linesCount2;
 		const intptr_t threadsNeeded	= (totalJobs + jobsPerThread - 1) / jobsPerThread;

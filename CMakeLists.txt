@@ -4,7 +4,7 @@ set (CMAKE_SYSTEM_NAME Windows)
 
 option (WIN64				"Win 64-bit build"						ON)
 option (MULTITHREAD			"Multithread change detection"			OFF)
-option (OTHER_MOVED_ICONS	"Use alternative moves lines icons"		ON)
+option (OTHER_MOVED_ICONS	"Use alternative moves lines icons"		OFF)
 
 # On Cmake invokation if debug logging is desired set the value of DLOG to include the bit-flag of each desired
 # function to log:
