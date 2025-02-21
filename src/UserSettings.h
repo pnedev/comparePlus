@@ -142,6 +142,7 @@ public:
 	static const TCHAR ignoreCaseSetting[];
 	static const TCHAR ignoreRegexSetting[];
 	static const TCHAR invertRegexSetting[];
+	static const TCHAR inclRegexNomatchLinesSetting[];
 	static const TCHAR ignoreRegexStrSetting[];
 
 	static const TCHAR showOnlySelSetting[];
@@ -206,6 +207,7 @@ public:
 	bool			IgnoreCase;
 	bool			IgnoreRegex;
 	bool			InvertRegex;
+	bool			InclRegexNomatchLines;
 	std::wstring	IgnoreRegexStr;
 
 	bool			ShowOnlyDiffs;

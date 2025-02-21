@@ -46,6 +46,7 @@ const TCHAR UserSettings::ignoreAllSpacesSetting[]			= TEXT("ignore_all_spaces")
 const TCHAR UserSettings::ignoreCaseSetting[]				= TEXT("ignore_case");
 const TCHAR UserSettings::ignoreRegexSetting[]				= TEXT("ignore_regex");
 const TCHAR UserSettings::invertRegexSetting[]				= TEXT("invert_regex");
+const TCHAR UserSettings::inclRegexNomatchLinesSetting[]	= TEXT("incl_regex_nomatch_lines");
 const TCHAR UserSettings::ignoreRegexStrSetting[]			= TEXT("ignore_regex_string");
 const TCHAR UserSettings::showOnlySelSetting[]				= TEXT("show_only_selections");
 const TCHAR UserSettings::showOnlyDiffSetting[]				= TEXT("show_only_diffs");
@@ -118,15 +119,16 @@ void UserSettings::load()
 	PromptToCloseOnMatch	= ::GetPrivateProfileInt(mainSection, promptCloseOnMatchSetting,
 			DEFAULT_PROMPT_CLOSE_ON_MATCH, iniFile) != 0;
 
-	DetectMoves			= ::GetPrivateProfileInt(mainSection, detectMovesSetting,			1, iniFile) != 0;
-	DetectCharDiffs		= ::GetPrivateProfileInt(mainSection, detectCharDiffsSetting,		0, iniFile) != 0;
-	IgnoreEmptyLines	= ::GetPrivateProfileInt(mainSection, ignoreEmptyLinesSetting,		0, iniFile) != 0;
-	IgnoreFoldedLines	= ::GetPrivateProfileInt(mainSection, ignoreFoldedLinesSetting,		0, iniFile) != 0;
-	IgnoreChangedSpaces	= ::GetPrivateProfileInt(mainSection, ignoreChangedSpacesSetting,	0, iniFile) != 0;
-	IgnoreAllSpaces		= ::GetPrivateProfileInt(mainSection, ignoreAllSpacesSetting,		0, iniFile) != 0;
-	IgnoreCase			= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,			0, iniFile) != 0;
-	IgnoreRegex			= ::GetPrivateProfileInt(mainSection, ignoreRegexSetting,			0, iniFile) != 0;
-	InvertRegex			= ::GetPrivateProfileInt(mainSection, invertRegexSetting,			0, iniFile) != 0;
+	DetectMoves				= ::GetPrivateProfileInt(mainSection, detectMovesSetting,			1, iniFile) != 0;
+	DetectCharDiffs			= ::GetPrivateProfileInt(mainSection, detectCharDiffsSetting,		0, iniFile) != 0;
+	IgnoreEmptyLines		= ::GetPrivateProfileInt(mainSection, ignoreEmptyLinesSetting,		0, iniFile) != 0;
+	IgnoreFoldedLines		= ::GetPrivateProfileInt(mainSection, ignoreFoldedLinesSetting,		0, iniFile) != 0;
+	IgnoreChangedSpaces		= ::GetPrivateProfileInt(mainSection, ignoreChangedSpacesSetting,	0, iniFile) != 0;
+	IgnoreAllSpaces			= ::GetPrivateProfileInt(mainSection, ignoreAllSpacesSetting,		0, iniFile) != 0;
+	IgnoreCase				= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,			0, iniFile) != 0;
+	IgnoreRegex				= ::GetPrivateProfileInt(mainSection, ignoreRegexSetting,			0, iniFile) != 0;
+	InvertRegex				= ::GetPrivateProfileInt(mainSection, invertRegexSetting,			0, iniFile) != 0;
+	InclRegexNomatchLines	= ::GetPrivateProfileInt(mainSection, inclRegexNomatchLinesSetting,	0, iniFile) != 0;
 
 	TCHAR buf[1024];
 
@@ -288,6 +290,8 @@ void UserSettings::save()
 			IgnoreRegex ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, invertRegexSetting,
 			InvertRegex ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, inclRegexNomatchLinesSetting,
+			InclRegexNomatchLines ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreRegexStrSetting,
 			IgnoreRegexStr.c_str(), iniFile);
 	::WritePrivateProfileString(mainSection, showOnlyDiffSetting,

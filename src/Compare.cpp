@@ -2767,7 +2767,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		cmpPair->options.recompareOnChange			= Settings.RecompareOnChange;
 
 		if (Settings.IgnoreRegex)
-			cmpPair->options.setIgnoreRegex(Settings.IgnoreRegexStr, Settings.InvertRegex, Settings.IgnoreCase);
+			cmpPair->options.setIgnoreRegex(Settings.IgnoreRegexStr,
+					Settings.InvertRegex, Settings.InclRegexNomatchLines, Settings.IgnoreCase);
 		else
 			cmpPair->options.clearIgnoreRegex();
 

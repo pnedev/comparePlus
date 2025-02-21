@@ -93,13 +93,21 @@ INT_PTR CALLBACK CompareOptionsDialog::run_dlgProc(UINT Message, WPARAM wParam, 
 
 				case IDC_IGNORE_REGEX:
 				{
-					bool ignoreRegex = (Button_GetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_REGEX)) == BST_CHECKED);
+					const bool ignoreRegex = (Button_GetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_REGEX)) == BST_CHECKED);
 
-					Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_MODE_IGNORE),	ignoreRegex);
-					Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_MODE_MATCH),	ignoreRegex);
+					Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_MODE_IGNORE),			ignoreRegex);
+					Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_MODE_MATCH),			ignoreRegex);
+					Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_INCL_NOMATCH_LINES),	ignoreRegex &&
+							(Button_GetCheck(::GetDlgItem(_hSelf, IDC_REGEX_MODE_MATCH)) == BST_CHECKED));
 
 					Edit_Enable(::GetDlgItem(_hSelf, IDC_IGNORE_REGEX_STR), ignoreRegex);
 				}
+				break;
+
+				case IDC_REGEX_MODE_IGNORE:
+				case IDC_REGEX_MODE_MATCH:
+					Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_INCL_NOMATCH_LINES),
+							(Button_GetCheck(::GetDlgItem(_hSelf, IDC_REGEX_MODE_MATCH)) == BST_CHECKED));
 				break;
 
 				default:
@@ -131,9 +139,13 @@ void CompareOptionsDialog::SetParams()
 
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_REGEX_MODE_IGNORE), !_Settings->InvertRegex ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_REGEX_MODE_MATCH),   _Settings->InvertRegex ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_REGEX_INCL_NOMATCH_LINES),
+			_Settings->InclRegexNomatchLines ? BST_CHECKED : BST_UNCHECKED);
 
 	Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_MODE_IGNORE),	_Settings->IgnoreRegex);
 	Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_MODE_MATCH),	_Settings->IgnoreRegex);
+	Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_INCL_NOMATCH_LINES),
+			_Settings->IgnoreRegex && _Settings->InvertRegex);
 
 	HWND hCtrl = ::GetDlgItem(_hSelf, IDC_IGNORE_REGEX_STR);
 
@@ -185,6 +197,10 @@ bool CompareOptionsDialog::GetParams()
 		}
 
 		_Settings->InvertRegex = (Button_GetCheck(::GetDlgItem(_hSelf, IDC_REGEX_MODE_MATCH)) == BST_CHECKED);
+
+		if (_Settings->InvertRegex)
+			_Settings->InclRegexNomatchLines =
+					(Button_GetCheck(::GetDlgItem(_hSelf, IDC_REGEX_INCL_NOMATCH_LINES)) == BST_CHECKED);
 	}
 
 	return true;
