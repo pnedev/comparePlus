@@ -30,7 +30,7 @@
 #define DEFAULT_COMPARE_TO_PREV			1
 
 #define DEFAULT_ENCODINGS_CHECK			1
-#define DEFAULT_ALIGN_ALL_MATCHES		0
+#define DEFAULT_SIZES_CHECK				1
 #define DEFAULT_NEVER_MARK_IGNORED		0
 #define DEFAULT_FOLLOWING_CARET			1
 #define DEFAULT_WRAP_AROUND				0
@@ -126,7 +126,7 @@ public:
 	static const TCHAR compareToPrevSetting[];
 
 	static const TCHAR encodingsCheckSetting[];
-	static const TCHAR alignAllMatchesSetting[];
+	static const TCHAR sizesCheckSetting[];
 	static const TCHAR markIgnoredLinesSetting[];
 	static const TCHAR followingCaretSetting[];
 	static const TCHAR wrapAroundSetting[];
@@ -191,7 +191,7 @@ public:
 	bool			CompareToPrev;
 
 	bool			EncodingsCheck;
-	bool			AlignAllMatches;
+	bool			SizesCheck;
 	bool			NeverMarkIgnored;
 	bool			FollowingCaret;
 	bool			WrapAround;

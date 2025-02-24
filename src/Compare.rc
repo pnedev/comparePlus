@@ -103,8 +103,8 @@ BEGIN
 	AUTORADIOBUTTON	"Compare options", IDC_COMPARE_OPTIONS, 124, 195, 70, 8
 	AUTORADIOBUTTON	"Disabled", IDC_STATUS_DISABLED, 199, 195, 60, 8
 	GROUPBOX		"Misc.", IDC_STATIC, 145, 22, 148, 150
-	AUTOCHECKBOX	"Warn about encodings mismatch", IDC_ENCODING_CHECK, 153, 36, 138, 14
-	AUTOCHECKBOX	"Align all matching lines", IDC_ALIGN_ALL_MATCHES, 153, 55, 138, 14
+	AUTOCHECKBOX	"Warn about encodings mismatch", IDC_ENCODINGS_CHECK, 153, 36, 138, 14
+	AUTOCHECKBOX	"Warn before comparing big files", IDC_SIZES_CHECK, 153, 55, 138, 14
 	AUTOCHECKBOX	"Never colorize ignored lines", IDC_NEVER_MARK_IGNORED, 153, 74, 138, 14
 	AUTOCHECKBOX	"Move caret on navigation", IDC_FOLLOWING_CARET, 153, 93, 138, 14
 	AUTOCHECKBOX	"Wrap around diffs on navigation", IDC_WRAP_AROUND, 153, 112, 138, 14

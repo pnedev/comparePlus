@@ -86,7 +86,6 @@ struct CompareOptions
 
 	bool	findUniqueMode;
 
-	bool	alignAllMatches;
 	bool	neverMarkIgnored;
 	bool	detectMoves;
 	bool	detectCharDiffs;

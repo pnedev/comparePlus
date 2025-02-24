@@ -114,7 +114,7 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					settings.NewFileViewId			= DEFAULT_NEW_IN_SUB_VIEW ? SUB_VIEW : MAIN_VIEW;
 					settings.CompareToPrev			= (bool) DEFAULT_COMPARE_TO_PREV;
 					settings.EncodingsCheck			= (bool) DEFAULT_ENCODINGS_CHECK;
-					settings.AlignAllMatches		= (bool) DEFAULT_ALIGN_ALL_MATCHES;
+					settings.SizesCheck				= (bool) DEFAULT_SIZES_CHECK;
 					settings.NeverMarkIgnored		= (bool) DEFAULT_NEVER_MARK_IGNORED;
 					settings.FollowingCaret			= (bool) DEFAULT_FOLLOWING_CARET;
 					settings.WrapAround				= (bool) DEFAULT_WRAP_AROUND;
@@ -274,10 +274,10 @@ void SettingsDialog::SetParams(UserSettings* settings)
 		Button_SetCheck(::GetDlgItem(_hSelf, IDC_STATUS_DISABLED),	BST_CHECKED);
 	}
 
-	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ENCODING_CHECK),
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ENCODINGS_CHECK),
 			settings->EncodingsCheck ? BST_CHECKED : BST_UNCHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ALIGN_ALL_MATCHES),
-			settings->AlignAllMatches ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_SIZES_CHECK),
+			settings->SizesCheck ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_NEVER_MARK_IGNORED),
 			settings->NeverMarkIgnored ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_PROMPT_CLOSE_ON_MATCH),
@@ -362,8 +362,8 @@ void SettingsDialog::GetParams()
 	else
 		_Settings->StatusInfo = StatusType::STATUS_DISABLED;
 
-	_Settings->EncodingsCheck		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENCODING_CHECK)) == BST_CHECKED);
-	_Settings->AlignAllMatches		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ALIGN_ALL_MATCHES)) == BST_CHECKED);
+	_Settings->EncodingsCheck		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENCODINGS_CHECK)) == BST_CHECKED);
+	_Settings->SizesCheck			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_SIZES_CHECK)) == BST_CHECKED);
 	_Settings->NeverMarkIgnored		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_NEVER_MARK_IGNORED)) == BST_CHECKED);
 	_Settings->PromptToCloseOnMatch	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_PROMPT_CLOSE_ON_MATCH)) == BST_CHECKED);
 	_Settings->WrapAround			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_WRAP_AROUND)) == BST_CHECKED);

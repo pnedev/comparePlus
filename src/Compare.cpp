@@ -2755,7 +2755,6 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		cmpPair->options.newFileViewId				= Settings.NewFileViewId;
 
 		cmpPair->options.findUniqueMode				= findUniqueMode;
-		cmpPair->options.alignAllMatches			= Settings.AlignAllMatches;
 		cmpPair->options.neverMarkIgnored			= Settings.NeverMarkIgnored;
 		cmpPair->options.detectMoves				= Settings.DetectMoves;
 		cmpPair->options.detectCharDiffs			= Settings.DetectCharDiffs;
@@ -2808,30 +2807,33 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 						cmpPair->options.findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"), MB_ICONWARNING);
 			}
 
-			constexpr int cLinesCountWarningLimit = 50000;
-
-			bool largeFilesWarning = false;
-
-			if (selectionCompare)
-				largeFilesWarning =
-					(cmpPair->options.selections[MAIN_VIEW].second -
-					cmpPair->options.selections[MAIN_VIEW].first + 1 > cLinesCountWarningLimit) &&
-					(cmpPair->options.selections[SUB_VIEW].second -
-					cmpPair->options.selections[SUB_VIEW].first + 1 > cLinesCountWarningLimit);
-			else
-				largeFilesWarning =
-					(CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) > cLinesCountWarningLimit) &&
-					(CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) > cLinesCountWarningLimit);
-
-			if (largeFilesWarning)
+			if (Settings.SizesCheck)
 			{
-				if (::MessageBox(nppData._nppHandle,
-					TEXT("Comparing large files such as these might take significant time ")
-					TEXT("especially if they differ a lot.\n\n")
-					TEXT("Compare anyway?"), PLUGIN_NAME, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES)
+				constexpr int cLinesCountWarningLimit = 50000;
+
+				bool largeFilesWarning = false;
+
+				if (selectionCompare)
+					largeFilesWarning =
+						(cmpPair->options.selections[MAIN_VIEW].second -
+						cmpPair->options.selections[MAIN_VIEW].first + 1 > cLinesCountWarningLimit) &&
+						(cmpPair->options.selections[SUB_VIEW].second -
+						cmpPair->options.selections[SUB_VIEW].first + 1 > cLinesCountWarningLimit);
+				else
+					largeFilesWarning =
+						(CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) > cLinesCountWarningLimit) &&
+						(CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) > cLinesCountWarningLimit);
+
+				if (largeFilesWarning)
 				{
-					clearComparePair(getCurrentBuffId());
-					return;
+					if (::MessageBox(nppData._nppHandle,
+						TEXT("Comparing large files such as these might take significant time ")
+						TEXT("especially if they differ a lot.\n\n")
+						TEXT("Compare anyway?"), PLUGIN_NAME, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES)
+					{
+						clearComparePair(getCurrentBuffId());
+						return;
+					}
 				}
 			}
 		}

@@ -1988,52 +1988,20 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 
 			summary.alignmentInfo.emplace_back(alignPair);
 
-			if (options.alignAllMatches)
+			// Align all pairs of matching lines
+			for (intptr_t j = bd.len - 1; j; --j)
 			{
-				// Align all pairs of matching lines
-				for (intptr_t j = bd.len - 1; j; --j)
-				{
-					++alignLines.first;
-					++alignLines.second;
-
-					pMainAlignData->line	= cmpInfo.doc1.lines[alignLines.first].line;
-					pSubAlignData->line		= cmpInfo.doc2.lines[alignLines.second].line;
-
-					summary.alignmentInfo.emplace_back(alignPair);
-				}
-
 				++alignLines.first;
 				++alignLines.second;
+
+				pMainAlignData->line	= cmpInfo.doc1.lines[alignLines.first].line;
+				pSubAlignData->line		= cmpInfo.doc2.lines[alignLines.second].line;
+
+				summary.alignmentInfo.emplace_back(alignPair);
 			}
-			else
-			{
-				if (options.ignoreEmptyLines)
-				{
-					// Align pairs of matching lines after ignored lines sections
-					for (intptr_t j = bd.len - 1; j; --j)
-					{
-						++alignLines.first;
-						++alignLines.second;
 
-						if ((++pMainAlignData->line != cmpInfo.doc1.lines[alignLines.first].line) ||
-							(++pSubAlignData->line != cmpInfo.doc2.lines[alignLines.second].line))
-						{
-							pMainAlignData->line	= cmpInfo.doc1.lines[alignLines.first].line;
-							pSubAlignData->line		= cmpInfo.doc2.lines[alignLines.second].line;
-
-							summary.alignmentInfo.emplace_back(alignPair);
-						}
-					}
-
-					++alignLines.first;
-					++alignLines.second;
-				}
-				else
-				{
-					alignLines.first	+= bd.len;
-					alignLines.second	+= bd.len;
-				}
-			}
+			++alignLines.first;
+			++alignLines.second;
 
 			summary.match += bd.len;
 		}
