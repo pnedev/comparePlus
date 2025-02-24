@@ -58,13 +58,13 @@ struct CompareOptions
 		selections[1] = std::make_pair(-1, -1);
 	}
 
-	inline void setIgnoreRegex(const std::wstring& regexStr, bool invert, bool inclNomatchLines, bool ignoreCase)
+	inline void setIgnoreRegex(const std::wstring& regexStr, bool invert, bool inclNomatchLines, bool iCase)
 	{
 		if (!regexStr.empty())
 		{
 			auto regexOptions = boost::regex::perl | boost::regex::optimize;
 
-			if (ignoreCase)
+			if (iCase)
 				regexOptions |= boost::regex::icase;
 
 			ignoreRegex				= std::make_unique<boost::wregex>(regexStr, regexOptions);

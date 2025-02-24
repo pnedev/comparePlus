@@ -89,7 +89,7 @@ protected :
 	std::wstring _pluginName;
 	bool _isClosed = false;
 
-	intptr_t CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam) override {
+	intptr_t CALLBACK run_dlgProc(UINT message, WPARAM /* wParam */, LPARAM lParam) override {
 		switch (message)
 		{
 			// case WM_ERASEBKGND:
