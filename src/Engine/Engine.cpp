@@ -445,6 +445,7 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 
 	int cancelCheckCount = monitorCancelEveryXLine;
 
+	const bool allLinesVisible = CallScintilla(doc.view, SCI_GETALLLINESVISIBLE, 0, 0);
 	const int codepage = getCodepage(doc.view);
 
 	for (intptr_t secLine = 0; secLine < doc.section.len; ++secLine)
@@ -462,11 +463,20 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 
 		intptr_t docLine = secLine + doc.section.off;
 
-		if (options.ignoreFoldedLines && getNextLineAfterFold(doc.view, &docLine))
+		if (!allLinesVisible)
 		{
-			--docLine;
-			secLine = docLine - doc.section.off;
-			continue;
+			if (options.ignoreFoldedLines && getNextLineAfterFold(doc.view, &docLine))
+			{
+				secLine = --docLine - doc.section.off;
+				continue;
+			}
+
+			if (options.ignoreHiddenLines && isLineHidden(doc.view, docLine) && !isLineFolded(doc.view, docLine))
+			{
+				docLine = getUnhiddenLine(doc.view, docLine);
+				secLine = --docLine - doc.section.off;
+				continue;
+			}
 		}
 
 		const intptr_t lineStart	= getLineStart(doc.view, docLine);

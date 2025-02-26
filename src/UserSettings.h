@@ -137,6 +137,7 @@ public:
 	static const TCHAR detectCharDiffsSetting[];
 	static const TCHAR ignoreEmptyLinesSetting[];
 	static const TCHAR ignoreFoldedLinesSetting[];
+	static const TCHAR ignoreHiddenLinesSetting[];
 	static const TCHAR ignoreChangedSpacesSetting[];
 	static const TCHAR ignoreAllSpacesSetting[];
 	static const TCHAR ignoreCaseSetting[];
@@ -202,6 +203,7 @@ public:
 	bool			DetectCharDiffs;
 	bool			IgnoreEmptyLines;
 	bool			IgnoreFoldedLines;
+	bool			IgnoreHiddenLines;
 	bool			IgnoreChangedSpaces;
 	bool			IgnoreAllSpaces;
 	bool			IgnoreCase;

@@ -1068,9 +1068,11 @@ void ComparedPair::positionFiles()
 		oldFile.updateFromCurrent();
 	}
 
-	// If compare type is LastSaved or Git or SVN diff and folds are to be ignored then expand all folds in the
-	// new (updated) file as its old version is restored unfolded and we shouldn't ignore folds
-	const bool expandNewFileFolds = (options.ignoreFoldedLines && oldFile.isTemp && oldFile.isTemp != CLIPBOARD_TEMP);
+	// If compare type is LastSaved or Git or SVN diff and folds/hidden lines are to be ignored
+	// then expand all folds/hidden lines in the new (updated) file as its old version is restored unfolded/unhidden
+	// and we shouldn't actually ignore folds/hidden lines
+	const bool expandNewFileFolds = ((options.ignoreFoldedLines || options.ignoreHiddenLines) &&
+			oldFile.isTemp && oldFile.isTemp != CLIPBOARD_TEMP);
 
 	if (viewIdFromBuffId(newFile.buffId) != newFile.compareViewId)
 	{
@@ -1187,13 +1189,14 @@ void ComparedPair::setStatus()
 				infoCurrentPos += len;
 			}
 
-			if (options.ignoreEmptyLines || options.ignoreFoldedLines || options.ignoreAllSpaces ||
-				options.ignoreChangedSpaces || options.ignoreCase || options.ignoreRegex)
+			if (options.ignoreEmptyLines || options.ignoreFoldedLines || options.ignoreHiddenLines ||
+				options.ignoreAllSpaces || options.ignoreChangedSpaces || options.ignoreCase || options.ignoreRegex)
 			{
-				const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%sIgnore:%s%s%s%s%s"),
+				const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%sIgnore:%s%s%s%s%s%s"),
 						hasDetectOpts				? TEXT("    ")				: TEXT(""),
 						options.ignoreEmptyLines	? TEXT(" Empty Lines,")		: TEXT(""),
 						options.ignoreFoldedLines	? TEXT(" Folded Lines,")	: TEXT(""),
+						options.ignoreHiddenLines	? TEXT(" Hidden Lines,")	: TEXT(""),
 						options.ignoreAllSpaces		? TEXT(" All Spaces,")		:
 						options.ignoreChangedSpaces	? TEXT(" Changed Spaces,")	: TEXT(""),
 						options.ignoreCase			? TEXT(" Case,")			: TEXT(""),
@@ -2760,6 +2763,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		cmpPair->options.detectCharDiffs			= Settings.DetectCharDiffs;
 		cmpPair->options.ignoreEmptyLines			= Settings.IgnoreEmptyLines;
 		cmpPair->options.ignoreFoldedLines			= Settings.IgnoreFoldedLines;
+		cmpPair->options.ignoreHiddenLines			= Settings.IgnoreHiddenLines;
 		cmpPair->options.ignoreChangedSpaces		= Settings.IgnoreChangedSpaces;
 		cmpPair->options.ignoreAllSpaces			= Settings.IgnoreAllSpaces;
 		cmpPair->options.ignoreCase					= Settings.IgnoreCase;
@@ -3303,15 +3307,17 @@ void ActiveCompareSummary()
 	}
 
 	const bool hasIgnoreOpts =
-		(cmpPair->options.ignoreEmptyLines || cmpPair->options.ignoreFoldedLines || cmpPair->options.ignoreAllSpaces ||
+		(cmpPair->options.ignoreEmptyLines || cmpPair->options.ignoreFoldedLines ||
+		cmpPair->options.ignoreHiddenLines || cmpPair->options.ignoreAllSpaces ||
 		cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreCase || cmpPair->options.ignoreRegex);
 
 	if (hasIgnoreOpts)
 	{
-		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%sIgnore:%s%s%s%s%s"),
+		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%sIgnore:%s%s%s%s%s%s"),
 				hasDetectOpts							? TEXT("\n")				: TEXT(""),
 				cmpPair->options.ignoreEmptyLines		? TEXT(" Empty Lines,")		: TEXT(""),
 				cmpPair->options.ignoreFoldedLines		? TEXT(" Folded Lines,")	: TEXT(""),
+				cmpPair->options.ignoreHiddenLines		? TEXT(" Hidden Lines,")	: TEXT(""),
 				cmpPair->options.ignoreAllSpaces		? TEXT(" All Spaces,")		:
 				cmpPair->options.ignoreChangedSpaces	? TEXT(" Changed Spaces,")	: TEXT(""),
 				cmpPair->options.ignoreCase				? TEXT(" Case,")			: TEXT(""),
