@@ -26,6 +26,12 @@
 #include <cwchar>
 #include <ctime>
 
+#if defined(__MINGW32__) && !defined(_GLIBCXX_HAS_GTHREADS)
+#include "../mingw-std-threads/mingw.thread.h"
+#else
+#include <thread>
+#endif // __MINGW32__ ...
+
 #include <windows.h>
 #include <tchar.h>
 #include <shlwapi.h>
@@ -4415,6 +4421,24 @@ void onNppReady()
 			::SendMessage(nppData._nppHandle, NPPM_ADDSCNMODIFIEDFLAGS, 0, (LPARAM)SCN_MODIFIED_NOTIF_FLAGS_USED);
 
 		NppSettings::get().updatePluginMenu();
+
+		// if (CallScintilla(MAIN_VIEW, SCI_SUPPORTSFEATURE, SC_SUPPORTS_THREAD_SAFE_MEASURE_WIDTHS, 0) &&
+			// CallScintilla(MAIN_VIEW, SCI_GETLAYOUTTHREADS, 0, 0) == 1)
+		// {
+			// const auto threadsCount = std::thread::hardware_concurrency();
+
+			// CallScintilla(MAIN_VIEW, SCI_SETLAYOUTTHREADS, threadsCount, 0);
+			// CallScintilla(SUB_VIEW, SCI_SETLAYOUTTHREADS, threadsCount, 0);
+
+			// MessageBox(nppData._nppHandle, _T("Enabled multithreading for Scintilla layout calculations"),
+					// PLUGIN_NAME, MB_OK);
+		// }
+
+		// if (CallScintilla(MAIN_VIEW, SCI_GETLAYOUTCACHE, 0, 0) < SC_CACHE_PAGE)
+		// {
+			// CallScintilla(MAIN_VIEW, SCI_SETLAYOUTCACHE, SC_CACHE_PAGE, 0);
+			// CallScintilla(SUB_VIEW, SCI_SETLAYOUTCACHE, SC_CACHE_PAGE, 0);
+		// }
 
 		checkCmdLine();
 	}
