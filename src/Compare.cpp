@@ -343,7 +343,7 @@ public:
 	inline ComparedFile& getOldFile();
 	inline ComparedFile& getNewFile();
 
-	void positionFiles();
+	void positionFiles(bool recompare);
 	void restoreFiles(LRESULT currentBuffId);
 
 	void setStatus();
@@ -1047,7 +1047,7 @@ ComparedFile& ComparedPair::getNewFile()
 }
 
 
-void ComparedPair::positionFiles()
+void ComparedPair::positionFiles(bool recompare)
 {
 	const LRESULT currentBuffId = getCurrentBuffId();
 
@@ -1071,7 +1071,7 @@ void ComparedPair::positionFiles()
 	// If compare type is LastSaved or Git or SVN diff and folds/hidden lines are to be ignored
 	// then expand all folds/hidden lines in the new (updated) file as its old version is restored unfolded/unhidden
 	// and we shouldn't actually ignore folds/hidden lines
-	const bool expandNewFileFolds = ((options.ignoreFoldedLines || options.ignoreHiddenLines) &&
+	const bool expandNewFileFolds = !recompare && ((options.ignoreFoldedLines || options.ignoreHiddenLines) &&
 			oldFile.isTemp && oldFile.isTemp != CLIPBOARD_TEMP);
 
 	if (viewIdFromBuffId(newFile.buffId) != newFile.compareViewId)
@@ -2778,7 +2778,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		cmpPair->options.changedThresholdPercent	= Settings.ChangedThresholdPercent;
 		cmpPair->options.selectionCompare			= selectionCompare;
 
-		cmpPair->positionFiles();
+		cmpPair->positionFiles(recompare);
 
 		if (selectionCompare && !recompareSameSelections)
 		{
@@ -2905,14 +2905,22 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 			const TCHAR* newName = ::PathFindFileName(cmpPair->getNewFile().name);
 
-			TCHAR msg[2 * MAX_PATH];
+			TCHAR msg[2 * MAX_PATH + 256];
 
 			int choice = IDNO;
 
 			if (oldFile.isTemp)
 			{
+				bool hasIgnoreOpts = false;
+
 				if (recompare)
 				{
+					hasIgnoreOpts =
+						(cmpPair->options.ignoreEmptyLines || cmpPair->options.ignoreFoldedLines ||
+						cmpPair->options.ignoreHiddenLines || cmpPair->options.ignoreAllSpaces ||
+						cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreCase ||
+						cmpPair->options.ignoreRegex);
+
 					_sntprintf_s(msg, _countof(msg), _TRUNCATE,
 							TEXT("%s \"%s\" and \"%s\" %s.\n\nTemp file will be closed."),
 							selectionCompare ? TEXT("Selections in files") : TEXT("Files"),
@@ -2921,6 +2929,13 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 				}
 				else
 				{
+					hasIgnoreOpts =
+						(cmpPair->options.ignoreEmptyLines || (oldFile.isTemp == CLIPBOARD_TEMP &&
+						(cmpPair->options.ignoreFoldedLines || cmpPair->options.ignoreHiddenLines)) ||
+						cmpPair->options.ignoreAllSpaces ||
+						cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreCase ||
+						cmpPair->options.ignoreRegex);
+
 					if (oldFile.isTemp == LAST_SAVED_TEMP)
 					{
 						_sntprintf_s(msg, _countof(msg), _TRUNCATE,
@@ -2940,16 +2955,28 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 					}
 				}
 
+				if (hasIgnoreOpts)
+					_tcscat_s(msg, _countof(msg),
+							TEXT("\n\nDue to compare options some diffs might have been ignored."));
+
 				::MessageBox(nppData._nppHandle, msg, cmpPair->options.findUniqueMode ?
 						TEXT("Find Unique") : TEXT("Compare"), MB_OK);
 			}
 			else
 			{
+				const bool hasIgnoreOpts =
+					(cmpPair->options.ignoreEmptyLines || cmpPair->options.ignoreFoldedLines ||
+					cmpPair->options.ignoreHiddenLines || cmpPair->options.ignoreAllSpaces ||
+					cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreCase ||
+					cmpPair->options.ignoreRegex);
+
 				_sntprintf_s(msg, _countof(msg), _TRUNCATE,
-						TEXT("%s \"%s\" and \"%s\" %s.%s"),
+						TEXT("%s \"%s\" and \"%s\" %s.%s%s"),
 						selectionCompare ? TEXT("Selections in files") : TEXT("Files"),
 						newName, ::PathFindFileName(oldFile.name),
 						cmpPair->options.findUniqueMode ? TEXT("do not contain unique lines") : TEXT("match"),
+						hasIgnoreOpts ?
+							TEXT("\n\nDue to compare options some diffs might have been ignored.") : TEXT(""),
 						Settings.PromptToCloseOnMatch ? TEXT("\n\nClose compared files?") : TEXT(""));
 
 				if (Settings.PromptToCloseOnMatch)
