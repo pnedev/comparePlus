@@ -282,11 +282,11 @@ enum Temp_t
 };
 
 
-enum FoldType_t
+enum HideType_t
 {
-	NO_FOLD = 0,
-	FOLD_MATCHES,
-	FOLD_OUTSIDE_SELECTIONS
+	NO_HIDE = 0,
+	HIDE_MATCHES,
+	HIDE_OUTSIDE_SELECTIONS
 };
 
 
@@ -374,7 +374,7 @@ public:
 
 	CompareSummary	summary;
 
-	FoldType_t		foldType		= NO_FOLD;
+	HideType_t		hideType		= NO_HIDE;
 
 	bool			compareDirty	= false;
 	bool			nppReplaceDone	= false;
@@ -1963,8 +1963,8 @@ bool isAlignmentNeeded(int view, const CompareList_t::iterator& cmpPair)
 	{
 		for (; i < maxSize; ++i)
 		{
-			if (isLineFolded(MAIN_VIEW, alignmentInfo[i].main.line) ||
-				isLineFolded(SUB_VIEW, alignmentInfo[i].sub.line))
+			if (isLineHidden(MAIN_VIEW, alignmentInfo[i].main.line) ||
+				isLineHidden(SUB_VIEW, alignmentInfo[i].sub.line))
 				continue;
 
 			if ((alignmentInfo[i].main.diffMask != 0) && (alignmentInfo[i].sub.diffMask != 0) &&
@@ -1980,8 +1980,8 @@ bool isAlignmentNeeded(int view, const CompareList_t::iterator& cmpPair)
 	{
 		for (; i < maxSize; ++i)
 		{
-			if (isLineFolded(MAIN_VIEW, alignmentInfo[i].main.line) ||
-				isLineFolded(SUB_VIEW, alignmentInfo[i].sub.line))
+			if (isLineHidden(MAIN_VIEW, alignmentInfo[i].main.line) ||
+				isLineHidden(SUB_VIEW, alignmentInfo[i].sub.line))
 				continue;
 
 			if ((alignmentInfo[i].main.diffMask == alignmentInfo[i].sub.diffMask) &&
@@ -2039,42 +2039,37 @@ bool isAlignmentNeeded(int view, const CompareList_t::iterator& cmpPair)
 }
 
 
-void updateViewsFoldState(CompareList_t::iterator& cmpPair)
+void updateViewsHideState(CompareList_t::iterator& cmpPair)
 {
 	if (Settings.ShowOnlyDiffs)
 	{
-		cmpPair->foldType = FOLD_MATCHES;
+		cmpPair->hideType = HIDE_MATCHES;
 
-		hideUnmarked(MAIN_VIEW, MARKER_MASK_LINE);
-		hideUnmarked(SUB_VIEW, MARKER_MASK_LINE);
+		hideUnmarkedLines(MAIN_VIEW, MARKER_MASK_LINE);
+		hideUnmarkedLines(SUB_VIEW, MARKER_MASK_LINE);
 	}
 	else if (cmpPair->options.selectionCompare && Settings.ShowOnlySelections)
 	{
-		cmpPair->foldType = FOLD_OUTSIDE_SELECTIONS;
+		cmpPair->hideType = HIDE_OUTSIDE_SELECTIONS;
 
-		hideOutsideRange(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first,
+		hideLinesOutsideRange(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first,
 				cmpPair->options.selections[MAIN_VIEW].second);
-		hideOutsideRange(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first,
+		hideLinesOutsideRange(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first,
 				cmpPair->options.selections[SUB_VIEW].second);
 	}
-	else if (cmpPair->foldType != NO_FOLD)
+	else if (cmpPair->hideType != NO_HIDE)
 	{
-		cmpPair->foldType = NO_FOLD;
+		cmpPair->hideType = NO_HIDE;
 
-		auto foldedLines = getFoldedLines(MAIN_VIEW);
-		CallScintilla(MAIN_VIEW, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
-		setFoldedLines(MAIN_VIEW, foldedLines);
-
-		foldedLines = getFoldedLines(SUB_VIEW);
-		CallScintilla(SUB_VIEW, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
-		setFoldedLines(SUB_VIEW, foldedLines);
+		unhideAllLines(MAIN_VIEW);
+		unhideAllLines(SUB_VIEW);
 	}
 }
 
 
 void alignDiffs(CompareList_t::iterator& cmpPair)
 {
-	updateViewsFoldState(cmpPair);
+	updateViewsHideState(cmpPair);
 
 	const AlignmentInfo_t& alignmentInfo = cmpPair->summary.alignmentInfo;
 
@@ -2186,7 +2181,7 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 		if (isLineAnnotated(SUB_VIEW, previousUnhiddenLine))
 			clearAnnotation(SUB_VIEW, previousUnhiddenLine);
 
-		if (isLineFolded(MAIN_VIEW, alignmentInfo[i].main.line) || isLineFolded(SUB_VIEW, alignmentInfo[i].sub.line))
+		if (isLineHidden(MAIN_VIEW, alignmentInfo[i].main.line) || isLineHidden(SUB_VIEW, alignmentInfo[i].sub.line))
 			continue;
 
 		const intptr_t mismatchLen =
@@ -2717,6 +2712,12 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 		cmpPair->getOldFile().clear(autoUpdating);
 		cmpPair->getNewFile().clear(autoUpdating);
+
+		if (cmpPair->hideType != NO_HIDE)
+		{
+			unhideAllLines(MAIN_VIEW);
+			unhideAllLines(SUB_VIEW);
+		}
 	}
 	// New compare
 	else
@@ -2807,7 +2808,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 			}
 		}
 
-		cmpPair->foldType = NO_FOLD;
+		cmpPair->hideType = NO_HIDE;
 
 		// New compare?
 		if (!recompare)
@@ -2884,7 +2885,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 			if (recompare)
 			{
-				updateViewsFoldState(cmpPair);
+				updateViewsHideState(cmpPair);
 				cmpPair->setStatus();
 			}
 
@@ -5063,7 +5064,7 @@ void onSciModified(SCNotification* notifyCode)
 						setMarkers(getOtherViewId(view), alignLine, undo->otherViewMarks);
 
 						if (Settings.ShowOnlyDiffs)
-							showRange(getOtherViewId(view), alignLine, undo->otherViewMarks.size());
+							unhideLinesInRange(getOtherViewId(view), alignLine, undo->otherViewMarks.size());
 
 						LOGD(LOG_NOTIF, "Other view markers restored.\n");
 					}

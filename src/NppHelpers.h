@@ -748,9 +748,10 @@ std::pair<intptr_t, intptr_t> getMarkedSection(int view, intptr_t startLine, int
 std::vector<int> getMarkers(int view, intptr_t startLine, intptr_t length, int markMask, bool clearMarkers = true);
 void setMarkers(int view, intptr_t startLine, const std::vector<int> &markers);
 
-void showRange(int view, intptr_t line, intptr_t length);
-void hideOutsideRange(int view, intptr_t startLine, intptr_t endLine);
-void hideUnmarked(int view, int markMask);
+void unhideAllLines(int view);
+void unhideLinesInRange(int view, intptr_t line, intptr_t length);
+void hideLinesOutsideRange(int view, intptr_t startLine, intptr_t endLine);
+void hideUnmarkedLines(int view, int markMask);
 
 bool isAdjacentAnnotation(int view, intptr_t line, bool down);
 bool isAdjacentAnnotationVisible(int view, intptr_t line, bool down);

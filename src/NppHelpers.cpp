@@ -568,10 +568,6 @@ void toLowerCase(std::vector<char>& text, int codepage)
 
 void clearWindow(int view)
 {
-	auto foldedLines = getFoldedLines(view);
-	CallScintilla(view, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
-	setFoldedLines(view, foldedLines);
-
 	CallScintilla(view, SCI_ANNOTATIONCLEARALL, 0, 0);
 
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_CHANGED_LINE, 0);
@@ -730,7 +726,17 @@ void setMarkers(int view, intptr_t startLine, const std::vector<int> &markers)
 }
 
 
-void showRange(int view, intptr_t line, intptr_t length)
+void unhideAllLines(int view)
+{
+	const intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+
+	auto foldedLines = getFoldedLines(view);
+	CallScintilla(view, SCI_SHOWLINES, 0, linesCount - 1);
+	setFoldedLines(view, foldedLines);
+}
+
+
+void unhideLinesInRange(int view, intptr_t line, intptr_t length)
 {
 	if (line >= 0 && length > 0)
 	{
@@ -744,7 +750,7 @@ void showRange(int view, intptr_t line, intptr_t length)
 }
 
 
-void hideOutsideRange(int view, intptr_t startLine, intptr_t endLine)
+void hideLinesOutsideRange(int view, intptr_t startLine, intptr_t endLine)
 {
 	const intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
 
@@ -764,7 +770,7 @@ void hideOutsideRange(int view, intptr_t startLine, intptr_t endLine)
 }
 
 
-void hideUnmarked(int view, int markMask)
+void hideUnmarkedLines(int view, int markMask)
 {
 	const intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
 
@@ -874,6 +880,9 @@ void addBlankSectionAfter(int view, intptr_t line, intptr_t length)
 
 std::vector<intptr_t> getFoldedLines(int view)
 {
+	if (CallScintilla(view, SCI_GETALLLINESVISIBLE, 0, 0))
+		return {};
+
 	const intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
 
 	std::vector<intptr_t> foldedLines;
@@ -894,7 +903,7 @@ std::vector<intptr_t> getFoldedLines(int view)
 
 void setFoldedLines(int view, const std::vector<intptr_t>& foldedLines)
 {
-	for (auto line: foldedLines)
+	for (auto line : foldedLines)
 		CallScintilla(view, SCI_FOLDLINE, line, SC_FOLDACTION_CONTRACT);
 }
 

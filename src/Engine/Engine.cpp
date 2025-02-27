@@ -1874,6 +1874,7 @@ void flagMatchingBlocks(CompareInfo& cmpInfo)
 inline void markLine(int view, intptr_t line, int mark)
 {
 	CallScintilla(view, SCI_ENSUREVISIBLE, line, 0);
+	CallScintilla(view, SCI_SHOWLINES, line, line);
 	CallScintilla(view, SCI_MARKERADDSET, line, mark);
 }
 
