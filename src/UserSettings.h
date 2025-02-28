@@ -134,6 +134,7 @@ public:
 	static const TCHAR promptCloseOnMatchSetting[];
 
 	static const TCHAR detectMovesSetting[];
+	static const TCHAR detectSubBlockDiffsSetting[];
 	static const TCHAR detectCharDiffsSetting[];
 	static const TCHAR ignoreEmptyLinesSetting[];
 	static const TCHAR ignoreFoldedLinesSetting[];
@@ -200,6 +201,7 @@ public:
 	bool			PromptToCloseOnMatch;
 
 	bool			DetectMoves;
+	bool			DetectSubBlockDiffs;
 	bool			DetectCharDiffs;
 	bool			IgnoreEmptyLines;
 	bool			IgnoreFoldedLines;

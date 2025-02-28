@@ -71,6 +71,11 @@ INT_PTR CALLBACK CompareOptionsDialog::run_dlgProc(UINT Message, WPARAM wParam, 
 					::EndDialog(_hSelf, IDCANCEL);
 				return TRUE;
 
+				case IDC_DETECT_SUB_BLOCK_DIFFS:
+					Button_Enable(::GetDlgItem(_hSelf, IDC_DETECT_CHAR_DIFFS),
+							(Button_GetCheck(::GetDlgItem(_hSelf, IDC_DETECT_SUB_BLOCK_DIFFS)) == BST_CHECKED));
+				break;
+
 				case IDC_IGNORE_CHANGED_SPACES:
 				{
 					bool ignoreChangedSpaces =
@@ -124,6 +129,8 @@ INT_PTR CALLBACK CompareOptionsDialog::run_dlgProc(UINT Message, WPARAM wParam, 
 void CompareOptionsDialog::SetParams()
 {
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_DETECT_MOVES), _Settings->DetectMoves ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_DETECT_SUB_BLOCK_DIFFS),
+			_Settings->DetectSubBlockDiffs ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_DETECT_CHAR_DIFFS),
 			_Settings->DetectCharDiffs ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_EMPTY_LINES),
@@ -144,6 +151,7 @@ void CompareOptionsDialog::SetParams()
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_REGEX_INCL_NOMATCH_LINES),
 			_Settings->InclRegexNomatchLines ? BST_CHECKED : BST_UNCHECKED);
 
+	Button_Enable(::GetDlgItem(_hSelf, IDC_DETECT_CHAR_DIFFS),	_Settings->DetectSubBlockDiffs);
 	Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_MODE_IGNORE),	_Settings->IgnoreRegex);
 	Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_MODE_MATCH),	_Settings->IgnoreRegex);
 	Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_INCL_NOMATCH_LINES),
@@ -161,6 +169,8 @@ void CompareOptionsDialog::SetParams()
 bool CompareOptionsDialog::GetParams()
 {
 	_Settings->DetectMoves			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_DETECT_MOVES)) == BST_CHECKED);
+	_Settings->DetectSubBlockDiffs	=
+			(Button_GetCheck(::GetDlgItem(_hSelf, IDC_DETECT_SUB_BLOCK_DIFFS)) == BST_CHECKED);
 	_Settings->DetectCharDiffs		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_DETECT_CHAR_DIFFS)) == BST_CHECKED);
 	_Settings->IgnoreEmptyLines		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_EMPTY_LINES)) == BST_CHECKED);
 	_Settings->IgnoreFoldedLines	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_FOLDED_LINES)) == BST_CHECKED);

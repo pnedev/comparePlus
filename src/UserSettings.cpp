@@ -38,6 +38,7 @@ const TCHAR UserSettings::gotoFirstDiffSetting[]			= TEXT("go_to_first_on_recomp
 const TCHAR UserSettings::followingCaretSetting[]			= TEXT("following_caret");
 
 const TCHAR UserSettings::detectMovesSetting[]				= TEXT("detect_moves");
+const TCHAR UserSettings::detectSubBlockDiffsSetting[]		= TEXT("detect_sub_block_diffs");
 const TCHAR UserSettings::detectCharDiffsSetting[]			= TEXT("detect_character_diffs");
 const TCHAR UserSettings::ignoreEmptyLinesSetting[]			= TEXT("ignore_empty_lines");
 const TCHAR UserSettings::ignoreFoldedLinesSetting[]		= TEXT("ignore_folded_lines");
@@ -121,6 +122,7 @@ void UserSettings::load()
 			DEFAULT_PROMPT_CLOSE_ON_MATCH, iniFile) != 0;
 
 	DetectMoves				= ::GetPrivateProfileInt(mainSection, detectMovesSetting,			1, iniFile) != 0;
+	DetectSubBlockDiffs		= ::GetPrivateProfileInt(mainSection, detectSubBlockDiffsSetting,	1, iniFile) != 0;
 	DetectCharDiffs			= ::GetPrivateProfileInt(mainSection, detectCharDiffsSetting,		0, iniFile) != 0;
 	IgnoreEmptyLines		= ::GetPrivateProfileInt(mainSection, ignoreEmptyLinesSetting,		0, iniFile) != 0;
 	IgnoreFoldedLines		= ::GetPrivateProfileInt(mainSection, ignoreFoldedLinesSetting,		0, iniFile) != 0;
@@ -276,6 +278,8 @@ void UserSettings::save()
 
 	::WritePrivateProfileString(mainSection, detectMovesSetting,
 			DetectMoves ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, detectSubBlockDiffsSetting,
+			DetectSubBlockDiffs ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, detectCharDiffsSetting,
 			DetectCharDiffs ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreEmptyLinesSetting,

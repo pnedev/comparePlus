@@ -43,7 +43,7 @@
 
 #ifdef MULTITHREAD
 
-#pragma message "Multithread change detection enabled."
+#pragma message("Multithread change detection enabled.")
 
 #include <atomic>
 
@@ -955,6 +955,36 @@ std::vector<std::vector<Char>> getLinesChars(const DocCmpInfo& doc, const diffIn
 }
 
 
+void findUniqueLines(CompareInfo& cmpInfo)
+{
+	std::unordered_map<uint64_t, std::vector<intptr_t>> doc1LinesMap;
+
+	for (const auto& line: cmpInfo.doc1.lines)
+	{
+		auto insertPair = doc1LinesMap.emplace(line.hash, std::vector<intptr_t>{line.line});
+		if (!insertPair.second)
+			insertPair.first->second.emplace_back(line.line);
+	}
+
+	for (const auto& line: cmpInfo.doc2.lines)
+	{
+		auto doc1it = doc1LinesMap.find(line.hash);
+
+		if (doc1it != doc1LinesMap.end())
+		{
+			cmpInfo.doc2.nonUniqueLines.emplace(line.line);
+
+			auto insertPair = cmpInfo.doc1.nonUniqueLines.emplace(doc1it->second[0]);
+			if (insertPair.second)
+			{
+				for (size_t j = 1; j < doc1it->second.size(); ++j)
+					cmpInfo.doc1.nonUniqueLines.emplace(doc1it->second[j]);
+			}
+		}
+	}
+}
+
+
 // Scan for the best single matching block in the other file
 void findBestMatch(const CompareInfo& cmpInfo, const diffInfo& lookupDiff, intptr_t lookupOff, MatchInfo& mi)
 {
@@ -1112,36 +1142,6 @@ void findMoves(CompareInfo& cmpInfo)
 					else
 						--lookupEi;
 				}
-			}
-		}
-	}
-}
-
-
-void findUniqueLines(CompareInfo& cmpInfo)
-{
-	std::unordered_map<uint64_t, std::vector<intptr_t>> doc1LinesMap;
-
-	for (const auto& line: cmpInfo.doc1.lines)
-	{
-		auto insertPair = doc1LinesMap.emplace(line.hash, std::vector<intptr_t>{line.line});
-		if (!insertPair.second)
-			insertPair.first->second.emplace_back(line.line);
-	}
-
-	for (const auto& line: cmpInfo.doc2.lines)
-	{
-		auto doc1it = doc1LinesMap.find(line.hash);
-
-		if (doc1it != doc1LinesMap.end())
-		{
-			cmpInfo.doc2.nonUniqueLines.emplace(line.line);
-
-			auto insertPair = cmpInfo.doc1.nonUniqueLines.emplace(doc1it->second[0]);
-			if (insertPair.second)
-			{
-				for (size_t j = 1; j < doc1it->second.size(); ++j)
-					cmpInfo.doc1.nonUniqueLines.emplace(doc1it->second[j]);
 			}
 		}
 	}
@@ -1754,6 +1754,123 @@ bool compareBlocks(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& blo
 }
 
 
+void findSubBlockDiffs(CompareInfo& cmpInfo, const CompareOptions& options)
+{
+	progress_ptr& progress = ProgressDlg::Get();
+
+	const intptr_t blockDiffsSize = static_cast<intptr_t>(cmpInfo.blockDiffs.size());
+
+	std::vector<intptr_t> changedBlockIdx;
+
+	intptr_t changedProgressCount = 0;
+
+	// Get changed blocks to sub-compare
+	for (intptr_t i = 1; i < blockDiffsSize; ++i)
+	{
+		if ((cmpInfo.blockDiffs[i].type == diff_type::DIFF_IN_2) &&
+				(cmpInfo.blockDiffs[i - 1].type == diff_type::DIFF_IN_1))
+		{
+			changedProgressCount += cmpInfo.blockDiffs[i].len * cmpInfo.blockDiffs[i - 1].len;
+			changedBlockIdx.emplace_back(i++);
+		}
+	}
+
+	progress->SetMaxCount(changedProgressCount);
+
+	if (changedProgressCount > 10000)
+		progress->Show();
+
+#ifdef MULTITHREAD // Do multithreaded block compares
+
+	const int threadsCount = std::thread::hardware_concurrency() - 2;
+
+	if (threadsCount > 0)
+	{
+		LOGD(LOG_ALL, "Changes detection running on " + std::to_string(threadsCount + 1) + " threads\n");
+
+		std::atomic<size_t> blockIdx {0};
+
+		auto threadFn =
+			[&]()
+			{
+				for (size_t i = blockIdx++; i < changedBlockIdx.size(); i = blockIdx++)
+				{
+					diffInfo& blockDiff1 = cmpInfo.blockDiffs[changedBlockIdx[i] - 1];
+					diffInfo& blockDiff2 = cmpInfo.blockDiffs[changedBlockIdx[i]];
+
+					blockDiff1.info.matchBlock = &blockDiff2;
+					blockDiff2.info.matchBlock = &blockDiff1;
+
+					if (!compareBlocks(cmpInfo.doc1, cmpInfo.doc2, blockDiff1, blockDiff2, options))
+						return;
+				}
+			};
+
+		std::vector<std::thread> threads(threadsCount);
+
+		for (auto& th : threads)
+			th = std::thread(threadFn);
+
+		threadFn();
+
+		for (auto& th : threads)
+			th.join();
+	}
+	else
+	{
+		LOGD(LOG_ALL, "Changes detection running on 1 thread\n");
+
+		for (intptr_t i : changedBlockIdx)
+		{
+			diffInfo& blockDiff1 = cmpInfo.blockDiffs[i - 1];
+			diffInfo& blockDiff2 = cmpInfo.blockDiffs[i];
+
+			blockDiff1.info.matchBlock = &blockDiff2;
+			blockDiff2.info.matchBlock = &blockDiff1;
+
+			if (!compareBlocks(cmpInfo.doc1, cmpInfo.doc2, blockDiff1, blockDiff2, options))
+				break;
+		}
+	}
+
+#else // Do block compares in single thread
+
+	for (intptr_t i: changedBlockIdx)
+	{
+		diffInfo& blockDiff1 = cmpInfo.blockDiffs[i - 1];
+		diffInfo& blockDiff2 = cmpInfo.blockDiffs[i];
+
+		blockDiff1.info.matchBlock = &blockDiff2;
+		blockDiff2.info.matchBlock = &blockDiff1;
+
+		if (!compareBlocks(cmpInfo.doc1, cmpInfo.doc2, blockDiff1, blockDiff2, options))
+			break;
+	}
+
+#endif // MULTITHREAD
+}
+
+
+void flagMatchingBlocks(CompareInfo& cmpInfo)
+{
+	const intptr_t blockDiffsSize = static_cast<intptr_t>(cmpInfo.blockDiffs.size());
+
+	// Flag changed blocks
+	for (intptr_t i = 1; i < blockDiffsSize; ++i)
+	{
+		if ((cmpInfo.blockDiffs[i].type == diff_type::DIFF_IN_2) &&
+				(cmpInfo.blockDiffs[i - 1].type == diff_type::DIFF_IN_1))
+		{
+			diffInfo& blockDiff1 = cmpInfo.blockDiffs[i - 1];
+			diffInfo& blockDiff2 = cmpInfo.blockDiffs[i];
+
+			blockDiff1.info.matchBlock = &blockDiff2;
+			blockDiff2.info.matchBlock = &blockDiff1;
+		}
+	}
+}
+
+
 inline void markLine(int view, intptr_t line, int mark)
 {
 	CallScintilla(view, SCI_ENSUREVISIBLE, line, 0);
@@ -2216,94 +2333,10 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 	if (!progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
-	std::vector<intptr_t> changedBlockIdx;
-
-	intptr_t changedProgressCount = 0;
-
-	// Get changed blocks to sub-compare
-	for (intptr_t i = 1; i < blockDiffsSize; ++i)
-	{
-		if ((cmpInfo.blockDiffs[i].type == diff_type::DIFF_IN_2) &&
-				(cmpInfo.blockDiffs[i - 1].type == diff_type::DIFF_IN_1))
-		{
-			changedProgressCount += cmpInfo.blockDiffs[i].len * cmpInfo.blockDiffs[i - 1].len;
-			changedBlockIdx.emplace_back(i++);
-		}
-	}
-
-	progress->SetMaxCount(changedProgressCount);
-
-	if (changedProgressCount > 10000)
-		progress->Show();
-
-#ifdef MULTITHREAD // Do multithreaded block compares
-
-	const int threadsCount = std::thread::hardware_concurrency() - 2;
-
-	if (threadsCount > 0)
-	{
-		LOGD(LOG_ALL, "Changes detection running on " + std::to_string(threadsCount + 1) + " threads\n");
-
-		std::atomic<size_t> blockIdx {0};
-
-		auto threadFn =
-			[&]()
-			{
-				for (size_t i = blockIdx++; i < changedBlockIdx.size(); i = blockIdx++)
-				{
-					diffInfo& blockDiff1 = cmpInfo.blockDiffs[changedBlockIdx[i] - 1];
-					diffInfo& blockDiff2 = cmpInfo.blockDiffs[changedBlockIdx[i]];
-
-					blockDiff1.info.matchBlock = &blockDiff2;
-					blockDiff2.info.matchBlock = &blockDiff1;
-
-					if (!compareBlocks(cmpInfo.doc1, cmpInfo.doc2, blockDiff1, blockDiff2, options))
-						return;
-				}
-			};
-
-		std::vector<std::thread> threads(threadsCount);
-
-		for (auto& th : threads)
-			th = std::thread(threadFn);
-
-		threadFn();
-
-		for (auto& th : threads)
-			th.join();
-	}
+	if (options.detectSubBlockDiffs)
+		findSubBlockDiffs(cmpInfo, options);
 	else
-	{
-		LOGD(LOG_ALL, "Changes detection running on 1 thread\n");
-
-		for (intptr_t i : changedBlockIdx)
-		{
-			diffInfo& blockDiff1 = cmpInfo.blockDiffs[i - 1];
-			diffInfo& blockDiff2 = cmpInfo.blockDiffs[i];
-
-			blockDiff1.info.matchBlock = &blockDiff2;
-			blockDiff2.info.matchBlock = &blockDiff1;
-
-			if (!compareBlocks(cmpInfo.doc1, cmpInfo.doc2, blockDiff1, blockDiff2, options))
-				break;
-		}
-	}
-
-#else // Do block compares in single thread
-
-	for (intptr_t i: changedBlockIdx)
-	{
-		diffInfo& blockDiff1 = cmpInfo.blockDiffs[i - 1];
-		diffInfo& blockDiff2 = cmpInfo.blockDiffs[i];
-
-		blockDiff1.info.matchBlock = &blockDiff2;
-		blockDiff2.info.matchBlock = &blockDiff1;
-
-		if (!compareBlocks(cmpInfo.doc1, cmpInfo.doc2, blockDiff1, blockDiff2, options))
-			break;
-	}
-
-#endif // MULTITHREAD
+		flagMatchingBlocks(cmpInfo);
 
 	if (!progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;

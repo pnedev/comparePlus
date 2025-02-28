@@ -88,6 +88,7 @@ struct CompareOptions
 
 	bool	neverMarkIgnored;
 	bool	detectMoves;
+	bool	detectSubBlockDiffs;
 	bool	detectCharDiffs;
 	bool	ignoreEmptyLines;
 	bool	ignoreFoldedLines;
