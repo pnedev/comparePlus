@@ -1123,6 +1123,10 @@ void findMoves(CompareInfo& cmpInfo)
 			// Go through all lookupDiff's elements and check if each is matched
 			for (intptr_t lookupEi = 0; lookupEi < lookupDiff.len; ++lookupEi)
 			{
+				// Skip empty lines (do not show blocks of empty/ignored lines as moved)
+				if (cmpInfo.doc1.lines[lookupDiff.off + lookupEi].hash == cHashSeed)
+					continue;
+
 				// Skip already detected moves
 				if (lookupDiff.info.getNextUnmoved(lookupEi))
 				{
