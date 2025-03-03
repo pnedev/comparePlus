@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017-2022 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <vector>
 #include <algorithm>
 
+#include "Tools.h"
 #include "NppHelpers.h"
 #include "NppInternalDefines.h"
 
@@ -917,4 +918,51 @@ void moveFileToOtherView()
 	::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
 
 	setFoldedLines(getOtherViewId(view), foldedLines);
+}
+
+
+std::vector<wchar_t> generateContentsSha256(int view, intptr_t startLine, intptr_t endLine)
+{
+	const int currentView = getCurrentViewId();
+
+	if (view != currentView)
+		::SetFocus(getView(view));
+
+	const intptr_t currentPos = CallScintilla(view, SCI_GETCURRENTPOS, 0, 0);
+
+	bool validSelection = !isSelectionVertical(view) && !isMultiSelection(view);
+
+	const intptr_t selectionStart = CallScintilla(view, SCI_GETSELECTIONSTART, 0, 0);
+	const intptr_t selectionEnd = CallScintilla(view, SCI_GETSELECTIONEND, 0, 0);
+
+	if (validSelection)
+		validSelection = selectionStart != selectionEnd;
+
+	if (startLine < 0)
+		startLine = 0;
+
+	if (endLine < 0)
+		endLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
+
+	// Store current clipboard content
+	auto clipboardContent = getFromClipboard();
+
+	setSelection(view, getLineStart(view, startLine), getLineEnd(view, endLine));
+
+	::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_TOOL_SHA256_GENERATEINTOCLIPBOARD);
+
+	auto sha256 = getFromClipboard();
+
+	if (validSelection)
+		setSelection(view, selectionStart, selectionEnd);
+	else
+		setSelection(view, currentPos, currentPos);
+
+	// Restore previous clipboard content
+	setToClipboard(clipboardContent);
+
+	if (view != currentView)
+		::SetFocus(getView(currentView));
+
+	return sha256;
 }

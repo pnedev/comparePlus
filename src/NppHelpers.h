@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017-2022 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -776,3 +776,4 @@ std::vector<intptr_t> getFoldedLines(int view);
 void setFoldedLines(int view, const std::vector<intptr_t>& foldedLines);
 
 void moveFileToOtherView();
+std::vector<wchar_t> generateContentsSha256(int view, intptr_t startLine = 0, intptr_t endLine = -1);

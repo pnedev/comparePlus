@@ -1,6 +1,6 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
- * Copyright (C) 2016 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C) 2016-2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -70,4 +70,90 @@ VOID CALLBACK DelayedWork::timerCB(HWND, UINT, UINT_PTR idEvent, DWORD)
 
 	work->_timerId = 0;
 	(*work)();
+}
+
+
+std::vector<wchar_t> getFromClipboard(bool addLeadingNewLine)
+{
+	std::vector<wchar_t> content;
+
+	if (!::OpenClipboard(NULL))
+		return content;
+
+	HANDLE hData = ::GetClipboardData(CF_UNICODETEXT);
+
+	if (hData != NULL)
+	{
+		wchar_t* pText = static_cast<wchar_t*>(::GlobalLock(hData));
+
+		if (pText != NULL)
+		{
+			const size_t len = wcslen(pText) + 1;
+
+			if (addLeadingNewLine)
+			{
+				content.resize(len + 1);
+				content[0] = L'\n'; // Needed for selections alignment after comparing
+				wcscpy_s(content.data() + 1, len, pText);
+			}
+			else
+			{
+				content.resize(len);
+				wcscpy_s(content.data(), len, pText);
+			}
+		}
+
+		::GlobalUnlock(hData);
+	}
+
+	::CloseClipboard();
+
+	return content;
+}
+
+
+bool setToClipboard(const std::vector<wchar_t>& txt)
+{
+	if (txt.empty())
+		return true;
+
+	HGLOBAL hglbCopy = ::GlobalAlloc(GMEM_MOVEABLE, txt.size() * sizeof(wchar_t));
+	if (hglbCopy == nullptr)
+		return false;
+
+	// Lock the handle and copy the text to the buffer
+	wchar_t* pStr = (wchar_t*)::GlobalLock(hglbCopy);
+	if (!pStr)
+	{
+		::GlobalFree(hglbCopy);
+		return false;
+	}
+
+	wcscpy_s(pStr, txt.size(), txt.data());
+	::GlobalUnlock(hglbCopy);
+
+	if (!::OpenClipboard(NULL))
+	{
+		::GlobalFree(hglbCopy);
+		return false;
+	}
+
+	if (!::EmptyClipboard())
+	{
+		::GlobalFree(hglbCopy);
+		::CloseClipboard();
+		return false;
+	}
+
+	// Place the handle on the clipboard
+	if (!::SetClipboardData(CF_UNICODETEXT, hglbCopy))
+	{
+		::GlobalFree(hglbCopy);
+		::CloseClipboard();
+		return false;
+	}
+
+	::CloseClipboard();
+
+	return true;
 }

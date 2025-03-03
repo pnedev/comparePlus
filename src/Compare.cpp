@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017-2024 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <vector>
 #include <memory>
 #include <utility>
+#include <algorithm>
 #include <cmath>
 #include <cwchar>
 #include <ctime>
@@ -180,11 +181,11 @@ struct DeletedSection
  */
 struct DeletedSectionsList
 {
-	DeletedSectionsList() : lastPushTimeMark(0) {}
+	DeletedSectionsList() : _lastPushTimeMark(0) {}
 
 	std::vector<DeletedSection>& get()
 	{
-		return sections;
+		return _sections;
 	}
 
 	bool push(int view, int currAction, intptr_t startLine, intptr_t len,
@@ -193,12 +194,12 @@ struct DeletedSectionsList
 
 	void clear()
 	{
-		sections.clear();
+		_sections.clear();
 	}
 
 private:
-	DWORD						lastPushTimeMark;
-	std::vector<DeletedSection>	sections;
+	DWORD						_lastPushTimeMark;
+	std::vector<DeletedSection>	_sections;
 };
 
 
@@ -209,7 +210,7 @@ bool DeletedSectionsList::push(int view, int currAction, intptr_t startLine, int
 		return false;
 
 	// Is it line replacement revert operation?
-	if (!sections.empty() && sections.back().restoreAction == currAction && sections.back().lineReplace)
+	if (!_sections.empty() && _sections.back().restoreAction == currAction && _sections.back().lineReplace)
 		return false;
 
 	DeletedSection delSection(currAction, startLine, undo);
@@ -226,9 +227,9 @@ bool DeletedSectionsList::push(int view, int currAction, intptr_t startLine, int
 		clearMarks(view, startLine, len);
 	}
 
-	sections.push_back(delSection);
+	_sections.push_back(delSection);
 
-	lastPushTimeMark = ::GetTickCount();
+	_lastPushTimeMark = ::GetTickCount();
 
 	return true;
 }
@@ -236,10 +237,10 @@ bool DeletedSectionsList::push(int view, int currAction, intptr_t startLine, int
 
 std::shared_ptr<DeletedSection::UndoData> DeletedSectionsList::pop(int view, int currAction, intptr_t startLine)
 {
-	if (sections.empty())
+	if (_sections.empty())
 		return nullptr;
 
-	DeletedSection& last = sections.back();
+	DeletedSection& last = _sections.back();
 
 	if (last.startLine != startLine)
 		return nullptr;
@@ -247,7 +248,7 @@ std::shared_ptr<DeletedSection::UndoData> DeletedSectionsList::pop(int view, int
 	if (last.restoreAction != currAction)
 	{
 		// Try to guess if this is the insert part of line replacement operation
-		if (::GetTickCount() < lastPushTimeMark + 40)
+		if (::GetTickCount() < _lastPushTimeMark + 40)
 			last.lineReplace = true;
 
 		return nullptr;
@@ -266,7 +267,7 @@ std::shared_ptr<DeletedSection::UndoData> DeletedSectionsList::pop(int view, int
 
 	std::shared_ptr<DeletedSection::UndoData> undo = last.undoInfo;
 
-	sections.pop_back();
+	_sections.pop_back();
 
 	return undo;
 }
@@ -311,12 +312,12 @@ public:
 	bool pushDeletedSection(int sciAction, intptr_t startLine, intptr_t len,
 		const std::shared_ptr<DeletedSection::UndoData>& undo, bool recompareOnChange)
 	{
-		return deletedSections.push(compareViewId, sciAction, startLine, len, undo, recompareOnChange);
+		return _deletedSections.push(compareViewId, sciAction, startLine, len, undo, recompareOnChange);
 	}
 
 	std::shared_ptr<DeletedSection::UndoData> popDeletedSection(int sciAction, intptr_t startLine)
 	{
-		return deletedSections.pop(compareViewId, sciAction, startLine);
+		return _deletedSections.pop(compareViewId, sciAction, startLine);
 	}
 
 	Temp_t	isTemp;
@@ -331,7 +332,7 @@ public:
 	TCHAR		name[MAX_PATH];
 
 private:
-	DeletedSectionsList deletedSections;
+	DeletedSectionsList _deletedSections;
 };
 
 
@@ -916,7 +917,7 @@ void ComparedFile::clear(bool keepDeleteHistory)
 	setArrowMark(-1);
 
 	if (!keepDeleteHistory)
-		deletedSections.clear();
+		_deletedSections.clear();
 }
 
 
@@ -1051,29 +1052,17 @@ void ComparedPair::positionFiles(bool recompare)
 	if (viewIdFromBuffId(oldFile.buffId) != oldFile.compareViewId)
 	{
 		activateBufferID(oldFile.buffId);
+
 		moveFileToOtherView();
 		oldFile.updateFromCurrent();
 	}
-
-	// If compare type is LastSaved or Git or SVN diff and folds/hidden lines are to be ignored
-	// then expand all folds/hidden lines in the new (updated) file as its old version is restored unfolded/unhidden
-	// and we shouldn't actually ignore folds/hidden lines
-	const bool expandNewFileFolds = !recompare && ((options.ignoreFoldedLines || options.ignoreHiddenLines) &&
-			oldFile.isTemp && oldFile.isTemp != CLIPBOARD_TEMP);
 
 	if (viewIdFromBuffId(newFile.buffId) != newFile.compareViewId)
 	{
 		activateBufferID(newFile.buffId);
 
-		if (expandNewFileFolds)
-			CallScintilla(newFile.originalViewId, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
-
 		moveFileToOtherView();
 		newFile.updateFromCurrent();
-	}
-	else if (expandNewFileFolds)
-	{
-		CallScintilla(newFile.originalViewId, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
 	}
 
 	if (oldFile.sciDoc != getDocId(oldFile.compareViewId))
@@ -1081,6 +1070,15 @@ void ComparedPair::positionFiles(bool recompare)
 
 	if (newFile.sciDoc != getDocId(newFile.compareViewId))
 		activateBufferID(newFile.buffId);
+
+	// If compare type is LastSaved or Git or SVN diff and folds/hidden lines are to be ignored
+	// then expand all folds/hidden lines in the new (updated) file as its old version is restored unfolded/unhidden
+	// and we shouldn't actually ignore folds/hidden lines
+	const bool expandNewFileFolds = !recompare && ((options.ignoreFoldedLines || options.ignoreHiddenLines) &&
+			oldFile.isTemp && oldFile.isTemp != CLIPBOARD_TEMP);
+
+	if (expandNewFileFolds)
+		CallScintilla(newFile.compareViewId, SCI_FOLDALL, SC_FOLDACTION_EXPAND, 0);
 
 	activateBufferID(currentBuffId);
 }
@@ -2875,7 +2873,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 				(CallScintilla(MAIN_VIEW, SCI_GETEOLMODE, 0, 0) != CallScintilla(SUB_VIEW, SCI_GETEOLMODE, 0, 0)))
 			{
 				::MessageBox(nppData._nppHandle,
-						TEXT("Files differ in line endings - this will be ignored in the compare process."),
+						TEXT("Seems like files differ in line endings - this will be ignored in the compare process."),
 						cmpPair->options.findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"), MB_ICONWARNING);
 			}
 
@@ -2915,7 +2913,24 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 	time_t startTime = time(0);
 
-	const CompareResult cmpResult = runCompare(cmpPair);
+	bool filesSha2Differ = false;
+	{
+		const std::vector<wchar_t> mainComparedContentSHA2 =
+			cmpPair->options.selectionCompare ? generateContentsSha256(MAIN_VIEW,
+			cmpPair->options.selections[MAIN_VIEW].first, cmpPair->options.selections[MAIN_VIEW].second) :
+			generateContentsSha256(MAIN_VIEW);
+
+		const std::vector<wchar_t> subComparedContentSHA2 =
+			cmpPair->options.selectionCompare ? generateContentsSha256(SUB_VIEW,
+			cmpPair->options.selections[SUB_VIEW].first, cmpPair->options.selections[SUB_VIEW].second) :
+			generateContentsSha256(SUB_VIEW);
+
+		filesSha2Differ = !std::equal(
+			mainComparedContentSHA2.begin(), mainComparedContentSHA2.end(),
+			subComparedContentSHA2.begin(), subComparedContentSHA2.end());
+	}
+
+	const CompareResult cmpResult = filesSha2Differ ? runCompare(cmpPair) : CompareResult::COMPARE_MATCH;
 
 	cmpPair->compareDirty		= false;
 	cmpPair->nppReplaceDone		= false;
@@ -2976,22 +2991,20 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 			const TCHAR* newName = ::PathFindFileName(cmpPair->getNewFile().name);
 
-			TCHAR msg[2 * MAX_PATH + 256];
+			TCHAR msg[2 * MAX_PATH + 512];
 
 			int choice = IDNO;
 
 			if (oldFile.isTemp)
 			{
-				bool hasIgnoreOpts = false;
+				const bool hasIgnoreOpts =
+					(cmpPair->options.ignoreEmptyLines || (oldFile.isTemp == CLIPBOARD_TEMP &&
+					(cmpPair->options.ignoreFoldedLines || cmpPair->options.ignoreHiddenLines)) ||
+					cmpPair->options.ignoreAllSpaces || cmpPair->options.ignoreChangedSpaces ||
+					cmpPair->options.ignoreCase || cmpPair->options.ignoreRegex);
 
 				if (recompare)
 				{
-					hasIgnoreOpts =
-						(cmpPair->options.ignoreEmptyLines || cmpPair->options.ignoreFoldedLines ||
-						cmpPair->options.ignoreHiddenLines || cmpPair->options.ignoreAllSpaces ||
-						cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreCase ||
-						cmpPair->options.ignoreRegex);
-
 					_sntprintf_s(msg, _countof(msg), _TRUNCATE,
 							TEXT("%s \"%s\" and \"%s\" %s.\n\nTemp file will be closed."),
 							selectionCompare ? TEXT("Selections in files") : TEXT("Files"),
@@ -3000,13 +3013,6 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 				}
 				else
 				{
-					hasIgnoreOpts =
-						(cmpPair->options.ignoreEmptyLines || (oldFile.isTemp == CLIPBOARD_TEMP &&
-						(cmpPair->options.ignoreFoldedLines || cmpPair->options.ignoreHiddenLines)) ||
-						cmpPair->options.ignoreAllSpaces ||
-						cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreCase ||
-						cmpPair->options.ignoreRegex);
-
 					if (oldFile.isTemp == LAST_SAVED_TEMP)
 					{
 						_sntprintf_s(msg, _countof(msg), _TRUNCATE,
@@ -3026,9 +3032,15 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 					}
 				}
 
-				if (hasIgnoreOpts)
-					_tcscat_s(msg, _countof(msg),
-							TEXT("\n\nDue to compare options some diffs might have been ignored."));
+				if (filesSha2Differ)
+				{
+					if (hasIgnoreOpts)
+						_tcscat_s(msg, _countof(msg),
+								TEXT("\n\nSome diffs exist but have either been ignored due to the compare options\n")
+								TEXT("or are in the line endings format."));
+					else
+						_tcscat_s(msg, _countof(msg), TEXT("\n\nThere are diffs in the line endings format."));
+				}
 
 				::MessageBox(nppData._nppHandle, msg, cmpPair->options.findUniqueMode ?
 						TEXT("Find Unique") : TEXT("Compare"), MB_OK);
@@ -3046,8 +3058,10 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 						selectionCompare ? TEXT("Selections in files") : TEXT("Files"),
 						newName, ::PathFindFileName(oldFile.name),
 						cmpPair->options.findUniqueMode ? TEXT("do not contain unique lines") : TEXT("match"),
-						hasIgnoreOpts ?
-							TEXT("\n\nDue to compare options some diffs might have been ignored.") : TEXT(""),
+						filesSha2Differ ? (hasIgnoreOpts ?
+							TEXT("\n\nSome diffs exist but have either been ignored due to the compare options\n")
+							TEXT("or are in the line endings format.") :
+							TEXT("\n\nThere are diffs in the line endings format.")) : TEXT(""),
 						Settings.PromptToCloseOnMatch ? TEXT("\n\nClose compared files?") : TEXT(""));
 
 				if (Settings.PromptToCloseOnMatch)
@@ -3075,51 +3089,6 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	}
 
 	storedLocation = nullptr;
-}
-
-
-std::vector<char> getClipboard(bool addLeadingNewLine = false)
-{
-	std::vector<char> content;
-
-	if (!::OpenClipboard(NULL))
-		return content;
-
-	HANDLE hData = ::GetClipboardData(CF_UNICODETEXT);
-
-	if (hData != NULL)
-	{
-		wchar_t* pText = static_cast<wchar_t*>(::GlobalLock(hData));
-
-		if (pText != NULL)
-		{
-			const size_t wLen	= wcslen(pText) + 1;
-			const size_t len	=
-					::WideCharToMultiByte(CP_UTF8, 0, pText, static_cast<int>(wLen), NULL, 0, NULL, NULL);
-
-			if (addLeadingNewLine)
-			{
-				content.resize(len + 1);
-				content[0] = '\n'; // Needed for selections alignment after comparing
-
-				::WideCharToMultiByte(CP_UTF8, 0, pText, static_cast<int>(wLen), content.data() + 1,
-						static_cast<int>(len), NULL, NULL);
-			}
-			else
-			{
-				content.resize(len);
-
-				::WideCharToMultiByte(CP_UTF8, 0, pText, static_cast<int>(wLen), content.data(),
-						static_cast<int>(len), NULL, NULL);
-			}
-		}
-
-		::GlobalUnlock(hData);
-	}
-
-	::CloseClipboard();
-
-	return content;
 }
 
 
@@ -3227,7 +3196,7 @@ void ClipboardDiff()
 
 	const bool isSel = isSelection(view);
 
-	std::vector<char> content = getClipboard(isSel);
+	std::vector<wchar_t> content = getFromClipboard(isSel);
 
 	if (content.empty())
 	{
@@ -3238,8 +3207,17 @@ void ClipboardDiff()
 	if (!createTempFile(nullptr, CLIPBOARD_TEMP))
 		return;
 
-	setContent(content.data());
+	const size_t len =
+			::WideCharToMultiByte(CP_UTF8, 0, content.data(), static_cast<int>(content.size()), NULL, 0, NULL, NULL);
+
+	std::vector<char> txt(len);
+
+	::WideCharToMultiByte(CP_UTF8, 0, content.data(), static_cast<int>(content.size()), txt.data(),
+			static_cast<int>(len), NULL, NULL);
 	content.clear();
+
+	setContent(txt.data());
+	txt.clear();
 
 	compare(isSel);
 }

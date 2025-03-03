@@ -1,6 +1,6 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
- * Copyright (C) 2016-2022 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C) 2016-2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,6 +20,7 @@
 #pragma once
 
 #include <map>
+#include <vector>
 #include <windows.h>
 #include <tchar.h>
 
@@ -113,3 +114,7 @@ inline bool fileExists(const TCHAR* filePath)
 	DWORD dwAttrib = ::GetFileAttributes(filePath);
 	return (bool)(dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }
+
+
+std::vector<wchar_t> getFromClipboard(bool addLeadingNewLine = false);
+bool setToClipboard(const std::vector<wchar_t>& txt);
