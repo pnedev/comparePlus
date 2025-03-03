@@ -1,6 +1,6 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
- * Copyright (C) 2016 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C) 2016-2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -70,4 +70,49 @@ VOID CALLBACK DelayedWork::timerCB(HWND, UINT, UINT_PTR idEvent, DWORD)
 
 	work->_timerId = 0;
 	(*work)();
+}
+
+
+std::vector<char> getClipboard(bool addLeadingNewLine)
+{
+	std::vector<char> content;
+
+	if (!::OpenClipboard(NULL))
+		return content;
+
+	HANDLE hData = ::GetClipboardData(CF_UNICODETEXT);
+
+	if (hData != NULL)
+	{
+		wchar_t* pText = static_cast<wchar_t*>(::GlobalLock(hData));
+
+		if (pText != NULL)
+		{
+			const size_t wLen	= wcslen(pText) + 1;
+			const size_t len	=
+					::WideCharToMultiByte(CP_UTF8, 0, pText, static_cast<int>(wLen), NULL, 0, NULL, NULL);
+
+			if (addLeadingNewLine)
+			{
+				content.resize(len + 1);
+				content[0] = '\n'; // Needed for selections alignment after comparing
+
+				::WideCharToMultiByte(CP_UTF8, 0, pText, static_cast<int>(wLen), content.data() + 1,
+						static_cast<int>(len), NULL, NULL);
+			}
+			else
+			{
+				content.resize(len);
+
+				::WideCharToMultiByte(CP_UTF8, 0, pText, static_cast<int>(wLen), content.data(),
+						static_cast<int>(len), NULL, NULL);
+			}
+		}
+
+		::GlobalUnlock(hData);
+	}
+
+	::CloseClipboard();
+
+	return content;
 }

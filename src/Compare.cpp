@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017-2024 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <vector>
 #include <memory>
 #include <utility>
+#include <algorithm>
 #include <cmath>
 #include <cwchar>
 #include <ctime>
@@ -2911,6 +2912,17 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 		case CompareResult::COMPARE_MATCH:
 		{
+			const auto shaMain = selectionCompare ? generateContentsSha256(MAIN_VIEW,
+					cmpPair->options.selections[MAIN_VIEW].first, cmpPair->options.selections[MAIN_VIEW].second) :
+					generateContentsSha256(MAIN_VIEW);
+			const auto shaSub = selectionCompare ? generateContentsSha256(SUB_VIEW,
+					cmpPair->options.selections[SUB_VIEW].first, cmpPair->options.selections[SUB_VIEW].second) :
+					generateContentsSha256(SUB_VIEW);
+			bool filesDiffer = shaMain.size() != shaSub.size();
+
+			if (!filesDiffer)
+				filesDiffer = !std::equal(shaMain.begin(), shaMain.end(), shaSub.begin(), shaSub.end());
+
 			const ComparedFile& oldFile = cmpPair->getOldFile();
 
 			const TCHAR* newName = ::PathFindFileName(cmpPair->getNewFile().name);
@@ -2965,7 +2977,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 					}
 				}
 
-				if (hasIgnoreOpts)
+				if (hasIgnoreOpts && filesDiffer)
 					_tcscat_s(msg, _countof(msg),
 							TEXT("\n\nDue to compare options some diffs might have been ignored."));
 
@@ -2985,7 +2997,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 						selectionCompare ? TEXT("Selections in files") : TEXT("Files"),
 						newName, ::PathFindFileName(oldFile.name),
 						cmpPair->options.findUniqueMode ? TEXT("do not contain unique lines") : TEXT("match"),
-						hasIgnoreOpts ?
+						hasIgnoreOpts && filesDiffer ?
 							TEXT("\n\nDue to compare options some diffs might have been ignored.") : TEXT(""),
 						Settings.PromptToCloseOnMatch ? TEXT("\n\nClose compared files?") : TEXT(""));
 
@@ -3014,51 +3026,6 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	}
 
 	storedLocation = nullptr;
-}
-
-
-std::vector<char> getClipboard(bool addLeadingNewLine = false)
-{
-	std::vector<char> content;
-
-	if (!::OpenClipboard(NULL))
-		return content;
-
-	HANDLE hData = ::GetClipboardData(CF_UNICODETEXT);
-
-	if (hData != NULL)
-	{
-		wchar_t* pText = static_cast<wchar_t*>(::GlobalLock(hData));
-
-		if (pText != NULL)
-		{
-			const size_t wLen	= wcslen(pText) + 1;
-			const size_t len	=
-					::WideCharToMultiByte(CP_UTF8, 0, pText, static_cast<int>(wLen), NULL, 0, NULL, NULL);
-
-			if (addLeadingNewLine)
-			{
-				content.resize(len + 1);
-				content[0] = '\n'; // Needed for selections alignment after comparing
-
-				::WideCharToMultiByte(CP_UTF8, 0, pText, static_cast<int>(wLen), content.data() + 1,
-						static_cast<int>(len), NULL, NULL);
-			}
-			else
-			{
-				content.resize(len);
-
-				::WideCharToMultiByte(CP_UTF8, 0, pText, static_cast<int>(wLen), content.data(),
-						static_cast<int>(len), NULL, NULL);
-			}
-		}
-
-		::GlobalUnlock(hData);
-	}
-
-	::CloseClipboard();
-
-	return content;
 }
 
 
