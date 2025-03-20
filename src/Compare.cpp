@@ -409,23 +409,6 @@ using CompareList_t = std::vector<ComparedPair>;
  *  \class
  *  \brief
  */
-class DelayedAlign : public DelayedWork
-{
-public:
-	DelayedAlign() : DelayedWork(), _consecutiveAligns(0) {}
-	virtual ~DelayedAlign() = default;
-
-	virtual void operator()();
-
-private:
-	unsigned _consecutiveAligns; // Used as alignment oscillation filter in some corner cases
-};
-
-
-/**
- *  \class
- *  \brief
- */
 class DelayedActivate : public DelayedWork
 {
 public:
@@ -548,12 +531,10 @@ std::vector<int> copiedSectionMarks;
 
 // Re-compare flags
 bool goToFirst = false;
-bool justCompared = false;
 bool selectionAutoRecompare = false;
 
 LRESULT currentlyActiveBuffID = 0;
 
-DelayedAlign	delayedAlignment;
 DelayedActivate	delayedActivation;
 DelayedClose	delayedClosure;
 DelayedUpdate	delayedUpdate;
@@ -2303,6 +2284,84 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 }
 
 
+void doAlignment()
+{
+	const LRESULT			currentBuffId	= getCurrentBuffId();
+	CompareList_t::iterator	cmpPair			= getCompare(currentBuffId);
+
+	if (cmpPair == compareList.end())
+		return;
+
+	if (cmpPair->autoUpdateDelay)
+	{
+		delayedUpdate.post(cmpPair->autoUpdateDelay);
+
+		return;
+	}
+
+	bool realign = goToFirst || selectionAutoRecompare;
+
+	ScopedIncrementerInt incr(notificationsLock);
+
+	if (!realign)
+	{
+		const int view = storedLocation ? storedLocation->getView() : getCurrentViewId();
+
+		realign = isAlignmentNeeded(view, cmpPair);
+	}
+
+	if (realign)
+	{
+		LOGD(LOG_NOTIF, "Aligning diffs\n");
+
+		if (!storedLocation && !goToFirst)
+			storedLocation = std::make_unique<ViewLocation>(getCurrentViewId());
+
+		selectionAutoRecompare = false;
+
+		alignDiffs(cmpPair);
+	}
+
+	if (goToFirst)
+	{
+		LOGD(LOG_NOTIF, "Go to first diff\n");
+
+		goToFirst = false;
+
+		std::pair<int, intptr_t> viewLoc = jumpToFirstChange(true);
+
+		if (viewLoc.first >= 0)
+			syncViews(viewLoc.first);
+
+		cmpPair->setStatus();
+	}
+	else if (storedLocation)
+	{
+		if (realign)
+			storedLocation->restore();
+
+		syncViews(storedLocation->getView());
+
+		storedLocation = nullptr;
+		cmpPair->setStatus();
+	}
+	else if (cmpPair->options.findUniqueMode)
+	{
+		syncViews(getCurrentViewId());
+	}
+
+	if (cmpPair->nppReplaceDone)
+	{
+		cmpPair->nppReplaceDone = false;
+
+		::MessageBox(nppData._nppHandle,
+				TEXT("Compared file text replaced by Notepad++. Please manually re-compare\n")
+				TEXT("to make sure compare results are valid!"),
+				PLUGIN_NAME, MB_ICONEXCLAMATION);
+	}
+}
+
+
 void showNavBar()
 {
 	if (!NavDlg.SetColors(Settings.colors()))
@@ -2646,7 +2705,6 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	// Just to be sure any old state is cleared
 	storedLocation = nullptr;
 	goToFirst = false;
-	justCompared = false;
 	copiedSectionMarks.clear();
 
 	temporaryRangeSelect(-1);
@@ -2873,8 +2931,6 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 			cmpPair->options.recompareOnChange =
 					cmpPair->options.recompareOnChange && (difftime(time(0), startTime) < 5.0);
 
-			justCompared = true;
-
 			if (Settings.UseNavBar)
 				showNavBar();
 
@@ -2904,6 +2960,11 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 			}
 
 			currentlyActiveBuffID = getCurrentBuffId();
+
+			::UpdateWindow(getView(MAIN_VIEW));
+			::UpdateWindow(getView(SUB_VIEW));
+
+			doAlignment();
 
 			LOGD(LOG_ALL, "COMPARE READY\n");
 		}
@@ -4450,107 +4511,10 @@ void onNppReady()
 }
 
 
-void DelayedAlign::operator()()
-{
-	const LRESULT			currentBuffId	= getCurrentBuffId();
-	CompareList_t::iterator	cmpPair			= getCompare(currentBuffId);
-
-	if (cmpPair == compareList.end())
-		return;
-
-	if (cmpPair->autoUpdateDelay)
-	{
-		delayedUpdate.post(cmpPair->autoUpdateDelay);
-
-		return;
-	}
-
-	bool realign = goToFirst || selectionAutoRecompare || justCompared;
-
-	justCompared = false;
-
-	ScopedIncrementerInt incr(notificationsLock);
-
-	if (!realign)
-	{
-		const int view = storedLocation ? storedLocation->getView() : getCurrentViewId();
-
-		realign = isAlignmentNeeded(view, cmpPair);
-	}
-
-	if (realign)
-	{
-		LOGD(LOG_NOTIF, "Aligning diffs\n");
-
-		if (!storedLocation && !goToFirst)
-			storedLocation = std::make_unique<ViewLocation>(getCurrentViewId());
-
-		selectionAutoRecompare = false;
-
-		alignDiffs(cmpPair);
-	}
-
-	if (goToFirst)
-	{
-		LOGD(LOG_NOTIF, "Go to first diff\n");
-
-		goToFirst = false;
-
-		std::pair<int, intptr_t> viewLoc = jumpToFirstChange(true);
-
-		if (viewLoc.first >= 0)
-			syncViews(viewLoc.first);
-
-		cmpPair->setStatus();
-	}
-	else if (storedLocation)
-	{
-		if (!realign || (++_consecutiveAligns > 1))
-		{
-			_consecutiveAligns = 0;
-		}
-		else if (storedLocation->restore())
-		{
-			syncViews(storedLocation->getView());
-			storedLocation = nullptr;
-		}
-
-		// Retry re-alignment one more time - might be needed in case line number margin width has changed
-		if (_consecutiveAligns)
-		{
-			post(30);
-		}
-		else
-		{
-			if (realign)
-				storedLocation->restore();
-
-			syncViews(storedLocation->getView());
-
-			storedLocation = nullptr;
-			cmpPair->setStatus();
-		}
-	}
-	else if (cmpPair->options.findUniqueMode)
-	{
-		syncViews(getCurrentViewId());
-	}
-
-	if (cmpPair->nppReplaceDone)
-	{
-		cmpPair->nppReplaceDone = false;
-
-		::MessageBox(nppData._nppHandle,
-				TEXT("Compared file text replaced by Notepad++. Please manually re-compare\n")
-				TEXT("to make sure compare results are valid!"),
-				PLUGIN_NAME, MB_ICONEXCLAMATION);
-	}
-}
-
-
 inline void onSciPaint()
 {
-	delayedAlignment.post(30);
+	if (storedLocation)
+		doAlignment();
 }
 
 
@@ -4948,8 +4912,6 @@ void onSciModified(SCNotification* notifyCode)
 		// // Use that flag to trigger force re-alignment (nothing to do with selections actually, just reuse the flag)
 		// selectionAutoRecompare = true;
 
-		// delayedAlignment.post(30);
-
 		// return;
 	// }
 
@@ -5075,7 +5037,6 @@ void onSciModified(SCNotification* notifyCode)
 
 	if ((notifyCode->modificationType & SC_MOD_DELETETEXT) || (notifyCode->modificationType & SC_MOD_INSERTTEXT))
 	{
-		delayedAlignment.cancel();
 		delayedUpdate.cancel();
 
 		if (notifyCode->linesAdded == 0)
@@ -5272,7 +5233,6 @@ void DelayedActivate::operator()()
 		// seems reloaded and we want to update the compare.
 		if (isCurrentFileSaved())
 		{
-			delayedAlignment.cancel();
 			delayedUpdate.post(30);
 		}
 	}
@@ -5281,7 +5241,6 @@ void DelayedActivate::operator()()
 
 void onBufferActivated(LRESULT buffId)
 {
-	delayedAlignment.cancel();
 	delayedUpdate.cancel();
 	delayedActivation.cancel();
 
@@ -5381,7 +5340,6 @@ void onFileBeforeClose(LRESULT buffId)
 	if (cmpPair == compareList.end())
 		return;
 
-	delayedAlignment.cancel();
 	delayedUpdate.cancel();
 	delayedActivation.cancel();
 
@@ -5436,7 +5394,6 @@ void onFileSaved(LRESULT buffId)
 	}
 	else if (cmpPair->options.recompareOnChange && cmpPair->autoUpdateDelay)
 	{
-		delayedAlignment.cancel();
 		delayedUpdate.post(30);
 	}
 
