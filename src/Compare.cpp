@@ -306,7 +306,7 @@ public:
 	void clear(bool keepDeleteHistory = false);
 	void onBeforeClose() const;
 	void close() const;
-	void restore() const;
+	void restore(bool unhideLines = false) const;
 	bool isOpen() const;
 
 	bool pushDeletedSection(int sciAction, intptr_t startLine, intptr_t len,
@@ -949,7 +949,7 @@ void ComparedFile::close() const
 }
 
 
-void ComparedFile::restore() const
+void ComparedFile::restore(bool unhideLines) const
 {
 	if (isTemp)
 	{
@@ -967,6 +967,9 @@ void ComparedFile::restore() const
 			getWrapCount(view, biasLine), 0);
 
 	ViewLocation loc(view, biasLine);
+
+	if (unhideLines)
+		unhideAllLines(view);
 
 	clearWindow(view);
 	setNormalView(view);
@@ -1116,12 +1119,12 @@ void ComparedPair::restoreFiles(LRESULT currentBuffId = -1)
 
 	if (file[0].originalViewId == file[0].compareViewId)
 	{
-		file[0].restore();
+		file[0].restore(file[1].isTemp);
 		file[1].restore();
 	}
 	else
 	{
-		file[1].restore();
+		file[1].restore(file[0].isTemp);
 		file[0].restore();
 	}
 
