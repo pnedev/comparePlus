@@ -618,16 +618,16 @@ void NppSettings::updatePluginMenu()
 	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ALL]._cmdID,
 			MF_BYCOMMAND | ((compareList.empty() && !newCompare) ? (MF_DISABLED | MF_GRAYED) : MF_ENABLED));
 
-	::EnableMenuItem(hMenu, funcItem[CMD_BOOKMARK_DIFFS]._cmdID, flag);
-	::EnableMenuItem(hMenu, funcItem[CMD_BOOKMARK_ADD_REM]._cmdID, flag);
-	::EnableMenuItem(hMenu, funcItem[CMD_BOOKMARK_CHANGED]._cmdID, flag);
-	::EnableMenuItem(hMenu, funcItem[CMD_COMPARE_SUMMARY]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_NEXT]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_LAST]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_PREV_CHANGE_POS]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_NEXT_CHANGE_POS]._cmdID, flag);
+	::EnableMenuItem(hMenu, funcItem[CMD_COMPARE_SUMMARY]._cmdID, flag);
+	::EnableMenuItem(hMenu, funcItem[CMD_BOOKMARK_DIFFS]._cmdID, flag);
+	::EnableMenuItem(hMenu, funcItem[CMD_BOOKMARK_ADD_REM]._cmdID, flag);
+	::EnableMenuItem(hMenu, funcItem[CMD_BOOKMARK_CHANGED]._cmdID, flag);
 
 	::DrawMenuBar(nppData._nppHandle);
 
@@ -639,8 +639,6 @@ void NppSettings::updatePluginMenu()
 		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_PREV]._cmdID, compareMode);
 		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_NEXT]._cmdID, compareMode);
 		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_LAST]._cmdID, compareMode);
-		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_PREV_CHANGE_POS]._cmdID, compareMode);
-		::SendMessage(hNppToolbar, TB_ENABLEBUTTON, funcItem[CMD_NEXT_CHANGE_POS]._cmdID, compareMode);
 	}
 }
 
@@ -3142,44 +3140,6 @@ void FindSelectionsUnique()
 }
 
 
-void ClearActiveCompare()
-{
-	newCompare = nullptr;
-
-	if (NppSettings::get().compareMode)
-		clearComparePair(getCurrentBuffId());
-}
-
-
-void ClearAllCompares()
-{
-	newCompare = nullptr;
-
-	if (!compareList.size())
-		return;
-
-	const LRESULT buffId = getCurrentBuffId();
-
-	ScopedIncrementerInt incr(notificationsLock);
-
-	::SetFocus(getOtherView());
-
-	const LRESULT otherBuffId = getCurrentBuffId();
-
-	for (int i = static_cast<int>(compareList.size()) - 1; i >= 0; --i)
-		compareList[i].restoreFiles();
-
-	compareList.clear();
-
-	NppSettings::get().setNormalMode(true);
-
-	if (!isSingleView())
-		activateBufferID(otherBuffId);
-
-	activateBufferID(buffId);
-}
-
-
 void LastSaveDiff()
 {
 	TCHAR file[MAX_PATH];
@@ -3281,6 +3241,140 @@ void GitDiff()
 	content.clear();
 
 	compare();
+}
+
+
+void ClearActiveCompare()
+{
+	newCompare = nullptr;
+
+	if (NppSettings::get().compareMode)
+		clearComparePair(getCurrentBuffId());
+}
+
+
+void ClearAllCompares()
+{
+	newCompare = nullptr;
+
+	if (!compareList.size())
+		return;
+
+	const LRESULT buffId = getCurrentBuffId();
+
+	ScopedIncrementerInt incr(notificationsLock);
+
+	::SetFocus(getOtherView());
+
+	const LRESULT otherBuffId = getCurrentBuffId();
+
+	for (int i = static_cast<int>(compareList.size()) - 1; i >= 0; --i)
+		compareList[i].restoreFiles();
+
+	compareList.clear();
+
+	NppSettings::get().setNormalMode(true);
+
+	if (!isSingleView())
+		activateBufferID(otherBuffId);
+
+	activateBufferID(buffId);
+}
+
+
+void First()
+{
+	if (NppSettings::get().compareMode)
+	{
+		ScopedIncrementerInt incr(notificationsLock);
+
+		jumpToFirstChange();
+	}
+}
+
+
+void Prev()
+{
+	if (NppSettings::get().compareMode)
+	{
+		ScopedIncrementerInt incr(notificationsLock);
+
+		jumpToChange(false);
+	}
+}
+
+
+void Next()
+{
+	if (NppSettings::get().compareMode)
+	{
+		ScopedIncrementerInt incr(notificationsLock);
+
+		jumpToChange(true);
+	}
+}
+
+
+void Last()
+{
+	if (NppSettings::get().compareMode)
+	{
+		ScopedIncrementerInt incr(notificationsLock);
+
+		jumpToLastChange();
+	}
+}
+
+
+void PrevChangePos()
+{
+	if (NppSettings::get().compareMode)
+	{
+		ScopedIncrementerInt incr(notificationsLock);
+
+		const int viewId = getCurrentViewId();
+		const intptr_t line = getCurrentLine(viewId);
+		const intptr_t currentPos = CallScintilla(viewId, SCI_GETCURRENTPOS, 0, 0);
+		const intptr_t pos = getIndicatorStartPos(viewId, currentPos - 1);
+
+		if (pos)
+		{
+			if (line == CallScintilla(viewId, SCI_LINEFROMPOSITION, pos, 0))
+				CallScintilla(viewId, SCI_GOTOPOS, pos, 0);
+			else
+				blinkLine(viewId, line);
+		}
+		else
+		{
+			blinkLine(viewId, line);
+		}
+	}
+}
+
+
+void NextChangePos()
+{
+	if (NppSettings::get().compareMode)
+	{
+		ScopedIncrementerInt incr(notificationsLock);
+
+		const int viewId = getCurrentViewId();
+		const intptr_t line = getCurrentLine(viewId);
+		const intptr_t currentPos = CallScintilla(viewId, SCI_GETCURRENTPOS, 0, 0);
+		const intptr_t pos = getIndicatorEndPos(viewId, currentPos);
+
+		if (pos)
+		{
+			if (line == CallScintilla(viewId, SCI_LINEFROMPOSITION, pos, 0))
+				CallScintilla(viewId, SCI_GOTOPOS, pos, 0);
+			else
+				blinkLine(viewId, line);
+		}
+		else
+		{
+			blinkLine(viewId, line);
+		}
+	}
 }
 
 
@@ -3523,102 +3617,6 @@ void AutoRecompare()
 }
 
 
-void Prev()
-{
-	if (NppSettings::get().compareMode)
-	{
-		ScopedIncrementerInt incr(notificationsLock);
-
-		jumpToChange(false);
-	}
-}
-
-
-void Next()
-{
-	if (NppSettings::get().compareMode)
-	{
-		ScopedIncrementerInt incr(notificationsLock);
-
-		jumpToChange(true);
-	}
-}
-
-
-void First()
-{
-	if (NppSettings::get().compareMode)
-	{
-		ScopedIncrementerInt incr(notificationsLock);
-
-		jumpToFirstChange();
-	}
-}
-
-
-void Last()
-{
-	if (NppSettings::get().compareMode)
-	{
-		ScopedIncrementerInt incr(notificationsLock);
-
-		jumpToLastChange();
-	}
-}
-
-
-void PrevChangePos()
-{
-	if (NppSettings::get().compareMode)
-	{
-		ScopedIncrementerInt incr(notificationsLock);
-
-		const int viewId = getCurrentViewId();
-		const intptr_t line = getCurrentLine(viewId);
-		const intptr_t currentPos = CallScintilla(viewId, SCI_GETCURRENTPOS, 0, 0);
-		const intptr_t pos = getIndicatorStartPos(viewId, currentPos - 1);
-
-		if (pos)
-		{
-			if (line == CallScintilla(viewId, SCI_LINEFROMPOSITION, pos, 0))
-				CallScintilla(viewId, SCI_GOTOPOS, pos, 0);
-			else
-				blinkLine(viewId, line);
-		}
-		else
-		{
-			blinkLine(viewId, line);
-		}
-	}
-}
-
-
-void NextChangePos()
-{
-	if (NppSettings::get().compareMode)
-	{
-		ScopedIncrementerInt incr(notificationsLock);
-
-		const int viewId = getCurrentViewId();
-		const intptr_t line = getCurrentLine(viewId);
-		const intptr_t currentPos = CallScintilla(viewId, SCI_GETCURRENTPOS, 0, 0);
-		const intptr_t pos = getIndicatorEndPos(viewId, currentPos);
-
-		if (pos)
-		{
-			if (line == CallScintilla(viewId, SCI_LINEFROMPOSITION, pos, 0))
-				CallScintilla(viewId, SCI_GOTOPOS, pos, 0);
-			else
-				blinkLine(viewId, line);
-		}
-		else
-		{
-			blinkLine(viewId, line);
-		}
-	}
-}
-
-
 void OpenSettingsDlg(void)
 {
 	SettingsDialog settingsDlg(hInstance, nppData);
@@ -3730,17 +3728,6 @@ void createMenu()
 	funcItem[CMD_FIND_UNIQUE_SEL]._pShKey->_isShift	= true;
 	funcItem[CMD_FIND_UNIQUE_SEL]._pShKey->_key		= 'N';
 
-	_tcscpy_s(funcItem[CMD_CLEAR_ACTIVE]._itemName, menuItemSize, TEXT("Clear Active Compare"));
-	funcItem[CMD_CLEAR_ACTIVE]._pFunc				= ClearActiveCompare;
-	funcItem[CMD_CLEAR_ACTIVE]._pShKey 				= new ShortcutKey;
-	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_isAlt 		= true;
-	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_isCtrl		= true;
-	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_isShift	= false;
-	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_key 		= 'X';
-
-	_tcscpy_s(funcItem[CMD_CLEAR_ALL]._itemName, menuItemSize, TEXT("Clear All Compares"));
-	funcItem[CMD_CLEAR_ALL]._pFunc	= ClearAllCompares;
-
 	_tcscpy_s(funcItem[CMD_LAST_SAVE_DIFF]._itemName, menuItemSize, TEXT("Diff since last Save"));
 	funcItem[CMD_LAST_SAVE_DIFF]._pFunc				= LastSaveDiff;
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey 			= new ShortcutKey;
@@ -3773,30 +3760,24 @@ void createMenu()
 	funcItem[CMD_GIT_DIFF]._pShKey->_isShift		= false;
 	funcItem[CMD_GIT_DIFF]._pShKey->_key 			= 'G';
 
-	_tcscpy_s(funcItem[CMD_COMPARE_SUMMARY]._itemName, menuItemSize, TEXT("Active Compare Summary"));
-	funcItem[CMD_COMPARE_SUMMARY]._pFunc = ActiveCompareSummary;
+	_tcscpy_s(funcItem[CMD_CLEAR_ACTIVE]._itemName, menuItemSize, TEXT("Clear Active Compare"));
+	funcItem[CMD_CLEAR_ACTIVE]._pFunc				= ClearActiveCompare;
+	funcItem[CMD_CLEAR_ACTIVE]._pShKey 				= new ShortcutKey;
+	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_isAlt 		= true;
+	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_isCtrl		= true;
+	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_isShift	= false;
+	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_key 		= 'X';
 
-	_tcscpy_s(funcItem[CMD_BOOKMARK_DIFFS]._itemName, menuItemSize, TEXT("Bookmark All Diffs in Current View"));
-	funcItem[CMD_BOOKMARK_DIFFS]._pFunc = BookmarkDiffs;
+	_tcscpy_s(funcItem[CMD_CLEAR_ALL]._itemName, menuItemSize, TEXT("Clear All Compares"));
+	funcItem[CMD_CLEAR_ALL]._pFunc	= ClearAllCompares;
 
-	_tcscpy_s(funcItem[CMD_BOOKMARK_ADD_REM]._itemName, menuItemSize,
-			TEXT("Bookmark Added/Removed Lines in Current View"));
-	funcItem[CMD_BOOKMARK_ADD_REM]._pFunc = BookmarkAddedRemoved;
-
-	_tcscpy_s(funcItem[CMD_BOOKMARK_CHANGED]._itemName, menuItemSize, TEXT("Bookmark Changed Lines in Current View"));
-	funcItem[CMD_BOOKMARK_CHANGED]._pFunc = BookmarkChanged;
-
-	_tcscpy_s(funcItem[CMD_COMPARE_OPTIONS]._itemName, menuItemSize, TEXT("Compare Options (ignore, etc.)..."));
-	funcItem[CMD_COMPARE_OPTIONS]._pFunc = OpenCompareOptionsDlg;
-
-	_tcscpy_s(funcItem[CMD_DIFFS_VISUAL_FILTERS]._itemName, menuItemSize, TEXT("Diffs Visual Filters..."));
-	funcItem[CMD_DIFFS_VISUAL_FILTERS]._pFunc = OpenVisualFiltersDlg;
-
-	_tcscpy_s(funcItem[CMD_NAV_BAR]._itemName, menuItemSize, TEXT("Navigation Bar"));
-	funcItem[CMD_NAV_BAR]._pFunc = ToggleNavigationBar;
-
-	_tcscpy_s(funcItem[CMD_AUTO_RECOMPARE]._itemName, menuItemSize, TEXT("Auto Re-Compare on Change"));
-	funcItem[CMD_AUTO_RECOMPARE]._pFunc = AutoRecompare;
+	_tcscpy_s(funcItem[CMD_FIRST]._itemName, menuItemSize, TEXT("First Diff Block"));
+	funcItem[CMD_FIRST]._pFunc 				= First;
+	funcItem[CMD_FIRST]._pShKey 			= new ShortcutKey;
+	funcItem[CMD_FIRST]._pShKey->_isAlt 	= true;
+	funcItem[CMD_FIRST]._pShKey->_isCtrl 	= true;
+	funcItem[CMD_FIRST]._pShKey->_isShift	= false;
+	funcItem[CMD_FIRST]._pShKey->_key 		= VK_PRIOR;
 
 	_tcscpy_s(funcItem[CMD_PREV]._itemName, menuItemSize, TEXT("Previous Diff Block"));
 	funcItem[CMD_PREV]._pFunc 				= Prev;
@@ -3813,14 +3794,6 @@ void createMenu()
 	funcItem[CMD_NEXT]._pShKey->_isCtrl 	= false;
 	funcItem[CMD_NEXT]._pShKey->_isShift	= false;
 	funcItem[CMD_NEXT]._pShKey->_key 		= VK_NEXT;
-
-	_tcscpy_s(funcItem[CMD_FIRST]._itemName, menuItemSize, TEXT("First Diff Block"));
-	funcItem[CMD_FIRST]._pFunc 				= First;
-	funcItem[CMD_FIRST]._pShKey 			= new ShortcutKey;
-	funcItem[CMD_FIRST]._pShKey->_isAlt 	= true;
-	funcItem[CMD_FIRST]._pShKey->_isCtrl 	= true;
-	funcItem[CMD_FIRST]._pShKey->_isShift	= false;
-	funcItem[CMD_FIRST]._pShKey->_key 		= VK_PRIOR;
 
 	_tcscpy_s(funcItem[CMD_LAST]._itemName, menuItemSize, TEXT("Last Diff Block"));
 	funcItem[CMD_LAST]._pFunc 				= Last;
@@ -3845,6 +3818,31 @@ void createMenu()
 	funcItem[CMD_NEXT_CHANGE_POS]._pShKey->_isCtrl 	= true;
 	funcItem[CMD_NEXT_CHANGE_POS]._pShKey->_isShift	= true;
 	funcItem[CMD_NEXT_CHANGE_POS]._pShKey->_key 	= VK_NEXT;
+
+	_tcscpy_s(funcItem[CMD_COMPARE_SUMMARY]._itemName, menuItemSize, TEXT("Active Compare Summary"));
+	funcItem[CMD_COMPARE_SUMMARY]._pFunc = ActiveCompareSummary;
+
+	_tcscpy_s(funcItem[CMD_BOOKMARK_DIFFS]._itemName, menuItemSize, TEXT("Bookmark All Diffs in Current View"));
+	funcItem[CMD_BOOKMARK_DIFFS]._pFunc = BookmarkDiffs;
+
+	_tcscpy_s(funcItem[CMD_BOOKMARK_ADD_REM]._itemName, menuItemSize,
+			TEXT("Bookmark Added/Removed Lines in Current View"));
+	funcItem[CMD_BOOKMARK_ADD_REM]._pFunc = BookmarkAddedRemoved;
+
+	_tcscpy_s(funcItem[CMD_BOOKMARK_CHANGED]._itemName, menuItemSize, TEXT("Bookmark Changed Lines in Current View"));
+	funcItem[CMD_BOOKMARK_CHANGED]._pFunc = BookmarkChanged;
+
+	_tcscpy_s(funcItem[CMD_COMPARE_OPTIONS]._itemName, menuItemSize, TEXT("Compare Options (ignore, etc.)..."));
+	funcItem[CMD_COMPARE_OPTIONS]._pFunc = OpenCompareOptionsDlg;
+
+	_tcscpy_s(funcItem[CMD_DIFFS_VISUAL_FILTERS]._itemName, menuItemSize, TEXT("Diffs Visual Filters..."));
+	funcItem[CMD_DIFFS_VISUAL_FILTERS]._pFunc = OpenVisualFiltersDlg;
+
+	_tcscpy_s(funcItem[CMD_NAV_BAR]._itemName, menuItemSize, TEXT("Navigation Bar"));
+	funcItem[CMD_NAV_BAR]._pFunc = ToggleNavigationBar;
+
+	_tcscpy_s(funcItem[CMD_AUTO_RECOMPARE]._itemName, menuItemSize, TEXT("Auto Re-Compare on Change"));
+	funcItem[CMD_AUTO_RECOMPARE]._pFunc = AutoRecompare;
 
 	_tcscpy_s(funcItem[CMD_SETTINGS]._itemName, menuItemSize, TEXT("Settings..."));
 	funcItem[CMD_SETTINGS]._pFunc = OpenSettingsDlg;
