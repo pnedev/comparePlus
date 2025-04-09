@@ -144,7 +144,7 @@
       <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0600;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;_DEBUG;MULTITHREAD;BOOST_REGEX_STANDALONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -178,7 +178,7 @@ copy "..\..\libs\x86\*.dll" "$(OutDir)libs"</Command>
       <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0600;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;_DEBUG;WIN64;MULTITHREAD;BOOST_REGEX_STANDALONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -211,7 +211,7 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)libs"</Command>
       <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0600;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;_DEBUG;WIN64;MULTITHREAD;BOOST_REGEX_STANDALONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -246,7 +246,7 @@ copy "..\..\libs\arm64\*.dll" "$(OutDir)libs"</Command>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0600;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;NDEBUG;MULTITHREAD;BOOST_REGEX_STANDALONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -287,7 +287,7 @@ copy "..\..\libs\x86\*.dll" "$(OutDir)libs"</Command>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0600;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;NDEBUG;WIN64;MULTITHREAD;BOOST_REGEX_STANDALONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -327,7 +327,7 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)libs"</Command>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0600;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;NDEBUG;WIN64;MULTITHREAD;BOOST_REGEX_STANDALONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -364,6 +364,7 @@ copy "..\..\libs\arm64\*.dll" "$(OutDir)libs"</Command>
     <ClCompile Include="..\..\src\SettingsDlg\ColorPopup.cpp" />
     <ClCompile Include="..\..\src\SettingsDlg\SettingsDialog.cpp" />
     <ClCompile Include="..\..\src\CompareOptionsDlg\CompareOptionsDialog.cpp" />
+    <ClCompile Include="..\..\src\VisualFiltersDlg\VisualFiltersDialog.cpp" />
     <ClCompile Include="..\..\src\Tools.cpp" />
     <ClCompile Include="..\..\src\UserSettings.cpp" />
     <ClCompile Include="..\..\src\Compare.cpp" />
@@ -383,6 +384,7 @@ copy "..\..\libs\arm64\*.dll" "$(OutDir)libs"</Command>
     <ClInclude Include="..\..\src\SettingsDlg\ColorPopup.h" />
     <ClInclude Include="..\..\src\SettingsDlg\SettingsDialog.h" />
     <ClInclude Include="..\..\src\CompareOptionsDlg\CompareOptionsDialog.h" />
+    <ClInclude Include="..\..\src\VisualFiltersDlg\VisualFiltersDialog.h" />
     <ClInclude Include="..\..\src\Tools.h" />
     <ClInclude Include="..\..\src\UserSettings.h" />
     <ClInclude Include="..\..\src\Compare.h" />
@@ -430,7 +432,7 @@ copy "..\..\libs\arm64\*.dll" "$(OutDir)libs"</Command>
     <None Include="..\..\res\Standard\Last.bmp" />
     <None Include="..\..\res\Standard\Prev.bmp" />
     <None Include="..\..\res\Standard\Next.bmp" />
-    <None Include="..\..\res\Standard\DiffsOnly.bmp" />
+    <None Include="..\..\res\Standard\DiffsFilters.bmp" />
     <None Include="..\..\res\Standard\NavBar.bmp" />
     <None Include="..\..\res\Standard\CompareDocking.ico" />
     <None Include="..\..\res\Fluent\FirstToCompareFluent.ico" />
@@ -442,7 +444,7 @@ copy "..\..\libs\arm64\*.dll" "$(OutDir)libs"</Command>
     <None Include="..\..\res\Fluent\LastFluent.ico" />
     <None Include="..\..\res\Fluent\PrevFluent.ico" />
     <None Include="..\..\res\Fluent\NextFluent.ico" />
-    <None Include="..\..\res\Fluent\DiffsOnlyFluent.ico" />
+    <None Include="..\..\res\Fluent\DiffsFiltersFluent.ico" />
     <None Include="..\..\res\Fluent\NavBarFluent.ico" />
     <None Include="..\..\res\FluentDM\FirstToCompareFluentDM.ico" />
     <None Include="..\..\res\FluentDM\FirstToCompareRTLFluentDM.ico" />
@@ -453,7 +455,7 @@ copy "..\..\libs\arm64\*.dll" "$(OutDir)libs"</Command>
     <None Include="..\..\res\FluentDM\LastFluentDM.ico" />
     <None Include="..\..\res\FluentDM\PrevFluentDM.ico" />
     <None Include="..\..\res\FluentDM\NextFluentDM.ico" />
-    <None Include="..\..\res\FluentDM\DiffsOnlyFluentDM.ico" />
+    <None Include="..\..\res\FluentDM\DiffsFiltersFluentDM.ico" />
     <None Include="..\..\res\FluentDM\NavBarFluentDM.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

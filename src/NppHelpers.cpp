@@ -753,9 +753,12 @@ void unhideLinesInRange(int view, intptr_t line, intptr_t length)
 
 void hideLinesOutsideRange(int view, intptr_t startLine, intptr_t endLine)
 {
+	if (endLine <= startLine)
+		return;
+
 	const intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
 
-	if (startLine >= 0 && (endLine > startLine && endLine < linesCount))
+	if (startLine >= 0 && endLine < linesCount)
 	{
 		auto foldedLines = getFoldedLines(view);
 		CallScintilla(view, SCI_SHOWLINES, startLine, endLine);
@@ -771,25 +774,38 @@ void hideLinesOutsideRange(int view, intptr_t startLine, intptr_t endLine)
 }
 
 
-void hideUnmarkedLines(int view, int markMask)
+void hideLines(int view, int hideMarkMask, bool hideUnmarked)
 {
 	const intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+	const int otherMarkMask = (MARKER_MASK_LINE ^ hideMarkMask) & MARKER_MASK_LINE;
 
 	// First line (0) cannot be hidden so start from line 1
-	for (intptr_t nextMarkedLine, nextUnmarkedLine = 1; nextUnmarkedLine < linesCount;
-		nextUnmarkedLine = nextMarkedLine)
+	for (intptr_t endLine, startLine = 1; startLine < linesCount; startLine = endLine)
 	{
-		for (; (nextUnmarkedLine < linesCount) && isLineMarked(view, nextUnmarkedLine, markMask); ++nextUnmarkedLine);
+		if (hideUnmarked)
+		{
+			for (; (startLine < linesCount) && isLineMarked(view, startLine, otherMarkMask); ++startLine);
 
-		if (nextUnmarkedLine == linesCount)
-			break;
+			if (startLine == linesCount)
+				break;
 
-		nextMarkedLine = CallScintilla(view, SCI_MARKERNEXT, nextUnmarkedLine, markMask);
+			endLine = CallScintilla(view, SCI_MARKERNEXT, startLine, otherMarkMask);
 
-		if (nextMarkedLine < 0)
-			nextMarkedLine = linesCount;
+			if (endLine < 0)
+				endLine = linesCount;
+		}
+		else
+		{
+			for (; (startLine < linesCount) && !isLineMarked(view, startLine, hideMarkMask); ++startLine);
 
-		CallScintilla(view, SCI_HIDELINES, nextUnmarkedLine, nextMarkedLine - 1);
+			if (startLine == linesCount)
+				break;
+
+			for (endLine = startLine + 1;
+				(endLine < linesCount) && isLineMarked(view, endLine, hideMarkMask); ++endLine);
+		}
+
+		CallScintilla(view, SCI_HIDELINES, startLine, endLine - 1);
 	}
 }
 

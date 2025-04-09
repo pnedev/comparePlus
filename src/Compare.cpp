@@ -46,6 +46,7 @@
 #include "AboutDialog.h"
 #include "SettingsDialog.h"
 #include "CompareOptionsDialog.h"
+#include "VisualFiltersDialog.h"
 #include "NavDialog.h"
 #include "Engine.h"
 #include "NppInternalDefines.h"
@@ -283,11 +284,14 @@ enum Temp_t
 };
 
 
-enum HideType_t
+enum HideFlags_t
 {
 	NO_HIDE = 0,
-	HIDE_MATCHES,
-	HIDE_OUTSIDE_SELECTIONS
+	HIDE_MATCHES = 1 << 0,
+	HIDE_NEW_LINES = 1 << 1,
+	HIDE_CHANGED_LINES = 1 << 2,
+	HIDE_MOVED_LINES = 1 << 3,
+	HIDE_OUTSIDE_SELECTIONS = 1 << 4
 };
 
 
@@ -375,7 +379,7 @@ public:
 
 	CompareSummary	summary;
 
-	HideType_t		hideType		= NO_HIDE;
+	unsigned		hideFlags		= NO_HIDE;
 
 	bool			compareDirty	= false;
 	bool			nppReplaceDone	= false;
@@ -550,7 +554,7 @@ toolbarIconsWithDarkMode	tbFirst			{nullptr, nullptr, nullptr};
 toolbarIconsWithDarkMode	tbPrev			{nullptr, nullptr, nullptr};
 toolbarIconsWithDarkMode	tbNext			{nullptr, nullptr, nullptr};
 toolbarIconsWithDarkMode	tbLast			{nullptr, nullptr, nullptr};
-toolbarIconsWithDarkMode	tbDiffsOnly		{nullptr, nullptr, nullptr};
+toolbarIconsWithDarkMode	tbDiffsFilters	{nullptr, nullptr, nullptr};
 toolbarIconsWithDarkMode	tbNavBar		{nullptr, nullptr, nullptr};
 
 HINSTANCE hInstance;
@@ -1570,7 +1574,7 @@ std::pair<int, intptr_t> findNextChange(intptr_t mainStartLine, intptr_t subStar
 		}
 	}
 
-	if (!isChangedDiff && !down && !Settings.ShowOnlyDiffs && isLineAnnotated(view, line) &&
+	if (!isChangedDiff && !down && !Settings.HideMatches && isLineAnnotated(view, line) &&
 			(line < CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1))
 		++line;
 
@@ -1718,7 +1722,7 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 			!isLineMarked(view, line, MARKER_MASK_LINE))
 		down = !down;
 
-	if (Settings.ShowOnlyDiffs && isLineHidden(view, line))
+	if (isLineHidden(view, line))
 		line = down ? getUnhiddenLine(view, line) : getPreviousUnhiddenLine(view, line);
 
 	// Line is not visible - scroll into view
@@ -1918,8 +1922,58 @@ intptr_t getAlignmentLine(const AlignmentInfo_t &alignInfo, int view, intptr_t l
 }
 
 
-bool isAlignmentNeeded(int view, const CompareList_t::iterator& cmpPair)
+void updateViewsHideState(CompareList_t::iterator& cmpPair)
 {
+	unsigned currentHideFlags = NO_HIDE;
+
+	if (Settings.HideMatches)
+		currentHideFlags |= HIDE_MATCHES;
+	if (Settings.HideNewLines)
+		currentHideFlags |= HIDE_NEW_LINES;
+	if (Settings.HideChangedLines)
+		currentHideFlags |= HIDE_CHANGED_LINES;
+	if (Settings.HideMovedLines)
+		currentHideFlags |= HIDE_MOVED_LINES;
+	if (cmpPair->options.selectionCompare && Settings.ShowOnlySelections)
+		currentHideFlags |= HIDE_OUTSIDE_SELECTIONS;
+
+	if (cmpPair->hideFlags == currentHideFlags)
+		return;
+
+	unhideAllLines(MAIN_VIEW);
+	unhideAllLines(SUB_VIEW);
+
+	if (currentHideFlags & HIDE_OUTSIDE_SELECTIONS)
+	{
+		hideLinesOutsideRange(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first,
+				cmpPair->options.selections[MAIN_VIEW].second);
+		hideLinesOutsideRange(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first,
+				cmpPair->options.selections[SUB_VIEW].second);
+	}
+
+	int hideMarkMask = 0;
+
+	if (Settings.HideNewLines)
+		hideMarkMask |= MARKER_MASK_NEW_LINE;
+	if (Settings.HideChangedLines)
+		hideMarkMask |= MARKER_MASK_CHANGED_LINE;
+	if (Settings.HideMovedLines)
+		hideMarkMask |= MARKER_MASK_MOVED_LINE;
+
+	if (Settings.HideMatches || hideMarkMask)
+	{
+		hideLines(MAIN_VIEW, hideMarkMask, Settings.HideMatches);
+		hideLines(SUB_VIEW, hideMarkMask, Settings.HideMatches);
+	}
+
+	cmpPair->hideFlags = currentHideFlags;
+}
+
+
+bool isAlignmentNeeded(int view, CompareList_t::iterator& cmpPair)
+{
+	updateViewsHideState(cmpPair);
+
 	const AlignmentInfo_t& alignmentInfo = cmpPair->summary.alignmentInfo;
 
 	const AlignmentViewData AlignmentPair::*pView = (view == MAIN_VIEW) ? &AlignmentPair::main : &AlignmentPair::sub;
@@ -1941,7 +1995,7 @@ bool isAlignmentNeeded(int view, const CompareList_t::iterator& cmpPair)
 	while ((i < maxSize) && ((alignmentInfo[i].main.line == 0) || (alignmentInfo[i].sub.line == 0)))
 		++i;
 
-	if (Settings.ShowOnlyDiffs)
+	if (Settings.HideMatches)
 	{
 		for (; i < maxSize; ++i)
 		{
@@ -1990,16 +2044,11 @@ bool isAlignmentNeeded(int view, const CompareList_t::iterator& cmpPair)
 		subEndLine	= cmpPair->options.selections[SUB_VIEW].second;
 	}
 
-	if (Settings.ShowOnlyDiffs)
-	{
-		mainEndLine	= CallScintilla(MAIN_VIEW, SCI_MARKERPREVIOUS, mainEndLine, MARKER_MASK_LINE);
-		subEndLine	= CallScintilla(SUB_VIEW, SCI_MARKERPREVIOUS, subEndLine, MARKER_MASK_LINE);
+	if (isLineHidden(MAIN_VIEW, mainEndLine))
+		mainEndLine = getPreviousUnhiddenLine(MAIN_VIEW, mainEndLine);
 
-		if (mainEndLine < 0)
-			mainEndLine = 0;
-		if (subEndLine < 0)
-			subEndLine = 0;
-	}
+	if (isLineHidden(SUB_VIEW, subEndLine))
+		subEndLine = getPreviousUnhiddenLine(SUB_VIEW, subEndLine);
 
 	const intptr_t mainEndVisible = CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, mainEndLine, 0) +
 			getWrapCount(MAIN_VIEW, mainEndLine) - 1;
@@ -2018,34 +2067,6 @@ bool isAlignmentNeeded(int view, const CompareList_t::iterator& cmpPair)
 		return true;
 
 	return false;
-}
-
-
-void updateViewsHideState(CompareList_t::iterator& cmpPair)
-{
-	if (Settings.ShowOnlyDiffs)
-	{
-		cmpPair->hideType = HIDE_MATCHES;
-
-		hideUnmarkedLines(MAIN_VIEW, MARKER_MASK_LINE);
-		hideUnmarkedLines(SUB_VIEW, MARKER_MASK_LINE);
-	}
-	else if (cmpPair->options.selectionCompare && Settings.ShowOnlySelections)
-	{
-		cmpPair->hideType = HIDE_OUTSIDE_SELECTIONS;
-
-		hideLinesOutsideRange(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first,
-				cmpPair->options.selections[MAIN_VIEW].second);
-		hideLinesOutsideRange(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first,
-				cmpPair->options.selections[SUB_VIEW].second);
-	}
-	else if (cmpPair->hideType != NO_HIDE)
-	{
-		cmpPair->hideType = NO_HIDE;
-
-		unhideAllLines(MAIN_VIEW);
-		unhideAllLines(SUB_VIEW);
-	}
 }
 
 
@@ -2186,16 +2207,11 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 		}
 	}
 
-	if (Settings.ShowOnlyDiffs)
-	{
-		mainEndLine	= CallScintilla(MAIN_VIEW, SCI_MARKERPREVIOUS, mainEndLine, MARKER_MASK_LINE);
-		subEndLine	= CallScintilla(SUB_VIEW, SCI_MARKERPREVIOUS, subEndLine, MARKER_MASK_LINE);
+	if (isLineHidden(MAIN_VIEW, mainEndLine))
+		mainEndLine = getPreviousUnhiddenLine(MAIN_VIEW, mainEndLine);
 
-		if (mainEndLine < 0)
-			mainEndLine = 0;
-		if (subEndLine < 0)
-			subEndLine = 0;
-	}
+	if (isLineHidden(SUB_VIEW, subEndLine))
+		subEndLine = getPreviousUnhiddenLine(SUB_VIEW, subEndLine);
 
 	const intptr_t mainEndVisible	= CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, mainEndLine, 0) +
 			getWrapCount(MAIN_VIEW, mainEndLine) - 1;
@@ -2772,7 +2788,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		cmpPair->getOldFile().clear(autoUpdating);
 		cmpPair->getNewFile().clear(autoUpdating);
 
-		if (cmpPair->hideType != NO_HIDE)
+		if (cmpPair->hideFlags != NO_HIDE)
 		{
 			unhideAllLines(MAIN_VIEW);
 			unhideAllLines(SUB_VIEW);
@@ -2867,7 +2883,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 			}
 		}
 
-		cmpPair->hideType = NO_HIDE;
+		cmpPair->hideFlags = NO_HIDE;
 
 		// New compare?
 		if (!recompare)
@@ -3268,36 +3284,6 @@ void GitDiff()
 }
 
 
-void BookmarkDiffs()
-{
-	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
-	if (cmpPair == compareList.end())
-		return;
-
-	bookmarkMarkedLines(getCurrentViewId(), MARKER_MASK_DIFF_LINE);
-}
-
-
-void BookmarkAddedRemoved()
-{
-	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
-	if (cmpPair == compareList.end())
-		return;
-
-	bookmarkMarkedLines(getCurrentViewId(), MARKER_MASK_NEW_LINE);
-}
-
-
-void BookmarkChanged()
-{
-	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
-	if (cmpPair == compareList.end())
-		return;
-
-	bookmarkMarkedLines(getCurrentViewId(), MARKER_MASK_CHANGED_LINE);
-}
-
-
 void ActiveCompareSummary()
 {
 	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
@@ -3422,20 +3408,50 @@ void ActiveCompareSummary()
 }
 
 
+void BookmarkDiffs()
+{
+	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
+	if (cmpPair == compareList.end())
+		return;
+
+	bookmarkMarkedLines(getCurrentViewId(), MARKER_MASK_DIFF_LINE);
+}
+
+
+void BookmarkAddedRemoved()
+{
+	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
+	if (cmpPair == compareList.end())
+		return;
+
+	bookmarkMarkedLines(getCurrentViewId(), MARKER_MASK_NEW_LINE);
+}
+
+
+void BookmarkChanged()
+{
+	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
+	if (cmpPair == compareList.end())
+		return;
+
+	bookmarkMarkedLines(getCurrentViewId(), MARKER_MASK_CHANGED_LINE);
+}
+
+
 void OpenCompareOptionsDlg()
 {
-	CompareOptionsDialog CompareOptionsDlg(hInstance, nppData);
+	CompareOptionsDialog compareOptionsDlg(hInstance, nppData);
 
-	CompareOptionsDlg.doDialog(&Settings);
+	compareOptionsDlg.doDialog(&Settings);
 }
 
 
-void ShowOnlyDiffs()
+void OpenVisualFiltersDlg()
 {
-	Settings.ShowOnlyDiffs = !Settings.ShowOnlyDiffs;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_SHOW_ONLY_DIFF]._cmdID,
-			(LPARAM)Settings.ShowOnlyDiffs);
-	Settings.markAsDirty();
+	VisualFiltersDialog visualFiltersDlg(hInstance, nppData);
+
+	if (visualFiltersDlg.doDialog(&Settings) != IDOK)
+		return;
 
 	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
 
@@ -3445,56 +3461,35 @@ void ShowOnlyDiffs()
 
 		const int view			= getCurrentViewId();
 		intptr_t currentLine	= (Settings.FollowingCaret ? getCurrentLine(view) : getFirstLine(view));
+		bool currentLineChanged = false;
 
-		if (!isLineMarked(view, currentLine, MARKER_MASK_LINE))
+		if (Settings.ShowOnlySelections)
 		{
-			const intptr_t  nextMarkedLine = CallScintilla(view, SCI_MARKERNEXT, currentLine, MARKER_MASK_LINE);
-
-			if (nextMarkedLine >= 0)
-				currentLine = nextMarkedLine;
-			else
-				currentLine = CallScintilla(view, SCI_MARKERPREVIOUS, currentLine, MARKER_MASK_LINE);
-
-			if (Settings.FollowingCaret)
-				CallScintilla(view, SCI_GOTOLINE, currentLine, 0);
+			if (currentLine < cmpPair->options.selections[view].first)
+			{
+				currentLine = cmpPair->options.selections[view].first;
+				currentLineChanged = true;
+			}
+			else if (currentLine > cmpPair->options.selections[view].second)
+			{
+				currentLine = cmpPair->options.selections[view].second;
+				currentLineChanged = true;
+			}
 		}
 
-		ViewLocation loc(view, currentLine);
+		// if (Settings.HideMatches && !isLineMarked(view, currentLine, MARKER_MASK_LINE))
+		// {
+			// const intptr_t  nextMarkedLine = CallScintilla(view, SCI_MARKERNEXT, currentLine, MARKER_MASK_LINE);
 
-		CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
-		CallScintilla(SUB_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
+			// if (nextMarkedLine >= 0)
+				// currentLine = nextMarkedLine;
+			// else
+				// currentLine = CallScintilla(view, SCI_MARKERPREVIOUS, currentLine, MARKER_MASK_LINE);
 
-		alignDiffs(cmpPair);
+			// currentLineChanged = true;
+		// }
 
-		loc.restore(Settings.FollowingCaret);
-
-		NavDlg.Update();
-	}
-}
-
-
-void ShowOnlySelections()
-{
-	Settings.ShowOnlySelections = !Settings.ShowOnlySelections;
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_SHOW_ONLY_SEL]._cmdID,
-			(LPARAM)Settings.ShowOnlySelections);
-	Settings.markAsDirty();
-
-	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
-
-	if (cmpPair != compareList.end())
-	{
-		ScopedIncrementerInt incr(notificationsLock);
-
-		const int view			= getCurrentViewId();
-		intptr_t currentLine	= (Settings.FollowingCaret ? getCurrentLine(view) : getFirstLine(view));
-
-		if (currentLine < cmpPair->options.selections[view].first)
-			currentLine = cmpPair->options.selections[view].first;
-		else if (currentLine > cmpPair->options.selections[view].second)
-			currentLine = cmpPair->options.selections[view].second;
-
-		if (Settings.FollowingCaret)
+		if (Settings.FollowingCaret && currentLineChanged)
 			CallScintilla(view, SCI_GOTOLINE, currentLine, 0);
 
 		ViewLocation loc(view, currentLine);
@@ -3626,9 +3621,9 @@ void NextChangePos()
 
 void OpenSettingsDlg(void)
 {
-	SettingsDialog SettingsDlg(hInstance, nppData);
+	SettingsDialog settingsDlg(hInstance, nppData);
 
-	if (SettingsDlg.doDialog(&Settings) == IDOK)
+	if (settingsDlg.doDialog(&Settings) == IDOK)
 	{
 		Settings.save();
 
@@ -3686,8 +3681,8 @@ void OpenAboutDlg()
 
 #else
 
-	AboutDialog AboutDlg(hInstance, nppData);
-	AboutDlg.doDialog();
+	AboutDialog aboutDlg(hInstance, nppData);
+	aboutDlg.doDialog();
 
 #endif
 }
@@ -3778,6 +3773,9 @@ void createMenu()
 	funcItem[CMD_GIT_DIFF]._pShKey->_isShift		= false;
 	funcItem[CMD_GIT_DIFF]._pShKey->_key 			= 'G';
 
+	_tcscpy_s(funcItem[CMD_COMPARE_SUMMARY]._itemName, menuItemSize, TEXT("Active Compare Summary"));
+	funcItem[CMD_COMPARE_SUMMARY]._pFunc = ActiveCompareSummary;
+
 	_tcscpy_s(funcItem[CMD_BOOKMARK_DIFFS]._itemName, menuItemSize, TEXT("Bookmark All Diffs in Current View"));
 	funcItem[CMD_BOOKMARK_DIFFS]._pFunc = BookmarkDiffs;
 
@@ -3788,17 +3786,11 @@ void createMenu()
 	_tcscpy_s(funcItem[CMD_BOOKMARK_CHANGED]._itemName, menuItemSize, TEXT("Bookmark Changed Lines in Current View"));
 	funcItem[CMD_BOOKMARK_CHANGED]._pFunc = BookmarkChanged;
 
-	_tcscpy_s(funcItem[CMD_COMPARE_SUMMARY]._itemName, menuItemSize, TEXT("Active Compare Summary"));
-	funcItem[CMD_COMPARE_SUMMARY]._pFunc = ActiveCompareSummary;
-
 	_tcscpy_s(funcItem[CMD_COMPARE_OPTIONS]._itemName, menuItemSize, TEXT("Compare Options (ignore, etc.)..."));
 	funcItem[CMD_COMPARE_OPTIONS]._pFunc = OpenCompareOptionsDlg;
 
-	_tcscpy_s(funcItem[CMD_SHOW_ONLY_DIFF]._itemName, menuItemSize, TEXT("Show Only Diffs (Hide Matches)"));
-	funcItem[CMD_SHOW_ONLY_DIFF]._pFunc = ShowOnlyDiffs;
-
-	_tcscpy_s(funcItem[CMD_SHOW_ONLY_SEL]._itemName, menuItemSize, TEXT("Show Only Compared Selections"));
-	funcItem[CMD_SHOW_ONLY_SEL]._pFunc = ShowOnlySelections;
+	_tcscpy_s(funcItem[CMD_DIFFS_VISUAL_FILTERS]._itemName, menuItemSize, TEXT("Diffs Visual Filters..."));
+	funcItem[CMD_DIFFS_VISUAL_FILTERS]._pFunc = OpenVisualFiltersDlg;
 
 	_tcscpy_s(funcItem[CMD_NAV_BAR]._itemName, menuItemSize, TEXT("Navigation Bar"));
 	funcItem[CMD_NAV_BAR]._pFunc = ToggleNavigationBar;
@@ -3892,7 +3884,7 @@ void deinitPlugin()
 	freeToolbarObjects(tbPrev);
 	freeToolbarObjects(tbNext);
 	freeToolbarObjects(tbLast);
-	freeToolbarObjects(tbDiffsOnly);
+	freeToolbarObjects(tbDiffsFilters);
 	freeToolbarObjects(tbNavBar);
 
 	NavDlg.destroy();
@@ -4015,14 +4007,16 @@ void comparedFileActivated()
 	setCompareView(MAIN_VIEW, Settings.colors().blank, Settings.colors().caret_line_transparency);
 	setCompareView(SUB_VIEW, Settings.colors().blank, Settings.colors().caret_line_transparency);
 
-	if (Settings.ShowOnlyDiffs || Settings.ShowOnlySelections)
+	if (Settings.HideMatches || Settings.HideNewLines || Settings.HideChangedLines || Settings.HideMovedLines ||
+		Settings.ShowOnlySelections)
 	{
 		CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
 
-		if ((cmpPair != compareList.end()) && (Settings.ShowOnlyDiffs ||
-			(cmpPair->options.selectionCompare && Settings.ShowOnlySelections)))
+		if (cmpPair != compareList.end())
 		{
 			ScopedIncrementerInt incr(notificationsLock);
+
+			cmpPair->hideFlags = NO_HIDE;
 
 			alignDiffs(cmpPair);
 		}
@@ -4358,17 +4352,17 @@ void onToolBarReady()
 				(WPARAM)funcItem[CMD_LAST]._cmdID, (LPARAM)&tbLast);
 	}
 
-	if (Settings.ShowOnlyDiffsTB)
+	if (Settings.DiffsFilterTB)
 	{
-		tbDiffsOnly.hToolbarBmp				= (HBITMAP)
-			::LoadImage(hInstance, MAKEINTRESOURCE(IDB_DIFFS_ONLY), IMAGE_BITMAP, bmpX, bmpY, style);
-		tbDiffsOnly.hToolbarIcon			= (HICON)
-			::LoadImage(hInstance, MAKEINTRESOURCE(IDB_DIFFS_ONLY_FL), IMAGE_ICON, icoX, icoY, style);
-		tbDiffsOnly.hToolbarIconDarkMode	= (HICON)
-			::LoadImage(hInstance, MAKEINTRESOURCE(IDB_DIFFS_ONLY_FL_DM), IMAGE_ICON, icoX, icoY, style);
+		tbDiffsFilters.hToolbarBmp			= (HBITMAP)
+			::LoadImage(hInstance, MAKEINTRESOURCE(IDB_DIFFS_FILTERS), IMAGE_BITMAP, bmpX, bmpY, style);
+		tbDiffsFilters.hToolbarIcon			= (HICON)
+			::LoadImage(hInstance, MAKEINTRESOURCE(IDB_DIFFS_FILTERS_FL), IMAGE_ICON, icoX, icoY, style);
+		tbDiffsFilters.hToolbarIconDarkMode	= (HICON)
+			::LoadImage(hInstance, MAKEINTRESOURCE(IDB_DIFFS_FILTERS_FL_DM), IMAGE_ICON, icoX, icoY, style);
 
 		::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON_FORDARKMODE,
-				(WPARAM)funcItem[CMD_SHOW_ONLY_DIFF]._cmdID, (LPARAM)&tbDiffsOnly);
+				(WPARAM)funcItem[CMD_DIFFS_VISUAL_FILTERS]._cmdID, (LPARAM)&tbDiffsFilters);
 	}
 
 	if (Settings.NavBarTB)
@@ -4392,10 +4386,6 @@ void onNppReady()
 	if (isSingleView())
 		NppSettings::get().enableNppScrollCommands(false);
 
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_SHOW_ONLY_DIFF]._cmdID,
-			(LPARAM)Settings.ShowOnlyDiffs);
-	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_SHOW_ONLY_SEL]._cmdID,
-			(LPARAM)Settings.ShowOnlySelections);
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID,
 			(LPARAM)Settings.UseNavBar);
 
@@ -4616,7 +4606,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 
 		if (!cmpPair->options.recompareOnChange)
 		{
-			if (Settings.ShowOnlyDiffs)
+			if (Settings.HideMatches || Settings.HideNewLines || Settings.HideChangedLines || Settings.HideMovedLines)
 				alignDiffs(cmpPair);
 
 			if (Settings.UseNavBar)
@@ -4664,7 +4654,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 		intptr_t startLine		= CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.first, 0);
 		intptr_t startOffset	= 0;
 
-		if (!Settings.ShowOnlyDiffs && (startLine > 1) && isLineAnnotated(viewId, startLine - 1))
+		if (!Settings.HideMatches && (startLine > 1) && isLineAnnotated(viewId, startLine - 1))
 		{
 			--startLine;
 			startOffset = getWrapCount(viewId, startLine);
@@ -4677,7 +4667,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 
 		intptr_t endOffset = getWrapCount(viewId, endLine) - 1;
 
-		if (!Settings.ShowOnlyDiffs)
+		if (!Settings.HideMatches)
 			endOffset += getLineAnnotation(viewId, endLine);
 
 		otherMarkedRange.first = otherViewMatchingLine(viewId, startLine, startOffset, true);
@@ -4688,7 +4678,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 		otherMarkedRange.second	= otherViewMatchingLine(viewId, endLine, endOffset);
 	}
 
-	if (!Settings.ShowOnlyDiffs)
+	if (!Settings.HideMatches)
 	{
 		for (; (otherMarkedRange.first <= otherMarkedRange.second) &&
 				!isLineMarked(otherViewId, otherMarkedRange.first, mark); ++otherMarkedRange.first);
@@ -4800,7 +4790,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 		{
 			if (line < lastLine)
 			{
-				if (!Settings.ShowOnlyDiffs)
+				if (!Settings.HideMatches)
 				{
 					startPos = line + 1;
 				}
@@ -4862,7 +4852,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 
 	if (!cmpPair->options.recompareOnChange)
 	{
-		if (Settings.ShowOnlyDiffs)
+		if (Settings.HideMatches || Settings.HideNewLines || Settings.HideChangedLines || Settings.HideMovedLines)
 			alignDiffs(cmpPair);
 
 		if (Settings.UseNavBar)
@@ -5006,7 +4996,7 @@ void onSciModified(SCNotification* notifyCode)
 					{
 						setMarkers(getOtherViewId(view), alignLine, undo->otherViewMarks);
 
-						if (Settings.ShowOnlyDiffs)
+						if (Settings.HideMatches)
 							unhideLinesInRange(getOtherViewId(view), alignLine, undo->otherViewMarks.size());
 
 						LOGD(LOG_NOTIF, "Other view markers restored.\n");

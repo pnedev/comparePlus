@@ -1,6 +1,6 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
- * Copyright (C)2017-2022 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -63,7 +63,7 @@
 #define DEFAULT_COMPARE_SEL_TB			1
 #define DEFAULT_CLEAR_COMPARE_TB		1
 #define DEFAULT_NAVIGATION_TB			1
-#define DEFAULT_SHOW_ONLY_DIFFS_TB		1
+#define DEFAULT_DIFFS_FILTER_TB			1
 #define DEFAULT_NAV_BAR_TB				1
 
 
@@ -147,8 +147,11 @@ public:
 	static const TCHAR inclRegexNomatchLinesSetting[];
 	static const TCHAR ignoreRegexStrSetting[];
 
+	static const TCHAR hideMatchesSetting[];
+	static const TCHAR hideNewLinesSetting[];
+	static const TCHAR hideChangedLinesSetting[];
+	static const TCHAR hideMovedLinesSetting[];
 	static const TCHAR showOnlySelSetting[];
-	static const TCHAR showOnlyDiffSetting[];
 	static const TCHAR navBarSetting[];
 
 	static const TCHAR reCompareOnChangeSetting[];
@@ -185,7 +188,7 @@ public:
 	static const TCHAR compareSelTBSetting[];
 	static const TCHAR clearCompareTBSetting[];
 	static const TCHAR navigationTBSetting[];
-	static const TCHAR showOnlyDiffsTBSetting[];
+	static const TCHAR diffsFilterTBSetting[];
 	static const TCHAR navBarTBSetting[];
 
 	bool			FirstFileIsNew;
@@ -214,7 +217,10 @@ public:
 	bool			InclRegexNomatchLines;
 	std::wstring	IgnoreRegexStr;
 
-	bool			ShowOnlyDiffs;
+	bool			HideMatches;
+	bool			HideNewLines;
+	bool			HideChangedLines;
+	bool			HideMovedLines;
 	bool			ShowOnlySelections;
 	bool			UseNavBar;
 
@@ -229,7 +235,7 @@ public:
 	bool			CompareSelTB;
 	bool			ClearCompareTB;
 	bool			NavigationTB;
-	bool			ShowOnlyDiffsTB;
+	bool			DiffsFilterTB;
 	bool			NavBarTB;
 
 private:

@@ -1920,7 +1920,7 @@ void markSection(const DocCmpInfo& doc, const diffInfo& bd, const CompareOptions
 		}
 		else if (movedLen == 1)
 		{
-			markLine(doc.view, doc.lines[line].line, MARKER_MASK_MOVED_LINE);
+			markLine(doc.view, doc.lines[line].line, MARKER_MASK_MOVED_SINGLE);
 		}
 		else
 		{

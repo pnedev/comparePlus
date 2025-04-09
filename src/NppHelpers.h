@@ -53,7 +53,7 @@ constexpr int MARKER_MASK_ADDED			=	(1 << MARKER_ADDED_LINE)	|	(1 << MARKER_ADDE
 constexpr int MARKER_MASK_ADDED_LOCAL	=	(1 << MARKER_ADDED_LINE)	|	(1 << MARKER_ADDED_LOCAL_SYMBOL);
 constexpr int MARKER_MASK_REMOVED		=	(1 << MARKER_REMOVED_LINE)	|	(1 << MARKER_REMOVED_SYMBOL);
 constexpr int MARKER_MASK_REMOVED_LOCAL	=	(1 << MARKER_REMOVED_LINE)	|	(1 << MARKER_REMOVED_LOCAL_SYMBOL);
-constexpr int MARKER_MASK_MOVED_LINE	=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_LINE_SYMBOL);
+constexpr int MARKER_MASK_MOVED_SINGLE	=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_LINE_SYMBOL);
 constexpr int MARKER_MASK_MOVED_BEGIN	=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_BLOCK_BEGIN_SYMBOL);
 constexpr int MARKER_MASK_MOVED_MID		=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_BLOCK_MID_SYMBOL);
 constexpr int MARKER_MASK_MOVED_END		=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVED_BLOCK_END_SYMBOL);
@@ -65,19 +65,16 @@ constexpr int MARKER_MASK_MOVED			=	(1 << MARKER_MOVED_LINE)	|	(1 << MARKER_MOVE
 constexpr int MARKER_MASK_BLANK			=	(1 << MARKER_BLANK);
 constexpr int MARKER_MASK_ARROW			=	(1 << MARKER_ARROW_SYMBOL);
 
-constexpr int MARKER_MASK_DIFF_LINE		=	(1 << MARKER_CHANGED_LINE) |
-											(1 << MARKER_ADDED_LINE) |
-											(1 << MARKER_REMOVED_LINE);
-
 constexpr int MARKER_MASK_NEW_LINE		=	(1 << MARKER_ADDED_LINE) |
 											(1 << MARKER_REMOVED_LINE);
 
 constexpr int MARKER_MASK_CHANGED_LINE	=	(1 << MARKER_CHANGED_LINE);
 
-constexpr int MARKER_MASK_LINE			=	(1 << MARKER_CHANGED_LINE) |
-											(1 << MARKER_ADDED_LINE) |
-											(1 << MARKER_REMOVED_LINE) |
-											(1 << MARKER_MOVED_LINE);
+constexpr int MARKER_MASK_MOVED_LINE	=	(1 << MARKER_MOVED_LINE);
+
+constexpr int MARKER_MASK_DIFF_LINE		=	MARKER_MASK_NEW_LINE | MARKER_MASK_CHANGED_LINE;
+
+constexpr int MARKER_MASK_LINE			=	MARKER_MASK_DIFF_LINE | MARKER_MASK_MOVED_LINE;
 
 constexpr int MARKER_MASK_SYMBOL		=	(1 << MARKER_CHANGED_SYMBOL) |
 											(1 << MARKER_CHANGED_LOCAL_SYMBOL) |
@@ -751,7 +748,7 @@ void setMarkers(int view, intptr_t startLine, const std::vector<int> &markers);
 void unhideAllLines(int view);
 void unhideLinesInRange(int view, intptr_t line, intptr_t length);
 void hideLinesOutsideRange(int view, intptr_t startLine, intptr_t endLine);
-void hideUnmarkedLines(int view, int markMask);
+void hideLines(int view, int hideMarkMask, bool hideUnmarked);
 
 bool isAdjacentAnnotation(int view, intptr_t line, bool down);
 bool isAdjacentAnnotationVisible(int view, intptr_t line, bool down);

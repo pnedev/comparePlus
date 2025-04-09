@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2009
- * Copyright (C)2017-2022 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -527,7 +527,8 @@ void NavDialog::setPos(int x, int y)
 	{
 		::SetFocus(getView(currentView->m_view));
 
-		if (Settings.ShowOnlyDiffs || Settings.ShowOnlySelections)
+		if (Settings.HideMatches || Settings.HideNewLines || Settings.HideChangedLines || Settings.HideMovedLines ||
+				Settings.ShowOnlySelections)
 			gotoClosestUnhiddenLine(currentView->m_view, currentLine);
 		else
 			CallScintilla(currentView->m_view, SCI_SETEMPTYSELECTION,

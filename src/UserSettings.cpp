@@ -1,6 +1,6 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
- * Copyright (C)2017-2021 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,8 +50,11 @@ const TCHAR UserSettings::ignoreRegexSetting[]				= TEXT("ignore_regex");
 const TCHAR UserSettings::invertRegexSetting[]				= TEXT("invert_regex");
 const TCHAR UserSettings::inclRegexNomatchLinesSetting[]	= TEXT("incl_regex_nomatch_lines");
 const TCHAR UserSettings::ignoreRegexStrSetting[]			= TEXT("ignore_regex_string");
+const TCHAR UserSettings::hideMatchesSetting[]				= TEXT("hide_matches");
+const TCHAR UserSettings::hideNewLinesSetting[]				= TEXT("hide_added_removed_lines");
+const TCHAR UserSettings::hideChangedLinesSetting[]			= TEXT("hide_changed_lines");
+const TCHAR UserSettings::hideMovedLinesSetting[]			= TEXT("hide_moved_lines");
 const TCHAR UserSettings::showOnlySelSetting[]				= TEXT("show_only_selections");
-const TCHAR UserSettings::showOnlyDiffSetting[]				= TEXT("show_only_diffs");
 const TCHAR UserSettings::navBarSetting[]					= TEXT("navigation_bar");
 
 const TCHAR UserSettings::reCompareOnChangeSetting[]		= TEXT("recompare_on_change");
@@ -88,7 +91,7 @@ const TCHAR UserSettings::compareTBSetting[]				= TEXT("compare_tb");
 const TCHAR UserSettings::compareSelTBSetting[]				= TEXT("compare_selection_tb");
 const TCHAR UserSettings::clearCompareTBSetting[]			= TEXT("clear_compare_tb");
 const TCHAR UserSettings::navigationTBSetting[]				= TEXT("navigation_tb");
-const TCHAR UserSettings::showOnlyDiffsTBSetting[]			= TEXT("show_only_diffs_tb");
+const TCHAR UserSettings::diffsFilterTBSetting[]			= TEXT("diffs_filter_tb");
 const TCHAR UserSettings::navBarTBSetting[]					= TEXT("nav_bar_tb");
 
 
@@ -140,11 +143,14 @@ void UserSettings::load()
 
 	IgnoreRegexStr = buf;
 
-	ShowOnlyDiffs		= ::GetPrivateProfileInt(mainSection, showOnlyDiffSetting,			0, iniFile) != 0;
+	HideMatches			= ::GetPrivateProfileInt(mainSection, hideMatchesSetting,			0, iniFile) != 0;
+	HideNewLines		= ::GetPrivateProfileInt(mainSection, hideNewLinesSetting,			0, iniFile) != 0;
+	HideChangedLines	= ::GetPrivateProfileInt(mainSection, hideChangedLinesSetting,		0, iniFile) != 0;
+	HideMovedLines		= ::GetPrivateProfileInt(mainSection, hideMovedLinesSetting,		0, iniFile) != 0;
 	ShowOnlySelections	= ::GetPrivateProfileInt(mainSection, showOnlySelSetting,			1, iniFile) != 0;
-	UseNavBar			= ::GetPrivateProfileInt(mainSection, navBarSetting,				1, iniFile) != 0;
 
-	RecompareOnChange	= ::GetPrivateProfileInt(mainSection, reCompareOnChangeSetting,	1, iniFile) != 0;
+	UseNavBar			= ::GetPrivateProfileInt(mainSection, navBarSetting,				1, iniFile) != 0;
+	RecompareOnChange	= ::GetPrivateProfileInt(mainSection, reCompareOnChangeSetting,		1, iniFile) != 0;
 
 	StatusInfo = static_cast<StatusType>(::GetPrivateProfileInt(mainSection, statusInfoSetting,
 			DEFAULT_STATUS_INFO, iniFile));
@@ -201,8 +207,8 @@ void UserSettings::load()
 			DEFAULT_CLEAR_COMPARE_TB, iniFile) != 0;
 	NavigationTB		= ::GetPrivateProfileInt(toolbarSection, navigationTBSetting,
 			DEFAULT_NAVIGATION_TB, iniFile) != 0;
-	ShowOnlyDiffsTB		= ::GetPrivateProfileInt(toolbarSection, showOnlyDiffsTBSetting,
-			DEFAULT_SHOW_ONLY_DIFFS_TB, iniFile) != 0;
+	DiffsFilterTB		= ::GetPrivateProfileInt(toolbarSection, diffsFilterTBSetting,
+			DEFAULT_DIFFS_FILTER_TB, iniFile) != 0;
 	NavBarTB			= ::GetPrivateProfileInt(toolbarSection, navBarTBSetting,
 			DEFAULT_NAV_BAR_TB, iniFile) != 0;
 
@@ -302,8 +308,14 @@ void UserSettings::save()
 			InclRegexNomatchLines ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreRegexStrSetting,
 			IgnoreRegexStr.c_str(), iniFile);
-	::WritePrivateProfileString(mainSection, showOnlyDiffSetting,
-			ShowOnlyDiffs ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, hideMatchesSetting,
+			HideMatches ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, hideNewLinesSetting,
+			HideNewLines ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, hideChangedLinesSetting,
+			HideChangedLines ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, hideMovedLinesSetting,
+			HideMovedLines ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, showOnlySelSetting,
 			ShowOnlySelections ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, navBarSetting,
@@ -380,8 +392,8 @@ void UserSettings::save()
 			ClearCompareTB ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(toolbarSection, navigationTBSetting,
 			NavigationTB ? TEXT("1") : TEXT("0"), iniFile);
-	::WritePrivateProfileString(toolbarSection, showOnlyDiffsTBSetting,
-			ShowOnlyDiffsTB ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(toolbarSection, diffsFilterTBSetting,
+			DiffsFilterTB ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(toolbarSection, navBarTBSetting,
 			NavBarTB ? TEXT("1") : TEXT("0"), iniFile);
 

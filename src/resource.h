@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2022-2024 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2022-2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,11 +23,11 @@
 #define TO_STR(X)				PARAM_TO_STR(X)
 
 
-#define VER_COPYRIGHT			"Copyright (C) 2024\0"
+#define VER_COPYRIGHT			"Copyright (C) 2025\0"
 
-#define PLUGIN_VERSION			1.2.0
-#define VER_FILEVERSION			1,2,0,0
-#define IS_PRERELEASE			0
+#define PLUGIN_VERSION			2.0.0
+#define VER_FILEVERSION			2,0,0,0
+#define IS_PRERELEASE			1
 
 #if (IS_PRERELEASE == 1)
 #define VER_PRERELEASE	VS_FF_PRERELEASE
@@ -55,7 +55,8 @@
 #define IDD_COLOR_POPUP					102
 #define IDD_SETTINGS_DIALOG				103
 #define IDD_COMPARE_OPTIONS_DIALOG		104
-#define IDD_NAV_DIALOG					105
+#define IDD_VISUAL_FILTERS_DIALOG		105
+#define IDD_NAV_DIALOG					106
 
 #define IDB_DOCKING_ICON				115
 
@@ -68,7 +69,7 @@
 #define IDB_LAST						126
 #define IDB_PREV						127
 #define IDB_NEXT						128
-#define IDB_DIFFS_ONLY					129
+#define IDB_DIFFS_FILTERS				129
 #define IDB_NAVBAR						130
 
 #define IDB_SETFIRST_FL					140
@@ -80,7 +81,7 @@
 #define IDB_LAST_FL						146
 #define IDB_PREV_FL						147
 #define IDB_NEXT_FL						148
-#define IDB_DIFFS_ONLY_FL				149
+#define IDB_DIFFS_FILTERS_FL			149
 #define IDB_NAVBAR_FL					150
 
 #define IDB_SETFIRST_FL_DM				160
@@ -92,7 +93,7 @@
 #define IDB_LAST_FL_DM					166
 #define IDB_PREV_FL_DM					167
 #define IDB_NEXT_FL_DM					168
-#define IDB_DIFFS_ONLY_FL_DM			169
+#define IDB_DIFFS_FILTERS_FL_DM			169
 #define IDB_NAVBAR_FL_DM				170
 
 #define IDC_ABOUT_CLOSE_BUTTON			1001
@@ -138,7 +139,7 @@
 #define IDC_COMPARE_SELECTIONS_TB		1051
 #define IDC_CLEAR_COMPARE_TB			1052
 #define IDC_NAVIGATION_TB				1053
-#define IDC_SHOW_ONLY_DIFFS_TB			1054
+#define IDC_DIFFS_FILTERS_TB			1054
 #define IDC_NAV_BAR_TB					1055
 
 #define IDC_DETECT_MOVES				1070
@@ -156,6 +157,13 @@
 #define IDC_REGEX_MODE_MATCH			1082
 #define IDC_REGEX_INCL_NOMATCH_LINES	1083
 
+#define IDC_HIDE_MATCHES				1090
+#define IDC_HIDE_ALL_DIFFS				1091
+#define IDC_HIDE_NEW_LINES				1092
+#define IDC_HIDE_CHANGED_LINES			1093
+#define IDC_HIDE_MOVED_LINES			1094
+#define IDC_SHOW_ONLY_SELECTIONS		1095
+
 #define IDC_STATIC						-1
 
 #define COLOR_POPUP_OK					10000
@@ -165,7 +173,7 @@
 //
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        200
+#define _APS_NEXT_RESOURCE_VALUE        220
 #define _APS_NEXT_COMMAND_VALUE         20001
 #define _APS_NEXT_CONTROL_VALUE         1100
 #define _APS_NEXT_SYMED_VALUE           110
