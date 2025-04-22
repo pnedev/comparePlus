@@ -291,7 +291,8 @@ enum HideFlags_t
 	HIDE_NEW_LINES = 1 << 1,
 	HIDE_CHANGED_LINES = 1 << 2,
 	HIDE_MOVED_LINES = 1 << 3,
-	HIDE_OUTSIDE_SELECTIONS = 1 << 4
+	HIDE_OUTSIDE_SELECTIONS = 1 << 4,
+	FORCE_REHIDING = 1 << 31
 };
 
 
@@ -1920,7 +1921,7 @@ intptr_t getAlignmentLine(const AlignmentInfo_t &alignInfo, int view, intptr_t l
 }
 
 
-void updateViewsHideState(CompareList_t::iterator& cmpPair)
+bool updateViewsHideState(CompareList_t::iterator& cmpPair)
 {
 	unsigned currentHideFlags = NO_HIDE;
 
@@ -1936,7 +1937,7 @@ void updateViewsHideState(CompareList_t::iterator& cmpPair)
 		currentHideFlags |= HIDE_OUTSIDE_SELECTIONS;
 
 	if (cmpPair->hideFlags == currentHideFlags)
-		return;
+		return false;
 
 	unhideAllLines(MAIN_VIEW);
 	unhideAllLines(SUB_VIEW);
@@ -1965,12 +1966,20 @@ void updateViewsHideState(CompareList_t::iterator& cmpPair)
 	}
 
 	cmpPair->hideFlags = currentHideFlags;
+
+	return true;
 }
 
 
 bool isAlignmentNeeded(int view, CompareList_t::iterator& cmpPair)
 {
-	updateViewsHideState(cmpPair);
+	if (updateViewsHideState(cmpPair))
+	{
+		CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
+		CallScintilla(SUB_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
+
+		return true;
+	}
 
 	const AlignmentInfo_t& alignmentInfo = cmpPair->summary.alignmentInfo;
 
@@ -2070,7 +2079,11 @@ bool isAlignmentNeeded(int view, CompareList_t::iterator& cmpPair)
 
 void alignDiffs(CompareList_t::iterator& cmpPair)
 {
-	updateViewsHideState(cmpPair);
+	if (updateViewsHideState(cmpPair))
+	{
+		CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
+		CallScintilla(SUB_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
+	}
 
 	const AlignmentInfo_t& alignmentInfo = cmpPair->summary.alignmentInfo;
 
@@ -2374,6 +2387,9 @@ void doAlignment()
 				TEXT("to make sure compare results are valid!"),
 				PLUGIN_NAME, MB_ICONEXCLAMATION);
 	}
+
+	::UpdateWindow(getView(MAIN_VIEW));
+	::UpdateWindow(getView(SUB_VIEW));
 }
 
 
@@ -3588,9 +3604,6 @@ void OpenVisualFiltersDlg()
 
 		ViewLocation loc(view, currentLine);
 
-		CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
-		CallScintilla(SUB_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
-
 		alignDiffs(cmpPair);
 
 		loc.restore(Settings.FollowingCaret);
@@ -4005,20 +4018,10 @@ void comparedFileActivated()
 	setCompareView(MAIN_VIEW, Settings.colors().blank, Settings.colors().caret_line_transparency);
 	setCompareView(SUB_VIEW, Settings.colors().blank, Settings.colors().caret_line_transparency);
 
-	if (Settings.HideMatches || Settings.HideNewLines || Settings.HideChangedLines || Settings.HideMovedLines ||
-		Settings.ShowOnlySelections)
-	{
-		CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
+	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
 
-		if (cmpPair != compareList.end())
-		{
-			ScopedIncrementerInt incr(notificationsLock);
-
-			cmpPair->hideFlags = NO_HIDE;
-
-			alignDiffs(cmpPair);
-		}
-	}
+	if (cmpPair != compareList.end())
+		cmpPair->hideFlags = FORCE_REHIDING;
 }
 
 
@@ -4487,10 +4490,8 @@ inline void onSciPaint()
 }
 
 
-void onSciUpdateUI(HWND view)
+inline void onSciUpdateUI(HWND view)
 {
-	ScopedIncrementerInt incr(notificationsLock);
-
 	LOGD(LOG_NOTIF, "onSciUpdateUI()\n");
 
 	storedLocation = std::make_unique<ViewLocation>(getViewId(view));
@@ -4507,6 +4508,12 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 {
 	if (keyMods & SCMOD_ALT)
 		return;
+
+	if (Settings.HideNewLines || Settings.HideChangedLines || Settings.HideMovedLines)
+	{
+		::MessageBox(nppData._nppHandle, TEXT("Operation not possible while diffs are hidden."), PLUGIN_NAME, MB_OK);
+		return;
+	}
 
 	const int viewId = getViewId(view);
 
@@ -5116,6 +5123,9 @@ void onSciModified(SCNotification* notifyCode)
 				// Leave bigger delay before re-comparing if change is on single line because the user might be typing
 				// and we should try to avoid interrupting / interfering
 				cmpPair->autoUpdateDelay = 1500;
+
+			if (!storedLocation)
+				storedLocation = std::make_unique<ViewLocation>(view);
 
 			return;
 		}
