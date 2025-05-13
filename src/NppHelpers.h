@@ -457,6 +457,18 @@ inline intptr_t getLineEnd(int view, intptr_t line)
 }
 
 
+inline intptr_t getVisibleFromDocLine(int view, intptr_t line)
+{
+	return CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0);
+}
+
+
+inline intptr_t getDocLineFromVisible(int view, intptr_t line)
+{
+	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE, line, 0);
+}
+
+
 inline intptr_t getCurrentLine(int view)
 {
 	return CallScintilla(view, SCI_LINEFROMPOSITION, CallScintilla(view, SCI_GETCURRENTPOS, 0, 0), 0);
@@ -465,7 +477,7 @@ inline intptr_t getCurrentLine(int view)
 
 inline intptr_t getCurrentVisibleLine(int view)
 {
-	return CallScintilla(view, SCI_VISIBLEFROMDOCLINE, getCurrentLine(view), 0);
+	return getVisibleFromDocLine(view, getCurrentLine(view));
 }
 
 
@@ -477,7 +489,7 @@ inline intptr_t getFirstVisibleLine(int view)
 
 inline intptr_t getFirstLine(int view)
 {
-	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE, getFirstVisibleLine(view), 0);
+	return getDocLineFromVisible(view, getFirstVisibleLine(view));
 }
 
 
@@ -489,24 +501,36 @@ inline intptr_t getLastVisibleLine(int view)
 
 inline intptr_t getLastLine(int view)
 {
-	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE, getLastVisibleLine(view), 0);
+	return getDocLineFromVisible(view, getLastVisibleLine(view));
+}
+
+
+inline intptr_t getCenterVisibleLine(int view)
+{
+	return (getFirstVisibleLine(view) + (CallScintilla(view, SCI_LINESONSCREEN, 0, 0) / 2));
+}
+
+
+inline intptr_t getCenterLine(int view)
+{
+	return getDocLineFromVisible(view, getCenterVisibleLine(view));
 }
 
 
 inline intptr_t getUnhiddenLine(int view, intptr_t line)
 {
-	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE, CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0), 0);
+	return getDocLineFromVisible(view, getVisibleFromDocLine(view, line));
 }
 
 
 inline intptr_t getPreviousUnhiddenLine(int view, intptr_t line)
 {
-	intptr_t visibleLine = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - 1;
+	intptr_t visibleLine = getVisibleFromDocLine(view, line) - 1;
 
 	if (visibleLine < 0)
 		visibleLine = 0;
 
-	return CallScintilla(view, SCI_DOCLINEFROMVISIBLE, visibleLine, 0);
+	return getDocLineFromVisible(view, visibleLine);
 }
 
 
@@ -548,7 +572,7 @@ inline intptr_t getLineAnnotation(int view, intptr_t line)
 
 inline intptr_t getFirstVisibleLineOffset(int view, intptr_t line)
 {
-	return (CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - getFirstVisibleLine(view));
+	return (getVisibleFromDocLine(view, line) - getFirstVisibleLine(view));
 }
 
 
@@ -613,7 +637,7 @@ inline bool isLineFoldedFoldPoint(int view, intptr_t line)
 
 inline bool isLineVisible(int view, intptr_t line)
 {
-	intptr_t lineStart	= CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0);
+	intptr_t lineStart	= getVisibleFromDocLine(view, line);
 	intptr_t lineEnd	= lineStart + getWrapCount(view, line) - 1;
 
 	return (getFirstVisibleLine(view) <= lineEnd && getLastVisibleLine(view) >= lineStart);

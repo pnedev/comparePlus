@@ -139,8 +139,7 @@ bool ViewLocation::restore(bool ensureCaretVisisble) const
 	if (_view < 0)
 		return false;
 
-	const intptr_t firstVisibleLine =
-			CallScintilla(_view, SCI_VISIBLEFROMDOCLINE, _firstLine, 0) - _visibleLineOffset;
+	const intptr_t firstVisibleLine = getVisibleFromDocLine(_view, _firstLine) - _visibleLineOffset;
 
 	CallScintilla(_view, SCI_SETFIRSTVISIBLELINE, firstVisibleLine, 0);
 
@@ -149,7 +148,7 @@ bool ViewLocation::restore(bool ensureCaretVisisble) const
 
 	LOGD(LOG_SYNC, "Restore " + std::string(_view == MAIN_VIEW ? "MAIN" : "SUB") +
 			" view location, first visible doc line: " +
-			std::to_string(CallScintilla(_view, SCI_DOCLINEFROMVISIBLE, firstVisibleLine, 0) + 1) + "\n");
+			std::to_string(getDocLineFromVisible(_view, firstVisibleLine) + 1) + "\n");
 
 	return true;
 }
@@ -261,8 +260,7 @@ intptr_t otherViewMatchingLine(int view, intptr_t line, intptr_t adjustment, boo
 	const int		otherView		= getOtherViewId(view);
 	const intptr_t	otherLineCount	= CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0);
 
-	const intptr_t otherLine = CallScintilla(otherView, SCI_DOCLINEFROMVISIBLE,
-			CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) + adjustment, 0);
+	const intptr_t otherLine = getDocLineFromVisible(otherView, getVisibleFromDocLine(view, line) + adjustment);
 
 	if (check && (otherLine < otherLineCount) && (otherViewMatchingLine(otherView, otherLine, -adjustment) != line))
 		return -1;
@@ -370,8 +368,7 @@ void blinkRange(int view, intptr_t startPos, intptr_t endPos)
 
 void centerAt(int view, intptr_t line)
 {
-	const intptr_t linesOnScreen = CallScintilla(view, SCI_LINESONSCREEN, 0, 0);
-	const intptr_t firstVisible = CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - linesOnScreen / 2;
+	const intptr_t firstVisible = getVisibleFromDocLine(view, line) - CallScintilla(view, SCI_LINESONSCREEN, 0, 0) / 2;
 
 	CallScintilla(view, SCI_SETFIRSTVISIBLELINE, firstVisible, 0);
 }
@@ -615,38 +612,35 @@ void clearMarks(int view, intptr_t line)
 
 void clearMarks(int view, intptr_t startLine, intptr_t length)
 {
-	intptr_t endLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+	intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
 
-	if (startLine + length < endLine)
-		endLine = startLine + length;
+	if (startLine + length < linesCount)
+		linesCount = startLine + length;
 
 	const intptr_t startPos = getLineStart(view, startLine);
 
-	clearChangedIndicator(view, startPos, getLineEnd(view, endLine - 1) - startPos);
+	clearChangedIndicator(view, startPos, getLineEnd(view, linesCount - 1) - startPos);
 
-	for (; startLine < endLine; ++startLine)
+	for (; startLine < linesCount; ++startLine)
 		clearMarks(view, startLine);
 }
 
 
 intptr_t getPrevUnmarkedLine(int view, intptr_t startLine, int markMask)
 {
-	intptr_t prevUnmarkedLine = startLine;
+	for (; (startLine >= 0) && isLineMarked(view, startLine, markMask); --startLine);
 
-	for (; (prevUnmarkedLine >= 0) && isLineMarked(view, prevUnmarkedLine, markMask); --prevUnmarkedLine);
-
-	return prevUnmarkedLine;
+	return startLine;
 }
 
 
 intptr_t getNextUnmarkedLine(int view, intptr_t startLine, int markMask)
 {
-	const intptr_t endLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
-	intptr_t nextUnmarkedLine = startLine;
+	const intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
 
-	for (; (nextUnmarkedLine <= endLine) && isLineMarked(view, nextUnmarkedLine, markMask); ++nextUnmarkedLine);
+	for (; (startLine < linesCount) && isLineMarked(view, startLine, markMask); ++startLine);
 
-	return ((nextUnmarkedLine <= endLine) ? nextUnmarkedLine : -1);
+	return ((startLine < linesCount) ? startLine : -1);
 }
 
 
@@ -834,7 +828,7 @@ bool isAdjacentAnnotationVisible(int view, intptr_t line, bool down)
 		if (!isLineAnnotated(view, line))
 			return false;
 
-		if (CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) + getWrapCount(view, line) > getLastVisibleLine(view))
+		if (getVisibleFromDocLine(view, line) + getWrapCount(view, line) > getLastVisibleLine(view))
 			return false;
 	}
 	else
@@ -842,7 +836,7 @@ bool isAdjacentAnnotationVisible(int view, intptr_t line, bool down)
 		if (!line || !isLineAnnotated(view, getPreviousUnhiddenLine(view, line)))
 			return false;
 
-		if (CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0) - 1 < getFirstVisibleLine(view))
+		if (getVisibleFromDocLine(view, line) - 1 < getFirstVisibleLine(view))
 			return false;
 	}
 

@@ -130,10 +130,10 @@ void NavDialog::NavView::paint(HDC hDC, int xPos, int yPos, int width, int heigh
 	// Fill view
 	::StretchBlt(hDC, r.left + 1, r.top + 1, width, h, m_hViewDC, 0, hOffset, 1, h / hScale, SRCCOPY);
 
-	intptr_t firstVisible	= CallScintilla(m_view, SCI_DOCLINEFROMVISIBLE, m_firstVisible, 0);
+	intptr_t firstVisible	= getDocLineFromVisible(m_view, m_firstVisible);
 	intptr_t lastVisible	= m_firstVisible + CallScintilla(m_view, SCI_LINESONSCREEN, 0, 0);
 
-	lastVisible = CallScintilla(m_view, SCI_DOCLINEFROMVISIBLE, lastVisible, 0);
+	lastVisible = getDocLineFromVisible(m_view, lastVisible);
 
 	if (firstVisible == lastVisible)
 		++lastVisible;
@@ -546,7 +546,7 @@ void NavDialog::setPos(int x, int y)
 void NavDialog::onMouseWheel(int rolls)
 {
 	const intptr_t linesOnScreen	= CallScintilla(m_syncView->m_view, SCI_LINESONSCREEN, 0, 0);
-	const intptr_t lastVisible		= CallScintilla(m_syncView->m_view, SCI_VISIBLEFROMDOCLINE, m_syncView->m_lines, 0);
+	const intptr_t lastVisible		= getVisibleFromDocLine(m_syncView->m_view, m_syncView->m_lines);
 
 	intptr_t firstVisible = m_syncView->m_firstVisible - rolls * linesOnScreen;
 
@@ -563,16 +563,14 @@ int NavDialog::updateScroll()
 {
 	if (m_hScroll && ::IsWindowVisible(m_hScroll))
 	{
-		const intptr_t firstVisible1 =
-				CallScintilla(m_view[0].m_view, SCI_DOCLINEFROMVISIBLE, m_view[0].m_firstVisible, 0);
-		const intptr_t firstVisible2 =
-				CallScintilla(m_view[1].m_view, SCI_DOCLINEFROMVISIBLE, m_view[1].m_firstVisible, 0);
+		const intptr_t firstVisible1 = getDocLineFromVisible(m_view[0].m_view, m_view[0].m_firstVisible);
+		const intptr_t firstVisible2 = getDocLineFromVisible(m_view[1].m_view, m_view[1].m_firstVisible);
 
 		intptr_t lastVisible1 = m_view[0].m_firstVisible + CallScintilla(m_view[0].m_view, SCI_LINESONSCREEN, 0, 0);
 		intptr_t lastVisible2 = m_view[1].m_firstVisible + CallScintilla(m_view[1].m_view, SCI_LINESONSCREEN, 0, 0);
 
-		lastVisible1 = CallScintilla(m_view[0].m_view, SCI_DOCLINEFROMVISIBLE, lastVisible1, 0);
-		lastVisible2 = CallScintilla(m_view[1].m_view, SCI_DOCLINEFROMVISIBLE, lastVisible2, 0);
+		lastVisible1 = getDocLineFromVisible(m_view[0].m_view, lastVisible1);
+		lastVisible2 = getDocLineFromVisible(m_view[1].m_view, lastVisible2);
 
 		const intptr_t firstVisible	= std::min(firstVisible1, firstVisible2);
 		const intptr_t lastVisible	= std::max(lastVisible1, lastVisible2);

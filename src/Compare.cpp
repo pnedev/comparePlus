@@ -23,9 +23,9 @@
 #include <memory>
 #include <utility>
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cwchar>
-#include <ctime>
 
 #if defined(__MINGW32__) && !defined(_GLIBCXX_HAS_GTHREADS)
 #include "../mingw-std-threads/mingw.thread.h"
@@ -51,6 +51,19 @@
 #include "Engine.h"
 #include "NppInternalDefines.h"
 #include "resource.h"
+
+
+#ifndef NDEBUG
+
+#pragma message("Compiling in debug mode.")
+
+#endif // NDEBUG
+
+#ifdef DLOG
+
+#pragma message("Compiling with debug log messages.")
+
+#endif // DLOG
 
 
 const TCHAR PLUGIN_NAME[] = TEXT("ComparePlus");
@@ -292,7 +305,7 @@ enum HideFlags_t
 	HIDE_CHANGED_LINES = 1 << 2,
 	HIDE_MOVED_LINES = 1 << 3,
 	HIDE_OUTSIDE_SELECTIONS = 1 << 4,
-	FORCE_REHIDING = 1 << 31
+	FORCE_REHIDING = 1 << 5
 };
 
 
@@ -535,8 +548,9 @@ int notificationsLock = 0;
 std::unique_ptr<ViewLocation> storedLocation = nullptr;
 std::vector<int> copiedSectionMarks;
 
-// Re-compare flags
-bool goToFirst = false;
+// Compare/Re-compare flags
+std::chrono::milliseconds firstUpdateGuardDuration {0};
+std::chrono::steady_clock::time_point prevUpdateTime;
 bool selectionAutoRecompare = false;
 
 LRESULT currentlyActiveBuffID = 0;
@@ -965,9 +979,8 @@ void ComparedFile::restore(bool unhideLines) const
 	const int view = getCurrentViewId();
 
 	intptr_t biasLine = getFirstLine(view);
-	biasLine = CallScintilla(view, SCI_DOCLINEFROMVISIBLE,
-			getFirstVisibleLine(view) + getLineAnnotation(view, biasLine) +
-			getWrapCount(view, biasLine), 0);
+	biasLine = getDocLineFromVisible(view, getFirstVisibleLine(view) + getLineAnnotation(view, biasLine) +
+			getWrapCount(view, biasLine));
 
 	ViewLocation loc(view, biasLine);
 
@@ -1546,8 +1559,8 @@ std::pair<int, intptr_t> findNextChange(intptr_t mainStartLine, intptr_t subStar
 	}
 	else if (otherLine >= 0)
 	{
-		const intptr_t visibleLine		= CallScintilla(view, SCI_VISIBLEFROMDOCLINE, line, 0);
-		const intptr_t otherVisibleLine	= CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE, otherLine, 0);
+		const intptr_t visibleLine		= getVisibleFromDocLine(view, line);
+		const intptr_t otherVisibleLine	= getVisibleFromDocLine(otherView, otherLine);
 
 		const bool switchViews = down ? (otherVisibleLine < visibleLine) : (otherVisibleLine > visibleLine);
 
@@ -1757,9 +1770,7 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 
 inline std::pair<int, intptr_t> jumpToFirstChange(bool doNotBlink = false)
 {
-	std::pair<int, intptr_t> viewLoc = jumpToNextChange(0, 0, true, true, doNotBlink);
-
-	return viewLoc;
+	return jumpToNextChange(0, 0, true, true, doNotBlink);
 }
 
 
@@ -2008,8 +2019,8 @@ bool isAlignmentNeeded(int view, CompareList_t::iterator& cmpPair)
 				continue;
 
 			if ((alignmentInfo[i].main.diffMask != 0) && (alignmentInfo[i].sub.diffMask != 0) &&
-					(CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) !=
-					CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0)))
+					(getVisibleFromDocLine(MAIN_VIEW, alignmentInfo[i].main.line) !=
+					getVisibleFromDocLine(SUB_VIEW, alignmentInfo[i].sub.line)))
 				return true;
 
 			if ((alignmentInfo[i].*pView).line > lastLine)
@@ -2025,8 +2036,8 @@ bool isAlignmentNeeded(int view, CompareList_t::iterator& cmpPair)
 				continue;
 
 			if ((alignmentInfo[i].main.diffMask == alignmentInfo[i].sub.diffMask) &&
-					(CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) !=
-					CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0)))
+					(getVisibleFromDocLine(MAIN_VIEW, alignmentInfo[i].main.line) !=
+					getVisibleFromDocLine(SUB_VIEW, alignmentInfo[i].sub.line)))
 				return true;
 
 			if ((alignmentInfo[i].*pView).line > lastLine)
@@ -2054,9 +2065,9 @@ bool isAlignmentNeeded(int view, CompareList_t::iterator& cmpPair)
 	if (isLineHidden(SUB_VIEW, subEndLine))
 		subEndLine = getPreviousUnhiddenLine(SUB_VIEW, subEndLine);
 
-	const intptr_t mainEndVisible = CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, mainEndLine, 0) +
+	const intptr_t mainEndVisible = getVisibleFromDocLine(MAIN_VIEW, mainEndLine) +
 			getWrapCount(MAIN_VIEW, mainEndLine) - 1;
-	const intptr_t subEndVisible = CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subEndLine, 0) +
+	const intptr_t subEndVisible = getVisibleFromDocLine(SUB_VIEW, subEndLine) +
 			getWrapCount(SUB_VIEW, subEndLine) - 1;
 
 	const intptr_t mismatchLen = std::abs(mainEndVisible - subEndVisible);
@@ -2076,6 +2087,8 @@ bool isAlignmentNeeded(int view, CompareList_t::iterator& cmpPair)
 
 void alignDiffs(CompareList_t::iterator& cmpPair)
 {
+	LOGD(LOG_NOTIF, "Aligning diffs\n");
+
 	if (updateViewsHideState(cmpPair))
 	{
 		CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
@@ -2127,8 +2140,8 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 			break;
 
 		const intptr_t mismatchLen =
-				CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) -
-				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0);
+				getVisibleFromDocLine(MAIN_VIEW, alignmentInfo[i].main.line) -
+				getVisibleFromDocLine(SUB_VIEW, alignmentInfo[i].sub.line);
 
 		if (cmpPair->options.selectionCompare)
 		{
@@ -2196,8 +2209,8 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 			continue;
 
 		const intptr_t mismatchLen =
-				CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].main.line, 0) -
-				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, alignmentInfo[i].sub.line, 0);
+				getVisibleFromDocLine(MAIN_VIEW, alignmentInfo[i].main.line) -
+				getVisibleFromDocLine(SUB_VIEW, alignmentInfo[i].sub.line);
 
 		if (mismatchLen > 0)
 		{
@@ -2221,9 +2234,9 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 	if (isLineHidden(SUB_VIEW, subEndLine))
 		subEndLine = getPreviousUnhiddenLine(SUB_VIEW, subEndLine);
 
-	const intptr_t mainEndVisible	= CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, mainEndLine, 0) +
+	const intptr_t mainEndVisible	= getVisibleFromDocLine(MAIN_VIEW, mainEndLine) +
 			getWrapCount(MAIN_VIEW, mainEndLine) - 1;
-	const intptr_t subEndVisible	= CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, subEndLine, 0) +
+	const intptr_t subEndVisible	= getVisibleFromDocLine(SUB_VIEW, subEndLine) +
 			getWrapCount(SUB_VIEW, subEndLine) - 1;
 
 	const intptr_t mismatchLen		= mainEndVisible - subEndVisible;
@@ -2267,8 +2280,8 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 					getPreviousUnhiddenLine(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first));
 
 			const intptr_t visibleBlockStartMismatch =
-				CallScintilla(MAIN_VIEW, SCI_VISIBLEFROMDOCLINE, cmpPair->options.selections[MAIN_VIEW].first, 0) -
-				CallScintilla(SUB_VIEW, SCI_VISIBLEFROMDOCLINE, cmpPair->options.selections[SUB_VIEW].first, 0);
+				getVisibleFromDocLine(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first) -
+				getVisibleFromDocLine(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first);
 
 			++mainAnnotation;
 			++subAnnotation;
@@ -2309,10 +2322,9 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 }
 
 
-void doAlignment()
+void doAlignment(bool forceAlign = false)
 {
-	const LRESULT			currentBuffId	= getCurrentBuffId();
-	CompareList_t::iterator	cmpPair			= getCompare(currentBuffId);
+	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
 
 	if (cmpPair == compareList.end())
 		return;
@@ -2324,21 +2336,26 @@ void doAlignment()
 		return;
 	}
 
-	bool realign = goToFirst || selectionAutoRecompare;
+	bool goToFirst = (firstUpdateGuardDuration.count() != 0);
+
+	if (goToFirst)
+	{
+		goToFirst = (std::chrono::duration_cast<std::chrono::milliseconds>(
+				std::chrono::steady_clock::now() - prevUpdateTime) < firstUpdateGuardDuration);
+
+		if (!goToFirst)
+			firstUpdateGuardDuration = std::chrono::milliseconds(0);
+	}
+
+	bool realign = forceAlign || selectionAutoRecompare;
+
+	if (!realign)
+		realign = isAlignmentNeeded(storedLocation ? storedLocation->getView() : getCurrentViewId(), cmpPair);
 
 	ScopedIncrementerInt incr(notificationsLock);
 
-	if (!realign)
-	{
-		const int view = storedLocation ? storedLocation->getView() : getCurrentViewId();
-
-		realign = isAlignmentNeeded(view, cmpPair);
-	}
-
 	if (realign)
 	{
-		LOGD(LOG_NOTIF, "Aligning diffs\n");
-
 		if (!storedLocation && !goToFirst)
 			storedLocation = std::make_unique<ViewLocation>(getCurrentViewId());
 
@@ -2351,14 +2368,30 @@ void doAlignment()
 	{
 		LOGD(LOG_NOTIF, "Go to first diff\n");
 
-		goToFirst = false;
+		::UpdateWindow(getView(MAIN_VIEW));
+		::UpdateWindow(getView(SUB_VIEW));
 
 		std::pair<int, intptr_t> viewLoc = jumpToFirstChange(true);
 
-		if (viewLoc.first >= 0)
-			syncViews(viewLoc.first);
+		const int view = (viewLoc.first >= 0) ? viewLoc.first : getCurrentViewId();
 
-		cmpPair->setStatus();
+		if (forceAlign && (getFirstVisibleLine(MAIN_VIEW) == getFirstVisibleLine(SUB_VIEW)))
+		{
+			const int otherView = getOtherViewId(view);
+
+			prevUpdateTime = std::chrono::steady_clock::now();
+
+			// Force initial refresh of the other view
+			CallScintilla(otherView, SCI_SETFIRSTVISIBLELINE, getFirstVisibleLine(otherView) + 1, 0);
+
+			return;
+		}
+		else
+		{
+			syncViews(view);
+
+			cmpPair->setStatus();
+		}
 	}
 	else if (storedLocation)
 	{
@@ -2367,13 +2400,17 @@ void doAlignment()
 
 		syncViews(storedLocation->getView());
 
-		storedLocation = nullptr;
 		cmpPair->setStatus();
 	}
 	else if (cmpPair->options.findUniqueMode)
 	{
 		syncViews(getCurrentViewId());
 	}
+
+	storedLocation = nullptr;
+
+	::UpdateWindow(getView(MAIN_VIEW));
+	::UpdateWindow(getView(SUB_VIEW));
 
 	if (cmpPair->nppReplaceDone)
 	{
@@ -2385,8 +2422,8 @@ void doAlignment()
 				PLUGIN_NAME, MB_ICONEXCLAMATION);
 	}
 
-	::UpdateWindow(getView(MAIN_VIEW));
-	::UpdateWindow(getView(SUB_VIEW));
+	if (goToFirst)
+		prevUpdateTime = std::chrono::steady_clock::now();
 }
 
 
@@ -2731,8 +2768,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	ScopedIncrementerInt incr(notificationsLock);
 
 	// Just to be sure any old state is cleared
+	firstUpdateGuardDuration = std::chrono::milliseconds(0);
 	storedLocation = nullptr;
-	goToFirst = false;
 	copiedSectionMarks.clear();
 
 	temporaryRangeSelect(-1);
@@ -2941,7 +2978,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 	selectionAutoRecompare = autoUpdating && cmpPair->options.selectionCompare;
 
-	time_t startTime = time(0);
+	const auto compareStartTime = std::chrono::steady_clock::now();
 
 	bool filesSha2Differ = false;
 	{
@@ -2966,15 +3003,17 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	cmpPair->nppReplaceDone		= false;
 	cmpPair->manuallyChanged	= false;
 
-	LOGD(LOG_ALL, "COMPARE took " + std::to_string((int)difftime(time(0), startTime)) + " seconds\n");
+	const auto compareDuration =
+		std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - compareStartTime);
+
+	LOGD(LOG_ALL, "COMPARE took " + std::to_string(compareDuration.count()) + " milliseconds\n");
 
 	switch (cmpResult)
 	{
 		case CompareResult::COMPARE_MISMATCH:
 		{
 			// Honour 'Auto Re-compare On Change' user setting only if compare time is less than 5 sec.
-			cmpPair->options.recompareOnChange =
-					cmpPair->options.recompareOnChange && (difftime(time(0), startTime) < 5.0);
+			cmpPair->options.recompareOnChange = cmpPair->options.recompareOnChange && (compareDuration.count() < 5000);
 
 			if (Settings.UseNavBar)
 				showNavBar();
@@ -3001,15 +3040,13 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 					clearSelection(getOtherViewId());
 				}
 
-				goToFirst = true;
+				firstUpdateGuardDuration = std::chrono::milliseconds(300);
+				prevUpdateTime = std::chrono::steady_clock::now();
+
+				doAlignment(true);
 			}
 
 			currentlyActiveBuffID = getCurrentBuffId();
-
-			::UpdateWindow(getView(MAIN_VIEW));
-			::UpdateWindow(getView(SUB_VIEW));
-
-			doAlignment();
 
 			LOGD(LOG_ALL, "COMPARE READY\n");
 		}
@@ -3918,7 +3955,7 @@ void syncViews(int biasView)
 
 	const intptr_t endLine = getPreviousUnhiddenLine(biasView, CallScintilla(biasView, SCI_GETLINECOUNT, 0, 0) - 1);
 	const intptr_t endVisible =
-			CallScintilla(biasView, SCI_VISIBLEFROMDOCLINE, endLine, 0) + getWrapCount(biasView, endLine) +
+			getVisibleFromDocLine(biasView, endLine) + getWrapCount(biasView, endLine) +
 			getLineAnnotation(biasView, endLine);
 
 	intptr_t otherNewFirstVisible = otherFirstVisible;
@@ -3937,7 +3974,7 @@ void syncViews(int biasView)
 		const intptr_t otherEndLine =
 				getPreviousUnhiddenLine(otherView, CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0) - 1);
 		const intptr_t otherEndVisible =
-				CallScintilla(otherView, SCI_VISIBLEFROMDOCLINE, otherEndLine, 0) +
+				getVisibleFromDocLine(otherView, otherEndLine) +
 				getWrapCount(otherView, otherEndLine) + getLineAnnotation(otherView, otherEndLine);
 
 		if (firstVisible > otherEndVisible)
@@ -3962,8 +3999,7 @@ void syncViews(int biasView)
 		::UpdateWindow(getView(otherView));
 
 		LOGD(LOG_SYNC, "Syncing to " + std::string(biasView == MAIN_VIEW ? "MAIN" : "SUB") +
-				" view, visible doc line: " + std::to_string(
-				CallScintilla(biasView, SCI_DOCLINEFROMVISIBLE, firstVisible, 0) + 1) + "\n");
+			" view, visible doc line: " + std::to_string(getDocLineFromVisible(biasView, firstVisible) + 1) + "\n");
 	}
 
 	if (Settings.FollowingCaret && biasView == getCurrentViewId())
@@ -4491,7 +4527,10 @@ inline void onSciUpdateUI(HWND view)
 {
 	LOGD(LOG_NOTIF, "onSciUpdateUI()\n");
 
-	storedLocation = std::make_unique<ViewLocation>(getViewId(view));
+	const int viewId = getViewIdSafe(view);
+
+	if (viewId >= 0)
+		storedLocation = std::make_unique<ViewLocation>(viewId);
 }
 
 
@@ -4512,7 +4551,10 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 		return;
 	}
 
-	const int viewId = getViewId(view);
+	const int viewId = getViewIdSafe(view);
+
+	if (viewId < 0)
+		return;
 
 	if ((keyMods & SCMOD_CTRL) && CallScintilla(viewId, SCI_GETREADONLY, 0, 0))
 		return;
@@ -4604,7 +4646,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 			CallScintilla(viewId, SCI_SETEMPTYSELECTION, startPos, 0);
 
 		if (!isLineVisible(viewId, line))
-			firstVisLine.set(CallScintilla(viewId, SCI_VISIBLEFROMDOCLINE, line, 0));
+			firstVisLine.set(getVisibleFromDocLine(viewId, line));
 
 		if (!cmpPair->options.recompareOnChange)
 		{
@@ -4772,7 +4814,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 			CallScintilla(viewId, SCI_SETEMPTYSELECTION, markedRange.first, 0);
 
 		if (!isLineVisible(viewId, startLine))
-			firstVisLine.set(CallScintilla(viewId, SCI_VISIBLEFROMDOCLINE, startLine, 0));
+			firstVisLine.set(getVisibleFromDocLine(viewId, startLine));
 
 		CallScintilla(viewId, SCI_DELETERANGE, markedRange.first, markedRange.second - markedRange.first);
 
@@ -4849,7 +4891,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 		const intptr_t firstLine = CallScintilla(viewId, SCI_LINEFROMPOSITION, startPos, 0);
 
 		if (!isLineVisible(viewId, firstLine))
-			firstVisLine.set(CallScintilla(viewId, SCI_VISIBLEFROMDOCLINE, firstLine, 0));
+			firstVisLine.set(getVisibleFromDocLine(viewId, firstLine));
 	}
 
 	if (!cmpPair->options.recompareOnChange)
@@ -5208,9 +5250,7 @@ void DelayedActivate::operator()()
 		// unsaved file. We try to distinguish here the reason for the notification - if file is saved then it
 		// seems reloaded and we want to update the compare.
 		if (isCurrentFileSaved())
-		{
 			delayedUpdate.post(30);
-		}
 	}
 }
 
@@ -5500,7 +5540,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 
 		// Vertical scroll sync
 		case SCN_UPDATEUI:
-			if (NppSettings::get().compareMode && !notificationsLock && !storedLocation && !goToFirst &&
+			if (NppSettings::get().compareMode && !notificationsLock && !storedLocation &&
 				!delayedActivation && !delayedClosure && !delayedUpdate &&
 				(notifyCode->updated & (SC_UPDATE_SELECTION | SC_UPDATE_V_SCROLL)))
 			{
