@@ -63,6 +63,7 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 			_ColorComboChanged.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_CHANGED_COLOR));
 			_ColorComboAddHighlight.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_ADD_HIGHLIGHT_COLOR));
 			_ColorComboRemHighlight.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_REM_HIGHLIGHT_COLOR));
+			_ColorComboMovHighlight.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_MOV_HIGHLIGHT_COLOR));
 
 			HWND hCtrl = ::GetDlgItem(_hSelf, IDC_HIGHLIGHT_SPIN_BOX);
 			::SendMessage(hCtrl, EM_SETLIMITTEXT, 3L, 0);
@@ -131,6 +132,7 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 						settings.colors().changed					= DEFAULT_CHANGED_COLOR_DARK;
 						settings.colors().add_highlight				= DEFAULT_HIGHLIGHT_COLOR_DARK;
 						settings.colors().rem_highlight				= DEFAULT_HIGHLIGHT_COLOR_DARK;
+						settings.colors().mov_highlight				= DEFAULT_HIGHLIGHT_MOVED_COLOR_DARK;
 						settings.colors().highlight_transparency	= DEFAULT_HIGHLIGHT_TRANSP_DARK;
 						settings.colors().caret_line_transparency	= DEFAULT_CARET_LINE_TRANSP_DARK;
 					}
@@ -144,6 +146,7 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 						settings.colors().changed					= DEFAULT_CHANGED_COLOR;
 						settings.colors().add_highlight				= DEFAULT_HIGHLIGHT_COLOR;
 						settings.colors().rem_highlight				= DEFAULT_HIGHLIGHT_COLOR;
+						settings.colors().mov_highlight				= DEFAULT_HIGHLIGHT_MOVED_COLOR;
 						settings.colors().highlight_transparency	= DEFAULT_HIGHLIGHT_TRANSP;
 						settings.colors().caret_line_transparency	= DEFAULT_CARET_LINE_TRANSP;
 					}
@@ -185,6 +188,10 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 
 				case IDC_COMBO_REM_HIGHLIGHT_COLOR:
 					_ColorComboRemHighlight.onSelect();
+				break;
+
+				case IDC_COMBO_MOV_HIGHLIGHT_COLOR:
+					_ColorComboMovHighlight.onSelect();
 				break;
 
 				case IDC_ENABLE_TOOLBAR:
@@ -296,6 +303,7 @@ void SettingsDialog::SetParams(UserSettings* settings)
 	_ColorComboChanged.setColor(settings->colors().changed);
 	_ColorComboAddHighlight.setColor(settings->colors().add_highlight);
 	_ColorComboRemHighlight.setColor(settings->colors().rem_highlight);
+	_ColorComboMovHighlight.setColor(settings->colors().mov_highlight);
 
 	if (settings->colors().highlight_transparency < c_Highlight_transp_min)
 		settings->colors().highlight_transparency = c_Highlight_transp_min;
@@ -377,6 +385,7 @@ void SettingsDialog::GetParams()
 	_ColorComboChanged.getColor((LPCOLORREF)&_Settings->colors().changed);
 	_ColorComboAddHighlight.getColor((LPCOLORREF)&_Settings->colors().add_highlight);
 	_ColorComboRemHighlight.getColor((LPCOLORREF)&_Settings->colors().rem_highlight);
+	_ColorComboMovHighlight.getColor((LPCOLORREF)&_Settings->colors().mov_highlight);
 
 	// Get highlight transparency
 	_Settings->colors().highlight_transparency = ::GetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, NULL, FALSE);

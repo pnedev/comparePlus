@@ -1182,13 +1182,14 @@ void ComparedPair::setStatus()
 		if (Settings.StatusInfo == StatusType::COMPARE_OPTIONS)
 		{
 			const bool hasDetectOpts = (!options.findUniqueMode &&
-				(options.detectSubBlockDiffs || options.detectMoves || options.detectCharDiffs));
+					(options.detectSubBlockDiffs || options.detectMoves));
 
 			if (hasDetectOpts)
 			{
-				const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Detect:%s%s%s"),
+				const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Detect:%s%s%s%s"),
 						options.detectMoves			? TEXT(" Moves,")			: TEXT(""),
-						options.detectSubBlockDiffs	? TEXT(" SubBlock Diffs,")	: TEXT(""),
+						options.detectSubBlockDiffs	? TEXT(" Sub-block Diffs,")	: TEXT(""),
+						options.detectSubLineMoves	? TEXT(" Sub-line Moves,")	: TEXT(""),
 						options.detectCharDiffs		? TEXT(" Char Diffs,")		: TEXT("")) - 1;
 
 				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
@@ -2893,7 +2894,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		cmpPair->options.neverMarkIgnored			= Settings.NeverMarkIgnored;
 		cmpPair->options.detectMoves				= Settings.DetectMoves;
 		cmpPair->options.detectSubBlockDiffs		= Settings.DetectSubBlockDiffs;
-		cmpPair->options.detectCharDiffs			= Settings.DetectCharDiffs;
+		cmpPair->options.detectSubLineMoves			= Settings.DetectSubBlockDiffs && Settings.DetectSubLineMoves;
+		cmpPair->options.detectCharDiffs			= Settings.DetectSubBlockDiffs && Settings.DetectCharDiffs;
 		cmpPair->options.ignoreEmptyLines			= Settings.IgnoreEmptyLines;
 		cmpPair->options.ignoreFoldedLines			= Settings.IgnoreFoldedLines;
 		cmpPair->options.ignoreHiddenLines			= Settings.IgnoreHiddenLines;
@@ -3503,13 +3505,14 @@ void ActiveCompareSummary()
 	}
 
 	const bool hasDetectOpts = (!cmpPair->options.findUniqueMode &&
-		(cmpPair->options.detectSubBlockDiffs || cmpPair->options.detectMoves || cmpPair->options.detectCharDiffs));
+			(cmpPair->options.detectSubBlockDiffs || cmpPair->options.detectMoves));
 
 	if (hasDetectOpts)
 	{
 		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Detect:%s%s%s"),
 				cmpPair->options.detectMoves			? TEXT(" Moves,")			: TEXT(""),
-				cmpPair->options.detectSubBlockDiffs	? TEXT(" SubBlock Diffs,")	: TEXT(""),
+				cmpPair->options.detectSubBlockDiffs	? TEXT(" Sub-block Diffs,")	: TEXT(""),
+				cmpPair->options.detectSubLineMoves		? TEXT(" Sub-line Moves,")	: TEXT(""),
 				cmpPair->options.detectCharDiffs		? TEXT(" Char Diffs,")		: TEXT("")) - 1;
 
 		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);

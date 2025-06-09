@@ -169,7 +169,7 @@ struct diffLine
 	diffLine(intptr_t lineNum) : line(lineNum) {}
 
 	intptr_t line;
-	std::vector<section_t> changes;
+	std::vector<line_section_t> changes;
 };
 
 
@@ -1171,7 +1171,7 @@ inline intptr_t matchBeginEnd(diffInfo& blockDiff1, diffInfo& blockDiff2,
 
 	if (startMatch || endMatch)
 	{
-		section_t change;
+		line_section_t change;
 
 		if ((intptr_t)sec1.size() > startMatch + endMatch)
 		{
@@ -1201,6 +1201,61 @@ inline intptr_t matchBeginEnd(diffInfo& blockDiff1, diffInfo& blockDiff2,
 	}
 
 	return (startMatch + endMatch);
+}
+
+
+void findSubLineMoves(int view1, intptr_t docLine1, int view2, intptr_t docLine2,
+	std::vector<line_section_t>& line_changes1, std::vector<line_section_t>& line_changes2)
+{
+	const std::vector<char> line1 = getText(view1, getLineStart(view1, docLine1), getLineEnd(view1, docLine1));
+	const std::vector<char> line2 = getText(view2, getLineStart(view2, docLine2), getLineEnd(view2, docLine2));
+
+	for (auto lc1 = line_changes1.begin(); lc1 != line_changes1.end(); lc1++)
+	{
+		bool sameSectionFound = false;
+
+		for (auto lc = line_changes1.begin(); lc != line_changes1.end(); lc++)
+		{
+			if (lc->off == lc1->off || lc->moved)
+				continue;
+
+			if (lc->len == lc1->len && std::equal(&line1[lc->off], &line1[lc->off + lc->len], &line1[lc1->off]))
+			{
+				sameSectionFound = true;
+				break;
+			}
+		}
+
+		if (sameSectionFound)
+			continue;
+
+		auto lc2same = line_changes2.end();
+
+		for (auto lc2 = line_changes2.begin(); lc2 != line_changes2.end(); lc2++)
+		{
+			if (lc2->moved)
+				continue;
+
+			if (lc2->len == lc1->len && std::equal(&line2[lc2->off], &line2[lc2->off + lc2->len], &line1[lc1->off]))
+			{
+				if (lc2same == line_changes2.end())
+				{
+					lc2same = lc2;
+				}
+				else
+				{
+					lc2same = line_changes2.end();
+					break;
+				}
+			}
+		}
+
+		if (lc2same != line_changes2.end())
+		{
+			lc1->moved = true;
+			lc2same->moved = true;
+		}
+	}
 }
 
 
@@ -1271,7 +1326,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 			}
 			else if (ld.type == diff_type::DIFF_IN_2)
 			{
-				section_t change;
+				line_section_t change;
 
 				change.off = (*pLine2)[ld.off].pos;
 				change.len = (*pLine2)[ld.off + ld.len - 1].pos + (*pLine2)[ld.off + ld.len - 1].len - change.off;
@@ -1349,7 +1404,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 								{
 									if (sd.type == diff_type::DIFF_IN_1)
 									{
-										section_t change;
+										line_section_t change;
 
 										change.off = (*pSec1)[sd.off].pos + off1;
 										change.len = (*pSec1)[sd.off + sd.len - 1].pos + off1 + 1 - change.off;
@@ -1358,7 +1413,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 									}
 									else if (sd.type == diff_type::DIFF_IN_2)
 									{
-										section_t change;
+										line_section_t change;
 
 										change.off = (*pSec2)[sd.off].pos + off2;
 										change.len = (*pSec2)[sd.off + sd.len - 1].pos + off2 + 1 - change.off;
@@ -1416,7 +1471,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 					}
 				}
 
-				section_t change;
+				line_section_t change;
 
 				change.off = (*pLine1)[ld.off].pos;
 				change.len = (*pLine1)[ld.off + ld.len - 1].pos + (*pLine1)[ld.off + ld.len - 1].len - change.off;
@@ -1430,6 +1485,16 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 		{
 			pBlockDiff1->info.changedLines.pop_back();
 			pBlockDiff2->info.changedLines.pop_back();
+		}
+		else if (options.detectSubLineMoves)
+		{
+			if (!blockDiff1.info.changedLines.back().changes.empty() &&
+				!blockDiff2.info.changedLines.back().changes.empty())
+					findSubLineMoves(
+						doc1.view, doc1.lines[blockDiff1.off + line1].line,
+						doc2.view, doc2.lines[blockDiff2.off + line2].line,
+						blockDiff1.info.changedLines.back().changes,
+						blockDiff2.info.changedLines.back().changes);
 		}
 	}
 }
@@ -1966,7 +2031,8 @@ void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, intptr_t line
 			Settings.colors().add_highlight : Settings.colors().rem_highlight;
 
 	for (const auto& change: bd.info.changedLines[lineIdx].changes)
-		markTextAsChanged(cmpInfo.doc1.view, linePos + change.off, change.len, color);
+		markTextAsChanged(cmpInfo.doc1.view, linePos + change.off, change.len,
+						change.moved ? Settings.colors().mov_highlight : color);
 
 	markLine(cmpInfo.doc1.view, line, cmpInfo.doc1.nonUniqueLines.find(line) == cmpInfo.doc1.nonUniqueLines.end() ?
 			MARKER_MASK_CHANGED : MARKER_MASK_CHANGED_LOCAL);
@@ -1977,7 +2043,8 @@ void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, intptr_t line
 			Settings.colors().add_highlight : Settings.colors().rem_highlight;
 
 	for (const auto& change: bd.info.matchBlock->info.changedLines[lineIdx].changes)
-		markTextAsChanged(cmpInfo.doc2.view, linePos + change.off, change.len, color);
+		markTextAsChanged(cmpInfo.doc2.view, linePos + change.off, change.len,
+						change.moved ? Settings.colors().mov_highlight : color);
 
 	markLine(cmpInfo.doc2.view, line, cmpInfo.doc2.nonUniqueLines.find(line) == cmpInfo.doc2.nonUniqueLines.end() ?
 			MARKER_MASK_CHANGED : MARKER_MASK_CHANGED_LOCAL);

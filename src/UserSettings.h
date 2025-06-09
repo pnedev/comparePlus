@@ -25,46 +25,48 @@
 
 
 // Those are interpreted as bool values
-#define DEFAULT_FIRST_IS_NEW			1
-#define DEFAULT_NEW_IN_SUB_VIEW			1
-#define DEFAULT_COMPARE_TO_PREV			1
+#define DEFAULT_FIRST_IS_NEW				1
+#define DEFAULT_NEW_IN_SUB_VIEW				1
+#define DEFAULT_COMPARE_TO_PREV				1
 
-#define DEFAULT_ENCODINGS_CHECK			1
-#define DEFAULT_SIZES_CHECK				1
-#define DEFAULT_NEVER_MARK_IGNORED		0
-#define DEFAULT_FOLLOWING_CARET			1
-#define DEFAULT_WRAP_AROUND				0
-#define DEFAULT_GOTO_FIRST_DIFF			1
-#define DEFAULT_PROMPT_CLOSE_ON_MATCH	0
+#define DEFAULT_ENCODINGS_CHECK				1
+#define DEFAULT_SIZES_CHECK					1
+#define DEFAULT_NEVER_MARK_IGNORED			0
+#define DEFAULT_FOLLOWING_CARET				1
+#define DEFAULT_WRAP_AROUND					0
+#define DEFAULT_GOTO_FIRST_DIFF				1
+#define DEFAULT_PROMPT_CLOSE_ON_MATCH		0
 
-#define DEFAULT_STATUS_INFO				0
+#define DEFAULT_STATUS_INFO					0
 
-#define DEFAULT_ADDED_COLOR				0xC6FFC6
-#define DEFAULT_REMOVED_COLOR			0xC6C6FF
-#define DEFAULT_MOVED_COLOR				0xFFE6CC
-#define DEFAULT_CHANGED_COLOR			0x98E7E7
-#define DEFAULT_HIGHLIGHT_COLOR			0x0683FF
-#define DEFAULT_HIGHLIGHT_TRANSP		0
-#define DEFAULT_CARET_LINE_TRANSP		60
+#define DEFAULT_ADDED_COLOR					0xC6FFC6
+#define DEFAULT_REMOVED_COLOR				0xC6C6FF
+#define DEFAULT_MOVED_COLOR					0xFFE6CC
+#define DEFAULT_CHANGED_COLOR				0x98E7E7
+#define DEFAULT_HIGHLIGHT_COLOR				0x0683FF
+#define DEFAULT_HIGHLIGHT_MOVED_COLOR		0xF58742
+#define DEFAULT_HIGHLIGHT_TRANSP			0
+#define DEFAULT_CARET_LINE_TRANSP			60
 
-#define DEFAULT_ADDED_COLOR_DARK		0x055A05
-#define DEFAULT_REMOVED_COLOR_DARK		0x16164F
-#define DEFAULT_MOVED_COLOR_DARK		0x4F361C
-#define DEFAULT_CHANGED_COLOR_DARK		0x145050
-#define DEFAULT_HIGHLIGHT_COLOR_DARK	0x0683FF
-#define DEFAULT_HIGHLIGHT_TRANSP_DARK	0
-#define DEFAULT_CARET_LINE_TRANSP_DARK	80
+#define DEFAULT_ADDED_COLOR_DARK			0x055A05
+#define DEFAULT_REMOVED_COLOR_DARK			0x16164F
+#define DEFAULT_MOVED_COLOR_DARK			0x4F361C
+#define DEFAULT_CHANGED_COLOR_DARK			0x145050
+#define DEFAULT_HIGHLIGHT_COLOR_DARK		0x0683FF
+#define DEFAULT_HIGHLIGHT_MOVED_COLOR_DARK	0xF58742
+#define DEFAULT_HIGHLIGHT_TRANSP_DARK		0
+#define DEFAULT_CARET_LINE_TRANSP_DARK		80
 
-#define DEFAULT_CHANGED_THRESHOLD		30
+#define DEFAULT_CHANGED_THRESHOLD			30
 
-#define DEFAULT_ENABLE_TOOLBAR_TB		1
-#define DEFAULT_SET_AS_FIRST_TB			1
-#define DEFAULT_COMPARE_TB				1
-#define DEFAULT_COMPARE_SEL_TB			1
-#define DEFAULT_CLEAR_COMPARE_TB		1
-#define DEFAULT_NAVIGATION_TB			1
-#define DEFAULT_DIFFS_FILTER_TB			1
-#define DEFAULT_NAV_BAR_TB				1
+#define DEFAULT_ENABLE_TOOLBAR_TB			1
+#define DEFAULT_SET_AS_FIRST_TB				1
+#define DEFAULT_COMPARE_TB					1
+#define DEFAULT_COMPARE_SEL_TB				1
+#define DEFAULT_CLEAR_COMPARE_TB			1
+#define DEFAULT_NAVIGATION_TB				1
+#define DEFAULT_DIFFS_FILTER_TB				1
+#define DEFAULT_NAV_BAR_TB					1
 
 
 enum StatusType
@@ -86,6 +88,7 @@ struct ColorSettings
     int _default;
 	int add_highlight;
 	int rem_highlight;
+	int mov_highlight;
 	int highlight_transparency;
 	int caret_line_transparency;
 };
@@ -135,6 +138,7 @@ public:
 
 	static const TCHAR detectMovesSetting[];
 	static const TCHAR detectSubBlockDiffsSetting[];
+	static const TCHAR detectSubLineMovesSetting[];
 	static const TCHAR detectCharDiffsSetting[];
 	static const TCHAR ignoreEmptyLinesSetting[];
 	static const TCHAR ignoreFoldedLinesSetting[];
@@ -166,6 +170,7 @@ public:
 	static const TCHAR changedColorSetting[];
 	static const TCHAR addHighlightColorSetting[];
 	static const TCHAR remHighlightColorSetting[];
+	static const TCHAR movHighlightColorSetting[];
 	static const TCHAR highlightTranspSetting[];
 	static const TCHAR caretLineTranspSetting[];
 
@@ -175,6 +180,7 @@ public:
 	static const TCHAR changedColorDarkSetting[];
 	static const TCHAR addHighlightColorDarkSetting[];
 	static const TCHAR remHighlightColorDarkSetting[];
+	static const TCHAR movHighlightColorDarkSetting[];
 	static const TCHAR highlightTranspDarkSetting[];
 	static const TCHAR caretLineTranspDarkSetting[];
 
@@ -205,6 +211,7 @@ public:
 
 	bool			DetectMoves;
 	bool			DetectSubBlockDiffs;
+	bool			DetectSubLineMoves;
 	bool			DetectCharDiffs;
 	bool			IgnoreEmptyLines;
 	bool			IgnoreFoldedLines;

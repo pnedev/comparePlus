@@ -39,6 +39,7 @@ const TCHAR UserSettings::followingCaretSetting[]			= TEXT("following_caret");
 
 const TCHAR UserSettings::detectMovesSetting[]				= TEXT("detect_moves");
 const TCHAR UserSettings::detectSubBlockDiffsSetting[]		= TEXT("detect_sub_block_diffs");
+const TCHAR UserSettings::detectSubLineMovesSetting[]		= TEXT("detect_sub_line_moves");
 const TCHAR UserSettings::detectCharDiffsSetting[]			= TEXT("detect_character_diffs");
 const TCHAR UserSettings::ignoreEmptyLinesSetting[]			= TEXT("ignore_empty_lines");
 const TCHAR UserSettings::ignoreFoldedLinesSetting[]		= TEXT("ignore_folded_lines");
@@ -69,6 +70,7 @@ const TCHAR UserSettings::movedColorSetting[]				= TEXT("moved");
 const TCHAR UserSettings::changedColorSetting[]				= TEXT("changed");
 const TCHAR UserSettings::addHighlightColorSetting[]		= TEXT("added_highlight");
 const TCHAR UserSettings::remHighlightColorSetting[]		= TEXT("removed_highlight");
+const TCHAR UserSettings::movHighlightColorSetting[]		= TEXT("moved_highlight");
 const TCHAR UserSettings::highlightTranspSetting[]			= TEXT("highlight_transparency");
 const TCHAR UserSettings::caretLineTranspSetting[]			= TEXT("caret_line_transparency");
 
@@ -78,6 +80,7 @@ const TCHAR UserSettings::movedColorDarkSetting[]			= TEXT("moved_dark");
 const TCHAR UserSettings::changedColorDarkSetting[]			= TEXT("changed_dark");
 const TCHAR UserSettings::addHighlightColorDarkSetting[]	= TEXT("added_highlight_dark");
 const TCHAR UserSettings::remHighlightColorDarkSetting[]	= TEXT("removed_highlight_dark");
+const TCHAR UserSettings::movHighlightColorDarkSetting[]	= TEXT("moved_highlight_dark");
 const TCHAR UserSettings::highlightTranspDarkSetting[]		= TEXT("highlight_transparency_dark");
 const TCHAR UserSettings::caretLineTranspDarkSetting[]		= TEXT("caret_line_transparency_dark");
 
@@ -126,6 +129,7 @@ void UserSettings::load()
 
 	DetectMoves				= ::GetPrivateProfileInt(mainSection, detectMovesSetting,			1, iniFile) != 0;
 	DetectSubBlockDiffs		= ::GetPrivateProfileInt(mainSection, detectSubBlockDiffsSetting,	1, iniFile) != 0;
+	DetectSubLineMoves		= ::GetPrivateProfileInt(mainSection, detectSubLineMovesSetting,	1, iniFile) != 0;
 	DetectCharDiffs			= ::GetPrivateProfileInt(mainSection, detectCharDiffsSetting,		0, iniFile) != 0;
 	IgnoreEmptyLines		= ::GetPrivateProfileInt(mainSection, ignoreEmptyLinesSetting,		0, iniFile) != 0;
 	IgnoreFoldedLines		= ::GetPrivateProfileInt(mainSection, ignoreFoldedLinesSetting,		0, iniFile) != 0;
@@ -170,6 +174,8 @@ void UserSettings::load()
 			DEFAULT_HIGHLIGHT_COLOR, iniFile);
 	colorsLight.rem_highlight				= ::GetPrivateProfileInt(colorsSection, remHighlightColorSetting,
 			DEFAULT_HIGHLIGHT_COLOR, iniFile);
+	colorsLight.mov_highlight				= ::GetPrivateProfileInt(colorsSection, movHighlightColorSetting,
+			DEFAULT_HIGHLIGHT_MOVED_COLOR, iniFile);
 	colorsLight.highlight_transparency		= ::GetPrivateProfileInt(colorsSection, highlightTranspSetting,
 			DEFAULT_HIGHLIGHT_TRANSP, iniFile);
 	colorsLight.caret_line_transparency		= ::GetPrivateProfileInt(colorsSection, caretLineTranspSetting,
@@ -187,6 +193,8 @@ void UserSettings::load()
 			DEFAULT_HIGHLIGHT_COLOR_DARK, iniFile);
 	colorsDark.rem_highlight				= ::GetPrivateProfileInt(colorsSection, remHighlightColorDarkSetting,
 			DEFAULT_HIGHLIGHT_COLOR_DARK, iniFile);
+	colorsDark.mov_highlight				= ::GetPrivateProfileInt(colorsSection, movHighlightColorDarkSetting,
+			DEFAULT_HIGHLIGHT_MOVED_COLOR_DARK, iniFile);
 	colorsDark.highlight_transparency		= ::GetPrivateProfileInt(colorsSection, highlightTranspDarkSetting,
 			DEFAULT_HIGHLIGHT_TRANSP_DARK, iniFile);
 	colorsDark.caret_line_transparency		= ::GetPrivateProfileInt(colorsSection, caretLineTranspDarkSetting,
@@ -286,6 +294,8 @@ void UserSettings::save()
 			DetectMoves ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, detectSubBlockDiffsSetting,
 			DetectSubBlockDiffs ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, detectSubLineMovesSetting,
+			DetectSubLineMoves ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, detectCharDiffsSetting,
 			DetectCharDiffs ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreEmptyLinesSetting,
@@ -347,6 +357,9 @@ void UserSettings::save()
 	_itot_s(colorsLight.rem_highlight, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, remHighlightColorSetting, buffer, iniFile);
 
+	_itot_s(colorsLight.mov_highlight, buffer, 64, 10);
+	::WritePrivateProfileString(colorsSection, movHighlightColorSetting, buffer, iniFile);
+
 	_itot_s(colorsLight.highlight_transparency, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, highlightTranspSetting, buffer, iniFile);
 
@@ -370,6 +383,9 @@ void UserSettings::save()
 
 	_itot_s(colorsDark.rem_highlight, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, remHighlightColorDarkSetting, buffer, iniFile);
+
+	_itot_s(colorsDark.mov_highlight, buffer, 64, 10);
+	::WritePrivateProfileString(colorsSection, movHighlightColorDarkSetting, buffer, iniFile);
 
 	_itot_s(colorsDark.highlight_transparency, buffer, 64, 10);
 	::WritePrivateProfileString(colorsSection, highlightTranspDarkSetting, buffer, iniFile);

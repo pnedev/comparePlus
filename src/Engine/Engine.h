@@ -50,6 +50,15 @@ struct section_t
 };
 
 
+struct line_section_t : public section_t
+{
+	line_section_t() : section_t(), moved {false} {}
+	line_section_t(intptr_t o, intptr_t l) : section_t(o, l), moved {false} {}
+
+	bool moved;
+};
+
+
 struct CompareOptions
 {
 	CompareOptions()
@@ -89,6 +98,7 @@ struct CompareOptions
 	bool	neverMarkIgnored;
 	bool	detectMoves;
 	bool	detectSubBlockDiffs;
+	bool	detectSubLineMoves;
 	bool	detectCharDiffs;
 	bool	ignoreEmptyLines;
 	bool	ignoreFoldedLines;

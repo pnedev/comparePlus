@@ -64,6 +64,7 @@ private:
 	ColorCombo _ColorComboChanged;
 	ColorCombo _ColorComboAddHighlight;
 	ColorCombo _ColorComboRemHighlight;
+	ColorCombo _ColorComboMovHighlight;
 
 	struct UserSettings* _Settings;
 };
