@@ -4143,15 +4143,32 @@ std::pair<std::wstring, std::wstring> getTwoFilenamesFromCmdLine(const TCHAR* cm
 // try to construct the command line files full paths
 bool constructFullFilePaths(std::pair<std::wstring, std::wstring>& files)
 {
-	const int openedFilesCount =
-			static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, ALL_OPEN_FILES));
+	const int mainViewFilesCount =
+			static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, PRIMARY_VIEW));
+	const int subViewFilesCount =
+			static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, SECOND_VIEW));
+	const int openedFilesCount = mainViewFilesCount + subViewFilesCount;
 
-	TCHAR** openedFiles = new TCHAR*[openedFilesCount];
+	wchar_t** openedFiles = new wchar_t*[openedFilesCount];
 
-	for (int i = 0; i < openedFilesCount; ++i)
-		openedFiles[i] = new TCHAR[1024];
+	int i = 0;
+	for (; i < mainViewFilesCount; ++i)
+	{
+		LRESULT buffId = ::SendMessage(nppData._nppHandle, NPPM_GETBUFFERIDFROMPOS, i, MAIN_VIEW);
+		LRESULT len = ::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (WPARAM)nullptr);
+		openedFiles[i] = new wchar_t[len + 1];
+		::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (WPARAM)openedFiles[i]);
+		++i;
+	}
 
-	::SendMessage(nppData._nppHandle, NPPM_GETOPENFILENAMES, (WPARAM)openedFiles, (LPARAM)openedFilesCount);
+	for (int j = 0; j < subViewFilesCount; ++j)
+	{
+		LRESULT buffId = ::SendMessage(nppData._nppHandle, NPPM_GETBUFFERIDFROMPOS, j, SUB_VIEW);
+		LRESULT len = ::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (WPARAM)nullptr);
+		openedFiles[i] = new wchar_t[len + 1];
+		::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (WPARAM)openedFiles[i]);
+		++i;
+	}
 
 	std::wstring* longerFileName  = files.first.size() >= files.second.size() ? &(files.first) : &(files.second);
 	std::wstring* shorterFileName = &(files.first) == longerFileName ? &(files.second) : &(files.first);
