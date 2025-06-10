@@ -1186,28 +1186,28 @@ void ComparedPair::setStatus()
 
 			if (hasDetectOpts)
 			{
-				const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Detect:%s%s%s%s"),
-						options.detectMoves			? TEXT(" Moves,")			: TEXT(""),
-						options.detectSubBlockDiffs	? TEXT(" Sub-block Diffs,")	: TEXT(""),
-						options.detectSubLineMoves	? TEXT(" Sub-line Moves,")	: TEXT(""),
-						options.detectCharDiffs		? TEXT(" Char Diffs,")		: TEXT("")) - 1;
+				const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Detect: %s%s%s%s"),
+						options.detectMoves			? TEXT("/Moves ")			: TEXT(""),
+						options.detectSubBlockDiffs	? TEXT("/Sub-block Diffs ")	: TEXT(""),
+						options.detectSubLineMoves	? TEXT("/Sub-line Moves ")	: TEXT(""),
+						options.detectCharDiffs		? TEXT("/Char Diffs ")		: TEXT("")) - 1;
 
 				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 				infoCurrentPos += len;
 			}
 
-			if (options.ignoreEmptyLines || options.ignoreFoldedLines || options.ignoreHiddenLines ||
-				options.ignoreAllSpaces || options.ignoreChangedSpaces || options.ignoreCase || options.ignoreRegex)
+			if (options.ignoreChangedSpaces || options.ignoreAllSpaces || options.ignoreEmptyLines ||
+				options.ignoreCase || options.ignoreRegex || options.ignoreFoldedLines || options.ignoreHiddenLines)
 			{
-				const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%sIgnore:%s%s%s%s%s%s"),
+				const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%sIgnore: %s%s%s%s%s%s"),
 						hasDetectOpts				? TEXT("    ")				: TEXT(""),
-						options.ignoreEmptyLines	? TEXT(" Empty Lines,")		: TEXT(""),
-						options.ignoreFoldedLines	? TEXT(" Folded Lines,")	: TEXT(""),
-						options.ignoreHiddenLines	? TEXT(" Hidden Lines,")	: TEXT(""),
-						options.ignoreAllSpaces		? TEXT(" All Spaces,")		:
-						options.ignoreChangedSpaces	? TEXT(" Changed Spaces,")	: TEXT(""),
-						options.ignoreCase			? TEXT(" Case,")			: TEXT(""),
-						options.ignoreRegex			? TEXT(" Regex,")			: TEXT("")) - 1;
+						options.ignoreEmptyLines	? TEXT("/Empty Lines ")		: TEXT(""),
+						options.ignoreFoldedLines	? TEXT("/Folded Lines ")	: TEXT(""),
+						options.ignoreHiddenLines	? TEXT("/Hidden Lines ")	: TEXT(""),
+						options.ignoreAllSpaces		? TEXT("/All Spaces ")		:
+						options.ignoreChangedSpaces	? TEXT("/Changed Spaces ")	: TEXT(""),
+						options.ignoreCase			? TEXT("/Case ")			: TEXT(""),
+						options.ignoreRegex			? TEXT("/Regex ")			: TEXT("")) - 1;
 
 				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 				infoCurrentPos += len;
@@ -1263,7 +1263,7 @@ void ComparedPair::setStatus()
 
 			if (summary.match)
 			{
-				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(".  %Id Match"), summary.match);
+				_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(".  %Id Matching Lines"), summary.match);
 				_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 			}
 			else
@@ -3491,7 +3491,7 @@ void ActiveCompareSummary()
 	if (cmpPair->summary.match)
 	{
 		const int len =
-			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(".\n%Id Match"), cmpPair->summary.match);
+			_sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT(".\n%Id Matching Lines."), cmpPair->summary.match);
 
 		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 		infoCurrentPos += len;
@@ -3509,32 +3509,32 @@ void ActiveCompareSummary()
 
 	if (hasDetectOpts)
 	{
-		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Detect:%s%s%s"),
-				cmpPair->options.detectMoves			? TEXT(" Moves,")			: TEXT(""),
-				cmpPair->options.detectSubBlockDiffs	? TEXT(" Sub-block Diffs,")	: TEXT(""),
-				cmpPair->options.detectSubLineMoves		? TEXT(" Sub-line Moves,")	: TEXT(""),
-				cmpPair->options.detectCharDiffs		? TEXT(" Char Diffs,")		: TEXT("")) - 1;
+		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Detect: %s%s%s"),
+				cmpPair->options.detectMoves			? TEXT("/Moves ")			: TEXT(""),
+				cmpPair->options.detectSubBlockDiffs	? TEXT("/Sub-block Diffs ")	: TEXT(""),
+				cmpPair->options.detectSubLineMoves		? TEXT("/Sub-line Moves ")	: TEXT(""),
+				cmpPair->options.detectCharDiffs		? TEXT("/Char Diffs ")		: TEXT("")) - 1;
 
 		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 		infoCurrentPos += len;
 	}
 
 	const bool hasIgnoreOpts =
-		(cmpPair->options.ignoreEmptyLines || cmpPair->options.ignoreFoldedLines ||
-		cmpPair->options.ignoreHiddenLines || cmpPair->options.ignoreAllSpaces ||
-		cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreCase || cmpPair->options.ignoreRegex);
+		(cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreAllSpaces ||
+		cmpPair->options.ignoreEmptyLines || cmpPair->options.ignoreCase || cmpPair->options.ignoreRegex ||
+		cmpPair->options.ignoreFoldedLines || cmpPair->options.ignoreHiddenLines);
 
 	if (hasIgnoreOpts)
 	{
-		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%sIgnore:%s%s%s%s%s%s"),
+		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%sIgnore: %s%s%s%s%s%s"),
 				hasDetectOpts							? TEXT("\n")				: TEXT(""),
-				cmpPair->options.ignoreEmptyLines		? TEXT(" Empty Lines,")		: TEXT(""),
-				cmpPair->options.ignoreFoldedLines		? TEXT(" Folded Lines,")	: TEXT(""),
-				cmpPair->options.ignoreHiddenLines		? TEXT(" Hidden Lines,")	: TEXT(""),
-				cmpPair->options.ignoreAllSpaces		? TEXT(" All Spaces,")		:
-				cmpPair->options.ignoreChangedSpaces	? TEXT(" Changed Spaces,")	: TEXT(""),
-				cmpPair->options.ignoreCase				? TEXT(" Case,")			: TEXT(""),
-				cmpPair->options.ignoreRegex			? TEXT(" Regex,")			: TEXT("")) - 1;
+				cmpPair->options.ignoreEmptyLines		? TEXT("/Empty Lines ")		: TEXT(""),
+				cmpPair->options.ignoreFoldedLines		? TEXT("/Folded Lines ")	: TEXT(""),
+				cmpPair->options.ignoreHiddenLines		? TEXT("/Hidden Lines ")	: TEXT(""),
+				cmpPair->options.ignoreAllSpaces		? TEXT("/All Spaces ")		:
+				cmpPair->options.ignoreChangedSpaces	? TEXT("/Changed Spaces ")	: TEXT(""),
+				cmpPair->options.ignoreCase				? TEXT("/Case ")			: TEXT(""),
+				cmpPair->options.ignoreRegex			? TEXT("/Regex ")			: TEXT("")) - 1;
 
 		_tcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 		infoCurrentPos += len;
