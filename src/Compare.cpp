@@ -19,6 +19,8 @@
 
 #include <cstdlib>
 #include <string>
+#include <sstream>
+#include <fstream>
 #include <vector>
 #include <memory>
 #include <utility>
@@ -643,6 +645,7 @@ void NppSettings::updatePluginMenu()
 	::EnableMenuItem(hMenu, funcItem[CMD_BOOKMARK_DIFFS]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_BOOKMARK_ADD_REM]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_BOOKMARK_CHANGED]._cmdID, flag);
+	::EnableMenuItem(hMenu, funcItem[CMD_GENERATE_PATCH]._cmdID, flag);
 
 	::DrawMenuBar(nppData._nppHandle);
 
@@ -2418,9 +2421,9 @@ void doAlignment(bool forceAlign = false)
 		cmpPair->nppReplaceDone = false;
 
 		::MessageBox(nppData._nppHandle,
-				TEXT("Compared file text replaced by Notepad++. Please manually re-compare\n")
+				TEXT("Compared file text replaced by Notepad++. Please manually re-compare")
 				TEXT("to make sure compare results are valid!"),
-				PLUGIN_NAME, MB_ICONEXCLAMATION);
+				PLUGIN_NAME, MB_OK | MB_ICONWARNING);
 	}
 
 	if (goToFirst)
@@ -2462,7 +2465,7 @@ bool isEncodingOK(const ComparedPair& cmpPair)
 	if (getEncoding(cmpPair.file[0].buffId) != getEncoding(cmpPair.file[1].buffId))
 	{
 		if (::MessageBox(nppData._nppHandle,
-			TEXT("Trying to compare files with different encodings - \n")
+			TEXT("Trying to compare files with different encodings - ")
 			TEXT("the result might be inaccurate and misleading.\n\n")
 			TEXT("Compare anyway?"), PLUGIN_NAME, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES)
 		{
@@ -2943,7 +2946,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 			{
 				::MessageBox(nppData._nppHandle,
 						TEXT("Seems like files differ in line endings - this will be ignored in the compare process."),
-						cmpPair->options.findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"), MB_ICONWARNING);
+						cmpPair->options.findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"),
+						MB_OK | MB_ICONWARNING);
 			}
 
 			if (Settings.SizesCheck)
@@ -3105,7 +3109,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 				{
 					if (hasIgnoreOpts)
 						_tcscat_s(msg, _countof(msg),
-								TEXT("\n\nSome diffs exist but have either been ignored due to the compare options\n")
+								TEXT("\n\nSome diffs exist but have either been ignored due to the compare options")
 								TEXT("or are in the line endings format."));
 					else
 						_tcscat_s(msg, _countof(msg), TEXT("\n\nThere are diffs in the line endings format."));
@@ -3128,7 +3132,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 						newName, ::PathFindFileName(oldFile.name),
 						cmpPair->options.findUniqueMode ? TEXT("do not contain unique lines") : TEXT("match"),
 						filesSha2Differ ? (hasIgnoreOpts ?
-							TEXT("\n\nSome diffs exist but have either been ignored due to the compare options\n")
+							TEXT("\n\nSome diffs exist but have either been ignored due to the compare options")
 							TEXT("or are in the line endings format.") :
 							TEXT("\n\nThere are diffs in the line endings format.")) : TEXT(""),
 						Settings.PromptToCloseOnMatch ? TEXT("\n\nClose compared files?") : TEXT(""));
@@ -3585,6 +3589,267 @@ void BookmarkChanged()
 }
 
 
+void formatAndWritePatch(ComparedPair& cmpPair, std::wofstream& patchFile)
+{
+	const auto& oldFile = cmpPair.getOldFile();
+	const auto& newFile = cmpPair.getNewFile();
+
+	const auto sciEOL = CallScintilla(oldFile.compareViewId, SCI_GETEOLMODE, 0, 0);
+
+	const wchar_t eol = (sciEOL == SC_EOL_CR ? L'\r' : L'\n');
+
+	// Write file names with least possible paths information to distinguish them
+	{
+		auto oldPos = wcslen(oldFile.name);
+		auto newPos = wcslen(newFile.name);
+
+		for (; oldPos && newPos && oldFile.name[oldPos] == newFile.name[newPos]; --oldPos, --newPos);
+
+		for (; oldPos && oldFile.name[oldPos] != L'/' && oldFile.name[oldPos] != L'\\'; --oldPos);
+
+		if (oldPos)
+		{
+			for (; newPos && newFile.name[newPos] != L'/' && newFile.name[newPos] != L'\\'; --newPos);
+
+			if (!newPos)
+				oldPos = 0;
+		}
+		else
+		{
+			newPos = 0;
+		}
+
+		if (oldPos) ++oldPos;
+		if (newPos) ++newPos;
+
+		patchFile << L"--- " << &oldFile.name[oldPos];
+		patchFile << eol << L"+++ " << &newFile.name[newPos];
+	}
+
+	// Write file names removing the common paths prefix
+	// {
+		// int commonPos = ::PathCommonPrefix(oldFile.name, newFile.name, NULL);
+		// if (commonPos) ++commonPos;
+
+		// patchFile << L"--- " << &oldFile.name[commonPos];
+		// patchFile << eol << L"+++ " << &newFile.name[commonPos];
+	// }
+
+	static constexpr int cMatchContextLen = 3;
+
+	intptr_t line1 = 0;
+	intptr_t line2 = 0;
+	intptr_t len1 = 0;
+	intptr_t len2 = 0;
+
+	const int oldCodepage = getCodepage(oldFile.compareViewId);
+	const int newCodepage = getCodepage(newFile.compareViewId);
+
+	const bool oldIs1 = (cmpPair.summary.diff1view == oldFile.compareViewId);
+
+	const auto& rFile1 = oldIs1 ? oldFile : newFile;
+	const auto& rFile2 = oldIs1 ? newFile : oldFile;
+
+	intptr_t& rOldLine	= oldIs1 ? line1 : line2;
+	intptr_t& rOldLen	= oldIs1 ? len1 : len2;
+	intptr_t& rNewLine	= oldIs1 ? line2 : line1;
+	intptr_t& rNewLen	= oldIs1 ? len2 : len1;
+
+	const int& rCodepage1 = oldIs1 ? oldCodepage : newCodepage;
+	const int& rCodepage2 = oldIs1 ? newCodepage : oldCodepage;
+
+	const wchar_t diffMark1 = oldIs1 ? L'-' : L'+';
+	const wchar_t diffMark2 = oldIs1 ? L'+' : L'-';
+
+	for (auto dsi = cmpPair.summary.diffSections.begin(); dsi != cmpPair.summary.diffSections.end();)
+	{
+		int matchContextStart	= 0;
+		int matchContextEnd		= 0;
+
+		len1 = 0;
+		len2 = 0;
+
+		// Calculate current diff sections lines and lengths
+		if (dsi->type == MATCH)
+		{
+			matchContextStart = (dsi->len < cMatchContextLen ? dsi->len : cMatchContextLen);
+
+			line1 += dsi->len - matchContextStart;
+			line2 += dsi->len - matchContextStart;
+			len1 = matchContextStart;
+			len2 = matchContextStart;
+		}
+		else if (dsi->type == IN_1)
+		{
+			line1 = dsi->off;
+			len1 = dsi->len;
+		}
+		else
+		{
+			line2 = dsi->off;
+			len2 = dsi->len;
+		}
+
+		auto dsn = dsi + 1;
+
+		for (; dsn != cmpPair.summary.diffSections.end(); dsn++)
+		{
+			if (dsn->type == MATCH)
+			{
+				if (dsn->len > 2 * cMatchContextLen)
+				{
+					matchContextEnd = cMatchContextLen;
+
+					len1 += matchContextEnd;
+					len2 += matchContextEnd;
+
+					break;
+				}
+
+				if (dsn + 1 == cmpPair.summary.diffSections.end())
+				{
+					matchContextEnd = dsn->len < cMatchContextLen ? dsn->len : cMatchContextLen;
+
+					len1 += matchContextEnd;
+					len2 += matchContextEnd;
+
+					break;
+				}
+
+				len1 += dsn->len;
+				len2 += dsn->len;
+			}
+			else if (dsn->type == IN_1)
+			{
+				len1 += dsn->len;
+			}
+			else
+			{
+				len2 += dsn->len;
+			}
+		}
+
+		patchFile << eol << L"@@ -" << rOldLine + 1 << L',' << rOldLen <<
+								L" +" << rNewLine + 1 << L',' << rNewLen <<  L" @@";
+
+		// Write current diff sections and context
+		for (auto dsr = dsi; dsr != dsn; dsr++)
+		{
+			if (dsr->type == MATCH)
+			{
+				if (!matchContextStart)
+					matchContextStart = dsr->len;
+
+				rNewLine += matchContextStart;
+
+				for (; matchContextStart; --matchContextStart)
+					patchFile << eol << L' ' << getLineAsWstr(oldFile.compareViewId, rOldLine++, oldCodepage);
+			}
+			else if (dsr->type == IN_1)
+			{
+				bool replacementDiff = false;
+
+				if (!oldIs1)
+				{
+					auto dsrn = dsr + 1;
+
+					// Replacement (changed) diff type - put old diff lines first
+					if (dsrn != dsn && dsrn->type == IN_2)
+					{
+						replacementDiff = true;
+
+						for (intptr_t i = dsrn->len; i; --i)
+							patchFile << eol << diffMark2 << getLineAsWstr(rFile2.compareViewId, line2++, rCodepage2);
+					}
+				}
+
+				for (intptr_t i = dsr->len; i; --i)
+					patchFile << eol << diffMark1 << getLineAsWstr(rFile1.compareViewId, line1++, rCodepage1);
+
+				if (replacementDiff)
+					dsr++;
+			}
+			else
+			{
+				for (intptr_t i = dsr->len; i; --i)
+					patchFile << eol << diffMark2 << getLineAsWstr(rFile2.compareViewId, line2++, rCodepage2);
+			}
+		}
+
+		if (dsn == cmpPair.summary.diffSections.end())
+			break;
+
+		intptr_t oldLine = rOldLine;
+
+		for (; matchContextEnd; --matchContextEnd)
+			patchFile << eol << L' ' << getLineAsWstr(oldFile.compareViewId, oldLine++, oldCodepage);
+
+		if (dsn + 1 == cmpPair.summary.diffSections.end())
+			break;
+
+		dsi = dsn;
+	}
+}
+
+
+void GeneratePatch()
+{
+	CompareList_t::iterator cmpPair = getCompare(getCurrentBuffId());
+	if (cmpPair == compareList.end())
+		return;
+
+	if (cmpPair->options.findUniqueMode)
+	{
+		::MessageBox(nppData._nppHandle,
+			TEXT("Patch generation for 'Find Unique' commands is currently not supported.\n"), PLUGIN_NAME, MB_OK);
+		return;
+	}
+
+	if (cmpPair->compareDirty)
+	{
+		::MessageBox(nppData._nppHandle,
+			TEXT("Compared file is modified after compare, generating patch is not possible.\n")
+			TEXT("Please manually re-compare and try again."), PLUGIN_NAME, MB_OK);
+		return;
+	}
+
+	std::wofstream ofs;
+	{
+		wchar_t patchFile[2048];
+
+		OPENFILENAME ofn;
+
+		::ZeroMemory(&patchFile, sizeof(patchFile));
+		::ZeroMemory(&ofn, sizeof(ofn));
+
+		ofn.lStructSize		= sizeof(ofn);
+		ofn.hwndOwner		= nppData._nppHandle;
+		ofn.lpstrFilter		= L"All Files\0*.*\0\0";
+		ofn.lpstrFile		= patchFile;
+		ofn.nMaxFile		= _countof(patchFile);
+		ofn.lpstrInitialDir	= nullptr;
+		ofn.lpstrTitle		= L"Save patch file as:";
+		ofn.Flags			= OFN_DONTADDTORECENT | OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST;
+
+		if (!::GetSaveFileNameW(&ofn))
+			return;
+
+		ofs.open(patchFile, std::ios_base::trunc);
+
+		if (!ofs.is_open())
+		{
+			::MessageBox(nppData._nppHandle, TEXT("Failure to open file for writing."), PLUGIN_NAME,
+					MB_OK | MB_ICONERROR);
+			return;
+		}
+	}
+
+	formatAndWritePatch(*cmpPair, ofs);
+
+	ofs.close();
+}
+
+
 void OpenCompareOptionsDlg()
 {
 	CompareOptionsDialog compareOptionsDlg(hInstance, nppData);
@@ -3881,6 +4146,9 @@ void createMenu()
 
 	_tcscpy_s(funcItem[CMD_BOOKMARK_CHANGED]._itemName, menuItemSize, TEXT("Bookmark Changed Lines in Current View"));
 	funcItem[CMD_BOOKMARK_CHANGED]._pFunc = BookmarkChanged;
+
+	_tcscpy_s(funcItem[CMD_GENERATE_PATCH]._itemName, menuItemSize, TEXT("Generate Patch"));
+	funcItem[CMD_GENERATE_PATCH]._pFunc = GeneratePatch;
 
 	_tcscpy_s(funcItem[CMD_COMPARE_OPTIONS]._itemName, menuItemSize, TEXT("Compare Options (ignore, etc.)..."));
 	funcItem[CMD_COMPARE_OPTIONS]._pFunc = OpenCompareOptionsDlg;
@@ -4521,7 +4789,7 @@ void onNppReady()
 			// CallScintilla(MAIN_VIEW, SCI_SETLAYOUTTHREADS, threadsCount, 0);
 			// CallScintilla(SUB_VIEW, SCI_SETLAYOUTTHREADS, threadsCount, 0);
 
-			// MessageBox(nppData._nppHandle, _T("Enabled multithreading for Scintilla layout calculations"),
+			// ::MessageBox(nppData._nppHandle, _T("Enabled multithreading for Scintilla layout calculations"),
 					// PLUGIN_NAME, MB_OK);
 		// }
 

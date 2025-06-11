@@ -563,7 +563,7 @@ inline void recalculateWordPos(int codepage, std::vector<Word>& words, const std
 	intptr_t bytePos = 0;
 	intptr_t currPos = 0;
 
-	for (auto& word : words)
+	for (auto& word: words)
 	{
 		if (currPos < word.pos)
 			bytePos += ::WideCharToMultiByte(codepage, 0, line.data() + currPos, static_cast<int>(word.pos - currPos),
@@ -751,7 +751,7 @@ inline void recalculateCharPos(int codepage, std::vector<Char>& chars, const std
 	intptr_t bytePos = 0;
 	intptr_t currPos = 0;
 
-	for (auto& ch : chars)
+	for (auto& ch: chars)
 	{
 		if (currPos < ch.pos)
 			bytePos += ::WideCharToMultiByte(codepage, 0, sec.data() + currPos, static_cast<int>(ch.pos - currPos),
@@ -1877,19 +1877,19 @@ void findSubBlockDiffs(CompareInfo& cmpInfo, const CompareOptions& options)
 
 		std::vector<std::thread> threads(threadsCount);
 
-		for (auto& th : threads)
+		for (auto& th: threads)
 			th = std::thread(threadFn);
 
 		threadFn();
 
-		for (auto& th : threads)
+		for (auto& th: threads)
 			th.join();
 	}
 	else
 	{
 		LOGD(LOG_ALL, "Changes detection running on 1 thread\n");
 
-		for (intptr_t i : changedBlockIdx)
+		for (intptr_t i: changedBlockIdx)
 		{
 			diffInfo& blockDiff1 = cmpInfo.blockDiffs[i - 1];
 			diffInfo& blockDiff2 = cmpInfo.blockDiffs[i];
@@ -2054,8 +2054,6 @@ void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, intptr_t line
 bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSummary& summary)
 {
 	progress_ptr& progress = ProgressDlg::Get();
-
-	summary.clear();
 
 	const intptr_t blockDiffSize = static_cast<intptr_t>(cmpInfo.blockDiffs.size());
 
@@ -2345,9 +2343,29 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 }
 
 
+inline std::vector<diff_section_t> toDiffSections(const CompareInfo& cmpInfo)
+{
+	std::vector<diff_section_t> diffSecs;
+
+	diffSecs.reserve(cmpInfo.blockDiffs.size());
+
+	for (const auto& bd: cmpInfo.blockDiffs)
+	{
+		diffSecs.emplace_back(bd.off +
+			(bd.type == diff_type::DIFF_IN_2) ? cmpInfo.doc2.section.off : cmpInfo.doc1.section.off, bd.len,
+			(bd.type == diff_type::DIFF_MATCH) ? DiffType::MATCH :
+			(bd.type == diff_type::DIFF_IN_1) ? DiffType::IN_1 : DiffType::IN_2);
+	}
+
+	return diffSecs;
+}
+
+
 CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 {
 	progress_ptr& progress = ProgressDlg::Get();
+
+	summary.clear();
 
 	CompareInfo cmpInfo;
 
@@ -2413,6 +2431,9 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 	if (!progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
+	summary.diffSections	= toDiffSections(cmpInfo);
+	summary.diff1view		= cmpInfo.doc1.view;
+
 	clearWindow(MAIN_VIEW);
 	clearWindow(SUB_VIEW);
 
@@ -2427,14 +2448,7 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 {
 	progress_ptr& progress = ProgressDlg::Get();
 
-	summary.alignmentInfo.clear();
-
-	summary.diffLines	= 0;
-	summary.added		= 0;
-	summary.removed		= 0;
-	summary.moved		= 0;
-	summary.changed		= 0;
-	summary.match		= 0;
+	summary.clear();
 
 	DocCmpInfo doc1;
 	DocCmpInfo doc2;

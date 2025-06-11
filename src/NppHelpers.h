@@ -21,6 +21,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <string>
 #include <utility>
 
 #include "Compare.h"
@@ -787,6 +788,7 @@ inline void clearAnnotation(int view, intptr_t line)
 void clearAnnotations(int view, intptr_t startLine, intptr_t length);
 
 std::vector<char> getText(int view, intptr_t startPos, intptr_t endPos);
+std::wstring getLineAsWstr(int view, intptr_t line, int codepage = CP_UTF8);
 void toLowerCase(std::vector<char>& text, int codepage = CP_UTF8);
 
 void addBlankSection(int view, intptr_t line, intptr_t length, intptr_t selectionMarkPosition = 0,

@@ -40,10 +40,18 @@ enum class CompareResult
 };
 
 
+enum DiffType
+{
+	MATCH	= 0,
+	IN_1	= 1,
+	IN_2	= 2
+};
+
+
 struct section_t
 {
 	section_t() : off(0), len(0) {}
-	section_t(intptr_t o, intptr_t l) : off(o), len(l) {}
+	section_t(intptr_t o, intptr_t l) : off {o}, len {l} {}
 
 	intptr_t off;
 	intptr_t len;
@@ -56,6 +64,15 @@ struct line_section_t : public section_t
 	line_section_t(intptr_t o, intptr_t l) : section_t(o, l), moved {false} {}
 
 	bool moved;
+};
+
+
+struct diff_section_t : public section_t
+{
+	diff_section_t() : section_t(), type {DiffType::MATCH} {}
+	diff_section_t(intptr_t o, intptr_t l, DiffType t) : section_t(o, l), type {t} {}
+
+	DiffType type;
 };
 
 
@@ -150,6 +167,7 @@ struct CompareSummary
 		match		= 0;
 
 		alignmentInfo.clear();
+		diffSections.clear();
 	}
 
 	intptr_t	diffLines;
@@ -160,6 +178,10 @@ struct CompareSummary
 	intptr_t	match;
 
 	AlignmentInfo_t	alignmentInfo;
+
+	// Below data is needed in case the user wants to generate patch
+	std::vector<diff_section_t>	diffSections;
+	int							diff1view;
 };
 
 

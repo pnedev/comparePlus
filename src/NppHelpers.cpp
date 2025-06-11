@@ -543,6 +543,35 @@ std::vector<char> getText(int view, intptr_t startPos, intptr_t endPos)
 }
 
 
+std::wstring getLineAsWstr(int view, intptr_t line, int codepage)
+{
+	const intptr_t startPos	= getLineStart(view, line);
+	const intptr_t endPos	= getLineEnd(view, line);
+	const intptr_t len		= endPos - startPos;
+
+	if (len <= 0)
+		return std::wstring {};
+
+	std::vector<char> text(len + 1, 0);
+
+	Sci_TextRangeFull tr;
+	tr.chrg.cpMin = startPos;
+	tr.chrg.cpMax = endPos;
+	tr.lpstrText = text.data();
+
+	CallScintilla(view, SCI_GETTEXTRANGEFULL, 0, (LPARAM)&tr);
+
+	const int wLen = ::MultiByteToWideChar(codepage, 0, text.data(), len, NULL, 0);
+
+	std::wstring lineWstr;
+	lineWstr.resize(wLen);
+
+	::MultiByteToWideChar(codepage, 0, text.data(), len, const_cast<wchar_t*>(lineWstr.data()), wLen);
+
+	return lineWstr;
+}
+
+
 void toLowerCase(std::vector<char>& text, int codepage)
 {
 	const int len = static_cast<int>(text.size());
