@@ -547,7 +547,7 @@ std::wstring getLineAsWstr(int view, intptr_t line, int codepage)
 {
 	const intptr_t startPos	= getLineStart(view, line);
 	const intptr_t endPos	= getLineEnd(view, line);
-	const intptr_t len		= endPos - startPos;
+	const int len			= static_cast<int>(endPos - startPos);
 
 	if (len <= 0)
 		return std::wstring {};
@@ -566,7 +566,7 @@ std::wstring getLineAsWstr(int view, intptr_t line, int codepage)
 	std::wstring lineWstr;
 	lineWstr.resize(wLen);
 
-	::MultiByteToWideChar(codepage, 0, text.data(), len, const_cast<wchar_t*>(lineWstr.data()), wLen);
+	::MultiByteToWideChar(codepage, 0, text.data(), len, &lineWstr[0], wLen);
 
 	return lineWstr;
 }

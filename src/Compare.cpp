@@ -2421,7 +2421,7 @@ void doAlignment(bool forceAlign = false)
 		cmpPair->nppReplaceDone = false;
 
 		::MessageBox(nppData._nppHandle,
-				TEXT("Compared file text replaced by Notepad++. Please manually re-compare")
+				TEXT("Compared file text replaced by Notepad++. Please manually re-compare ")
 				TEXT("to make sure compare results are valid!"),
 				PLUGIN_NAME, MB_OK | MB_ICONWARNING);
 	}
@@ -3109,7 +3109,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 				{
 					if (hasIgnoreOpts)
 						_tcscat_s(msg, _countof(msg),
-								TEXT("\n\nSome diffs exist but have either been ignored due to the compare options")
+								TEXT("\n\nSome diffs exist but have either been ignored due to the compare options ")
 								TEXT("or are in the line endings format."));
 					else
 						_tcscat_s(msg, _countof(msg), TEXT("\n\nThere are diffs in the line endings format."));
@@ -3132,7 +3132,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 						newName, ::PathFindFileName(oldFile.name),
 						cmpPair->options.findUniqueMode ? TEXT("do not contain unique lines") : TEXT("match"),
 						filesSha2Differ ? (hasIgnoreOpts ?
-							TEXT("\n\nSome diffs exist but have either been ignored due to the compare options")
+							TEXT("\n\nSome diffs exist but have either been ignored due to the compare options ")
 							TEXT("or are in the line endings format.") :
 							TEXT("\n\nThere are diffs in the line endings format.")) : TEXT(""),
 						Settings.PromptToCloseOnMatch ? TEXT("\n\nClose compared files?") : TEXT(""));
@@ -3513,7 +3513,7 @@ void ActiveCompareSummary()
 
 	if (hasDetectOpts)
 	{
-		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Detect: %s%s%s"),
+		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("Detect: %s%s%s%s"),
 				cmpPair->options.detectMoves			? TEXT("/Moves ")			: TEXT(""),
 				cmpPair->options.detectSubBlockDiffs	? TEXT("/Sub-block Diffs ")	: TEXT(""),
 				cmpPair->options.detectSubLineMoves		? TEXT("/Sub-line Moves ")	: TEXT(""),
@@ -3663,8 +3663,8 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::wofstream& patchFile)
 
 	for (auto dsi = cmpPair.summary.diffSections.begin(); dsi != cmpPair.summary.diffSections.end();)
 	{
-		int matchContextStart	= 0;
-		int matchContextEnd		= 0;
+		intptr_t matchContextStart	= 0;
+		intptr_t matchContextEnd		= 0;
 
 		len1 = 0;
 		len2 = 0;
@@ -4447,24 +4447,24 @@ bool constructFullFilePaths(std::pair<std::wstring, std::wstring>& files)
 	std::wstring longer;
 	std::wstring shorter;
 
-	for (int i = 0; i < openedFilesCount; ++i)
+	for (int j = 0; j < openedFilesCount; ++j)
 	{
-		size_t pathLen = wcslen(openedFiles[i]);
+		size_t pathLen = wcslen(openedFiles[j]);
 
 		if (pathLen >= longerFileName->size() &&
-			wcsstr(openedFiles[i] + pathLen - longerFileName->size(), longerFileName->c_str()))
+			wcsstr(openedFiles[j] + pathLen - longerFileName->size(), longerFileName->c_str()))
 		{
 			if (++longerFound == 1)
-				longer = openedFiles[i];
+				longer = openedFiles[j];
 		}
 		else if (pathLen >= shorterFileName->size() &&
-			wcsstr(openedFiles[i] + pathLen - shorterFileName->size(), shorterFileName->c_str()))
+			wcsstr(openedFiles[j] + pathLen - shorterFileName->size(), shorterFileName->c_str()))
 		{
 			if (++shorterFound == 1)
-				shorter = openedFiles[i];
+				shorter = openedFiles[j];
 		}
 
-		delete [] openedFiles[i];
+		delete [] openedFiles[j];
 	}
 
 	delete [] openedFiles;
