@@ -3596,7 +3596,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::wofstream& patchFile)
 
 	const auto sciEOL = CallScintilla(oldFile.compareViewId, SCI_GETEOLMODE, 0, 0);
 
-	const wchar_t eol = (sciEOL == SC_EOL_CR ? L'\r' : L'\n');
+	const wchar_t* eol = (sciEOL == SC_EOL_CRLF ? L"\r\n" : (sciEOL == SC_EOL_LF ? L"\n" : L"\r"));
 
 	// Write file names with least possible paths information to distinguish them
 	{
@@ -3622,8 +3622,8 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::wofstream& patchFile)
 		if (oldPos) ++oldPos;
 		if (newPos) ++newPos;
 
-		patchFile << L"--- " << &oldFile.name[oldPos];
-		patchFile << eol << L"+++ " << &newFile.name[newPos];
+		patchFile << L"--- " << &oldFile.name[oldPos] << eol;
+		patchFile << L"+++ " << &newFile.name[newPos];
 	}
 
 	// Write file names removing the common paths prefix
@@ -3631,8 +3631,8 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::wofstream& patchFile)
 		// int commonPos = ::PathCommonPrefix(oldFile.name, newFile.name, NULL);
 		// if (commonPos) ++commonPos;
 
-		// patchFile << L"--- " << &oldFile.name[commonPos];
-		// patchFile << eol << L"+++ " << &newFile.name[commonPos];
+		// patchFile << L"--- " << &oldFile.name[commonPos] << eol;
+		// patchFile << L"+++ " << &newFile.name[commonPos];
 	// }
 
 	static constexpr int cMatchContextLen = 3;
@@ -3785,9 +3785,23 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::wofstream& patchFile)
 			patchFile << eol << L' ' << getLineAsWstr(oldFile.compareViewId, oldLine++, oldCodepage);
 
 		if (dsn + 1 == cmpPair.summary.diffSections.end())
+		{
+			rOldLine = oldLine;
 			break;
+		}
 
 		dsi = dsn;
+	}
+
+	if (cmpPair.summary.diffSections.back().type == IN_2)
+	{
+		if (line2 <= CallScintilla(rFile2.compareViewId, SCI_GETLINECOUNT, 0, 0) - 1)
+			patchFile << eol;
+	}
+	else
+	{
+		if (line1 <= CallScintilla(rFile1.compareViewId, SCI_GETLINECOUNT, 0, 0) - 1)
+			patchFile << eol;
 	}
 }
 
@@ -3834,7 +3848,7 @@ void GeneratePatch()
 		if (!::GetSaveFileNameW(&ofn))
 			return;
 
-		ofs.open(patchFile, std::ios_base::trunc);
+		ofs.open(patchFile, std::ios_base::trunc | std::ios_base::binary);
 
 		if (!ofs.is_open())
 		{
@@ -3846,6 +3860,7 @@ void GeneratePatch()
 
 	formatAndWritePatch(*cmpPair, ofs);
 
+	ofs.flush();
 	ofs.close();
 }
 

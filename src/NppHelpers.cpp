@@ -550,7 +550,7 @@ std::wstring getLineAsWstr(int view, intptr_t line, int codepage)
 	const int len			= static_cast<int>(endPos - startPos);
 
 	if (len <= 0)
-		return std::wstring {};
+		return {};
 
 	std::vector<char> text(len + 1, 0);
 
