@@ -254,7 +254,7 @@ void UserSettings::save()
 	{
 		FILE* fp;
 
-		_wfopen_s(&fp, iniFile, L"w, ccs=UNICODE");
+		_wfopen_s(&fp, iniFile, L"w, ccs=UTF-8");
 
 		if (fp)
 			fclose(fp);
