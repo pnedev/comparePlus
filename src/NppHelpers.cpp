@@ -543,7 +543,7 @@ std::vector<char> getText(int view, intptr_t startPos, intptr_t endPos)
 }
 
 
-std::wstring getLineAsWstr(int view, intptr_t line, int codepage)
+std::vector<char> getLineAsBytes(int view, intptr_t line)
 {
 	const intptr_t startPos	= getLineStart(view, line);
 	const intptr_t endPos	= getLineEnd(view, line);
@@ -561,14 +561,9 @@ std::wstring getLineAsWstr(int view, intptr_t line, int codepage)
 
 	CallScintilla(view, SCI_GETTEXTRANGEFULL, 0, (LPARAM)&tr);
 
-	const int wLen = ::MultiByteToWideChar(codepage, 0, text.data(), len, NULL, 0);
+	text.pop_back();
 
-	std::wstring lineWstr;
-	lineWstr.resize(wLen);
-
-	::MultiByteToWideChar(codepage, 0, text.data(), len, &lineWstr[0], wLen);
-
-	return lineWstr;
+	return text;
 }
 
 

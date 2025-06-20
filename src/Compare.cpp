@@ -19,7 +19,6 @@
 
 #include <cstdlib>
 #include <string>
-#include <sstream>
 #include <fstream>
 #include <vector>
 #include <memory>
@@ -3589,19 +3588,21 @@ void BookmarkChanged()
 }
 
 
-void formatAndWritePatch(ComparedPair& cmpPair, std::wofstream& patchFile)
+void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 {
 	const auto& oldFile = cmpPair.getOldFile();
 	const auto& newFile = cmpPair.getNewFile();
 
 	const auto sciEOL = CallScintilla(oldFile.compareViewId, SCI_GETEOLMODE, 0, 0);
 
-	const wchar_t* eol = (sciEOL == SC_EOL_CRLF ? L"\r\n" : (sciEOL == SC_EOL_LF ? L"\n" : L"\r"));
+	const char* eol = (sciEOL == SC_EOL_CRLF ? "\r\n" : (sciEOL == SC_EOL_LF ? "\n" : "\r"));
 
 	// Write file names with least possible paths information to distinguish them
 	{
-		auto oldPos = wcslen(oldFile.name);
-		auto newPos = wcslen(newFile.name);
+		const int oldLen = static_cast<int>(wcslen(oldFile.name));
+		const int newLen = static_cast<int>(wcslen(newFile.name));
+		int oldPos = oldLen ? oldLen - 1 : 0;
+		int newPos = newLen ? newLen - 1 : 0;
 
 		for (; oldPos && newPos && oldFile.name[oldPos] == newFile.name[newPos]; --oldPos, --newPos);
 
@@ -3622,18 +3623,23 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::wofstream& patchFile)
 		if (oldPos) ++oldPos;
 		if (newPos) ++newPos;
 
-		patchFile << L"--- " << &oldFile.name[oldPos] << eol;
-		patchFile << L"+++ " << &newFile.name[newPos];
+		int len = ::WideCharToMultiByte(CP_UTF8, 0, &oldFile.name[oldPos], oldLen - oldPos, NULL, 0, NULL, NULL);
+
+		std::string fname;
+		fname.resize(len);
+
+		::WideCharToMultiByte(CP_UTF8, 0, &oldFile.name[oldPos], oldLen - oldPos, &fname[0], len, NULL, NULL);
+
+		patchFile << "--- " << fname << eol;
+
+		len = ::WideCharToMultiByte(CP_UTF8, 0, &newFile.name[newPos], newLen - newPos, NULL, 0, NULL, NULL);
+
+		fname.resize(len);
+
+		::WideCharToMultiByte(CP_UTF8, 0, &newFile.name[newPos], newLen - newPos, &fname[0], len, NULL, NULL);
+
+		patchFile << "+++ " << fname;
 	}
-
-	// Write file names removing the common paths prefix
-	// {
-		// int commonPos = ::PathCommonPrefix(oldFile.name, newFile.name, NULL);
-		// if (commonPos) ++commonPos;
-
-		// patchFile << L"--- " << &oldFile.name[commonPos] << eol;
-		// patchFile << L"+++ " << &newFile.name[commonPos];
-	// }
 
 	static constexpr int cMatchContextLen = 3;
 
@@ -3641,9 +3647,6 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::wofstream& patchFile)
 	intptr_t line2 = 0;
 	intptr_t len1 = 0;
 	intptr_t len2 = 0;
-
-	const int oldCodepage = getCodepage(oldFile.compareViewId);
-	const int newCodepage = getCodepage(newFile.compareViewId);
 
 	const bool oldIs1 = (cmpPair.summary.diff1view == oldFile.compareViewId);
 
@@ -3655,11 +3658,8 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::wofstream& patchFile)
 	intptr_t& rNewLine	= oldIs1 ? line2 : line1;
 	intptr_t& rNewLen	= oldIs1 ? len2 : len1;
 
-	const int& rCodepage1 = oldIs1 ? oldCodepage : newCodepage;
-	const int& rCodepage2 = oldIs1 ? newCodepage : oldCodepage;
-
-	const wchar_t diffMark1 = oldIs1 ? L'-' : L'+';
-	const wchar_t diffMark2 = oldIs1 ? L'+' : L'-';
+	const char diffMark1 = oldIs1 ? '-' : '+';
+	const char diffMark2 = oldIs1 ? '+' : '-';
 
 	for (auto dsi = cmpPair.summary.diffSections.begin(); dsi != cmpPair.summary.diffSections.end();)
 	{
@@ -3729,8 +3729,8 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::wofstream& patchFile)
 			}
 		}
 
-		patchFile << eol << L"@@ -" << rOldLine + 1 << L',' << rOldLen <<
-								L" +" << rNewLine + 1 << L',' << rNewLen <<  L" @@";
+		patchFile << eol << "@@ -" << rOldLine + 1 << ',' << rOldLen <<
+								" +" << rNewLine + 1 << ',' << rNewLen << " @@";
 
 		// Write current diff sections and context
 		for (auto dsr = dsi; dsr != dsn; dsr++)
@@ -3743,7 +3743,11 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::wofstream& patchFile)
 				rNewLine += matchContextStart;
 
 				for (; matchContextStart; --matchContextStart)
-					patchFile << eol << L' ' << getLineAsWstr(oldFile.compareViewId, rOldLine++, oldCodepage);
+				{
+					patchFile << eol << ' ';
+					const auto txt = getLineAsBytes(oldFile.compareViewId, rOldLine++);
+					patchFile.write(txt.data(), txt.size());
+				}
 			}
 			else if (dsr->type == IN_1)
 			{
@@ -3759,12 +3763,20 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::wofstream& patchFile)
 						replacementDiff = true;
 
 						for (intptr_t i = dsrn->len; i; --i)
-							patchFile << eol << diffMark2 << getLineAsWstr(rFile2.compareViewId, line2++, rCodepage2);
+						{
+							patchFile << eol << diffMark2;
+							const auto txt = getLineAsBytes(rFile2.compareViewId, line2++);
+							patchFile.write(txt.data(), txt.size());
+						}
 					}
 				}
 
 				for (intptr_t i = dsr->len; i; --i)
-					patchFile << eol << diffMark1 << getLineAsWstr(rFile1.compareViewId, line1++, rCodepage1);
+				{
+					patchFile << eol << diffMark1;
+					const auto txt = getLineAsBytes(rFile1.compareViewId, line1++);
+					patchFile.write(txt.data(), txt.size());
+				}
 
 				if (replacementDiff)
 					dsr++;
@@ -3772,7 +3784,11 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::wofstream& patchFile)
 			else
 			{
 				for (intptr_t i = dsr->len; i; --i)
-					patchFile << eol << diffMark2 << getLineAsWstr(rFile2.compareViewId, line2++, rCodepage2);
+				{
+					patchFile << eol << diffMark2;
+					const auto txt = getLineAsBytes(rFile2.compareViewId, line2++);
+					patchFile.write(txt.data(), txt.size());
+				}
 			}
 		}
 
@@ -3782,7 +3798,11 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::wofstream& patchFile)
 		intptr_t oldLine = rOldLine;
 
 		for (; matchContextEnd; --matchContextEnd)
-			patchFile << eol << L' ' << getLineAsWstr(oldFile.compareViewId, oldLine++, oldCodepage);
+		{
+			patchFile << eol << ' ';
+			const auto txt = getLineAsBytes(oldFile.compareViewId, oldLine++);
+			patchFile.write(txt.data(), txt.size());
+		}
 
 		if (dsn + 1 == cmpPair.summary.diffSections.end())
 		{
@@ -3827,28 +3847,28 @@ void GeneratePatch()
 		return;
 	}
 
-	std::wofstream ofs;
+	std::ofstream ofs;
 	{
-		wchar_t patchFile[2048];
+		wchar_t fname[2048];
 
 		OPENFILENAME ofn;
 
-		::ZeroMemory(&patchFile, sizeof(patchFile));
+		::ZeroMemory(&fname, sizeof(fname));
 		::ZeroMemory(&ofn, sizeof(ofn));
 
 		ofn.lStructSize		= sizeof(ofn);
 		ofn.hwndOwner		= nppData._nppHandle;
 		ofn.lpstrFilter		= L"All Files\0*.*\0\0";
-		ofn.lpstrFile		= patchFile;
-		ofn.nMaxFile		= _countof(patchFile);
+		ofn.lpstrFile		= fname;
+		ofn.nMaxFile		= _countof(fname);
 		ofn.lpstrInitialDir	= nullptr;
 		ofn.lpstrTitle		= L"Save patch file as:";
 		ofn.Flags			= OFN_DONTADDTORECENT | OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST;
 
-		if (!::GetSaveFileNameW(&ofn))
+		if (!::GetSaveFileName(&ofn))
 			return;
 
-		ofs.open(patchFile, std::ios_base::trunc | std::ios_base::binary);
+		ofs.open(fname, std::ios_base::trunc | std::ios_base::binary);
 
 		if (!ofs.is_open())
 		{
