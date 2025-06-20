@@ -3745,7 +3745,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 				for (; matchContextStart; --matchContextStart)
 				{
 					patchFile << eol << ' ';
-					const auto txt = getLineAsBytes(oldFile.compareViewId, rOldLine++);
+					const auto txt = getLineText(oldFile.compareViewId, rOldLine++);
 					patchFile.write(txt.data(), txt.size());
 				}
 			}
@@ -3765,7 +3765,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 						for (intptr_t i = dsrn->len; i; --i)
 						{
 							patchFile << eol << diffMark2;
-							const auto txt = getLineAsBytes(rFile2.compareViewId, line2++);
+							const auto txt = getLineText(rFile2.compareViewId, line2++);
 							patchFile.write(txt.data(), txt.size());
 						}
 					}
@@ -3774,7 +3774,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 				for (intptr_t i = dsr->len; i; --i)
 				{
 					patchFile << eol << diffMark1;
-					const auto txt = getLineAsBytes(rFile1.compareViewId, line1++);
+					const auto txt = getLineText(rFile1.compareViewId, line1++);
 					patchFile.write(txt.data(), txt.size());
 				}
 
@@ -3786,7 +3786,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 				for (intptr_t i = dsr->len; i; --i)
 				{
 					patchFile << eol << diffMark2;
-					const auto txt = getLineAsBytes(rFile2.compareViewId, line2++);
+					const auto txt = getLineText(rFile2.compareViewId, line2++);
 					patchFile.write(txt.data(), txt.size());
 				}
 			}
@@ -3800,7 +3800,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 		for (; matchContextEnd; --matchContextEnd)
 		{
 			patchFile << eol << ' ';
-			const auto txt = getLineAsBytes(oldFile.compareViewId, oldLine++);
+			const auto txt = getLineText(oldFile.compareViewId, oldLine++);
 			patchFile.write(txt.data(), txt.size());
 		}
 

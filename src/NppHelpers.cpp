@@ -543,7 +543,7 @@ std::vector<char> getText(int view, intptr_t startPos, intptr_t endPos)
 }
 
 
-std::vector<char> getLineAsBytes(int view, intptr_t line)
+std::vector<char> getLineText(int view, intptr_t line)
 {
 	const intptr_t startPos	= getLineStart(view, line);
 	const intptr_t endPos	= getLineEnd(view, line);
