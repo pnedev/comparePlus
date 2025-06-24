@@ -2357,6 +2357,27 @@ inline std::vector<diff_section_t> toDiffSections(const CompareInfo& cmpInfo)
 			(bd.type == diff_type::DIFF_IN_1) ? DiffType::IN_1 : DiffType::IN_2);
 	}
 
+	// diffSecs is used as data for patch generation - remove the artificial last empty lines from sections lengths
+	if (!diffSecs.empty())
+	{
+		if (diffSecs.back().type == DiffType::MATCH || diffSecs.back().type == DiffType::IN_1)
+		{
+			if (isLineEmpty(cmpInfo.doc1.view, CallScintilla(cmpInfo.doc1.view, SCI_GETLINECOUNT, 0, 0) - 1))
+				diffSecs.back().len--;
+		}
+		else
+		{
+			if (isLineEmpty(cmpInfo.doc2.view, CallScintilla(cmpInfo.doc2.view, SCI_GETLINECOUNT, 0, 0) - 1))
+				diffSecs.back().len--;
+
+			auto rit = diffSecs.rbegin() + 1;
+
+			if (rit != diffSecs.rend() && rit->type == DiffType::IN_1 &&
+					isLineEmpty(cmpInfo.doc1.view, CallScintilla(cmpInfo.doc1.view, SCI_GETLINECOUNT, 0, 0) - 1))
+				rit->len--;
+		}
+	}
+
 	return diffSecs;
 }
 

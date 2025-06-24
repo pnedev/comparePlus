@@ -3653,6 +3653,9 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 	const auto& rFile1 = oldIs1 ? oldFile : newFile;
 	const auto& rFile2 = oldIs1 ? newFile : oldFile;
 
+	const intptr_t endLine1 = CallScintilla(rFile1.compareViewId, SCI_GETLINECOUNT, 0, 0) - 1;
+	const intptr_t endLine2 = CallScintilla(rFile2.compareViewId, SCI_GETLINECOUNT, 0, 0) - 1;
+
 	intptr_t& rOldLine	= oldIs1 ? line1 : line2;
 	intptr_t& rOldLen	= oldIs1 ? len1 : len2;
 	intptr_t& rNewLine	= oldIs1 ? line2 : line1;
@@ -3664,7 +3667,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 	for (auto dsi = cmpPair.summary.diffSections.begin(); dsi != cmpPair.summary.diffSections.end();)
 	{
 		intptr_t matchContextStart	= 0;
-		intptr_t matchContextEnd		= 0;
+		intptr_t matchContextEnd	= 0;
 
 		len1 = 0;
 		len2 = 0;
@@ -3751,16 +3754,22 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 			}
 			else if (dsr->type == IN_1)
 			{
-				bool replacementDiff = false;
+				auto dsrn = dsr + 1;
 
-				if (!oldIs1)
+				// Replacement (changed) diff type - put old diff lines first
+				if (dsrn != dsn && dsrn->type == IN_2)
 				{
-					auto dsrn = dsr + 1;
-
-					// Replacement (changed) diff type - put old diff lines first
-					if (dsrn != dsn && dsrn->type == IN_2)
+					if (oldIs1)
 					{
-						replacementDiff = true;
+						for (intptr_t i = dsr->len; i; --i)
+						{
+							patchFile << eol << diffMark1;
+							const auto txt = getLineText(rFile1.compareViewId, line1++);
+							patchFile.write(txt.data(), txt.size());
+						}
+
+						if (line1 > endLine1)
+							patchFile << eol << "\\ No newline at end of file";
 
 						for (intptr_t i = dsrn->len; i; --i)
 						{
@@ -3768,18 +3777,44 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 							const auto txt = getLineText(rFile2.compareViewId, line2++);
 							patchFile.write(txt.data(), txt.size());
 						}
+
+						if (line2 > endLine2)
+							patchFile << eol << "\\ No newline at end of file";
+					}
+					else
+					{
+						for (intptr_t i = dsrn->len; i; --i)
+						{
+							patchFile << eol << diffMark2;
+							const auto txt = getLineText(rFile2.compareViewId, line2++);
+							patchFile.write(txt.data(), txt.size());
+						}
+
+						if (line2 > endLine2)
+							patchFile << eol << "\\ No newline at end of file";
+
+						for (intptr_t i = dsr->len; i; --i)
+						{
+							patchFile << eol << diffMark1;
+							const auto txt = getLineText(rFile1.compareViewId, line1++);
+							patchFile.write(txt.data(), txt.size());
+						}
+
+						if (line1 > endLine1)
+							patchFile << eol << "\\ No newline at end of file";
+					}
+
+					dsr++;
+				}
+				else
+				{
+					for (intptr_t i = dsr->len; i; --i)
+					{
+						patchFile << eol << diffMark1;
+						const auto txt = getLineText(rFile1.compareViewId, line1++);
+						patchFile.write(txt.data(), txt.size());
 					}
 				}
-
-				for (intptr_t i = dsr->len; i; --i)
-				{
-					patchFile << eol << diffMark1;
-					const auto txt = getLineText(rFile1.compareViewId, line1++);
-					patchFile.write(txt.data(), txt.size());
-				}
-
-				if (replacementDiff)
-					dsr++;
 			}
 			else
 			{
@@ -3793,7 +3828,18 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 		}
 
 		if (dsn == cmpPair.summary.diffSections.end())
+		{
+			const auto dsSize = cmpPair.summary.diffSections.size();
+
+			// Replaced section at the end does not require additional processing
+			if (dsSize > 1 && cmpPair.summary.diffSections[dsSize - 2].type != MATCH)
+			{
+				patchFile << eol;
+				return;
+			}
+
 			break;
+		}
 
 		intptr_t oldLine = rOldLine;
 
@@ -3806,6 +3852,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 
 		if (dsn + 1 == cmpPair.summary.diffSections.end())
 		{
+			rNewLine += oldLine - rOldLine;
 			rOldLine = oldLine;
 			break;
 		}
@@ -3815,12 +3862,16 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 
 	if (cmpPair.summary.diffSections.back().type == IN_2)
 	{
-		if (line2 <= CallScintilla(rFile2.compareViewId, SCI_GETLINECOUNT, 0, 0) - 1)
+		if (line2 > endLine2)
+			patchFile << eol << "\\ No newline at end of file" << eol;
+		else
 			patchFile << eol;
 	}
 	else
 	{
-		if (line1 <= CallScintilla(rFile1.compareViewId, SCI_GETLINECOUNT, 0, 0) - 1)
+		if (line1 > endLine1)
+			patchFile << eol << "\\ No newline at end of file" << eol;
+		else
 			patchFile << eol;
 	}
 }
