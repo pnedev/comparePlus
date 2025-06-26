@@ -157,3 +157,40 @@ bool setToClipboard(const std::vector<wchar_t>& txt)
 
 	return true;
 }
+
+
+void toLowerCase(std::vector<char>& text, int codepage)
+{
+	const int len = static_cast<int>(text.size());
+
+	if (len == 0)
+		return;
+
+	const int wLen = ::MultiByteToWideChar(codepage, 0, text.data(), len, NULL, 0);
+
+	std::vector<wchar_t> wText(wLen);
+
+	::MultiByteToWideChar(codepage, 0, text.data(), len, wText.data(), wLen);
+
+	wText.push_back(L'\0');
+	::CharLowerW((LPWSTR)wText.data());
+	wText.pop_back();
+
+	::WideCharToMultiByte(codepage, 0, wText.data(), wLen, text.data(), len, NULL, NULL);
+}
+
+
+std::string WCtoMB(const wchar_t* wc, int len, int codepage)
+{
+	if (!wc || !len)
+		return {};
+
+	int l = ::WideCharToMultiByte(codepage, 0, wc, len, NULL, 0, NULL, NULL);
+
+	std::string str;
+	str.resize(len > 0 ? l : l - 1);
+
+	::WideCharToMultiByte(codepage, 0, wc, len, &str[0], l, NULL, NULL);
+
+	return str;
+}

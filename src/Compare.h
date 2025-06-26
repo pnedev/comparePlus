@@ -35,6 +35,8 @@
 	#include <string>
 	#include <shlwapi.h>
 
+	#include "Tools.h"
+
 	#define LOG_ALGO			(1 << 0)
 	#define LOG_SYNC			(1 << 1)
 	#define LOG_NOTIF			(1 << 2)
@@ -51,14 +53,12 @@
 		if (DLOG & LOG_FILTER) { \
 			const DWORD time_ms = ::GetTickCount(); \
 			TCHAR file[MAX_PATH]; \
-			char fileA[MAX_PATH * 2]; \
 			::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, _countof(file), (LPARAM)file); \
-			::WideCharToMultiByte(CP_UTF8, 0, file, -1, fileA, sizeof(fileA), NULL, NULL); \
 			std::string tmp_str { std::to_string(time_ms - dLogTime_ms) }; \
 			dLog += tmp_str; \
 			if (tmp_str.size() < 5) dLog += " ms\t\t("; \
 			else dLog += " ms\t("; \
-			tmp_str = fileA; \
+			tmp_str = WCtoMB(file, -1); \
 			dLog += tmp_str; \
 			if (tmp_str.size() < 7) dLog += ")\t\t\t"; \
 			else if (tmp_str.size() < 11) dLog += ")\t\t"; \
@@ -74,14 +74,12 @@
 		if (DLOG & LOG_FILTER) { \
 			const DWORD time_ms = ::GetTickCount(); \
 			TCHAR file[MAX_PATH]; \
-			char fileA[MAX_PATH * 2]; \
 			::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, BUFFID, (LPARAM)file); \
-			::WideCharToMultiByte(CP_UTF8, 0, ::PathFindFileName(file), -1, fileA, sizeof(fileA), NULL, NULL); \
 			std::string tmp_str { std::to_string(time_ms - dLogTime_ms) }; \
 			dLog += tmp_str; \
 			if (tmp_str.size() < 5) dLog += " ms\t\t("; \
 			else dLog += " ms\t("; \
-			tmp_str = fileA; \
+			tmp_str = WCtoMB(::PathFindFileName(file), -1); \
 			dLog += tmp_str; \
 			if (tmp_str.size() < 7) dLog += ")\t\t\t"; \
 			else if (tmp_str.size() < 11) dLog += ")\t\t"; \

@@ -789,7 +789,6 @@ void clearAnnotations(int view, intptr_t startLine, intptr_t length);
 
 std::vector<char> getText(int view, intptr_t startPos, intptr_t endPos);
 std::vector<char> getLineText(int view, intptr_t line);
-void toLowerCase(std::vector<char>& text, int codepage = CP_UTF8);
 
 void addBlankSection(int view, intptr_t line, intptr_t length, intptr_t selectionMarkPosition = 0,
 		const char *text = nullptr);

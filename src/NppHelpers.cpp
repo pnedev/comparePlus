@@ -567,27 +567,6 @@ std::vector<char> getLineText(int view, intptr_t line)
 }
 
 
-void toLowerCase(std::vector<char>& text, int codepage)
-{
-	const int len = static_cast<int>(text.size());
-
-	if (len == 0)
-		return;
-
-	const int wLen = ::MultiByteToWideChar(codepage, 0, text.data(), len, NULL, 0);
-
-	std::vector<wchar_t> wText(wLen);
-
-	::MultiByteToWideChar(codepage, 0, text.data(), len, wText.data(), wLen);
-
-	wText.push_back(L'\0');
-	::CharLowerW((LPWSTR)wText.data());
-	wText.pop_back();
-
-	::WideCharToMultiByte(codepage, 0, wText.data(), wLen, text.data(), len, NULL, NULL);
-}
-
-
 void clearWindow(int view)
 {
 	CallScintilla(view, SCI_ANNOTATIONCLEARALL, 0, 0);

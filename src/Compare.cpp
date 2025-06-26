@@ -3241,17 +3241,8 @@ void ClipboardDiff()
 	if (!createTempFile(nullptr, CLIPBOARD_TEMP))
 		return;
 
-	const size_t len =
-			::WideCharToMultiByte(CP_UTF8, 0, content.data(), static_cast<int>(content.size()), NULL, 0, NULL, NULL);
-
-	std::vector<char> txt(len);
-
-	::WideCharToMultiByte(CP_UTF8, 0, content.data(), static_cast<int>(content.size()), txt.data(),
-			static_cast<int>(len), NULL, NULL);
+	setContent(WCtoMB(content.data(), static_cast<int>(content.size())).c_str());
 	content.clear();
-
-	setContent(txt.data());
-	txt.clear();
 
 	compare(isSel);
 }
@@ -3623,22 +3614,8 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 		if (oldPos) ++oldPos;
 		if (newPos) ++newPos;
 
-		int len = ::WideCharToMultiByte(CP_UTF8, 0, &oldFile.name[oldPos], oldLen - oldPos, NULL, 0, NULL, NULL);
-
-		std::string fname;
-		fname.resize(len);
-
-		::WideCharToMultiByte(CP_UTF8, 0, &oldFile.name[oldPos], oldLen - oldPos, &fname[0], len, NULL, NULL);
-
-		patchFile << "--- " << fname << eol;
-
-		len = ::WideCharToMultiByte(CP_UTF8, 0, &newFile.name[newPos], newLen - newPos, NULL, 0, NULL, NULL);
-
-		fname.resize(len);
-
-		::WideCharToMultiByte(CP_UTF8, 0, &newFile.name[newPos], newLen - newPos, &fname[0], len, NULL, NULL);
-
-		patchFile << "+++ " << fname;
+		patchFile << "--- " << WCtoMB(&oldFile.name[oldPos], oldLen - oldPos) << eol;
+		patchFile << "+++ " << WCtoMB(&newFile.name[newPos], newLen - newPos);
 	}
 
 	static constexpr int cMatchContextLen = 3;

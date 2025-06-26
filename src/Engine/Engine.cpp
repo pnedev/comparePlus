@@ -33,6 +33,7 @@
 
 #include <windows.h>
 
+#include "Tools.h"
 #include "Engine.h"
 #include "diff.h"
 // #include "fast_myers_diff.h"

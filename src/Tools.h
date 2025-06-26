@@ -20,6 +20,7 @@
 #pragma once
 
 #include <map>
+#include <string>
 #include <vector>
 #include <windows.h>
 #include <tchar.h>
@@ -118,3 +119,7 @@ inline bool fileExists(const TCHAR* filePath)
 
 std::vector<wchar_t> getFromClipboard(bool addLeadingNewLine = false);
 bool setToClipboard(const std::vector<wchar_t>& txt);
+
+void toLowerCase(std::vector<char>& text, int codepage = CP_UTF8);
+
+std::string WCtoMB(const wchar_t* wc, int len, int codepage = CP_UTF8);
