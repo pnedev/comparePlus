@@ -221,7 +221,7 @@ std::vector<intptr_t> getAllBookmarkedLines(int view)
 {
 	std::vector<intptr_t> bookmarkedLines;
 
-	const intptr_t	linesCount	= CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+	const intptr_t	linesCount	= getLinesCount(view);
 	intptr_t		line		= CallScintilla(view, SCI_MARKERNEXT, 0, nppBookmarkMarker);
 
 	while (line >= 0)
@@ -240,7 +240,7 @@ std::vector<intptr_t> getAllBookmarkedLines(int view)
 
 void bookmarkMarkedLines(int view, int markMask)
 {
-	const intptr_t	linesCount	= CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+	const intptr_t	linesCount	= getLinesCount(view);
 	intptr_t		line		= CallScintilla(view, SCI_MARKERNEXT, 0, markMask);
 
 	while (line >= 0)
@@ -258,7 +258,7 @@ void bookmarkMarkedLines(int view, int markMask)
 intptr_t otherViewMatchingLine(int view, intptr_t line, intptr_t adjustment, bool check)
 {
 	const int		otherView		= getOtherViewId(view);
-	const intptr_t	otherLineCount	= CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0);
+	const intptr_t	otherLineCount	= getLinesCount(otherView);
 
 	const intptr_t otherLine = getDocLineFromVisible(otherView, getVisibleFromDocLine(view, line) + adjustment);
 
@@ -615,7 +615,7 @@ void clearMarks(int view, intptr_t line)
 
 void clearMarks(int view, intptr_t startLine, intptr_t length)
 {
-	intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+	intptr_t linesCount = getLinesCount(view);
 
 	if (startLine + length < linesCount)
 		linesCount = startLine + length;
@@ -639,7 +639,7 @@ intptr_t getPrevUnmarkedLine(int view, intptr_t startLine, int markMask)
 
 intptr_t getNextUnmarkedLine(int view, intptr_t startLine, int markMask)
 {
-	const intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+	const intptr_t linesCount = getLinesCount(view);
 
 	for (; (startLine < linesCount) && isLineMarked(view, startLine, markMask); ++startLine);
 
@@ -650,7 +650,7 @@ intptr_t getNextUnmarkedLine(int view, intptr_t startLine, int markMask)
 std::pair<intptr_t, intptr_t> getMarkedSection(int view, intptr_t startLine, intptr_t endLine, int markMask,
 	bool excludeNewLine)
 {
-	const intptr_t lastLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
+	const intptr_t lastLine = getEndLine(view);
 
 	if ((startLine < 0) || (endLine > lastLine) || (startLine > endLine) || !isLineMarked(view, startLine, markMask))
 		return std::make_pair(-1, -1);
@@ -678,7 +678,7 @@ std::vector<int> getMarkers(int view, intptr_t startLine, intptr_t length, int m
 	if (length <= 0 || startLine < 0)
 		return markers;
 
-	const intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+	const intptr_t linesCount = getLinesCount(view);
 
 	if (startLine + length > linesCount)
 		length = linesCount - startLine;
@@ -726,7 +726,7 @@ void setMarkers(int view, intptr_t startLine, const std::vector<int> &markers)
 
 void unhideAllLines(int view)
 {
-	const intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+	const intptr_t linesCount = getLinesCount(view);
 
 	auto foldedLines = getFoldedLines(view);
 	CallScintilla(view, SCI_SHOWLINES, 0, linesCount - 1);
@@ -738,7 +738,7 @@ void unhideLinesInRange(int view, intptr_t line, intptr_t length)
 {
 	if (line >= 0 && length > 0)
 	{
-		const intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+		const intptr_t linesCount = getLinesCount(view);
 
 		if (line + length > linesCount)
 			length = linesCount - line;
@@ -753,7 +753,7 @@ void hideLinesOutsideRange(int view, intptr_t startLine, intptr_t endLine)
 	if (endLine <= startLine)
 		return;
 
-	const intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+	const intptr_t linesCount = getLinesCount(view);
 
 	if (startLine >= 0 && endLine < linesCount)
 	{
@@ -773,7 +773,7 @@ void hideLinesOutsideRange(int view, intptr_t startLine, intptr_t endLine)
 
 void hideLines(int view, int hideMarkMask, bool hideUnmarked)
 {
-	const intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+	const intptr_t linesCount = getLinesCount(view);
 	const int otherMarkMask = (MARKER_MASK_LINE ^ hideMarkMask) & MARKER_MASK_LINE;
 
 	// First line (0) cannot be hidden so start from line 1
@@ -849,7 +849,7 @@ bool isAdjacentAnnotationVisible(int view, intptr_t line, bool down)
 
 void clearAnnotations(int view, intptr_t startLine, intptr_t length)
 {
-	intptr_t endLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+	intptr_t endLine = getLinesCount(view);
 
 	if (startLine + length < endLine)
 		endLine = startLine + length;
@@ -897,7 +897,7 @@ std::vector<intptr_t> getFoldedLines(int view)
 	if (CallScintilla(view, SCI_GETALLLINESVISIBLE, 0, 0))
 		return {};
 
-	const intptr_t linesCount = CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+	const intptr_t linesCount = getLinesCount(view);
 
 	std::vector<intptr_t> foldedLines;
 
@@ -955,7 +955,7 @@ std::vector<wchar_t> generateContentsSha256(int view, intptr_t startLine, intptr
 		startLine = 0;
 
 	if (endLine < 0)
-		endLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
+		endLine = getEndLine(view);
 
 	// Store current clipboard content
 	auto clipboardContent = getFromClipboard();

@@ -234,7 +234,7 @@ bool DeletedSectionsList::push(int view, int currAction, intptr_t startLine, int
 	{
 		delSection.markers = getMarkers(view, startLine, len, MARKER_MASK_ALL);
 
-		if (startLine + len < CallScintilla(view, SCI_GETLINECOUNT, 0, 0))
+		if (startLine + len < getLinesCount(view))
 			delSection.nextLineMarker = CallScintilla(view, SCI_MARKERGET, startLine + len, 0) & MARKER_MASK_ALL;
 	}
 	else
@@ -1474,8 +1474,7 @@ void showBlankAdjacentArrowMark(int view, intptr_t line, bool down)
 	{
 		if (isAdjacentAnnotationVisible(view, line, down))
 			setArrowMark(view, line, down);
-		else if ((line == CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1) &&
-				isAdjacentAnnotationVisible(view, line, true))
+		else if ((line == getEndLine(view)) && isAdjacentAnnotationVisible(view, line, true))
 			setArrowMark(view, line, true);
 		else
 			setArrowMark(-1);
@@ -1503,7 +1502,7 @@ intptr_t getCornerLine(int view, bool down, const CompareList_t::iterator& cmpPa
 		if (down)
 			cornerLine = 0;
 		else
-			cornerLine = CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
+			cornerLine = getEndLine(view);
 	}
 
 	return cornerLine;
@@ -1578,16 +1577,14 @@ std::pair<int, intptr_t> findNextChange(intptr_t mainStartLine, intptr_t subStar
 			{
 				line = otherViewMatchingLine(otherView, otherLine);
 
-				if (down && isLineAnnotated(view, line) &&
-					(line < CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1) &&
+				if (down && isLineAnnotated(view, line) && (line < getEndLine(view)) &&
 					((view == MAIN_VIEW && line <= mainStartLine) || (view == SUB_VIEW && line <= subStartLine)))
 					++line;
 			}
 		}
 	}
 
-	if (!down && !Settings.HideMatches && isLineAnnotated(view, line) &&
-			(line < CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1))
+	if (!down && !Settings.HideMatches && isLineAnnotated(view, line) && (line < getEndLine(view)))
 		++line;
 
 	if (cmpPair->options.selectionCompare && !isLineMarked(view, line, MARKER_MASK_LINE))
@@ -2053,8 +2050,8 @@ bool isAlignmentNeeded(int view, CompareList_t::iterator& cmpPair)
 
 	if (!cmpPair->options.selectionCompare)
 	{
-		mainEndLine	= CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
-		subEndLine	= CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
+		mainEndLine	= getEndLine(MAIN_VIEW);
+		subEndLine	= getEndLine(SUB_VIEW);
 	}
 	else
 	{
@@ -2107,8 +2104,8 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 
 	if (!cmpPair->options.selectionCompare)
 	{
-		mainEndLine	= CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
-		subEndLine	= CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) - 1;
+		mainEndLine	= getEndLine(MAIN_VIEW);
+		subEndLine	= getEndLine(SUB_VIEW);
 	}
 	else
 	{
@@ -2930,8 +2927,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 				const int tmpView = cmpPair->getOldFile().compareViewId;
 
 				cmpPair->options.selections[newView] = getSelectionLines(newView);
-				cmpPair->options.selections[tmpView] =
-						std::make_pair(1, CallScintilla(tmpView, SCI_GETLINECOUNT, 0, 0) - 1);
+				cmpPair->options.selections[tmpView] = std::make_pair(1, getEndLine(tmpView));
 			}
 		}
 
@@ -2963,8 +2959,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 						cmpPair->options.selections[SUB_VIEW].first + 1 > cLinesCountWarningLimit);
 				else
 					largeFilesWarning =
-						(CallScintilla(MAIN_VIEW, SCI_GETLINECOUNT, 0, 0) > cLinesCountWarningLimit) &&
-						(CallScintilla(SUB_VIEW, SCI_GETLINECOUNT, 0, 0) > cLinesCountWarningLimit);
+						(getLinesCount(MAIN_VIEW) > cLinesCountWarningLimit) &&
+						(getLinesCount(SUB_VIEW) > cLinesCountWarningLimit);
 
 				if (largeFilesWarning)
 				{
@@ -3630,8 +3626,8 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 	const auto& rFile1 = oldIs1 ? oldFile : newFile;
 	const auto& rFile2 = oldIs1 ? newFile : oldFile;
 
-	const intptr_t endLine1 = CallScintilla(rFile1.compareViewId, SCI_GETLINECOUNT, 0, 0) - 1;
-	const intptr_t endLine2 = CallScintilla(rFile2.compareViewId, SCI_GETLINECOUNT, 0, 0) - 1;
+	const intptr_t endLine1 = getEndLine(rFile1.compareViewId);
+	const intptr_t endLine2 = getEndLine(rFile2.compareViewId);
 
 	intptr_t& rOldLine	= oldIs1 ? line1 : line2;
 	intptr_t& rOldLen	= oldIs1 ? len1 : len2;
@@ -4287,7 +4283,7 @@ void syncViews(int biasView)
 	intptr_t firstVisible				= getFirstVisibleLine(biasView);
 	const intptr_t otherFirstVisible	= getFirstVisibleLine(otherView);
 
-	const intptr_t endLine = getPreviousUnhiddenLine(biasView, CallScintilla(biasView, SCI_GETLINECOUNT, 0, 0) - 1);
+	const intptr_t endLine = getPreviousUnhiddenLine(biasView, getEndLine(biasView));
 	const intptr_t endVisible =
 			getVisibleFromDocLine(biasView, endLine) + getWrapCount(biasView, endLine) +
 			getLineAnnotation(biasView, endLine);
@@ -4305,8 +4301,7 @@ void syncViews(int biasView)
 
 	if (firstVisible != otherFirstVisible)
 	{
-		const intptr_t otherEndLine =
-				getPreviousUnhiddenLine(otherView, CallScintilla(otherView, SCI_GETLINECOUNT, 0, 0) - 1);
+		const intptr_t otherEndLine = getPreviousUnhiddenLine(otherView, getEndLine(otherView));
 		const intptr_t otherEndVisible =
 				getVisibleFromDocLine(otherView, otherEndLine) +
 				getWrapCount(otherView, otherEndLine) + getLineAnnotation(otherView, otherEndLine);
@@ -5035,14 +5030,14 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 
 	if (markedRange.first < 0)
 	{
-		const intptr_t lastLine = CallScintilla(viewId, SCI_GETLINECOUNT, 0, 0) - 1;
+		const intptr_t lastLine = getEndLine(viewId);
 
 		otherMarkedRange.first	= otherViewMatchingLine(viewId, line, getWrapCount(viewId, line));
 
 		if (line < lastLine)
 			otherMarkedRange.second	= otherViewMatchingLine(viewId, line + 1, -1);
 		else
-			otherMarkedRange.second = CallScintilla(otherViewId, SCI_GETLINECOUNT, 0, 0) - 1;
+			otherMarkedRange.second = getEndLine(otherViewId);
 	}
 	else
 	{
@@ -5150,7 +5145,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 		}
 	}
 
-	const intptr_t lastLine = CallScintilla(viewId, SCI_GETLINECOUNT, 0, 0) - 1;
+	const intptr_t lastLine = getEndLine(viewId);
 
 	if (markedRange.first >= 0)
 	{
@@ -5223,7 +5218,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 				CallScintilla(otherViewId, SCI_LINEFROMPOSITION, otherMarkedRange.second, 0) - 1));
 
 		if (copyOtherTillEnd)
-			otherMarkedRange.second = getLineEnd(otherViewId, CallScintilla(otherViewId, SCI_GETLINECOUNT, 0, 0) - 1);
+			otherMarkedRange.second = getLineEnd(otherViewId, getEndLine(otherViewId));
 
 		const auto text = getText(otherViewId, otherMarkedRange.first, otherMarkedRange.second);
 

@@ -44,7 +44,7 @@ void NavDialog::NavView::init(HDC hDC)
 	m_hViewDC	= ::CreateCompatibleDC(hDC);
 	m_hSelDC	= ::CreateCompatibleDC(hDC);
 
-	m_lines	= CallScintilla(m_view, SCI_GETLINECOUNT, 0, 0);
+	m_lines	= getLinesCount(m_view);
 
 	m_hViewBMP	= ::CreateCompatibleBitmap(hDC, 1, static_cast<int>(m_lines));
 	m_hSelBMP	= ::CreateCompatibleBitmap(hDC, 1, 1);
@@ -251,8 +251,8 @@ void NavDialog::Update()
 		return;
 
 	// Bitmap needs to be recreated
-	if ((m_view[0].m_lines != CallScintilla(m_view[0].m_view, SCI_GETLINECOUNT, 0, 0)) ||
-		(m_view[1].m_lines != CallScintilla(m_view[1].m_view, SCI_GETLINECOUNT, 0, 0)))
+	if ((m_view[0].m_lines != getLinesCount(m_view[0].m_view)) ||
+		(m_view[1].m_lines != getLinesCount(m_view[1].m_view)))
 	{
 		Show();
 	}
@@ -454,8 +454,8 @@ void NavDialog::setScalingFactor()
 	if (r.bottom - r.top == 0)
 		return;
 
-	m_view[0].m_lines = CallScintilla(m_view[0].m_view, SCI_GETLINECOUNT, 0, 0);
-	m_view[1].m_lines = CallScintilla(m_view[1].m_view, SCI_GETLINECOUNT, 0, 0);
+	m_view[0].m_lines = getLinesCount(m_view[0].m_view);
+	m_view[1].m_lines = getLinesCount(m_view[1].m_view);
 
 	m_view[0].updateFirstVisible();
 	m_view[1].updateFirstVisible();

@@ -428,7 +428,7 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 	intptr_t linesCount = CallScintilla(doc.view, SCI_GETLENGTH, 0, 0);
 
 	if (linesCount)
-		linesCount = CallScintilla(doc.view, SCI_GETLINECOUNT, 0, 0);
+		linesCount = getLinesCount(doc.view);
 	else
 		return;
 
@@ -2363,18 +2363,18 @@ inline std::vector<diff_section_t> toDiffSections(const CompareInfo& cmpInfo)
 	{
 		if (diffSecs.back().type == DiffType::MATCH || diffSecs.back().type == DiffType::IN_1)
 		{
-			if (isLineEmpty(cmpInfo.doc1.view, CallScintilla(cmpInfo.doc1.view, SCI_GETLINECOUNT, 0, 0) - 1))
+			if (isLineEmpty(cmpInfo.doc1.view, getEndLine(cmpInfo.doc1.view)))
 				diffSecs.back().len--;
 		}
 		else
 		{
-			if (isLineEmpty(cmpInfo.doc2.view, CallScintilla(cmpInfo.doc2.view, SCI_GETLINECOUNT, 0, 0) - 1))
+			if (isLineEmpty(cmpInfo.doc2.view, getEndLine(cmpInfo.doc2.view)))
 				diffSecs.back().len--;
 
 			auto rit = diffSecs.rbegin() + 1;
 
 			if (rit != diffSecs.rend() && rit->type == DiffType::IN_1 &&
-					isLineEmpty(cmpInfo.doc1.view, CallScintilla(cmpInfo.doc1.view, SCI_GETLINECOUNT, 0, 0) - 1))
+					isLineEmpty(cmpInfo.doc1.view, getEndLine(cmpInfo.doc1.view)))
 				rit->len--;
 		}
 	}
