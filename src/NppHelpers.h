@@ -730,6 +730,8 @@ inline void bookmarkLine(int view, intptr_t line)
 }
 
 
+std::vector<intptr_t> getVisibleLines(int view, bool skipFirstLine = false);
+
 // Make sure you have called at least once readNppBookmarkID() before using that functions!
 std::vector<intptr_t> getAllBookmarkedLines(int view);
 void bookmarkMarkedLines(int view, int markMask);
@@ -799,8 +801,18 @@ inline void clearAnnotation(int view, intptr_t line)
 
 void clearAnnotations(int view, intptr_t startLine, intptr_t length);
 
+
+inline void deleteLine(int view, intptr_t line)
+{
+	const intptr_t startPos	= getLineStart(view, line);
+	const intptr_t length	= CallScintilla(view, SCI_LINELENGTH, line, 0);
+
+	CallScintilla(view, SCI_DELETERANGE, startPos, length);
+}
+
+
 std::vector<char> getText(int view, intptr_t startPos, intptr_t endPos);
-std::vector<char> getLineText(int view, intptr_t line);
+std::vector<char> getLineText(int view, intptr_t line, bool includeEOL = false);
 
 void addBlankSection(int view, intptr_t line, intptr_t length, intptr_t selectionMarkPosition = 0,
 		const char *text = nullptr);

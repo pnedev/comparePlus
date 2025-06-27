@@ -641,9 +641,6 @@ void NppSettings::updatePluginMenu()
 	::EnableMenuItem(hMenu, funcItem[CMD_PREV_CHANGE_POS]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_NEXT_CHANGE_POS]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_COMPARE_SUMMARY]._cmdID, flag);
-	::EnableMenuItem(hMenu, funcItem[CMD_BOOKMARK_DIFFS]._cmdID, flag);
-	::EnableMenuItem(hMenu, funcItem[CMD_BOOKMARK_ADD_REM]._cmdID, flag);
-	::EnableMenuItem(hMenu, funcItem[CMD_BOOKMARK_CHANGED]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_GENERATE_PATCH]._cmdID, flag);
 
 	::DrawMenuBar(nppData._nppHandle);
@@ -3545,33 +3542,63 @@ void ActiveCompareSummary()
 }
 
 
-void BookmarkDiffs()
+// First line can never be hidden due to Scintilla limitations so explicitly check if it should be hidden
+bool shouldFirstLineBeHidden(int view)
 {
 	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
-	if (cmpPair == compareList.end())
-		return;
+	if (cmpPair == compareList.end() || view > 1)
+		return false;
 
-	bookmarkMarkedLines(getCurrentViewId(), MARKER_MASK_DIFF_LINE);
+	return (
+		(cmpPair->hideFlags == HIDE_MATCHES && !isLineMarked(view, 0, MARKER_MASK_LINE)) ||
+		(cmpPair->hideFlags == HIDE_NEW_LINES && isLineMarked(view, 0, MARKER_MASK_NEW_LINE)) ||
+		(cmpPair->hideFlags == HIDE_CHANGED_LINES && isLineMarked(view, 0, MARKER_MASK_CHANGED_LINE)) ||
+		(cmpPair->hideFlags == HIDE_MOVED_LINES && isLineMarked(view, 0, MARKER_MASK_MOVED_LINE)) ||
+		(cmpPair->options.selectionCompare && cmpPair->hideFlags == HIDE_OUTSIDE_SELECTIONS &&
+			cmpPair->options.selections[view].first > 0)
+	);
 }
 
 
-void BookmarkAddedRemoved()
+void CopyVisibleLines()
 {
-	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
-	if (cmpPair == compareList.end())
+	const int view = getCurrentViewId();
+	const std::vector<intptr_t> lines = getVisibleLines(view, shouldFirstLineBeHidden(view));
+
+	if (lines.empty())
 		return;
 
-	bookmarkMarkedLines(getCurrentViewId(), MARKER_MASK_NEW_LINE);
+	const int codepage = getCodepage(view);
+
+	std::vector<wchar_t> txt;
+
+	for (auto l: lines)
+	{
+		const auto lineTxt	= getLineText(view, l, true);
+		const auto wLineTxt	= MBtoWC(lineTxt.data(), static_cast<int>(lineTxt.size()), codepage);
+		txt.insert(txt.end(), wLineTxt.begin(), wLineTxt.end());
+	}
+
+	txt.emplace_back(L'\0');
+
+	setToClipboard(txt);
 }
 
 
-void BookmarkChanged()
+void DeleteVisibleLines()
 {
-	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
-	if (cmpPair == compareList.end())
+	const int view = getCurrentViewId();
+	const std::vector<intptr_t> lines = getVisibleLines(view), shouldFirstLineBeHidden(view);
+
+	if (lines.empty())
 		return;
 
-	bookmarkMarkedLines(getCurrentViewId(), MARKER_MASK_CHANGED_LINE);
+	CallScintilla(view, SCI_BEGINUNDOACTION, 0, 0);
+
+	for (auto rit = lines.rbegin(); rit != lines.rend(); rit++)
+		deleteLine(view, *rit);
+
+	CallScintilla(view, SCI_ENDUNDOACTION, 0, 0);
 }
 
 
@@ -3948,18 +3975,6 @@ void OpenVisualFiltersDlg()
 			}
 		}
 
-		// if (Settings.HideMatches && !isLineMarked(view, currentLine, MARKER_MASK_LINE))
-		// {
-			// const intptr_t  nextMarkedLine = CallScintilla(view, SCI_MARKERNEXT, currentLine, MARKER_MASK_LINE);
-
-			// if (nextMarkedLine >= 0)
-				// currentLine = nextMarkedLine;
-			// else
-				// currentLine = CallScintilla(view, SCI_MARKERPREVIOUS, currentLine, MARKER_MASK_LINE);
-
-			// currentLineChanged = true;
-		// }
-
 		if (Settings.FollowingCaret && currentLineChanged)
 			CallScintilla(view, SCI_GOTOLINE, currentLine, 0);
 
@@ -4196,15 +4211,11 @@ void createMenu()
 	_tcscpy_s(funcItem[CMD_COMPARE_SUMMARY]._itemName, menuItemSize, TEXT("Active Compare Summary"));
 	funcItem[CMD_COMPARE_SUMMARY]._pFunc = ActiveCompareSummary;
 
-	_tcscpy_s(funcItem[CMD_BOOKMARK_DIFFS]._itemName, menuItemSize, TEXT("Bookmark All Diffs in Current View"));
-	funcItem[CMD_BOOKMARK_DIFFS]._pFunc = BookmarkDiffs;
+	_tcscpy_s(funcItem[CMD_COPY_VISIBLE]._itemName, menuItemSize, TEXT("Copy all/selected visible lines"));
+	funcItem[CMD_COPY_VISIBLE]._pFunc = CopyVisibleLines;
 
-	_tcscpy_s(funcItem[CMD_BOOKMARK_ADD_REM]._itemName, menuItemSize,
-			TEXT("Bookmark Added/Removed Lines in Current View"));
-	funcItem[CMD_BOOKMARK_ADD_REM]._pFunc = BookmarkAddedRemoved;
-
-	_tcscpy_s(funcItem[CMD_BOOKMARK_CHANGED]._itemName, menuItemSize, TEXT("Bookmark Changed Lines in Current View"));
-	funcItem[CMD_BOOKMARK_CHANGED]._pFunc = BookmarkChanged;
+	_tcscpy_s(funcItem[CMD_DELETE_VISIBLE]._itemName, menuItemSize, TEXT("Delete all/selected visible lines"));
+	funcItem[CMD_DELETE_VISIBLE]._pFunc = DeleteVisibleLines;
 
 	_tcscpy_s(funcItem[CMD_GENERATE_PATCH]._itemName, menuItemSize, TEXT("Generate Patch"));
 	funcItem[CMD_GENERATE_PATCH]._pFunc = GeneratePatch;

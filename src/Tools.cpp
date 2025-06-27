@@ -180,12 +180,28 @@ void toLowerCase(std::vector<char>& text, int codepage)
 }
 
 
+std::wstring MBtoWC(const char* mb, int len, int codepage)
+{
+	if (!mb || !len)
+		return {};
+
+	const int wLen = ::MultiByteToWideChar(codepage, 0, mb, len, NULL, 0);
+
+	std::wstring str;
+	str.resize(len > 0 ? wLen : wLen - 1);
+
+	::MultiByteToWideChar(codepage, 0, mb, len, &str[0], wLen);
+
+	return str;
+}
+
+
 std::string WCtoMB(const wchar_t* wc, int len, int codepage)
 {
 	if (!wc || !len)
 		return {};
 
-	int l = ::WideCharToMultiByte(codepage, 0, wc, len, NULL, 0, NULL, NULL);
+	const int l = ::WideCharToMultiByte(codepage, 0, wc, len, NULL, 0, NULL, NULL);
 
 	std::string str;
 	str.resize(len > 0 ? l : l - 1);

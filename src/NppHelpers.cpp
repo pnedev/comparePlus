@@ -216,6 +216,32 @@ void setBlanksStyle(int view, int blankColor)
 } // anonymous namespace
 
 
+std::vector<intptr_t> getVisibleLines(int view, bool skipFirstLine)
+{
+	std::vector<intptr_t> lines;
+
+	intptr_t l = 0;
+	intptr_t linesCount = getLinesCount(view);
+
+	const std::pair<intptr_t, intptr_t> sel = getSelectionLines(view);
+
+	if (sel.first >= 0)
+	{
+		l = sel.first;
+		linesCount = sel.second + 1;
+	}
+
+	if (l == 0 && skipFirstLine)
+		++l;
+
+	for (; l < linesCount; ++l)
+		if (!isLineHidden(view, l))
+			lines.emplace_back(l);
+
+	return lines;
+}
+
+
 // Make sure you have called at least once readNppBookmarkID() before using that functions!
 std::vector<intptr_t> getAllBookmarkedLines(int view)
 {
@@ -543,10 +569,11 @@ std::vector<char> getText(int view, intptr_t startPos, intptr_t endPos)
 }
 
 
-std::vector<char> getLineText(int view, intptr_t line)
+std::vector<char> getLineText(int view, intptr_t line, bool includeEOL)
 {
 	const intptr_t startPos	= getLineStart(view, line);
-	const intptr_t endPos	= getLineEnd(view, line);
+	const intptr_t endPos	= includeEOL ?
+			startPos + CallScintilla(view, SCI_LINELENGTH, line, 0) : getLineEnd(view, line);
 	const int len			= static_cast<int>(endPos - startPos);
 
 	if (len <= 0)
