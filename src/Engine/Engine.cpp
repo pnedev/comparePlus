@@ -1492,8 +1492,8 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 			if (!blockDiff1.info.changedLines.back().changes.empty() &&
 				!blockDiff2.info.changedLines.back().changes.empty())
 					findSubLineMoves(
-						doc1.view, doc1.lines[blockDiff1.off + line1].line,
-						doc2.view, doc2.lines[blockDiff2.off + line2].line,
+						doc1.view, doc1.lines[blockDiff1.off + lm.second].line,
+						doc2.view, doc2.lines[blockDiff2.off + lm.first].line,
 						blockDiff1.info.changedLines.back().changes,
 						blockDiff2.info.changedLines.back().changes);
 		}
