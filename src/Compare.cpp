@@ -3986,6 +3986,9 @@ void OpenVisualFiltersDlg()
 
 		NavDlg.Update();
 	}
+
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DIFFS_VISUAL_FILTERS]._cmdID, (LPARAM)
+		(Settings.HideMatches || Settings.HideNewLines || Settings.HideChangedLines || Settings.HideMovedLines));
 }
 
 
@@ -4776,6 +4779,9 @@ void onNppReady()
 	// It's N++'s job actually to disable its scroll menu commands but since it's not the case provide this as a patch
 	if (isSingleView())
 		NppSettings::get().enableNppScrollCommands(false);
+
+	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DIFFS_VISUAL_FILTERS]._cmdID, (LPARAM)
+		(Settings.HideMatches || Settings.HideNewLines || Settings.HideChangedLines || Settings.HideMovedLines));
 
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID,
 			(LPARAM)Settings.UseNavBar);
