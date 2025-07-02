@@ -554,7 +554,7 @@ std::vector<char> getText(int view, intptr_t startPos, intptr_t endPos)
 	const intptr_t len = endPos - startPos;
 
 	if (len <= 0)
-		return std::vector<char>(1, 0);
+		return {};
 
 	std::vector<char> text(len + 1, 0);
 

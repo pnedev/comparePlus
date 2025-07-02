@@ -446,18 +446,6 @@ inline intptr_t getDocId(int view)
 }
 
 
-inline intptr_t getLinesCount(int view)
-{
-	return CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
-}
-
-
-inline intptr_t getEndLine(int view)
-{
-	return CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
-}
-
-
 inline intptr_t getLineStart(int view, intptr_t line)
 {
 	return CallScintilla(view, SCI_POSITIONFROMLINE, line, 0);
@@ -467,6 +455,20 @@ inline intptr_t getLineStart(int view, intptr_t line)
 inline intptr_t getLineEnd(int view, intptr_t line)
 {
 	return CallScintilla(view, SCI_GETLINEENDPOSITION, line, 0);
+}
+
+
+inline intptr_t getLinesCount(int view)
+{
+	return CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
+}
+
+
+inline intptr_t getEndLine(int view)
+{
+	intptr_t line = CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
+
+	return ((getLineEnd(view, line) - getLineStart(view, line)) == 0) ? line - 1 : line;
 }
 
 

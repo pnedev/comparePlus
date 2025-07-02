@@ -2259,8 +2259,8 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 		}
 		else
 		{
-			addBlankSectionAfter(MAIN_VIEW, mainEndLine, endMisalignment);
 			clearAnnotation(SUB_VIEW, subEndLine);
+			addBlankSectionAfter(MAIN_VIEW, mainEndLine, endMisalignment);
 		}
 	}
 
@@ -2937,7 +2937,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 				(CallScintilla(MAIN_VIEW, SCI_GETEOLMODE, 0, 0) != CallScintilla(SUB_VIEW, SCI_GETEOLMODE, 0, 0)))
 			{
 				::MessageBox(nppData._nppHandle,
-						TEXT("Seems like files differ in line endings - this will be ignored in the compare process."),
+						TEXT("Seems like files differ in line endings. ")
+						TEXT("If that's the case all lines will appear different."),
 						cmpPair->options.findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"),
 						MB_OK | MB_ICONWARNING);
 			}
@@ -3062,12 +3063,6 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 			if (oldFile.isTemp)
 			{
-				const bool hasIgnoreOpts =
-					(cmpPair->options.ignoreEmptyLines || (oldFile.isTemp == CLIPBOARD_TEMP &&
-					(cmpPair->options.ignoreFoldedLines || cmpPair->options.ignoreHiddenLines)) ||
-					cmpPair->options.ignoreAllSpaces || cmpPair->options.ignoreChangedSpaces ||
-					cmpPair->options.ignoreCase || cmpPair->options.ignoreRegex);
-
 				if (recompare)
 				{
 					_sntprintf_s(msg, _countof(msg), _TRUNCATE,
@@ -3098,35 +3093,21 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 				}
 
 				if (filesSha2Differ)
-				{
-					if (hasIgnoreOpts)
-						_tcscat_s(msg, _countof(msg),
-								TEXT("\n\nSome diffs exist but have either been ignored due to the compare options ")
-								TEXT("or are in the line endings format."));
-					else
-						_tcscat_s(msg, _countof(msg), TEXT("\n\nThere are diffs in the line endings format."));
-				}
+					_tcscat_s(msg, _countof(msg),
+							TEXT("\n\nSome diffs exist but have been ignored due to the compare options."));
 
 				::MessageBox(nppData._nppHandle, msg, cmpPair->options.findUniqueMode ?
 						TEXT("Find Unique") : TEXT("Compare"), MB_OK);
 			}
 			else
 			{
-				const bool hasIgnoreOpts =
-					(cmpPair->options.ignoreEmptyLines || cmpPair->options.ignoreFoldedLines ||
-					cmpPair->options.ignoreHiddenLines || cmpPair->options.ignoreAllSpaces ||
-					cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreCase ||
-					cmpPair->options.ignoreRegex);
-
 				_sntprintf_s(msg, _countof(msg), _TRUNCATE,
 						TEXT("%s \"%s\" and \"%s\" %s.%s%s"),
 						selectionCompare ? TEXT("Selections in files") : TEXT("Files"),
 						newName, ::PathFindFileName(oldFile.name),
 						cmpPair->options.findUniqueMode ? TEXT("do not contain unique lines") : TEXT("match"),
-						filesSha2Differ ? (hasIgnoreOpts ?
-							TEXT("\n\nSome diffs exist but have either been ignored due to the compare options ")
-							TEXT("or are in the line endings format.") :
-							TEXT("\n\nThere are diffs in the line endings format.")) : TEXT(""),
+						filesSha2Differ ?
+							TEXT("\n\nSome diffs exist but have been ignored due to the compare options.") : TEXT(""),
 						Settings.PromptToCloseOnMatch ? TEXT("\n\nClose compared files?") : TEXT(""));
 
 				if (Settings.PromptToCloseOnMatch)
@@ -3653,8 +3634,8 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 	const auto& rFile1 = oldIs1 ? oldFile : newFile;
 	const auto& rFile2 = oldIs1 ? newFile : oldFile;
 
-	const intptr_t endLine1 = getEndLine(rFile1.compareViewId);
-	const intptr_t endLine2 = getEndLine(rFile2.compareViewId);
+	const intptr_t endLine1 = getLinesCount(rFile1.compareViewId) - 1;
+	const intptr_t endLine2 = getLinesCount(rFile2.compareViewId) - 1;
 
 	intptr_t& rOldLine	= oldIs1 ? line1 : line2;
 	intptr_t& rOldLen	= oldIs1 ? len1 : len2;

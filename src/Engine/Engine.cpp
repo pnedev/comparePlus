@@ -432,6 +432,9 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 	else
 		return;
 
+	if (isLineEmpty(doc.view, linesCount - 1))
+		--linesCount;
+
 	if ((doc.section.len <= 0) || (doc.section.off + doc.section.len > linesCount))
 		doc.section.len = linesCount - doc.section.off;
 
@@ -476,7 +479,7 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 		}
 
 		const intptr_t lineStart	= getLineStart(doc.view, docLine);
-		const intptr_t lineEnd		= getLineEnd(doc.view, docLine);
+		const intptr_t lineEnd		= lineStart + CallScintilla(doc.view, SCI_LINELENGTH, docLine, 0);
 
 		Line newLine;
 		newLine.hash = cHashSeed;
@@ -2356,27 +2359,6 @@ inline std::vector<diff_section_t> toDiffSections(const CompareInfo& cmpInfo)
 			(bd.type == diff_type::DIFF_IN_2) ? cmpInfo.doc2.section.off : cmpInfo.doc1.section.off, bd.len,
 			(bd.type == diff_type::DIFF_MATCH) ? DiffType::MATCH :
 			(bd.type == diff_type::DIFF_IN_1) ? DiffType::IN_1 : DiffType::IN_2);
-	}
-
-	// diffSecs is used as data for patch generation - remove the artificial last empty lines from sections lengths
-	if (!diffSecs.empty())
-	{
-		if (diffSecs.back().type == DiffType::MATCH || diffSecs.back().type == DiffType::IN_1)
-		{
-			if (isLineEmpty(cmpInfo.doc1.view, getEndLine(cmpInfo.doc1.view)))
-				diffSecs.back().len--;
-		}
-		else
-		{
-			if (isLineEmpty(cmpInfo.doc2.view, getEndLine(cmpInfo.doc2.view)))
-				diffSecs.back().len--;
-
-			auto rit = diffSecs.rbegin() + 1;
-
-			if (rit != diffSecs.rend() && rit->type == DiffType::IN_1 &&
-					isLineEmpty(cmpInfo.doc1.view, getEndLine(cmpInfo.doc1.view)))
-				rit->len--;
-		}
 	}
 
 	return diffSecs;
