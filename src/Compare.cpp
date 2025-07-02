@@ -3936,6 +3936,143 @@ void GeneratePatch()
 }
 
 
+bool readAndApplyPatch(std::ifstream& patchFile)
+{
+	bool res = true;
+	int view = getCurrentViewId();
+
+	std::string searchStr;
+	std::string replaceStr;
+	std::string lineStr;
+
+	bool dropLines = true;
+
+	intptr_t replacements = 0;
+	intptr_t searchStartLine = 0;
+
+	CallScintilla(view, SCI_BEGINUNDOACTION, 0, 0);
+
+	for (std::getline(patchFile, lineStr); patchFile.good(); std::getline(patchFile, lineStr))
+	{
+		if (dropLines && lineStr[0] != '@')
+			continue;
+
+		dropLines = false;
+
+		const int nextChar = patchFile.peek();
+
+		if (nextChar != EOF)
+		{
+			// If next char from patch file does not look like 'no EOL' mark ("\ No newline at end of file")
+			// for the last diff line add LF as it was dropped by std::getline().
+			// If it is the last diff line and it has no EOL ("\ No newline at end of file" mark seems present
+			// in the patch file) - remove line endings as artificially added to the patch file
+			if (nextChar != '\\')
+			{
+				lineStr += '\n';
+			}
+			else
+			{
+				while (lineStr.back() == '\r' || lineStr.back() == '\n')
+					lineStr.pop_back();
+			}
+		}
+
+		if (lineStr[0] == '@')
+		{
+			if (!searchStr.empty())
+			{
+				searchStartLine = replaceText(view, searchStr, replaceStr, searchStartLine);
+
+				if (searchStartLine < 0)
+				{
+					res = false;
+					break;
+				}
+
+				++replacements;
+
+				searchStr.clear();
+				replaceStr.clear();
+			}
+		}
+		else if (lineStr[0] == ' ')
+		{
+			searchStr.append(lineStr, 1);
+			replaceStr.append(lineStr, 1);
+		}
+		else if (lineStr[0] == '-')
+		{
+			searchStr.append(lineStr, 1);
+		}
+		else if (lineStr[0] == '+')
+		{
+			replaceStr.append(lineStr, 1);
+		}
+	}
+
+	if (res && !searchStr.empty())
+		res = (replaceText(view, searchStr, replaceStr, searchStartLine) >= 0);
+
+	CallScintilla(view, SCI_ENDUNDOACTION, 0, 0);
+
+	if (!res && replacements)
+		CallScintilla(view, SCI_UNDO, 0, 0);
+
+	return res;
+}
+
+
+void ApplyPatch()
+{
+	std::ifstream ifs;
+	{
+		wchar_t fname[2048];
+
+		OPENFILENAME ofn;
+
+		::ZeroMemory(&fname, sizeof(fname));
+		::ZeroMemory(&ofn, sizeof(ofn));
+
+		ofn.lStructSize		= sizeof(ofn);
+		ofn.hwndOwner		= nppData._nppHandle;
+		ofn.lpstrFilter		= L"All Files\0*.*\0\0";
+		ofn.lpstrFile		= fname;
+		ofn.nMaxFile		= _countof(fname);
+		ofn.lpstrInitialDir	= nullptr;
+		ofn.lpstrTitle		= L"Select patch file to apply:";
+		ofn.Flags			= OFN_DONTADDTORECENT | OFN_FILEMUSTEXIST;
+
+		if (!::GetOpenFileName(&ofn))
+			return;
+
+		ifs.open(fname, std::ios_base::binary);
+
+		if (!ifs.is_open())
+		{
+			::MessageBox(nppData._nppHandle, TEXT("Failure to open patch file."), PLUGIN_NAME,
+					MB_OK | MB_ICONERROR);
+			return;
+		}
+	}
+
+	if (!readAndApplyPatch(ifs))
+	{
+		wchar_t fname[MAX_PATH];
+
+		::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, _countof(fname), (LPARAM)fname);
+
+		std::wstring msg = L"Patch file failed to apply on \"";
+		msg += fname;
+		msg += L"\".\nFile is probably modified or patch file is invalid.";
+
+		::MessageBoxW(nppData._nppHandle, msg.c_str(), PLUGIN_NAME, MB_OK | MB_ICONERROR);
+	}
+
+	ifs.close();
+}
+
+
 void OpenCompareOptionsDlg()
 {
 	CompareOptionsDialog compareOptionsDlg(hInstance, nppData);
@@ -4227,6 +4364,9 @@ void createMenu()
 
 	_tcscpy_s(funcItem[CMD_GENERATE_PATCH]._itemName, menuItemSize, TEXT("Generate Patch"));
 	funcItem[CMD_GENERATE_PATCH]._pFunc = GeneratePatch;
+
+	_tcscpy_s(funcItem[CMD_APPLY_PATCH]._itemName, menuItemSize, TEXT("Apply Patch on current file"));
+	funcItem[CMD_APPLY_PATCH]._pFunc = ApplyPatch;
 
 	_tcscpy_s(funcItem[CMD_COMPARE_OPTIONS]._itemName, menuItemSize, TEXT("Compare Options (ignore, etc.)..."));
 	funcItem[CMD_COMPARE_OPTIONS]._pFunc = OpenCompareOptionsDlg;

@@ -814,6 +814,9 @@ inline void deleteLine(int view, intptr_t line)
 std::vector<char> getText(int view, intptr_t startPos, intptr_t endPos);
 std::vector<char> getLineText(int view, intptr_t line, bool includeEOL = false);
 
+intptr_t replaceText(int view, const std::string& txtToReplace, const std::string& replacementTxt,
+	intptr_t searchStartLine = 0);
+
 void addBlankSection(int view, intptr_t line, intptr_t length, intptr_t selectionMarkPosition = 0,
 		const char *text = nullptr);
 void addBlankSectionAfter(int view, intptr_t line, intptr_t length);
