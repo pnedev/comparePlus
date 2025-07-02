@@ -3936,16 +3936,19 @@ void GeneratePatch()
 }
 
 
-bool readAndApplyPatch(std::ifstream& patchFile)
+bool readAndApplyPatch(std::ifstream& patchFile, bool revert)
 {
 	bool res = true;
 	int view = getCurrentViewId();
 
+	bool dropLines = true;
+
+	const char oldMark = revert ? '+' : '-';
+	const char newMark = revert ? '-' : '+';
+
 	std::string searchStr;
 	std::string replaceStr;
 	std::string lineStr;
-
-	bool dropLines = true;
 
 	intptr_t replacements = 0;
 	intptr_t searchStartLine = 0;
@@ -4001,11 +4004,11 @@ bool readAndApplyPatch(std::ifstream& patchFile)
 			searchStr.append(lineStr, 1);
 			replaceStr.append(lineStr, 1);
 		}
-		else if (lineStr[0] == '-')
+		else if (lineStr[0] == oldMark)
 		{
 			searchStr.append(lineStr, 1);
 		}
-		else if (lineStr[0] == '+')
+		else if (lineStr[0] == newMark)
 		{
 			replaceStr.append(lineStr, 1);
 		}
@@ -4023,7 +4026,7 @@ bool readAndApplyPatch(std::ifstream& patchFile)
 }
 
 
-void ApplyPatch()
+void applyPatch(bool revert = false)
 {
 	std::ifstream ifs;
 	{
@@ -4040,7 +4043,7 @@ void ApplyPatch()
 		ofn.lpstrFile		= fname;
 		ofn.nMaxFile		= _countof(fname);
 		ofn.lpstrInitialDir	= nullptr;
-		ofn.lpstrTitle		= L"Select patch file to apply:";
+		ofn.lpstrTitle		= L"Select patch file:";
 		ofn.Flags			= OFN_DONTADDTORECENT | OFN_FILEMUSTEXIST;
 
 		if (!::GetOpenFileName(&ofn))
@@ -4056,7 +4059,7 @@ void ApplyPatch()
 		}
 	}
 
-	if (!readAndApplyPatch(ifs))
+	if (!readAndApplyPatch(ifs, revert))
 	{
 		wchar_t fname[MAX_PATH];
 
@@ -4070,6 +4073,18 @@ void ApplyPatch()
 	}
 
 	ifs.close();
+}
+
+
+void ApplyPatch()
+{
+	applyPatch();
+}
+
+
+void RevertPatch()
+{
+	applyPatch(true);
 }
 
 
@@ -4367,6 +4382,9 @@ void createMenu()
 
 	_tcscpy_s(funcItem[CMD_APPLY_PATCH]._itemName, menuItemSize, TEXT("Apply Patch on current file"));
 	funcItem[CMD_APPLY_PATCH]._pFunc = ApplyPatch;
+
+	_tcscpy_s(funcItem[CMD_REVERT_PATCH]._itemName, menuItemSize, TEXT("Revert Patch on current file"));
+	funcItem[CMD_REVERT_PATCH]._pFunc = RevertPatch;
 
 	_tcscpy_s(funcItem[CMD_COMPARE_OPTIONS]._itemName, menuItemSize, TEXT("Compare Options (ignore, etc.)..."));
 	funcItem[CMD_COMPARE_OPTIONS]._pFunc = OpenCompareOptionsDlg;
