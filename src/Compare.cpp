@@ -3936,86 +3936,118 @@ void GeneratePatch()
 }
 
 
+intptr_t lineNumFromPatchDiff(const std::string& patchDiff, char linePrefix)
+{
+	const size_t numPos = patchDiff.find(linePrefix);
+
+	if ((numPos == std::string::npos) || (numPos == patchDiff.size() - 1))
+		return -1;
+
+	return strtoll(patchDiff.c_str() + numPos + 1, NULL, 10) - 1;
+}
+
+
 bool readAndApplyPatch(std::ifstream& patchFile, bool revert)
 {
-	bool res = true;
-	int view = getCurrentViewId();
+	std::string lineStr;
 
-	bool dropLines = true;
+	// Skip patch file lines until the first diff section
+	for (std::getline(patchFile, lineStr);
+		patchFile.good() && *(lineStr.c_str()) != '@'; std::getline(patchFile, lineStr));
+
+	if (!patchFile.good())
+		return false;
 
 	const char oldMark = revert ? '+' : '-';
 	const char newMark = revert ? '-' : '+';
 
+	intptr_t oldLine = lineNumFromPatchDiff(lineStr, oldMark);
+	if (oldLine < 0)
+		return false;
+
+	bool res = true;
+	int view = getCurrentViewId();
+
 	std::string searchStr;
 	std::string replaceStr;
-	std::string lineStr;
+
+	std::string* lastUpdatedStr = nullptr;
+
+	intptr_t oldLineOffset = 0;
+
+	intptr_t searchedLines = 0;
+	intptr_t replacedLines = 0;
 
 	intptr_t replacements = 0;
-	intptr_t searchStartLine = 0;
 
 	CallScintilla(view, SCI_BEGINUNDOACTION, 0, 0);
 
 	for (std::getline(patchFile, lineStr); patchFile.good(); std::getline(patchFile, lineStr))
 	{
-		if (dropLines && lineStr[0] != '@')
-			continue;
+		// Add LF as it was dropped by std::getline()
+		lineStr += '\n';
 
-		dropLines = false;
-
-		const int nextChar = patchFile.peek();
-
-		if (nextChar != EOF)
+		if (*(lineStr.c_str()) == ' ')
 		{
-			// If next char from patch file does not look like 'no EOL' mark ("\ No newline at end of file")
-			// for the last diff line add LF as it was dropped by std::getline().
-			// If it is the last diff line and it has no EOL ("\ No newline at end of file" mark seems present
-			// in the patch file) - remove line endings as artificially added to the patch file
-			if (nextChar != '\\')
+			searchStr.append(lineStr, 1);
+			replaceStr.append(lineStr, 1);
+			lastUpdatedStr = nullptr;
+		}
+		else if (*(lineStr.c_str()) == oldMark)
+		{
+			searchStr.append(lineStr, 1);
+			++searchedLines;
+			lastUpdatedStr = &searchStr;
+		}
+		else if (*(lineStr.c_str()) == newMark)
+		{
+			replaceStr.append(lineStr, 1);
+			++replacedLines;
+			lastUpdatedStr = &replaceStr;
+		}
+		else if (*(lineStr.c_str()) == '@')
+		{
+			res = (replaceText(view, searchStr, replaceStr, oldLine + oldLineOffset) >= 0);
+			if (!res)
+				break;
+
+			++replacements;
+
+			oldLine = lineNumFromPatchDiff(lineStr, oldMark);
+			if (oldLine < 0)
 			{
-				lineStr += '\n';
+				res = false;
+				break;
+			}
+
+			oldLineOffset += replacedLines - searchedLines;
+
+			searchStr.clear();
+			replaceStr.clear();
+
+			searchedLines = 0;
+			replacedLines = 0;
+		}
+		// Check for "\ No newline at end of file" - remove last line endings as artificially added to the patch file
+		else if (*(lineStr.c_str()) == '\\')
+		{
+			if (lastUpdatedStr)
+			{
+				while (!lastUpdatedStr->empty() && (lastUpdatedStr->back() == '\n' || lastUpdatedStr->back() == '\r'))
+					lastUpdatedStr->pop_back();
 			}
 			else
 			{
-				while (lineStr.back() == '\r' || lineStr.back() == '\n')
-					lineStr.pop_back();
+				while (!searchStr.empty() && (searchStr.back() == '\n' || searchStr.back() == '\r'))
+					searchStr.pop_back();
+				while (!replaceStr.empty() && (replaceStr.back() == '\n' || replaceStr.back() == '\r'))
+					replaceStr.pop_back();
 			}
-		}
-
-		if (lineStr[0] == '@')
-		{
-			if (!searchStr.empty())
-			{
-				searchStartLine = replaceText(view, searchStr, replaceStr, searchStartLine);
-
-				if (searchStartLine < 0)
-				{
-					res = false;
-					break;
-				}
-
-				++replacements;
-
-				searchStr.clear();
-				replaceStr.clear();
-			}
-		}
-		else if (lineStr[0] == ' ')
-		{
-			searchStr.append(lineStr, 1);
-			replaceStr.append(lineStr, 1);
-		}
-		else if (lineStr[0] == oldMark)
-		{
-			searchStr.append(lineStr, 1);
-		}
-		else if (lineStr[0] == newMark)
-		{
-			replaceStr.append(lineStr, 1);
 		}
 	}
 
-	if (res && !searchStr.empty())
-		res = (replaceText(view, searchStr, replaceStr, searchStartLine) >= 0);
+	if (res && (searchedLines || replacedLines))
+		res = (replaceText(view, searchStr, replaceStr, oldLine + oldLineOffset) >= 0);
 
 	CallScintilla(view, SCI_ENDUNDOACTION, 0, 0);
 

@@ -597,12 +597,20 @@ std::vector<char> getLineText(int view, intptr_t line, bool includeEOL)
 intptr_t replaceText(int view, const std::string& txtToReplace, const std::string& replacementTxt,
 	intptr_t searchStartLine)
 {
-    CallScintilla(view, SCI_SETSEARCHFLAGS, (WPARAM)SCFIND_MATCHCASE, 0);
+	intptr_t pos = getLineStart(view, searchStartLine);
 
-    CallScintilla(view, SCI_SETTARGETSTART, getLineStart(view, searchStartLine), 0);
-    CallScintilla(view, SCI_SETTARGETEND, CallScintilla(view, SCI_GETLENGTH, 0, 0), 0);
+	CallScintilla(view, SCI_SETTARGETSTART, pos, 0);
 
-    intptr_t pos = CallScintilla(view, SCI_SEARCHINTARGET, txtToReplace.size(), (LPARAM)txtToReplace.c_str());
+	if (txtToReplace.empty())
+	{
+		CallScintilla(view, SCI_SETTARGETEND, pos, 0);
+	}
+	else
+	{
+		CallScintilla(view, SCI_SETTARGETEND, CallScintilla(view, SCI_GETLENGTH, 0, 0), 0);
+		CallScintilla(view, SCI_SETSEARCHFLAGS, (WPARAM)SCFIND_MATCHCASE, 0);
+		pos = CallScintilla(view, SCI_SEARCHINTARGET, txtToReplace.size(), (LPARAM)txtToReplace.c_str());
+	}
 
 	if (pos >= 0)
 	{
