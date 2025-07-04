@@ -3740,7 +3740,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 		{
 			if (dsr->type == MATCH)
 			{
-				if (!matchContextStart)
+				if (!matchContextStart && dsr != dsi)
 					matchContextStart = dsr->len;
 
 				rNewLine += matchContextStart;
