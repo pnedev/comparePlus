@@ -394,6 +394,8 @@ public:
 
 	CompareSummary	summary;
 
+	bool			forcedIgnoreEOL	= false;
+
 	unsigned		hideFlags		= NO_HIDE;
 
 	bool			compareDirty	= false;
@@ -1195,14 +1197,16 @@ void ComparedPair::setStatus()
 				infoCurrentPos += len;
 			}
 
-			if (options.ignoreChangedSpaces || options.ignoreAllSpaces || options.ignoreEmptyLines ||
-				options.ignoreCase || options.ignoreRegex || options.ignoreFoldedLines || options.ignoreHiddenLines)
+			if (options.ignoreChangedSpaces || options.ignoreAllSpaces || options.ignoreEOL ||
+				options.ignoreEmptyLines || options.ignoreCase || options.ignoreRegex || options.ignoreFoldedLines ||
+				options.ignoreHiddenLines)
 			{
-				const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%sIgnore: %s%s%s%s%s%s"),
+				const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%sIgnore: %s%s%s%s%s%s%s"),
 						hasDetectOpts				? TEXT("    ")				: TEXT(""),
 						options.ignoreEmptyLines	? TEXT("/Empty Lines ")		: TEXT(""),
 						options.ignoreFoldedLines	? TEXT("/Folded Lines ")	: TEXT(""),
 						options.ignoreHiddenLines	? TEXT("/Hidden Lines ")	: TEXT(""),
+						options.ignoreEOL			? TEXT("/EOL ")				: TEXT(""),
 						options.ignoreAllSpaces		? TEXT("/All Spaces ")		:
 						options.ignoreChangedSpaces	? TEXT("/Changed Spaces ")	: TEXT(""),
 						options.ignoreCase			? TEXT("/Case ")			: TEXT(""),
@@ -2897,6 +2901,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		cmpPair->options.ignoreHiddenLines			= Settings.IgnoreHiddenLines;
 		cmpPair->options.ignoreChangedSpaces		= Settings.IgnoreChangedSpaces;
 		cmpPair->options.ignoreAllSpaces			= Settings.IgnoreAllSpaces;
+		cmpPair->options.ignoreEOL					= Settings.IgnoreEOL || cmpPair->forcedIgnoreEOL;
 		cmpPair->options.ignoreCase					= Settings.IgnoreCase;
 		cmpPair->options.recompareOnChange			= Settings.RecompareOnChange;
 
@@ -2934,13 +2939,19 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		if (!recompare)
 		{
 			if ((cmpPair->getOldFile().isTemp != CLIPBOARD_TEMP) &&
-				(CallScintilla(MAIN_VIEW, SCI_GETEOLMODE, 0, 0) != CallScintilla(SUB_VIEW, SCI_GETEOLMODE, 0, 0)))
+				(CallScintilla(MAIN_VIEW, SCI_GETEOLMODE, 0, 0) != CallScintilla(SUB_VIEW, SCI_GETEOLMODE, 0, 0)) &&
+				!cmpPair->options.ignoreEOL)
 			{
-				::MessageBox(nppData._nppHandle,
-						TEXT("Seems like files differ in line endings. ")
-						TEXT("If that's the case all lines will appear different."),
+				if (::MessageBox(nppData._nppHandle,
+						TEXT("Seems like files differ in line endings (EOL). ")
+						TEXT("If that's the case all lines will appear different.\n\n")
+						TEXT("Would you like to ignore EOL differences for this compare?"),
 						cmpPair->options.findUniqueMode ? TEXT("Find Unique") : TEXT("Compare"),
-						MB_OK | MB_ICONWARNING);
+						MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) == IDYES)
+				{
+					cmpPair->forcedIgnoreEOL = true;
+					cmpPair->options.ignoreEOL = true;
+				}
 			}
 
 			if (Settings.SizesCheck)
@@ -3488,17 +3499,18 @@ void ActiveCompareSummary()
 	}
 
 	const bool hasIgnoreOpts =
-		(cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreAllSpaces ||
+		(cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreAllSpaces || cmpPair->options.ignoreEOL ||
 		cmpPair->options.ignoreEmptyLines || cmpPair->options.ignoreCase || cmpPair->options.ignoreRegex ||
 		cmpPair->options.ignoreFoldedLines || cmpPair->options.ignoreHiddenLines);
 
 	if (hasIgnoreOpts)
 	{
-		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%sIgnore: %s%s%s%s%s%s"),
+		const int len = _sntprintf_s(buf, _countof(buf), _TRUNCATE, TEXT("%sIgnore: %s%s%s%s%s%s%s"),
 				hasDetectOpts							? TEXT("\n")				: TEXT(""),
 				cmpPair->options.ignoreEmptyLines		? TEXT("/Empty Lines ")		: TEXT(""),
 				cmpPair->options.ignoreFoldedLines		? TEXT("/Folded Lines ")	: TEXT(""),
 				cmpPair->options.ignoreHiddenLines		? TEXT("/Hidden Lines ")	: TEXT(""),
+				cmpPair->options.ignoreEOL				? TEXT("/EOL ")				: TEXT(""),
 				cmpPair->options.ignoreAllSpaces		? TEXT("/All Spaces ")		:
 				cmpPair->options.ignoreChangedSpaces	? TEXT("/Changed Spaces ")	: TEXT(""),
 				cmpPair->options.ignoreCase				? TEXT("/Case ")			: TEXT(""),
@@ -4109,8 +4121,8 @@ void OpenCompareOptionsDlg()
 		return;
 
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_COMPARE_OPTIONS]._cmdID, (LPARAM)
-		(Settings.IgnoreChangedSpaces || Settings.IgnoreAllSpaces || Settings.IgnoreCase || Settings.IgnoreRegex ||
-		Settings.IgnoreEmptyLines || Settings.IgnoreFoldedLines || Settings.IgnoreHiddenLines));
+		(Settings.IgnoreChangedSpaces || Settings.IgnoreAllSpaces || Settings.IgnoreEOL || Settings.IgnoreCase ||
+		Settings.IgnoreRegex || Settings.IgnoreEmptyLines || Settings.IgnoreFoldedLines || Settings.IgnoreHiddenLines));
 }
 
 
@@ -4957,8 +4969,8 @@ void onNppReady()
 		NppSettings::get().enableNppScrollCommands(false);
 
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_COMPARE_OPTIONS]._cmdID, (LPARAM)
-		(Settings.IgnoreChangedSpaces || Settings.IgnoreAllSpaces || Settings.IgnoreCase || Settings.IgnoreRegex ||
-		Settings.IgnoreEmptyLines || Settings.IgnoreFoldedLines || Settings.IgnoreHiddenLines));
+		(Settings.IgnoreChangedSpaces || Settings.IgnoreAllSpaces || Settings.IgnoreEOL || Settings.IgnoreCase ||
+		Settings.IgnoreRegex || Settings.IgnoreEmptyLines || Settings.IgnoreFoldedLines || Settings.IgnoreHiddenLines));
 
 	::SendMessage(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DIFFS_VISUAL_FILTERS]._cmdID, (LPARAM)
 		(Settings.HideMatches || Settings.HideNewLines || Settings.HideChangedLines || Settings.HideMovedLines));

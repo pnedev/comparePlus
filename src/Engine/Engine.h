@@ -122,6 +122,7 @@ struct CompareOptions
 	bool	ignoreHiddenLines;
 	bool	ignoreChangedSpaces;
 	bool	ignoreAllSpaces;
+	bool	ignoreEOL;
 	bool	ignoreCase;
 
 	bool	recompareOnChange;

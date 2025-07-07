@@ -145,6 +145,7 @@ public:
 	static const TCHAR ignoreHiddenLinesSetting[];
 	static const TCHAR ignoreChangedSpacesSetting[];
 	static const TCHAR ignoreAllSpacesSetting[];
+	static const TCHAR ignoreEOLSetting[];
 	static const TCHAR ignoreCaseSetting[];
 	static const TCHAR ignoreRegexSetting[];
 	static const TCHAR invertRegexSetting[];
@@ -218,6 +219,7 @@ public:
 	bool			IgnoreHiddenLines;
 	bool			IgnoreChangedSpaces;
 	bool			IgnoreAllSpaces;
+	bool			IgnoreEOL;
 	bool			IgnoreCase;
 	bool			IgnoreRegex;
 	bool			InvertRegex;

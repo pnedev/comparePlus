@@ -150,6 +150,7 @@ void CompareOptionsDialog::SetParams()
 			!_Settings->IgnoreAllSpaces && _Settings->IgnoreChangedSpaces ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_ALL_SPACES),
 			_Settings->IgnoreAllSpaces ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_EOL),	_Settings->IgnoreEOL ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_CASE),  _Settings->IgnoreCase  ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_REGEX), _Settings->IgnoreRegex ? BST_CHECKED : BST_UNCHECKED);
 
@@ -187,6 +188,7 @@ bool CompareOptionsDialog::GetParams()
 	_Settings->IgnoreHiddenLines	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_HIDDEN_LINES)) == BST_CHECKED);
 	_Settings->IgnoreChangedSpaces	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_CHANGED_SPACES)) == BST_CHECKED);
 	_Settings->IgnoreAllSpaces		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_ALL_SPACES)) == BST_CHECKED);
+	_Settings->IgnoreEOL			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_EOL)) == BST_CHECKED);
 	_Settings->IgnoreCase			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_CASE)) == BST_CHECKED);
 	_Settings->IgnoreRegex			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_REGEX)) == BST_CHECKED);
 

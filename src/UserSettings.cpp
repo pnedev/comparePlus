@@ -46,6 +46,7 @@ const TCHAR UserSettings::ignoreFoldedLinesSetting[]		= TEXT("ignore_folded_line
 const TCHAR UserSettings::ignoreHiddenLinesSetting[]		= TEXT("ignore_hidden_lines");
 const TCHAR UserSettings::ignoreChangedSpacesSetting[]		= TEXT("ignore_changed_spaces");
 const TCHAR UserSettings::ignoreAllSpacesSetting[]			= TEXT("ignore_all_spaces");
+const TCHAR UserSettings::ignoreEOLSetting[]				= TEXT("ignore_eol");
 const TCHAR UserSettings::ignoreCaseSetting[]				= TEXT("ignore_case");
 const TCHAR UserSettings::ignoreRegexSetting[]				= TEXT("ignore_regex");
 const TCHAR UserSettings::invertRegexSetting[]				= TEXT("invert_regex");
@@ -136,6 +137,7 @@ void UserSettings::load()
 	IgnoreHiddenLines		= ::GetPrivateProfileInt(mainSection, ignoreHiddenLinesSetting,		0, iniFile) != 0;
 	IgnoreChangedSpaces		= ::GetPrivateProfileInt(mainSection, ignoreChangedSpacesSetting,	0, iniFile) != 0;
 	IgnoreAllSpaces			= ::GetPrivateProfileInt(mainSection, ignoreAllSpacesSetting,		0, iniFile) != 0;
+	IgnoreEOL				= ::GetPrivateProfileInt(mainSection, ignoreEOLSetting,				0, iniFile) != 0;
 	IgnoreCase				= ::GetPrivateProfileInt(mainSection, ignoreCaseSetting,			0, iniFile) != 0;
 	IgnoreRegex				= ::GetPrivateProfileInt(mainSection, ignoreRegexSetting,			0, iniFile) != 0;
 	InvertRegex				= ::GetPrivateProfileInt(mainSection, invertRegexSetting,			0, iniFile) != 0;
@@ -308,6 +310,8 @@ void UserSettings::save()
 			IgnoreChangedSpaces ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreAllSpacesSetting,
 			IgnoreAllSpaces ? TEXT("1") : TEXT("0"), iniFile);
+	::WritePrivateProfileString(mainSection, ignoreEOLSetting,
+			IgnoreEOL ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreCaseSetting,
 			IgnoreCase ? TEXT("1") : TEXT("0"), iniFile);
 	::WritePrivateProfileString(mainSection, ignoreRegexSetting,
