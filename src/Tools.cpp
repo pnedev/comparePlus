@@ -73,6 +73,53 @@ VOID CALLBACK DelayedWork::timerCB(HWND, UINT, UINT_PTR idEvent, DWORD)
 }
 
 
+IFStreamLineGetter::IFStreamLineGetter(std::ifstream& ifs) : _ifs(ifs)
+{
+	if (ifs.good())
+	{
+		_readBuf.resize(cBuffSize);
+
+		ifs.read(_readBuf.data(), _readBuf.size());
+
+		_countRead = static_cast<size_t>(ifs.gcount());
+	}
+}
+
+
+std::string IFStreamLineGetter::get()
+{
+	std::string lineStr;
+
+	while (true)
+	{
+		const size_t pos = _readPos;
+
+		if (lineStr.empty() || (lineStr.back() != '\r' && lineStr.back() != '\n'))
+		{
+			while (_readPos < _countRead &&
+					*(_readBuf.data() + _readPos) != '\r' && *(_readBuf.data() + _readPos) != '\n')
+				++_readPos;
+		}
+
+		while (_readPos < _countRead &&
+				(*(_readBuf.data() + _readPos) == '\r' || *(_readBuf.data() + _readPos) == '\n'))
+			++_readPos;
+
+		lineStr.append(_readBuf.data() + pos, _readBuf.data() + _readPos);
+
+		if (_readPos < _countRead || !_ifs.good())
+			break;
+
+		_ifs.read(_readBuf.data(), _readBuf.size());
+
+		_countRead = static_cast<size_t>(_ifs.gcount());
+		_readPos = 0;
+	}
+
+	return lineStr;
+}
+
+
 std::vector<wchar_t> getFromClipboard(bool addLeadingNewLine)
 {
 	std::vector<wchar_t> content;

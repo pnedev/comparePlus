@@ -3942,13 +3942,14 @@ intptr_t lineNumFromPatchDiff(const std::string& patchDiff, char linePrefix)
 
 bool readAndApplyPatch(std::ifstream& patchFile, bool revert)
 {
-	std::string lineStr;
+	IFStreamLineGetter patchLineGetter(patchFile);
+
+	std::string lineStr = patchLineGetter.get();
 
 	// Skip patch file lines until the first diff section
-	for (std::getline(patchFile, lineStr);
-		patchFile.good() && *(lineStr.c_str()) != '@'; std::getline(patchFile, lineStr));
+	for (; !lineStr.empty() && *(lineStr.c_str()) != '@'; lineStr = patchLineGetter.get());
 
-	if (!patchFile.good())
+	if (lineStr.empty())
 		return false;
 
 	const char oldMark = revert ? '+' : '-';
@@ -3975,11 +3976,8 @@ bool readAndApplyPatch(std::ifstream& patchFile, bool revert)
 
 	CallScintilla(view, SCI_BEGINUNDOACTION, 0, 0);
 
-	for (std::getline(patchFile, lineStr); patchFile.good(); std::getline(patchFile, lineStr))
+	for (lineStr = patchLineGetter.get(); !lineStr.empty(); lineStr = patchLineGetter.get())
 	{
-		// Add LF as it was dropped by std::getline()
-		lineStr += '\n';
-
 		if (*(lineStr.c_str()) == ' ')
 		{
 			searchStr.append(lineStr, 1);
@@ -4038,6 +4036,9 @@ bool readAndApplyPatch(std::ifstream& patchFile, bool revert)
 			}
 		}
 	}
+
+	if (!patchFile.eof())
+		res = false;
 
 	if (res && (searchedLines || replacedLines))
 		res = (replaceText(view, searchStr, replaceStr, oldLine + oldLineOffset) >= 0);

@@ -22,6 +22,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <fstream>
 #include <windows.h>
 #include <tchar.h>
 
@@ -96,6 +97,34 @@ private:
 	static VOID CALLBACK timerCB(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
 
 	static std::map<UINT_PTR, DelayedWork*> workMap;
+};
+
+
+/**
+ *  \class
+ *  \brief	Reads chunks of data from file stream and returns it line-by-line on each get() call
+ *			preserving original EOL
+ */
+class IFStreamLineGetter
+{
+public:
+	IFStreamLineGetter(std::ifstream& ifs);
+	~IFStreamLineGetter() {}
+
+	std::string get();
+
+private:
+	static constexpr size_t cBuffSize {2048};
+
+	IFStreamLineGetter(const IFStreamLineGetter&) = delete;
+	IFStreamLineGetter(IFStreamLineGetter&&) = delete;
+	IFStreamLineGetter& operator=(const IFStreamLineGetter&) = delete;
+
+	std::ifstream& 		_ifs;
+
+	std::vector<char>	_readBuf;
+	size_t				_readPos	{0};
+	size_t				_countRead	{0};
 };
 
 
