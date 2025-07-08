@@ -1897,13 +1897,11 @@ void syncViews(int biasView)
 {
 	const int otherView = getOtherViewId(biasView);
 
-	intptr_t firstVisible				= getFirstVisibleLine(biasView);
-	const intptr_t otherFirstVisible	= getFirstVisibleLine(otherView);
+	intptr_t firstVisible		= getFirstVisibleLine(biasView);
+	intptr_t otherFirstVisible	= getFirstVisibleLine(otherView);
 
-	const intptr_t endLine = getPreviousUnhiddenLine(biasView, getEndLine(biasView));
-	const intptr_t endVisible =
-			getVisibleFromDocLine(biasView, endLine) + getWrapCount(biasView, endLine) +
-			getLineAnnotation(biasView, endLine);
+	const intptr_t endLine		= getUnhiddenLine(biasView, getEndNotEmptyLine(biasView));
+	const intptr_t endVisible	= getVisibleFromDocLine(biasView, endLine) + getWrapCount(biasView, endLine);
 
 	intptr_t otherNewFirstVisible = otherFirstVisible;
 
@@ -1918,15 +1916,15 @@ void syncViews(int biasView)
 
 	if (firstVisible != otherFirstVisible)
 	{
-		const intptr_t otherEndLine = getPreviousUnhiddenLine(otherView, getEndLine(otherView));
+		const intptr_t otherEndLine = getUnhiddenLine(otherView, getEndNotEmptyLine(otherView));
 		const intptr_t otherEndVisible =
-				getVisibleFromDocLine(otherView, otherEndLine) +
-				getWrapCount(otherView, otherEndLine) + getLineAnnotation(otherView, otherEndLine);
+				getVisibleFromDocLine(otherView, otherEndLine) + getWrapCount(otherView, otherEndLine);
+		const intptr_t otherLinesOnScreen = CallScintilla(otherView, SCI_LINESONSCREEN, 0, 0);
 
-		if (firstVisible > otherEndVisible)
+		if (firstVisible > otherEndVisible && getLineAnnotation(otherView, otherEndLine) >= otherLinesOnScreen)
 		{
 			if (endVisible - firstVisible < CallScintilla(biasView, SCI_LINESONSCREEN, 0, 0))
-				otherNewFirstVisible = firstVisible;
+				otherNewFirstVisible = otherEndVisible + otherLinesOnScreen - (endVisible - firstVisible);
 			else
 				otherNewFirstVisible = otherEndVisible;
 		}
@@ -2133,8 +2131,8 @@ bool isAlignmentNeeded(int view, CompareList_t::iterator& cmpPair)
 
 	if (!cmpPair->options.selectionCompare)
 	{
-		mainEndLine	= getEndLine(MAIN_VIEW);
-		subEndLine	= getEndLine(SUB_VIEW);
+		mainEndLine	= getEndNotEmptyLine(MAIN_VIEW);
+		subEndLine	= getEndNotEmptyLine(SUB_VIEW);
 	}
 	else
 	{
@@ -2187,8 +2185,8 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 
 	if (!cmpPair->options.selectionCompare)
 	{
-		mainEndLine	= getEndLine(MAIN_VIEW);
-		subEndLine	= getEndLine(SUB_VIEW);
+		mainEndLine	= getEndNotEmptyLine(MAIN_VIEW);
+		subEndLine	= getEndNotEmptyLine(SUB_VIEW);
 	}
 	else
 	{
@@ -3011,7 +3009,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 				const int tmpView = cmpPair->getOldFile().compareViewId;
 
 				cmpPair->options.selections[newView] = getSelectionLines(newView);
-				cmpPair->options.selections[tmpView] = std::make_pair(1, getEndLine(tmpView));
+				cmpPair->options.selections[tmpView] = std::make_pair(1, getEndNotEmptyLine(tmpView));
 			}
 		}
 
@@ -3728,8 +3726,8 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 	const auto& rFile1 = oldIs1 ? oldFile : newFile;
 	const auto& rFile2 = oldIs1 ? newFile : oldFile;
 
-	const intptr_t endLine1 = getLinesCount(rFile1.compareViewId) - 1;
-	const intptr_t endLine2 = getLinesCount(rFile2.compareViewId) - 1;
+	const intptr_t endLine1 = getEndLine(rFile1.compareViewId);
+	const intptr_t endLine2 = getEndLine(rFile2.compareViewId);
 
 	intptr_t& rOldLine	= oldIs1 ? line1 : line2;
 	intptr_t& rOldLen	= oldIs1 ? len1 : len2;
@@ -5235,13 +5233,13 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 		return;
 	}
 
+	intptr_t lastLine = getEndNotEmptyLine(viewId);
+
 	std::pair<intptr_t, intptr_t> otherMarkedRange;
 
 	if (markedRange.first < 0)
 	{
-		const intptr_t lastLine = getEndLine(viewId);
-
-		otherMarkedRange.first	= otherViewMatchingLine(viewId, line, getWrapCount(viewId, line));
+		otherMarkedRange.first = otherViewMatchingLine(viewId, line, getWrapCount(viewId, line));
 
 		if (line < lastLine)
 			otherMarkedRange.second	= otherViewMatchingLine(viewId, line + 1, -1);
@@ -5274,7 +5272,8 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 		if (otherMarkedRange.first < 0)
 			otherMarkedRange.first = otherViewMatchingLine(viewId, startLine, startOffset) + 1;
 
-		otherMarkedRange.second	= otherViewMatchingLine(viewId, endLine, endOffset);
+		otherMarkedRange.second	=
+				(line < lastLine) ? otherViewMatchingLine(viewId, endLine, endOffset) : getEndLine(otherViewId);
 	}
 
 	if (!Settings.HideMatches)
@@ -5354,7 +5353,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 		}
 	}
 
-	const intptr_t lastLine = getEndLine(viewId);
+	lastLine = getEndLine(viewId);
 
 	if (markedRange.first >= 0)
 	{

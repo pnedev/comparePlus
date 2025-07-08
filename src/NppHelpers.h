@@ -466,6 +466,12 @@ inline intptr_t getLinesCount(int view)
 
 inline intptr_t getEndLine(int view)
 {
+	return CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
+}
+
+
+inline intptr_t getEndNotEmptyLine(int view)
+{
 	intptr_t line = CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
 
 	return ((getLineEnd(view, line) - getLineStart(view, line)) == 0) ? line - 1 : line;
