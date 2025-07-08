@@ -3105,7 +3105,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 				if (filesSha2Differ)
 					_tcscat_s(msg, _countof(msg),
-							TEXT("\n\nSome diffs exist but have been ignored due to the compare options."));
+							TEXT("\n\nDiffs exist but have been ignored due to the compare options."));
 
 				::MessageBox(nppData._nppHandle, msg, cmpPair->options.findUniqueMode ?
 						TEXT("Find Unique") : TEXT("Compare"), MB_OK);
@@ -3118,7 +3118,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 						newName, ::PathFindFileName(oldFile.name),
 						cmpPair->options.findUniqueMode ? TEXT("do not contain unique lines") : TEXT("match"),
 						filesSha2Differ ?
-							TEXT("\n\nSome diffs exist but have been ignored due to the compare options.") : TEXT(""),
+							TEXT("\n\nDiffs exist but have been ignored due to the compare options.") : TEXT(""),
 						Settings.PromptToCloseOnMatch ? TEXT("\n\nClose compared files?") : TEXT(""));
 
 				if (Settings.PromptToCloseOnMatch)
@@ -3887,7 +3887,7 @@ void GeneratePatch()
 	{
 		::MessageBox(nppData._nppHandle,
 			TEXT("Compared file is modified after compare, generating patch is not possible.\n")
-			TEXT("Please manually re-compare and try again."), PLUGIN_NAME, MB_OK);
+			TEXT("Please manually re-compare and try again."), PLUGIN_NAME, MB_OK | MB_ICONWARNING);
 		return;
 	}
 
