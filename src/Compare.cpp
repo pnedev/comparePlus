@@ -580,7 +580,6 @@ FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
 
 // Declare local functions that appear before they are defined
 void onBufferActivated(LRESULT buffId);
-void syncViews(int biasView);
 void temporaryRangeSelect(int view, intptr_t startPos = -1, intptr_t endPos = -1);
 void setArrowMark(int view, intptr_t line = -1, bool down = true);
 intptr_t getAlignmentIdxAfter(const AlignmentViewData AlignmentPair::*pView, const AlignmentInfo_t &alignInfo,
@@ -1891,6 +1890,89 @@ void resetCompareView(int view)
 	CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(view));
 	if (cmpPair != compareList.end())
 		setCompareView(view, Settings.colors().blank, Settings.colors().caret_line_transparency);
+}
+
+
+void syncViews(int biasView)
+{
+	const int otherView = getOtherViewId(biasView);
+
+	intptr_t firstVisible				= getFirstVisibleLine(biasView);
+	const intptr_t otherFirstVisible	= getFirstVisibleLine(otherView);
+
+	const intptr_t endLine = getPreviousUnhiddenLine(biasView, getEndLine(biasView));
+	const intptr_t endVisible =
+			getVisibleFromDocLine(biasView, endLine) + getWrapCount(biasView, endLine) +
+			getLineAnnotation(biasView, endLine);
+
+	intptr_t otherNewFirstVisible = otherFirstVisible;
+
+	if (firstVisible > endVisible)
+	{
+		firstVisible = endVisible;
+
+		ScopedIncrementerInt incr(notificationsLock);
+
+		CallScintilla(biasView, SCI_SETFIRSTVISIBLELINE, firstVisible, 0);
+	}
+
+	if (firstVisible != otherFirstVisible)
+	{
+		const intptr_t otherEndLine = getPreviousUnhiddenLine(otherView, getEndLine(otherView));
+		const intptr_t otherEndVisible =
+				getVisibleFromDocLine(otherView, otherEndLine) +
+				getWrapCount(otherView, otherEndLine) + getLineAnnotation(otherView, otherEndLine);
+
+		if (firstVisible > otherEndVisible)
+		{
+			if (endVisible - firstVisible < CallScintilla(biasView, SCI_LINESONSCREEN, 0, 0))
+				otherNewFirstVisible = firstVisible;
+			else
+				otherNewFirstVisible = otherEndVisible;
+		}
+		else
+		{
+			otherNewFirstVisible = firstVisible;
+		}
+	}
+
+	if (otherNewFirstVisible != otherFirstVisible)
+	{
+		ScopedIncrementerInt incr(notificationsLock);
+
+		CallScintilla(otherView, SCI_SETFIRSTVISIBLELINE, otherNewFirstVisible, 0);
+
+		::UpdateWindow(getView(otherView));
+
+		LOGD(LOG_SYNC, "Syncing to " + std::string(biasView == MAIN_VIEW ? "MAIN" : "SUB") +
+			" view, visible doc line: " + std::to_string(getDocLineFromVisible(biasView, firstVisible) + 1) + "\n");
+	}
+
+	if (Settings.FollowingCaret && biasView == getCurrentViewId())
+	{
+		const intptr_t line = getCurrentLine(biasView);
+
+		otherNewFirstVisible = otherViewMatchingLine(biasView, line);
+
+		if ((otherNewFirstVisible != getCurrentLine(otherView)) && !isSelection(otherView))
+		{
+			intptr_t pos;
+
+			if (!isLineMarked(otherView, otherNewFirstVisible, MARKER_MASK_LINE) &&
+					isLineAnnotated(otherView, otherNewFirstVisible) && isLineWrapped(otherView, otherNewFirstVisible))
+				pos = getLineEnd(otherView, otherNewFirstVisible);
+			else
+				pos = getLineStart(otherView, otherNewFirstVisible);
+
+			ScopedIncrementerInt incr(notificationsLock);
+
+			CallScintilla(otherView, SCI_SETEMPTYSELECTION, pos, 0);
+
+			::UpdateWindow(getView(otherView));
+		}
+	}
+
+	NavDlg.Update();
 }
 
 
@@ -4476,89 +4558,6 @@ void deinitPlugin()
 			funcItem[i]._pShKey = NULL;
 		}
 	}
-}
-
-
-void syncViews(int biasView)
-{
-	const int otherView = getOtherViewId(biasView);
-
-	intptr_t firstVisible				= getFirstVisibleLine(biasView);
-	const intptr_t otherFirstVisible	= getFirstVisibleLine(otherView);
-
-	const intptr_t endLine = getPreviousUnhiddenLine(biasView, getEndLine(biasView));
-	const intptr_t endVisible =
-			getVisibleFromDocLine(biasView, endLine) + getWrapCount(biasView, endLine) +
-			getLineAnnotation(biasView, endLine);
-
-	intptr_t otherNewFirstVisible = otherFirstVisible;
-
-	if (firstVisible > endVisible)
-	{
-		firstVisible = endVisible;
-
-		ScopedIncrementerInt incr(notificationsLock);
-
-		CallScintilla(biasView, SCI_SETFIRSTVISIBLELINE, firstVisible, 0);
-	}
-
-	if (firstVisible != otherFirstVisible)
-	{
-		const intptr_t otherEndLine = getPreviousUnhiddenLine(otherView, getEndLine(otherView));
-		const intptr_t otherEndVisible =
-				getVisibleFromDocLine(otherView, otherEndLine) +
-				getWrapCount(otherView, otherEndLine) + getLineAnnotation(otherView, otherEndLine);
-
-		if (firstVisible > otherEndVisible)
-		{
-			if (endVisible - firstVisible < CallScintilla(biasView, SCI_LINESONSCREEN, 0, 0))
-				otherNewFirstVisible = firstVisible;
-			else
-				otherNewFirstVisible = otherEndVisible;
-		}
-		else
-		{
-			otherNewFirstVisible = firstVisible;
-		}
-	}
-
-	if (otherNewFirstVisible != otherFirstVisible)
-	{
-		ScopedIncrementerInt incr(notificationsLock);
-
-		CallScintilla(otherView, SCI_SETFIRSTVISIBLELINE, otherNewFirstVisible, 0);
-
-		::UpdateWindow(getView(otherView));
-
-		LOGD(LOG_SYNC, "Syncing to " + std::string(biasView == MAIN_VIEW ? "MAIN" : "SUB") +
-			" view, visible doc line: " + std::to_string(getDocLineFromVisible(biasView, firstVisible) + 1) + "\n");
-	}
-
-	if (Settings.FollowingCaret && biasView == getCurrentViewId())
-	{
-		const intptr_t line = getCurrentLine(biasView);
-
-		otherNewFirstVisible = otherViewMatchingLine(biasView, line);
-
-		if ((otherNewFirstVisible != getCurrentLine(otherView)) && !isSelection(otherView))
-		{
-			intptr_t pos;
-
-			if (!isLineMarked(otherView, otherNewFirstVisible, MARKER_MASK_LINE) &&
-					isLineAnnotated(otherView, otherNewFirstVisible) && isLineWrapped(otherView, otherNewFirstVisible))
-				pos = getLineEnd(otherView, otherNewFirstVisible);
-			else
-				pos = getLineStart(otherView, otherNewFirstVisible);
-
-			ScopedIncrementerInt incr(notificationsLock);
-
-			CallScintilla(otherView, SCI_SETEMPTYSELECTION, pos, 0);
-
-			::UpdateWindow(getView(otherView));
-		}
-	}
-
-	NavDlg.Update();
 }
 
 
