@@ -478,9 +478,15 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 			}
 		}
 
-		const intptr_t lineStart	= getLineStart(doc.view, docLine);
-		const intptr_t lineEnd		= options.ignoreEOL ?
-				getLineEnd(doc.view, docLine) : lineStart + CallScintilla(doc.view, SCI_LINELENGTH, docLine, 0);
+		const intptr_t lineStart = getLineStart(doc.view, docLine);
+		intptr_t lineEnd;
+
+		if (options.ignoreEOL)
+			lineEnd = getLineEnd(doc.view, docLine);
+		else if (options.ignoreEmptyLines && lineStart == getLineEnd(doc.view, docLine))
+			continue;
+		else
+			lineEnd = lineStart + CallScintilla(doc.view, SCI_LINELENGTH, docLine, 0);
 
 		Line newLine;
 		newLine.hash = cHashSeed;
