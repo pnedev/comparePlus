@@ -4145,7 +4145,7 @@ void applyPatch(bool revert = false)
 
 		ofn.lStructSize		= sizeof(ofn);
 		ofn.hwndOwner		= nppData._nppHandle;
-		ofn.lpstrFilter		= L"All Files\0*.*\0\0";
+		ofn.lpstrFilter		= L"Patch Files (*.patch, *.diff)\0*.patch;*.diff\0All Files\0*.*\0\0";
 		ofn.lpstrFile		= fname;
 		ofn.nMaxFile		= _countof(fname);
 		ofn.lpstrInitialDir	= nullptr;
