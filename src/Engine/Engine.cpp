@@ -444,7 +444,15 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 
 	int cancelCheckCount = monitorCancelEveryXLine;
 
-	const bool allLinesVisible = CallScintilla(doc.view, SCI_GETALLLINESVISIBLE, 0, 0);
+	// Group ignore options to speed-up per-line checks
+	const bool checkForIgnoredLines = !CallScintilla(doc.view, SCI_GETALLLINESVISIBLE, 0, 0) &&
+		(options.ignoreFoldedLines || options.ignoreHiddenLines);
+	const bool inclEmptyLinesAndEOL = !options.ignoreEOL && !options.ignoreEmptyLines;
+	const bool inclEmptyLines =
+		!options.ignoreEmptyLines && (!options.ignoreRegex || !options.invertRegex || options.inclRegexNomatchLines);
+	const bool inclRegexEmptyLines =
+		!options.ignoreEmptyLines && options.ignoreRegex && options.invertRegex && options.inclRegexNomatchLines;
+
 	const int codepage = getCodepage(doc.view);
 
 	for (intptr_t secLine = 0; secLine < doc.section.len; ++secLine)
@@ -462,7 +470,7 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 
 		intptr_t docLine = secLine + doc.section.off;
 
-		if (!allLinesVisible)
+		if (checkForIgnoredLines)
 		{
 			if (options.ignoreFoldedLines && getNextLineAfterFold(doc.view, &docLine))
 			{
@@ -481,12 +489,23 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 		const intptr_t lineStart = getLineStart(doc.view, docLine);
 		intptr_t lineEnd;
 
-		if (options.ignoreEOL)
-			lineEnd = getLineEnd(doc.view, docLine);
-		else if (options.ignoreEmptyLines && lineStart == getLineEnd(doc.view, docLine))
-			continue;
-		else
+		if (inclEmptyLinesAndEOL)
+		{
 			lineEnd = lineStart + CallScintilla(doc.view, SCI_LINELENGTH, docLine, 0);
+		}
+		else
+		{
+			lineEnd = getLineEnd(doc.view, docLine);
+
+			// Because of the parent 'if' that check actually means that empty lines are ignored
+			if (!options.ignoreEOL)
+			{
+				if (lineStart == lineEnd)
+					continue;
+				else
+					lineEnd = lineStart + CallScintilla(doc.view, SCI_LINELENGTH, docLine, 0);
+			}
+		}
 
 		Line newLine;
 		newLine.hash = cHashSeed;
@@ -504,8 +523,7 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 #endif
 				newLine.hash = getRegexIgnoreLineHash(newLine.hash, codepage, line, options);
 
-				if (newLine.hash != cHashSeed || (!options.ignoreEmptyLines &&
-						options.invertRegex && options.inclRegexNomatchLines))
+				if (newLine.hash != cHashSeed || inclRegexEmptyLines)
 					doc.lines.emplace_back(newLine);
 			}
 			else
@@ -548,8 +566,7 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 					doc.lines.emplace_back(newLine);
 			}
 		}
-		else if (!options.ignoreEmptyLines &&
-			(!options.ignoreRegex || !options.invertRegex || options.inclRegexNomatchLines))
+		else if (inclEmptyLines)
 		{
 			doc.lines.emplace_back(newLine);
 		}
