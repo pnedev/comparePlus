@@ -2,6 +2,38 @@ ComparePlus Changelog:
 ----------------------
 
 
+10.08.2025
+v2.0.0
+
+	- Enable multithreading in changed lines detection
+	- Compare now includes also the line endings (EOL) so now it will find also mismatched EOL types
+	- Added EOL ignore option
+	- Added hidden lines ignore option
+	- Added option to disable changed lines detection (so called sub-block diffs)
+	- Added detection of sub-line moves option (moves detection within changed lines)
+	- Added advanced regex ignore line portions option using Boost Regex engine for improved speed and extended
+		syntax allowing complex patterns. Regex can be configured to either ignore or compare only the line portions
+		matching the pattern
+	- Added compare options dialog which groups all possible detect/ignore compare options
+	- Added diffs visual filtering dialog which allows fine selection of diff types to be shown
+	- Commands to bookmark diffs are replaced by new commands to copy/delete only visible lines
+		(made to work in synergy with diffs visual filtering but usable also in the generic case when there are
+		hidden lines in Notepad++ document that should not be copied/deleted)
+	- Added generate patch command (produces unified diff type patch file)
+	- Added apply patch command (can be used on the old file of a comparison to produce the new file)
+	- Added revert patch command that reverts the result of apply patch. Can also be used on the new file of a
+		comparison to produce the old file BUT this might not always work if patch had been generated from compare
+		that had some ignore options enabled due to a possibly mismatching contexts
+	- Compared files views synchronization speed is increased reducing scroll lag and making it more responsize
+	- Report if there are ignored differences between files when those are considered matching
+	- Added setting configuring if warning about big size files comparison is to be shown
+	- Removed the setting to align all matching lines - those will always be aligned now
+	- Increased font size in dialogs for improved visibility on high DPI displays
+	- Plugin's menu updated and reordered
+	- Update Notepad++ and Scintilla plugin API headers and ensure compatibility
+	- Several minor corner-case bug fixes and some optimizations
+
+
 28.02.2024
 v1.2.0
 
