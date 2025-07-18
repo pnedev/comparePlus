@@ -3675,7 +3675,7 @@ void DeleteVisibleLines()
 }
 
 
-void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
+void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int matchContextLen = 3)
 {
 	const auto& oldFile = cmpPair.getOldFile();
 	const auto& newFile = cmpPair.getNewFile();
@@ -3714,8 +3714,6 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 		patchFile << "+++ " << WCtoMB(&newFile.name[newPos], newLen - newPos);
 	}
 
-	static constexpr int cMatchContextLen = 3;
-
 	intptr_t line1 = 0;
 	intptr_t line2 = 0;
 	intptr_t len1 = 0;
@@ -3748,7 +3746,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 		// Calculate current diff sections lines and lengths
 		if (dsi->type == MATCH)
 		{
-			matchContextStart = (dsi->len < cMatchContextLen ? dsi->len : cMatchContextLen);
+			matchContextStart = (dsi->len < matchContextLen ? dsi->len : matchContextLen);
 
 			line1 += dsi->len - matchContextStart;
 			line2 += dsi->len - matchContextStart;
@@ -3772,9 +3770,9 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 		{
 			if (dsn->type == MATCH)
 			{
-				if (dsn->len > 2 * cMatchContextLen)
+				if (dsn->len > 2 * matchContextLen)
 				{
-					matchContextEnd = cMatchContextLen;
+					matchContextEnd = matchContextLen;
 
 					len1 += matchContextEnd;
 					len2 += matchContextEnd;
@@ -3784,7 +3782,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile)
 
 				if (dsn + 1 == cmpPair.summary.diffSections.end())
 				{
-					matchContextEnd = dsn->len < cMatchContextLen ? dsn->len : cMatchContextLen;
+					matchContextEnd = dsn->len < matchContextLen ? dsn->len : matchContextLen;
 
 					len1 += matchContextEnd;
 					len2 += matchContextEnd;
@@ -4002,7 +4000,12 @@ void GeneratePatch()
 		}
 	}
 
-	formatAndWritePatch(*cmpPair, ofs);
+	const bool hasIgnoreOpts =
+		(cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreAllSpaces || cmpPair->options.ignoreEOL ||
+		cmpPair->options.ignoreEmptyLines || cmpPair->options.ignoreCase || cmpPair->options.ignoreRegex ||
+		cmpPair->options.ignoreFoldedLines || cmpPair->options.ignoreHiddenLines);
+
+	formatAndWritePatch(*cmpPair, ofs, hasIgnoreOpts ? 0 : 3);
 
 	ofs.flush();
 	ofs.close();
