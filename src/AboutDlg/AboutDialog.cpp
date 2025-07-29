@@ -38,6 +38,7 @@ UINT AboutDialog::doDialog()
 			(DLGPROC)dlgProc, (LPARAM)this);
 }
 
+
 INT_PTR CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*lParam*/)
 {
 	switch (Message)
@@ -51,9 +52,27 @@ INT_PTR CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*
 			TCHAR buildTimeStr[256];
 
 			_sntprintf_s(buildTimeStr, _countof(buildTimeStr), _TRUNCATE,
-					TEXT("Build time:    %s,  %s"), TEXT(__DATE__), TEXT(__TIME__));
+					TEXT("Build time:   %s,  %s"), TEXT(__DATE__), TEXT(__TIME__));
 
 			::SetDlgItemText(_hSelf, IDC_BUILD_TIME, buildTimeStr);
+
+			std::wstring libVer = L"LibGit2 version:  ";
+
+			if (_libGit2Ver.empty())
+				libVer += L"lib not found";
+			else
+				libVer += _libGit2Ver.c_str();
+
+			::SetDlgItemText(_hSelf, IDC_GITLIB_VER, libVer.c_str());
+
+			libVer = L"SQLite3 version:  ";
+
+			if (_sqlite3Ver.empty())
+				libVer += L"lib not found";
+			else
+				libVer += _sqlite3Ver.c_str();
+
+			::SetDlgItemText(_hSelf, IDC_SQLITE3_VER, libVer.c_str());
 
 			_emailLink.init(_hInst, _hSelf);
 			_emailLink.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK), TEXT("mailto:pg.nedev@gmail.com"));
@@ -83,6 +102,6 @@ INT_PTR CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*
 			break;
 		}
 	}
+
 	return FALSE;
 }
-

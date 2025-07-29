@@ -18,6 +18,8 @@
 #pragma once
 
 
+#include <string>
+
 #include "PluginInterface.h"
 #include "DockingFeature/StaticDialog.h"
 #include "URLCtrl.h"
@@ -27,10 +29,12 @@ class AboutDialog : public StaticDialog
 {
 
 public:
-	AboutDialog(HINSTANCE hInst, NppData nppDataParam) : StaticDialog()
+	AboutDialog(HINSTANCE hInst, NppData nppDataParam,
+		const std::wstring& libGit2Ver, const std::wstring& sqlite3Ver) : StaticDialog(),
+		_libGit2Ver(libGit2Ver), _sqlite3Ver(sqlite3Ver)
 	{
 		Window::init(hInst, nppDataParam._nppHandle);
-	};
+	}
 
 	~AboutDialog()
 	{
@@ -45,7 +49,6 @@ public:
 		_helpLink.destroy();
 	};
 
-
 protected :
 	virtual INT_PTR CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -54,4 +57,7 @@ private:
 	URLCtrl			_emailLink;
 	URLCtrl			_urlRepo;
 	URLCtrl			_helpLink;
+
+	std::wstring	_libGit2Ver;
+	std::wstring	_sqlite3Ver;
 };

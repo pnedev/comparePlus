@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2013 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017-2022 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include "LibHelpers.h"
 #include "SQLite/SqliteHelper.h"
 #include "LibGit2/LibGit2Helper.h"
+#include "Tools.h"
 
 
 namespace // anonymous namespace
@@ -302,4 +303,27 @@ std::vector<char> GetGitFileContent(const TCHAR* fullFilePath)
 		::MessageBox(nppData._nppHandle, TEXT("No Git data found."), PLUGIN_NAME, MB_OK);
 
 	return gitFileContent;
+}
+
+
+std::wstring GetLibGit2Ver()
+{
+	std::unique_ptr<LibGit>& gitLib = LibGit::load();
+	if (!gitLib)
+		return {};
+
+	const std::string& libGit2Ver = gitLib->GetVersion();
+
+	return MBtoWC(libGit2Ver.c_str(), libGit2Ver.size());
+}
+
+
+std::wstring GetSQLite3Ver()
+{
+	if (!InitSQLite())
+		return {};
+
+	const char* sqlite3Ver = sqlite3_libversion();
+
+	return MBtoWC(sqlite3Ver, strlen(sqlite3Ver));
 }

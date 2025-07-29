@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2013 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 
 typedef struct git_repository git_repository;
@@ -96,6 +97,8 @@ private:
 
 	bool	_isInit;
 
+	std::string		_verStr;
+
 public:
 	static std::unique_ptr<LibGit>& load();
 
@@ -103,6 +106,11 @@ public:
 	{
 		if (_isInit)
 			shutdown();
+	}
+
+	const std::string& GetVersion()
+	{
+		return _verStr;
 	}
 
 	PGITREPOSITORYOPENEXT	repository_open_ext;

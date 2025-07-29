@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2013 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #define SQLITE_ROW		100
 
 
+typedef const char * (*PSQLVERSION) (void);
 typedef int (*PSQLOPEN16) (const void *filename, sqlite3 **ppDb);
 typedef int (*PSQLPREPARE16V2) (sqlite3 *db, const void *zSql, int nByte, sqlite3_stmt **ppStmt, const char **pzTail);
 typedef int (*PSQLSTEP) (sqlite3_stmt *pStmt);
@@ -33,6 +34,7 @@ typedef int (*PSQLFINALZE) (sqlite3_stmt *pStmt);
 typedef int (*PSQLCLOSE) (sqlite3 *db);
 
 
+extern PSQLVERSION		sqlite3_libversion;
 extern PSQLOPEN16		sqlite3_open16;
 extern PSQLPREPARE16V2	sqlite3_prepare16_v2;
 extern PSQLSTEP			sqlite3_step;

@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2013 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017-2022 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #include <windows.h>
 #include <tchar.h>
 #include <shlwapi.h>
+
 #include "LibGit2Helper.h"
 #include "Tools.h"
 
@@ -114,6 +115,12 @@ std::unique_ptr<LibGit>& LibGit::load()
 	{
 		int major, minor, rev;
 		Inst->version(&major, &minor, &rev);
+
+		Inst->_verStr = std::to_string(major);
+		Inst->_verStr += '.';
+		Inst->_verStr += std::to_string(minor);
+		Inst->_verStr += '.';
+		Inst->_verStr += std::to_string(rev);
 
 		if ((major > 0) || (major == 0 && minor >= 22)) // Those API functions are introduced after version 0.22
 		{

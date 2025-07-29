@@ -102,8 +102,10 @@
 
 #define IDC_BUILD_TIME					1010
 #define IDC_EMAIL_LINK					1011
-#define IDC_REPO_URL					1012
-#define IDC_HELP_URL					1013
+#define IDC_GITLIB_VER					1012
+#define IDC_SQLITE3_VER					1013
+#define IDC_REPO_URL					1014
+#define IDC_HELP_URL					1015
 
 #define IDC_NEW_IN_SUB					1020
 #define IDC_OLD_IN_SUB					1021

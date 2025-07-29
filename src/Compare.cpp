@@ -4337,7 +4337,7 @@ void OpenAboutDlg()
 
 #else
 
-	AboutDialog aboutDlg(hInstance, nppData);
+	AboutDialog aboutDlg(hInstance, nppData, GetLibGit2Ver(), GetSQLite3Ver());
 	aboutDlg.doDialog();
 
 #endif

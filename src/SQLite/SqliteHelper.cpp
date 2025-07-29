@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2013 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017-2022 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,10 +21,12 @@
 #include <windows.h>
 #include <tchar.h>
 #include <shlwapi.h>
+
 #include "SqliteHelper.h"
 #include "Tools.h"
 
 
+PSQLVERSION			sqlite3_libversion;
 PSQLOPEN16			sqlite3_open16;
 PSQLPREPARE16V2		sqlite3_prepare16_v2;
 PSQLSTEP			sqlite3_step;
@@ -78,6 +80,9 @@ bool InitSQLite()
 		if (!ligSQLite)
 			return false;
 
+		sqlite3_libversion = (PSQLVERSION)::GetProcAddress(ligSQLite, "sqlite3_libversion");
+		if (!sqlite3_libversion)
+			return false;
 		sqlite3_open16 = (PSQLOPEN16)::GetProcAddress(ligSQLite, "sqlite3_open16");
 		if (!sqlite3_open16)
 			return false;
