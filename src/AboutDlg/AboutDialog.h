@@ -43,8 +43,8 @@ public:
 
 	UINT doDialog();
 
-	virtual void destroy() {
-		_emailLink.destroy();
+	virtual void destroy()
+	{
 		_urlRepo.destroy();
 		_helpLink.destroy();
 	};
@@ -53,8 +53,6 @@ protected :
 	virtual INT_PTR CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
-	/* for eMail */
-	URLCtrl			_emailLink;
 	URLCtrl			_urlRepo;
 	URLCtrl			_helpLink;
 

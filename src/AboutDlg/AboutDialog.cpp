@@ -74,8 +74,6 @@ INT_PTR CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*
 
 			::SetDlgItemText(_hSelf, IDC_SQLITE3_VER, libVer.c_str());
 
-			_emailLink.init(_hInst, _hSelf);
-			_emailLink.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK), TEXT("mailto:pg.nedev@gmail.com"));
 			_urlRepo.init(_hInst, _hSelf);
 			_urlRepo.create(::GetDlgItem(_hSelf, IDC_REPO_URL), cRepo_URL);
 			_helpLink.init(_hInst, _hSelf);

@@ -64,8 +64,7 @@ BEGIN
 	GROUPBOX		"Info", IDC_STATIC, 5, 7, 165, 85
 	CTEXT			TO_STR(Version PLUGIN_VERSION), IDC_STATIC, 10, 20, 155, 8
 	CTEXT			"Build time:", IDC_BUILD_TIME, 10, 33, 155, 8
-	RTEXT			"Author:", IDC_STATIC, 25, 46, 50, 8
-	LTEXT			"Pavel Nedev", IDC_EMAIL_LINK, 80, 46, 70, 8
+	CTEXT			"Author:   Pavel Nedev", IDC_STATIC, 10, 46, 155, 8
 	CTEXT			"ComparePlus is based on Compare plugin by", IDC_STATIC, 10, 65, 155, 8
 	CTEXT			"Ty Landercasper and Jean-Sébastien Leroy", IDC_STATIC, 10, 75, 155, 8
 	GROUPBOX		"External libraries", IDC_STATIC, 5, 100, 165, 42
