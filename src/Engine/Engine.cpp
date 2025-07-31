@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017-2024 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 
 #define NOMINMAX
 
+#include <cassert>
 #include <climits>
 #include <cstdint>
 #include <exception>
@@ -40,11 +41,7 @@
 #include "ProgressDlg.h"
 
 
-// #undef MULTITHREAD // Until properly analyzed, implemented and debugged
-
 #ifdef MULTITHREAD
-
-#pragma message("Multithread change detection enabled.")
 
 #include <atomic>
 
@@ -54,10 +51,17 @@
 #include <thread>
 #endif // __MINGW32__ ...
 
+#else // MULTITHREAD not defined
+
+#pragma message("Multithread change detection disabled.")
+
 #endif // MULTITHREAD
 
 
 namespace {
+
+static constexpr uint64_t cHashSeed = 0x84222325;
+
 
 enum class charType
 {
@@ -69,6 +73,8 @@ enum class charType
 
 struct Line
 {
+	Line(intptr_t l = 0, uint64_t h = cHashSeed) : line(l), hash(h) {}
+
 	intptr_t line;
 
 	uint64_t hash;
@@ -97,6 +103,8 @@ struct Line
 
 struct Word
 {
+	Word(intptr_t p, intptr_t l, uint64_t h = cHashSeed) : pos(p), len(l), hash(h) {}
+
 	intptr_t pos;
 	intptr_t len;
 
@@ -269,9 +277,6 @@ struct LinesConv
 	}
 };
 
-
-static constexpr uint64_t cHashSeed = 0x84222325;
-
 template<typename CharT>
 inline uint64_t Hash(uint64_t hval, CharT letter)
 {
@@ -285,14 +290,9 @@ inline uint64_t Hash(uint64_t hval, CharT letter)
 
 inline intptr_t toAlignmentLine(const DocCmpInfo& doc, intptr_t bdLine)
 {
-	if (doc.lines.empty())
-		return 0;
-	else if (bdLine < 0)
-		return doc.lines.front().line;
-	else if (bdLine < (intptr_t)doc.lines.size())
-		return doc.lines[bdLine].line;
+	assert(bdLine >= 0);
 
-	return (doc.lines.back().line + 1);
+	return (bdLine < (intptr_t)doc.lines.size()) ? doc.lines[bdLine].line : (doc.lines.back().line + 1);
 }
 
 
@@ -507,9 +507,7 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 			}
 		}
 
-		Line newLine;
-		newLine.hash = cHashSeed;
-		newLine.line = docLine;
+		Line newLine {docLine, cHashSeed};
 
 		if (lineStart < lineEnd)
 		{
@@ -625,9 +623,7 @@ inline void getSectionRangeWords(std::vector<Word>& words, std::vector<wchar_t>&
 
 	charType currentWordType = getCharTypeW(line[pos]);
 
-	Word word;
-	word.pos = pos;
-	word.len = 1;
+	Word word {pos, 1};
 
 	if (options.ignoreChangedSpaces && currentWordType == charType::SPACECHAR)
 		word.hash = Hash(cHashSeed, L' ');
@@ -2081,6 +2077,9 @@ void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, intptr_t line
 
 bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSummary& summary)
 {
+	clearWindow(MAIN_VIEW);
+	clearWindow(SUB_VIEW);
+
 	progress_ptr& progress = ProgressDlg::Get();
 
 	const intptr_t blockDiffSize = static_cast<intptr_t>(cmpInfo.blockDiffs.size());
@@ -2371,7 +2370,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 }
 
 
-inline std::vector<diff_section_t> toDiffSections(const CompareInfo& cmpInfo)
+std::vector<diff_section_t> toDiffSections(const CompareInfo& cmpInfo)
 {
 	std::vector<diff_section_t> diffSecs;
 
@@ -2459,11 +2458,14 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 	if (!progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
-	summary.diffSections	= toDiffSections(cmpInfo);
-	summary.diff1view		= cmpInfo.doc1.view;
+	// Make sure we have at least one line in each view so the functions' logic below works properly
+	if (cmpInfo.doc1.lines.empty())
+		cmpInfo.doc1.lines.emplace_back(0, cHashSeed);
+	if (cmpInfo.doc2.lines.empty())
+		cmpInfo.doc2.lines.emplace_back(0, cHashSeed);
 
-	clearWindow(MAIN_VIEW);
-	clearWindow(SUB_VIEW);
+	summary.diff1view		= cmpInfo.doc1.view;
+	summary.diffSections	= toDiffSections(cmpInfo);
 
 	if (!markAllDiffs(cmpInfo, options, summary))
 		return CompareResult::COMPARE_CANCELLED;

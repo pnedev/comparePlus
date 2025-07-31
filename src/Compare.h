@@ -167,9 +167,7 @@ extern UserSettings	Settings;
 
 inline LRESULT CallScintilla(int viewNum, unsigned int uMsg, uptr_t wParam, sptr_t lParam)
 {
-#ifndef NDEBUG
 	assert(viewNum >= 0 && viewNum < 2);
-#endif
 
 	return sciFunc(sciPtr[viewNum], uMsg, wParam, lParam);
 }
