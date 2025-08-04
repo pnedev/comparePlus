@@ -67,12 +67,16 @@ struct line_section_t : public section_t
 };
 
 
-struct diff_section_t : public section_t
+struct diff_section_t
 {
-	diff_section_t() : section_t(), type {DiffType::MATCH} {}
-	diff_section_t(intptr_t o, intptr_t l, DiffType t) : section_t(o, l), type {t} {}
+	diff_section_t() : type {DiffType::MATCH} {}
+	diff_section_t(DiffType t, intptr_t o1, intptr_t l1, intptr_t o2, intptr_t l2) :
+			type {t}, sec1 {o1, l1}, sec2 {o2, l2} {}
 
 	DiffType type;
+
+	section_t sec1;
+	section_t sec2;
 };
 
 

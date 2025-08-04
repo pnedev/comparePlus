@@ -3675,7 +3675,7 @@ void DeleteVisibleLines()
 }
 
 
-void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int matchContextLen = 3)
+void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int matchContextLen)
 {
 	const auto& oldFile = cmpPair.getOldFile();
 	const auto& newFile = cmpPair.getNewFile();
@@ -3746,22 +3746,22 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 		// Calculate current diff sections lines and lengths
 		if (dsi->type == MATCH)
 		{
-			matchContextStart = (dsi->len < matchContextLen ? dsi->len : matchContextLen);
+			matchContextStart = (dsi->sec1.len < matchContextLen ? dsi->sec1.len : matchContextLen);
 
-			line1 += dsi->len - matchContextStart;
-			line2 += dsi->len - matchContextStart;
+			line1 += dsi->sec1.len - matchContextStart;
+			line2 += dsi->sec2.len - matchContextStart;
 			len1 = matchContextStart;
 			len2 = matchContextStart;
 		}
 		else if (dsi->type == IN_1)
 		{
-			line1 = dsi->off;
-			len1 = dsi->len;
+			line1 = dsi->sec1.off;
+			len1 = dsi->sec1.len;
 		}
 		else
 		{
-			line2 = dsi->off;
-			len2 = dsi->len;
+			line2 = dsi->sec2.off;
+			len2 = dsi->sec2.len;
 		}
 
 		auto dsn = dsi + 1;
@@ -3770,7 +3770,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 		{
 			if (dsn->type == MATCH)
 			{
-				if (dsn->len > 2 * matchContextLen)
+				if (dsn->sec1.len > 2 * matchContextLen)
 				{
 					matchContextEnd = matchContextLen;
 
@@ -3782,7 +3782,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 
 				if (dsn + 1 == cmpPair.summary.diffSections.end())
 				{
-					matchContextEnd = dsn->len < matchContextLen ? dsn->len : matchContextLen;
+					matchContextEnd = dsn->sec1.len < matchContextLen ? dsn->sec1.len : matchContextLen;
 
 					len1 += matchContextEnd;
 					len2 += matchContextEnd;
@@ -3790,21 +3790,21 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 					break;
 				}
 
-				len1 += dsn->len;
-				len2 += dsn->len;
+				len1 += dsn->sec1.len;
+				len2 += dsn->sec2.len;
 			}
 			else if (dsn->type == IN_1)
 			{
-				len1 += dsn->len;
+				len1 += dsn->sec1.len;
 			}
 			else
 			{
-				len2 += dsn->len;
+				len2 += dsn->sec2.len;
 			}
 		}
 
-		patchFile << eol << "@@ -" << rOldLine + 1 << ',' << rOldLen <<
-								" +" << rNewLine + 1 << ',' << rNewLen << " @@";
+		patchFile << eol << "@@ -" << rOldLine + (rOldLen ? 1 : 0) << ',' << rOldLen <<
+								" +" << rNewLine + (rNewLen ? 1 : 0) << ',' << rNewLen << " @@";
 
 		// Write current diff sections and context
 		for (auto dsr = dsi; dsr != dsn; dsr++)
@@ -3812,7 +3812,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 			if (dsr->type == MATCH)
 			{
 				if (!matchContextStart && dsr != dsi)
-					matchContextStart = dsr->len;
+					matchContextStart = dsr->sec1.len;
 
 				rNewLine += matchContextStart;
 
@@ -3832,7 +3832,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 				{
 					if (oldIs1)
 					{
-						for (intptr_t i = dsr->len; i; --i)
+						for (intptr_t i = dsr->sec1.len; i; --i)
 						{
 							patchFile << eol << diffMark1;
 							const auto txt = getLineText(rFile1.compareViewId, line1++);
@@ -3842,7 +3842,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 						if (line1 > endLine1)
 							patchFile << eol << "\\ No newline at end of file";
 
-						for (intptr_t i = dsrn->len; i; --i)
+						for (intptr_t i = dsrn->sec2.len; i; --i)
 						{
 							patchFile << eol << diffMark2;
 							const auto txt = getLineText(rFile2.compareViewId, line2++);
@@ -3854,7 +3854,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 					}
 					else
 					{
-						for (intptr_t i = dsrn->len; i; --i)
+						for (intptr_t i = dsrn->sec2.len; i; --i)
 						{
 							patchFile << eol << diffMark2;
 							const auto txt = getLineText(rFile2.compareViewId, line2++);
@@ -3864,7 +3864,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 						if (line2 > endLine2)
 							patchFile << eol << "\\ No newline at end of file";
 
-						for (intptr_t i = dsr->len; i; --i)
+						for (intptr_t i = dsr->sec1.len; i; --i)
 						{
 							patchFile << eol << diffMark1;
 							const auto txt = getLineText(rFile1.compareViewId, line1++);
@@ -3879,7 +3879,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 				}
 				else
 				{
-					for (intptr_t i = dsr->len; i; --i)
+					for (intptr_t i = dsr->sec1.len; i; --i)
 					{
 						patchFile << eol << diffMark1;
 						const auto txt = getLineText(rFile1.compareViewId, line1++);
@@ -3889,7 +3889,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 			}
 			else
 			{
-				for (intptr_t i = dsr->len; i; --i)
+				for (intptr_t i = dsr->sec2.len; i; --i)
 				{
 					patchFile << eol << diffMark2;
 					const auto txt = getLineText(rFile2.compareViewId, line2++);
@@ -4065,6 +4065,8 @@ bool readAndApplyPatch(std::ifstream& patchFile, bool revert)
 		{
 			searchStr.append(lineStr, 1);
 			replaceStr.append(lineStr, 1);
+			++searchedLines;
+			++replacedLines;
 			lastUpdatedStr = nullptr;
 		}
 		else if (*(lineStr.c_str()) == oldMark)
@@ -4081,6 +4083,9 @@ bool readAndApplyPatch(std::ifstream& patchFile, bool revert)
 		}
 		else if (*(lineStr.c_str()) == '@')
 		{
+			if (!searchedLines)
+				++oldLine;
+
 			res = (replaceText(view, searchStr, replaceStr, oldLine + oldLineOffset) >= 0);
 			if (!res)
 				break;
@@ -4124,7 +4129,12 @@ bool readAndApplyPatch(std::ifstream& patchFile, bool revert)
 		res = false;
 
 	if (res && (searchedLines || replacedLines))
+	{
+		if (!searchedLines)
+			++oldLine;
+
 		res = (replaceText(view, searchStr, replaceStr, oldLine + oldLineOffset) >= 0);
+	}
 
 	CallScintilla(view, SCI_ENDUNDOACTION, 0, 0);
 
