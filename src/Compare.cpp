@@ -3714,8 +3714,8 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 		patchFile << "+++ " << WCtoMB(&newFile.name[newPos], newLen - newPos);
 	}
 
-	intptr_t line1 = 0;
-	intptr_t line2 = 0;
+	intptr_t line1 = cmpPair.options.selectionCompare ? cmpPair.options.selections[0].first : 0;
+	intptr_t line2 = cmpPair.options.selectionCompare ? cmpPair.options.selections[1].first : 0;
 	intptr_t len1 = 0;
 	intptr_t len2 = 0;
 

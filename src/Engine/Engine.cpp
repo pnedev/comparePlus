@@ -2371,15 +2371,15 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 
 
 // Needed to format patch generation data
-std::vector<diff_section_t> toDiffSections(const CompareInfo& cmpInfo)
+std::vector<diff_section_t> toDiffSections(const CompareInfo& cmpInfo, const CompareOptions& options)
 {
 	std::vector<diff_section_t> diffSecs;
 
 	diffSecs.reserve(cmpInfo.blockDiffs.size());
 
 	intptr_t line2		= 0;
-	intptr_t docLine1	= 0;
-	intptr_t docLine2	= 0;
+	intptr_t docLine1	= options.selectionCompare ? options.selections[0].first : 0;
+	intptr_t docLine2	= options.selectionCompare ? options.selections[1].first : 0;
 
 	for (const auto& bd: cmpInfo.blockDiffs)
 	{
@@ -2501,7 +2501,7 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 
 	// Needed for patch generation
 	summary.diff1view		= cmpInfo.doc1.view;
-	summary.diffSections	= toDiffSections(cmpInfo);
+	summary.diffSections	= toDiffSections(cmpInfo, options);
 
 	if (!markAllDiffs(cmpInfo, options, summary))
 		return CompareResult::COMPARE_CANCELLED;
