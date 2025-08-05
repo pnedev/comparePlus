@@ -24,13 +24,15 @@ v2.0.0
 	- Added revert patch command that reverts the result of apply patch. Can also be used on the new file of a
 		comparison to produce the old file BUT this might not always work if patch had been generated from compare
 		that had some ignore options enabled due to a possibly mismatching contexts
-	- Compared files views synchronization speed is increased reducing scroll lag and making it more responsize
+	- Compared files views synchronization speed is increased reducing scroll lag and making it more responsive
 	- Report if there are ignored differences between files when those are considered matching
 	- Added setting configuring if warning about big size files comparison is to be shown
 	- Removed the setting to align all matching lines - those will always be aligned now
 	- Increased font size in dialogs for improved visibility on high DPI displays
 	- Plugin's menu updated and reordered
+	- Plugin's About dialog now prints current libraries versions, author's e-mail link is removed
 	- Update Notepad++ and Scintilla plugin API headers and ensure compatibility
+	- Update SQLite3 library to v3.50.3
 	- Several minor corner-case bug fixes and some optimizations
 
 
