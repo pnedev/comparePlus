@@ -3969,6 +3969,18 @@ void GeneratePatch()
 		return;
 	}
 
+	const bool hasIgnoreOpts =
+		(cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreAllSpaces || cmpPair->options.ignoreEOL ||
+		cmpPair->options.ignoreEmptyLines || cmpPair->options.ignoreCase || cmpPair->options.ignoreRegex ||
+		cmpPair->options.ignoreFoldedLines || cmpPair->options.ignoreHiddenLines);
+
+	if (hasIgnoreOpts)
+	{
+		::MessageBox(nppData._nppHandle,
+			TEXT("Some ignore options are enabled - please note that the patch file might contain ignored files ")
+			TEXT("portions and migth insert such when applied!"), PLUGIN_NAME, MB_OK | MB_ICONWARNING);
+	}
+
 	std::ofstream ofs;
 	{
 		wchar_t fname[2048];
@@ -3999,11 +4011,6 @@ void GeneratePatch()
 			return;
 		}
 	}
-
-	const bool hasIgnoreOpts =
-		(cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreAllSpaces || cmpPair->options.ignoreEOL ||
-		cmpPair->options.ignoreEmptyLines || cmpPair->options.ignoreCase || cmpPair->options.ignoreRegex ||
-		cmpPair->options.ignoreFoldedLines || cmpPair->options.ignoreHiddenLines);
 
 	formatAndWritePatch(*cmpPair, ofs, hasIgnoreOpts ? 0 : 3);
 
