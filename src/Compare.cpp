@@ -2921,6 +2921,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		{
 			unhideAllLines(MAIN_VIEW);
 			unhideAllLines(SUB_VIEW);
+
+			cmpPair->hideFlags = NO_HIDE;
 		}
 	}
 	// New compare
