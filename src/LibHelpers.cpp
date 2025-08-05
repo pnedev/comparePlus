@@ -314,7 +314,7 @@ std::wstring GetLibGit2Ver()
 
 	const std::string& libGit2Ver = gitLib->GetVersion();
 
-	return MBtoWC(libGit2Ver.c_str(), libGit2Ver.size());
+	return MBtoWC(libGit2Ver.c_str(), static_cast<int>(libGit2Ver.size()));
 }
 
 
@@ -325,5 +325,5 @@ std::wstring GetSQLite3Ver()
 
 	const char* sqlite3Ver = sqlite3_libversion();
 
-	return MBtoWC(sqlite3Ver, strlen(sqlite3Ver));
+	return MBtoWC(sqlite3Ver, static_cast<int>(strlen(sqlite3Ver)));
 }

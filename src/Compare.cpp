@@ -4028,7 +4028,7 @@ intptr_t lineNumFromPatchDiff(const std::string& patchDiff, char linePrefix)
 	if ((numPos == std::string::npos) || (numPos == patchDiff.size() - 1))
 		return -1;
 
-	return strtoll(patchDiff.c_str() + numPos + 1, NULL, 10) - 1;
+	return (intptr_t)strtoll(patchDiff.c_str() + numPos + 1, NULL, 10) - 1;
 }
 
 

@@ -614,7 +614,7 @@ intptr_t replaceText(int view, const std::string& txtToReplace, const std::strin
 
 	if (pos >= 0)
 	{
-		CallScintilla(view, SCI_REPLACETARGETMINIMAL, -1, (LPARAM)replacementTxt.c_str());
+		CallScintilla(view, SCI_REPLACETARGETMINIMAL, (uptr_t)-1, (LPARAM)replacementTxt.c_str());
 		pos = CallScintilla(view, SCI_GETTARGETEND, 0, 0);
 		pos = CallScintilla(view, SCI_LINEFROMPOSITION, pos, 0) + 1;
 	}
