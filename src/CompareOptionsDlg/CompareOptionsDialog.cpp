@@ -20,6 +20,7 @@
 
 #include "CompareOptionsDialog.h"
 
+#include <string>
 #include <windowsx.h>
 #include <commctrl.h>
 #include <uxtheme.h>
@@ -32,7 +33,7 @@ UINT CompareOptionsDialog::doDialog(UserSettings* settings)
 {
 	_Settings = settings;
 
-	return (UINT)::DialogBoxParam(_hInst, MAKEINTRESOURCE(IDD_COMPARE_OPTIONS_DIALOG), _hParent,
+	return (UINT)::DialogBoxParamW(_hInst, MAKEINTRESOURCEW(IDD_COMPARE_OPTIONS_DIALOG), _hParent,
 			(DLGPROC)dlgProc, (LPARAM)this);
 }
 
@@ -168,7 +169,7 @@ void CompareOptionsDialog::SetParams()
 
 	HWND hCtrl = ::GetDlgItem(_hSelf, IDC_IGNORE_REGEX_STR);
 
-	::SendMessage(hCtrl, EM_SETLIMITTEXT, cMaxRegexLen, 0);
+	::SendMessageW(hCtrl, EM_SETLIMITTEXT, cMaxRegexLen, 0);
 
 	Edit_SetText(hCtrl, _Settings->IgnoreRegexStr.c_str());
 	Edit_Enable(hCtrl, _Settings->IgnoreRegex);

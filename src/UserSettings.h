@@ -20,7 +20,7 @@
 #pragma once
 
 #include <windows.h>
-#include <tchar.h>
+#include <wchar.h>
 #include <string>
 
 
@@ -122,81 +122,81 @@ public:
 		return *_colors;
 	}
 
-	static const TCHAR mainSection[];
+	static const wchar_t mainSection[];
 
-	static const TCHAR newFileViewSetting[];
-	static const TCHAR firstIsNewSetting[];
-	static const TCHAR compareToPrevSetting[];
+	static const wchar_t newFileViewSetting[];
+	static const wchar_t firstIsNewSetting[];
+	static const wchar_t compareToPrevSetting[];
 
-	static const TCHAR encodingsCheckSetting[];
-	static const TCHAR sizesCheckSetting[];
-	static const TCHAR markIgnoredLinesSetting[];
-	static const TCHAR followingCaretSetting[];
-	static const TCHAR wrapAroundSetting[];
-	static const TCHAR gotoFirstDiffSetting[];
-	static const TCHAR promptCloseOnMatchSetting[];
+	static const wchar_t encodingsCheckSetting[];
+	static const wchar_t sizesCheckSetting[];
+	static const wchar_t markIgnoredLinesSetting[];
+	static const wchar_t followingCaretSetting[];
+	static const wchar_t wrapAroundSetting[];
+	static const wchar_t gotoFirstDiffSetting[];
+	static const wchar_t promptCloseOnMatchSetting[];
 
-	static const TCHAR detectMovesSetting[];
-	static const TCHAR detectSubBlockDiffsSetting[];
-	static const TCHAR detectSubLineMovesSetting[];
-	static const TCHAR detectCharDiffsSetting[];
-	static const TCHAR ignoreEmptyLinesSetting[];
-	static const TCHAR ignoreFoldedLinesSetting[];
-	static const TCHAR ignoreHiddenLinesSetting[];
-	static const TCHAR ignoreChangedSpacesSetting[];
-	static const TCHAR ignoreAllSpacesSetting[];
-	static const TCHAR ignoreEOLSetting[];
-	static const TCHAR ignoreCaseSetting[];
-	static const TCHAR ignoreRegexSetting[];
-	static const TCHAR invertRegexSetting[];
-	static const TCHAR inclRegexNomatchLinesSetting[];
-	static const TCHAR ignoreRegexStrSetting[];
+	static const wchar_t detectMovesSetting[];
+	static const wchar_t detectSubBlockDiffsSetting[];
+	static const wchar_t detectSubLineMovesSetting[];
+	static const wchar_t detectCharDiffsSetting[];
+	static const wchar_t ignoreEmptyLinesSetting[];
+	static const wchar_t ignoreFoldedLinesSetting[];
+	static const wchar_t ignoreHiddenLinesSetting[];
+	static const wchar_t ignoreChangedSpacesSetting[];
+	static const wchar_t ignoreAllSpacesSetting[];
+	static const wchar_t ignoreEOLSetting[];
+	static const wchar_t ignoreCaseSetting[];
+	static const wchar_t ignoreRegexSetting[];
+	static const wchar_t invertRegexSetting[];
+	static const wchar_t inclRegexNomatchLinesSetting[];
+	static const wchar_t ignoreRegexStrSetting[];
 
-	static const TCHAR hideMatchesSetting[];
-	static const TCHAR hideNewLinesSetting[];
-	static const TCHAR hideChangedLinesSetting[];
-	static const TCHAR hideMovedLinesSetting[];
-	static const TCHAR showOnlySelSetting[];
-	static const TCHAR navBarSetting[];
+	static const wchar_t hideMatchesSetting[];
+	static const wchar_t hideNewLinesSetting[];
+	static const wchar_t hideChangedLinesSetting[];
+	static const wchar_t hideMovedLinesSetting[];
+	static const wchar_t showOnlySelSetting[];
+	static const wchar_t navBarSetting[];
 
-	static const TCHAR reCompareOnChangeSetting[];
+	static const wchar_t reCompareOnChangeSetting[];
 
-	static const TCHAR statusInfoSetting[];
+	static const wchar_t statusInfoSetting[];
 
-	static const TCHAR colorsSection[];
+	static const wchar_t colorsSection[];
 
-	static const TCHAR addedColorSetting[];
-	static const TCHAR removedColorSetting[];
-	static const TCHAR movedColorSetting[];
-	static const TCHAR changedColorSetting[];
-	static const TCHAR addHighlightColorSetting[];
-	static const TCHAR remHighlightColorSetting[];
-	static const TCHAR movHighlightColorSetting[];
-	static const TCHAR highlightTranspSetting[];
-	static const TCHAR caretLineTranspSetting[];
+	static const wchar_t addedColorSetting[];
+	static const wchar_t removedColorSetting[];
+	static const wchar_t movedColorSetting[];
+	static const wchar_t changedColorSetting[];
+	static const wchar_t addHighlightColorSetting[];
+	static const wchar_t remHighlightColorSetting[];
+	static const wchar_t movHighlightColorSetting[];
+	static const wchar_t highlightTranspSetting[];
+	static const wchar_t caretLineTranspSetting[];
 
-	static const TCHAR addedColorDarkSetting[];
-	static const TCHAR removedColorDarkSetting[];
-	static const TCHAR movedColorDarkSetting[];
-	static const TCHAR changedColorDarkSetting[];
-	static const TCHAR addHighlightColorDarkSetting[];
-	static const TCHAR remHighlightColorDarkSetting[];
-	static const TCHAR movHighlightColorDarkSetting[];
-	static const TCHAR highlightTranspDarkSetting[];
-	static const TCHAR caretLineTranspDarkSetting[];
+	static const wchar_t addedColorDarkSetting[];
+	static const wchar_t removedColorDarkSetting[];
+	static const wchar_t movedColorDarkSetting[];
+	static const wchar_t changedColorDarkSetting[];
+	static const wchar_t addHighlightColorDarkSetting[];
+	static const wchar_t remHighlightColorDarkSetting[];
+	static const wchar_t movHighlightColorDarkSetting[];
+	static const wchar_t highlightTranspDarkSetting[];
+	static const wchar_t caretLineTranspDarkSetting[];
 
-	static const TCHAR changedThresholdSetting[];
+	static const wchar_t changedThresholdSetting[];
 
-	static const TCHAR toolbarSection[];
+	static const wchar_t toolbarSection[];
 
-	static const TCHAR enableToolbarSetting[];
-	static const TCHAR setAsFirstTBSetting[];
-	static const TCHAR compareTBSetting[];
-	static const TCHAR compareSelTBSetting[];
-	static const TCHAR clearCompareTBSetting[];
-	static const TCHAR navigationTBSetting[];
-	static const TCHAR diffsFilterTBSetting[];
-	static const TCHAR navBarTBSetting[];
+	static const wchar_t enableToolbarSetting[];
+	static const wchar_t setAsFirstTBSetting[];
+	static const wchar_t compareTBSetting[];
+	static const wchar_t compareSelTBSetting[];
+	static const wchar_t clearCompareTBSetting[];
+	static const wchar_t navigationTBSetting[];
+	static const wchar_t diffsFilterTBSetting[];
+	static const wchar_t navBarTBSetting[];
 
 	bool			FirstFileIsNew;
 	int				NewFileViewId;

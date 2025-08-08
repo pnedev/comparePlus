@@ -50,27 +50,26 @@ public :
 
 	void getColor(LPCOLORREF p_rgbCol)
 	{
-		if (p_rgbCol != NULL) {
+		if (p_rgbCol != NULL)
 			*p_rgbCol = _rgbCol;
-		}
 	};
 
 private:
 	void DrawColor(HDC hDcExt = NULL);
 
 private :
-	HWND					_hNpp;
-	COMBOBOXINFO			_comboBoxInfo;
-	WNDPROC					_hDefaultComboProc;
+	HWND			_hNpp;
+	COMBOBOXINFO	_comboBoxInfo;
+	WNDPROC			_hDefaultComboProc;
 
-	COLORREF                _rgbCol;
-	ColorPopup*				_pColorPopup;
+	COLORREF		_rgbCol;
+	ColorPopup*		_pColorPopup;
 
 	/* Subclassing combo boxes */
 	LRESULT runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
 
 	static LRESULT CALLBACK wndDefaultProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 	{
-		return (((ColorCombo *)(::GetWindowLongPtr(hwnd, GWLP_USERDATA)))->runProc(hwnd, Message, wParam, lParam));
+		return (((ColorCombo *)(::GetWindowLongPtrW(hwnd, GWLP_USERDATA)))->runProc(hwnd, Message, wParam, lParam));
 	};
 };

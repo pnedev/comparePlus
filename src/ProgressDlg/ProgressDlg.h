@@ -21,7 +21,7 @@
 #include <cstdint>
 
 #include <windows.h>
-#include <tchar.h>
+#include <wchar.h>
 #include <commctrl.h>
 
 #include <memory>
@@ -34,7 +34,7 @@ using progress_ptr = std::shared_ptr<ProgressDlg>;
 class ProgressDlg
 {
 public:
-	static progress_ptr& Open(const TCHAR* info = NULL);
+	static progress_ptr& Open(const wchar_t* info = NULL);
 
 	static progress_ptr& Get()
 	{
@@ -48,9 +48,9 @@ public:
 
     ~ProgressDlg();
 
-	inline void SetInfo(const TCHAR *info) const
+	inline void SetInfo(const wchar_t *info) const
 	{
-		::SendMessage(_hPText, WM_SETTEXT, 0, (LPARAM)info);
+		::SendMessageW(_hPText, WM_SETTEXT, 0, (LPARAM)info);
 	}
 
 	void Show() const;
@@ -63,7 +63,7 @@ public:
 	bool Advance(intptr_t cnt = 1, unsigned phase = 0);
 
 private:
-    static const TCHAR cClassName[];
+    static const wchar_t cClassName[];
     static const int cBackgroundColor;
     static const int cPBwidth;
     static const int cPBheight;
@@ -92,7 +92,7 @@ private:
 
     inline void setPos(intptr_t pos) const
 	{
-		::PostMessage(_hPBar, PBM_SETPOS, (WPARAM)pos, 0);
+		::PostMessageW(_hPBar, PBM_SETPOS, (WPARAM)pos, 0);
 	}
 
     void update();

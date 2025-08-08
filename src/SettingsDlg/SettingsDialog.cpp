@@ -28,19 +28,19 @@
 #include "NppHelpers.h"
 
 
-static const int c_Highlight_transp_min = 0;
-static const int c_Highlight_transp_max = 100;
-static const int c_Caret_line_transp_min = 0;
-static const int c_Caret_line_transp_max = 100;
-static const int c_Threshold_perc_min = 1;
-static const int c_Threshold_perc_max = 99;
+static const int c_Highlight_transp_min		= 0;
+static const int c_Highlight_transp_max		= 100;
+static const int c_Caret_line_transp_min	= 0;
+static const int c_Caret_line_transp_max	= 100;
+static const int c_Threshold_perc_min		= 1;
+static const int c_Threshold_perc_max		= 99;
 
 
 UINT SettingsDialog::doDialog(UserSettings* settings)
 {
 	_Settings = settings;
 
-	return (UINT)::DialogBoxParam(_hInst, MAKEINTRESOURCE(IDD_SETTINGS_DIALOG), _hParent,
+	return (UINT)::DialogBoxParamW(_hInst, MAKEINTRESOURCEW(IDD_SETTINGS_DIALOG), _hParent,
 			(DLGPROC)dlgProc, (LPARAM)this);
 }
 
@@ -66,27 +66,27 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 			_ColorComboMovHighlight.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_MOV_HIGHLIGHT_COLOR));
 
 			HWND hCtrl = ::GetDlgItem(_hSelf, IDC_HIGHLIGHT_SPIN_BOX);
-			::SendMessage(hCtrl, EM_SETLIMITTEXT, 3L, 0);
+			::SendMessageW(hCtrl, EM_SETLIMITTEXT, 3L, 0);
 
 			hCtrl = ::GetDlgItem(_hSelf, IDC_CARET_LINE_SPIN_BOX);
-			::SendMessage(hCtrl, EM_SETLIMITTEXT, 3L, 0);
+			::SendMessageW(hCtrl, EM_SETLIMITTEXT, 3L, 0);
 
 			hCtrl = ::GetDlgItem(_hSelf, IDC_THRESHOLD_SPIN_BOX);
-			::SendMessage(hCtrl, EM_SETLIMITTEXT, 2L, 0);
+			::SendMessageW(hCtrl, EM_SETLIMITTEXT, 2L, 0);
 
 			hCtrl = ::GetDlgItem(_hSelf, IDC_HIGHLIGHT_SPIN_CTL);
-			::SendMessage(hCtrl, UDM_SETRANGE, 0L, MAKELONG(c_Highlight_transp_max, c_Highlight_transp_min));
+			::SendMessageW(hCtrl, UDM_SETRANGE, 0L, MAKELONG(c_Highlight_transp_max, c_Highlight_transp_min));
 
 			hCtrl = ::GetDlgItem(_hSelf, IDC_CARET_LINE_SPIN_CTL);
-			::SendMessage(hCtrl, UDM_SETRANGE, 0L, MAKELONG(c_Caret_line_transp_max, c_Caret_line_transp_min));
+			::SendMessageW(hCtrl, UDM_SETRANGE, 0L, MAKELONG(c_Caret_line_transp_max, c_Caret_line_transp_min));
 
 			hCtrl = ::GetDlgItem(_hSelf, IDC_THRESHOLD_SPIN_CTL);
-			::SendMessage(hCtrl, UDM_SETRANGE, 0L, MAKELONG(c_Threshold_perc_max, c_Threshold_perc_min));
+			::SendMessageW(hCtrl, UDM_SETRANGE, 0L, MAKELONG(c_Threshold_perc_max, c_Threshold_perc_min));
 
 			if (isRTLwindow(nppData._nppHandle))
 			{
-				SetDlgItemText(_hSelf, IDC_NEW_IN_SUB, TEXT("New file in left view"));
-				SetDlgItemText(_hSelf, IDC_OLD_IN_SUB, TEXT("Old file in left view"));
+				SetDlgItemTextW(_hSelf, IDC_NEW_IN_SUB, L"New file in left view");
+				SetDlgItemTextW(_hSelf, IDC_OLD_IN_SUB, L"Old file in left view");
 			}
 
 			SetParams();

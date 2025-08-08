@@ -21,7 +21,7 @@
 #include <cassert>
 
 #include <windows.h>
-#include <tchar.h>
+#include <wchar.h>
 
 #include "Notepad_plus_msgs.h"
 #include "Scintilla.h"
@@ -52,8 +52,8 @@
 	#define LOGD(LOG_FILTER, STR) \
 		if (DLOG & LOG_FILTER) { \
 			const DWORD time_ms = ::GetTickCount(); \
-			TCHAR file[MAX_PATH]; \
-			::SendMessage(nppData._nppHandle, NPPM_GETFILENAME, _countof(file), (LPARAM)file); \
+			wchar_t file[MAX_PATH]; \
+			::SendMessageW(nppData._nppHandle, NPPM_GETFILENAME, _countof(file), (LPARAM)file); \
 			std::string tmp_str { std::to_string(time_ms - dLogTime_ms) }; \
 			dLog += tmp_str; \
 			if (tmp_str.size() < 5) dLog += " ms\t\t("; \
@@ -73,13 +73,13 @@
 	#define LOGDB(LOG_FILTER, BUFFID, STR) \
 		if (DLOG & LOG_FILTER) { \
 			const DWORD time_ms = ::GetTickCount(); \
-			TCHAR file[MAX_PATH]; \
-			::SendMessage(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, BUFFID, (LPARAM)file); \
+			wchar_t file[MAX_PATH]; \
+			::SendMessageW(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, BUFFID, (LPARAM)file); \
 			std::string tmp_str { std::to_string(time_ms - dLogTime_ms) }; \
 			dLog += tmp_str; \
 			if (tmp_str.size() < 5) dLog += " ms\t\t("; \
 			else dLog += " ms\t("; \
-			tmp_str = WCtoMB(::PathFindFileName(file), -1); \
+			tmp_str = WCtoMB(::PathFindFileNameW(file), -1); \
 			dLog += tmp_str; \
 			if (tmp_str.size() < 7) dLog += ")\t\t\t"; \
 			else if (tmp_str.size() < 11) dLog += ")\t\t"; \
@@ -156,7 +156,7 @@ enum MENU_COMMANDS
 };
 
 
-extern const TCHAR PLUGIN_NAME[];
+extern const wchar_t PLUGIN_NAME[];
 
 extern NppData		nppData;
 extern SciFnDirect	sciFunc;

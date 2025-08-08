@@ -23,7 +23,6 @@
 #include <windowsx.h>
 #include <commctrl.h>
 #include <uxtheme.h>
-#include <boost/regex.hpp>
 
 #include "NppHelpers.h"
 
@@ -32,7 +31,7 @@ UINT VisualFiltersDialog::doDialog(UserSettings* settings)
 {
 	_Settings = settings;
 
-	return (UINT)::DialogBoxParam(_hInst, MAKEINTRESOURCE(IDD_VISUAL_FILTERS_DIALOG), _hParent,
+	return (UINT)::DialogBoxParamW(_hInst, MAKEINTRESOURCEW(IDD_VISUAL_FILTERS_DIALOG), _hParent,
 			(DLGPROC)dlgProc, (LPARAM)this);
 }
 

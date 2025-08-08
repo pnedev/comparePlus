@@ -19,7 +19,7 @@
 
 #include <stdlib.h>
 #include <windows.h>
-#include <tchar.h>
+#include <wchar.h>
 #include <shlwapi.h>
 
 #include "LibGit2Helper.h"
@@ -29,15 +29,15 @@
 namespace
 {
 
-inline bool getDllPath(TCHAR* dllPath, size_t bufLen)
+inline bool getDllPath(wchar_t* dllPath, size_t bufLen)
 {
-	HMODULE hPlugin = ::GetModuleHandle(TEXT("ComparePlus.dll"));
+	HMODULE hPlugin = ::GetModuleHandleW(L"ComparePlus.dll");
 	if (!hPlugin)
 		return false;
 
-	::GetModuleFileName(hPlugin, (LPWSTR)dllPath, (DWORD)bufLen);
-	::PathRemoveFileSpec(dllPath);
-	_tcscat_s(dllPath, bufLen, TEXT("\\libs\\git2.dll"));
+	::GetModuleFileNameW(hPlugin, (LPWSTR)dllPath, (DWORD)bufLen);
+	::PathRemoveFileSpecW(dllPath);
+	wcscat_s(dllPath, bufLen, L"\\libs\\git2.dll");
 
 	return true;
 }
@@ -47,7 +47,7 @@ inline bool getDllPath(TCHAR* dllPath, size_t bufLen)
 
 bool isGITlibFound()
 {
-	TCHAR dllPath[MAX_PATH];
+	wchar_t dllPath[MAX_PATH];
 
 	if (getDllPath(dllPath, _countof(dllPath)))
 		return fileExists(dllPath);
@@ -64,12 +64,12 @@ std::unique_ptr<LibGit>& LibGit::load()
 	if (Inst)
 		return Inst;
 
-	TCHAR dllPath[MAX_PATH];
+	wchar_t dllPath[MAX_PATH];
 
 	if (!getDllPath(dllPath, _countof(dllPath)))
 		return Inst;
 
-	HMODULE libGit2 = ::LoadLibrary(dllPath);
+	HMODULE libGit2 = ::LoadLibraryW(dllPath);
 	if (!libGit2)
 		return Inst;
 

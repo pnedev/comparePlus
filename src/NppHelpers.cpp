@@ -18,7 +18,7 @@
  */
 
 #include <windows.h>
-#include <tchar.h>
+#include <wchar.h>
 #include <commctrl.h>
 
 #include <cstdlib>
@@ -56,11 +56,11 @@ HWND NppToolbarHandleGetter::get()
 
 BOOL CALLBACK NppToolbarHandleGetter::enumWindowsCB(HWND hwnd, LPARAM )
 {
-	TCHAR winClassName[64];
+	wchar_t winClassName[64];
 
-	::GetClassName(hwnd, winClassName, _countof(winClassName));
+	::GetClassNameW(hwnd, winClassName, _countof(winClassName));
 
-	if (!_tcscmp(winClassName, TOOLBARCLASSNAME))
+	if (!wcscmp(winClassName, TOOLBARCLASSNAME))
 	{
 		hNppToolbar = hwnd;
 		return FALSE;
@@ -75,7 +75,7 @@ HWND NppTabHandleGetter::hNppTab[2] = { NULL, NULL };
 
 HWND NppTabHandleGetter::get(int viewId)
 {
-	if (::SendMessage(nppData._nppHandle, NPPM_ISTABBARHIDDEN, 0, 0))
+	if (::SendMessageW(nppData._nppHandle, NPPM_ISTABBARHIDDEN, 0, 0))
 		return NULL;
 
 	const int idx = (viewId == MAIN_VIEW) ? 0 : 1;
@@ -89,11 +89,11 @@ HWND NppTabHandleGetter::get(int viewId)
 
 BOOL CALLBACK NppTabHandleGetter::enumWindowsCB(HWND hwnd, LPARAM lParam)
 {
-	TCHAR winClassName[64];
+	wchar_t winClassName[64];
 
-	::GetClassName(hwnd, winClassName, _countof(winClassName));
+	::GetClassNameW(hwnd, winClassName, _countof(winClassName));
 
-	if (!_tcscmp(winClassName, WC_TABCONTROL))
+	if (!wcscmp(winClassName, WC_TABCONTROL))
 	{
 		RECT tabRect;
 		RECT viewRect;
@@ -299,8 +299,8 @@ void activateBufferID(LRESULT buffId)
 {
 	if (buffId != getCurrentBuffId())
 	{
-		LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);
-		::SendMessage(nppData._nppHandle, NPPM_ACTIVATEDOC, index >> 30, index & 0x3FFFFFFF);
+		LRESULT index = ::SendMessageW(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);
+		::SendMessageW(nppData._nppHandle, NPPM_ACTIVATEDOC, index >> 30, index & 0x3FFFFFFF);
 	}
 }
 
@@ -451,13 +451,13 @@ void setCompareView(int view, int blankColor, int caretLineTransp)
 
 bool isCurrentFileSaved()
 {
-	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
+	HMENU hMenu = (HMENU)::SendMessageW(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
 
-	MENUITEMINFOA menuItemInfo	= { 0 };
+	MENUITEMINFOW menuItemInfo	= { 0 };
 	menuItemInfo.cbSize			= sizeof(menuItemInfo);
 	menuItemInfo.fMask			= MIIM_STATE;
 
-	::GetMenuItemInfoA(hMenu, IDM_FILE_SAVE, FALSE, &menuItemInfo);
+	::GetMenuItemInfoW(hMenu, IDM_FILE_SAVE, FALSE, &menuItemInfo);
 
 	return (menuItemInfo.fState & MFS_DISABLED);
 }
@@ -465,10 +465,10 @@ bool isCurrentFileSaved()
 
 bool isDarkMode()
 {
-	if (::SendMessage(nppData._nppHandle, NPPM_ISDARKMODEENABLED, 0, 0))
+	if (::SendMessageW(nppData._nppHandle, NPPM_ISDARKMODEENABLED, 0, 0))
 		return true;
 
-	const int bg = static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETEDITORDEFAULTBACKGROUNDCOLOR, 0, 0));
+	const int bg = static_cast<int>(::SendMessageW(nppData._nppHandle, NPPM_GETEDITORDEFAULTBACKGROUNDCOLOR, 0, 0));
 
 	const int r = bg & 0xFF;
 	const int g = bg >> 8 & 0xFF;
@@ -480,7 +480,7 @@ bool isDarkMode()
 
 void setStyles(UserSettings& settings)
 {
-	const int bg = static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETEDITORDEFAULTBACKGROUNDCOLOR, 0, 0));
+	const int bg = static_cast<int>(::SendMessageW(nppData._nppHandle, NPPM_GETEDITORDEFAULTBACKGROUNDCOLOR, 0, 0));
 
 	settings.colors()._default = bg;
 
@@ -646,26 +646,6 @@ void clearWindow(int view)
 	clearChangedIndicator(view, 0, CallScintilla(view, SCI_GETLENGTH, 0, 0));
 
 	CallScintilla(view, SCI_COLOURISE, 0, -1);
-}
-
-
-void clearMarks(int view, intptr_t line)
-{
-	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_CHANGED_LINE);
-	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_ADDED_LINE);
-	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_REMOVED_LINE);
-	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_LINE);
-	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_BLANK);
-	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_CHANGED_SYMBOL);
-	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_CHANGED_LOCAL_SYMBOL);
-	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_ADDED_SYMBOL);
-	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_ADDED_LOCAL_SYMBOL);
-	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_REMOVED_SYMBOL);
-	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_REMOVED_LOCAL_SYMBOL);
-	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_LINE_SYMBOL);
-	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_BLOCK_BEGIN_SYMBOL);
-	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_BLOCK_MID_SYMBOL);
-	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_BLOCK_END_SYMBOL);
 }
 
 
@@ -984,7 +964,7 @@ void moveFileToOtherView()
 
 	auto foldedLines = getFoldedLines(view);
 
-	::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
+	::SendMessageW(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_VIEW_GOTO_ANOTHER_VIEW);
 
 	setFoldedLines(getOtherViewId(view), foldedLines);
 }
@@ -1018,7 +998,7 @@ std::vector<wchar_t> generateContentsSha256(int view, intptr_t startLine, intptr
 
 	setSelection(view, getLineStart(view, startLine), getLineEnd(view, endLine));
 
-	::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_TOOL_SHA256_GENERATEINTOCLIPBOARD);
+	::SendMessageW(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_TOOL_SHA256_GENERATEINTOCLIPBOARD);
 
 	auto sha256 = getFromClipboard();
 

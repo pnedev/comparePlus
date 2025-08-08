@@ -50,8 +50,8 @@ void NavDialog::NavView::init(HDC hDC)
 	m_hSelBMP	= ::CreateCompatibleBitmap(hDC, 1, 1);
 
 	BITMAP bmpInfo;
-	::GetObject(m_hViewBMP, sizeof(bmpInfo), &bmpInfo);
-	::GetObject(m_hSelBMP, sizeof(bmpInfo), &bmpInfo);
+	::GetObjectW(m_hViewBMP, sizeof(bmpInfo), &bmpInfo);
+	::GetObjectW(m_hSelBMP, sizeof(bmpInfo), &bmpInfo);
 
 	// Attach bitmaps to the DC
 	::SelectObject(m_hViewDC, m_hViewBMP);
@@ -233,14 +233,14 @@ void NavDialog::doDialog()
 
 		// define the default docking behaviour
 		_data.uMask			= DWS_DF_CONT_RIGHT | DWS_ICONTAB;
-		_data.pszName       = TEXT("ComparePlus NavBar");
+		_data.pszName       = L"ComparePlus NavBar";
 		_data.pszModuleName	= getPluginFileName();
 		_data.dlgID			= CMD_NAV_BAR;
-		_data.hIconTab		= (HICON)::LoadImage(GetModuleHandle(TEXT("ComparePlus.dll")),
-									MAKEINTRESOURCE(IDB_DOCKING_ICON), IMAGE_ICON, 14, 14,
+		_data.hIconTab		= (HICON)::LoadImageW(GetModuleHandleW(L"ComparePlus.dll"),
+									MAKEINTRESOURCEW(IDB_DOCKING_ICON), IMAGE_ICON, 14, 14,
 									LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
 
-		::SendMessage(_hParent, NPPM_DMMREGASDCKDLG, 0, (LPARAM)&_data);
+		::SendMessageW(_hParent, NPPM_DMMREGASDCKDLG, 0, (LPARAM)&_data);
 	}
 }
 
@@ -397,12 +397,12 @@ void NavDialog::createBitmaps()
 
 					m_view[viewId].m_lineMap.push_back(i);
 
-					::SetPixel(m_view[viewId].m_hViewDC, 0, bmpLine++, marker);
+					::SetPixelV(m_view[viewId].m_hViewDC, 0, bmpLine++, marker);
 				}
 			}
 			else
 			{
-				::SetPixel(m_view[viewId].m_hViewDC, 0, static_cast<int>(i), marker);
+				::SetPixelV(m_view[viewId].m_hViewDC, 0, static_cast<int>(i), marker);
 			}
 		}
 	}
@@ -426,7 +426,7 @@ void NavDialog::showScroller(RECT& r)
 	if (m_hScroll)
 		::MoveWindow(m_hScroll, x, y, w, h, TRUE);
 	else
-		m_hScroll = ::CreateWindowEx(WS_EX_NOPARENTNOTIFY, WC_SCROLLBAR, NULL, WS_CHILD | SBS_VERT,
+		m_hScroll = ::CreateWindowExW(WS_EX_NOPARENTNOTIFY, WC_SCROLLBAR, NULL, WS_CHILD | SBS_VERT,
 				x, y, w, h, _hSelf, NULL, m_hInst, NULL);
 
 	SCROLLINFO si = { 0 };

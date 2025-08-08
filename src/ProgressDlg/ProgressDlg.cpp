@@ -25,12 +25,12 @@
 #include "ProgressDlg.h"
 
 
-const TCHAR ProgressDlg::cClassName[]     = TEXT("ComparePlusProgressClass");
-const int ProgressDlg::cBackgroundColor   = COLOR_3DFACE;
-const int ProgressDlg::cPBwidth           = 600;
-const int ProgressDlg::cPBheight          = 10;
-const int ProgressDlg::cBTNwidth          = 80;
-const int ProgressDlg::cBTNheight         = 25;
+const wchar_t ProgressDlg::cClassName[]		= L"ComparePlusProgressClass";
+const int ProgressDlg::cBackgroundColor		= COLOR_3DFACE;
+const int ProgressDlg::cPBwidth				= 600;
+const int ProgressDlg::cPBheight			= 10;
+const int ProgressDlg::cBTNwidth			= 80;
+const int ProgressDlg::cBTNheight			= 25;
 
 
 // Different compare phases progress end positions
@@ -46,7 +46,7 @@ const int ProgressDlg::cPhases[] = {
 progress_ptr ProgressDlg::Inst;
 
 
-progress_ptr& ProgressDlg::Open(const TCHAR* info)
+progress_ptr& ProgressDlg::Open(const wchar_t* info)
 {
 	if (Inst)
 		return Inst;
@@ -78,7 +78,7 @@ void ProgressDlg::Show() const
 	{
 		if (_phase + 1 == _countof(cPhases))
 		{
-			::SendMessage(_hwnd, WM_CLOSE, 0, 0);
+			::SendMessageW(_hwnd, WM_CLOSE, 0, 0);
 		}
 		else
 		{
@@ -167,11 +167,11 @@ bool ProgressDlg::Advance(intptr_t cnt, unsigned phase)
 ProgressDlg::ProgressDlg() : _hwnd(NULL),  _hKeyHook(NULL),
 		_phase(0), _phaseRange(cPhases[0]), _phasePosOffset(0), _max(cPhases[0]), _count(0), _pos(0)
 {
-	::GetModuleHandleEx(
+	::GetModuleHandleExW(
 		GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
 		GET_MODULE_HANDLE_EX_FLAG_PIN, cClassName, &_hInst);
 
-	WNDCLASSEX wcex;
+	WNDCLASSEXW wcex;
 
 	::SecureZeroMemory(&wcex, sizeof(wcex));
 	wcex.cbSize           = sizeof(wcex);
@@ -182,7 +182,7 @@ ProgressDlg::ProgressDlg() : _hwnd(NULL),  _hKeyHook(NULL),
 	wcex.hbrBackground    = ::GetSysColorBrush(cBackgroundColor);
 	wcex.lpszClassName    = cClassName;
 
-	::RegisterClassEx(&wcex);
+	::RegisterClassExW(&wcex);
 
 	INITCOMMONCONTROLSEX icex;
 
@@ -204,14 +204,14 @@ ProgressDlg::~ProgressDlg()
 	::EnableWindow(nppData._nppHandle, TRUE);
 	::SetForegroundWindow(nppData._nppHandle);
 
-	::UnregisterClass(cClassName, _hInst);
+	::UnregisterClassW(cClassName, _hInst);
 }
 
 
 HWND ProgressDlg::create()
 {
 	// Create manually reset non-signaled event
-	_hActiveState = ::CreateEvent(NULL, TRUE, FALSE, NULL);
+	_hActiveState = ::CreateEventW(NULL, TRUE, FALSE, NULL);
 	if (!_hActiveState)
 		return NULL;
 
@@ -245,7 +245,7 @@ void ProgressDlg::cancel()
 	::ResetEvent(_hActiveState);
 	::EnableWindow(_hBtn, FALSE);
 
-	SetInfo(TEXT("Cancelling compare, please wait..."));
+	SetInfo(L"Cancelling compare, please wait...");
 }
 
 
@@ -254,7 +254,7 @@ void ProgressDlg::destroy()
 	if (_hwnd)
 	{
 		::KillTimer(_hwnd, 1);
-		::PostMessage(_hwnd, WM_CLOSE, 0, 0);
+		::PostMessageW(_hwnd, WM_CLOSE, 0, 0);
 		_hwnd = NULL;
 
 		::WaitForSingleObject(_hThread, INFINITE);
@@ -292,8 +292,8 @@ BOOL ProgressDlg::thread()
 
 	// Window message loop
 	MSG msg;
-	while ((r = ::GetMessage(&msg, NULL, 0, 0)) != 0 && r != -1)
-		::DispatchMessage(&msg);
+	while ((r = ::GetMessageW(&msg, NULL, 0, 0)) != 0 && r != -1)
+		::DispatchMessageW(&msg);
 
 	return r;
 }
@@ -301,7 +301,7 @@ BOOL ProgressDlg::thread()
 
 BOOL ProgressDlg::createProgressWindow()
 {
-	_hwnd = ::CreateWindowEx(
+	_hwnd = ::CreateWindowExW(
 		WS_EX_APPWINDOW | WS_EX_TOOLWINDOW | WS_EX_OVERLAPPEDWINDOW,
 			cClassName, PLUGIN_NAME, WS_POPUP | WS_CAPTION,
 			CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
@@ -318,17 +318,17 @@ BOOL ProgressDlg::createProgressWindow()
 	width = win.right - win.left;
 	height = win.bottom - win.top;
 
-	_hPText = ::CreateWindowEx(0, TEXT("STATIC"), TEXT(""),
+	_hPText = ::CreateWindowExW(0, L"STATIC", L"",
 			WS_CHILD | WS_VISIBLE | BS_TEXT | SS_PATHELLIPSIS,
 			5, 5, width - 10, 20, _hwnd, NULL, _hInst, NULL);
 
-	_hPBar = ::CreateWindowEx(0, PROGRESS_CLASS, TEXT("Progress Bar"),
+	_hPBar = ::CreateWindowExW(0, PROGRESS_CLASS, L"Progress Bar",
 			WS_CHILD | WS_VISIBLE | PBS_SMOOTH,
 			5, 25, width - 10, cPBheight,
 			_hwnd, NULL, _hInst, NULL);
-	::SendMessage(_hPBar, PBM_SETRANGE, 0, MAKELPARAM(0, cPhases[_countof(cPhases) - 1]));
+	::SendMessageW(_hPBar, PBM_SETRANGE, 0, MAKELPARAM(0, cPhases[_countof(cPhases) - 1]));
 
-	_hBtn = ::CreateWindowEx(0, TEXT("BUTTON"), TEXT("Cancel"),
+	_hBtn = ::CreateWindowExW(0, L"BUTTON", L"Cancel",
 			WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON | BS_TEXT,
 			(width - cBTNwidth) / 2, height - cBTNheight - 5,
 			cBTNwidth, cBTNheight, _hwnd, NULL, _hInst, NULL);
@@ -336,11 +336,11 @@ BOOL ProgressDlg::createProgressWindow()
 	HFONT hf = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);
 	if (hf)
 	{
-		::SendMessage(_hPText, WM_SETFONT, (WPARAM)hf, MAKELPARAM(TRUE, 0));
-		::SendMessage(_hBtn, WM_SETFONT, (WPARAM)hf, MAKELPARAM(TRUE, 0));
+		::SendMessageW(_hPText, WM_SETFONT, (WPARAM)hf, MAKELPARAM(TRUE, 0));
+		::SendMessageW(_hBtn, WM_SETFONT, (WPARAM)hf, MAKELPARAM(TRUE, 0));
 	}
 
-	_hKeyHook = ::SetWindowsHookEx(WH_KEYBOARD, keyHookProc, _hInst, GetCurrentThreadId());
+	_hKeyHook = ::SetWindowsHookExW(WH_KEYBOARD, keyHookProc, _hInst, GetCurrentThreadId());
 
 	::ShowWindow(_hwnd, SW_HIDE);
 
@@ -371,8 +371,8 @@ RECT ProgressDlg::adjustSizeAndPos(int width, int height)
 	win.right = win.left + width;
 	win.bottom = win.top + height;
 
-	::AdjustWindowRectEx(&win, (DWORD)::GetWindowLongPtr(_hwnd, GWL_STYLE), FALSE,
-			(DWORD)::GetWindowLongPtr(_hwnd, GWL_EXSTYLE));
+	::AdjustWindowRectEx(&win, (DWORD)::GetWindowLongPtrW(_hwnd, GWL_STYLE), FALSE,
+			(DWORD)::GetWindowLongPtrW(_hwnd, GWL_EXSTYLE));
 
 	width = win.right - win.left;
 	height = win.bottom - win.top;
@@ -467,5 +467,5 @@ LRESULT APIENTRY ProgressDlg::wndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARA
 			return 0;
 	}
 
-	return ::DefWindowProc(hwnd, umsg, wparam, lparam);
+	return ::DefWindowProcW(hwnd, umsg, wparam, lparam);
 }

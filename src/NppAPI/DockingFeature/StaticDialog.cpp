@@ -240,7 +240,7 @@ HGLOBAL StaticDialog::makeRTLResource(int dialogID, DLGTEMPLATE **ppMyDlgTemplat
 
 std::wstring GetLastErrorAsString(DWORD errorCode)
 {
-	std::wstring errorMsg(_T(""));
+	std::wstring errorMsg(L"");
 	// Get the error message, if any.
 	// If both error codes (passed error n GetLastError) are 0, then return empty
 	if (errorCode == 0)
@@ -276,7 +276,7 @@ void StaticDialog::create(int dialogID, bool isRTL, bool msgDestParent)
 	{
 		std::wstring errMsg = L"CreateDialogParam() return NULL.\rGetLastError(): ";
 		errMsg += GetLastErrorAsString(0);
-		::MessageBox(NULL, errMsg.c_str(), L"In StaticDialog::create()", MB_OK);
+		::MessageBoxW(NULL, errMsg.c_str(), L"In StaticDialog::create()", MB_OK);
 		return;
 	}
 

@@ -26,9 +26,10 @@ void ColorCombo::init(HINSTANCE hInst, HWND hNpp, HWND hCombo)
 
 	/* subclass combo to get edit messages */
 	_comboBoxInfo.cbSize = sizeof(_comboBoxInfo);
-	::SendMessage(hCombo, CB_GETCOMBOBOXINFO, 0, (LPARAM)&_comboBoxInfo);
-	::SetWindowLongPtr(_comboBoxInfo.hwndItem, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
-	_hDefaultComboProc = reinterpret_cast<WNDPROC>(::SetWindowLongPtr(_comboBoxInfo.hwndItem, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(wndDefaultProc)));
+	::SendMessageW(hCombo, CB_GETCOMBOBOXINFO, 0, (LPARAM)&_comboBoxInfo);
+	::SetWindowLongPtrW(_comboBoxInfo.hwndItem, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+	_hDefaultComboProc = reinterpret_cast<WNDPROC>(::SetWindowLongPtrW(_comboBoxInfo.hwndItem, GWLP_WNDPROC,
+			reinterpret_cast<LONG_PTR>(wndDefaultProc)));
 }
 
 
@@ -50,13 +51,14 @@ LRESULT ColorCombo::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 		case WM_LBUTTONDOWN:
 		case WM_LBUTTONDBLCLK:
 		{
-			RECT		rc;
-			POINT		pt;
+			RECT	rc;
+			POINT	pt;
 			::GetWindowRect(hwnd, &rc);
 			pt.x = rc.left;
 			pt.y = rc.bottom;
 
-			if (_pColorPopup == NULL) {
+			if (_pColorPopup == NULL)
+			{
 				_pColorPopup = new ColorPopup(_rgbCol);
 				_pColorPopup->init(_hInst, hwnd, _hNpp);
 				_pColorPopup->doDialog(pt);
@@ -68,7 +70,8 @@ LRESULT ColorCombo::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 		case COLOR_POPUP_CANCEL:
 		case WM_DESTROY:
 		{
-			if (_pColorPopup != NULL) {
+			if (_pColorPopup != NULL)
+			{
 				_pColorPopup->destroy();
 				delete _pColorPopup;
 				_pColorPopup = NULL;
@@ -79,14 +82,14 @@ LRESULT ColorCombo::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 
 		case WM_PAINT:
 		{
-			LRESULT lpRet = ::CallWindowProc(_hDefaultComboProc, hwnd, Message, wParam, lParam);
+			LRESULT lpRet = ::CallWindowProcW(_hDefaultComboProc, hwnd, Message, wParam, lParam);
 			DrawColor((HDC)wParam);
 
 			return lpRet;
 		}
 	}
 
-	return ::CallWindowProc(_hDefaultComboProc, hwnd, Message, wParam, lParam);
+	return ::CallWindowProcW(_hDefaultComboProc, hwnd, Message, wParam, lParam);
 }
 
 
@@ -95,11 +98,10 @@ void ColorCombo::DrawColor(HDC hDcExt)
 	HDC		hDc			= NULL;
 	HBRUSH	hBrush		= ::CreateSolidBrush(_rgbCol);
 
-	if (hDcExt == NULL) {
+	if (hDcExt == NULL)
 		hDc	= ::GetWindowDC(_comboBoxInfo.hwndCombo);
-	} else {
+	else
 		hDc = hDcExt;
-	}
 
 	/* draw item */
 	::FillRect(hDc, &_comboBoxInfo.rcItem, hBrush);
@@ -107,16 +109,13 @@ void ColorCombo::DrawColor(HDC hDcExt)
 	/* draw selection on focus */
 	if (_comboBoxInfo.hwndCombo == ::GetFocus())
 	{
-		RECT	rc	= _comboBoxInfo.rcItem;
+		RECT rc	= _comboBoxInfo.rcItem;
 		::InflateRect(&rc, -1, -1);
 		::DrawFocusRect(hDc, &rc);
 	}
 
 	::DeleteObject(hBrush);
 
-	if (hDcExt == NULL) {
+	if (hDcExt == NULL)
 		::ReleaseDC(_comboBoxInfo.hwndCombo, hDc);
-	}
 }
-
-

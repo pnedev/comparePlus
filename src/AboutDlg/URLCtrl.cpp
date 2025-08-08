@@ -94,13 +94,14 @@ static const BYTE ANDMask[128] =
 };
 
 
-void URLCtrl::create(HWND itemHandle, const TCHAR* link, COLORREF linkColor)
+void URLCtrl::create(HWND itemHandle, const wchar_t* link, COLORREF linkColor)
 {
 	// turn on notify style
-	::SetWindowLongPtr(itemHandle, GWL_STYLE, ::GetWindowLongPtr(itemHandle, GWL_STYLE) | SS_NOTIFY);
+	::SetWindowLongPtrW(itemHandle, GWL_STYLE, ::GetWindowLongPtrW(itemHandle, GWL_STYLE) | SS_NOTIFY);
 
 	// set the URL text (not the display text)
-	if (link) _tcscpy_s(_URL, _countof(_URL), link);
+	if (link)
+		_URL = link;
 
 	// set the hyper-link colour
 	_linkColor = linkColor;
@@ -109,10 +110,10 @@ void URLCtrl::create(HWND itemHandle, const TCHAR* link, COLORREF linkColor)
 	_visitedColor = RGB(128,0,128);
 
 	// subclass the static control
-	_oldproc = (WNDPROC)::SetWindowLongPtr(itemHandle, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(URLCtrlProc));
+	_oldproc = (WNDPROC)::SetWindowLongPtrW(itemHandle, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(URLCtrlProc));
 
 	// associate the URL structure with the static control
-	::SetWindowLongPtr(itemHandle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+	::SetWindowLongPtrW(itemHandle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
 }
 
 LRESULT URLCtrl::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
@@ -128,7 +129,7 @@ LRESULT URLCtrl::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 		// colours, and with an underline text style
 		case WM_PAINT:
 		{
-			LONG_PTR dwStyle	= ::GetWindowLongPtr(hwnd, GWL_STYLE);
+			LONG_PTR dwStyle	= ::GetWindowLongPtrW(hwnd, GWL_STYLE);
 			DWORD dwDTStyle		= DT_SINGLELINE;
 
 			//Test if centered horizontally or vertically
@@ -136,7 +137,7 @@ LRESULT URLCtrl::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 			if (dwStyle & SS_RIGHT)			dwDTStyle |= DT_RIGHT;
 			if (dwStyle & SS_CENTERIMAGE)	dwDTStyle |= DT_VCENTER;
 
-			RECT		rect;
+			RECT rect;
 			::GetClientRect(hwnd, &rect);
 
 			PAINTSTRUCT ps;
@@ -149,23 +150,24 @@ LRESULT URLCtrl::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 			if(_hfUnderlined == 0)
 			{
 				// Get the default GUI font
-				LOGFONT lf;
+				LOGFONTW lf;
 				HFONT hf = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);
 
 				// Add UNDERLINE attribute
-				GetObject(hf, sizeof(lf), &lf);
+				::GetObjectW(hf, sizeof(lf), &lf);
 				lf.lfUnderline = TRUE;
 
 				// Create a new font
-				_hfUnderlined = ::CreateFontIndirect(&lf);
+				_hfUnderlined = ::CreateFontIndirectW(&lf);
 			}
 
-			HANDLE hOld = SelectObject(hdc, _hfUnderlined);
+			HANDLE hOld = ::SelectObject(hdc, _hfUnderlined);
 
 			// Draw the text!
-			TCHAR szWinText[MAX_PATH];
-			::GetWindowText(hwnd, szWinText, _countof(szWinText));
-			::DrawText(hdc, szWinText, -1, &rect, dwDTStyle);
+			wchar_t szWinText[512];
+
+			::GetWindowTextW(hwnd, szWinText, _countof(szWinText));
+			::DrawTextW(hdc, szWinText, -1, &rect, dwDTStyle);
 
 			::SelectObject(hdc, hOld);
 
@@ -176,16 +178,17 @@ LRESULT URLCtrl::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 
 		case WM_SETTEXT:
 		{
-			LRESULT ret = ::CallWindowProc(_oldproc, hwnd, Message, wParam, lParam);
+			LRESULT ret = ::CallWindowProcW(_oldproc, hwnd, Message, wParam, lParam);
 			::InvalidateRect(hwnd, 0, 0);
 			return ret;
 		}
+
 		// Provide a hand cursor when the mouse moves over us
 		//case WM_SETCURSOR:
 		case WM_MOUSEMOVE:
 		{
 			if (_hCursor == 0)
-				_hCursor = ::CreateCursor(::GetModuleHandle(0), 5, 2, 32, 32, XORMask, ANDMask);
+				_hCursor = ::CreateCursor(::GetModuleHandleW(0), 5, 2, 32, 32, XORMask, ANDMask);
 
 			SetCursor(_hCursor);
 			return TRUE;
@@ -205,15 +208,16 @@ LRESULT URLCtrl::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 				::UpdateWindow(hwnd);
 
 				// Open a browser
-				if(_URL[0])
+				if(!_URL.empty())
 				{
-					::ShellExecute(NULL, TEXT("open"), _URL, NULL, NULL, SW_SHOWNORMAL);
+					::ShellExecuteW(NULL, L"open", _URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
 				}
 				else
 				{
-					TCHAR szWinText[MAX_PATH];
-					::GetWindowText(hwnd, szWinText, _countof(szWinText));
-					::ShellExecute(NULL, TEXT("open"), szWinText, NULL, NULL, SW_SHOWNORMAL);
+					wchar_t szWinText[MAX_PATH];
+
+					::GetWindowTextW(hwnd, szWinText, _countof(szWinText));
+					::ShellExecuteW(NULL, L"open", szWinText, NULL, NULL, SW_SHOWNORMAL);
 				}
 			}
 
@@ -225,5 +229,5 @@ LRESULT URLCtrl::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 		case WM_NCHITTEST:
 			return HTCLIENT;
 	}
-	return ::CallWindowProc(_oldproc, hwnd, Message, wParam, lParam);
+	return ::CallWindowProcW(_oldproc, hwnd, Message, wParam, lParam);
 }

@@ -31,7 +31,7 @@
 namespace // anonymous namespace
 {
 
-void TCharToChar(const wchar_t* src, char* dest, int destCharsCount)
+void WCharToChar(const wchar_t* src, char* dest, int destCharsCount)
 {
 	::WideCharToMultiByte(CP_UTF8, 0, src, -1, dest, destCharsCount, NULL, NULL);
 }
@@ -106,24 +106,24 @@ void RelativePath(const wchar_t* fullFilePath, const wchar_t* baseDir, wchar_t* 
 
 
 // Search recursively upwards for the dirName folder
-bool LocateDirUp(const TCHAR* dirName, const TCHAR* currentDir, TCHAR* fullDirPath, unsigned fullDirPathSize)
+bool LocateDirUp(const wchar_t* dirName, const wchar_t* currentDir, wchar_t* fullDirPath, unsigned fullDirPathSize)
 {
-	TCHAR testPath[MAX_PATH];
+	wchar_t testPath[MAX_PATH];
 
-	_tcscpy_s(fullDirPath, fullDirPathSize, currentDir);
+	wcscpy_s(fullDirPath, fullDirPathSize, currentDir);
 
 	while (true)
 	{
-		::PathCombine(testPath, fullDirPath, dirName);
-		if (::PathIsDirectory(testPath))
+		::PathCombineW(testPath, fullDirPath, dirName);
+		if (::PathIsDirectoryW(testPath))
 			return true;
 
-		if (::PathIsRoot(fullDirPath))
+		if (::PathIsRootW(fullDirPath))
 			break;
 
 		// up one folder
-		::PathCombine(testPath, fullDirPath, TEXT(".."));
-		_tcscpy_s(fullDirPath, fullDirPathSize, testPath);
+		::PathCombineW(testPath, fullDirPath, L"..");
+		wcscpy_s(fullDirPath, fullDirPathSize, testPath);
 	}
 
 	return false;
@@ -132,31 +132,31 @@ bool LocateDirUp(const TCHAR* dirName, const TCHAR* currentDir, TCHAR* fullDirPa
 } // anonymous namespace
 
 
-bool GetSvnFile(const TCHAR* fullFilePath, TCHAR* svnFile, unsigned svnFileSize)
+bool GetSvnFile(const wchar_t* fullFilePath, wchar_t* svnFile, unsigned svnFileSize)
 {
-	TCHAR svnTop[MAX_PATH];
-	TCHAR svnBase[MAX_PATH];
+	wchar_t svnTop[MAX_PATH];
+	wchar_t svnBase[MAX_PATH];
 
-	_tcscpy_s(svnBase, _countof(svnBase), fullFilePath);
-	::PathRemoveFileSpec(svnBase);
+	wcscpy_s(svnBase, _countof(svnBase), fullFilePath);
+	::PathRemoveFileSpecW(svnBase);
 
-	bool ret = LocateDirUp(TEXT(".svn"), svnBase, svnTop, _countof(svnTop));
+	bool ret = LocateDirUp(L".svn", svnBase, svnTop, _countof(svnTop));
 
 	if (ret)
 	{
 		ret = false;
 
-		TCHAR dotSvnIdx[MAX_PATH];
+		wchar_t dotSvnIdx[MAX_PATH];
 
-		::PathCombine(dotSvnIdx, svnTop, TEXT(".svn"));
-		::PathCombine(svnBase, dotSvnIdx, TEXT("wc.db"));
+		::PathCombineW(dotSvnIdx, svnTop, L".svn");
+		::PathCombineW(svnBase, dotSvnIdx, L"wc.db");
 
 		// is it SVN 1.7 or above?
-		if (::PathFileExists(svnBase))
+		if (::PathFileExistsW(svnBase))
 		{
 			if (!InitSQLite())
 			{
-				::MessageBox(nppData._nppHandle, TEXT("Failed to initialize SQLite - operation aborted."),
+				::MessageBoxW(nppData._nppHandle, L"Failed to initialize SQLite - operation aborted.",
 						PLUGIN_NAME, MB_OK);
 				return false;
 			}
@@ -167,9 +167,9 @@ bool GetSvnFile(const TCHAR* fullFilePath, TCHAR* svnFile, unsigned svnFileSize)
 			{
 				RelativePath(fullFilePath, svnTop, svnBase, _countof(svnBase));
 
-				TCHAR sqlQuery[MAX_PATH + 64];
-				_sntprintf_s(sqlQuery, _countof(sqlQuery), _TRUNCATE,
-						TEXT("SELECT checksum FROM nodes_current WHERE local_relpath='%s';"), svnBase);
+				wchar_t sqlQuery[MAX_PATH + 64];
+				_snwprintf_s(sqlQuery, _countof(sqlQuery), _TRUNCATE,
+						L"SELECT checksum FROM nodes_current WHERE local_relpath='%s';", svnBase);
 
 				sqlite3_stmt* pStmt;
 
@@ -177,25 +177,25 @@ bool GetSvnFile(const TCHAR* fullFilePath, TCHAR* svnFile, unsigned svnFileSize)
 				{
 					if (sqlite3_step(pStmt) == SQLITE_ROW)
 					{
-						const TCHAR* checksum = (const TCHAR*)sqlite3_column_text16(pStmt, 0);
+						const wchar_t* checksum = (const wchar_t*)sqlite3_column_text16(pStmt, 0);
 
 						if (checksum[0] != 0)
 						{
-							TCHAR idx[128];
+							wchar_t idx[128];
 
-							_tcsncpy_s(idx, _countof(idx), checksum + 6, 2);
+							wcsncpy_s(idx, _countof(idx), checksum + 6, 2);
 
-							::PathCombine(svnBase, dotSvnIdx, TEXT("pristine"));
-							::PathCombine(dotSvnIdx, svnBase, idx);
+							::PathCombineW(svnBase, dotSvnIdx, L"pristine");
+							::PathCombineW(dotSvnIdx, svnBase, idx);
 
-							_tcscpy_s(idx, _countof(idx), checksum + 6);
+							wcscpy_s(idx, _countof(idx), checksum + 6);
 
-							::PathCombine(svnBase, dotSvnIdx, idx);
-							_tcscat_s(svnBase, _countof(svnBase), TEXT(".svn-base"));
+							::PathCombineW(svnBase, dotSvnIdx, idx);
+							wcscat_s(svnBase, _countof(svnBase), L".svn-base");
 
-							if (PathFileExists(svnBase))
+							if (PathFileExistsW(svnBase))
 							{
-								_tcscpy_s(svnFile, svnFileSize, svnBase);
+								wcscpy_s(svnFile, svnFileSize, svnBase);
 								ret = true;
 							}
 						}
@@ -209,38 +209,37 @@ bool GetSvnFile(const TCHAR* fullFilePath, TCHAR* svnFile, unsigned svnFileSize)
 		}
 		else
 		{
-			::PathCombine(svnTop, dotSvnIdx, TEXT("text-base"));
+			::PathCombineW(svnTop, dotSvnIdx, L"text-base");
 
-			const TCHAR* file = ::PathFindFileName(fullFilePath);
+			const wchar_t* file = ::PathFindFileNameW(fullFilePath);
 
-			::PathCombine(svnBase, svnTop, file);
-			_tcscat_s(svnBase, _countof(svnBase), TEXT(".svn-base"));
+			::PathCombineW(svnBase, svnTop, file);
+			wcscat_s(svnBase, _countof(svnBase), L".svn-base");
 
 			// Is it an old SVN version?
-			if (::PathFileExists(svnBase))
+			if (::PathFileExistsW(svnBase))
 			{
-				_tcscpy_s(svnFile, svnFileSize, svnBase);
+				wcscpy_s(svnFile, svnFileSize, svnBase);
 				ret = true;
 			}
 		}
 	}
 
 	if (!ret)
-		::MessageBox(nppData._nppHandle, TEXT("No SVN data found."), PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, L"No SVN data found.", PLUGIN_NAME, MB_OK);
 
 	return ret;
 }
 
 
-std::vector<char> GetGitFileContent(const TCHAR* fullFilePath)
+std::vector<char> GetGitFileContent(const wchar_t* fullFilePath)
 {
 	std::vector<char> gitFileContent;
 
 	std::unique_ptr<LibGit>& gitLib = LibGit::load();
 	if (!gitLib)
 	{
-		::MessageBox(nppData._nppHandle, TEXT("Failed to initialize LibGit2 - operation aborted."),
-				PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, L"Failed to initialize LibGit2 - operation aborted.", PLUGIN_NAME, MB_OK);
 		return gitFileContent;
 	}
 
@@ -251,7 +250,7 @@ std::vector<char> GetGitFileContent(const TCHAR* fullFilePath)
 	{
 		char ansiPath[MAX_PATH * 2];
 
-		TCharToChar(fullFilePath, ansiPath, sizeof(ansiPath));
+		WCharToChar(fullFilePath, ansiPath, sizeof(ansiPath));
 		::PathRemoveFileSpecA(ansiPath);
 
 		if (!gitLib->repository_open_ext(&repo, ansiPath, 0, NULL))
@@ -259,7 +258,7 @@ std::vector<char> GetGitFileContent(const TCHAR* fullFilePath)
 			const char* ansiGitDir = gitLib->repository_workdir(repo);
 
 			//reinit with fullFilePath after modification by PathRemoveFileSpecA(), needed to get the relative path
-			TCharToChar(fullFilePath, ansiPath, sizeof(ansiPath));
+			WCharToChar(fullFilePath, ansiPath, sizeof(ansiPath));
 
 			RelativePath(ansiPath, ansiGitDir, ansiGitFilePath, sizeof(ansiGitFilePath));
 		}
@@ -300,7 +299,7 @@ std::vector<char> GetGitFileContent(const TCHAR* fullFilePath)
 	}
 
 	if (gitFileContent.empty())
-		::MessageBox(nppData._nppHandle, TEXT("No Git data found."), PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, L"No Git data found.", PLUGIN_NAME, MB_OK);
 
 	return gitFileContent;
 }

@@ -20,15 +20,15 @@
 #pragma once
 
 #include <windows.h>
-#include <tchar.h>
+#include <wchar.h>
 #include <vector>
 #include <string>
 
 bool isSQLlibFound();
 bool isGITlibFound();
 
-bool GetSvnFile(const TCHAR* fullFilePath, TCHAR* svnFile, unsigned svnFileSize);
-std::vector<char> GetGitFileContent(const TCHAR* fullFilePath);
+bool GetSvnFile(const wchar_t* fullFilePath, wchar_t* svnFile, unsigned svnFileSize);
+std::vector<char> GetGitFileContent(const wchar_t* fullFilePath);
 
 std::wstring GetLibGit2Ver();
 std::wstring GetSQLite3Ver();

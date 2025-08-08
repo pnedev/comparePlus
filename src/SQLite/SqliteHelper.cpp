@@ -19,7 +19,7 @@
 
 #include <stdlib.h>
 #include <windows.h>
-#include <tchar.h>
+#include <wchar.h>
 #include <shlwapi.h>
 
 #include "SqliteHelper.h"
@@ -38,15 +38,15 @@ PSQLCLOSE			sqlite3_close;
 namespace
 {
 
-inline bool getDllPath(TCHAR* dllPath, size_t bufLen)
+inline bool getDllPath(wchar_t* dllPath, size_t bufLen)
 {
-	HMODULE hPlugin = ::GetModuleHandle(TEXT("ComparePlus.dll"));
+	HMODULE hPlugin = ::GetModuleHandleW(L"ComparePlus.dll");
 	if (!hPlugin)
 		return false;
 
-	::GetModuleFileName(hPlugin, (LPWSTR)dllPath, (DWORD)bufLen);
-	::PathRemoveFileSpec(dllPath);
-	_tcscat_s(dllPath, bufLen, TEXT("\\libs\\sqlite3.dll"));
+	::GetModuleFileNameW(hPlugin, (LPWSTR)dllPath, (DWORD)bufLen);
+	::PathRemoveFileSpecW(dllPath);
+	wcscat_s(dllPath, bufLen, L"\\libs\\sqlite3.dll");
 
 	return true;
 }
@@ -56,7 +56,7 @@ inline bool getDllPath(TCHAR* dllPath, size_t bufLen)
 
 bool isSQLlibFound()
 {
-	TCHAR dllPath[MAX_PATH];
+	wchar_t dllPath[MAX_PATH];
 
 	if (getDllPath(dllPath, _countof(dllPath)))
 		return fileExists(dllPath);
@@ -71,12 +71,12 @@ bool InitSQLite()
 
 	if (!isInit)
 	{
-		TCHAR dllPath[MAX_PATH];
+		wchar_t dllPath[MAX_PATH];
 
 		if (!getDllPath(dllPath, _countof(dllPath)))
 			return false;
 
-		HMODULE ligSQLite = ::LoadLibrary(dllPath);
+		HMODULE ligSQLite = ::LoadLibraryW(dllPath);
 		if (!ligSQLite)
 			return false;
 

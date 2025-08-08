@@ -2635,7 +2635,7 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 }
 
 
-CompareResult compareViews(const CompareOptions& options, const TCHAR* progressInfo, CompareSummary& summary)
+CompareResult compareViews(const CompareOptions& options, const wchar_t* progressInfo, CompareSummary& summary)
 {
 	CompareResult result = CompareResult::COMPARE_ERROR;
 
@@ -2664,9 +2664,10 @@ CompareResult compareViews(const CompareOptions& options, const TCHAR* progressI
 		clearWindow(MAIN_VIEW);
 		clearWindow(SUB_VIEW);
 
-		char msg[128];
-		_snprintf_s(msg, _countof(msg), _TRUNCATE, "Exception occurred: %s", e.what());
-		::MessageBoxA(nppData._nppHandle, msg, "ComparePlus", MB_OK | MB_ICONWARNING);
+		std::string msg = "Exception occurred: ";
+		msg += e.what();
+
+		::MessageBoxA(nppData._nppHandle, msg.c_str(), "ComparePlus", MB_OK | MB_ICONWARNING);
 	}
 	catch (...)
 	{

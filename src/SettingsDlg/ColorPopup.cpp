@@ -27,19 +27,27 @@
 
 
 DWORD colorItems[] = {
-	RGB(  0,   0,   0),	RGB( 64,   0,   0),	RGB(128,   0,   0),	RGB(128,  64,  64),	RGB(255,   0,   0),	RGB(255, 128, 128),
-	RGB(255, 255, 128),	RGB(255, 255,   0),	RGB(255, 128,  64),	RGB(255, 128,   0),	RGB(128,  64,   0),	RGB(128, 128,   0),
-	RGB(128, 128,  64),	RGB(  0,  64,   0),	RGB(  0, 128,   0),	RGB(  0, 255,   0),	RGB(128, 255,   0),	RGB(128, 255, 128),
-	RGB(  0, 255, 128),	RGB(  0, 255,  64),	RGB(  0, 128, 128),	RGB(  0, 128,  64),	RGB(  0,  64,  64),	RGB(128, 128, 128),
-	RGB( 64, 128, 128),	RGB(  0,   0, 128),	RGB(  0,   0, 255),	RGB(  0,  64, 128),	RGB(  0, 255, 255), RGB(128, 255, 255),
-	RGB(  0, 128, 255),	RGB(  0, 128, 192),	RGB(128, 128, 255),	RGB(  0,   0, 160),	RGB(  0,   0,  64),	RGB(192, 192, 192),
-	RGB( 64,   0,  64),	RGB( 64,   0,  64),	RGB(128,   0, 128),	RGB(128,   0,  64),	RGB(128, 128, 192),	RGB(255, 128, 192),
-	RGB(255, 128, 255),	RGB(255,   0, 255), RGB(255,   0, 128),	RGB(128,   0, 255), RGB( 64,   0, 128),	RGB(255, 255, 255),
+	RGB(  0,   0,   0),	RGB( 64,   0,   0),	RGB(128,   0,   0),
+	RGB(128,  64,  64),	RGB(255,   0,   0),	RGB(255, 128, 128),
+	RGB(255, 255, 128),	RGB(255, 255,   0),	RGB(255, 128,  64),
+	RGB(255, 128,   0),	RGB(128,  64,   0),	RGB(128, 128,   0),
+	RGB(128, 128,  64),	RGB(  0,  64,   0),	RGB(  0, 128,   0),
+	RGB(  0, 255,   0),	RGB(128, 255,   0),	RGB(128, 255, 128),
+	RGB(  0, 255, 128),	RGB(  0, 255,  64),	RGB(  0, 128, 128),
+	RGB(  0, 128,  64),	RGB(  0,  64,  64),	RGB(128, 128, 128),
+	RGB( 64, 128, 128),	RGB(  0,   0, 128),	RGB(  0,   0, 255),
+	RGB(  0,  64, 128),	RGB(  0, 255, 255), RGB(128, 255, 255),
+	RGB(  0, 128, 255),	RGB(  0, 128, 192),	RGB(128, 128, 255),
+	RGB(  0,   0, 160),	RGB(  0,   0,  64),	RGB(192, 192, 192),
+	RGB( 64,   0,  64),	RGB( 64,   0,  64),	RGB(128,   0, 128),
+	RGB(128,   0,  64),	RGB(128, 128, 192),	RGB(255, 128, 192),
+	RGB(255, 128, 255),	RGB(255,   0, 255), RGB(255,   0, 128),
+	RGB(128,   0, 255), RGB( 64,   0, 128),	RGB(255, 255, 255)
 };
 
 void ColorPopup::create(int dialogID)
 {
-	_hSelf = ::CreateDialogParam(_hInst, MAKEINTRESOURCE(dialogID), _hParent,  (DLGPROC)dlgProc, (LPARAM)this);
+	_hSelf = ::CreateDialogParamW(_hInst, MAKEINTRESOURCEW(dialogID), _hParent,  (DLGPROC)dlgProc, (LPARAM)this);
 
 	Window::getClientRect(_rc);
 	display();
@@ -63,14 +71,14 @@ INT_PTR CALLBACK ColorPopup::dlgProc(HWND hwnd, UINT message, WPARAM wParam, LPA
 		{
 			ColorPopup *pColorPopup = (ColorPopup *)(lParam);
 			pColorPopup->_hSelf = hwnd;
-			::SetWindowLongPtr(hwnd, GWLP_USERDATA, lParam);
+			::SetWindowLongPtrW(hwnd, GWLP_USERDATA, lParam);
 			pColorPopup->run_dlgProc(message, wParam, lParam);
 			return TRUE;
 		}
 
 		default :
 		{
-			ColorPopup *pColorPopup = reinterpret_cast<ColorPopup *>(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
+			ColorPopup *pColorPopup = reinterpret_cast<ColorPopup *>(::GetWindowLongPtrW(hwnd, GWLP_USERDATA));
 			if (!pColorPopup)
 				return FALSE;
 			return pColorPopup->run_dlgProc(message, wParam, lParam);
@@ -84,22 +92,21 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 	{
 		case WM_INITDIALOG:
 		{
-			unsigned nColor;
-			for (nColor = 0 ; nColor < _countof(colorItems); nColor++)
+			for (unsigned nColor = 0 ; nColor < _countof(colorItems); nColor++)
 			{
-				::SendDlgItemMessage(_hSelf, IDC_COLOR_LIST, LB_ADDSTRING, nColor, (LPARAM)TEXT(""));
-				::SendDlgItemMessage(_hSelf, IDC_COLOR_LIST, LB_SETITEMDATA , nColor, (LPARAM)colorItems[nColor]);
+				::SendDlgItemMessageW(_hSelf, IDC_COLOR_LIST, LB_ADDSTRING, nColor, (LPARAM)L"");
+				::SendDlgItemMessageW(_hSelf, IDC_COLOR_LIST, LB_SETITEMDATA , nColor, (LPARAM)colorItems[nColor]);
 			}
 
 			return TRUE;
 		}
 
 		case WM_CTLCOLORLISTBOX:
-			return (LRESULT) CreateSolidBrush(GetSysColor(COLOR_3DFACE));
+			return (LRESULT)::CreateSolidBrush(::GetSysColor(COLOR_3DFACE));
 
 		case WM_DRAWITEM:
 		{
-			HDC hdc;
+			HDC			hdc;
 			COLORREF	cr;
 			HBRUSH		hbrush;
 
@@ -108,10 +115,11 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 			RECT rc = pdis->rcItem;
 
 			// Transparent.
-			SetBkMode(hdc,TRANSPARENT);
+			::SetBkMode(hdc,TRANSPARENT);
 
 			// NULL object
-			if (pdis->itemID == UINT(-1)) return 0;
+			if (pdis->itemID == UINT(-1))
+				return 0;
 
 			switch (pdis->itemAction)
 			{
@@ -121,11 +129,12 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 						case IDC_COLOR_LIST:
 							rc = pdis->rcItem;
 							cr = (COLORREF) pdis->itemData;
-							InflateRect(&rc, -3, -3);
-							hbrush = CreateSolidBrush((COLORREF)cr);
-							FillRect(hdc, &rc, hbrush);
-							DeleteObject(hbrush);
-							FrameRect(hdc, &rc, (HBRUSH) GetStockObject(GRAY_BRUSH));
+							hbrush = ::CreateSolidBrush((COLORREF)cr);
+
+							::InflateRect(&rc, -3, -3);
+							::FillRect(hdc, &rc, hbrush);
+							::DeleteObject(hbrush);
+							::FrameRect(hdc, &rc, (HBRUSH) GetStockObject(GRAY_BRUSH));
 					}
 					// *** Intentional FALL THROUGH ***
 
@@ -134,37 +143,44 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 
 					if (pdis->itemState & ODS_SELECTED)
 					{
-						rc.bottom --;
-						rc.right --;
+						--rc.bottom;
+						--rc.right;
+
 						// Draw the lighted side.
-						HPEN hpen = CreatePen(PS_SOLID, 1, GetSysColor(COLOR_BTNSHADOW));
-						HPEN holdPen = (HPEN)SelectObject(hdc, hpen);
-						MoveToEx(hdc, rc.left, rc.bottom, NULL);
-						LineTo(hdc, rc.left, rc.top);
-						LineTo(hdc, rc.right, rc.top);
-						SelectObject(hdc, holdPen);
-						DeleteObject(hpen);
+						HPEN hpen = ::CreatePen(PS_SOLID, 1, ::GetSysColor(COLOR_BTNSHADOW));
+						HPEN holdPen = (HPEN)::SelectObject(hdc, hpen);
+
+						::MoveToEx(hdc, rc.left, rc.bottom, NULL);
+						::LineTo(hdc, rc.left, rc.top);
+						::LineTo(hdc, rc.right, rc.top);
+						::SelectObject(hdc, holdPen);
+						::DeleteObject(hpen);
+
 						// Draw the darkened side.
-						hpen = CreatePen(PS_SOLID, 1, GetSysColor(COLOR_BTNHIGHLIGHT));
-						holdPen = (HPEN)SelectObject(hdc, hpen);
-						LineTo(hdc, rc.right, rc.bottom);
-						LineTo(hdc, rc.left, rc.bottom);
-						SelectObject(hdc, holdPen);
-						DeleteObject(hpen);
+						hpen = ::CreatePen(PS_SOLID, 1, ::GetSysColor(COLOR_BTNHIGHLIGHT));
+						holdPen = (HPEN)::SelectObject(hdc, hpen);
+
+						::LineTo(hdc, rc.right, rc.bottom);
+						::LineTo(hdc, rc.left, rc.bottom);
+						::SelectObject(hdc, holdPen);
+						::DeleteObject(hpen);
 					}
 					else
 					{
-						hbrush = CreateSolidBrush(GetSysColor(COLOR_3DFACE));
-						FrameRect(hdc, &rc, hbrush);
-						DeleteObject(hbrush);
+						hbrush = ::CreateSolidBrush(::GetSysColor(COLOR_3DFACE));
+
+						::FrameRect(hdc, &rc, hbrush);
+						::DeleteObject(hbrush);
 					}
 
 					break;
 
 				case ODA_FOCUS:
 					rc = pdis->rcItem;
-					InflateRect(&rc, -2, -2);
-					DrawFocusRect(hdc, &rc);
+
+					::InflateRect(&rc, -2, -2);
+					::DrawFocusRect(hdc, &rc);
+
 					break;
 			}
 
@@ -176,16 +192,16 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 			{
 				case IDOK :
 				{
-					_isColorChooserLaunched = true;
-					CHOOSECOLOR cc;                 // common dialog box structure
 					static COLORREF acrCustClr[16] = {
-						RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),\
-						RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),\
-						RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),\
-						RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),RGB(0xFF,0xFF,0xFF),\
+						RGB(0xFF,0xFF,0xFF), RGB(0xFF,0xFF,0xFF), RGB(0xFF,0xFF,0xFF), RGB(0xFF,0xFF,0xFF),
+						RGB(0xFF,0xFF,0xFF), RGB(0xFF,0xFF,0xFF), RGB(0xFF,0xFF,0xFF), RGB(0xFF,0xFF,0xFF),
+						RGB(0xFF,0xFF,0xFF), RGB(0xFF,0xFF,0xFF), RGB(0xFF,0xFF,0xFF), RGB(0xFF,0xFF,0xFF),
+						RGB(0xFF,0xFF,0xFF), RGB(0xFF,0xFF,0xFF), RGB(0xFF,0xFF,0xFF), RGB(0xFF,0xFF,0xFF),
 					}; // array of custom colors
 
-					// Initialize CHOOSECOLOR
+					_isColorChooserLaunched = true;
+
+					CHOOSECOLORW cc; // common dialog box structure
 					::ZeroMemory(&cc, sizeof(cc));
 					cc.lStructSize = sizeof(cc);
 					cc.hwndOwner = _hParent;
@@ -196,14 +212,10 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 
 					display(false);
 
-					if (ChooseColor(&cc) == TRUE)
-					{
-						::SendMessage(_hParent, COLOR_POPUP_OK, cc.rgbResult, 0);
-					}
+					if (::ChooseColorW(&cc) == TRUE)
+						::SendMessageW(_hParent, COLOR_POPUP_OK, cc.rgbResult, 0);
 					else
-					{
-						::SendMessage(_hParent, COLOR_POPUP_CANCEL, 0, 0);
-					}
+						::SendMessageW(_hParent, COLOR_POPUP_CANCEL, 0, 0);
 
 					return TRUE;
 				}
@@ -212,10 +224,10 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 				{
 					if (HIWORD(wParam) == LBN_SELCHANGE)
 					{
-						LRESULT i = ::SendMessage((HWND)lParam, LB_GETCURSEL, 0L, 0L);
-						_color = static_cast<COLORREF>(::SendMessage((HWND)lParam, LB_GETITEMDATA, i, 0L));
+						LRESULT i = ::SendMessageW((HWND)lParam, LB_GETCURSEL, 0L, 0L);
+						_color = static_cast<COLORREF>(::SendMessageW((HWND)lParam, LB_GETITEMDATA, i, 0L));
 
-						::SendMessage(_hParent, COLOR_POPUP_OK, _color, 0);
+						::SendMessageW(_hParent, COLOR_POPUP_OK, _color, 0);
 						return TRUE;
 					}
 
@@ -229,7 +241,7 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 		{
 			if (LOWORD(wParam) == WA_INACTIVE)
 				if (!_isColorChooserLaunched)
-					::SendMessage(_hParent, COLOR_POPUP_CANCEL, 0, 0);
+					::SendMessageW(_hParent, COLOR_POPUP_CANCEL, 0, 0);
 
 			return TRUE;
 		}
@@ -237,5 +249,3 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 
 	return FALSE;
 }
-
-

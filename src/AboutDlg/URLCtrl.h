@@ -19,17 +19,18 @@
 #pragma once
 
 #include <windows.h>
+#include <wchar.h>
+#include <string>
 #include "DockingFeature/Window.h"
-#include <tchar.h>
 
 
 class URLCtrl : public Window
 {
 public:
 	URLCtrl():_hfUnderlined(0),_hCursor(0), _oldproc(NULL),
-		_linkColor(), _visitedColor(), _clicking(false) { _URL[0] = '\0'; };
+		_linkColor(), _visitedColor(), _clicking(false) {};
 
-	void create(HWND itemHandle, const TCHAR* link, COLORREF linkColor = RGB(0, 0, 255));
+	void create(HWND itemHandle, const wchar_t* link, COLORREF linkColor = RGB(0, 0, 255));
 
 	void destroy()
 	{
@@ -40,9 +41,9 @@ public:
 	};
 
 private :
-	TCHAR	_URL[MAX_PATH];
-	HFONT	_hfUnderlined;
-	HCURSOR	_hCursor;
+	std::wstring	_URL;
+	HFONT			_hfUnderlined;
+	HCURSOR			_hCursor;
 
 	WNDPROC		_oldproc;
 	COLORREF	_linkColor;
@@ -52,7 +53,7 @@ private :
 
 	static LRESULT CALLBACK URLCtrlProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 	{
-		return ((URLCtrl *)(::GetWindowLongPtr(hwnd, GWLP_USERDATA)))->runProc(hwnd, Message, wParam, lParam);
+		return ((URLCtrl *)(::GetWindowLongPtrW(hwnd, GWLP_USERDATA)))->runProc(hwnd, Message, wParam, lParam);
 	};
 
 	LRESULT runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);

@@ -278,7 +278,7 @@ private:
 
 inline bool isRTLwindow(HWND hWin)
 {
-	return ((::GetWindowLongPtr(hWin, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0);
+	return ((::GetWindowLongPtrW(hWin, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0);
 }
 
 
@@ -296,7 +296,7 @@ inline bool isFileEmpty(int view)
 
 inline int getNotepadVersion()
 {
-	return (int)::SendMessage(nppData._nppHandle, NPPM_GETNPPVERSION, 1, 0);
+	return (int)::SendMessageW(nppData._nppHandle, NPPM_GETNPPVERSION, 1, 0);
 }
 
 
@@ -305,7 +305,7 @@ inline BOOL allocateIndicator()
 	if (indicatorHighlight >= 0)
 		return TRUE;
 
-	BOOL res = (BOOL)::SendMessage(nppData._nppHandle, NPPM_ALLOCATEINDICATOR, 1, (LPARAM)&indicatorHighlight);
+	BOOL res = (BOOL)::SendMessageW(nppData._nppHandle, NPPM_ALLOCATEINDICATOR, 1, (LPARAM)&indicatorHighlight);
 
 	// Set default indicator marker but don't use "INDIC_CONTAINER + 1" since it conflicts with DSpellCheck plugin
 	if (!res)
@@ -317,7 +317,7 @@ inline BOOL allocateIndicator()
 
 inline bool getWrapMode()
 {
-	HMENU hMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
+	HMENU hMenu = (HMENU)::SendMessageW(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
 
 	return (::GetMenuState(hMenu, IDM_VIEW_WRAP, MF_BYCOMMAND) & MF_CHECKED) != 0;
 }
@@ -326,15 +326,15 @@ inline bool getWrapMode()
 inline int getNumberOfFiles()
 {
 	return static_cast<int>((::IsWindowVisible(nppData._scintillaMainHandle) ?
-				::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, PRIMARY_VIEW) : 0) +
+				::SendMessageW(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, PRIMARY_VIEW) : 0) +
 			(::IsWindowVisible(nppData._scintillaSecondHandle) ?
-				::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, SECOND_VIEW) : 0));
+				::SendMessageW(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, SECOND_VIEW) : 0));
 }
 
 
 inline int getNumberOfFiles(int viewId)
 {
-	return static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0,
+	return static_cast<int>(::SendMessageW(nppData._nppHandle, NPPM_GETNBOPENFILES, 0,
 			viewId == MAIN_VIEW ? PRIMARY_VIEW : SECOND_VIEW));
 }
 
@@ -360,26 +360,26 @@ inline int getViewIdSafe(HWND view)
 
 inline int getCurrentViewId()
 {
-	return static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0));
+	return static_cast<int>(::SendMessageW(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0));
 }
 
 
 inline HWND getCurrentView()
 {
-	return (::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0) == MAIN_VIEW) ?
+	return (::SendMessageW(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0) == MAIN_VIEW) ?
 			nppData._scintillaMainHandle : nppData._scintillaSecondHandle;
 }
 
 
 inline int getOtherViewId()
 {
-	return (::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0) == MAIN_VIEW) ? SUB_VIEW : MAIN_VIEW;
+	return (::SendMessageW(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0) == MAIN_VIEW) ? SUB_VIEW : MAIN_VIEW;
 }
 
 
 inline HWND getOtherView()
 {
-	return (::SendMessage(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0) == MAIN_VIEW) ?
+	return (::SendMessageW(nppData._nppHandle, NPPM_GETCURRENTVIEW, 0, 0) == MAIN_VIEW) ?
 			nppData._scintillaSecondHandle : nppData._scintillaMainHandle;
 }
 
@@ -404,27 +404,27 @@ inline HWND getOtherView(HWND view)
 
 inline int viewIdFromBuffId(LRESULT buffId)
 {
-	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);
+	LRESULT index = ::SendMessageW(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);
 	return static_cast<int>(index >> 30);
 }
 
 
 inline int posFromBuffId(LRESULT buffId)
 {
-	LRESULT index = ::SendMessage(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);
+	LRESULT index = ::SendMessageW(nppData._nppHandle, NPPM_GETPOSFROMBUFFERID, buffId, 0);
 	return static_cast<int>(index & 0x3FFFFFFF);
 }
 
 
 inline LRESULT getCurrentBuffId()
 {
-	return ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+	return ::SendMessageW(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
 }
 
 
 inline int getEncoding(LRESULT buffId)
 {
-	return static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETBUFFERENCODING, buffId, 0));
+	return static_cast<int>(::SendMessageW(nppData._nppHandle, NPPM_GETBUFFERENCODING, buffId, 0));
 }
 
 
@@ -713,7 +713,7 @@ inline void setSelection(int view, intptr_t start, intptr_t end, bool scrollView
 
 inline void readNppBookmarkID()
 {
-	nppBookmarkMarker = 1 << static_cast<int>(::SendMessage(nppData._nppHandle, NPPM_GETBOOKMARKID, 0, 0));
+	nppBookmarkMarker = 1 << static_cast<int>(::SendMessageW(nppData._nppHandle, NPPM_GETBOOKMARKID, 0, 0));
 }
 
 
@@ -764,13 +764,13 @@ void setCompareView(int view, int blankColor, int caretLineTransp);
 
 inline bool isDarkModeNPP()
 {
-	return (bool)::SendMessage(nppData._nppHandle, NPPM_ISDARKMODEENABLED, 0, 0);
+	return (bool)::SendMessageW(nppData._nppHandle, NPPM_ISDARKMODEENABLED, 0, 0);
 }
 
 
 inline void registerDlgForDarkMode(HWND hwnd)
 {
-	::SendMessage(nppData._nppHandle, NPPM_DARKMODESUBCLASSANDTHEME,
+	::SendMessageW(nppData._nppHandle, NPPM_DARKMODESUBCLASSANDTHEME,
 			static_cast<WPARAM>(NppDarkMode::dmfInit), reinterpret_cast<LPARAM>(hwnd));
 }
 
@@ -782,7 +782,28 @@ bool isDarkMode();
 void setStyles(UserSettings& settings);
 
 void clearWindow(int view);
-void clearMarks(int view, intptr_t line);
+
+
+inline void clearMarks(int view, intptr_t line)
+{
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_CHANGED_LINE);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_ADDED_LINE);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_REMOVED_LINE);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_LINE);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_BLANK);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_CHANGED_SYMBOL);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_CHANGED_LOCAL_SYMBOL);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_ADDED_SYMBOL);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_ADDED_LOCAL_SYMBOL);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_REMOVED_SYMBOL);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_REMOVED_LOCAL_SYMBOL);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_LINE_SYMBOL);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_BLOCK_BEGIN_SYMBOL);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_BLOCK_MID_SYMBOL);
+	CallScintilla(view, SCI_MARKERDELETE, line, MARKER_MOVED_BLOCK_END_SYMBOL);
+}
+
+
 void clearMarks(int view, intptr_t startLine, intptr_t length);
 intptr_t getPrevUnmarkedLine(int view, intptr_t startLine, int markMask);
 intptr_t getNextUnmarkedLine(int view, intptr_t startLine, int markMask);

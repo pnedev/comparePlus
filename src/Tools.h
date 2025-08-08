@@ -24,7 +24,7 @@
 #include <vector>
 #include <fstream>
 #include <windows.h>
-#include <tchar.h>
+#include <wchar.h>
 
 
 /**
@@ -132,16 +132,16 @@ inline void flushMsgQueue()
 {
 	MSG msg;
 
-	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE));
+	while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE));
 }
 
 
-inline bool fileExists(const TCHAR* filePath)
+inline bool fileExists(const wchar_t* filePath)
 {
 	if (filePath == nullptr)
 		return false;
 
-	DWORD dwAttrib = ::GetFileAttributes(filePath);
+	DWORD dwAttrib = ::GetFileAttributesW(filePath);
 	return (bool)(dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }
 

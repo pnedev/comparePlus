@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017-2022 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -190,4 +190,4 @@ struct CompareSummary
 };
 
 
-CompareResult compareViews(const CompareOptions& options, const TCHAR* progressInfo, CompareSummary& summary);
+CompareResult compareViews(const CompareOptions& options, const wchar_t* progressInfo, CompareSummary& summary);

@@ -16,25 +16,27 @@
  */
 
 #include <windows.h>
-#include <tchar.h>
+#include <wchar.h>
 #include <shellapi.h>
 #include <cstdlib>
+#include <string>
 
 #include "AboutDialog.h"
 #include "resource.h"
 #include "DockingFeature/Window.h"
 
 #include "NppHelpers.h"
+#include "Tools.h"
 
 
-static const TCHAR cDonate_URL[]	= TEXT("https://www.paypal.com/paypalme/pnedev");
-static const TCHAR cRepo_URL[]		= TEXT("https://github.com/pnedev/comparePlus");
-static const TCHAR cHelp_URL[]		= TEXT("https://github.com/pnedev/comparePlus/blob/master/Help.md");
+static const wchar_t cDonate_URL[]	= L"https://www.paypal.com/paypalme/pnedev";
+static const wchar_t cRepo_URL[]	= L"https://github.com/pnedev/comparePlus";
+static const wchar_t cHelp_URL[]	= L"https://github.com/pnedev/comparePlus/blob/master/Help.md";
 
 
 UINT AboutDialog::doDialog()
 {
-	return (UINT)::DialogBoxParam(_hInst, MAKEINTRESOURCE(IDD_ABOUT_DIALOG), _hParent,
+	return (UINT)::DialogBoxParamW(_hInst, MAKEINTRESOURCEW(IDD_ABOUT_DIALOG), _hParent,
 			(DLGPROC)dlgProc, (LPARAM)this);
 }
 
@@ -49,30 +51,29 @@ INT_PTR CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*
 
 			goToCenter();
 
-			TCHAR buildTimeStr[256];
+			wchar_t buildInfo[256];
 
-			_sntprintf_s(buildTimeStr, _countof(buildTimeStr), _TRUNCATE,
-					TEXT("Build time:   %s,  %s"), TEXT(__DATE__), TEXT(__TIME__));
+			_snwprintf_s(buildInfo, _countof(buildInfo), _TRUNCATE, L"Build time:  %S, %S", __DATE__, __TIME__);
 
-			::SetDlgItemText(_hSelf, IDC_BUILD_TIME, buildTimeStr);
+			::SetDlgItemTextW(_hSelf, IDC_BUILD_TIME, buildInfo);
 
-			std::wstring libVer = L"LibGit2 version:  ";
+			std::wstring libInfo = L"LibGit2 version:  ";
 
 			if (_libGit2Ver.empty())
-				libVer += L"lib not found";
+				libInfo += L"lib not found";
 			else
-				libVer += _libGit2Ver.c_str();
+				libInfo += _libGit2Ver.c_str();
 
-			::SetDlgItemText(_hSelf, IDC_GITLIB_VER, libVer.c_str());
+			::SetDlgItemTextW(_hSelf, IDC_GITLIB_VER, libInfo.c_str());
 
-			libVer = L"SQLite3 version:  ";
+			libInfo = L"SQLite3 version:  ";
 
 			if (_sqlite3Ver.empty())
-				libVer += L"lib not found";
+				libInfo += L"lib not found";
 			else
-				libVer += _sqlite3Ver.c_str();
+				libInfo += _sqlite3Ver.c_str();
 
-			::SetDlgItemText(_hSelf, IDC_SQLITE3_VER, libVer.c_str());
+			::SetDlgItemTextW(_hSelf, IDC_SQLITE3_VER, libInfo.c_str());
 
 			_urlRepo.init(_hInst, _hSelf);
 			_urlRepo.create(::GetDlgItem(_hSelf, IDC_REPO_URL), cRepo_URL);
@@ -91,7 +92,7 @@ INT_PTR CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*
 				return TRUE;
 
 				case IDC_DONATE_BUTTON :
-					::ShellExecute(NULL, _T("open"), cDonate_URL, NULL, NULL, SW_SHOWNORMAL);
+					::ShellExecuteW(NULL, L"open", cDonate_URL, NULL, NULL, SW_SHOWNORMAL);
 				return TRUE;
 
 				default :
