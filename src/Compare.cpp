@@ -3069,7 +3069,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 	const auto compareStartTime = std::chrono::steady_clock::now();
 
-	bool filesSha2Differ = false;
+	bool filesSha2Differ = true;
 	{
 		const std::vector<wchar_t> mainComparedContentSHA2 =
 			cmpPair->options.selectionCompare ? generateContentsSha256(MAIN_VIEW,
@@ -3081,9 +3081,10 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 			cmpPair->options.selections[SUB_VIEW].first, cmpPair->options.selections[SUB_VIEW].second) :
 			generateContentsSha256(SUB_VIEW);
 
-		filesSha2Differ = !std::equal(
-			mainComparedContentSHA2.begin(), mainComparedContentSHA2.end(),
-			subComparedContentSHA2.begin(), subComparedContentSHA2.end());
+		if (mainComparedContentSHA2.size() == subComparedContentSHA2.size())
+			filesSha2Differ = !std::equal(
+					mainComparedContentSHA2.begin(), mainComparedContentSHA2.end(),
+					subComparedContentSHA2.begin(), subComparedContentSHA2.end());
 	}
 
 	const CompareResult cmpResult = filesSha2Differ ? runCompare(cmpPair) : CompareResult::COMPARE_MATCH;

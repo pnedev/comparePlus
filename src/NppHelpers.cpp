@@ -993,10 +993,16 @@ std::vector<wchar_t> generateContentsSha256(int view, intptr_t startLine, intptr
 	if (endLine < 0)
 		endLine = getEndLine(view);
 
+	const auto selStart	= getLineStart(view, startLine);
+	const auto selEnd	= getLineEnd(view, endLine);
+
+	if (selStart == selEnd)
+		return {};
+
 	// Store current clipboard content
 	auto clipboardContent = getFromClipboard();
 
-	setSelection(view, getLineStart(view, startLine), getLineEnd(view, endLine));
+	setSelection(view, selStart, selEnd);
 
 	::SendMessageW(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_TOOL_SHA256_GENERATEINTOCLIPBOARD);
 
