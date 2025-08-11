@@ -486,7 +486,8 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 			}
 		}
 
-		const intptr_t lineStart = getLineStart(doc.view, docLine);
+		const intptr_t lineStart	= getLineStart(doc.view, docLine);
+		const intptr_t lineEndNoEOL	= getLineEnd(doc.view, docLine);
 		intptr_t lineEnd;
 
 		if (inclEmptyLinesAndEOL)
@@ -495,7 +496,7 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 		}
 		else
 		{
-			lineEnd = getLineEnd(doc.view, docLine);
+			lineEnd = lineEndNoEOL;
 
 			// Because of the parent 'if' that check actually means that empty lines are ignored
 			if (!options.ignoreEOL)
@@ -530,7 +531,7 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 					toLowerCase(line, codepage);
 
 				intptr_t pos = 0;
-				intptr_t endPos = lineEnd - lineStart;
+				intptr_t endPos = lineEndNoEOL - lineStart;
 
 				if (options.ignoreChangedSpaces)
 				{
@@ -558,6 +559,18 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 					}
 
 					newLine.hash = Hash(newLine.hash, line[pos]);
+				}
+
+				if (lineEnd > lineEndNoEOL)
+				{
+					endPos = lineEnd - lineStart;
+
+					if ((options.ignoreAllSpaces || options.ignoreChangedSpaces) &&
+							(line[pos] == ' ' || line[pos] == '\t'))
+						while (++pos < endPos && (line[pos] == ' ' || line[pos] == '\t'));
+
+					for (; pos < endPos; ++pos)
+						newLine.hash = Hash(newLine.hash, line[pos]);
 				}
 
 				if (newLine.hash != cHashSeed || !options.ignoreEmptyLines)
