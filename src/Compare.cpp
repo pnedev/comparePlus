@@ -3621,11 +3621,11 @@ bool shouldFirstLineBeHidden(int view)
 		return false;
 
 	return (
-		(cmpPair->hideFlags == HIDE_MATCHES && !isLineMarked(view, 0, MARKER_MASK_LINE)) ||
-		(cmpPair->hideFlags == HIDE_NEW_LINES && isLineMarked(view, 0, MARKER_MASK_NEW_LINE)) ||
-		(cmpPair->hideFlags == HIDE_CHANGED_LINES && isLineMarked(view, 0, MARKER_MASK_CHANGED_LINE)) ||
-		(cmpPair->hideFlags == HIDE_MOVED_LINES && isLineMarked(view, 0, MARKER_MASK_MOVED_LINE)) ||
-		(cmpPair->options.selectionCompare && cmpPair->hideFlags == HIDE_OUTSIDE_SELECTIONS &&
+		((cmpPair->hideFlags & HIDE_MATCHES) && !isLineMarked(view, 0, MARKER_MASK_LINE)) ||
+		((cmpPair->hideFlags & HIDE_NEW_LINES) && isLineMarked(view, 0, MARKER_MASK_NEW_LINE)) ||
+		((cmpPair->hideFlags & HIDE_CHANGED_LINES) && isLineMarked(view, 0, MARKER_MASK_CHANGED_LINE)) ||
+		((cmpPair->hideFlags & HIDE_MOVED_LINES) && isLineMarked(view, 0, MARKER_MASK_MOVED_LINE)) ||
+		(cmpPair->options.selectionCompare && (cmpPair->hideFlags & HIDE_OUTSIDE_SELECTIONS) &&
 			cmpPair->options.selections[view].first > 0)
 	);
 }
@@ -3659,15 +3659,26 @@ void CopyVisibleLines()
 void DeleteVisibleLines()
 {
 	const int view = getCurrentViewId();
-	const std::vector<intptr_t> lines = getVisibleLines(view), shouldFirstLineBeHidden(view);
+	const std::vector<intptr_t> lines = getVisibleLines(view, shouldFirstLineBeHidden(view));
 
 	if (lines.empty())
 		return;
 
 	ScopedViewUndoAction scopedUndo(view);
 
-	for (auto rit = lines.rbegin(); rit != lines.rend(); rit++)
-		deleteLine(view, *rit);
+	for (intptr_t i = lines.size() - 1; i >= 0; --i)
+	{
+		const intptr_t	endLine		= lines[i];
+		intptr_t		startLine	= endLine;
+
+		for (--i, --startLine; i >= 0 && startLine == lines[i]; --i, --startLine);
+
+		++i;
+		++startLine;
+
+		deleteRange(view, getLineStart(view, startLine),
+				getLineStart(view, endLine) + CallScintilla(view, SCI_LINELENGTH, endLine, 0));
+	}
 }
 
 
@@ -5198,7 +5209,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 			clearMarks(otherViewId, otherLine, 1);
 		}
 
-		CallScintilla(viewId, SCI_DELETERANGE, startPos, endPos - startPos);
+		deleteRange(viewId, startPos, endPos);
 
 		if (lastMarked)
 			clearMarks(viewId, line);
@@ -5383,7 +5394,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 		if (!isLineVisible(viewId, startLine))
 			firstVisLine.set(getVisibleFromDocLine(viewId, startLine));
 
-		CallScintilla(viewId, SCI_DELETERANGE, markedRange.first, markedRange.second - markedRange.first);
+		deleteRange(viewId, markedRange.first, markedRange.second);
 
 		if (lastMarked)
 			clearMarks(viewId, CallScintilla(viewId, SCI_LINEFROMPOSITION, markedRange.first, 0));

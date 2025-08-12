@@ -831,12 +831,19 @@ inline void clearAnnotation(int view, intptr_t line)
 void clearAnnotations(int view, intptr_t startLine, intptr_t length);
 
 
+inline void deleteRange(int view, intptr_t startPos, intptr_t endPos)
+{
+	CallScintilla(view, SCI_SETTARGETRANGE, startPos, endPos);
+	CallScintilla(view, SCI_REPLACETARGET, (uptr_t)-1, (LPARAM)"");
+}
+
+
 inline void deleteLine(int view, intptr_t line)
 {
 	const intptr_t startPos	= getLineStart(view, line);
-	const intptr_t length	= CallScintilla(view, SCI_LINELENGTH, line, 0);
+	const intptr_t endPos	= startPos + CallScintilla(view, SCI_LINELENGTH, line, 0);
 
-	CallScintilla(view, SCI_DELETERANGE, startPos, length);
+	deleteRange(view, startPos, endPos);
 }
 
 
