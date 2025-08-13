@@ -50,7 +50,6 @@
 #include "VisualFiltersDialog.h"
 #include "NavDialog.h"
 #include "Engine.h"
-#include "NppInternalDefines.h"
 #include "resource.h"
 
 
@@ -2030,6 +2029,12 @@ bool updateViewsHideState(CompareList_t::iterator& cmpPair)
 
 	unhideAllLines(MAIN_VIEW);
 	unhideAllLines(SUB_VIEW);
+
+	if (cmpPair->options.ignoreHiddenLines)
+	{
+		hideNotepadHiddenLines(MAIN_VIEW);
+		hideNotepadHiddenLines(SUB_VIEW);
+	}
 
 	if (currentHideFlags & HIDE_OUTSIDE_SELECTIONS)
 	{

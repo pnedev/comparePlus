@@ -24,6 +24,7 @@
 #include <string>
 #include <utility>
 
+#include "NppInternalDefines.h"
 #include "Compare.h"
 
 
@@ -817,6 +818,7 @@ void unhideAllLines(int view);
 void unhideLinesInRange(int view, intptr_t line, intptr_t length);
 void hideLinesOutsideRange(int view, intptr_t startLine, intptr_t endLine);
 void hideLines(int view, int hideMarkMask, bool hideUnmarked);
+void hideNotepadHiddenLines(int view);
 
 bool isAdjacentAnnotation(int view, intptr_t line, bool down);
 bool isAdjacentAnnotationVisible(int view, intptr_t line, bool down);

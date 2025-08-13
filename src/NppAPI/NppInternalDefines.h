@@ -1,6 +1,6 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
- * Copyright (C) 2017 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C) 2017-2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,3 +25,6 @@
 #include <windows.h>
 
 #define WM_TABSETSTYLE	(WM_APP + 0x024)
+
+constexpr int MARK_HIDELINESBEGIN	= 19;
+constexpr int MARK_HIDELINESEND		= 18;

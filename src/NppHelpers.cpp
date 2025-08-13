@@ -27,7 +27,6 @@
 
 #include "Tools.h"
 #include "NppHelpers.h"
-#include "NppInternalDefines.h"
 
 #include "icon_added.h"
 #include "icon_removed.h"
@@ -839,6 +838,26 @@ void hideLines(int view, int hideMarkMask, bool hideUnmarked)
 		}
 
 		CallScintilla(view, SCI_HIDELINES, startLine, endLine - 1);
+	}
+}
+
+
+void hideNotepadHiddenLines(int view)
+{
+	constexpr int nppMarkHiddenBegin	= 1 << MARK_HIDELINESBEGIN;
+	constexpr int nppMarkHiddenEnd		= 1 << MARK_HIDELINESEND;
+
+	intptr_t endLine = 0;
+
+	for (intptr_t startLine = CallScintilla(view, SCI_MARKERNEXT, 0, nppMarkHiddenBegin); startLine > 0;
+		startLine = CallScintilla(view, SCI_MARKERNEXT, endLine, nppMarkHiddenBegin))
+	{
+		endLine = CallScintilla(view, SCI_MARKERNEXT, startLine, nppMarkHiddenEnd);
+
+		if (endLine <= 0)
+			break;
+
+		CallScintilla(view, SCI_HIDELINES, startLine + 1, endLine - 1);
 	}
 }
 
