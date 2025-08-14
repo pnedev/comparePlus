@@ -393,16 +393,16 @@ public:
 
 	CompareSummary	summary;
 
-	bool			forcedIgnoreEOL	= false;
+	bool			forcedIgnoreEOL		= false;
 
-	unsigned		hideFlags		= NO_HIDE;
+	unsigned		hideFlags			= NO_HIDE;
 
-	bool			compareDirty	= false;
-	bool			nppReplaceDone	= false;
-	bool			manuallyChanged	= false;
-	int				inEqualizeMode	= 0;
+	bool			compareDirty		= false;
+	bool			nppReplaceDone		= false;
+	bool			manuallyChanged		= false;
+	int				inEqualizeMode		= 0;
 
-	int				autoUpdateDelay	= 0;
+	int				autoRecompareDelay	= 0;
 };
 
 
@@ -468,11 +468,25 @@ public:
  *  \class
  *  \brief
  */
-class DelayedUpdate : public DelayedWork
+class DelayedAlign : public DelayedWork
 {
 public:
-	DelayedUpdate() : DelayedWork() {}
-	virtual ~DelayedUpdate() = default;
+	DelayedAlign() : DelayedWork() {}
+	virtual ~DelayedAlign() = default;
+
+	virtual void operator()();
+};
+
+
+/**
+ *  \class
+ *  \brief
+ */
+class DelayedRecompare : public DelayedWork
+{
+public:
+	DelayedRecompare() : DelayedWork() {}
+	virtual ~DelayedRecompare() = default;
 
 	virtual void operator()();
 };
@@ -553,15 +567,15 @@ std::vector<int> copiedSectionMarks;
 // Compare/Re-compare flags
 std::chrono::milliseconds firstUpdateGuardDuration {0};
 std::chrono::steady_clock::time_point prevUpdateTime;
-bool selectionAutoRecompare = false;
 
 LRESULT currentlyActiveBuffID = 0;
 
-DelayedActivate	delayedActivation;
-DelayedClose	delayedClosure;
-DelayedUpdate	delayedUpdate;
+DelayedActivate		delayedActivation;
+DelayedClose		delayedClosure;
+DelayedAlign		delayedAlign;
+DelayedRecompare	delayedRecompare;
 
-NavDialog		NavDlg;
+NavDialog			NavDlg;
 
 toolbarIconsWithDarkMode	tbSetFirst		{nullptr, nullptr, nullptr};
 toolbarIconsWithDarkMode	tbCompare		{nullptr, nullptr, nullptr};
@@ -2410,14 +2424,17 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 
 void doAlignment(bool forceAlign = false)
 {
+	if (delayedAlign && !forceAlign)
+		return;
+
 	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
 
 	if (cmpPair == compareList.end())
 		return;
 
-	if (cmpPair->autoUpdateDelay)
+	if (cmpPair->autoRecompareDelay)
 	{
-		delayedUpdate.post(cmpPair->autoUpdateDelay);
+		delayedRecompare.post(cmpPair->autoRecompareDelay);
 
 		return;
 	}
@@ -2433,7 +2450,10 @@ void doAlignment(bool forceAlign = false)
 			firstUpdateGuardDuration = std::chrono::milliseconds(0);
 	}
 
-	bool realign = forceAlign || selectionAutoRecompare;
+	bool realign = forceAlign;
+
+	if (forceAlign)
+		cmpPair->hideFlags = FORCE_REHIDING;
 
 	if (!realign)
 		realign = isAlignmentNeeded(storedLocation ? storedLocation->getView() : getCurrentViewId(), cmpPair);
@@ -2444,8 +2464,6 @@ void doAlignment(bool forceAlign = false)
 	{
 		if (!storedLocation && !goToFirst)
 			storedLocation = std::make_unique<ViewLocation>(getCurrentViewId());
-
-		selectionAutoRecompare = false;
 
 		alignDiffs(cmpPair);
 	}
@@ -2846,7 +2864,7 @@ CompareResult runCompare(CompareList_t::iterator cmpPair)
 
 void compare(bool selectionCompare = false, bool findUniqueMode = false, bool autoUpdating = false)
 {
-	delayedUpdate.cancel();
+	delayedRecompare.cancel();
 
 	ScopedIncrementerInt incr(notificationsLock);
 
@@ -2869,7 +2887,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	{
 		newCompare = nullptr;
 
-		cmpPair->autoUpdateDelay = 0;
+		cmpPair->autoRecompareDelay = 0;
 
 		if (!autoUpdating && selectionCompare)
 		{
@@ -3069,8 +3087,6 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 			}
 		}
 	}
-
-	selectionAutoRecompare = autoUpdating && cmpPair->options.selectionCompare;
 
 	const auto compareStartTime = std::chrono::steady_clock::now();
 
@@ -4297,7 +4313,7 @@ void AutoRecompare()
 		CompareList_t::iterator cmpPair = getCompare(getCurrentBuffId());
 
 		if ((cmpPair != compareList.end()) && cmpPair->compareDirty && cmpPair->options.recompareOnChange)
-			delayedUpdate.post(30);
+			delayedRecompare.post(30);
 	}
 }
 
@@ -5100,8 +5116,7 @@ void onNppReady()
 
 inline void onSciPaint()
 {
-	if (storedLocation)
-		doAlignment();
+	doAlignment();
 }
 
 
@@ -5116,7 +5131,13 @@ inline void onSciUpdateUI(HWND view)
 }
 
 
-void DelayedUpdate::operator()()
+void DelayedAlign::operator()()
+{
+	doAlignment(true);
+}
+
+
+void DelayedRecompare::operator()()
 {
 	compare(false, false, true);
 }
@@ -5504,11 +5525,7 @@ void onSciModified(SCNotification* notifyCode)
 	// by SCI_SETMODEVENTMASK
 	// if (notifyCode->modificationType & SC_MOD_CHANGEFOLD)
 	// {
-		// CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
-		// CallScintilla(SUB_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
-
-		// // Use that flag to trigger force re-alignment (nothing to do with selections actually, just reuse the flag)
-		// selectionAutoRecompare = true;
+		// delayedAlign.post(300);
 
 		// return;
 	// }
@@ -5635,7 +5652,8 @@ void onSciModified(SCNotification* notifyCode)
 
 	if ((notifyCode->modificationType & SC_MOD_DELETETEXT) || (notifyCode->modificationType & SC_MOD_INSERTTEXT))
 	{
-		delayedUpdate.cancel();
+		delayedAlign.cancel();
+		delayedRecompare.cancel();
 
 		if (notifyCode->linesAdded == 0)
 			notReverting = true;
@@ -5740,11 +5758,11 @@ void onSciModified(SCNotification* notifyCode)
 		if (cmpPair->options.recompareOnChange)
 		{
 			if (notifyCode->linesAdded)
-				cmpPair->autoUpdateDelay = 500;
+				cmpPair->autoRecompareDelay = 500;
 			else
 				// Leave bigger delay before re-comparing if change is on single line because the user might be typing
 				// and we should try to avoid interrupting / interfering
-				cmpPair->autoUpdateDelay = 1500;
+				cmpPair->autoRecompareDelay = 1500;
 
 			if (!storedLocation)
 				storedLocation = std::make_unique<ViewLocation>(view);
@@ -5766,13 +5784,7 @@ void onSciModified(SCNotification* notifyCode)
 				}
 			}
 
-			if (selectionsAdjusted)
-			{
-				CallScintilla(MAIN_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
-				CallScintilla(SUB_VIEW, SCI_ANNOTATIONCLEARALL, 0, 0);
-
-				selectionAutoRecompare = true; // Force re-alignment in onSciPaint()
-			}
+			delayedAlign.post(300);
 
 			if (Settings.UseNavBar && !cmpPair->inEqualizeMode)
 				NavDlg.Show();
@@ -5833,14 +5845,15 @@ void DelayedActivate::operator()()
 		// unsaved file. We try to distinguish here the reason for the notification - if file is saved then it
 		// seems reloaded and we want to update the compare.
 		if (isCurrentFileSaved())
-			delayedUpdate.post(30);
+			delayedRecompare.post(30);
 	}
 }
 
 
 void onBufferActivated(LRESULT buffId)
 {
-	delayedUpdate.cancel();
+	delayedAlign.cancel();
+	delayedRecompare.cancel();
 	delayedActivation.cancel();
 
 	// If compared pair was not active explicitly release mouse key as it might have been pressed and make a
@@ -5939,7 +5952,8 @@ void onFileBeforeClose(LRESULT buffId)
 	if (cmpPair == compareList.end())
 		return;
 
-	delayedUpdate.cancel();
+	delayedAlign.cancel();
+	delayedRecompare.cancel();
 	delayedActivation.cancel();
 
 	delayedClosure.cancel();
@@ -5988,13 +6002,9 @@ void onFileSaved(LRESULT buffId)
 	ScopedIncrementerInt incr(notificationsLock);
 
 	if (!pairIsActive)
-	{
 		activateBufferID(buffId);
-	}
-	else if (cmpPair->options.recompareOnChange && cmpPair->autoUpdateDelay)
-	{
-		delayedUpdate.post(30);
-	}
+	else if (cmpPair->options.recompareOnChange && cmpPair->autoRecompareDelay)
+		delayedRecompare.post(30);
 
 	if (otherFile.isTemp == LAST_SAVED_TEMP)
 	{
@@ -6114,32 +6124,37 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 {
 	switch (notifyCode->nmhdr.code)
 	{
-		// Handle wrap refresh
-		case SCN_PAINTED:
-			if (NppSettings::get().compareMode && !notificationsLock &&
-					!delayedActivation && !delayedClosure && !delayedUpdate)
-				onSciPaint();
-		break;
-
 		// Vertical scroll sync
 		case SCN_UPDATEUI:
 			if (NppSettings::get().compareMode && !notificationsLock && !storedLocation &&
-				!delayedActivation && !delayedClosure && !delayedUpdate &&
-				(notifyCode->updated & (SC_UPDATE_SELECTION | SC_UPDATE_V_SCROLL)))
-			{
+					(notifyCode->updated & (SC_UPDATE_SELECTION | SC_UPDATE_V_SCROLL)) &&
+					!delayedRecompare && !delayedActivation && !delayedClosure)
 				onSciUpdateUI((HWND)notifyCode->nmhdr.hwndFrom);
-			}
 		break;
 
-		case SCN_MARGINCLICK:
-			if (NppSettings::get().compareMode && !notificationsLock &&
-					!delayedActivation && !delayedClosure && !delayedUpdate && (notifyCode->margin == MARGIN_NUM))
-				onMarginClick((HWND)notifyCode->nmhdr.hwndFrom, notifyCode->position, notifyCode->modifiers);
+		// Handle word-wrap refresh
+		case SCN_PAINTED:
+			if (NppSettings::get().compareMode && !notificationsLock && storedLocation &&
+					!delayedRecompare && !delayedActivation && !delayedClosure)
+				onSciPaint();
+		break;
+
+		// This is used to monitor fold state and deletion of lines to properly clear their compare markings
+		case SCN_MODIFIED:
+			if (NppSettings::get().compareMode && !notificationsLock)
+				onSciModified(notifyCode);
 		break;
 
 		case NPPN_BUFFERACTIVATED:
 			if (!compareList.empty() && !notificationsLock && !delayedClosure)
 				onBufferActivated(notifyCode->nmhdr.idFrom);
+		break;
+
+		// Copy/equalize diffs
+		case SCN_MARGINCLICK:
+			if (NppSettings::get().compareMode && !notificationsLock && (notifyCode->margin == MARGIN_NUM) &&
+					!delayedRecompare && !delayedAlign && !delayedActivation && !delayedClosure)
+				onMarginClick((HWND)notifyCode->nmhdr.hwndFrom, notifyCode->position, notifyCode->modifiers);
 		break;
 
 		case NPPN_FILEBEFORECLOSE:
@@ -6158,12 +6173,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 				onFileSaved(notifyCode->nmhdr.idFrom);
 		break;
 
-		// This is used to monitor fold state and deletion of lines to properly clear their compare markings
-		case SCN_MODIFIED:
-			if (NppSettings::get().compareMode && !notificationsLock)
-				onSciModified(notifyCode);
-		break;
-
 		case NPPN_GLOBALMODIFIED:
 			if (!compareList.empty() && !notificationsLock)
 			{
@@ -6175,7 +6184,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 				{
 					if (cmpPair->options.recompareOnChange)
 					{
-						cmpPair->autoUpdateDelay = 200;
+						cmpPair->autoRecompareDelay = 200;
 					}
 					else
 					{
