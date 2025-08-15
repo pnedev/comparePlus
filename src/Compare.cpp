@@ -3703,6 +3703,19 @@ void DeleteVisibleLines()
 }
 
 
+void BookmarkVisibleLines()
+{
+	const int view = getCurrentViewId();
+	const std::vector<intptr_t> lines = getVisibleLines(view, shouldFirstLineBeHidden(view));
+
+	if (lines.empty())
+		return;
+
+	for (auto l: lines)
+		bookmarkLine(view, l);
+}
+
+
 void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int matchContextLen)
 {
 	const auto& oldFile = cmpPair.getOldFile();
@@ -4528,6 +4541,9 @@ void createMenu()
 
 	wcscpy_s(funcItem[CMD_DELETE_VISIBLE]._itemName, menuItemSize, L"Delete all/selected visible lines");
 	funcItem[CMD_DELETE_VISIBLE]._pFunc = DeleteVisibleLines;
+
+	wcscpy_s(funcItem[CMD_BOOKMARK_VISIBLE]._itemName, menuItemSize, L"Bookmark all/selected visible lines");
+	funcItem[CMD_BOOKMARK_VISIBLE]._pFunc = BookmarkVisibleLines;
 
 	wcscpy_s(funcItem[CMD_GENERATE_PATCH]._itemName, menuItemSize, L"Generate Patch");
 	funcItem[CMD_GENERATE_PATCH]._pFunc = GeneratePatch;
