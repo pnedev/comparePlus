@@ -5136,12 +5136,6 @@ void onNppReady()
 }
 
 
-inline void onSciPaint()
-{
-	doAlignment();
-}
-
-
 inline void onSciUpdateUI(HWND view)
 {
 	LOGD(LOG_NOTIF, "onSciUpdateUI()\n");
@@ -5150,6 +5144,12 @@ inline void onSciUpdateUI(HWND view)
 
 	if (viewId >= 0)
 		storedLocation = std::make_unique<ViewLocation>(viewId);
+}
+
+
+inline void onSciPaint()
+{
+	doAlignment();
 }
 
 
@@ -5162,6 +5162,307 @@ void DelayedAlign::operator()()
 void DelayedRecompare::operator()()
 {
 	compare(false, false, true);
+}
+
+
+inline std::shared_ptr<DeletedSection::UndoData> saveUndoData(int view, SCNotification* notifyCode,
+	CompareList_t::iterator& cmpPair, bool* notReverting)
+{
+	const intptr_t startLine	= CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+	const intptr_t endLine		= CallScintilla(view, SCI_LINEFROMPOSITION,
+			notifyCode->position + notifyCode->length, 0);
+
+	// Change is on single line?
+	if (endLine <= startLine)
+		return nullptr;
+
+	std::shared_ptr<DeletedSection::UndoData> undo;
+
+	LOGD(LOG_NOTIF, "SC_MOD_BEFOREDELETE: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
+			" view, lines range: " + std::to_string(startLine + 1) + "-" + std::to_string(endLine) + "\n");
+
+	const int action = notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
+
+	ScopedIncrementerInt incr(notificationsLock);
+
+	if (cmpPair->options.selectionCompare)
+	{
+		undo = std::make_shared<DeletedSection::UndoData>();
+
+		undo->selection = cmpPair->options.selections[view];
+	}
+
+	if (!cmpPair->options.recompareOnChange)
+	{
+		if (!undo)
+			undo = std::make_shared<DeletedSection::UndoData>();
+
+		undo->alignment = cmpPair->summary.alignmentInfo;
+
+		if (cmpPair->inEqualizeMode && !copiedSectionMarks.empty())
+			undo->otherViewMarks = std::move(copiedSectionMarks);
+	}
+
+	*notReverting = cmpPair->getFileByViewId(view).pushDeletedSection(action, startLine, endLine - startLine, undo,
+			cmpPair->options.recompareOnChange);
+
+#ifdef DLOG
+	if (*notReverting)
+	{
+		if (undo)
+		{
+			if (undo->selection.first >= 0)
+			{
+				LOGD(LOG_NOTIF, "Selection stored.\n");
+			}
+
+			if (!undo->alignment.empty())
+			{
+				LOGD(LOG_NOTIF, "Alignment stored.\n");
+			}
+
+			if (!undo->otherViewMarks.empty())
+			{
+				LOGD(LOG_NOTIF, "Other view markers stored.\n");
+			}
+		}
+	}
+#endif
+
+	return undo;
+}
+
+
+inline std::shared_ptr<DeletedSection::UndoData> getUndoData(int view, SCNotification* notifyCode,
+	CompareList_t::iterator& cmpPair, bool* selectionsAdjusted)
+{
+	const intptr_t startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+
+	const int action = notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
+
+	LOGD(LOG_NOTIF, "SC_MOD_INSERTTEXT: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
+			" view, lines range: " + std::to_string(startLine + 1) + "-" +
+			std::to_string(startLine + notifyCode->linesAdded) + "\n");
+
+	ScopedIncrementerInt incr(notificationsLock);
+
+	std::shared_ptr<DeletedSection::UndoData> undo =
+			cmpPair->getFileByViewId(view).popDeletedSection(action, startLine);
+
+	if (undo)
+	{
+		if ((undo->selection.first < undo->selection.second) &&
+			(cmpPair->options.selections[view] != undo->selection))
+		{
+			cmpPair->options.selections[view] = undo->selection;
+
+			*selectionsAdjusted = true;
+
+			LOGD(LOG_NOTIF, "Selection restored.\n");
+		}
+
+		if (!cmpPair->options.recompareOnChange)
+		{
+			cmpPair->summary.alignmentInfo = std::move(undo->alignment);
+
+			LOGD(LOG_NOTIF, "Alignment restored.\n");
+
+			if (!undo->otherViewMarks.empty())
+			{
+				const intptr_t alignLine = getAlignmentLine(cmpPair->summary.alignmentInfo, view, startLine);
+
+				if (alignLine >= 0)
+				{
+					setMarkers(getOtherViewId(view), alignLine, undo->otherViewMarks);
+
+					LOGD(LOG_NOTIF, "Other view markers restored.\n");
+				}
+			}
+		}
+	}
+
+	return undo;
+}
+
+
+void onSciModified(SCNotification* notifyCode)
+{
+	static bool notReverting = true;
+
+	const int view = getViewIdSafe((HWND)notifyCode->nmhdr.hwndFrom);
+	if (view < 0)
+		return;
+
+	CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(view));
+	if (cmpPair == compareList.end())
+		return;
+
+	// For some reason this notification is never sent by Notepad++ and Scintilla eventhough it is allowed
+	// by SCI_SETMODEVENTMASK
+	// if (notifyCode->modificationType & SC_MOD_CHANGEFOLD)
+	// {
+		// delayedAlign.post(300);
+
+		// return;
+	// }
+
+	std::shared_ptr<DeletedSection::UndoData> undo = nullptr;
+
+	bool selectionsAdjusted = false;
+
+	if (notifyCode->modificationType & SC_MOD_BEFOREDELETE)
+	{
+		undo = saveUndoData(view, notifyCode, cmpPair, &notReverting);
+	}
+	else if ((notifyCode->modificationType & SC_MOD_INSERTTEXT) && notifyCode->linesAdded)
+	{
+		notReverting = true;
+		undo = getUndoData(view, notifyCode, cmpPair, &selectionsAdjusted);
+	}
+
+	if ((notifyCode->modificationType & SC_MOD_DELETETEXT) || (notifyCode->modificationType & SC_MOD_INSERTTEXT))
+	{
+		delayedAlign.cancel();
+		delayedRecompare.cancel();
+
+		if (notifyCode->linesAdded == 0)
+			notReverting = true;
+
+		bool updateStatus = false;
+
+		// Set compare dirty flag if needed
+		if (!cmpPair->options.recompareOnChange && notReverting && !undo)
+		{
+			if (!cmpPair->compareDirty || (!cmpPair->inEqualizeMode && !cmpPair->manuallyChanged))
+			{
+				if (!cmpPair->options.selectionCompare)
+				{
+					cmpPair->setCompareDirty();
+					updateStatus = true;
+				}
+				else
+				{
+					intptr_t startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+
+					if ((startLine >= cmpPair->options.selections[view].first) &&
+						(startLine <= cmpPair->options.selections[view].second))
+					{
+						cmpPair->setCompareDirty();
+						updateStatus = true;
+					}
+
+					if (!updateStatus && notifyCode->linesAdded && (notifyCode->modificationType & SC_MOD_DELETETEXT))
+					{
+						startLine += notifyCode->linesAdded + 1;
+
+						if ((startLine >= cmpPair->options.selections[view].first) &&
+							(startLine <= cmpPair->options.selections[view].second))
+						{
+							cmpPair->setCompareDirty();
+							updateStatus = true;
+						}
+					}
+				}
+			}
+		}
+
+		// Adjust selections if in selection compare
+		if (cmpPair->options.selectionCompare && notifyCode->linesAdded && !undo && !selectionsAdjusted)
+		{
+			intptr_t startLine		= CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+			const intptr_t endLine	= startLine + std::abs(notifyCode->linesAdded) - 1;
+
+			if (cmpPair->options.selections[view].first > startLine)
+			{
+				if (notifyCode->linesAdded > 0)
+				{
+					cmpPair->options.selections[view].first += notifyCode->linesAdded;
+				}
+				else
+				{
+					if (cmpPair->options.selections[view].first > endLine)
+						cmpPair->options.selections[view].first += notifyCode->linesAdded;
+					else
+						cmpPair->options.selections[view].first -=
+								(cmpPair->options.selections[view].first - startLine);
+				}
+
+				selectionsAdjusted = true;
+			}
+
+			// Handle the special case when the end of the selection compare is diff-equalized -
+			// the insert part of the replace notification then needs to increase the selection accordingly to
+			// include the equalized diff
+			if (cmpPair->inEqualizeMode && (cmpPair->options.selections[view].second == startLine - 1) &&
+					(notifyCode->linesAdded > 0))
+				--startLine;
+
+			if (cmpPair->options.selections[view].second >= startLine)
+			{
+				if (notifyCode->linesAdded > 0)
+				{
+					cmpPair->options.selections[view].second += notifyCode->linesAdded;
+				}
+				else
+				{
+					if (cmpPair->options.selections[view].second >= endLine)
+						cmpPair->options.selections[view].second += notifyCode->linesAdded;
+					else
+						cmpPair->options.selections[view].second -=
+								(cmpPair->options.selections[view].second - startLine + 1);
+				}
+
+				selectionsAdjusted = true;
+			}
+
+			if (!cmpPair->inEqualizeMode &&
+				cmpPair->options.selections[view].second < cmpPair->options.selections[view].first)
+			{
+				clearComparePair(getCurrentBuffId());
+				return;
+			}
+
+			LOGDIF(LOG_NOTIF, selectionsAdjusted, "Selection adjusted.\n");
+		}
+
+		if (cmpPair->options.recompareOnChange)
+		{
+			if (notifyCode->linesAdded)
+				cmpPair->autoRecompareDelay = 500;
+			else
+				// Leave bigger delay before re-comparing if change is on single line because the user might be typing
+				// and we should try to avoid interrupting / interfering
+				cmpPair->autoRecompareDelay = 1500;
+
+			if (!storedLocation)
+				storedLocation = std::make_unique<ViewLocation>(view);
+
+			return;
+		}
+
+		if (notifyCode->linesAdded)
+		{
+			intptr_t startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
+
+			if (!undo)
+			{
+				if (!cmpPair->options.selectionCompare || selectionsAdjusted)
+				{
+					cmpPair->adjustAlignment(view, startLine, notifyCode->linesAdded);
+
+					LOGD(LOG_NOTIF, "Alignment adjusted.\n");
+				}
+			}
+
+			delayedAlign.post(300);
+
+			if (Settings.UseNavBar && !cmpPair->inEqualizeMode)
+				NavDlg.Show();
+		}
+
+		if (updateStatus)
+			cmpPair->setStatus();
+	}
 }
 
 
@@ -5527,293 +5828,6 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 
 		if (Settings.UseNavBar)
 			NavDlg.Show();
-	}
-}
-
-
-void onSciModified(SCNotification* notifyCode)
-{
-	static bool notReverting = true;
-
-	const int view = getViewIdSafe((HWND)notifyCode->nmhdr.hwndFrom);
-	if (view < 0)
-		return;
-
-	CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(view));
-	if (cmpPair == compareList.end())
-		return;
-
-	// For some reason this notification is never sent by Notepad++ and Scintilla eventhough it is allowed
-	// by SCI_SETMODEVENTMASK
-	// if (notifyCode->modificationType & SC_MOD_CHANGEFOLD)
-	// {
-		// delayedAlign.post(300);
-
-		// return;
-	// }
-
-	std::shared_ptr<DeletedSection::UndoData> undo = nullptr;
-
-	if (notifyCode->modificationType & SC_MOD_BEFOREDELETE)
-	{
-		const intptr_t startLine	= CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
-		const intptr_t endLine		= CallScintilla(view, SCI_LINEFROMPOSITION,
-				notifyCode->position + notifyCode->length, 0);
-
-		// Change is on single line?
-		if (endLine <= startLine)
-			return;
-
-		LOGD(LOG_NOTIF, "SC_MOD_BEFOREDELETE: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
-				" view, lines range: " + std::to_string(startLine + 1) + "-" + std::to_string(endLine) + "\n");
-
-		const int action = notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
-
-		ScopedIncrementerInt incr(notificationsLock);
-
-		if (cmpPair->options.selectionCompare)
-		{
-			undo = std::make_shared<DeletedSection::UndoData>();
-
-			undo->selection = cmpPair->options.selections[view];
-		}
-
-		if (!cmpPair->options.recompareOnChange)
-		{
-			if (!undo)
-				undo = std::make_shared<DeletedSection::UndoData>();
-
-			undo->alignment = cmpPair->summary.alignmentInfo;
-
-			if (cmpPair->inEqualizeMode && !copiedSectionMarks.empty())
-				undo->otherViewMarks = std::move(copiedSectionMarks);
-		}
-
-		notReverting = cmpPair->getFileByViewId(view).pushDeletedSection(action, startLine, endLine - startLine, undo,
-				cmpPair->options.recompareOnChange);
-
-#ifdef DLOG
-		if (notReverting)
-		{
-			if (undo)
-			{
-				if (undo->selection.first >= 0)
-				{
-					LOGD(LOG_NOTIF, "Selection stored.\n");
-				}
-
-				if (!undo->alignment.empty())
-				{
-					LOGD(LOG_NOTIF, "Alignment stored.\n");
-				}
-
-				if (!undo->otherViewMarks.empty())
-				{
-					LOGD(LOG_NOTIF, "Other view markers stored.\n");
-				}
-			}
-		}
-#endif
-
-		return;
-	}
-
-	bool selectionsAdjusted = false;
-
-	if ((notifyCode->modificationType & SC_MOD_INSERTTEXT) && notifyCode->linesAdded)
-	{
-		const intptr_t startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
-
-		const int action = notifyCode->modificationType & (SC_PERFORMED_USER | SC_PERFORMED_UNDO | SC_PERFORMED_REDO);
-
-		LOGD(LOG_NOTIF, "SC_MOD_INSERTTEXT: " + std::string(view == MAIN_VIEW ? "MAIN" : "SUB") +
-				" view, lines range: " + std::to_string(startLine + 1) + "-" +
-				std::to_string(startLine + notifyCode->linesAdded) + "\n");
-
-		ScopedIncrementerInt incr(notificationsLock);
-
-		notReverting = true;
-
-		undo = cmpPair->getFileByViewId(view).popDeletedSection(action, startLine);
-
-		if (undo)
-		{
-			if ((undo->selection.first < undo->selection.second) &&
-				(cmpPair->options.selections[view] != undo->selection))
-			{
-				cmpPair->options.selections[view] = undo->selection;
-
-				selectionsAdjusted = true;
-
-				LOGD(LOG_NOTIF, "Selection restored.\n");
-			}
-
-			if (!cmpPair->options.recompareOnChange)
-			{
-				cmpPair->summary.alignmentInfo = std::move(undo->alignment);
-
-				LOGD(LOG_NOTIF, "Alignment restored.\n");
-
-				if (!undo->otherViewMarks.empty())
-				{
-					const intptr_t alignLine = getAlignmentLine(cmpPair->summary.alignmentInfo, view, startLine);
-
-					if (alignLine >= 0)
-					{
-						setMarkers(getOtherViewId(view), alignLine, undo->otherViewMarks);
-
-						if (Settings.HideMatches)
-							unhideLinesInRange(getOtherViewId(view), alignLine, undo->otherViewMarks.size());
-
-						LOGD(LOG_NOTIF, "Other view markers restored.\n");
-					}
-				}
-			}
-		}
-	}
-
-	if ((notifyCode->modificationType & SC_MOD_DELETETEXT) || (notifyCode->modificationType & SC_MOD_INSERTTEXT))
-	{
-		delayedAlign.cancel();
-		delayedRecompare.cancel();
-
-		if (notifyCode->linesAdded == 0)
-			notReverting = true;
-
-		bool updateStatus = false;
-
-		// Set compare dirty flag if needed
-		if (!cmpPair->options.recompareOnChange && notReverting && !undo)
-		{
-			if (!cmpPair->compareDirty || (!cmpPair->inEqualizeMode && !cmpPair->manuallyChanged))
-			{
-				if (!cmpPair->options.selectionCompare)
-				{
-					cmpPair->setCompareDirty();
-					updateStatus = true;
-				}
-				else
-				{
-					intptr_t startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
-
-					if ((startLine >= cmpPair->options.selections[view].first) &&
-						(startLine <= cmpPair->options.selections[view].second))
-					{
-						cmpPair->setCompareDirty();
-						updateStatus = true;
-					}
-
-					if (!updateStatus && notifyCode->linesAdded && (notifyCode->modificationType & SC_MOD_DELETETEXT))
-					{
-						startLine += notifyCode->linesAdded + 1;
-
-						if ((startLine >= cmpPair->options.selections[view].first) &&
-							(startLine <= cmpPair->options.selections[view].second))
-						{
-							cmpPair->setCompareDirty();
-							updateStatus = true;
-						}
-					}
-				}
-			}
-		}
-
-		// Adjust selections if in selection compare
-		if (cmpPair->options.selectionCompare && notifyCode->linesAdded && !undo && !selectionsAdjusted)
-		{
-			intptr_t startLine		= CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
-			const intptr_t endLine	= startLine + std::abs(notifyCode->linesAdded) - 1;
-
-			if (cmpPair->options.selections[view].first > startLine)
-			{
-				if (notifyCode->linesAdded > 0)
-				{
-					cmpPair->options.selections[view].first += notifyCode->linesAdded;
-				}
-				else
-				{
-					if (cmpPair->options.selections[view].first > endLine)
-						cmpPair->options.selections[view].first += notifyCode->linesAdded;
-					else
-						cmpPair->options.selections[view].first -=
-								(cmpPair->options.selections[view].first - startLine);
-				}
-
-				selectionsAdjusted = true;
-			}
-
-			// Handle the special case when the end of the selection compare is diff-equalized -
-			// the insert part of the replace notification then needs to increase the selection accordingly to
-			// include the equalized diff
-			if (cmpPair->inEqualizeMode && (cmpPair->options.selections[view].second == startLine - 1) &&
-					(notifyCode->linesAdded > 0))
-				--startLine;
-
-			if (cmpPair->options.selections[view].second >= startLine)
-			{
-				if (notifyCode->linesAdded > 0)
-				{
-					cmpPair->options.selections[view].second += notifyCode->linesAdded;
-				}
-				else
-				{
-					if (cmpPair->options.selections[view].second >= endLine)
-						cmpPair->options.selections[view].second += notifyCode->linesAdded;
-					else
-						cmpPair->options.selections[view].second -=
-								(cmpPair->options.selections[view].second - startLine + 1);
-				}
-
-				selectionsAdjusted = true;
-			}
-
-			if (!cmpPair->inEqualizeMode &&
-				cmpPair->options.selections[view].second < cmpPair->options.selections[view].first)
-			{
-				clearComparePair(getCurrentBuffId());
-				return;
-			}
-
-			LOGDIF(LOG_NOTIF, selectionsAdjusted, "Selection adjusted.\n");
-		}
-
-		if (cmpPair->options.recompareOnChange)
-		{
-			if (notifyCode->linesAdded)
-				cmpPair->autoRecompareDelay = 500;
-			else
-				// Leave bigger delay before re-comparing if change is on single line because the user might be typing
-				// and we should try to avoid interrupting / interfering
-				cmpPair->autoRecompareDelay = 1500;
-
-			if (!storedLocation)
-				storedLocation = std::make_unique<ViewLocation>(view);
-
-			return;
-		}
-
-		if (notifyCode->linesAdded)
-		{
-			intptr_t startLine = CallScintilla(view, SCI_LINEFROMPOSITION, notifyCode->position, 0);
-
-			if (!undo)
-			{
-				if (!cmpPair->options.selectionCompare || selectionsAdjusted)
-				{
-					cmpPair->adjustAlignment(view, startLine, notifyCode->linesAdded);
-
-					LOGD(LOG_NOTIF, "Alignment adjusted.\n");
-				}
-			}
-
-			delayedAlign.post(300);
-
-			if (Settings.UseNavBar && !cmpPair->inEqualizeMode)
-				NavDlg.Show();
-		}
-
-		if (updateStatus)
-			cmpPair->setStatus();
 	}
 }
 
