@@ -5060,10 +5060,16 @@ void onNppReady()
 	{
 		if (!allocateIndicator())
 			::MessageBoxW(nppData._nppHandle,
-					L"Notepad++ marker allocation for visualizing diff changes failed - "
+					L"Notepad++ marker allocation for visualizing diff changes failed -"
 					L"\nusing default one but conflicts with other plugins might appear."
 					L"\nPlease switch to Notepad++ version 8.5.6 or newer.",
-					PLUGIN_NAME, MB_OK);
+					PLUGIN_NAME, MB_OK | MB_ICONWARNING);
+
+		if (!allocateMarginNum())
+			::MessageBoxW(nppData._nppHandle,
+					L"Allocating new margin for compare diff symbols failed."
+					L"\nLines diff symbols will not be visible.",
+					PLUGIN_NAME, MB_OK | MB_ICONWARNING);
 
 		if (isDarkMode())
 			Settings.useDarkColors();
@@ -6152,7 +6158,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 
 		// Copy/equalize diffs
 		case SCN_MARGINCLICK:
-			if (NppSettings::get().compareMode && !notificationsLock && (notifyCode->margin == MARGIN_NUM) &&
+			if (NppSettings::get().compareMode && !notificationsLock && (notifyCode->margin == marginNum) &&
 					!delayedRecompare && !delayedAlign && !delayedActivation && !delayedClosure)
 				onMarginClick((HWND)notifyCode->nmhdr.hwndFrom, notifyCode->position, notifyCode->modifiers);
 		break;

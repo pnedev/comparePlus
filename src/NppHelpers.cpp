@@ -39,6 +39,7 @@ extern int gMarginWidth;
 
 int nppBookmarkMarker	= -1;
 int indicatorHighlight	= -1;
+int marginNum			= -1;
 
 
 HWND NppToolbarHandleGetter::hNppToolbar = NULL;
@@ -407,9 +408,12 @@ void setNormalView(int view)
 
 		CallScintilla(view, SCI_SETENDATLASTLINE, endAtLastLine[view], 0);
 
-		CallScintilla(view, SCI_SETMARGINMASKN, MARGIN_NUM, 0);
-		CallScintilla(view, SCI_SETMARGINWIDTHN, MARGIN_NUM, 0);
-		CallScintilla(view, SCI_SETMARGINSENSITIVEN, MARGIN_NUM, false);
+		if (marginNum >= 0)
+		{
+			CallScintilla(view, SCI_SETMARGINMASKN, marginNum, 0);
+			CallScintilla(view, SCI_SETMARGINWIDTHN, marginNum, 0);
+			CallScintilla(view, SCI_SETMARGINSENSITIVEN, marginNum, false);
+		}
 
 		CallScintilla(view, SCI_SETELEMENTCOLOUR, SC_ELEMENT_CARET_LINE_BACK, caretLineColor[view]);
 		CallScintilla(view, SCI_SETCARETLINELAYER, caretLineLayer[view], 0);
@@ -428,9 +432,12 @@ void setCompareView(int view, int blankColor, int caretLineTransp)
 		endAtLastLine[view] = (CallScintilla(view, SCI_GETENDATLASTLINE, 0, 0) != 0);
 		CallScintilla(view, SCI_SETENDATLASTLINE, false, 0);
 
-		CallScintilla(view, SCI_SETMARGINMASKN, MARGIN_NUM, (LPARAM)(MARKER_MASK_SYMBOL | MARKER_MASK_ARROW));
-		CallScintilla(view, SCI_SETMARGINWIDTHN, MARGIN_NUM, gMarginWidth);
-		CallScintilla(view, SCI_SETMARGINSENSITIVEN, MARGIN_NUM, true);
+		if (marginNum >= 0)
+		{
+			CallScintilla(view, SCI_SETMARGINMASKN, marginNum, (LPARAM)(MARKER_MASK_SYMBOL | MARKER_MASK_ARROW));
+			CallScintilla(view, SCI_SETMARGINWIDTHN, marginNum, gMarginWidth);
+			CallScintilla(view, SCI_SETMARGINSENSITIVEN, marginNum, true);
+		}
 
 		caretLineColor[view] =
 				static_cast<int>(CallScintilla(view, SCI_GETELEMENTCOLOUR, SC_ELEMENT_CARET_LINE_BACK, 0));

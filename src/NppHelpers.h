@@ -91,11 +91,10 @@ constexpr int MARKER_MASK_SYMBOL		=	(1 << MARKER_CHANGED_SYMBOL) |
 
 constexpr int MARKER_MASK_ALL			=	MARKER_MASK_LINE | MARKER_MASK_SYMBOL;
 
-constexpr int MARGIN_NUM = 4;
-
 
 extern int nppBookmarkMarker;
 extern int indicatorHighlight;
+extern int marginNum;
 
 
 /**
@@ -313,6 +312,23 @@ inline BOOL allocateIndicator()
 		indicatorHighlight = INDIC_CONTAINER + 7;
 
 	return res;
+}
+
+
+inline bool allocateMarginNum()
+{
+	if (marginNum >= 0)
+		return true;
+
+	marginNum = (int)CallScintilla(MAIN_VIEW, SCI_GETMARGINS, 0, 0);
+
+	if (marginNum < (int)CallScintilla(SUB_VIEW, SCI_GETMARGINS, 0, 0))
+		marginNum = (int)CallScintilla(SUB_VIEW, SCI_GETMARGINS, 0, 0);
+
+	CallScintilla(MAIN_VIEW, SCI_SETMARGINS, marginNum + 1, 0);
+	CallScintilla(SUB_VIEW,  SCI_SETMARGINS, marginNum + 1, 0);
+
+	return (marginNum >= 0);
 }
 
 
