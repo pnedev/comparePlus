@@ -776,7 +776,7 @@ void markTextAsChanged(int view, intptr_t start, intptr_t length, int color);
 void clearChangedIndicator(int view, intptr_t start, intptr_t length);
 
 void setNormalView(int view);
-void setCompareView(int view, int blankColor, int caretLineTransp);
+void setCompareView(int view, bool showMargin, int blankColor, int caretLineTransp);
 
 
 inline bool isDarkModeNPP()

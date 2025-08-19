@@ -25,17 +25,18 @@
 
 const wchar_t UserSettings::mainSection[]					= L"main_settings";
 
-const wchar_t UserSettings::newFileViewSetting[]			= L"new_in_sub_view";
 const wchar_t UserSettings::firstIsNewSetting[]				= L"set_first_as_new";
+const wchar_t UserSettings::newFileViewSetting[]			= L"new_in_sub_view";
 const wchar_t UserSettings::compareToPrevSetting[]			= L"default_compare_to_prev";
 
 const wchar_t UserSettings::encodingsCheckSetting[]			= L"check_encodings";
 const wchar_t UserSettings::sizesCheckSetting[]				= L"check_sizes";
-const wchar_t UserSettings::markIgnoredLinesSetting[]		= L"never_colorize_ignored_lines";
 const wchar_t UserSettings::promptCloseOnMatchSetting[]		= L"prompt_to_close_on_match";
+const wchar_t UserSettings::hideMarginSetting[]				= L"hide_margin";
+const wchar_t UserSettings::markIgnoredLinesSetting[]		= L"never_colorize_ignored_lines";
+const wchar_t UserSettings::followingCaretSetting[]			= L"following_caret";
 const wchar_t UserSettings::wrapAroundSetting[]				= L"wrap_around";
 const wchar_t UserSettings::gotoFirstDiffSetting[]			= L"go_to_first_on_recompare";
-const wchar_t UserSettings::followingCaretSetting[]			= L"following_caret";
 
 const wchar_t UserSettings::detectMovesSetting[]			= L"detect_moves";
 const wchar_t UserSettings::detectSubBlockDiffsSetting[]	= L"detect_sub_block_diffs";
@@ -107,16 +108,20 @@ void UserSettings::load()
 
 	::PathAppendW(ini, L"ComparePlus.ini");
 
-	NewFileViewId			= ::GetPrivateProfileIntW(mainSection, newFileViewSetting,
-			DEFAULT_NEW_IN_SUB_VIEW, ini) == 0 ? MAIN_VIEW : SUB_VIEW;
 	FirstFileIsNew			= ::GetPrivateProfileIntW(mainSection, firstIsNewSetting,
 			DEFAULT_FIRST_IS_NEW, ini) != 0;
+	NewFileViewId			= ::GetPrivateProfileIntW(mainSection, newFileViewSetting,
+			DEFAULT_NEW_IN_SUB_VIEW, ini) == 0 ? MAIN_VIEW : SUB_VIEW;
 	CompareToPrev			= ::GetPrivateProfileIntW(mainSection, compareToPrevSetting,
 			DEFAULT_COMPARE_TO_PREV, ini) != 0;
 	EncodingsCheck			= ::GetPrivateProfileIntW(mainSection, encodingsCheckSetting,
 			DEFAULT_ENCODINGS_CHECK, ini) != 0;
 	SizesCheck				= ::GetPrivateProfileIntW(mainSection, sizesCheckSetting,
 			DEFAULT_SIZES_CHECK, ini) != 0;
+	PromptToCloseOnMatch	= ::GetPrivateProfileIntW(mainSection, promptCloseOnMatchSetting,
+			DEFAULT_PROMPT_CLOSE_ON_MATCH, ini) != 0;
+	HideMargin				= ::GetPrivateProfileIntW(mainSection, hideMarginSetting,
+			DEFAULT_HIDE_MARGIN, ini) != 0;
 	NeverMarkIgnored		= ::GetPrivateProfileIntW(mainSection, markIgnoredLinesSetting,
 			DEFAULT_NEVER_MARK_IGNORED, ini) != 0;
 	FollowingCaret			= ::GetPrivateProfileIntW(mainSection, followingCaretSetting,
@@ -125,8 +130,6 @@ void UserSettings::load()
 			DEFAULT_WRAP_AROUND, ini) != 0;
 	GotoFirstDiff			= ::GetPrivateProfileIntW(mainSection, gotoFirstDiffSetting,
 			DEFAULT_GOTO_FIRST_DIFF, ini) != 0;
-	PromptToCloseOnMatch	= ::GetPrivateProfileIntW(mainSection, promptCloseOnMatchSetting,
-			DEFAULT_PROMPT_CLOSE_ON_MATCH, ini) != 0;
 
 	DetectMoves				= ::GetPrivateProfileIntW(mainSection, detectMovesSetting,			 1, ini) != 0;
 	DetectSubBlockDiffs		= ::GetPrivateProfileIntW(mainSection, detectSubBlockDiffsSetting,	 1, ini) != 0;
@@ -262,7 +265,7 @@ void UserSettings::save()
 			fclose(fp);
 	}
 
-	if (!::WritePrivateProfileStringW(mainSection, newFileViewSetting, NewFileViewId == SUB_VIEW ? L"1" : L"0", ini))
+	if (!::WritePrivateProfileStringW(mainSection, firstIsNewSetting, FirstFileIsNew ? L"1" : L"0", ini))
 	{
 		wchar_t msg[MAX_PATH + 64];
 
@@ -272,15 +275,16 @@ void UserSettings::save()
 		return;
 	}
 
-	::WritePrivateProfileStringW(mainSection, firstIsNewSetting,			FirstFileIsNew		  ? L"1" : L"0", ini);
+	::WritePrivateProfileStringW(mainSection, newFileViewSetting,	NewFileViewId == SUB_VIEW	  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, compareToPrevSetting,			CompareToPrev		  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, encodingsCheckSetting,		EncodingsCheck		  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, sizesCheckSetting,			SizesCheck			  ? L"1" : L"0", ini);
+	::WritePrivateProfileStringW(mainSection, promptCloseOnMatchSetting,	PromptToCloseOnMatch  ? L"1" : L"0", ini);
+	::WritePrivateProfileStringW(mainSection, hideMarginSetting,			HideMargin	  		  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, markIgnoredLinesSetting,		NeverMarkIgnored	  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, followingCaretSetting,		FollowingCaret		  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, wrapAroundSetting,			WrapAround			  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, gotoFirstDiffSetting,			GotoFirstDiff		  ? L"1" : L"0", ini);
-	::WritePrivateProfileStringW(mainSection, promptCloseOnMatchSetting,	PromptToCloseOnMatch  ? L"1" : L"0", ini);
 
 	::WritePrivateProfileStringW(mainSection, detectMovesSetting,			DetectMoves			  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, detectSubBlockDiffsSetting,	DetectSubBlockDiffs	  ? L"1" : L"0", ini);

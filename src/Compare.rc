@@ -91,12 +91,12 @@ CAPTION "ComparePlus Settings"
 FONT 9, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
 	GROUPBOX		"Main Settings", IDC_STATIC, 7, 7, 295, 247
-	GROUPBOX		"Files Position", IDC_STATIC, 15, 22, 122, 42
-	AUTORADIOBUTTON	"New file in right/bottom view", IDC_NEW_IN_SUB, 21, 37, 107, 8, WS_GROUP | WS_TABSTOP
-	AUTORADIOBUTTON	"Old file in right/bottom view", IDC_OLD_IN_SUB, 21, 50, 107, 8
-	GROUPBOX		"Set as First to Compare", IDC_STATIC, 15, 76, 122, 42
-	AUTORADIOBUTTON	"Set as new file", IDC_FIRST_NEW, 21, 91, 107, 8, WS_GROUP | WS_TABSTOP
-	AUTORADIOBUTTON	"Set as old file", IDC_FIRST_OLD, 21, 104, 107, 8
+	GROUPBOX		"Set as First to Compare", IDC_STATIC, 15, 22, 122, 42
+	AUTORADIOBUTTON	"Set as new file", IDC_FIRST_NEW, 21, 37, 107, 8, WS_GROUP | WS_TABSTOP
+	AUTORADIOBUTTON	"Set as old file", IDC_FIRST_OLD, 21, 50, 107, 8
+	GROUPBOX		"Files Position", IDC_STATIC, 15, 76, 122, 42
+	AUTORADIOBUTTON	"New file in right/bottom view", IDC_NEW_IN_SUB, 21, 91, 107, 8, WS_GROUP | WS_TABSTOP
+	AUTORADIOBUTTON	"Old file in right/bottom view", IDC_OLD_IN_SUB, 21, 104, 107, 8
 	GROUPBOX		"Default Compare in Single-View", IDC_STATIC, 15, 130, 122, 42
 	AUTORADIOBUTTON	"Current and previous files", IDC_COMPARE_TO_PREV, 21, 145, 107, 8, WS_GROUP | WS_TABSTOP
 	AUTORADIOBUTTON	"Current and next files", IDC_COMPARE_TO_NEXT, 21, 158, 107, 8
@@ -107,11 +107,12 @@ BEGIN
 	GROUPBOX		"Misc.", IDC_STATIC, 145, 22, 148, 217
 	AUTOCHECKBOX	"Warn about encodings mismatch", IDC_ENCODINGS_CHECK, 153, 36, 138, 14
 	AUTOCHECKBOX	"Warn before comparing big files", IDC_SIZES_CHECK, 153, 55, 138, 14
-	AUTOCHECKBOX	"Never colorize ignored lines", IDC_NEVER_MARK_IGNORED, 153, 74, 138, 14
-	AUTOCHECKBOX	"Move caret on navigation", IDC_FOLLOWING_CARET, 153, 93, 138, 14
-	AUTOCHECKBOX	"Wrap around diffs on navigation", IDC_WRAP_AROUND, 153, 112, 138, 14
-	AUTOCHECKBOX	"Go to first diff after re-Compare", IDC_GOTO_FIRST_DIFF, 153, 131, 138, 14
-	AUTOCHECKBOX	"Show ""Close Files?"" dialog on match", IDC_PROMPT_CLOSE_ON_MATCH, 153, 150, 138, 14
+	AUTOCHECKBOX	"Show ""Close Files?"" dialog on match", IDC_PROMPT_CLOSE_ON_MATCH, 153, 74, 138, 14
+	AUTOCHECKBOX	"Hide compare margin", IDC_HIDE_MARGIN, 153, 93, 138, 14
+	AUTOCHECKBOX	"Never colorize ignored lines", IDC_NEVER_MARK_IGNORED, 153, 112, 138, 14
+	AUTOCHECKBOX	"Move caret on navigation", IDC_FOLLOWING_CARET, 153, 131, 138, 14
+	AUTOCHECKBOX	"Wrap around diffs on navigation", IDC_WRAP_AROUND, 153, 150, 138, 14
+	AUTOCHECKBOX	"Go to first diff after re-Compare", IDC_GOTO_FIRST_DIFF, 153, 169, 138, 14
 	GROUPBOX		"Color and Highlight Settings", IDC_STATIC, 312, 7, 141, 247
 	LTEXT			"Added line:", IDC_STATIC, 323, 25, 70, 8
 	COMBOBOX		IDC_COMBO_ADDED_COLOR, 393, 23, 50, 12, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP

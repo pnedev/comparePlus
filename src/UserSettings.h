@@ -31,11 +31,12 @@
 
 #define DEFAULT_ENCODINGS_CHECK				1
 #define DEFAULT_SIZES_CHECK					1
+#define DEFAULT_PROMPT_CLOSE_ON_MATCH		0
+#define DEFAULT_HIDE_MARGIN					0
 #define DEFAULT_NEVER_MARK_IGNORED			0
 #define DEFAULT_FOLLOWING_CARET				1
 #define DEFAULT_WRAP_AROUND					0
 #define DEFAULT_GOTO_FIRST_DIFF				1
-#define DEFAULT_PROMPT_CLOSE_ON_MATCH		0
 
 #define DEFAULT_STATUS_INFO					0
 
@@ -57,7 +58,7 @@
 #define DEFAULT_HIGHLIGHT_TRANSP_DARK		0
 #define DEFAULT_CARET_LINE_TRANSP_DARK		80
 
-#define DEFAULT_CHANGED_THRESHOLD			30
+#define DEFAULT_CHANGED_THRESHOLD			20
 
 #define DEFAULT_ENABLE_TOOLBAR_TB			1
 #define DEFAULT_SET_AS_FIRST_TB				1
@@ -124,17 +125,18 @@ public:
 
 	static const wchar_t mainSection[];
 
-	static const wchar_t newFileViewSetting[];
 	static const wchar_t firstIsNewSetting[];
+	static const wchar_t newFileViewSetting[];
 	static const wchar_t compareToPrevSetting[];
 
 	static const wchar_t encodingsCheckSetting[];
 	static const wchar_t sizesCheckSetting[];
+	static const wchar_t promptCloseOnMatchSetting[];
+	static const wchar_t hideMarginSetting[];
 	static const wchar_t markIgnoredLinesSetting[];
 	static const wchar_t followingCaretSetting[];
 	static const wchar_t wrapAroundSetting[];
 	static const wchar_t gotoFirstDiffSetting[];
-	static const wchar_t promptCloseOnMatchSetting[];
 
 	static const wchar_t detectMovesSetting[];
 	static const wchar_t detectSubBlockDiffsSetting[];
@@ -204,11 +206,12 @@ public:
 
 	bool			EncodingsCheck;
 	bool			SizesCheck;
+	bool			PromptToCloseOnMatch;
+	bool			HideMargin;
 	bool			NeverMarkIgnored;
 	bool			FollowingCaret;
 	bool			WrapAround;
 	bool			GotoFirstDiff;
-	bool			PromptToCloseOnMatch;
 
 	bool			DetectMoves;
 	bool			DetectSubBlockDiffs;

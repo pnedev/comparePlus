@@ -423,7 +423,7 @@ void setNormalView(int view)
 }
 
 
-void setCompareView(int view, int blankColor, int caretLineTransp)
+void setCompareView(int view, bool showMargin, int blankColor, int caretLineTransp)
 {
 	if (!compareMode[view])
 	{
@@ -432,7 +432,7 @@ void setCompareView(int view, int blankColor, int caretLineTransp)
 		endAtLastLine[view] = (CallScintilla(view, SCI_GETENDATLASTLINE, 0, 0) != 0);
 		CallScintilla(view, SCI_SETENDATLASTLINE, false, 0);
 
-		if (marginNum >= 0)
+		if (showMargin && marginNum >= 0)
 		{
 			CallScintilla(view, SCI_SETMARGINMASKN, marginNum, (LPARAM)(MARKER_MASK_SYMBOL | MARKER_MASK_ARROW));
 			CallScintilla(view, SCI_SETMARGINWIDTHN, marginNum, gMarginWidth);
