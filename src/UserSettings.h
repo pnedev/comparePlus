@@ -234,7 +234,7 @@ public:
 	bool			HideChangedLines;
 	bool			HideMovedLines;
 	bool			ShowOnlySelections;
-	bool			UseNavBar;
+	bool			ShowNavBar;
 
 	bool			RecompareOnChange;
 	StatusType		StatusInfo;

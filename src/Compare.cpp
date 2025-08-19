@@ -3126,7 +3126,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 			// Honour 'Auto Re-compare On Change' user setting only if compare time is less than 5 sec.
 			cmpPair->options.recompareOnChange = cmpPair->options.recompareOnChange && (compareDuration.count() < 5000);
 
-			if (Settings.UseNavBar)
+			if (Settings.ShowNavBar)
 				showNavBar();
 
 			NppSettings::get().setCompareMode(true);
@@ -4629,7 +4629,7 @@ void comparedFileActivated()
 {
 	if (!NppSettings::get().compareMode)
 	{
-		if (Settings.UseNavBar && !NavDlg.isVisible())
+		if (Settings.ShowNavBar && !NavDlg.isVisible())
 			showNavBar();
 
 		ScopedIncrementerInt incr(notificationsLock);
@@ -5039,7 +5039,7 @@ void onNppReady()
 		(Settings.HideMatches || Settings.HideNewLines || Settings.HideChangedLines || Settings.HideMovedLines));
 
 	::SendMessageW(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID,
-			(LPARAM)Settings.UseNavBar);
+			(LPARAM)Settings.ShowNavBar);
 
 	::SendMessageW(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_AUTO_RECOMPARE]._cmdID,
 			(LPARAM)Settings.RecompareOnChange);
@@ -5460,7 +5460,7 @@ void onSciModified(SCNotification* notifyCode)
 
 			delayedAlign.post(300);
 
-			if (Settings.UseNavBar && !cmpPair->inEqualizeMode)
+			if (Settings.ShowNavBar && !cmpPair->inEqualizeMode)
 				NavDlg.Show();
 		}
 
@@ -5583,7 +5583,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 			if (Settings.HideMatches || Settings.HideNewLines || Settings.HideChangedLines || Settings.HideMovedLines)
 				alignDiffs(cmpPair);
 
-			if (Settings.UseNavBar)
+			if (Settings.ShowNavBar)
 				NavDlg.Show();
 		}
 
@@ -5830,7 +5830,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 		if (Settings.HideMatches || Settings.HideNewLines || Settings.HideChangedLines || Settings.HideMovedLines)
 			alignDiffs(cmpPair);
 
-		if (Settings.UseNavBar)
+		if (Settings.ShowNavBar)
 			NavDlg.Show();
 	}
 }
@@ -6084,13 +6084,14 @@ void onFileSaved(LRESULT buffId)
 
 void ToggleNavigationBar()
 {
-	Settings.UseNavBar = !Settings.UseNavBar;
-	::SendMessageW(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID, (LPARAM)Settings.UseNavBar);
+	Settings.ShowNavBar = !Settings.ShowNavBar;
+	::SendMessageW(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID,
+			(LPARAM)Settings.ShowNavBar);
 	Settings.markAsDirty();
 
 	if (NppSettings::get().compareMode)
 	{
-		if (Settings.UseNavBar)
+		if (Settings.ShowNavBar)
 			showNavBar();
 		else
 			NavDlg.Hide();

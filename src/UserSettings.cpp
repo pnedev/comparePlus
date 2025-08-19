@@ -158,7 +158,7 @@ void UserSettings::load()
 	HideMovedLines		= ::GetPrivateProfileIntW(mainSection, hideMovedLinesSetting,		0, ini) != 0;
 	ShowOnlySelections	= ::GetPrivateProfileIntW(mainSection, showOnlySelSetting,			1, ini) != 0;
 
-	UseNavBar			= ::GetPrivateProfileIntW(mainSection, navBarSetting,				1, ini) != 0;
+	ShowNavBar			= ::GetPrivateProfileIntW(mainSection, navBarSetting,				1, ini) != 0;
 	RecompareOnChange	= ::GetPrivateProfileIntW(mainSection, reCompareOnChangeSetting,	1, ini) != 0;
 
 	StatusInfo = static_cast<StatusType>(::GetPrivateProfileIntW(mainSection, statusInfoSetting,
@@ -308,7 +308,7 @@ void UserSettings::save()
 	::WritePrivateProfileStringW(mainSection, hideChangedLinesSetting,		HideChangedLines	  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, hideMovedLinesSetting,		HideMovedLines		  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, showOnlySelSetting,			ShowOnlySelections	  ? L"1" : L"0", ini);
-	::WritePrivateProfileStringW(mainSection, navBarSetting,				UseNavBar			  ? L"1" : L"0", ini);
+	::WritePrivateProfileStringW(mainSection, navBarSetting,				ShowNavBar			  ? L"1" : L"0", ini);
 
 	::WritePrivateProfileStringW(mainSection, reCompareOnChangeSetting,		RecompareOnChange	  ? L"1" : L"0", ini);
 
