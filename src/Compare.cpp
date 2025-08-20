@@ -474,7 +474,17 @@ public:
 	DelayedAlign() : DelayedWork() {}
 	virtual ~DelayedAlign() = default;
 
+	void post(UINT delay_ms, bool force)
+	{
+		cancel();
+		_force = force;
+		DelayedWork::post(delay_ms);
+	}
+
 	virtual void operator()();
+
+private:
+	bool _force {false};
 };
 
 
@@ -2424,9 +2434,6 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 
 void doAlignment(bool forceAlign = false)
 {
-	if (delayedAlign && !forceAlign)
-		return;
-
 	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
 
 	if (cmpPair == compareList.end())
@@ -2466,6 +2473,8 @@ void doAlignment(bool forceAlign = false)
 			storedLocation = std::make_unique<ViewLocation>(getCurrentViewId());
 
 		alignDiffs(cmpPair);
+
+		delayedAlign.post(300, false);
 	}
 
 	if (goToFirst)
@@ -5159,7 +5168,7 @@ inline void onSciPaint()
 
 void DelayedAlign::operator()()
 {
-	doAlignment(true);
+	doAlignment(_force);
 }
 
 
@@ -5300,15 +5309,6 @@ void onSciModified(SCNotification* notifyCode)
 	CompareList_t::iterator cmpPair = getCompareBySciDoc(getDocId(view));
 	if (cmpPair == compareList.end())
 		return;
-
-	// For some reason this notification is never sent by Notepad++ and Scintilla eventhough it is allowed
-	// by SCI_SETMODEVENTMASK
-	// if (notifyCode->modificationType & SC_MOD_CHANGEFOLD)
-	// {
-		// delayedAlign.post(300);
-
-		// return;
-	// }
 
 	std::shared_ptr<DeletedSection::UndoData> undo = nullptr;
 
@@ -5458,7 +5458,7 @@ void onSciModified(SCNotification* notifyCode)
 				}
 			}
 
-			delayedAlign.post(300);
+			delayedAlign.post(300, true);
 
 			if (Settings.ShowNavBar && !cmpPair->inEqualizeMode)
 				NavDlg.Show();
