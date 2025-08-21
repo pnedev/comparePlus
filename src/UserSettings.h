@@ -152,6 +152,7 @@ public:
 	static const wchar_t ignoreRegexSetting[];
 	static const wchar_t invertRegexSetting[];
 	static const wchar_t inclRegexNomatchLinesSetting[];
+	static const wchar_t highlightRegexIgnoresSetting[];
 	static const wchar_t ignoreRegexStrSetting[];
 
 	static const wchar_t hideMatchesSetting[];
@@ -227,6 +228,7 @@ public:
 	bool			IgnoreRegex;
 	bool			InvertRegex;
 	bool			InclRegexNomatchLines;
+	bool			HighlightRegexIgnores;
 	std::wstring	IgnoreRegexStr;
 
 	bool			HideMatches;

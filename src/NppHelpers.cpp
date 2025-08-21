@@ -629,7 +629,7 @@ intptr_t replaceText(int view, const std::string& txtToReplace, const std::strin
 }
 
 
-void clearWindow(int view)
+void clearWindow(int view, bool clearIndicators)
 {
 	CallScintilla(view, SCI_ANNOTATIONCLEARALL, 0, 0);
 
@@ -649,7 +649,8 @@ void clearWindow(int view)
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_MOVED_BLOCK_END_SYMBOL, 0);
 	CallScintilla(view, SCI_MARKERDELETEALL, MARKER_ARROW_SYMBOL, 0);
 
-	clearChangedIndicator(view, 0, CallScintilla(view, SCI_GETLENGTH, 0, 0));
+	if (clearIndicators)
+		clearChangedIndicatorFull(view);
 
 	CallScintilla(view, SCI_COLOURISE, 0, -1);
 }

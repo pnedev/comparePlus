@@ -88,7 +88,8 @@ struct CompareOptions
 		selections[1] = std::make_pair(-1, -1);
 	}
 
-	inline void setIgnoreRegex(const std::wstring& regexStr, bool invert, bool inclNomatchLines, bool iCase)
+	inline void setIgnoreRegex(const std::wstring& regexStr,
+		bool invert, bool inclNomatchLines, bool highlightIgnores, bool iCase)
 	{
 		if (!regexStr.empty())
 		{
@@ -100,6 +101,7 @@ struct CompareOptions
 			ignoreRegex				= std::make_unique<boost::wregex>(regexStr, regexOptions);
 			invertRegex				= invert;
 			inclRegexNomatchLines	= inclNomatchLines;
+			highlightRegexIgnores	= highlightIgnores;
 		}
 		else
 		{
@@ -134,6 +136,7 @@ struct CompareOptions
 	std::unique_ptr<boost::wregex>	ignoreRegex;
 	bool							invertRegex;
 	bool							inclRegexNomatchLines;
+	bool							highlightRegexIgnores;
 
 	int		changedThresholdPercent;
 

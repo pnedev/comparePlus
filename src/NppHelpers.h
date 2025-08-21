@@ -775,6 +775,12 @@ void centerAt(int view, intptr_t line);
 void markTextAsChanged(int view, intptr_t start, intptr_t length, int color);
 void clearChangedIndicator(int view, intptr_t start, intptr_t length);
 
+
+inline void clearChangedIndicatorFull(int view)
+{
+	clearChangedIndicator(view, 0, CallScintilla(view, SCI_GETLENGTH, 0, 0));
+}
+
 void setNormalView(int view);
 void setCompareView(int view, bool showMargin, int blankColor, int caretLineTransp);
 
@@ -798,7 +804,7 @@ bool isDarkMode();
 
 void setStyles(UserSettings& settings);
 
-void clearWindow(int view);
+void clearWindow(int view, bool clearIndicators = true);
 
 
 inline void clearMarks(int view, intptr_t line)

@@ -3018,7 +3018,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 		if (Settings.IgnoreRegex)
 			cmpPair->options.setIgnoreRegex(Settings.IgnoreRegexStr,
-					Settings.InvertRegex, Settings.InclRegexNomatchLines, Settings.IgnoreCase);
+					Settings.InvertRegex, Settings.InclRegexNomatchLines, Settings.HighlightRegexIgnores,
+					Settings.IgnoreCase);
 		else
 			cmpPair->options.clearIgnoreRegex();
 

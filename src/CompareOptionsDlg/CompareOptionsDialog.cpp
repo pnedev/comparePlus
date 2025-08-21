@@ -106,6 +106,7 @@ INT_PTR CALLBACK CompareOptionsDialog::run_dlgProc(UINT Message, WPARAM wParam, 
 				{
 					const bool ignoreRegex = (Button_GetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_REGEX)) == BST_CHECKED);
 
+					Button_Enable(::GetDlgItem(_hSelf, IDC_HIGHLIGHT_REGEX_IGNORES),	ignoreRegex);
 					Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_MODE_IGNORE),			ignoreRegex);
 					Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_MODE_MATCH),			ignoreRegex);
 					Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_INCL_NOMATCH_LINES),	ignoreRegex &&
@@ -159,13 +160,16 @@ void CompareOptionsDialog::SetParams()
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_REGEX_MODE_MATCH),   _Settings->InvertRegex ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_REGEX_INCL_NOMATCH_LINES),
 			_Settings->InclRegexNomatchLines ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_HIGHLIGHT_REGEX_IGNORES),
+			_Settings->HighlightRegexIgnores ? BST_CHECKED : BST_UNCHECKED);
 
-	Button_Enable(::GetDlgItem(_hSelf, IDC_DETECT_SUB_LINE_MOVES),	_Settings->DetectSubBlockDiffs);
-	Button_Enable(::GetDlgItem(_hSelf, IDC_DETECT_CHAR_DIFFS),		_Settings->DetectSubBlockDiffs);
-	Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_MODE_IGNORE),		_Settings->IgnoreRegex);
-	Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_MODE_MATCH),		_Settings->IgnoreRegex);
+	Button_Enable(::GetDlgItem(_hSelf, IDC_DETECT_SUB_LINE_MOVES),		_Settings->DetectSubBlockDiffs);
+	Button_Enable(::GetDlgItem(_hSelf, IDC_DETECT_CHAR_DIFFS),			_Settings->DetectSubBlockDiffs);
+	Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_MODE_IGNORE),			_Settings->IgnoreRegex);
+	Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_MODE_MATCH),			_Settings->IgnoreRegex);
 	Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_INCL_NOMATCH_LINES),
 			_Settings->IgnoreRegex && _Settings->InvertRegex);
+	Button_Enable(::GetDlgItem(_hSelf, IDC_HIGHLIGHT_REGEX_IGNORES),	_Settings->IgnoreRegex);
 
 	HWND hCtrl = ::GetDlgItem(_hSelf, IDC_IGNORE_REGEX_STR);
 
@@ -221,13 +225,13 @@ bool CompareOptionsDialog::GetParams()
 		{
 			_Settings->IgnoreRegexStr = L"";
 		}
-
-		_Settings->InvertRegex = (Button_GetCheck(::GetDlgItem(_hSelf, IDC_REGEX_MODE_MATCH)) == BST_CHECKED);
-
-		if (_Settings->InvertRegex)
-			_Settings->InclRegexNomatchLines =
-					(Button_GetCheck(::GetDlgItem(_hSelf, IDC_REGEX_INCL_NOMATCH_LINES)) == BST_CHECKED);
 	}
+
+	_Settings->InvertRegex = (Button_GetCheck(::GetDlgItem(_hSelf, IDC_REGEX_MODE_MATCH)) == BST_CHECKED);
+	_Settings->InclRegexNomatchLines =
+				(Button_GetCheck(::GetDlgItem(_hSelf, IDC_REGEX_INCL_NOMATCH_LINES)) == BST_CHECKED);
+	_Settings->HighlightRegexIgnores =
+			(Button_GetCheck(::GetDlgItem(_hSelf, IDC_HIGHLIGHT_REGEX_IGNORES)) == BST_CHECKED);
 
 	return true;
 }

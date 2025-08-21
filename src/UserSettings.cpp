@@ -52,6 +52,7 @@ const wchar_t UserSettings::ignoreCaseSetting[]				= L"ignore_case";
 const wchar_t UserSettings::ignoreRegexSetting[]			= L"ignore_regex";
 const wchar_t UserSettings::invertRegexSetting[]			= L"invert_regex";
 const wchar_t UserSettings::inclRegexNomatchLinesSetting[]	= L"incl_regex_nomatch_lines";
+const wchar_t UserSettings::highlightRegexIgnoresSetting[]	= L"highlight_regex_ignores";
 const wchar_t UserSettings::ignoreRegexStrSetting[]			= L"ignore_regex_string";
 const wchar_t UserSettings::hideMatchesSetting[]			= L"hide_matches";
 const wchar_t UserSettings::hideNewLinesSetting[]			= L"hide_added_removed_lines";
@@ -145,6 +146,7 @@ void UserSettings::load()
 	IgnoreRegex				= ::GetPrivateProfileIntW(mainSection, ignoreRegexSetting,			 0, ini) != 0;
 	InvertRegex				= ::GetPrivateProfileIntW(mainSection, invertRegexSetting,			 0, ini) != 0;
 	InclRegexNomatchLines	= ::GetPrivateProfileIntW(mainSection, inclRegexNomatchLinesSetting, 0, ini) != 0;
+	HighlightRegexIgnores	= ::GetPrivateProfileIntW(mainSection, highlightRegexIgnoresSetting, 0, ini) != 0;
 
 	wchar_t buf[1024];
 
@@ -300,6 +302,7 @@ void UserSettings::save()
 	::WritePrivateProfileStringW(mainSection, ignoreRegexSetting,			IgnoreRegex			  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, invertRegexSetting,			InvertRegex			  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, inclRegexNomatchLinesSetting,	InclRegexNomatchLines ? L"1" : L"0", ini);
+	::WritePrivateProfileStringW(mainSection, highlightRegexIgnoresSetting,	HighlightRegexIgnores ? L"1" : L"0", ini);
 
 	::WritePrivateProfileStringW(mainSection, ignoreRegexStrSetting, IgnoreRegexStr.c_str(), ini);
 

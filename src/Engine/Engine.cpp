@@ -345,7 +345,7 @@ inline uint64_t getSectionRangeHash(uint64_t hashSeed, std::vector<wchar_t>& sec
 }
 
 
-uint64_t getRegexIgnoreLineHash(uint64_t hashSeed, int codepage, const std::vector<char>& line,
+uint64_t getRegexIgnoreLineHash(int view, intptr_t off, uint64_t hashSeed, int codepage, const std::vector<char>& line,
 	const CompareOptions& options)
 {
 	const int len = static_cast<int>(line.size());
@@ -366,15 +366,34 @@ uint64_t getRegexIgnoreLineHash(uint64_t hashSeed, int codepage, const std::vect
 	boost::regex_iterator<std::vector<wchar_t>::iterator>		rit(wLine.begin(), wLine.end(), *options.ignoreRegex);
 	const boost::regex_iterator<std::vector<wchar_t>::iterator>	rend;
 
+	intptr_t mbPos = 0;
+
 	if (options.invertRegex && (rit != rend || !options.inclRegexNomatchLines))
 	{
+		intptr_t pos = 0;
+
 		for (; rit != rend; ++rit)
 		{
 #ifndef MULTITHREAD
 			LOGD(LOG_ALGO, "pos " + std::to_string(rit->position()) + ", len " + std::to_string(rit->length()) + "\n");
 #endif
 			hashSeed = getSectionRangeHash(hashSeed, wLine, rit->position(), rit->position() + rit->length(), options);
+
+			if (options.highlightRegexIgnores)
+			{
+				const int mbLen = ::WideCharToMultiByte(codepage, 0,
+						wLine.data() + pos, rit->position() - pos, NULL, 0, NULL, NULL);
+
+				markTextAsChanged(view, off + mbPos, mbLen, Settings.colors().blank);
+
+				pos = rit->position() + rit->length();
+				mbPos += mbLen + ::WideCharToMultiByte(codepage, 0,
+						wLine.data() + rit->position(), rit->length(), NULL, 0, NULL, NULL);
+			}
 		}
+
+		if (options.highlightRegexIgnores)
+			markTextAsChanged(view, off + mbPos, len - 1 - mbPos, Settings.colors().blank);
 	}
 	else
 	{
@@ -395,6 +414,18 @@ uint64_t getRegexIgnoreLineHash(uint64_t hashSeed, int codepage, const std::vect
 			LOGD(LOG_ALGO, "pos " + std::to_string(rit->position()) + ", len " + std::to_string(rit->length()) + "\n");
 #endif
 			hashSeed = getSectionRangeHash(hashSeed, wLine, pos, rit->position(), options);
+
+			if (options.highlightRegexIgnores)
+			{
+				mbPos += ::WideCharToMultiByte(codepage, 0,
+						wLine.data() + pos, rit->position() - pos, NULL, 0, NULL, NULL);
+				const int mbLen = ::WideCharToMultiByte(codepage, 0,
+						wLine.data() + rit->position(), rit->length(), NULL, 0, NULL, NULL);
+
+				markTextAsChanged(view, off + mbPos, mbLen, Settings.colors().blank);
+
+				mbPos += mbLen;
+			}
 
 			pos = rit->position() + rit->length();
 			++rit;
@@ -520,7 +551,7 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 				LOGD(LOG_ALGO, "Regex Ignore on line " + std::to_string(docLine + 1) +
 						", view " + std::to_string(doc.view) + "\n");
 #endif
-				newLine.hash = getRegexIgnoreLineHash(newLine.hash, codepage, line, options);
+				newLine.hash = getRegexIgnoreLineHash(doc.view, lineStart, newLine.hash, codepage, line, options);
 
 				if (newLine.hash != cHashSeed || inclRegexEmptyLines)
 					doc.lines.emplace_back(newLine);
@@ -2090,8 +2121,8 @@ void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, intptr_t line
 
 bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSummary& summary)
 {
-	clearWindow(MAIN_VIEW);
-	clearWindow(SUB_VIEW);
+	clearWindow(MAIN_VIEW, false);
+	clearWindow(SUB_VIEW, false);
 
 	progress_ptr& progress = ProgressDlg::Get();
 
@@ -2593,8 +2624,8 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 	if (!progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
-	clearWindow(MAIN_VIEW);
-	clearWindow(SUB_VIEW);
+	clearWindow(MAIN_VIEW, false);
+	clearWindow(SUB_VIEW, false);
 
 	intptr_t doc1UniqueLinesCount = 0;
 
@@ -2654,6 +2685,9 @@ CompareResult compareViews(const CompareOptions& options, const wchar_t* progres
 
 	if (!progressInfo || !ProgressDlg::Open(progressInfo))
 		return CompareResult::COMPARE_ERROR;
+
+	clearChangedIndicatorFull(MAIN_VIEW);
+	clearChangedIndicatorFull(SUB_VIEW);
 
 	try
 	{
