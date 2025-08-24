@@ -25,8 +25,8 @@
 
 #define VER_COPYRIGHT			"Copyright (C) 2025\0"
 
-#define PLUGIN_VERSION			2.0.0
-#define VER_FILEVERSION			2,0,0,0
+#define PLUGIN_VERSION			2.1.0
+#define VER_FILEVERSION			2,1,0,0
 #define IS_PRERELEASE			0
 
 #if (IS_PRERELEASE == 1)

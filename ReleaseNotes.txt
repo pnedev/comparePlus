@@ -2,6 +2,21 @@ ComparePlus Changelog:
 ----------------------
 
 
+24.08.2025
+v2.1.0
+
+	- Code reworked for Unicode APIs only
+	- Fix empty file compare problem
+	- Fix trailing empty spaces ignore
+	- Fix and optimize copy/delete visual lines commands
+	- Add new command to bookmark all/selected visible lines
+	- Allocate new margin num instead of using predefined one
+	- Add "Hide Compare Margin" setting
+	- Add regex ignored line portions marking
+	- Several other fixes and optimizations (mainly regarding views alignment and hidden lines)
+	- Update SQLite3 library to v3.50.4 and libGit2 library to v1.9.1 (thanks to Christian Grasser)
+
+
 10.08.2025
 v2.0.0
 
