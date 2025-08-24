@@ -382,13 +382,13 @@ uint64_t getRegexIgnoreLineHash(int view, intptr_t off, uint64_t hashSeed, int c
 			if (options.highlightRegexIgnores)
 			{
 				const int mbLen = ::WideCharToMultiByte(codepage, 0,
-						wLine.data() + pos, rit->position() - pos, NULL, 0, NULL, NULL);
+						wLine.data() + pos, static_cast<int>(rit->position() - pos), NULL, 0, NULL, NULL);
 
 				markTextAsChanged(view, off + mbPos, mbLen, Settings.colors().blank);
 
 				pos = rit->position() + rit->length();
 				mbPos += mbLen + ::WideCharToMultiByte(codepage, 0,
-						wLine.data() + rit->position(), rit->length(), NULL, 0, NULL, NULL);
+						wLine.data() + rit->position(), static_cast<int>(rit->length()), NULL, 0, NULL, NULL);
 			}
 		}
 
@@ -418,9 +418,9 @@ uint64_t getRegexIgnoreLineHash(int view, intptr_t off, uint64_t hashSeed, int c
 			if (options.highlightRegexIgnores)
 			{
 				mbPos += ::WideCharToMultiByte(codepage, 0,
-						wLine.data() + pos, rit->position() - pos, NULL, 0, NULL, NULL);
+						wLine.data() + pos, static_cast<int>(rit->position() - pos), NULL, 0, NULL, NULL);
 				const int mbLen = ::WideCharToMultiByte(codepage, 0,
-						wLine.data() + rit->position(), rit->length(), NULL, 0, NULL, NULL);
+						wLine.data() + rit->position(), static_cast<int>(rit->length()), NULL, 0, NULL, NULL);
 
 				markTextAsChanged(view, off + mbPos, mbLen, Settings.colors().blank);
 
