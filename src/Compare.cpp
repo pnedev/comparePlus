@@ -2481,9 +2481,6 @@ void doAlignment(bool forceAlign = false)
 	{
 		LOGD(LOG_NOTIF, "Go to first diff\n");
 
-		::UpdateWindow(getView(MAIN_VIEW));
-		::UpdateWindow(getView(SUB_VIEW));
-
 		std::pair<int, intptr_t> viewLoc = jumpToFirstChange(true);
 
 		const int view = (viewLoc.first >= 0) ? viewLoc.first : getCurrentViewId();
@@ -2521,9 +2518,6 @@ void doAlignment(bool forceAlign = false)
 	}
 
 	storedLocation = nullptr;
-
-	::UpdateWindow(getView(MAIN_VIEW));
-	::UpdateWindow(getView(SUB_VIEW));
 
 	if (cmpPair->nppReplaceDone)
 	{
