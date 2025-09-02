@@ -53,8 +53,6 @@ protected :
 	bool GetParams();
 
 private:
-	static constexpr int cMaxRegexLen = 1023;
-
 	bool isRegexValid(const wchar_t* regexStr);
 
 	/* Handles */

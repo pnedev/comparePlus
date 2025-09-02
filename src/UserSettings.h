@@ -123,6 +123,65 @@ public:
 		return *_colors;
 	}
 
+	void moveRegexToHistory(std::wstring&& newRegex);
+
+	static constexpr int cMaxRegexLen		= 2047;
+	static constexpr int cMaxRegexHistory	= 5;
+
+	bool			FirstFileIsNew;
+	int				NewFileViewId;
+	bool			CompareToPrev;
+
+	bool			EncodingsCheck;
+	bool			SizesCheck;
+	bool			PromptToCloseOnMatch;
+	bool			HideMargin;
+	bool			NeverMarkIgnored;
+	bool			FollowingCaret;
+	bool			WrapAround;
+	bool			GotoFirstDiff;
+
+	bool			DetectMoves;
+	bool			DetectSubBlockDiffs;
+	bool			DetectSubLineMoves;
+	bool			DetectCharDiffs;
+	bool			IgnoreEmptyLines;
+	bool			IgnoreFoldedLines;
+	bool			IgnoreHiddenLines;
+	bool			IgnoreChangedSpaces;
+	bool			IgnoreAllSpaces;
+	bool			IgnoreEOL;
+	bool			IgnoreCase;
+	bool			IgnoreRegex;
+	bool			InvertRegex;
+	bool			InclRegexNomatchLines;
+	bool			HighlightRegexIgnores;
+	std::wstring	IgnoreRegexStr[cMaxRegexHistory];
+
+	bool			HideMatches;
+	bool			HideNewLines;
+	bool			HideChangedLines;
+	bool			HideMovedLines;
+	bool			ShowOnlySelections;
+	bool			ShowNavBar;
+
+	bool			RecompareOnChange;
+	StatusType		StatusInfo;
+
+	int				ChangedThresholdPercent;
+
+	bool			EnableToolbar;
+	bool			SetAsFirstTB;
+	bool			CompareTB;
+	bool			CompareSelTB;
+	bool			ClearCompareTB;
+	bool			NavigationTB;
+	bool			DiffsFilterTB;
+	bool			NavBarTB;
+
+private:
+	static const wchar_t cRegexEntriesDelimiter[];
+
 	static const wchar_t mainSection[];
 
 	static const wchar_t firstIsNewSetting[];
@@ -201,58 +260,8 @@ public:
 	static const wchar_t diffsFilterTBSetting[];
 	static const wchar_t navBarTBSetting[];
 
-	bool			FirstFileIsNew;
-	int				NewFileViewId;
-	bool			CompareToPrev;
+	static constexpr int MaxRegexStrSize();
 
-	bool			EncodingsCheck;
-	bool			SizesCheck;
-	bool			PromptToCloseOnMatch;
-	bool			HideMargin;
-	bool			NeverMarkIgnored;
-	bool			FollowingCaret;
-	bool			WrapAround;
-	bool			GotoFirstDiff;
-
-	bool			DetectMoves;
-	bool			DetectSubBlockDiffs;
-	bool			DetectSubLineMoves;
-	bool			DetectCharDiffs;
-	bool			IgnoreEmptyLines;
-	bool			IgnoreFoldedLines;
-	bool			IgnoreHiddenLines;
-	bool			IgnoreChangedSpaces;
-	bool			IgnoreAllSpaces;
-	bool			IgnoreEOL;
-	bool			IgnoreCase;
-	bool			IgnoreRegex;
-	bool			InvertRegex;
-	bool			InclRegexNomatchLines;
-	bool			HighlightRegexIgnores;
-	std::wstring	IgnoreRegexStr;
-
-	bool			HideMatches;
-	bool			HideNewLines;
-	bool			HideChangedLines;
-	bool			HideMovedLines;
-	bool			ShowOnlySelections;
-	bool			ShowNavBar;
-
-	bool			RecompareOnChange;
-	StatusType		StatusInfo;
-
-	int				ChangedThresholdPercent;
-
-	bool			EnableToolbar;
-	bool			SetAsFirstTB;
-	bool			CompareTB;
-	bool			CompareSelTB;
-	bool			ClearCompareTB;
-	bool			NavigationTB;
-	bool			DiffsFilterTB;
-	bool			NavBarTB;
-
-private:
 	bool dirty {false};
 
 	ColorSettings	colorsLight;

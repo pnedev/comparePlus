@@ -23,6 +23,8 @@
 #include <cstdlib>
 
 
+const wchar_t UserSettings::cRegexEntriesDelimiter[]		= L";\\;";
+
 const wchar_t UserSettings::mainSection[]					= L"main_settings";
 
 const wchar_t UserSettings::firstIsNewSetting[]				= L"set_first_as_new";
@@ -53,7 +55,7 @@ const wchar_t UserSettings::ignoreRegexSetting[]			= L"ignore_regex";
 const wchar_t UserSettings::invertRegexSetting[]			= L"invert_regex";
 const wchar_t UserSettings::inclRegexNomatchLinesSetting[]	= L"incl_regex_nomatch_lines";
 const wchar_t UserSettings::highlightRegexIgnoresSetting[]	= L"highlight_regex_ignores";
-const wchar_t UserSettings::ignoreRegexStrSetting[]			= L"ignore_regex_string";
+const wchar_t UserSettings::ignoreRegexStrSetting[]			= L"ignore_regex_strings";
 const wchar_t UserSettings::hideMatchesSetting[]			= L"hide_matches";
 const wchar_t UserSettings::hideNewLinesSetting[]			= L"hide_added_removed_lines";
 const wchar_t UserSettings::hideChangedLinesSetting[]		= L"hide_changed_lines";
@@ -101,8 +103,17 @@ const wchar_t UserSettings::diffsFilterTBSetting[]			= L"diffs_filter_tb";
 const wchar_t UserSettings::navBarTBSetting[]				= L"nav_bar_tb";
 
 
+constexpr int UserSettings::MaxRegexStrSize()
+{
+	return ((cMaxRegexLen * cMaxRegexHistory) +
+			((_countof(cRegexEntriesDelimiter) - 1) * (cMaxRegexHistory - 1)) + 1);
+}
+
+
 void UserSettings::load()
 {
+	dirty = false;
+
 	wchar_t ini[MAX_PATH];
 
 	::SendMessageW(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, (WPARAM)_countof(ini), (LPARAM)ini);
@@ -148,11 +159,36 @@ void UserSettings::load()
 	InclRegexNomatchLines	= ::GetPrivateProfileIntW(mainSection, inclRegexNomatchLinesSetting, 0, ini) != 0;
 	HighlightRegexIgnores	= ::GetPrivateProfileIntW(mainSection, highlightRegexIgnoresSetting, 0, ini) != 0;
 
-	wchar_t buf[1024];
+	std::wstring regexBuf;
 
-	::GetPrivateProfileStringW(mainSection, ignoreRegexStrSetting, NULL, buf, _countof(buf), ini);
+	int maxRegexBufSize = (size_t)MaxRegexStrSize();
 
-	IgnoreRegexStr = buf;
+	regexBuf.resize(maxRegexBufSize);
+
+	maxRegexBufSize =
+		::GetPrivateProfileStringW(mainSection, ignoreRegexStrSetting, NULL, &regexBuf[0], maxRegexBufSize, ini);
+
+	regexBuf.resize(maxRegexBufSize);
+
+	for (size_t i = 0, pos1 = 0, pos2 = regexBuf.find(cRegexEntriesDelimiter);
+		pos1 < (size_t)maxRegexBufSize && i < cMaxRegexHistory;
+		++i, pos2 = regexBuf.find(cRegexEntriesDelimiter, pos1))
+	{
+		if (pos2 == std::wstring::npos)
+			pos2 = (size_t)maxRegexBufSize;
+
+		if (pos2 - pos1 > cMaxRegexLen)
+		{
+			--i;
+			dirty = true;
+		}
+		else
+		{
+			IgnoreRegexStr[i] = std::move(regexBuf.substr(pos1, pos2 - pos1));
+		}
+
+		pos1 = pos2 + _countof(cRegexEntriesDelimiter) - 1;
+	}
 
 	HideMatches			= ::GetPrivateProfileIntW(mainSection, hideMatchesSetting,			0, ini) != 0;
 	HideNewLines		= ::GetPrivateProfileIntW(mainSection, hideNewLinesSetting,			0, ini) != 0;
@@ -226,8 +262,6 @@ void UserSettings::load()
 			DEFAULT_DIFFS_FILTER_TB, ini) != 0;
 	NavBarTB			= ::GetPrivateProfileIntW(toolbarSection, navBarTBSetting,
 			DEFAULT_NAV_BAR_TB, ini) != 0;
-
-	dirty = false;
 }
 
 
@@ -304,7 +338,17 @@ void UserSettings::save()
 	::WritePrivateProfileStringW(mainSection, inclRegexNomatchLinesSetting,	InclRegexNomatchLines ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, highlightRegexIgnoresSetting,	HighlightRegexIgnores ? L"1" : L"0", ini);
 
-	::WritePrivateProfileStringW(mainSection, ignoreRegexStrSetting, IgnoreRegexStr.c_str(), ini);
+	{
+		std::wstring regexBuf = IgnoreRegexStr[0];
+
+		for (size_t i = 1; i < cMaxRegexHistory && IgnoreRegexStr[i].size(); ++i)
+		{
+			regexBuf += cRegexEntriesDelimiter;
+			regexBuf += IgnoreRegexStr[i];
+		}
+
+		::WritePrivateProfileStringW(mainSection, ignoreRegexStrSetting, regexBuf.c_str(), ini);
+	}
 
 	::WritePrivateProfileStringW(mainSection, hideMatchesSetting,			HideMatches			  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, hideNewLinesSetting,			HideNewLines		  ? L"1" : L"0", ini);
@@ -387,4 +431,22 @@ void UserSettings::save()
 	::WritePrivateProfileStringW(toolbarSection, navBarTBSetting,		NavBarTB		? L"1" : L"0", ini);
 
 	dirty = false;
+}
+
+
+void UserSettings::moveRegexToHistory(std::wstring&& newRegex)
+{
+	int i = 0;
+
+	for (; i < cMaxRegexHistory && IgnoreRegexStr[i].size() && !(IgnoreRegexStr[i] == newRegex); ++i);
+
+	if (i < cMaxRegexHistory)
+		--i;
+	else
+		i = cMaxRegexHistory - 2;
+
+	for (; i >= 0; --i)
+		IgnoreRegexStr[i + 1] = std::move(IgnoreRegexStr[i]);
+
+	IgnoreRegexStr[0] = std::move(newRegex);
 }

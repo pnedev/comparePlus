@@ -112,7 +112,7 @@ INT_PTR CALLBACK CompareOptionsDialog::run_dlgProc(UINT Message, WPARAM wParam, 
 					Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_INCL_NOMATCH_LINES),	ignoreRegex &&
 							(Button_GetCheck(::GetDlgItem(_hSelf, IDC_REGEX_MODE_MATCH)) == BST_CHECKED));
 
-					Edit_Enable(::GetDlgItem(_hSelf, IDC_IGNORE_REGEX_STR), ignoreRegex);
+					ComboBox_Enable(::GetDlgItem(_hSelf, IDC_IGNORE_REGEX_STR), ignoreRegex);
 				}
 				break;
 
@@ -173,10 +173,17 @@ void CompareOptionsDialog::SetParams()
 
 	HWND hCtrl = ::GetDlgItem(_hSelf, IDC_IGNORE_REGEX_STR);
 
-	::SendMessageW(hCtrl, EM_SETLIMITTEXT, cMaxRegexLen, 0);
+	for (const auto& regexStr : _Settings->IgnoreRegexStr)
+	{
+		if (regexStr.empty())
+			break;
 
-	Edit_SetText(hCtrl, _Settings->IgnoreRegexStr.c_str());
-	Edit_Enable(hCtrl, _Settings->IgnoreRegex);
+		ComboBox_AddString(hCtrl, regexStr.c_str());
+	}
+
+	ComboBox_LimitText(hCtrl, UserSettings::cMaxRegexLen);
+	ComboBox_SetText(hCtrl, _Settings->IgnoreRegexStr[0].c_str());
+	ComboBox_Enable(hCtrl, _Settings->IgnoreRegex);
 }
 
 
@@ -201,29 +208,24 @@ bool CompareOptionsDialog::GetParams()
 	{
 		HWND hCtrl = ::GetDlgItem(_hSelf, IDC_IGNORE_REGEX_STR);
 
-		int len = Edit_LineLength(hCtrl, 0);
+		int len = ComboBox_GetTextLength(hCtrl);
+
+		std::wstring newRegex;
 
 		if (len > 0)
 		{
-			wchar_t buf[cMaxRegexLen + 1];
+			newRegex.resize(len);
 
-			Edit_GetLine(hCtrl, 0, buf, cMaxRegexLen);
-			buf[len] = L'\0';
+			ComboBox_GetText(hCtrl, &newRegex[0], len + 1);
 
-			if (isRegexValid(buf))
-			{
-				_Settings->IgnoreRegexStr = buf;
-			}
-			else
+			if (!isRegexValid(newRegex.c_str()))
 			{
 				::SetFocus(hCtrl);
 
 				return false;
 			}
-		}
-		else
-		{
-			_Settings->IgnoreRegexStr = L"";
+
+			_Settings->moveRegexToHistory(std::move(newRegex));
 		}
 	}
 
