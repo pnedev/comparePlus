@@ -32,3 +32,5 @@ Notepad++/
 *.swp
 *.ipch
 *.exp
+
+build/

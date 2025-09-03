@@ -27,6 +27,8 @@
 
 #include "NppHelpers.h"
 
+#include "Localization.h"
+
 
 static const int c_Highlight_transp_min		= 0;
 static const int c_Highlight_transp_max		= 100;
@@ -85,8 +87,9 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 
 			if (isRTLwindow(nppData._nppHandle))
 			{
-				SetDlgItemTextW(_hSelf, IDC_NEW_IN_SUB, L"New file in left view");
-				SetDlgItemTextW(_hSelf, IDC_OLD_IN_SUB, L"Old file in left view");
+				std::string lang = getUILanguage();
+				SetDlgItemTextW(_hSelf, IDC_NEW_IN_SUB, getLocalizedString(lang, "settings", "NewFileInLeftView").c_str());
+				SetDlgItemTextW(_hSelf, IDC_OLD_IN_SUB, getLocalizedString(lang, "settings", "OldFileInLeftView").c_str());
 			}
 
 			SetParams();

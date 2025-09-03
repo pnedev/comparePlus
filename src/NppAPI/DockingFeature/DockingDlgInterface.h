@@ -33,6 +33,9 @@ public:
 	DockingDlgInterface() = default;
 	explicit DockingDlgInterface(int dlgID): _dlgID(dlgID) {}
 
+	// Bring base class virtual functions into scope to avoid hiding warnings
+	using StaticDialog::init;
+
 	void init(HINSTANCE hInst, HWND parent) override {
 		StaticDialog::init(hInst, parent);
 		wchar_t temp[MAX_PATH];

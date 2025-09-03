@@ -31,6 +31,10 @@ public :
 	};
 
 	~ColorCombo () {};
+
+	// Bring base class virtual functions into scope to avoid hiding warnings
+	using Window::init;
+
 	virtual void init(HINSTANCE hInst, HWND hNpp, HWND hCombo);
 	virtual void destroy()
 	{

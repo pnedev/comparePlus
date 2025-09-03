@@ -105,6 +105,7 @@ set (project_sources
 	src/Engine/Engine.cpp
 	src/Tools.cpp
 	src/UserSettings.cpp
+	src/Localization.cpp
 	src/Compare.cpp
 	src/LibGit2/LibGit2Helper.cpp
 	src/NppHelpers.cpp
@@ -198,3 +199,9 @@ else()
 		DESTINATION "${INSTALL_PATH}/libs"
 	)
 endif()
+
+# Install language translation files into plugin languages directory
+install (DIRECTORY res/languages/
+	DESTINATION "${INSTALL_PATH}/languages"
+	FILES_MATCHING PATTERN "*.ini"
+)
