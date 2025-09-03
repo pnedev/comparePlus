@@ -36,6 +36,9 @@ public:
 	NavDialog(const NavDialog&) = delete;
 	NavDialog& operator=(const NavDialog&) = delete;
 
+	// Bring base class virtual functions into scope to avoid hiding warnings
+	using DockingDlgInterface::init;
+
 	void init(HINSTANCE hInst);
 	void destroy() {};
 

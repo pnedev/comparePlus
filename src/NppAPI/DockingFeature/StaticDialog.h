@@ -48,6 +48,10 @@ public :
 		return (_hSelf != nullptr);
 	}
 
+	// Bring base class virtual functions into scope to avoid hiding warnings
+	using Window::init;
+	using Window::display;
+
 	void getMappedChildRect(HWND hChild, RECT& rcChild) const;
 	void getMappedChildRect(int idChild, RECT& rcChild) const;
 	void redrawDlgItem(const int nIDDlgItem, bool forceUpdate = false) const;

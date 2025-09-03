@@ -31,6 +31,9 @@ public :
 	ColorPopup(COLORREF defaultColor) : Window(), _isColorChooserLaunched(false), _color(defaultColor) {};
 	~ColorPopup(){};
 
+	// Bring base class virtual functions into scope to avoid hiding warnings
+	using Window::init;
+
 	void init(HINSTANCE hInst, HWND hParent, HWND hNpp) {
 		_hNpp = hNpp;
 		Window::init(hInst, hParent);

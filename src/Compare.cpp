@@ -51,6 +51,7 @@
 #include "NavDialog.h"
 #include "Engine.h"
 #include "resource.h"
+#include "Localization.h"
 
 
 #ifndef NDEBUG
@@ -4385,6 +4386,8 @@ void OpenAboutDlg()
 			tab.pszText = name;
 
 			TabCtrl_SetItem(hNppTabBar, posFromBuffId(dLogBuf), &tab);
+
+			::SendMessageW(nppData._nppHandle, NPPM_HIDETABBAR, 0, FALSE);
 		}
 	}
 	else
@@ -4410,7 +4413,10 @@ void OpenAboutDlg()
 
 void createMenu()
 {
-	wcscpy_s(funcItem[CMD_SET_FIRST]._itemName, menuItemSize, L"Set as First to Compare");
+	std::string uiLang = getUILanguage();
+	if (uiLang.empty()) uiLang = "english"; // ensure deterministic base
+
+	wcscpy_s(funcItem[CMD_SET_FIRST]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_SET_FIRST").c_str());
 	funcItem[CMD_SET_FIRST]._pFunc					= SetAsFirst;
 	funcItem[CMD_SET_FIRST]._pShKey					= new ShortcutKey;
 	funcItem[CMD_SET_FIRST]._pShKey->_isAlt			= true;
@@ -4418,7 +4424,7 @@ void createMenu()
 	funcItem[CMD_SET_FIRST]._pShKey->_isShift		= false;
 	funcItem[CMD_SET_FIRST]._pShKey->_key			= '1';
 
-	wcscpy_s(funcItem[CMD_COMPARE]._itemName, menuItemSize, L"Compare");
+	wcscpy_s(funcItem[CMD_COMPARE]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_COMPARE").c_str());
 	funcItem[CMD_COMPARE]._pFunc					= CompareWhole;
 	funcItem[CMD_COMPARE]._pShKey					= new ShortcutKey;
 	funcItem[CMD_COMPARE]._pShKey->_isAlt			= true;
@@ -4426,7 +4432,7 @@ void createMenu()
 	funcItem[CMD_COMPARE]._pShKey->_isShift			= false;
 	funcItem[CMD_COMPARE]._pShKey->_key				= 'C';
 
-	wcscpy_s(funcItem[CMD_COMPARE_SEL]._itemName, menuItemSize, L"Compare Selections");
+	wcscpy_s(funcItem[CMD_COMPARE_SEL]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_COMPARE_SEL").c_str());
 	funcItem[CMD_COMPARE_SEL]._pFunc				= CompareSelections;
 	funcItem[CMD_COMPARE_SEL]._pShKey				= new ShortcutKey;
 	funcItem[CMD_COMPARE_SEL]._pShKey->_isAlt		= true;
@@ -4434,7 +4440,7 @@ void createMenu()
 	funcItem[CMD_COMPARE_SEL]._pShKey->_isShift		= false;
 	funcItem[CMD_COMPARE_SEL]._pShKey->_key			= 'N';
 
-	wcscpy_s(funcItem[CMD_FIND_UNIQUE]._itemName, menuItemSize, L"Find Unique Lines");
+	wcscpy_s(funcItem[CMD_FIND_UNIQUE]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_FIND_UNIQUE").c_str());
 	funcItem[CMD_FIND_UNIQUE]._pFunc				= FindUnique;
 	funcItem[CMD_FIND_UNIQUE]._pShKey				= new ShortcutKey;
 	funcItem[CMD_FIND_UNIQUE]._pShKey->_isAlt		= true;
@@ -4442,7 +4448,7 @@ void createMenu()
 	funcItem[CMD_FIND_UNIQUE]._pShKey->_isShift		= true;
 	funcItem[CMD_FIND_UNIQUE]._pShKey->_key			= 'C';
 
-	wcscpy_s(funcItem[CMD_FIND_UNIQUE_SEL]._itemName, menuItemSize, L"Find Unique Lines in Selections");
+	wcscpy_s(funcItem[CMD_FIND_UNIQUE_SEL]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_FIND_UNIQUE_SEL").c_str());
 	funcItem[CMD_FIND_UNIQUE_SEL]._pFunc			= FindSelectionsUnique;
 	funcItem[CMD_FIND_UNIQUE_SEL]._pShKey			= new ShortcutKey;
 	funcItem[CMD_FIND_UNIQUE_SEL]._pShKey->_isAlt	= true;
@@ -4450,7 +4456,7 @@ void createMenu()
 	funcItem[CMD_FIND_UNIQUE_SEL]._pShKey->_isShift	= true;
 	funcItem[CMD_FIND_UNIQUE_SEL]._pShKey->_key		= 'N';
 
-	wcscpy_s(funcItem[CMD_LAST_SAVE_DIFF]._itemName, menuItemSize, L"Diff since last Save");
+	wcscpy_s(funcItem[CMD_LAST_SAVE_DIFF]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_LAST_SAVE_DIFF").c_str());
 	funcItem[CMD_LAST_SAVE_DIFF]._pFunc				= LastSaveDiff;
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey->_isAlt 	= true;
@@ -4458,7 +4464,7 @@ void createMenu()
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey->_isShift	= false;
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey->_key 		= 'D';
 
-	wcscpy_s(funcItem[CMD_CLIPBOARD_DIFF]._itemName, menuItemSize, L"Compare file/selection to Clipboard");
+	wcscpy_s(funcItem[CMD_CLIPBOARD_DIFF]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_CLIPBOARD_DIFF").c_str());
 	funcItem[CMD_CLIPBOARD_DIFF]._pFunc 			= ClipboardDiff;
 	funcItem[CMD_CLIPBOARD_DIFF]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_CLIPBOARD_DIFF]._pShKey->_isAlt 	= true;
@@ -4466,7 +4472,7 @@ void createMenu()
 	funcItem[CMD_CLIPBOARD_DIFF]._pShKey->_isShift	= false;
 	funcItem[CMD_CLIPBOARD_DIFF]._pShKey->_key 		= 'M';
 
-	wcscpy_s(funcItem[CMD_SVN_DIFF]._itemName, menuItemSize, L"SVN Diff");
+	wcscpy_s(funcItem[CMD_SVN_DIFF]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_SVN_DIFF").c_str());
 	funcItem[CMD_SVN_DIFF]._pFunc 					= SvnDiff;
 	funcItem[CMD_SVN_DIFF]._pShKey 					= new ShortcutKey;
 	funcItem[CMD_SVN_DIFF]._pShKey->_isAlt 			= true;
@@ -4474,7 +4480,7 @@ void createMenu()
 	funcItem[CMD_SVN_DIFF]._pShKey->_isShift		= false;
 	funcItem[CMD_SVN_DIFF]._pShKey->_key 			= 'V';
 
-	wcscpy_s(funcItem[CMD_GIT_DIFF]._itemName, menuItemSize, L"Git Diff");
+	wcscpy_s(funcItem[CMD_GIT_DIFF]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_GIT_DIFF").c_str());
 	funcItem[CMD_GIT_DIFF]._pFunc 					= GitDiff;
 	funcItem[CMD_GIT_DIFF]._pShKey 					= new ShortcutKey;
 	funcItem[CMD_GIT_DIFF]._pShKey->_isAlt 			= true;
@@ -4482,7 +4488,7 @@ void createMenu()
 	funcItem[CMD_GIT_DIFF]._pShKey->_isShift		= false;
 	funcItem[CMD_GIT_DIFF]._pShKey->_key 			= 'G';
 
-	wcscpy_s(funcItem[CMD_CLEAR_ACTIVE]._itemName, menuItemSize, L"Clear Active Compare");
+	wcscpy_s(funcItem[CMD_CLEAR_ACTIVE]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_CLEAR_ACTIVE").c_str());
 	funcItem[CMD_CLEAR_ACTIVE]._pFunc				= ClearActiveCompare;
 	funcItem[CMD_CLEAR_ACTIVE]._pShKey 				= new ShortcutKey;
 	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_isAlt 		= true;
@@ -4490,10 +4496,10 @@ void createMenu()
 	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_isShift	= false;
 	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_key 		= 'X';
 
-	wcscpy_s(funcItem[CMD_CLEAR_ALL]._itemName, menuItemSize, L"Clear All Compares");
+	wcscpy_s(funcItem[CMD_CLEAR_ALL]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_CLEAR_ALL").c_str());
 	funcItem[CMD_CLEAR_ALL]._pFunc	= ClearAllCompares;
 
-	wcscpy_s(funcItem[CMD_FIRST]._itemName, menuItemSize, L"First Diff Block");
+	wcscpy_s(funcItem[CMD_FIRST]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_FIRST").c_str());
 	funcItem[CMD_FIRST]._pFunc 				= First;
 	funcItem[CMD_FIRST]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_FIRST]._pShKey->_isAlt 	= true;
@@ -4501,7 +4507,7 @@ void createMenu()
 	funcItem[CMD_FIRST]._pShKey->_isShift	= false;
 	funcItem[CMD_FIRST]._pShKey->_key 		= VK_PRIOR;
 
-	wcscpy_s(funcItem[CMD_PREV]._itemName, menuItemSize, L"Previous Diff Block");
+	wcscpy_s(funcItem[CMD_PREV]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_PREV").c_str());
 	funcItem[CMD_PREV]._pFunc 				= Prev;
 	funcItem[CMD_PREV]._pShKey 				= new ShortcutKey;
 	funcItem[CMD_PREV]._pShKey->_isAlt 		= true;
@@ -4509,7 +4515,7 @@ void createMenu()
 	funcItem[CMD_PREV]._pShKey->_isShift	= false;
 	funcItem[CMD_PREV]._pShKey->_key 		= VK_PRIOR;
 
-	wcscpy_s(funcItem[CMD_NEXT]._itemName, menuItemSize, L"Next Diff Block");
+	wcscpy_s(funcItem[CMD_NEXT]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_NEXT").c_str());
 	funcItem[CMD_NEXT]._pFunc 				= Next;
 	funcItem[CMD_NEXT]._pShKey 				= new ShortcutKey;
 	funcItem[CMD_NEXT]._pShKey->_isAlt 		= true;
@@ -4517,7 +4523,7 @@ void createMenu()
 	funcItem[CMD_NEXT]._pShKey->_isShift	= false;
 	funcItem[CMD_NEXT]._pShKey->_key 		= VK_NEXT;
 
-	wcscpy_s(funcItem[CMD_LAST]._itemName, menuItemSize, L"Last Diff Block");
+	wcscpy_s(funcItem[CMD_LAST]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_LAST").c_str());
 	funcItem[CMD_LAST]._pFunc 				= Last;
 	funcItem[CMD_LAST]._pShKey 				= new ShortcutKey;
 	funcItem[CMD_LAST]._pShKey->_isAlt 		= true;
@@ -4525,7 +4531,7 @@ void createMenu()
 	funcItem[CMD_LAST]._pShKey->_isShift	= false;
 	funcItem[CMD_LAST]._pShKey->_key 		= VK_NEXT;
 
-	wcscpy_s(funcItem[CMD_PREV_CHANGE_POS]._itemName, menuItemSize, L"Previous Diff in Changed Line");
+	wcscpy_s(funcItem[CMD_PREV_CHANGE_POS]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_PREV_CHANGE_POS").c_str());
 	funcItem[CMD_PREV_CHANGE_POS]._pFunc 			= PrevChangePos;
 	funcItem[CMD_PREV_CHANGE_POS]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_PREV_CHANGE_POS]._pShKey->_isAlt 	= true;
@@ -4533,7 +4539,7 @@ void createMenu()
 	funcItem[CMD_PREV_CHANGE_POS]._pShKey->_isShift	= true;
 	funcItem[CMD_PREV_CHANGE_POS]._pShKey->_key 	= VK_PRIOR;
 
-	wcscpy_s(funcItem[CMD_NEXT_CHANGE_POS]._itemName, menuItemSize, L"Next Diff in Changed Line");
+	wcscpy_s(funcItem[CMD_NEXT_CHANGE_POS]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_NEXT_CHANGE_POS").c_str());
 	funcItem[CMD_NEXT_CHANGE_POS]._pFunc 			= NextChangePos;
 	funcItem[CMD_NEXT_CHANGE_POS]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_NEXT_CHANGE_POS]._pShKey->_isAlt 	= true;
@@ -4541,48 +4547,105 @@ void createMenu()
 	funcItem[CMD_NEXT_CHANGE_POS]._pShKey->_isShift	= true;
 	funcItem[CMD_NEXT_CHANGE_POS]._pShKey->_key 	= VK_NEXT;
 
-	wcscpy_s(funcItem[CMD_COMPARE_SUMMARY]._itemName, menuItemSize, L"Active Compare Summary");
+	wcscpy_s(funcItem[CMD_COMPARE_SUMMARY]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_COMPARE_SUMMARY").c_str());
 	funcItem[CMD_COMPARE_SUMMARY]._pFunc = ActiveCompareSummary;
 
-	wcscpy_s(funcItem[CMD_COPY_VISIBLE]._itemName, menuItemSize, L"Copy all/selected visible lines");
+	wcscpy_s(funcItem[CMD_COPY_VISIBLE]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_COPY_VISIBLE").c_str());
 	funcItem[CMD_COPY_VISIBLE]._pFunc = CopyVisibleLines;
 
-	wcscpy_s(funcItem[CMD_DELETE_VISIBLE]._itemName, menuItemSize, L"Delete all/selected visible lines");
+	wcscpy_s(funcItem[CMD_DELETE_VISIBLE]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_DELETE_VISIBLE").c_str());
 	funcItem[CMD_DELETE_VISIBLE]._pFunc = DeleteVisibleLines;
 
-	wcscpy_s(funcItem[CMD_BOOKMARK_VISIBLE]._itemName, menuItemSize, L"Bookmark all/selected visible lines");
+	wcscpy_s(funcItem[CMD_BOOKMARK_VISIBLE]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_BOOKMARK_VISIBLE").c_str());
 	funcItem[CMD_BOOKMARK_VISIBLE]._pFunc = BookmarkVisibleLines;
 
-	wcscpy_s(funcItem[CMD_GENERATE_PATCH]._itemName, menuItemSize, L"Generate Patch");
+	wcscpy_s(funcItem[CMD_GENERATE_PATCH]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_GENERATE_PATCH").c_str());
 	funcItem[CMD_GENERATE_PATCH]._pFunc = GeneratePatch;
 
-	wcscpy_s(funcItem[CMD_APPLY_PATCH]._itemName, menuItemSize, L"Apply Patch on current file");
+	wcscpy_s(funcItem[CMD_APPLY_PATCH]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_APPLY_PATCH").c_str());
 	funcItem[CMD_APPLY_PATCH]._pFunc = ApplyPatch;
 
-	wcscpy_s(funcItem[CMD_REVERT_PATCH]._itemName, menuItemSize, L"Revert Patch on current file");
+	wcscpy_s(funcItem[CMD_REVERT_PATCH]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_REVERT_PATCH").c_str());
 	funcItem[CMD_REVERT_PATCH]._pFunc = RevertPatch;
 
-	wcscpy_s(funcItem[CMD_COMPARE_OPTIONS]._itemName, menuItemSize, L"Compare Options (ignore, etc.)...");
+	wcscpy_s(funcItem[CMD_COMPARE_OPTIONS]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_COMPARE_OPTIONS").c_str());
 	funcItem[CMD_COMPARE_OPTIONS]._pFunc = OpenCompareOptionsDlg;
 
-	wcscpy_s(funcItem[CMD_DIFFS_VISUAL_FILTERS]._itemName, menuItemSize, L"Diffs Visual Filters...");
+	wcscpy_s(funcItem[CMD_DIFFS_VISUAL_FILTERS]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_DIFFS_VISUAL_FILTERS").c_str());
 	funcItem[CMD_DIFFS_VISUAL_FILTERS]._pFunc = OpenVisualFiltersDlg;
 
-	wcscpy_s(funcItem[CMD_NAV_BAR]._itemName, menuItemSize, L"Navigation Bar");
+	wcscpy_s(funcItem[CMD_NAV_BAR]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_NAV_BAR").c_str());
 	funcItem[CMD_NAV_BAR]._pFunc = ToggleNavigationBar;
 
-	wcscpy_s(funcItem[CMD_AUTO_RECOMPARE]._itemName, menuItemSize, L"Auto Re-Compare on Change");
+	wcscpy_s(funcItem[CMD_AUTO_RECOMPARE]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_AUTO_RECOMPARE").c_str());
 	funcItem[CMD_AUTO_RECOMPARE]._pFunc = AutoRecompare;
 
-	wcscpy_s(funcItem[CMD_SETTINGS]._itemName, menuItemSize, L"Settings...");
+	wcscpy_s(funcItem[CMD_SETTINGS]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_SETTINGS").c_str());
 	funcItem[CMD_SETTINGS]._pFunc = OpenSettingsDlg;
 
 #ifdef DLOG
 	wcscpy_s(funcItem[CMD_ABOUT]._itemName, menuItemSize, L"Show debug log");
 #else
-	wcscpy_s(funcItem[CMD_ABOUT]._itemName, menuItemSize, L"Help / About...");
+	wcscpy_s(funcItem[CMD_ABOUT]._itemName, menuItemSize, getLocalizedString(uiLang, "menu", "CMD_ABOUT").c_str());
 #endif
 	funcItem[CMD_ABOUT]._pFunc = OpenAboutDlg;
+}
+
+// Refresh existing menu item captions using current UI language (called after NPPN_READY)
+static void refreshMenuCaptions()
+{
+	std::string uiLang = getUILanguage();
+	if (uiLang.empty()) return;
+	HMENU hMenu = (HMENU)::SendMessageW(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
+	if (!hMenu) return;
+	// Update all items except About (which may be debug conditional)
+	struct { int id; const char* key; } items[] = {
+		{ CMD_SET_FIRST, "CMD_SET_FIRST" },
+		{ CMD_COMPARE, "CMD_COMPARE" },
+		{ CMD_COMPARE_SEL, "CMD_COMPARE_SEL" },
+		{ CMD_FIND_UNIQUE, "CMD_FIND_UNIQUE" },
+		{ CMD_FIND_UNIQUE_SEL, "CMD_FIND_UNIQUE_SEL" },
+		{ CMD_LAST_SAVE_DIFF, "CMD_LAST_SAVE_DIFF" },
+		{ CMD_CLIPBOARD_DIFF, "CMD_CLIPBOARD_DIFF" },
+		{ CMD_SVN_DIFF, "CMD_SVN_DIFF" },
+		{ CMD_GIT_DIFF, "CMD_GIT_DIFF" },
+		{ CMD_CLEAR_ACTIVE, "CMD_CLEAR_ACTIVE" },
+		{ CMD_CLEAR_ALL, "CMD_CLEAR_ALL" },
+		{ CMD_FIRST, "CMD_FIRST" },
+		{ CMD_PREV, "CMD_PREV" },
+		{ CMD_NEXT, "CMD_NEXT" },
+		{ CMD_LAST, "CMD_LAST" },
+		{ CMD_PREV_CHANGE_POS, "CMD_PREV_CHANGE_POS" },
+		{ CMD_NEXT_CHANGE_POS, "CMD_NEXT_CHANGE_POS" },
+		{ CMD_COMPARE_SUMMARY, "CMD_COMPARE_SUMMARY" },
+		{ CMD_COPY_VISIBLE, "CMD_COPY_VISIBLE" },
+		{ CMD_DELETE_VISIBLE, "CMD_DELETE_VISIBLE" },
+		{ CMD_BOOKMARK_VISIBLE, "CMD_BOOKMARK_VISIBLE" },
+		{ CMD_GENERATE_PATCH, "CMD_GENERATE_PATCH" },
+		{ CMD_APPLY_PATCH, "CMD_APPLY_PATCH" },
+		{ CMD_REVERT_PATCH, "CMD_REVERT_PATCH" },
+		{ CMD_COMPARE_OPTIONS, "CMD_COMPARE_OPTIONS" },
+		{ CMD_DIFFS_VISUAL_FILTERS, "CMD_DIFFS_VISUAL_FILTERS" },
+		{ CMD_NAV_BAR, "CMD_NAV_BAR" },
+		{ CMD_AUTO_RECOMPARE, "CMD_AUTO_RECOMPARE" },
+		{ CMD_SETTINGS, "CMD_SETTINGS" }
+#ifndef DLOG
+		,{ CMD_ABOUT, "CMD_ABOUT" }
+#endif
+	};
+	for (auto &it : items) {
+		std::wstring localized = getLocalizedString(uiLang, "menu", it.key);
+		if(localized.empty()) continue;
+		wchar_t current[256] = {0};
+		if (GetMenuStringW(hMenu, funcItem[it.id]._cmdID, current, _countof(current), MF_BYCOMMAND)) {
+			wchar_t* tab = wcschr(current, L'\t');
+			if (tab) {
+				localized.append(tab); // keep existing accelerator part (e.g. "\tCtrl+Alt+C")
+			}
+		}
+		ModifyMenuW(hMenu, funcItem[it.id]._cmdID, MF_BYCOMMAND | MF_STRING, funcItem[it.id]._cmdID, localized.c_str());
+	}
+	DrawMenuBar(nppData._nppHandle);
 }
 
 
@@ -5031,6 +5094,18 @@ void onToolBarReady()
 
 void onNppReady()
 {
+	// Force refresh UI language now that NPPN_READY is received (language file name becomes available only now)
+	std::string refreshedLang = getUILanguage(true);
+	if (refreshedLang.empty())
+	{
+		// fallback to english if still not available
+		refreshedLang = "english";
+	}
+	else if (refreshedLang != "english")
+	{
+		refreshMenuCaptions();
+	}
+
 	// It's N++'s job actually to disable its scroll menu commands but since it's not the case provide this as a patch
 	if (isSingleView())
 		NppSettings::get().enableNppScrollCommands(false);
@@ -6057,7 +6132,8 @@ void onFileSaved(LRESULT buffId)
 			const int tabPos = posFromBuffId(otherFile.buffId);
 			TabCtrl_GetItem(hNppTabBar, tabPos, &tab);
 
-			wcscat_s(tabText, _countof(tabText), L" - Outdated");
+			_snwprintf_s(tabText, _countof(tabText), _TRUNCATE, L"%s - Outdated",
+					::PathFindFileNameW(otherFile.name));
 
 			::SendMessageW(nppData._nppHandle, NPPM_HIDETABBAR, 0, TRUE);
 
@@ -6301,8 +6377,22 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 }
 
 
-extern "C" __declspec(dllexport) LRESULT messageProc(UINT, WPARAM, LPARAM)
+extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM wParam, LPARAM lParam)
 {
+	constexpr UINT WM_INITMENUPOPUP_CONST = 0x0117;
+	if (Message == WM_INITMENUPOPUP_CONST)
+	{
+		std::string cur = getUILanguage();
+		if (!cur.empty())
+		{
+			static std::string last;
+			if (last != cur)
+			{
+				refreshMenuCaptions();
+				last = cur;
+			}
+		}
+	}
 	return TRUE;
 }
 

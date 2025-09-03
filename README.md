@@ -37,8 +37,14 @@ To install the plugin manually:
 2. Copy the contents of the desired ComparePlus [release](https://github.com/pnedev/comparePlus/releases) zip file
 into the newly created folder. Please use the correct archive version based on your Notepad++ architecture - x86, x64 or ARM64.
 - ComparePlus.dll : The core plugin DLL.
-- `libs` sub-folder : Contains the libs libgit2.dll and sqlite.dll needed for the Diff against Git and SVN commands.
-3. Restart Notepad++.
+- `libs` sub-folder : Contains the libs `libgit2.dll` and `sqlite.dll` needed for the Diff against Git and SVN commands.
+3. Copy the `languages` folder (contains `*.ini` translation files) next to `ComparePlus.dll` if you want localized menus.
+4. Restart Notepad++.
+
+Localization
+-------------------------------
+Translation files (*.ini) are loaded from `plugins/ComparePlus/languages/`.
+To contribute a translation copy `english.ini`, rename it (e.g. `italian.ini`) and translate the values (left side keys stay the same).
 
 
 -------------------------------
