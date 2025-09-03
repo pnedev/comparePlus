@@ -2,6 +2,14 @@ ComparePlus Changelog:
 ----------------------
 
 
+03.09.2025
+v2.1.1
+
+	- Fix update problem on views alignment when rendering mode is DirectWrite
+	- Add history of the ignored regexes (remember 5 entries)
+	- Use simplified version of the URL Ctrl code from Notepad++ to show links in About Dialog
+
+
 24.08.2025
 v2.1.0
 
