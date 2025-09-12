@@ -18,6 +18,7 @@
  */
 
 #include "Tools.h"
+#include <versionhelpers.h>
 
 
 std::map<UINT_PTR, DelayedWork*> DelayedWork::workMap;
@@ -256,4 +257,67 @@ std::string WCtoMB(const wchar_t* wc, int len, int codepage)
 	::WideCharToMultiByte(codepage, 0, wc, len, &str[0], l, NULL, NULL);
 
 	return str;
+}
+
+
+HFONT createFontFromSystemDefault(SysFont font, int size, bool underlined)
+{
+	HFONT hf {nullptr};
+
+	NONCLIENTMETRICS ncm {0};
+	ncm.cbSize = sizeof(NONCLIENTMETRICS);
+
+#if (WINVER >= 0x0600)
+	if (!IsWindows7OrGreater())
+		ncm.cbSize -= sizeof(int);
+#endif
+
+	if (::SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, ncm.cbSize, &ncm, 0))
+	{
+		LOGFONTW lf;
+
+		switch (font)
+		{
+			case SysFont::Caption:
+				lf = ncm.lfCaptionFont;
+			break;
+
+			case SysFont::SmallCaption:
+				lf = ncm.lfSmCaptionFont;
+			break;
+
+			case SysFont::Menu:
+				lf = ncm.lfMenuFont;
+			break;
+
+			case SysFont::Status:
+				lf = ncm.lfStatusFont;
+			break;
+
+			case SysFont::Message:
+				lf = ncm.lfMessageFont;
+			break;
+
+			default:
+			return hf;
+		}
+
+		if (size)
+		{
+			HDC hdc = ::GetDC(nullptr);
+
+			if (hdc)
+			{
+				lf.lfHeight = -::MulDiv(size, ::GetDeviceCaps(hdc, LOGPIXELSY), 72);
+
+				::ReleaseDC(nullptr, hdc);
+			}
+		}
+
+		lf.lfUnderline = underlined ? TRUE : FALSE;
+
+		hf = ::CreateFontIndirectW(&lf);
+	}
+
+	return hf;
 }

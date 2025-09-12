@@ -23,6 +23,7 @@
 
 #include "Compare.h"
 #include "ProgressDlg.h"
+#include "Tools.h"
 
 
 const wchar_t ProgressDlg::cClassName[]		= L"ComparePlusProgressClass";
@@ -164,7 +165,7 @@ bool ProgressDlg::Advance(intptr_t cnt, unsigned phase)
 }
 
 
-ProgressDlg::ProgressDlg() : _hwnd(NULL),  _hKeyHook(NULL),
+ProgressDlg::ProgressDlg() : _hwnd(NULL), _hFont(NULL), _hKeyHook(NULL),
 		_phase(0), _phaseRange(cPhases[0]), _phasePosOffset(0), _max(cPhases[0]), _count(0), _pos(0)
 {
 	::GetModuleHandleExW(
@@ -178,7 +179,7 @@ ProgressDlg::ProgressDlg() : _hwnd(NULL),  _hKeyHook(NULL),
 	wcex.style            = CS_HREDRAW | CS_VREDRAW;
 	wcex.lpfnWndProc      = wndProc;
 	wcex.hInstance        = _hInst;
-	wcex.hCursor          = ::LoadCursor(NULL, IDC_ARROW);
+	wcex.hCursor          = (HCURSOR)::LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED);
 	wcex.hbrBackground    = ::GetSysColorBrush(cBackgroundColor);
 	wcex.lpszClassName    = cClassName;
 
@@ -260,6 +261,9 @@ void ProgressDlg::destroy()
 		::WaitForSingleObject(_hThread, INFINITE);
 		::CloseHandle(_hThread);
 		::CloseHandle(_hActiveState);
+
+		if (_hFont)
+			::DeleteObject(_hFont);
 	}
 }
 
@@ -302,7 +306,7 @@ BOOL ProgressDlg::thread()
 BOOL ProgressDlg::createProgressWindow()
 {
 	_hwnd = ::CreateWindowExW(
-		WS_EX_APPWINDOW | WS_EX_TOOLWINDOW | WS_EX_OVERLAPPEDWINDOW,
+			WS_EX_APPWINDOW | WS_EX_TOOLWINDOW | WS_EX_OVERLAPPEDWINDOW,
 			cClassName, PLUGIN_NAME, WS_POPUP | WS_CAPTION,
 			CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
 			NULL, NULL, _hInst, (LPVOID)this);
@@ -310,7 +314,7 @@ BOOL ProgressDlg::createProgressWindow()
 		return FALSE;
 
 	int width = cPBwidth + 10;
-	int height = cPBheight + cBTNheight + 35;
+	int height = cPBheight + cBTNheight + 40;
 	RECT win = adjustSizeAndPos(width, height);
 	::MoveWindow(_hwnd, win.left, win.top, win.right - win.left, win.bottom - win.top, TRUE);
 
@@ -324,7 +328,7 @@ BOOL ProgressDlg::createProgressWindow()
 
 	_hPBar = ::CreateWindowExW(0, PROGRESS_CLASS, L"Progress Bar",
 			WS_CHILD | WS_VISIBLE | PBS_SMOOTH,
-			5, 25, width - 10, cPBheight,
+			5, 30, width - 10, cPBheight,
 			_hwnd, NULL, _hInst, NULL);
 	::SendMessageW(_hPBar, PBM_SETRANGE, 0, MAKELPARAM(0, cPhases[_countof(cPhases) - 1]));
 
@@ -333,11 +337,11 @@ BOOL ProgressDlg::createProgressWindow()
 			(width - cBTNwidth) / 2, height - cBTNheight - 5,
 			cBTNwidth, cBTNheight, _hwnd, NULL, _hInst, NULL);
 
-	HFONT hf = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);
-	if (hf)
+	_hFont = createFontFromSystemDefault(SysFont::Message);
+	if (_hFont)
 	{
-		::SendMessageW(_hPText, WM_SETFONT, (WPARAM)hf, MAKELPARAM(TRUE, 0));
-		::SendMessageW(_hBtn, WM_SETFONT, (WPARAM)hf, MAKELPARAM(TRUE, 0));
+		::SendMessageW(_hPText, WM_SETFONT, (WPARAM)_hFont, MAKELPARAM(TRUE, 0));
+		::SendMessageW(_hBtn, WM_SETFONT, (WPARAM)_hFont, MAKELPARAM(TRUE, 0));
 	}
 
 	_hKeyHook = ::SetWindowsHookExW(WH_KEYBOARD, keyHookProc, _hInst, GetCurrentThreadId());

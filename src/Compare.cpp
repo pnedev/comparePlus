@@ -4880,14 +4880,14 @@ void onToolBarReady()
 	if (hdc)
 	{
 		// Bitmaps are 16x16
-		bmpX = ::MulDiv(16, GetDeviceCaps(hdc, LOGPIXELSX), 96);
-		bmpY = ::MulDiv(16, GetDeviceCaps(hdc, LOGPIXELSY), 96);
+		bmpX = ::MulDiv(16, ::GetDeviceCaps(hdc, LOGPIXELSX), 96);
+		bmpY = ::MulDiv(16, ::GetDeviceCaps(hdc, LOGPIXELSY), 96);
 
 		gMarginWidth = bmpX;
 
 		// Icons are 32x32
-		icoX = ::MulDiv(32, GetDeviceCaps(hdc, LOGPIXELSX), 96);
-		icoY = ::MulDiv(32, GetDeviceCaps(hdc, LOGPIXELSY), 96);
+		icoX = ::MulDiv(32, ::GetDeviceCaps(hdc, LOGPIXELSX), 96);
+		icoY = ::MulDiv(32, ::GetDeviceCaps(hdc, LOGPIXELSY), 96);
 
 		ReleaseDC(NULL, hdc);
 	}
@@ -4895,7 +4895,8 @@ void onToolBarReady()
 	if (!Settings.EnableToolbar)
 		return;
 
-	UINT style = (LR_LOADTRANSPARENT | LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS);
+	constexpr UINT style		= (LR_LOADTRANSPARENT);
+	constexpr UINT styleDark	= (LR_LOADTRANSPARENT);
 
 	if (Settings.SetAsFirstTB)
 	{
@@ -4906,7 +4907,7 @@ void onToolBarReady()
 			tbSetFirst.hToolbarIcon			= (HICON)
 				::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_SETFIRST_RTL_FL), IMAGE_ICON, icoX, icoY, style);
 			tbSetFirst.hToolbarIconDarkMode	= (HICON)
-				::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_SETFIRST_RTL_FL_DM), IMAGE_ICON, icoX, icoY, style);
+				::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_SETFIRST_RTL_FL_DM), IMAGE_ICON, icoX, icoY, styleDark);
 		}
 		else
 		{
@@ -4915,7 +4916,7 @@ void onToolBarReady()
 			tbSetFirst.hToolbarIcon			= (HICON)
 				::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_SETFIRST_FL), IMAGE_ICON, icoX, icoY, style);
 			tbSetFirst.hToolbarIconDarkMode	= (HICON)
-				::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_SETFIRST_FL_DM), IMAGE_ICON, icoX, icoY, style);
+				::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_SETFIRST_FL_DM), IMAGE_ICON, icoX, icoY, styleDark);
 		}
 
 		::SendMessageW(nppData._nppHandle, NPPM_ADDTOOLBARICON_FORDARKMODE,
@@ -4929,7 +4930,7 @@ void onToolBarReady()
 		tbCompare.hToolbarIcon				= (HICON)
 			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_COMPARE_FL), IMAGE_ICON, icoX, icoY, style);
 		tbCompare.hToolbarIconDarkMode		= (HICON)
-			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_COMPARE_FL_DM), IMAGE_ICON, icoX, icoY, style);
+			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_COMPARE_FL_DM), IMAGE_ICON, icoX, icoY, styleDark);
 
 		::SendMessageW(nppData._nppHandle, NPPM_ADDTOOLBARICON_FORDARKMODE,
 				(WPARAM)funcItem[CMD_COMPARE]._cmdID, (LPARAM)&tbCompare);
@@ -4942,7 +4943,7 @@ void onToolBarReady()
 		tbCompareSel.hToolbarIcon			= (HICON)
 			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_COMPARE_LINES_FL), IMAGE_ICON, icoX, icoY, style);
 		tbCompareSel.hToolbarIconDarkMode	= (HICON)
-			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_COMPARE_LINES_FL_DM), IMAGE_ICON, icoX, icoY, style);
+			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_COMPARE_LINES_FL_DM), IMAGE_ICON, icoX, icoY, styleDark);
 
 		::SendMessageW(nppData._nppHandle, NPPM_ADDTOOLBARICON_FORDARKMODE,
 				(WPARAM)funcItem[CMD_COMPARE_SEL]._cmdID, (LPARAM)&tbCompareSel);
@@ -4955,7 +4956,7 @@ void onToolBarReady()
 		tbClearCompare.hToolbarIcon			= (HICON)
 			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_CLEARCOMPARE_FL), IMAGE_ICON, icoX, icoY, style);
 		tbClearCompare.hToolbarIconDarkMode	= (HICON)
-			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_CLEARCOMPARE_FL_DM), IMAGE_ICON, icoX, icoY, style);
+			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_CLEARCOMPARE_FL_DM), IMAGE_ICON, icoX, icoY, styleDark);
 
 		::SendMessageW(nppData._nppHandle, NPPM_ADDTOOLBARICON_FORDARKMODE,
 				(WPARAM)funcItem[CMD_CLEAR_ACTIVE]._cmdID, (LPARAM)&tbClearCompare);
@@ -4968,28 +4969,28 @@ void onToolBarReady()
 		tbFirst.hToolbarIcon				= (HICON)
 			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_FIRST_FL), IMAGE_ICON, icoX, icoY, style);
 		tbFirst.hToolbarIconDarkMode		= (HICON)
-			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_FIRST_FL_DM), IMAGE_ICON, icoX, icoY, style);
+			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_FIRST_FL_DM), IMAGE_ICON, icoX, icoY, styleDark);
 
 		tbPrev.hToolbarBmp					= (HBITMAP)
 			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_PREV), IMAGE_BITMAP, bmpX, bmpY, style);
 		tbPrev.hToolbarIcon					= (HICON)
 			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_PREV_FL), IMAGE_ICON, icoX, icoY, style);
 		tbPrev.hToolbarIconDarkMode			= (HICON)
-			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_PREV_FL_DM), IMAGE_ICON, icoX, icoY, style);
+			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_PREV_FL_DM), IMAGE_ICON, icoX, icoY, styleDark);
 
 		tbNext.hToolbarBmp					= (HBITMAP)
 			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_NEXT), IMAGE_BITMAP, bmpX, bmpY, style);
 		tbNext.hToolbarIcon					= (HICON)
 			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_NEXT_FL), IMAGE_ICON, icoX, icoY, style);
 		tbNext.hToolbarIconDarkMode			= (HICON)
-			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_NEXT_FL_DM), IMAGE_ICON, icoX, icoY, style);
+			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_NEXT_FL_DM), IMAGE_ICON, icoX, icoY, styleDark);
 
 		tbLast.hToolbarBmp					= (HBITMAP)
 			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_LAST), IMAGE_BITMAP, bmpX, bmpY, style);
 		tbLast.hToolbarIcon					= (HICON)
 			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_LAST_FL), IMAGE_ICON, icoX, icoY, style);
 		tbLast.hToolbarIconDarkMode			= (HICON)
-			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_LAST_FL_DM), IMAGE_ICON, icoX, icoY, style);
+			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_LAST_FL_DM), IMAGE_ICON, icoX, icoY, styleDark);
 
 		::SendMessageW(nppData._nppHandle, NPPM_ADDTOOLBARICON_FORDARKMODE,
 				(WPARAM)funcItem[CMD_FIRST]._cmdID, (LPARAM)&tbFirst);
@@ -5008,7 +5009,7 @@ void onToolBarReady()
 		tbDiffsFilters.hToolbarIcon			= (HICON)
 			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_DIFFS_FILTERS_FL), IMAGE_ICON, icoX, icoY, style);
 		tbDiffsFilters.hToolbarIconDarkMode	= (HICON)
-			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_DIFFS_FILTERS_FL_DM), IMAGE_ICON, icoX, icoY, style);
+			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_DIFFS_FILTERS_FL_DM), IMAGE_ICON, icoX, icoY, styleDark);
 
 		::SendMessageW(nppData._nppHandle, NPPM_ADDTOOLBARICON_FORDARKMODE,
 				(WPARAM)funcItem[CMD_DIFFS_VISUAL_FILTERS]._cmdID, (LPARAM)&tbDiffsFilters);
@@ -5021,7 +5022,7 @@ void onToolBarReady()
 		tbNavBar.hToolbarIcon				= (HICON)
 			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_NAVBAR_FL), IMAGE_ICON, icoX, icoY, style);
 		tbNavBar.hToolbarIconDarkMode		= (HICON)
-			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_NAVBAR_FL_DM), IMAGE_ICON, icoX, icoY, style);
+			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_NAVBAR_FL_DM), IMAGE_ICON, icoX, icoY, styleDark);
 
 		::SendMessageW(nppData._nppHandle, NPPM_ADDTOOLBARICON_FORDARKMODE,
 				(WPARAM)funcItem[CMD_NAV_BAR]._cmdID, (LPARAM)&tbNavBar);
@@ -6277,7 +6278,9 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 							Settings.colors().blank, Settings.colors().caret_line_transparency);
 				}
 			}
+			// Intentional fall-through
 
+		case NPPN_TOOLBARICONSETCHANGED:
 			NppSettings::get().updatePluginMenu();
 		break;
 

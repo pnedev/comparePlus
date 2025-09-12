@@ -46,7 +46,7 @@ public:
 		Inst.reset();
 	}
 
-    ~ProgressDlg();
+	~ProgressDlg();
 
 	inline void SetInfo(const wchar_t *info) const
 	{
@@ -63,12 +63,12 @@ public:
 	bool Advance(intptr_t cnt = 1, unsigned phase = 0);
 
 private:
-    static const wchar_t cClassName[];
-    static const int cBackgroundColor;
-    static const int cPBwidth;
-    static const int cPBheight;
-    static const int cBTNwidth;
-    static const int cBTNheight;
+	static const wchar_t cClassName[];
+	static const int cBackgroundColor;
+	static const int cPBwidth;
+	static const int cPBheight;
+	static const int cBTNwidth;
+	static const int cBTNheight;
 
 	static const int cInitialShowDelay_ms = 500;
 
@@ -76,39 +76,40 @@ private:
 
 	static progress_ptr Inst;
 
-    static DWORD WINAPI threadFunc(LPVOID data);
-    static LRESULT CALLBACK keyHookProc(int code, WPARAM wParam, LPARAM lParam);
-    static LRESULT APIENTRY wndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam);
+	static DWORD WINAPI threadFunc(LPVOID data);
+	static LRESULT CALLBACK keyHookProc(int code, WPARAM wParam, LPARAM lParam);
+	static LRESULT APIENTRY wndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam);
 
-    ProgressDlg();
+	ProgressDlg();
 
-    // Disable copy construction and operator=
-    ProgressDlg(const ProgressDlg&);
-    const ProgressDlg& operator=(const ProgressDlg&);
+	// Disable copy construction and operator=
+	ProgressDlg(const ProgressDlg&);
+	const ProgressDlg& operator=(const ProgressDlg&);
 
-    HWND create();
-    void cancel();
-    void destroy();
+	HWND create();
+	void cancel();
+	void destroy();
 
-    inline void setPos(intptr_t pos) const
+	inline void setPos(intptr_t pos) const
 	{
 		::PostMessageW(_hPBar, PBM_SETPOS, (WPARAM)pos, 0);
 	}
 
-    void update();
+	void update();
 
-    BOOL thread();
-    BOOL createProgressWindow();
-    RECT adjustSizeAndPos(int width, int height);
+	BOOL thread();
+	BOOL createProgressWindow();
+	RECT adjustSizeAndPos(int width, int height);
 
-    HINSTANCE		_hInst;
+	HINSTANCE		_hInst;
 	volatile HWND	_hwnd;
-    HANDLE			_hThread;
-    HANDLE			_hActiveState;
+	HANDLE			_hThread;
+	HANDLE			_hActiveState;
+	HFONT			_hFont;
 	HWND			_hPText;
-    HWND			_hPBar;
-    HWND			_hBtn;
-    HHOOK			_hKeyHook;
+	HWND			_hPBar;
+	HWND			_hBtn;
+	HHOOK			_hKeyHook;
 
 	unsigned	_phase;
 	unsigned	_phaseRange;

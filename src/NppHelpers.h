@@ -22,8 +22,10 @@
 #include <cstdint>
 #include <vector>
 #include <string>
+#include <memory>
 #include <utility>
 
+#include "Notepad_plus_msgs.h"
 #include "NppInternalDefines.h"
 #include "Compare.h"
 
@@ -785,12 +787,6 @@ void setNormalView(int view);
 void setCompareView(int view, bool showMargin, int blankColor, int caretLineTransp);
 
 
-inline bool isDarkModeNPP()
-{
-	return (bool)::SendMessageW(nppData._nppHandle, NPPM_ISDARKMODEENABLED, 0, 0);
-}
-
-
 inline void registerDlgForDarkMode(HWND hwnd)
 {
 	::SendMessageW(nppData._nppHandle, NPPM_DARKMODESUBCLASSANDTHEME,
@@ -798,13 +794,29 @@ inline void registerDlgForDarkMode(HWND hwnd)
 }
 
 
-bool isCurrentFileSaved();
+inline void onDarkModeChanged(HWND hwnd)
+{
+	::SendMessageW(nppData._nppHandle, NPPM_DARKMODESUBCLASSANDTHEME,
+			static_cast<WPARAM>(NppDarkMode::dmfHandleChange), reinterpret_cast<LPARAM>(hwnd));
+	::SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+}
+
+
+inline bool isDarkModeNPP()
+{
+	return (bool)::SendMessageW(nppData._nppHandle, NPPM_ISDARKMODEENABLED, 0, 0);
+}
+
 
 bool isDarkMode();
+
+std::unique_ptr<NppDarkMode::Colors> getNppDarkModeColors();
 
 void setStyles(UserSettings& settings);
 
 void clearWindow(int view, bool clearIndicators = true);
+
+bool isCurrentFileSaved();
 
 
 inline void clearMarks(int view, intptr_t line)

@@ -142,7 +142,6 @@ private:
 	HWND		m_hScroll;
 
 	HBRUSH		m_hBackBrush;
-	HBRUSH		m_hScrollerBackBrush;
 
 	bool		m_mouseOver;
 

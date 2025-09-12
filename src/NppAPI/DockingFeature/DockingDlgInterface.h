@@ -25,6 +25,7 @@
 #include <string>
 #include "StaticDialog.h"
 
+#include "NppHelpers.h"
 
 
 class DockingDlgInterface : public StaticDialog
@@ -89,21 +90,28 @@ protected :
 	std::wstring _pluginName;
 	bool _isClosed = false;
 
-	intptr_t CALLBACK run_dlgProc(UINT message, WPARAM /* wParam */, LPARAM lParam) override {
+	intptr_t CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam) override {
 		switch (message)
 		{
-			// case WM_ERASEBKGND:
-			// {
-				// if (!NppDarkMode::isEnabled())
-				// {
-					// break;
-				// }
+			case WM_ERASEBKGND:
+			{
+				if (!isDarkMode())
+					break;
 
-				// RECT rc = {};
-				// getClientRect(rc);
-				// ::FillRect(reinterpret_cast<HDC>(wParam), &rc, NppDarkMode::getDarkerBackgroundBrush());
-				// return TRUE;
-			// }
+				auto dmColors = getNppDarkModeColors();
+				if (!dmColors)
+					break;
+
+				HBRUSH hBrush = ::CreateSolidBrush(dmColors->pureBackground);
+
+				RECT rc = {};
+				getClientRect(rc);
+				::FillRect(reinterpret_cast<HDC>(wParam), &rc, hBrush);
+
+				::DeleteObject(hBrush);
+
+				return TRUE;
+			}
 			case WM_NOTIFY:
 			{
 				LPNMHDR	pnmh = reinterpret_cast<LPNMHDR>(lParam);

@@ -188,7 +188,7 @@ int NavDialog::NavView::docToBmpLine(intptr_t docLine) const
 
 
 NavDialog::NavDialog() : DockingDlgInterface(IDD_NAV_DIALOG),
-	m_hScroll(NULL), m_hBackBrush(NULL), m_hScrollerBackBrush(NULL), m_mouseOver(false)
+	m_hScroll(NULL), m_hBackBrush(NULL), m_mouseOver(false)
 {
 	_data.hIconTab = NULL;
 }
@@ -315,12 +315,6 @@ void NavDialog::Hide()
 		m_hBackBrush = NULL;
 	}
 
-	if (m_hScrollerBackBrush != NULL)
-	{
-		::DeleteObject(m_hScrollerBackBrush);
-		m_hScrollerBackBrush = NULL;
-	}
-
 	::SetFocus(hwnd);
 }
 
@@ -345,12 +339,6 @@ void NavDialog::createBitmaps()
 	{
 		::DeleteObject(m_hBackBrush);
 		m_hBackBrush = NULL;
-	}
-
-	if (m_hScrollerBackBrush != NULL)
-	{
-		::DeleteObject(m_hScrollerBackBrush);
-		m_hScrollerBackBrush = NULL;
 	}
 
 	m_hBackBrush				= ::CreateSolidBrush(m_clr._default);
@@ -419,9 +407,6 @@ void NavDialog::showScroller(RECT& r)
 	const int y = cSpace;
 	const int w = cScrollerWidth;
 	const int h = m_navHeight;
-
-	// if (m_hScrollerBackBrush == NULL)
-		// m_hScrollerBackBrush = ::CreateSolidBrush(m_clr.blank);
 
 	if (m_hScroll)
 		::MoveWindow(m_hScroll, x, y, w, h, TRUE);
@@ -663,9 +648,6 @@ INT_PTR CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lPar
 		case WM_SETFOCUS:
 			::SetFocus(getCurrentView());
 		return TRUE;
-
-		// case WM_CTLCOLORSCROLLBAR:
-		// return (INT_PTR)m_hScrollerBackBrush;
 
 		case WM_LBUTTONDOWN:
 			::SetCapture(_hSelf);

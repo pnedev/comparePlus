@@ -99,7 +99,7 @@ void ColorCombo::DrawColor(HDC hDcExt)
 	HBRUSH	hBrush		= ::CreateSolidBrush(_rgbCol);
 
 	if (hDcExt == NULL)
-		hDc	= ::GetWindowDC(_comboBoxInfo.hwndCombo);
+		hDc	= ::GetDC(_comboBoxInfo.hwndCombo);
 	else
 		hDc = hDcExt;
 

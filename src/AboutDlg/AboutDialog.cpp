@@ -75,10 +75,19 @@ INT_PTR CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*
 
 			::SetDlgItemTextW(_hSelf, IDC_SQLITE3_VER, libInfo.c_str());
 
+			COLORREF linkColor = ::GetSysColor(COLOR_HOTLIGHT);
+
+			if (isDarkMode())
+			{
+				auto dmColors = getNppDarkModeColors();
+				if (dmColors)
+					linkColor = dmColors->linkText;
+			}
+
 			_urlRepo.init(_hInst, _hSelf);
-			_urlRepo.create(::GetDlgItem(_hSelf, IDC_REPO_URL), cRepo_URL);
+			_urlRepo.create(::GetDlgItem(_hSelf, IDC_REPO_URL), cRepo_URL, linkColor);
 			_helpLink.init(_hInst, _hSelf);
-			_helpLink.create(::GetDlgItem(_hSelf, IDC_HELP_URL), cHelp_URL);
+			_helpLink.create(::GetDlgItem(_hSelf, IDC_HELP_URL), cHelp_URL, linkColor);
 
 			return TRUE;
 		}

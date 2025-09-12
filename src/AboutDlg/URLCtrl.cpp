@@ -18,11 +18,8 @@
 #include <stdlib.h>
 #include <shellapi.h>
 #include "URLCtrl.h"
-
-
-#ifndef OCR_HAND
-	#define OCR_HAND 32649
-#endif
+#include "Tools.h"
+#include "Notepad_plus_msgs.h"
 
 
 static COLORREF getCtrlBgColor(HWND hWnd)
@@ -72,54 +69,6 @@ static COLORREF getCtrlBgColor(HWND hWnd)
 }
 
 
-// static int scale(int x, UINT toDpi, UINT fromDpi)
-// {
-	// return ::MulDiv(x, toDpi, fromDpi);
-// }
-
-
-// static int scaleFont(int pt, UINT dpi)
-// {
-	// return -(scale(pt, dpi, 72));
-// }
-
-
-// static UINT getSystemDpi()
-// {
-	// UINT dpi = USER_DEFAULT_SCREEN_DPI;
-	// HDC hdc = ::GetDC(nullptr);
-
-	// if (hdc != nullptr)
-	// {
-		// dpi = ::GetDeviceCaps(hdc, LOGPIXELSX);
-		// ::ReleaseDC(nullptr, hdc);
-	// }
-
-	// return dpi;
-// }
-
-
-static LOGFONTW getDefaultGUIFont()
-{
-	LOGFONTW lf {};
-	// NONCLIENTMETRICS ncm {};
-	// ncm.cbSize = sizeof(NONCLIENTMETRICS);
-
-	// if (::SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, 0) == FALSE) // should not happen
-	// {
-		auto hf = static_cast<HFONT>(::GetStockObject(DEFAULT_GUI_FONT));
-		::GetObject(hf, sizeof(LOGFONTW), &lf);
-	// }
-	// else
-	// {
-		// lf = ncm.lfMessageFont;
-		// lf.lfHeight = scaleFont(lf.lfHeight, getSystemDpi());
-	// }
-
-	return lf;
-}
-
-
 void URLCtrl::create(HWND itemHandle, const wchar_t* link, COLORREF linkColor)
 {
 	// turn on notify style
@@ -131,9 +80,6 @@ void URLCtrl::create(HWND itemHandle, const wchar_t* link, COLORREF linkColor)
 
 	// set the hyperlink colour
 	_linkColor = linkColor;
-
-	// set the visited colour
-	_visitedColor = RGB(128,0,128);
 
 	// subclass the static control
 	_oldproc = reinterpret_cast<WNDPROC>(
@@ -157,7 +103,7 @@ void URLCtrl::create(HWND itemHandle, int cmd, HWND msgDest)
 	_msgDest = msgDest;
 
 	// set the hyperlink colour
-	_linkColor = RGB(0,0,255);
+	_linkColor = ::GetSysColor(COLOR_HOTLIGHT);
 
 	// subclass the static control
 	_oldproc = reinterpret_cast<WNDPROC>(
@@ -184,8 +130,7 @@ void URLCtrl::destroy()
 HCURSOR& URLCtrl::loadHandCursor()
 {
 	if (_hCursor == nullptr)
-		_hCursor = static_cast<HCURSOR>(::LoadImage(nullptr, MAKEINTRESOURCE(OCR_HAND),
-					IMAGE_CURSOR, SM_CXCURSOR, SM_CYCURSOR, LR_SHARED));
+		_hCursor = (HCURSOR)::LoadImage(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED);
 
 	return _hCursor;
 }
@@ -198,11 +143,6 @@ void URLCtrl::action()
 	}
 	else
 	{
-		_linkColor = _visitedColor;
-
-		::InvalidateRect(_hSelf, 0, 0);
-		::UpdateWindow(_hSelf);
-
 		// Open a browser
 		if (!_URL.empty())
 		{
@@ -243,37 +183,12 @@ LRESULT URLCtrl::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 			PAINTSTRUCT ps{};
 			HDC hdc = ::BeginPaint(hwnd, &ps);
 
-			// if ((_linkColor == _visitedColor) || (_linkColor == NppDarkMode::getDarkerTextColor()))
-			// {
-				// _linkColor = NppDarkMode::isEnabled() ? NppDarkMode::getDarkerTextColor() : _visitedColor;
-				// ::SetTextColor(hdc, _linkColor);
-			// }
-			// else if (NppDarkMode::isEnabled())
-			// {
-				// ::SetTextColor(hdc, NppDarkMode::getLinkTextColor());
-			// }
-			if (_linkColor == _visitedColor)
-			{
-				_linkColor = _visitedColor;
-				::SetTextColor(hdc, _linkColor);
-			}
-			else
-			{
-				::SetTextColor(hdc, _linkColor);
-			}
-
+			::SetTextColor(hdc, _linkColor);
 			::SetBkColor(hdc, getCtrlBgColor(GetParent(hwnd)));
 
 			// Create an underline font
 			if (_hfUnderlined == nullptr)
-			{
-				// Get the default GUI font
-				LOGFONTW lf {getDefaultGUIFont()};
-				lf.lfUnderline = TRUE;
-
-				// Create a new font
-				_hfUnderlined = ::CreateFontIndirectW(&lf);
-			}
+				_hfUnderlined = createFontFromSystemDefault(SysFont::Message, 0, true);
 
 			HANDLE hOld = ::SelectObject(hdc, _hfUnderlined);
 

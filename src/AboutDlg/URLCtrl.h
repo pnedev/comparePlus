@@ -43,7 +43,6 @@ protected :
 
 	WNDPROC		_oldproc		= nullptr;
 	COLORREF	_linkColor		= RGB(0xFF, 0xFF, 0xFF);
-	COLORREF	_visitedColor	= RGB(0xFF, 0xFF, 0xFF);
 	bool		_clicking		= false;
 
 	static LRESULT CALLBACK URLCtrlProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)

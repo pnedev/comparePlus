@@ -153,3 +153,15 @@ void toLowerCase(std::vector<char>& text, int codepage = CP_UTF8);
 
 std::wstring MBtoWC(const char* mb, int len, int codepage = CP_UTF8);
 std::string WCtoMB(const wchar_t* wc, int len, int codepage = CP_UTF8);
+
+
+enum class SysFont {
+	Caption,
+	SmallCaption,
+	Menu,
+	Status,
+	Message
+};
+
+
+HFONT createFontFromSystemDefault(SysFont font, int size = 0, bool underlined = false);

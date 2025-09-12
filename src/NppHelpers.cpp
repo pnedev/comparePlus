@@ -455,20 +455,6 @@ void setCompareView(int view, bool showMargin, int blankColor, int caretLineTran
 }
 
 
-bool isCurrentFileSaved()
-{
-	HMENU hMenu = (HMENU)::SendMessageW(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
-
-	MENUITEMINFOW menuItemInfo	= { 0 };
-	menuItemInfo.cbSize			= sizeof(menuItemInfo);
-	menuItemInfo.fMask			= MIIM_STATE;
-
-	::GetMenuItemInfoW(hMenu, IDM_FILE_SAVE, FALSE, &menuItemInfo);
-
-	return (menuItemInfo.fState & MFS_DISABLED);
-}
-
-
 bool isDarkMode()
 {
 	if (::SendMessageW(nppData._nppHandle, NPPM_ISDARKMODEENABLED, 0, 0))
@@ -481,6 +467,18 @@ bool isDarkMode()
 	const int b = bg >> 16 & 0xFF;
 
 	return (((r + g + b) / 3) < 128);
+}
+
+
+std::unique_ptr<NppDarkMode::Colors> getNppDarkModeColors()
+{
+	std::unique_ptr<NppDarkMode::Colors> dmColors = std::make_unique<NppDarkMode::Colors>();
+
+	if (!::SendMessageW(nppData._nppHandle, NPPM_GETDARKMODECOLORS,
+			sizeof(NppDarkMode::Colors), reinterpret_cast<LPARAM>(dmColors.get())))
+		return nullptr;
+
+	return dmColors;
 }
 
 
@@ -530,6 +528,20 @@ void setStyles(UserSettings& settings)
 }
 
 
+bool isCurrentFileSaved()
+{
+	HMENU hMenu = (HMENU)::SendMessageW(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
+
+	MENUITEMINFOW menuItemInfo	= { 0 };
+	menuItemInfo.cbSize			= sizeof(menuItemInfo);
+	menuItemInfo.fMask			= MIIM_STATE;
+
+	::GetMenuItemInfoW(hMenu, IDM_FILE_SAVE, FALSE, &menuItemInfo);
+
+	return (menuItemInfo.fState & MFS_DISABLED);
+}
+
+
 void markTextAsChanged(int view, intptr_t start, intptr_t length, int color)
 {
 	if (length > 0)
@@ -572,60 +584,6 @@ std::vector<char> getText(int view, intptr_t startPos, intptr_t endPos)
 	CallScintilla(view, SCI_GETTEXTRANGEFULL, 0, (LPARAM)&tr);
 
 	return text;
-}
-
-
-std::vector<char> getLineText(int view, intptr_t line, bool includeEOL)
-{
-	const intptr_t startPos	= getLineStart(view, line);
-	const intptr_t endPos	= includeEOL ?
-			startPos + CallScintilla(view, SCI_LINELENGTH, line, 0) : getLineEnd(view, line);
-	const int len			= static_cast<int>(endPos - startPos);
-
-	if (len <= 0)
-		return {};
-
-	std::vector<char> text(len + 1, 0);
-
-	Sci_TextRangeFull tr;
-	tr.chrg.cpMin = startPos;
-	tr.chrg.cpMax = endPos;
-	tr.lpstrText = text.data();
-
-	CallScintilla(view, SCI_GETTEXTRANGEFULL, 0, (LPARAM)&tr);
-
-	text.pop_back();
-
-	return text;
-}
-
-
-intptr_t replaceText(int view, const std::string& txtToReplace, const std::string& replacementTxt,
-	intptr_t searchStartLine)
-{
-	intptr_t pos = getLineStart(view, searchStartLine);
-
-	CallScintilla(view, SCI_SETTARGETSTART, pos, 0);
-
-	if (txtToReplace.empty())
-	{
-		CallScintilla(view, SCI_SETTARGETEND, pos, 0);
-	}
-	else
-	{
-		CallScintilla(view, SCI_SETTARGETEND, CallScintilla(view, SCI_GETLENGTH, 0, 0), 0);
-		CallScintilla(view, SCI_SETSEARCHFLAGS, (WPARAM)SCFIND_MATCHCASE, 0);
-		pos = CallScintilla(view, SCI_SEARCHINTARGET, txtToReplace.size(), (LPARAM)txtToReplace.c_str());
-	}
-
-	if (pos >= 0)
-	{
-		CallScintilla(view, SCI_REPLACETARGETMINIMAL, (uptr_t)-1, (LPARAM)replacementTxt.c_str());
-		pos = CallScintilla(view, SCI_GETTARGETEND, 0, 0);
-		pos = CallScintilla(view, SCI_LINEFROMPOSITION, pos, 0) + 1;
-	}
-
-	return pos;
 }
 
 
@@ -919,6 +877,60 @@ void clearAnnotations(int view, intptr_t startLine, intptr_t length)
 
 	for (; startLine < endLine; ++startLine)
 		clearAnnotation(view, startLine);
+}
+
+
+std::vector<char> getLineText(int view, intptr_t line, bool includeEOL)
+{
+	const intptr_t startPos	= getLineStart(view, line);
+	const intptr_t endPos	= includeEOL ?
+			startPos + CallScintilla(view, SCI_LINELENGTH, line, 0) : getLineEnd(view, line);
+	const int len			= static_cast<int>(endPos - startPos);
+
+	if (len <= 0)
+		return {};
+
+	std::vector<char> text(len + 1, 0);
+
+	Sci_TextRangeFull tr;
+	tr.chrg.cpMin = startPos;
+	tr.chrg.cpMax = endPos;
+	tr.lpstrText = text.data();
+
+	CallScintilla(view, SCI_GETTEXTRANGEFULL, 0, (LPARAM)&tr);
+
+	text.pop_back();
+
+	return text;
+}
+
+
+intptr_t replaceText(int view, const std::string& txtToReplace, const std::string& replacementTxt,
+	intptr_t searchStartLine)
+{
+	intptr_t pos = getLineStart(view, searchStartLine);
+
+	CallScintilla(view, SCI_SETTARGETSTART, pos, 0);
+
+	if (txtToReplace.empty())
+	{
+		CallScintilla(view, SCI_SETTARGETEND, pos, 0);
+	}
+	else
+	{
+		CallScintilla(view, SCI_SETTARGETEND, CallScintilla(view, SCI_GETLENGTH, 0, 0), 0);
+		CallScintilla(view, SCI_SETSEARCHFLAGS, (WPARAM)SCFIND_MATCHCASE, 0);
+		pos = CallScintilla(view, SCI_SEARCHINTARGET, txtToReplace.size(), (LPARAM)txtToReplace.c_str());
+	}
+
+	if (pos >= 0)
+	{
+		CallScintilla(view, SCI_REPLACETARGETMINIMAL, (uptr_t)-1, (LPARAM)replacementTxt.c_str());
+		pos = CallScintilla(view, SCI_GETTARGETEND, 0, 0);
+		pos = CallScintilla(view, SCI_LINEFROMPOSITION, pos, 0) + 1;
+	}
+
+	return pos;
 }
 
 

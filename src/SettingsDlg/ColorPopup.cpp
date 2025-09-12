@@ -102,13 +102,12 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 		}
 
 		case WM_CTLCOLORLISTBOX:
-			return (LRESULT)::CreateSolidBrush(::GetSysColor(COLOR_3DFACE));
+			return (LRESULT)::GetSysColorBrush(COLOR_3DFACE);
 
 		case WM_DRAWITEM:
 		{
 			HDC			hdc;
 			COLORREF	cr;
-			HBRUSH		hbrush;
 
 			DRAWITEMSTRUCT *pdis = (DRAWITEMSTRUCT *)lParam;
 			hdc = pdis->hDC;
@@ -129,12 +128,12 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 						case IDC_COLOR_LIST:
 							rc = pdis->rcItem;
 							cr = (COLORREF) pdis->itemData;
-							hbrush = ::CreateSolidBrush((COLORREF)cr);
+							HBRUSH hbrush = ::CreateSolidBrush((COLORREF)cr);
 
 							::InflateRect(&rc, -3, -3);
 							::FillRect(hdc, &rc, hbrush);
 							::DeleteObject(hbrush);
-							::FrameRect(hdc, &rc, (HBRUSH) GetStockObject(GRAY_BRUSH));
+							::FrameRect(hdc, &rc, (HBRUSH) ::GetStockObject(GRAY_BRUSH));
 					}
 					// *** Intentional FALL THROUGH ***
 
@@ -167,10 +166,7 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 					}
 					else
 					{
-						hbrush = ::CreateSolidBrush(::GetSysColor(COLOR_3DFACE));
-
-						::FrameRect(hdc, &rc, hbrush);
-						::DeleteObject(hbrush);
+						::FrameRect(hdc, &rc, ::GetSysColorBrush(COLOR_3DFACE));
 					}
 
 					break;
