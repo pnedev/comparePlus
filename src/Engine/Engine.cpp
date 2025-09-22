@@ -432,17 +432,26 @@ uint64_t getRegexIgnoreLineHash(int view, intptr_t off, uint64_t hashSeed, int c
 			++rit;
 		}
 
-		--endPos;
-
-		if (options.ignoreChangedSpaces && (wLine[endPos] == L' ' || wLine[endPos] == L'\t'))
+		if (options.ignoreChangedSpaces)
 		{
-			while (--endPos >= pos && (wLine[endPos] == L' ' || wLine[endPos] == L'\t'));
+			intptr_t eolPos = endPos;
+			while (--eolPos >= pos && (wLine[eolPos] == L'\n' || wLine[eolPos] == L'\r'));
 
-			if (endPos < pos)
-				return hashSeed;
+			if (++eolPos > pos)
+			{
+				intptr_t p = eolPos;
+				while (--p >= pos && (wLine[p] == L' ' || wLine[p] == L'\t'));
+
+				if (++p > pos)
+					hashSeed = getSectionRangeHash(hashSeed, wLine, pos, p, options);
+			}
+
+			hashSeed = getSectionRangeHash(hashSeed, wLine, eolPos, endPos, options);
 		}
-
-		hashSeed = getSectionRangeHash(hashSeed, wLine, pos, endPos + 1, options);
+		else
+		{
+			hashSeed = getSectionRangeHash(hashSeed, wLine, pos, endPos, options);
+		}
 	}
 
 	return hashSeed;
