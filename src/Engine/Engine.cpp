@@ -398,6 +398,7 @@ uint64_t getRegexIgnoreLineHash(int view, intptr_t off, uint64_t hashSeed, int c
 	else
 	{
 		intptr_t pos = 0;
+		intptr_t highlightPos = 0;
 		intptr_t endPos = wLen - 1;
 
 		if (options.ignoreChangedSpaces && (wLine[pos] == L' ' || wLine[pos] == L'\t'))
@@ -417,8 +418,8 @@ uint64_t getRegexIgnoreLineHash(int view, intptr_t off, uint64_t hashSeed, int c
 
 			if (options.highlightRegexIgnores)
 			{
-				mbPos += ::WideCharToMultiByte(codepage, 0,
-						wLine.data() + pos, static_cast<int>(rit->position() - pos), NULL, 0, NULL, NULL);
+				mbPos += ::WideCharToMultiByte(codepage, 0, wLine.data() + highlightPos,
+						static_cast<int>(rit->position() - highlightPos), NULL, 0, NULL, NULL);
 				const int mbLen = ::WideCharToMultiByte(codepage, 0,
 						wLine.data() + rit->position(), static_cast<int>(rit->length()), NULL, 0, NULL, NULL);
 
@@ -427,7 +428,7 @@ uint64_t getRegexIgnoreLineHash(int view, intptr_t off, uint64_t hashSeed, int c
 				mbPos += mbLen;
 			}
 
-			pos = rit->position() + rit->length();
+			highlightPos = pos = rit->position() + rit->length();
 			++rit;
 		}
 
