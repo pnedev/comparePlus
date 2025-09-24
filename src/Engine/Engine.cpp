@@ -36,9 +36,9 @@
 
 #include "Tools.h"
 #include "Engine.h"
+#include "ProgressDlg.h"
 #include "diff.h"
 // #include "fast_myers_diff.h"
-#include "ProgressDlg.h"
 
 
 #ifdef MULTITHREAD
@@ -293,16 +293,6 @@ inline intptr_t toDocLine(const DocCmpInfo& doc, intptr_t bdLine)
 	assert(bdLine >= 0);
 
 	return (bdLine < (intptr_t)doc.lines.size()) ? doc.lines[bdLine].line : (doc.lines.back().line + 1);
-}
-
-
-void swap(DocCmpInfo& lhs, DocCmpInfo& rhs)
-{
-	std::swap(lhs.view, rhs.view);
-	std::swap(lhs.section, rhs.section);
-	std::swap(lhs.blockDiffMask, rhs.blockDiffMask);
-	std::swap(lhs.lines, rhs.lines);
-	std::swap(lhs.nonUniqueLines, rhs.nonUniqueLines);
 }
 
 
@@ -1351,44 +1341,25 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 		const std::vector<Word> lineWords1 = getLineWords(doc1.view, doc1.lines[blockDiff1.off + line1].line, options);
 		const std::vector<Word> lineWords2 = getLineWords(doc2.view, doc2.lines[blockDiff2.off + line2].line, options);
 
-		const auto* pLine1 = &lineWords1;
-		const auto* pLine2 = &lineWords2;
-
-		const DocCmpInfo* pDoc1 = &doc1;
-		const DocCmpInfo* pDoc2 = &doc2;
-
-		diffInfo* pBlockDiff1 = &blockDiff1;
-		diffInfo* pBlockDiff2 = &blockDiff2;
-
 		// First use word granularity (find matching words) for better precision
-		auto wordDiffRes = DiffCalc<Word>(lineWords1, lineWords2)(true);
-		const std::vector<diff_info<void>> lineDiffs = std::move(wordDiffRes.first);
-
-		if (wordDiffRes.second)
-		{
-			std::swap(pDoc1, pDoc2);
-			std::swap(pBlockDiff1, pBlockDiff2);
-			std::swap(pLine1, pLine2);
-			std::swap(line1, line2);
-		}
-
+		const std::vector<diff_info<void>> lineDiffs = DiffCalc<Word>(lineWords1, lineWords2)(true, true);
 		const intptr_t lineDiffsSize = static_cast<intptr_t>(lineDiffs.size());
 
 		PRINT_DIFFS("WORD DIFFS", lineDiffs);
 
-		pBlockDiff1->info.changedLines.emplace_back(line1);
-		pBlockDiff2->info.changedLines.emplace_back(line2);
+		blockDiff1.info.changedLines.emplace_back(line1);
+		blockDiff2.info.changedLines.emplace_back(line2);
 
-		const intptr_t lineOff1 = getLineStart(pDoc1->view, pDoc1->lines[line1 + pBlockDiff1->off].line);
-		const intptr_t lineOff2 = getLineStart(pDoc2->view, pDoc2->lines[line2 + pBlockDiff2->off].line);
+		const intptr_t lineOff1 = getLineStart(doc1.view, doc1.lines[line1 + blockDiff1.off].line);
+		const intptr_t lineOff2 = getLineStart(doc2.view, doc2.lines[line2 + blockDiff2.off].line);
 
 		intptr_t lineLen1 = 0;
 		intptr_t lineLen2 = 0;
 
-		for (const auto& word: *pLine1)
+		for (const auto& word: lineWords1)
 			lineLen1 += word.len;
 
-		for (const auto& word: *pLine2)
+		for (const auto& word: lineWords2)
 			lineLen2 += word.len;
 
 		intptr_t totalLineMatchLen = 0;
@@ -1400,16 +1371,16 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 			if (ld.type == diff_type::DIFF_MATCH)
 			{
 				for (intptr_t j = 0; j < ld.len; ++j)
-					totalLineMatchLen += (*pLine1)[ld.off + j].len;
+					totalLineMatchLen += lineWords1[ld.off + j].len;
 			}
 			else if (ld.type == diff_type::DIFF_IN_2)
 			{
 				line_section_t change;
 
-				change.off = (*pLine2)[ld.off].pos;
-				change.len = (*pLine2)[ld.off + ld.len - 1].pos + (*pLine2)[ld.off + ld.len - 1].len - change.off;
+				change.off = lineWords2[ld.off].pos;
+				change.len = lineWords2[ld.off + ld.len - 1].pos + lineWords2[ld.off + ld.len - 1].len - change.off;
 
-				pBlockDiff2->info.changedLines.back().changes.emplace_back(change);
+				blockDiff2.info.changedLines.back().changes.emplace_back(change);
 			}
 			else
 			{
@@ -1418,16 +1389,16 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 				{
 					const auto& ld2 = lineDiffs[i + 1];
 
-					intptr_t off1 = (*pLine1)[ld.off].pos;
-					intptr_t end1 = (*pLine1)[ld.off + ld.len - 1].pos + (*pLine1)[ld.off + ld.len - 1].len;
+					intptr_t off1 = lineWords1[ld.off].pos;
+					intptr_t end1 = lineWords1[ld.off + ld.len - 1].pos + lineWords1[ld.off + ld.len - 1].len;
 
-					intptr_t off2 = (*pLine2)[ld2.off].pos;
-					intptr_t end2 = (*pLine2)[ld2.off + ld2.len - 1].pos + (*pLine2)[ld2.off + ld2.len - 1].len;
+					intptr_t off2 = lineWords2[ld2.off].pos;
+					intptr_t end2 = lineWords2[ld2.off + ld2.len - 1].pos + lineWords2[ld2.off + ld2.len - 1].len;
 
 					const std::vector<Char> sec1 =
-							getSectionChars(pDoc1->view, off1 + lineOff1, end1 + lineOff1, options);
+							getSectionChars(doc1.view, off1 + lineOff1, end1 + lineOff1, options);
 					const std::vector<Char> sec2 =
-							getSectionChars(pDoc2->view, off2 + lineOff2, end2 + lineOff2, options);
+							getSectionChars(doc2.view, off2 + lineOff2, end2 + lineOff2, options);
 
 					if (options.detectCharDiffs)
 					{
@@ -1437,23 +1408,8 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 								std::to_string(off2 + 1) + " to " +
 								std::to_string(end2 + 1) + "\n");
 
-						const auto* pSec1 = &sec1;
-						const auto* pSec2 = &sec2;
-
-						diffInfo* pBD1 = pBlockDiff1;
-						diffInfo* pBD2 = pBlockDiff2;
-
 						// Compare changed words
-						auto diffRes = DiffCalc<Char>(sec1, sec2)();
-						const std::vector<diff_info<void>> sectionDiffs = std::move(diffRes.first);
-
-						if (diffRes.second)
-						{
-							std::swap(pSec1, pSec2);
-							std::swap(pBD1, pBD2);
-							std::swap(off1, off2);
-							std::swap(end1, end2);
-						}
+						const std::vector<diff_info<void>> sectionDiffs = DiffCalc<Char>(sec1, sec2)();
 
 						PRINT_DIFFS("CHAR DIFFS", sectionDiffs);
 
@@ -1484,19 +1440,19 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 									{
 										line_section_t change;
 
-										change.off = (*pSec1)[sd.off].pos + off1;
-										change.len = (*pSec1)[sd.off + sd.len - 1].pos + off1 + 1 - change.off;
+										change.off = sec1[sd.off].pos + off1;
+										change.len = sec1[sd.off + sd.len - 1].pos + off1 + 1 - change.off;
 
-										pBD1->info.changedLines.back().changes.emplace_back(change);
+										blockDiff1.info.changedLines.back().changes.emplace_back(change);
 									}
 									else if (sd.type == diff_type::DIFF_IN_2)
 									{
 										line_section_t change;
 
-										change.off = (*pSec2)[sd.off].pos + off2;
-										change.len = (*pSec2)[sd.off + sd.len - 1].pos + off2 + 1 - change.off;
+										change.off = sec2[sd.off].pos + off2;
+										change.len = sec2[sd.off + sd.len - 1].pos + off2 + 1 - change.off;
 
-										pBD2->info.changedLines.back().changes.emplace_back(change);
+										blockDiff2.info.changedLines.back().changes.emplace_back(change);
 									}
 								}
 
@@ -1511,8 +1467,8 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 							else
 							{
 								const intptr_t matches =
-										matchBeginEnd(*pBD1, *pBD2, *pSec1, *pSec2, off1, off2, end1, end2,
-												[](const wchar_t) { return true; });
+										matchBeginEnd(blockDiff1, blockDiff2, sec1, sec2, off1, off2, end1, end2,
+											[](const wchar_t) { return true; });
 
 								if (matches)
 								{
@@ -1532,8 +1488,8 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 					else
 					{
 						const intptr_t matches =
-								matchBeginEnd(*pBlockDiff1, *pBlockDiff2, sec1, sec2, off1, off2, end1, end2,
-										[](const wchar_t ch) { return (getCharTypeW(ch) != charType::ALPHANUMCHAR); });
+								matchBeginEnd(blockDiff1, blockDiff2, sec1, sec2, off1, off2, end1, end2,
+									[](const wchar_t ch) { return (getCharTypeW(ch) != charType::ALPHANUMCHAR); });
 
 						if (matches)
 						{
@@ -1551,18 +1507,18 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 
 				line_section_t change;
 
-				change.off = (*pLine1)[ld.off].pos;
-				change.len = (*pLine1)[ld.off + ld.len - 1].pos + (*pLine1)[ld.off + ld.len - 1].len - change.off;
+				change.off = lineWords1[ld.off].pos;
+				change.len = lineWords1[ld.off + ld.len - 1].pos + lineWords1[ld.off + ld.len - 1].len - change.off;
 
-				pBlockDiff1->info.changedLines.back().changes.emplace_back(change);
+				blockDiff1.info.changedLines.back().changes.emplace_back(change);
 			}
 		}
 
 		// Not enough portion of the lines matches - consider them totally different
 		if (((totalLineMatchLen * 100) / std::max(lineLen1, lineLen2)) < options.changedThresholdPercent)
 		{
-			pBlockDiff1->info.changedLines.pop_back();
-			pBlockDiff2->info.changedLines.pop_back();
+			blockDiff1.info.changedLines.pop_back();
+			blockDiff2.info.changedLines.pop_back();
 		}
 		else if (options.detectSubLineMoves)
 		{
@@ -1644,18 +1600,16 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 				if (progress->IsCancelled())
 					return {};
 
-				const std::vector<Word>& rWord = wordDiffs.second ? words2[line2] : words1;
-
-				const intptr_t wordDiffsSize = static_cast<intptr_t>(wordDiffs.first.size());
+				const intptr_t wordDiffsSize = static_cast<intptr_t>(wordDiffs.size());
 
 				for (intptr_t i = 0; i < wordDiffsSize; ++i)
 				{
-					if (wordDiffs.first[i].type == diff_type::DIFF_MATCH)
+					if (wordDiffs[i].type == diff_type::DIFF_MATCH)
 					{
 						intptr_t matchLen = 0;
 
-						for (intptr_t n = 0; n < wordDiffs.first[i].len; ++n)
-							matchLen += rWord[wordDiffs.first[i].off + n].len;
+						for (intptr_t n = 0; n < wordDiffs[i].len; ++n)
+							matchLen += words1[wordDiffs[i].off + n].len;
 
 						matchesCount += matchLen;
 
@@ -1672,13 +1626,13 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 				if (progress->IsCancelled())
 					return {};
 
-				const intptr_t charDiffsSize = static_cast<intptr_t>(charDiffs.first.size());
+				const intptr_t charDiffsSize = static_cast<intptr_t>(charDiffs.size());
 
 				for (intptr_t i = 0; i < charDiffsSize; ++i)
 				{
-					if (charDiffs.first[i].type == diff_type::DIFF_MATCH)
+					if (charDiffs[i].type == diff_type::DIFF_MATCH)
 					{
-						const intptr_t matchLen = charDiffs.first[i].len;
+						const intptr_t matchLen = charDiffs[i].len;
 
 						matchesCount += matchLen;
 
@@ -2512,16 +2466,12 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 	if (!progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
-	auto diffRes = DiffCalc<Line, blockDiffInfo>(cmpInfo.doc1.lines, cmpInfo.doc2.lines,
-		std::bind(&ProgressDlg::IsCancelled, progress))(options.ignoreAllSpaces || options.ignoreChangedSpaces, true);
+	cmpInfo.blockDiffs = DiffCalc<Line, blockDiffInfo>(cmpInfo.doc1.lines, cmpInfo.doc2.lines,
+		std::bind(&ProgressDlg::IsCancelled, progress))(
+			true, options.ignoreAllSpaces || options.ignoreChangedSpaces, true);
 
 	if (progress->IsCancelled())
 		return CompareResult::COMPARE_CANCELLED;
-
-	cmpInfo.blockDiffs = std::move(diffRes.first);
-
-	if (diffRes.second)
-		swap(cmpInfo.doc1, cmpInfo.doc2);
 
 	LOGD_GET_TIME;
 	PRINT_DIFFS("COMPARE START - LINE DIFFS", cmpInfo.blockDiffs);
