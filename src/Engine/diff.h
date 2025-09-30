@@ -95,56 +95,72 @@ public:
 
 	// Runs the actual compare and returns the differences
 	std::vector<diff_info<UserDataT>> operator()(
-			bool doSwapCheck = true, bool doDiffsCombine = false, bool doBoundaryShift = false);
+			bool doSwapCheck = true, bool doDiffsCombine = false, bool doBoundaryShift = false,
+			const std::vector<std::pair<intptr_t, intptr_t>>& syncPoints = {});
 
 	DiffCalc(const DiffCalc&) = delete;
 	const DiffCalc& operator=(const DiffCalc&) = delete;
 
 private:
-	static constexpr int		_cCancelCheckItrInterval {3000};
-	static constexpr intptr_t	_cDmax {INTPTR_MAX};
+	class Engine
+	{
+	public:
+		Engine(const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size,
+			IsCancelledFn isCancelled = nullptr);
 
-	struct middle_snake {
-		intptr_t x, y, u, v;
+		// Runs the actual compare and returns the differences
+		std::vector<diff_info<UserDataT>> operator()(bool doSwapCheck = true);
+
+		Engine(const Engine&) = delete;
+		const Engine& operator=(const Engine&) = delete;
+
+	private:
+		static constexpr int		_cCancelCheckItrInterval {3000};
+		static constexpr intptr_t	_cDmax {INTPTR_MAX};
+
+		struct middle_snake {
+			intptr_t x, y, u, v;
+		};
+
+		inline intptr_t& _v(intptr_t k, intptr_t r);
+		void _add(diff_type type, intptr_t off, intptr_t len);
+		intptr_t _find_middle_snake(intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend, middle_snake& ms);
+		intptr_t _ses(intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend);
+
+		inline intptr_t _count_replaces();
+		inline void _swap_diff1_diff2();
+
+		const Elem*	_a;
+		intptr_t _a_size;
+		const Elem*	_b;
+		intptr_t _b_size;
+
+		IsCancelledFn _isCancelled;
+		int _cancelCheckCount;
+
+		std::vector<diff_info<UserDataT>> _diff;
+
+		varray<intptr_t> _buf;
 	};
 
-	inline intptr_t& _v(intptr_t k, intptr_t r);
-	void _add(diff_type type, intptr_t off, intptr_t len);
-	intptr_t _find_middle_snake(intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend, middle_snake& ms);
-	intptr_t _ses(intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend);
-
+	void _diff_append(intptr_t aoff, intptr_t boff, std::vector<diff_info<UserDataT>>&& diff);
 	void _combine_diffs();
 	void _shift_boundaries();
-	inline intptr_t _count_replaces();
-
-	inline void _swap_diff1_diff2();
 
 	const Elem*	_a;
 	intptr_t _a_size;
 	const Elem*	_b;
 	intptr_t _b_size;
 
-	IsCancelledFn _isCancelled;
-	int _cancelCheckCount;
-
 	std::vector<diff_info<UserDataT>> _diff;
 
-	varray<intptr_t> _buf;
+	IsCancelledFn _isCancelled;
 };
 
 
 template <typename Elem, typename UserDataT>
-DiffCalc<Elem, UserDataT>::DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
-		IsCancelledFn isCancelled) :
-	_a(v1.data()), _a_size(v1.size()), _b(v2.data()), _b_size(v2.size()),
-	_isCancelled(isCancelled), _cancelCheckCount(_cCancelCheckItrInterval)
-{
-}
-
-
-template <typename Elem, typename UserDataT>
-DiffCalc<Elem, UserDataT>::DiffCalc(const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size,
-		IsCancelledFn isCancelled) :
+DiffCalc<Elem, UserDataT>::Engine::Engine(
+		const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size, IsCancelledFn isCancelled) :
 	_a(v1), _a_size(v1_size), _b(v2), _b_size(v2_size),
 	_isCancelled(isCancelled), _cancelCheckCount(_cCancelCheckItrInterval)
 {
@@ -152,16 +168,15 @@ DiffCalc<Elem, UserDataT>::DiffCalc(const Elem v1[], intptr_t v1_size, const Ele
 
 
 template <typename Elem, typename UserDataT>
-std::vector<diff_info<UserDataT>> DiffCalc<Elem, UserDataT>::operator()(
-	bool doSwapCheck, bool doDiffsCombine, bool doBoundaryShift)
+std::vector<diff_info<UserDataT>> DiffCalc<Elem, UserDataT>::Engine::operator()(bool doSwapCheck)
 {
-	// The diff algorithm assumes we begin with a diff. The following ensures this is true by skipping any matches
-	// in the beginning. This also helps to quickly process sequences that match entirely.
 	intptr_t off_s = 0;
 
 	intptr_t asize = _a_size;
 	intptr_t bsize = _b_size;
 
+	// The diff algorithm assumes we begin with a diff. The following ensures this is true by skipping any matches
+	// in the beginning. This also helps to quickly process sequences that match entirely.
 	while (off_s < asize && off_s < bsize && _a[off_s] == _b[off_s])
 		++off_s;
 
@@ -231,18 +246,12 @@ std::vector<diff_info<UserDataT>> DiffCalc<Elem, UserDataT>::operator()(
 	if (off_e)
 		_add(diff_type::DIFF_MATCH, aend - off_e + 1, off_e);
 
-	if (doDiffsCombine)
-		_combine_diffs();
-
-	if (doBoundaryShift)
-		_shift_boundaries();
-
 	return _diff;
 }
 
 
 template <typename Elem, typename UserDataT>
-inline intptr_t& DiffCalc<Elem, UserDataT>::_v(intptr_t k, intptr_t r)
+inline intptr_t& DiffCalc<Elem, UserDataT>::Engine::_v(intptr_t k, intptr_t r)
 {
 	// Pack -N to N into 0 to 2 * N
 	const intptr_t j = (k <= 0) ? (-k * 4 + r) : (k * 4 + (r - 2));
@@ -252,7 +261,7 @@ inline intptr_t& DiffCalc<Elem, UserDataT>::_v(intptr_t k, intptr_t r)
 
 
 template <typename Elem, typename UserDataT>
-void DiffCalc<Elem, UserDataT>::_add(diff_type type, intptr_t off, intptr_t len)
+void DiffCalc<Elem, UserDataT>::Engine::_add(diff_type type, intptr_t off, intptr_t len)
 {
 	if (len == 0)
 		return;
@@ -280,8 +289,8 @@ void DiffCalc<Elem, UserDataT>::_add(diff_type type, intptr_t off, intptr_t len)
 
 
 template <typename Elem, typename UserDataT>
-intptr_t DiffCalc<Elem, UserDataT>::_find_middle_snake(intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend,
-	middle_snake& ms)
+intptr_t DiffCalc<Elem, UserDataT>::Engine::_find_middle_snake(
+	intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend, middle_snake& ms)
 {
 	const intptr_t delta = aend - bend;
 	const intptr_t odd = delta & 1;
@@ -380,7 +389,8 @@ intptr_t DiffCalc<Elem, UserDataT>::_find_middle_snake(intptr_t aoff, intptr_t a
 
 
 template <typename Elem, typename UserDataT>
-intptr_t DiffCalc<Elem, UserDataT>::_ses(intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend)
+intptr_t DiffCalc<Elem, UserDataT>::Engine::_ses(
+	intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend)
 {
 	middle_snake ms = { 0 };
 	intptr_t d;
@@ -470,6 +480,139 @@ intptr_t DiffCalc<Elem, UserDataT>::_ses(intptr_t aoff, intptr_t aend, intptr_t 
 	}
 
 	return d;
+}
+
+
+template <typename Elem, typename UserDataT>
+inline intptr_t DiffCalc<Elem, UserDataT>::Engine::_count_replaces()
+{
+	const intptr_t diffSize = static_cast<intptr_t>(_diff.size()) - 1;
+	intptr_t replaces = 0;
+
+	for (intptr_t i = 0; i < diffSize; ++i)
+	{
+		if ((_diff[i].type == diff_type::DIFF_IN_1) && (_diff[i + 1].type == diff_type::DIFF_IN_2))
+		{
+			replaces += std::min(_diff[i].len, _diff[i + 1].len);
+			++i;
+		}
+	}
+
+	return replaces;
+}
+
+
+template <typename Elem, typename UserDataT>
+inline void DiffCalc<Elem, UserDataT>::Engine::_swap_diff1_diff2()
+{
+	intptr_t off2 = 0;
+	diff_info<UserDataT>* reorderDiff = nullptr;
+
+	// Swap DIFF_IN_1 and DIFF_IN_2
+	for (auto& d: _diff)
+	{
+		if (d.type == diff_type::DIFF_MATCH)
+		{
+			d.off = off2;
+			off2 += d.len;
+
+			reorderDiff = nullptr;
+		}
+		else if (d.type == diff_type::DIFF_IN_1)
+		{
+			d.type = diff_type::DIFF_IN_2;
+
+			reorderDiff = &d;
+		}
+		else
+		{
+			d.type = diff_type::DIFF_IN_1;
+			off2 += d.len;
+
+			if (reorderDiff)
+			{
+				std::swap(reorderDiff->type, d.type);
+				std::swap(reorderDiff->off,  d.off);
+				std::swap(reorderDiff->len,  d.len);
+
+				reorderDiff = nullptr;
+			}
+		}
+	}
+}
+
+
+template <typename Elem, typename UserDataT>
+DiffCalc<Elem, UserDataT>::DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
+		IsCancelledFn isCancelled) :
+	_a(v1.data()), _a_size(v1.size()), _b(v2.data()), _b_size(v2.size()), _isCancelled(isCancelled)
+{
+}
+
+
+template <typename Elem, typename UserDataT>
+DiffCalc<Elem, UserDataT>::DiffCalc(const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size,
+		IsCancelledFn isCancelled) :
+	_a(v1), _a_size(v1_size), _b(v2), _b_size(v2_size), _isCancelled(isCancelled)
+{
+}
+
+
+template <typename Elem, typename UserDataT>
+std::vector<diff_info<UserDataT>> DiffCalc<Elem, UserDataT>::operator()(
+	bool doSwapCheck, bool doDiffsCombine, bool doBoundaryShift,
+	const std::vector<std::pair<intptr_t, intptr_t>>& syncPoints)
+{
+	if (syncPoints.empty())
+	{
+		_diff = Engine(_a, _a_size, _b, _b_size)(doSwapCheck);
+	}
+	else
+	{
+		intptr_t apos = 0;
+		intptr_t bpos = 0;
+
+		for (const auto& syncP: syncPoints)
+		{
+			if (syncP.first  < apos || syncP.first  >= _a_size ||
+				syncP.second < bpos || syncP.second >= _b_size)
+				break;
+
+			_diff_append(apos, bpos,
+					Engine(&_a[apos], syncP.first - apos, &_b[bpos], syncP.second - bpos)(doSwapCheck));
+
+			apos = syncP.first;
+			bpos = syncP.second;
+		}
+
+		_diff_append(apos, bpos, Engine(&_a[apos], _a_size - apos, &_b[bpos], _b_size - bpos)(doSwapCheck));
+	}
+
+	if (doDiffsCombine)
+		_combine_diffs();
+
+	if (doBoundaryShift)
+		_shift_boundaries();
+
+	return _diff;
+}
+
+
+template <typename Elem, typename UserDataT>
+void DiffCalc<Elem, UserDataT>::_diff_append(intptr_t aoff, intptr_t boff, std::vector<diff_info<UserDataT>>&& diff)
+{
+	if (diff.empty())
+		return;
+
+	for (auto& d: diff)
+		d.off += (d.type == diff_type::DIFF_IN_2) ? boff : aoff;
+
+	auto dItr = diff.begin();
+
+	if (_diff.size() && _diff.back().type == dItr->type)
+		_diff.back().len += dItr->len;
+
+	_diff.insert(_diff.end(), ++dItr, diff.end());
 }
 
 
@@ -673,65 +816,6 @@ void DiffCalc<Elem, UserDataT>::_shift_boundaries()
 						--i;
 					}
 				}
-			}
-		}
-	}
-}
-
-
-template <typename Elem, typename UserDataT>
-inline intptr_t DiffCalc<Elem, UserDataT>::_count_replaces()
-{
-	const intptr_t diffSize = static_cast<intptr_t>(_diff.size()) - 1;
-	intptr_t replaces = 0;
-
-	for (intptr_t i = 0; i < diffSize; ++i)
-	{
-		if ((_diff[i].type == diff_type::DIFF_IN_1) && (_diff[i + 1].type == diff_type::DIFF_IN_2))
-		{
-			replaces += std::min(_diff[i].len, _diff[i + 1].len);
-			++i;
-		}
-	}
-
-	return replaces;
-}
-
-
-template <typename Elem, typename UserDataT>
-inline void DiffCalc<Elem, UserDataT>::_swap_diff1_diff2()
-{
-	intptr_t off2 = 0;
-	diff_info<UserDataT>* reorderDiff = nullptr;
-
-	// Swap DIFF_IN_1 and DIFF_IN_2
-	for (auto& d: _diff)
-	{
-		if (d.type == diff_type::DIFF_MATCH)
-		{
-			d.off = off2;
-			off2 += d.len;
-
-			reorderDiff = nullptr;
-		}
-		else if (d.type == diff_type::DIFF_IN_1)
-		{
-			d.type = diff_type::DIFF_IN_2;
-
-			reorderDiff = &d;
-		}
-		else
-		{
-			d.type = diff_type::DIFF_IN_1;
-			off2 += d.len;
-
-			if (reorderDiff)
-			{
-				std::swap(reorderDiff->type, d.type);
-				std::swap(reorderDiff->off,  d.off);
-				std::swap(reorderDiff->len,  d.len);
-
-				reorderDiff = nullptr;
 			}
 		}
 	}
