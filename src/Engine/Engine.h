@@ -131,6 +131,10 @@ struct CompareOptions
 	bool	ignoreEOL;
 	bool	ignoreCase;
 
+	bool	bookmarksAsSync;
+
+	mutable std::vector<std::pair<intptr_t, intptr_t>> syncPoints;
+
 	bool	recompareOnChange;
 
 	std::unique_ptr<boost::wregex>	ignoreRegex;

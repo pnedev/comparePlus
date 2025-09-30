@@ -610,9 +610,12 @@ void DiffCalc<Elem, UserDataT>::_diff_append(intptr_t aoff, intptr_t boff, std::
 	auto dItr = diff.begin();
 
 	if (_diff.size() && _diff.back().type == dItr->type)
+	{
 		_diff.back().len += dItr->len;
+		dItr++;
+	}
 
-	_diff.insert(_diff.end(), ++dItr, diff.end());
+	_diff.insert(_diff.end(), dItr, diff.end());
 }
 
 

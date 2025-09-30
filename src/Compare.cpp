@@ -1238,6 +1238,15 @@ void ComparedPair::setStatus()
 				infoCurrentPos += len;
 			}
 
+			if (options.bookmarksAsSync)
+			{
+				const int len = _snwprintf_s(buf, _countof(buf), _TRUNCATE, L"    Manual Sync Points: %lld",
+						options.syncPoints.size());
+
+				wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+				infoCurrentPos += len;
+			}
+
 			info[infoCurrentPos] = L'\0';
 		}
 		else if (Settings.StatusInfo == StatusType::DIFFS_SUMMARY)
@@ -2993,22 +3002,23 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	// Compare is triggered manually - get/re-get compare settings and position/reposition files
 	if (!autoUpdating)
 	{
-		cmpPair->options.newFileViewId				= Settings.NewFileViewId;
+		cmpPair->options.newFileViewId	= Settings.NewFileViewId;
+		cmpPair->options.findUniqueMode	= findUniqueMode;
 
-		cmpPair->options.findUniqueMode				= findUniqueMode;
-		cmpPair->options.neverMarkIgnored			= Settings.NeverMarkIgnored;
-		cmpPair->options.detectMoves				= Settings.DetectMoves;
-		cmpPair->options.detectSubBlockDiffs		= Settings.DetectSubBlockDiffs;
-		cmpPair->options.detectSubLineMoves			= Settings.DetectSubBlockDiffs && Settings.DetectSubLineMoves;
-		cmpPair->options.detectCharDiffs			= Settings.DetectSubBlockDiffs && Settings.DetectCharDiffs;
-		cmpPair->options.ignoreEmptyLines			= Settings.IgnoreEmptyLines;
-		cmpPair->options.ignoreFoldedLines			= Settings.IgnoreFoldedLines;
-		cmpPair->options.ignoreHiddenLines			= Settings.IgnoreHiddenLines;
-		cmpPair->options.ignoreChangedSpaces		= Settings.IgnoreChangedSpaces;
-		cmpPair->options.ignoreAllSpaces			= Settings.IgnoreAllSpaces;
-		cmpPair->options.ignoreEOL					= Settings.IgnoreEOL || cmpPair->forcedIgnoreEOL;
-		cmpPair->options.ignoreCase					= Settings.IgnoreCase;
-		cmpPair->options.recompareOnChange			= Settings.RecompareOnChange;
+		cmpPair->options.neverMarkIgnored		= Settings.NeverMarkIgnored;
+		cmpPair->options.detectMoves			= Settings.DetectMoves && !findUniqueMode;
+		cmpPair->options.detectSubBlockDiffs	= Settings.DetectSubBlockDiffs && !findUniqueMode;
+		cmpPair->options.detectSubLineMoves		= Settings.DetectSubLineMoves && cmpPair->options.detectSubBlockDiffs;
+		cmpPair->options.detectCharDiffs		= Settings.DetectCharDiffs && cmpPair->options.detectSubBlockDiffs;
+		cmpPair->options.ignoreEmptyLines		= Settings.IgnoreEmptyLines;
+		cmpPair->options.ignoreFoldedLines		= Settings.IgnoreFoldedLines;
+		cmpPair->options.ignoreHiddenLines		= Settings.IgnoreHiddenLines;
+		cmpPair->options.ignoreChangedSpaces	= Settings.IgnoreChangedSpaces;
+		cmpPair->options.ignoreAllSpaces		= Settings.IgnoreAllSpaces;
+		cmpPair->options.ignoreEOL				= Settings.IgnoreEOL || cmpPair->forcedIgnoreEOL;
+		cmpPair->options.ignoreCase				= Settings.IgnoreCase;
+		cmpPair->options.bookmarksAsSync		= Settings.BookmarksAsSync && !findUniqueMode;
+		cmpPair->options.recompareOnChange		= Settings.RecompareOnChange;
 
 		if (Settings.IgnoreRegex)
 			cmpPair->options.setIgnoreRegex(Settings.IgnoreRegexStr[0],
@@ -3037,6 +3047,41 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 				cmpPair->options.selections[newView] = getSelectionLines(newView);
 				cmpPair->options.selections[tmpView] = std::make_pair(1, getEndNotEmptyLine(tmpView));
 			}
+		}
+
+		cmpPair->options.syncPoints.clear();
+
+		if (cmpPair->options.bookmarksAsSync)
+		{
+			intptr_t bookmark1 = -1;
+			intptr_t bookmark2 = -1;
+
+			intptr_t endLine1 = getLinesCount(MAIN_VIEW) - 1;
+			intptr_t endLine2 = getLinesCount(SUB_VIEW) - 1;
+
+			if (selectionCompare)
+			{
+				bookmark1 = cmpPair->options.selections[MAIN_VIEW].first;
+				bookmark2 = cmpPair->options.selections[SUB_VIEW].first;
+
+				endLine1 = cmpPair->options.selections[MAIN_VIEW].second;
+				endLine2 = cmpPair->options.selections[SUB_VIEW].second;
+			}
+
+			while (true)
+			{
+				bookmark1 = getNextBookmarkedLine(MAIN_VIEW, bookmark1 + 1);
+				if (bookmark1 < 0 || bookmark1 > endLine1)
+					break;
+
+				bookmark2 = getNextBookmarkedLine(SUB_VIEW, bookmark2 + 1);
+				if (bookmark2 < 0 || bookmark2 > endLine2)
+					break;
+
+				cmpPair->options.syncPoints.emplace_back(std::make_pair(bookmark1, bookmark2));
+			}
+
+			cmpPair->options.bookmarksAsSync = !cmpPair->options.syncPoints.empty();
 		}
 
 		cmpPair->hideFlags = NO_HIDE;
@@ -3625,15 +3670,24 @@ void ActiveCompareSummary()
 		infoCurrentPos += len;
 	}
 
-	if (hasDetectOpts || hasIgnoreOpts)
+	if (!hasDetectOpts && !hasIgnoreOpts)
 	{
-		info[infoCurrentPos] = L'\0';
+		const int len = _snwprintf_s(buf, _countof(buf), _TRUNCATE, L"No%s Ignore options used.",
+				cmpPair->options.findUniqueMode ? L"" : L" Detect and") - 1;
+
+		wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+		infoCurrentPos += len;
+	}
+
+	if (cmpPair->options.bookmarksAsSync)
+	{
+		_snwprintf_s(buf, _countof(buf), _TRUNCATE, L"\n\nManual sync points used: %lld.\n\n",
+				cmpPair->options.syncPoints.size());
+		wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 	}
 	else
 	{
-		_snwprintf_s(buf, _countof(buf), _TRUNCATE, L"No%s Ignore options used.",
-				cmpPair->options.findUniqueMode ? L"" : L" Detect and");
-		wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
+		wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, L"\n\n");
 	}
 
 	::MessageBoxW(nppData._nppHandle, info, PLUGIN_NAME, MB_OK);
@@ -4272,6 +4326,15 @@ void OpenCompareOptionsDlg()
 }
 
 
+void BookmarksAsSyncPoints()
+{
+	Settings.BookmarksAsSync = !Settings.BookmarksAsSync;
+	::SendMessageW(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_BOOKMARKS_SYNC]._cmdID,
+			(LPARAM)Settings.BookmarksAsSync);
+	Settings.markAsDirty();
+}
+
+
 void OpenVisualFiltersDlg()
 {
 	VisualFiltersDialog visualFiltersDlg(hInstance, nppData);
@@ -4564,6 +4627,9 @@ void createMenu()
 
 	wcscpy_s(funcItem[CMD_COMPARE_OPTIONS]._itemName, menuItemSize, L"Compare Options (ignore, etc.)...");
 	funcItem[CMD_COMPARE_OPTIONS]._pFunc = OpenCompareOptionsDlg;
+
+	wcscpy_s(funcItem[CMD_BOOKMARKS_SYNC]._itemName, menuItemSize, L"Use Bookmarks as Sync Points");
+	funcItem[CMD_BOOKMARKS_SYNC]._pFunc = BookmarksAsSyncPoints;
 
 	wcscpy_s(funcItem[CMD_DIFFS_VISUAL_FILTERS]._itemName, menuItemSize, L"Diffs Visual Filters...");
 	funcItem[CMD_DIFFS_VISUAL_FILTERS]._pFunc = OpenVisualFiltersDlg;
@@ -5045,6 +5111,9 @@ void onNppReady()
 
 	::SendMessageW(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID,
 			(LPARAM)Settings.ShowNavBar);
+
+	::SendMessageW(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_BOOKMARKS_SYNC]._cmdID,
+			(LPARAM)Settings.BookmarksAsSync);
 
 	::SendMessageW(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_AUTO_RECOMPARE]._cmdID,
 			(LPARAM)Settings.RecompareOnChange);

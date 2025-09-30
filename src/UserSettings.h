@@ -165,6 +165,7 @@ public:
 	bool			ShowOnlySelections;
 	bool			ShowNavBar;
 
+	bool			BookmarksAsSync;
 	bool			RecompareOnChange;
 	StatusType		StatusInfo;
 
@@ -221,6 +222,7 @@ private:
 	static const wchar_t showOnlySelSetting[];
 	static const wchar_t navBarSetting[];
 
+	static const wchar_t bookmarksAsSyncSetting[];
 	static const wchar_t reCompareOnChangeSetting[];
 
 	static const wchar_t statusInfoSetting[];

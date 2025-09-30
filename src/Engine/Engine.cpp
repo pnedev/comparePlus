@@ -2468,7 +2468,7 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 
 	cmpInfo.blockDiffs = DiffCalc<Line, blockDiffInfo>(cmpInfo.doc1.lines, cmpInfo.doc2.lines,
 		std::bind(&ProgressDlg::IsCancelled, progress))(
-			true, options.ignoreAllSpaces || options.ignoreChangedSpaces, true);
+			true, options.ignoreAllSpaces || options.ignoreChangedSpaces, true, options.syncPoints);
 
 	if (progress->IsCancelled())
 		return CompareResult::COMPARE_CANCELLED;

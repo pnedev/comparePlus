@@ -63,6 +63,7 @@ const wchar_t UserSettings::hideMovedLinesSetting[]			= L"hide_moved_lines";
 const wchar_t UserSettings::showOnlySelSetting[]			= L"show_only_selections";
 const wchar_t UserSettings::navBarSetting[]					= L"navigation_bar";
 
+const wchar_t UserSettings::bookmarksAsSyncSetting[]		= L"bookmarks_as_sync";
 const wchar_t UserSettings::reCompareOnChangeSetting[]		= L"recompare_on_change";
 
 const wchar_t UserSettings::statusInfoSetting[]				= L"status_info";
@@ -197,6 +198,7 @@ void UserSettings::load()
 	ShowOnlySelections	= ::GetPrivateProfileIntW(mainSection, showOnlySelSetting,			1, ini) != 0;
 
 	ShowNavBar			= ::GetPrivateProfileIntW(mainSection, navBarSetting,				1, ini) != 0;
+	BookmarksAsSync		= ::GetPrivateProfileIntW(mainSection, bookmarksAsSyncSetting,		0, ini) != 0;
 	RecompareOnChange	= ::GetPrivateProfileIntW(mainSection, reCompareOnChangeSetting,	1, ini) != 0;
 
 	StatusInfo = static_cast<StatusType>(::GetPrivateProfileIntW(mainSection, statusInfoSetting,
@@ -357,6 +359,7 @@ void UserSettings::save()
 	::WritePrivateProfileStringW(mainSection, showOnlySelSetting,			ShowOnlySelections	  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, navBarSetting,				ShowNavBar			  ? L"1" : L"0", ini);
 
+	::WritePrivateProfileStringW(mainSection, bookmarksAsSyncSetting,		BookmarksAsSync		  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, reCompareOnChangeSetting,		RecompareOnChange	  ? L"1" : L"0", ini);
 
 	wchar_t buffer[64];
