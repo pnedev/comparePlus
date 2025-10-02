@@ -2858,6 +2858,147 @@ CompareList_t::iterator addComparePair()
 }
 
 
+bool setupCompare(CompareList_t::iterator& cmpPair, bool selectionCompare, bool findUniqueMode, bool recompare,
+	bool recompareSameSelections)
+{
+	cmpPair->options.newFileViewId	= Settings.NewFileViewId;
+	cmpPair->options.findUniqueMode	= findUniqueMode;
+
+	cmpPair->options.neverMarkIgnored		= Settings.NeverMarkIgnored;
+	cmpPair->options.detectMoves			= Settings.DetectMoves && !findUniqueMode;
+	cmpPair->options.detectSubBlockDiffs	= Settings.DetectSubBlockDiffs && !findUniqueMode;
+	cmpPair->options.detectSubLineMoves		= Settings.DetectSubLineMoves && cmpPair->options.detectSubBlockDiffs;
+	cmpPair->options.detectCharDiffs		= Settings.DetectCharDiffs && cmpPair->options.detectSubBlockDiffs;
+	cmpPair->options.ignoreEmptyLines		= Settings.IgnoreEmptyLines;
+	cmpPair->options.ignoreFoldedLines		= Settings.IgnoreFoldedLines;
+	cmpPair->options.ignoreHiddenLines		= Settings.IgnoreHiddenLines;
+	cmpPair->options.ignoreChangedSpaces	= Settings.IgnoreChangedSpaces;
+	cmpPair->options.ignoreAllSpaces		= Settings.IgnoreAllSpaces;
+	cmpPair->options.ignoreEOL				= Settings.IgnoreEOL || cmpPair->forcedIgnoreEOL;
+	cmpPair->options.ignoreCase				= Settings.IgnoreCase;
+	cmpPair->options.bookmarksAsSync		= Settings.BookmarksAsSync && !findUniqueMode;
+	cmpPair->options.recompareOnChange		= Settings.RecompareOnChange;
+
+	if (Settings.IgnoreRegex)
+		cmpPair->options.setIgnoreRegex(Settings.IgnoreRegexStr[0],
+				Settings.InvertRegex, Settings.InclRegexNomatchLines, Settings.HighlightRegexIgnores,
+				Settings.IgnoreCase);
+	else
+		cmpPair->options.clearIgnoreRegex();
+
+	cmpPair->options.changedThresholdPercent	= Settings.ChangedThresholdPercent;
+	cmpPair->options.selectionCompare			= selectionCompare;
+
+	cmpPair->positionFiles(recompare);
+
+	// Re-get selections
+	if (selectionCompare && !recompareSameSelections)
+	{
+		if (cmpPair->getOldFile().isTemp != CLIPBOARD_TEMP)
+		{
+			cmpPair->options.selections[MAIN_VIEW]	= getSelectionLines(MAIN_VIEW);
+			cmpPair->options.selections[SUB_VIEW]	= getSelectionLines(SUB_VIEW);
+		}
+		else
+		{
+			const int newView = cmpPair->getNewFile().compareViewId;
+			const int tmpView = cmpPair->getOldFile().compareViewId;
+
+			cmpPair->options.selections[newView] = getSelectionLines(newView);
+			cmpPair->options.selections[tmpView] = std::make_pair(1, getEndNotEmptyLine(tmpView));
+		}
+	}
+
+	cmpPair->options.syncPoints.clear();
+
+	if (cmpPair->options.bookmarksAsSync)
+	{
+		intptr_t bookmark1 = -1;
+		intptr_t bookmark2 = -1;
+
+		intptr_t endLine1 = getLinesCount(MAIN_VIEW) - 1;
+		intptr_t endLine2 = getLinesCount(SUB_VIEW) - 1;
+
+		if (selectionCompare)
+		{
+			bookmark1 = cmpPair->options.selections[MAIN_VIEW].first;
+			bookmark2 = cmpPair->options.selections[SUB_VIEW].first;
+
+			endLine1 = cmpPair->options.selections[MAIN_VIEW].second;
+			endLine2 = cmpPair->options.selections[SUB_VIEW].second;
+		}
+
+		while (true)
+		{
+			bookmark1 = getNextBookmarkedLine(MAIN_VIEW, bookmark1 + 1);
+			if (bookmark1 < 0 || bookmark1 > endLine1)
+				break;
+
+			bookmark2 = getNextBookmarkedLine(SUB_VIEW, bookmark2 + 1);
+			if (bookmark2 < 0 || bookmark2 > endLine2)
+				break;
+
+			cmpPair->options.syncPoints.emplace_back(std::make_pair(bookmark1, bookmark2));
+		}
+
+		cmpPair->options.bookmarksAsSync = !cmpPair->options.syncPoints.empty();
+	}
+
+	cmpPair->hideFlags = NO_HIDE;
+
+	// New compare?
+	if (!recompare)
+	{
+		if ((cmpPair->getOldFile().isTemp != CLIPBOARD_TEMP) &&
+			(CallScintilla(MAIN_VIEW, SCI_GETEOLMODE, 0, 0) != CallScintilla(SUB_VIEW, SCI_GETEOLMODE, 0, 0)) &&
+			!cmpPair->options.ignoreEOL)
+		{
+			if (::MessageBoxW(nppData._nppHandle,
+					L"Seems like files differ in line endings (EOL). "
+					L"If that's the case all lines will appear different.\n\n"
+					L"Would you like to ignore EOL differences for this compare?",
+					cmpPair->options.findUniqueMode ? L"Find Unique" : L"Compare",
+					MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) == IDYES)
+			{
+				cmpPair->forcedIgnoreEOL = true;
+				cmpPair->options.ignoreEOL = true;
+			}
+		}
+
+		if (Settings.SizesCheck)
+		{
+			constexpr int cLinesCountWarningLimit = 50000;
+
+			bool largeFilesWarning = false;
+
+			if (selectionCompare)
+				largeFilesWarning =
+					(cmpPair->options.selections[MAIN_VIEW].second -
+					cmpPair->options.selections[MAIN_VIEW].first + 1 > cLinesCountWarningLimit) &&
+					(cmpPair->options.selections[SUB_VIEW].second -
+					cmpPair->options.selections[SUB_VIEW].first + 1 > cLinesCountWarningLimit);
+			else
+				largeFilesWarning =
+					(getLinesCount(MAIN_VIEW) > cLinesCountWarningLimit) &&
+					(getLinesCount(SUB_VIEW) > cLinesCountWarningLimit);
+
+			if (largeFilesWarning)
+			{
+				if (::MessageBoxW(nppData._nppHandle,
+					L"Comparing large files such as these might take significant time "
+					L"especially if they differ a lot.\n\n"
+					L"Compare anyway?", PLUGIN_NAME, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES)
+				{
+					return false;
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
+
 CompareResult runCompare(CompareList_t::iterator cmpPair)
 {
 	setStyles(Settings);
@@ -3002,138 +3143,10 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	// Compare is triggered manually - get/re-get compare settings and position/reposition files
 	if (!autoUpdating)
 	{
-		cmpPair->options.newFileViewId	= Settings.NewFileViewId;
-		cmpPair->options.findUniqueMode	= findUniqueMode;
-
-		cmpPair->options.neverMarkIgnored		= Settings.NeverMarkIgnored;
-		cmpPair->options.detectMoves			= Settings.DetectMoves && !findUniqueMode;
-		cmpPair->options.detectSubBlockDiffs	= Settings.DetectSubBlockDiffs && !findUniqueMode;
-		cmpPair->options.detectSubLineMoves		= Settings.DetectSubLineMoves && cmpPair->options.detectSubBlockDiffs;
-		cmpPair->options.detectCharDiffs		= Settings.DetectCharDiffs && cmpPair->options.detectSubBlockDiffs;
-		cmpPair->options.ignoreEmptyLines		= Settings.IgnoreEmptyLines;
-		cmpPair->options.ignoreFoldedLines		= Settings.IgnoreFoldedLines;
-		cmpPair->options.ignoreHiddenLines		= Settings.IgnoreHiddenLines;
-		cmpPair->options.ignoreChangedSpaces	= Settings.IgnoreChangedSpaces;
-		cmpPair->options.ignoreAllSpaces		= Settings.IgnoreAllSpaces;
-		cmpPair->options.ignoreEOL				= Settings.IgnoreEOL || cmpPair->forcedIgnoreEOL;
-		cmpPair->options.ignoreCase				= Settings.IgnoreCase;
-		cmpPair->options.bookmarksAsSync		= Settings.BookmarksAsSync && !findUniqueMode;
-		cmpPair->options.recompareOnChange		= Settings.RecompareOnChange;
-
-		if (Settings.IgnoreRegex)
-			cmpPair->options.setIgnoreRegex(Settings.IgnoreRegexStr[0],
-					Settings.InvertRegex, Settings.InclRegexNomatchLines, Settings.HighlightRegexIgnores,
-					Settings.IgnoreCase);
-		else
-			cmpPair->options.clearIgnoreRegex();
-
-		cmpPair->options.changedThresholdPercent	= Settings.ChangedThresholdPercent;
-		cmpPair->options.selectionCompare			= selectionCompare;
-
-		cmpPair->positionFiles(recompare);
-
-		if (selectionCompare && !recompareSameSelections)
+		if (!setupCompare(cmpPair, selectionCompare, findUniqueMode, recompare, recompareSameSelections))
 		{
-			if (cmpPair->getOldFile().isTemp != CLIPBOARD_TEMP)
-			{
-				cmpPair->options.selections[MAIN_VIEW]	= getSelectionLines(MAIN_VIEW);
-				cmpPair->options.selections[SUB_VIEW]	= getSelectionLines(SUB_VIEW);
-			}
-			else
-			{
-				const int newView = cmpPair->getNewFile().compareViewId;
-				const int tmpView = cmpPair->getOldFile().compareViewId;
-
-				cmpPair->options.selections[newView] = getSelectionLines(newView);
-				cmpPair->options.selections[tmpView] = std::make_pair(1, getEndNotEmptyLine(tmpView));
-			}
-		}
-
-		cmpPair->options.syncPoints.clear();
-
-		if (cmpPair->options.bookmarksAsSync)
-		{
-			intptr_t bookmark1 = -1;
-			intptr_t bookmark2 = -1;
-
-			intptr_t endLine1 = getLinesCount(MAIN_VIEW) - 1;
-			intptr_t endLine2 = getLinesCount(SUB_VIEW) - 1;
-
-			if (selectionCompare)
-			{
-				bookmark1 = cmpPair->options.selections[MAIN_VIEW].first;
-				bookmark2 = cmpPair->options.selections[SUB_VIEW].first;
-
-				endLine1 = cmpPair->options.selections[MAIN_VIEW].second;
-				endLine2 = cmpPair->options.selections[SUB_VIEW].second;
-			}
-
-			while (true)
-			{
-				bookmark1 = getNextBookmarkedLine(MAIN_VIEW, bookmark1 + 1);
-				if (bookmark1 < 0 || bookmark1 > endLine1)
-					break;
-
-				bookmark2 = getNextBookmarkedLine(SUB_VIEW, bookmark2 + 1);
-				if (bookmark2 < 0 || bookmark2 > endLine2)
-					break;
-
-				cmpPair->options.syncPoints.emplace_back(std::make_pair(bookmark1, bookmark2));
-			}
-
-			cmpPair->options.bookmarksAsSync = !cmpPair->options.syncPoints.empty();
-		}
-
-		cmpPair->hideFlags = NO_HIDE;
-
-		// New compare?
-		if (!recompare)
-		{
-			if ((cmpPair->getOldFile().isTemp != CLIPBOARD_TEMP) &&
-				(CallScintilla(MAIN_VIEW, SCI_GETEOLMODE, 0, 0) != CallScintilla(SUB_VIEW, SCI_GETEOLMODE, 0, 0)) &&
-				!cmpPair->options.ignoreEOL)
-			{
-				if (::MessageBoxW(nppData._nppHandle,
-						L"Seems like files differ in line endings (EOL). "
-						L"If that's the case all lines will appear different.\n\n"
-						L"Would you like to ignore EOL differences for this compare?",
-						cmpPair->options.findUniqueMode ? L"Find Unique" : L"Compare",
-						MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) == IDYES)
-				{
-					cmpPair->forcedIgnoreEOL = true;
-					cmpPair->options.ignoreEOL = true;
-				}
-			}
-
-			if (Settings.SizesCheck)
-			{
-				constexpr int cLinesCountWarningLimit = 50000;
-
-				bool largeFilesWarning = false;
-
-				if (selectionCompare)
-					largeFilesWarning =
-						(cmpPair->options.selections[MAIN_VIEW].second -
-						cmpPair->options.selections[MAIN_VIEW].first + 1 > cLinesCountWarningLimit) &&
-						(cmpPair->options.selections[SUB_VIEW].second -
-						cmpPair->options.selections[SUB_VIEW].first + 1 > cLinesCountWarningLimit);
-				else
-					largeFilesWarning =
-						(getLinesCount(MAIN_VIEW) > cLinesCountWarningLimit) &&
-						(getLinesCount(SUB_VIEW) > cLinesCountWarningLimit);
-
-				if (largeFilesWarning)
-				{
-					if (::MessageBoxW(nppData._nppHandle,
-						L"Comparing large files such as these might take significant time "
-						L"especially if they differ a lot.\n\n"
-						L"Compare anyway?", PLUGIN_NAME, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES)
-					{
-						clearComparePair(getCurrentBuffId());
-						return;
-					}
-				}
-			}
+			clearComparePair(getCurrentBuffId());
+			return;
 		}
 	}
 
@@ -3673,7 +3686,7 @@ void ActiveCompareSummary()
 	if (!hasDetectOpts && !hasIgnoreOpts)
 	{
 		const int len = _snwprintf_s(buf, _countof(buf), _TRUNCATE, L"No%s Ignore options used.",
-				cmpPair->options.findUniqueMode ? L"" : L" Detect and") - 1;
+				cmpPair->options.findUniqueMode ? L"" : L" Detect and");
 
 		wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 		infoCurrentPos += len;
