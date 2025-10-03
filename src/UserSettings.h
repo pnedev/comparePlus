@@ -31,6 +31,7 @@
 
 #define DEFAULT_ENCODINGS_CHECK				1
 #define DEFAULT_SIZES_CHECK					1
+#define DEFAULT_MANUAL_SYNC_CHECK			1
 #define DEFAULT_PROMPT_CLOSE_ON_MATCH		0
 #define DEFAULT_HIDE_MARGIN					0
 #define DEFAULT_NEVER_MARK_IGNORED			0
@@ -134,6 +135,7 @@ public:
 
 	bool			EncodingsCheck;
 	bool			SizesCheck;
+	bool			ManualSyncCheck;
 	bool			PromptToCloseOnMatch;
 	bool			HideMargin;
 	bool			NeverMarkIgnored;
@@ -191,6 +193,7 @@ private:
 
 	static const wchar_t encodingsCheckSetting[];
 	static const wchar_t sizesCheckSetting[];
+	static const wchar_t manualSyncCheckSetting[];
 	static const wchar_t promptCloseOnMatchSetting[];
 	static const wchar_t hideMarginSetting[];
 	static const wchar_t markIgnoredLinesSetting[];

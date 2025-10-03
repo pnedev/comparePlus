@@ -33,6 +33,7 @@ const wchar_t UserSettings::compareToPrevSetting[]			= L"default_compare_to_prev
 
 const wchar_t UserSettings::encodingsCheckSetting[]			= L"check_encodings";
 const wchar_t UserSettings::sizesCheckSetting[]				= L"check_sizes";
+const wchar_t UserSettings::manualSyncCheckSetting[]		= L"check_manual_sync";
 const wchar_t UserSettings::promptCloseOnMatchSetting[]		= L"prompt_to_close_on_match";
 const wchar_t UserSettings::hideMarginSetting[]				= L"hide_margin";
 const wchar_t UserSettings::markIgnoredLinesSetting[]		= L"never_colorize_ignored_lines";
@@ -131,6 +132,8 @@ void UserSettings::load()
 			DEFAULT_ENCODINGS_CHECK, ini) != 0;
 	SizesCheck				= ::GetPrivateProfileIntW(mainSection, sizesCheckSetting,
 			DEFAULT_SIZES_CHECK, ini) != 0;
+	ManualSyncCheck			= ::GetPrivateProfileIntW(mainSection, manualSyncCheckSetting,
+			DEFAULT_MANUAL_SYNC_CHECK, ini) != 0;
 	PromptToCloseOnMatch	= ::GetPrivateProfileIntW(mainSection, promptCloseOnMatchSetting,
 			DEFAULT_PROMPT_CLOSE_ON_MATCH, ini) != 0;
 	HideMargin				= ::GetPrivateProfileIntW(mainSection, hideMarginSetting,
@@ -317,6 +320,7 @@ void UserSettings::save()
 	::WritePrivateProfileStringW(mainSection, compareToPrevSetting,			CompareToPrev		  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, encodingsCheckSetting,		EncodingsCheck		  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, sizesCheckSetting,			SizesCheck			  ? L"1" : L"0", ini);
+	::WritePrivateProfileStringW(mainSection, manualSyncCheckSetting,		ManualSyncCheck		  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, promptCloseOnMatchSetting,	PromptToCloseOnMatch  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, hideMarginSetting,			HideMargin	  		  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, markIgnoredLinesSetting,		NeverMarkIgnored	  ? L"1" : L"0", ini);

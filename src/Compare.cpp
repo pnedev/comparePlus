@@ -394,6 +394,7 @@ public:
 	CompareSummary	summary;
 
 	bool			forcedIgnoreEOL		= false;
+	bool			forcedNoManualSync	= false;
 
 	unsigned		hideFlags			= NO_HIDE;
 
@@ -2579,7 +2580,7 @@ bool isEncodingOK(const ComparedPair& cmpPair)
 		if (::MessageBoxW(nppData._nppHandle,
 			L"Trying to compare files with different encodings - "
 			L"the result might be inaccurate and misleading.\n\n"
-			L"Compare anyway?", PLUGIN_NAME, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES)
+			L"Compare anyway?", PLUGIN_NAME, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) != IDYES)
 		{
 			return false;
 		}
@@ -2864,20 +2865,20 @@ bool setupCompare(CompareList_t::iterator& cmpPair, bool selectionCompare, bool 
 	cmpPair->options.newFileViewId	= Settings.NewFileViewId;
 	cmpPair->options.findUniqueMode	= findUniqueMode;
 
-	cmpPair->options.neverMarkIgnored		= Settings.NeverMarkIgnored;
-	cmpPair->options.detectMoves			= Settings.DetectMoves && !findUniqueMode;
-	cmpPair->options.detectSubBlockDiffs	= Settings.DetectSubBlockDiffs && !findUniqueMode;
-	cmpPair->options.detectSubLineMoves		= Settings.DetectSubLineMoves && cmpPair->options.detectSubBlockDiffs;
-	cmpPair->options.detectCharDiffs		= Settings.DetectCharDiffs && cmpPair->options.detectSubBlockDiffs;
-	cmpPair->options.ignoreEmptyLines		= Settings.IgnoreEmptyLines;
-	cmpPair->options.ignoreFoldedLines		= Settings.IgnoreFoldedLines;
-	cmpPair->options.ignoreHiddenLines		= Settings.IgnoreHiddenLines;
-	cmpPair->options.ignoreChangedSpaces	= Settings.IgnoreChangedSpaces;
-	cmpPair->options.ignoreAllSpaces		= Settings.IgnoreAllSpaces;
-	cmpPair->options.ignoreEOL				= Settings.IgnoreEOL || cmpPair->forcedIgnoreEOL;
-	cmpPair->options.ignoreCase				= Settings.IgnoreCase;
-	cmpPair->options.bookmarksAsSync		= Settings.BookmarksAsSync && !findUniqueMode;
-	cmpPair->options.recompareOnChange		= Settings.RecompareOnChange;
+	cmpPair->options.neverMarkIgnored	 = Settings.NeverMarkIgnored;
+	cmpPair->options.detectMoves		 = Settings.DetectMoves && !findUniqueMode;
+	cmpPair->options.detectSubBlockDiffs = Settings.DetectSubBlockDiffs && !findUniqueMode;
+	cmpPair->options.detectSubLineMoves	 = Settings.DetectSubLineMoves && cmpPair->options.detectSubBlockDiffs;
+	cmpPair->options.detectCharDiffs	 = Settings.DetectCharDiffs && cmpPair->options.detectSubBlockDiffs;
+	cmpPair->options.ignoreEmptyLines	 = Settings.IgnoreEmptyLines;
+	cmpPair->options.ignoreFoldedLines	 = Settings.IgnoreFoldedLines;
+	cmpPair->options.ignoreHiddenLines	 = Settings.IgnoreHiddenLines;
+	cmpPair->options.ignoreChangedSpaces = Settings.IgnoreChangedSpaces;
+	cmpPair->options.ignoreAllSpaces	 = Settings.IgnoreAllSpaces;
+	cmpPair->options.ignoreEOL			 = Settings.IgnoreEOL || cmpPair->forcedIgnoreEOL;
+	cmpPair->options.ignoreCase			 = Settings.IgnoreCase;
+	cmpPair->options.bookmarksAsSync	 = Settings.BookmarksAsSync && !cmpPair->forcedNoManualSync && !findUniqueMode;
+	cmpPair->options.recompareOnChange	 = Settings.RecompareOnChange;
 
 	if (Settings.IgnoreRegex)
 		cmpPair->options.setIgnoreRegex(Settings.IgnoreRegexStr[0],
@@ -2949,22 +2950,6 @@ bool setupCompare(CompareList_t::iterator& cmpPair, bool selectionCompare, bool 
 	// New compare?
 	if (!recompare)
 	{
-		if ((cmpPair->getOldFile().isTemp != CLIPBOARD_TEMP) &&
-			(CallScintilla(MAIN_VIEW, SCI_GETEOLMODE, 0, 0) != CallScintilla(SUB_VIEW, SCI_GETEOLMODE, 0, 0)) &&
-			!cmpPair->options.ignoreEOL)
-		{
-			if (::MessageBoxW(nppData._nppHandle,
-					L"Seems like files differ in line endings (EOL). "
-					L"If that's the case all lines will appear different.\n\n"
-					L"Would you like to ignore EOL differences for this compare?",
-					cmpPair->options.findUniqueMode ? L"Find Unique" : L"Compare",
-					MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) == IDYES)
-			{
-				cmpPair->forcedIgnoreEOL = true;
-				cmpPair->options.ignoreEOL = true;
-			}
-		}
-
 		if (Settings.SizesCheck)
 		{
 			constexpr int cLinesCountWarningLimit = 50000;
@@ -2987,10 +2972,39 @@ bool setupCompare(CompareList_t::iterator& cmpPair, bool selectionCompare, bool 
 				if (::MessageBoxW(nppData._nppHandle,
 					L"Comparing large files such as these might take significant time "
 					L"especially if they differ a lot.\n\n"
-					L"Compare anyway?", PLUGIN_NAME, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES)
+					L"Compare anyway?", PLUGIN_NAME, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) != IDYES)
 				{
 					return false;
 				}
+			}
+		}
+
+		if ((cmpPair->getOldFile().isTemp != CLIPBOARD_TEMP) &&
+			(CallScintilla(MAIN_VIEW, SCI_GETEOLMODE, 0, 0) != CallScintilla(SUB_VIEW, SCI_GETEOLMODE, 0, 0)) &&
+			!cmpPair->options.ignoreEOL)
+		{
+			if (::MessageBoxW(nppData._nppHandle,
+					L"Seems like files differ in line endings (EOL). "
+					L"If that's the case all lines will appear different.\n\n"
+					L"Would you like to ignore EOL differences for this compare?",
+					cmpPair->options.findUniqueMode ? L"Find Unique" : L"Compare",
+					MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) == IDYES)
+			{
+				cmpPair->options.ignoreEOL = true;
+				cmpPair->forcedIgnoreEOL = true;
+			}
+		}
+
+		if (cmpPair->options.bookmarksAsSync && Settings.ManualSyncCheck)
+		{
+			if (::MessageBoxW(nppData._nppHandle,
+					L"There are existing bookmarks that will be used as manual sync points.\n\n"
+					L"If that's not done on purpose, would you like to disable manual sync for this compare?",
+					L"Compare", MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) == IDYES)
+			{
+				cmpPair->options.bookmarksAsSync = false;
+				cmpPair->options.syncPoints.clear();
+				cmpPair->forcedNoManualSync = true;
 			}
 		}
 	}
@@ -2999,7 +3013,7 @@ bool setupCompare(CompareList_t::iterator& cmpPair, bool selectionCompare, bool 
 }
 
 
-CompareResult runCompare(CompareList_t::iterator cmpPair)
+CompareResult runCompare(CompareList_t::iterator& cmpPair)
 {
 	setStyles(Settings);
 
@@ -3694,7 +3708,7 @@ void ActiveCompareSummary()
 
 	if (cmpPair->options.bookmarksAsSync)
 	{
-		_snwprintf_s(buf, _countof(buf), _TRUNCATE, L"\n\nManual sync points used: %lld.\n\n",
+		_snwprintf_s(buf, _countof(buf), _TRUNCATE, L"\n\nManual Sync Points used: %lld.\n\n",
 				cmpPair->options.syncPoints.size());
 		wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 	}
@@ -4641,7 +4655,7 @@ void createMenu()
 	wcscpy_s(funcItem[CMD_COMPARE_OPTIONS]._itemName, menuItemSize, L"Compare Options (ignore, etc.)...");
 	funcItem[CMD_COMPARE_OPTIONS]._pFunc = OpenCompareOptionsDlg;
 
-	wcscpy_s(funcItem[CMD_BOOKMARKS_SYNC]._itemName, menuItemSize, L"Use Bookmarks as Sync Points");
+	wcscpy_s(funcItem[CMD_BOOKMARKS_SYNC]._itemName, menuItemSize, L"Use Bookmarks as Manual Sync Points");
 	funcItem[CMD_BOOKMARKS_SYNC]._pFunc = BookmarksAsSyncPoints;
 
 	wcscpy_s(funcItem[CMD_DIFFS_VISUAL_FILTERS]._itemName, menuItemSize, L"Diffs Visual Filters...");
@@ -5122,11 +5136,11 @@ void onNppReady()
 	::SendMessageW(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_DIFFS_VISUAL_FILTERS]._cmdID, (LPARAM)
 		(Settings.HideMatches || Settings.HideNewLines || Settings.HideChangedLines || Settings.HideMovedLines));
 
-	::SendMessageW(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID,
-			(LPARAM)Settings.ShowNavBar);
-
 	::SendMessageW(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_BOOKMARKS_SYNC]._cmdID,
 			(LPARAM)Settings.BookmarksAsSync);
+
+	::SendMessageW(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_NAV_BAR]._cmdID,
+			(LPARAM)Settings.ShowNavBar);
 
 	::SendMessageW(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_AUTO_RECOMPARE]._cmdID,
 			(LPARAM)Settings.RecompareOnChange);
