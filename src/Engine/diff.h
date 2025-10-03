@@ -609,10 +609,35 @@ void DiffCalc<Elem, UserDataT>::_diff_append(intptr_t aoff, intptr_t boff, std::
 
 	auto dItr = diff.begin();
 
-	if (_diff.size() && _diff.back().type == dItr->type)
+	if (_diff.size())
 	{
-		_diff.back().len += dItr->len;
-		dItr++;
+		// Unite border diffs
+		if (_diff.back().type == dItr->type)
+		{
+			_diff.back().len += dItr->len;
+			dItr++;
+		}
+		else if (_diff.back().type == diff_type::DIFF_IN_2 && dItr->type == diff_type::DIFF_IN_1)
+		{
+			auto itr = _diff.end() - 1;
+
+			if (itr->type == diff_type::DIFF_IN_1)
+			{
+				itr->len += dItr->len;
+				dItr++;
+			}
+			else
+			{
+				_diff.insert(itr, *dItr);
+				dItr++;
+
+				if (dItr->type == diff_type::DIFF_IN_2)
+				{
+					_diff.back().len += dItr->len;
+					dItr++;
+				}
+			}
+		}
 	}
 
 	_diff.insert(_diff.end(), dItr, diff.end());
