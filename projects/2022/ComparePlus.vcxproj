@@ -410,9 +410,10 @@ copy "..\..\libs\arm64\*.dll" "$(OutDir)libs"</Command>
     <ClInclude Include="..\..\src\NppAPI\PluginInterface.h" />
     <ClInclude Include="..\..\src\NppAPI\Scintilla.h" />
     <ClInclude Include="..\..\src\NppAPI\Sci_Position.h" />
+    <ClInclude Include="..\..\src\Engine\diff_types.h" />
     <ClInclude Include="..\..\src\Engine\diff.h" />
-    <ClInclude Include="..\..\src\Engine\fast_diff.h" />
-    <ClInclude Include="..\..\src\Engine\varray.h" />
+    <ClInclude Include="..\..\src\Engine\myers_diff.h" />
+    <ClInclude Include="..\..\src\Engine\fast_myers_diff.h" />
     <ClInclude Include="..\..\src\LibHelpers.h" />
     <ClInclude Include="..\..\src\SQLite\SqliteHelper.h" />
   </ItemGroup>

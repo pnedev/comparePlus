@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define NOMINMAX
+#include "diff.h"
 
 #include <cassert>
 #include <climits>
@@ -37,8 +37,6 @@
 #include "Tools.h"
 #include "Engine.h"
 #include "ProgressDlg.h"
-#include "diff.h"
-// #include "fast_myers_diff.h"
 
 
 #ifdef MULTITHREAD
@@ -236,7 +234,7 @@ struct CompareInfo
 	DocCmpInfo				doc2;
 
 	// Output data - filled by the compare engine
-	std::vector<diffInfo>	blockDiffs;
+	diff_results<blockDiffInfo>	blockDiffs;
 };
 
 
@@ -1342,7 +1340,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 		const std::vector<Word> lineWords2 = getLineWords(doc2.view, doc2.lines[blockDiff2.off + line2].line, options);
 
 		// First use word granularity (find matching words) for better precision
-		const std::vector<diff_info<void>> lineDiffs = DiffCalc<Word>(lineWords1, lineWords2)(true, true);
+		const auto lineDiffs = DiffCalc<Word>(lineWords1, lineWords2)(true, true);
 		const intptr_t lineDiffsSize = static_cast<intptr_t>(lineDiffs.size());
 
 		PRINT_DIFFS("WORD DIFFS", lineDiffs);
@@ -1409,7 +1407,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 								std::to_string(end2 + 1) + "\n");
 
 						// Compare changed words
-						const std::vector<diff_info<void>> sectionDiffs = DiffCalc<Char>(sec1, sec2)();
+						const auto sectionDiffs = DiffCalc<Char>(sec1, sec2)();
 
 						PRINT_DIFFS("CHAR DIFFS", sectionDiffs);
 
@@ -1594,7 +1592,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 				if (words1.empty())
 					words1 = getLineWords(doc1.view, doc1.lines[blockDiff1.off + line1].line, options);
 
-				auto wordDiffs = DiffCalc<Word>(words1, words2[line2],
+				const auto wordDiffs = DiffCalc<Word>(words1, words2[line2],
 						std::bind(&ProgressDlg::IsCancelled, progress))();
 
 				if (progress->IsCancelled())
@@ -1620,7 +1618,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 			}
 			else
 			{
-				auto charDiffs = DiffCalc<Char>(chunk1[line1], chunk2[line2],
+				const auto charDiffs = DiffCalc<Char>(chunk1[line1], chunk2[line2],
 						std::bind(&ProgressDlg::IsCancelled, progress))();
 
 				if (progress->IsCancelled())

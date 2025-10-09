@@ -22,7 +22,7 @@
 #pragma comment (lib, "comctl32")
 
 
-#define NOMINMAX
+#define NOMINMAX	1
 
 #include "Compare.h"
 #include "NavDialog.h"
