@@ -167,8 +167,8 @@ diff_results<UserDataT> DiffCalc<Elem, UserDataT>::operator()(
 				syncP.second < bpos || syncP.second >= _b_size)
 				break;
 
-			diff._append(apos, bpos,
-					_run_algo(&_a[apos], syncP.first - apos, &_b[bpos], syncP.second - bpos, doSwapCheck));
+			diff._append(
+				_run_algo(&_a[apos], syncP.first - apos, &_b[bpos], syncP.second - bpos, doSwapCheck), apos, bpos);
 
 			if (_isCancelled && _isCancelled())
 				return {};
@@ -177,8 +177,8 @@ diff_results<UserDataT> DiffCalc<Elem, UserDataT>::operator()(
 			bpos = syncP.second;
 		}
 
-		diff._append(apos, bpos,
-				_run_algo(&_a[apos], _a_size - apos, &_b[bpos], _b_size - bpos, doSwapCheck));
+		diff._append(
+			_run_algo(&_a[apos], _a_size - apos, &_b[bpos], _b_size - bpos, doSwapCheck), apos, bpos);
 	}
 
 	if (_isCancelled && _isCancelled())

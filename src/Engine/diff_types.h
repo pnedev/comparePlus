@@ -125,7 +125,7 @@ struct diff_results : public std::vector<diff_info<UserDataT>>
 		}
 	};
 
-	void _append(intptr_t aoff, intptr_t boff, diff_results<UserDataT>&& diff)
+	void _append(diff_results<UserDataT>&& diff, intptr_t aoff, intptr_t boff)
 	{
 		if (diff.empty())
 			return;
@@ -142,23 +142,6 @@ struct diff_results : public std::vector<diff_info<UserDataT>>
 			{
 				this->back().len += dItr->len;
 				dItr++;
-			}
-			else if (this->back().type == diff_type::DIFF_IN_2 && dItr->type == diff_type::DIFF_IN_1)
-			{
-				auto itr = this->end() - 1;
-
-				if (itr->type == diff_type::DIFF_IN_1)
-					itr->len += dItr->len;
-				else
-					this->insert(itr, *dItr);
-
-				dItr++;
-
-				if (dItr->type == diff_type::DIFF_IN_2)
-				{
-					this->back().len += dItr->len;
-					dItr++;
-				}
 			}
 		}
 
