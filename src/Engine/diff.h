@@ -13,6 +13,17 @@
 // #include "fast_myers_diff.h"
 
 
+#ifdef MULTITHREAD
+
+#if defined(__MINGW32__) && !defined(_GLIBCXX_HAS_GTHREADS)
+#include "../mingw-std-threads/mingw.thread.h"
+#else
+#include <thread>
+#endif // __MINGW32__ ...
+
+#endif // MULTITHREAD
+
+
 /**
  *  \class  DiffCalc
  *  \brief  Compares and makes a differences list between two vectors (elements are template, must have operator==).
@@ -103,39 +114,68 @@ diff_results<UserDataT> DiffCalc<Elem, UserDataT>::_run_algo(
 		bsize -= off_e;
 	}
 
-	DiffAlgo<Elem, UserDataT>(a, asize, b, bsize, diff, _isCancelled)(off_s);
-	if (diff.empty())
-		return {};
-
-	if (_isCancelled && _isCancelled())
-		return {};
-
-	// Swap compared sequences and re-compare to see if result is more optimal
+	// Compare with swapped sequences as well to see if result is more optimal
 	if (doSwapCheck)
 	{
-		const intptr_t replacesCount = diff.count_replaces();
+		diff_results<UserDataT> swapDiff;
 
-		// Store current compare result
-		diff_results<UserDataT> storedDiff = std::move(diff);
-		std::swap(a, b);
-		std::swap(asize, bsize);
+		// Add first matching block before continuing
+		if (!diff.empty())
+			swapDiff.push_back(diff[0]);
 
-		// Restore first matching block before continuing
-		if (storedDiff[0].type == diff_type::DIFF_MATCH)
-			diff.push_back(storedDiff[0]);
+#ifdef MULTITHREAD
 
-		DiffAlgo<Elem, UserDataT>(a, asize, b, bsize, diff, _isCancelled)(off_s);
+		std::thread thr;
+
+		if (asize > 10000 && bsize > 10000 && std::thread::hardware_concurrency() > 1)
+		{
+			thr = std::thread([&]()
+			{
+				DiffAlgo<Elem, UserDataT>(b, bsize, a, asize, swapDiff, _isCancelled)(off_s);
+			});
+		}
+		else
+		{
+			DiffAlgo<Elem, UserDataT>(b, bsize, a, asize, swapDiff, _isCancelled)(off_s);
+
+			if (_isCancelled && _isCancelled())
+				return {};
+		}
+
+#else // MULTITHREAD
+
+		DiffAlgo<Elem, UserDataT>(b, bsize, a, asize, swapDiff, _isCancelled)(off_s);
 
 		if (_isCancelled && _isCancelled())
 			return {};
 
-		std::swap(a, b);
+#endif // MULTITHREAD
 
-		// If re-compare result is not more optimal - restore the previous state
-		if (diff.count_replaces() < replacesCount)
-			diff = std::move(storedDiff);
-		else
+		DiffAlgo<Elem, UserDataT>(a, asize, b, bsize, diff, _isCancelled)(off_s);
+
+#ifdef MULTITHREAD
+
+		if (thr.joinable())
+			thr.join();
+
+#endif // MULTITHREAD
+
+		if (_isCancelled && _isCancelled())
+			return {};
+
+		// Check which result is more optimal
+		if (diff.count_replaces() < swapDiff.count_replaces())
+		{
+			diff = std::move(swapDiff);
 			diff._swap_diff1_diff2();
+		}
+	}
+	else
+	{
+		DiffAlgo<Elem, UserDataT>(a, asize, b, bsize, diff, _isCancelled)(off_s);
+
+		if (_isCancelled && _isCancelled())
+			return {};
 	}
 
 	if (off_e)
