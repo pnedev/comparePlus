@@ -133,7 +133,7 @@ struct CompareOptions
 
 	bool	bookmarksAsSync;
 
-	mutable std::vector<std::pair<intptr_t, intptr_t>> syncPoints;
+	std::vector<std::pair<intptr_t, intptr_t>> syncPoints;
 
 	bool	recompareOnChange;
 
