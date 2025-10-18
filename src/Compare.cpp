@@ -4847,7 +4847,6 @@ bool constructFullFilePaths(std::pair<std::wstring, std::wstring>& files)
 		LRESULT len = ::SendMessageW(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (WPARAM)nullptr);
 		openedFiles[i] = new wchar_t[len + 1];
 		::SendMessageW(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (WPARAM)openedFiles[i]);
-		++i;
 	}
 
 	for (int j = 0; j < subViewFilesCount; ++j)
