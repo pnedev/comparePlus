@@ -5240,6 +5240,12 @@ void onNppReady()
 }
 
 
+// void onPluginMsg(const wchar_t* msg)
+// {
+	// ::MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK);
+// }
+
+
 inline void onSciUpdateUI(HWND view)
 {
 	LOGD(LOG_NOTIF, "onSciUpdateUI()\n");
@@ -6386,6 +6392,10 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 		case NPPN_READY:
 			onNppReady();
 		break;
+
+		// case NPPN_CMDLINEPLUGINMSG:
+			// onPluginMsg(reinterpret_cast<wchar_t*>(notifyCode->nmhdr.idFrom));
+		// break;
 
 		case NPPN_BEFORESHUTDOWN:
 			ClearAllCompares();
