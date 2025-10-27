@@ -3013,6 +3013,29 @@ bool setupCompare(CompareList_t::iterator& cmpPair, bool selectionCompare, bool 
 }
 
 
+inline bool compareSHAs(const CompareList_t::iterator& cmpPair)
+{
+    bool filesSHAsDiffer = true;
+
+    const std::vector<wchar_t> mainComparedContentSHA2 =
+        cmpPair->options.selectionCompare ? generateContentsSha256(MAIN_VIEW,
+        cmpPair->options.selections[MAIN_VIEW].first, cmpPair->options.selections[MAIN_VIEW].second) :
+        generateContentsSha256(MAIN_VIEW);
+
+    const std::vector<wchar_t> subComparedContentSHA2 =
+        cmpPair->options.selectionCompare ? generateContentsSha256(SUB_VIEW,
+        cmpPair->options.selections[SUB_VIEW].first, cmpPair->options.selections[SUB_VIEW].second) :
+        generateContentsSha256(SUB_VIEW);
+
+    if (mainComparedContentSHA2.size() == subComparedContentSHA2.size())
+        filesSHAsDiffer = !std::equal(
+                mainComparedContentSHA2.begin(), mainComparedContentSHA2.end(),
+                subComparedContentSHA2.begin(), subComparedContentSHA2.end());
+
+    return filesSHAsDiffer;
+}
+
+
 CompareResult runCompare(CompareList_t::iterator& cmpPair)
 {
 	setStyles(Settings);
@@ -3166,25 +3189,10 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 	const auto compareStartTime = std::chrono::steady_clock::now();
 
-	bool filesSha2Differ = true;
-	{
-		const std::vector<wchar_t> mainComparedContentSHA2 =
-			cmpPair->options.selectionCompare ? generateContentsSha256(MAIN_VIEW,
-			cmpPair->options.selections[MAIN_VIEW].first, cmpPair->options.selections[MAIN_VIEW].second) :
-			generateContentsSha256(MAIN_VIEW);
+    // Don't compute views SHAs if recomparing - they most probably differ
+	bool filesSHAsDiffer = recompare ? true : compareSHAs(cmpPair);
 
-		const std::vector<wchar_t> subComparedContentSHA2 =
-			cmpPair->options.selectionCompare ? generateContentsSha256(SUB_VIEW,
-			cmpPair->options.selections[SUB_VIEW].first, cmpPair->options.selections[SUB_VIEW].second) :
-			generateContentsSha256(SUB_VIEW);
-
-		if (mainComparedContentSHA2.size() == subComparedContentSHA2.size())
-			filesSha2Differ = !std::equal(
-					mainComparedContentSHA2.begin(), mainComparedContentSHA2.end(),
-					subComparedContentSHA2.begin(), subComparedContentSHA2.end());
-	}
-
-	const CompareResult cmpResult = filesSha2Differ ? runCompare(cmpPair) : CompareResult::COMPARE_MATCH;
+	const CompareResult cmpResult = filesSHAsDiffer ? runCompare(cmpPair) : CompareResult::COMPARE_MATCH;
 
 	cmpPair->compareDirty		= false;
 	cmpPair->nppReplaceDone		= false;
@@ -3243,6 +3251,10 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 		case CompareResult::COMPARE_MATCH:
 		{
+            // Files match when recompared - check if they fully match or because of active ignored options
+            if (recompare)
+                filesSHAsDiffer = compareSHAs(cmpPair);
+
 			const ComparedFile& oldFile = cmpPair->getOldFile();
 
 			const wchar_t* newName = ::PathFindFileNameW(cmpPair->getNewFile().name);
@@ -3282,7 +3294,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 					}
 				}
 
-				if (filesSha2Differ)
+				if (filesSHAsDiffer)
 					wcscat_s(msg, _countof(msg),
 							L"\n\nDiffs exist but have been ignored due to the compare options.");
 
@@ -3296,7 +3308,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 						selectionCompare ? L"Selections in files" : L"Files",
 						newName, ::PathFindFileNameW(oldFile.name),
 						cmpPair->options.findUniqueMode ? L"do not contain unique lines" : L"match",
-						filesSha2Differ ?
+						filesSHAsDiffer ?
 							L"\n\nDiffs exist but have been ignored due to the compare options." : L"",
 						Settings.PromptToCloseOnMatch ? L"\n\nClose compared files?" : L"");
 
