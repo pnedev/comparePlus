@@ -128,6 +128,40 @@ private:
 };
 
 
+/**
+ *  \class
+ *  \brief	Calculates SHA256 - Original code is borrowed from Notepad++ Sha256 calculation function and modified
+ *			into a class that is intended to be able to calculate SHA256 from different data sources
+ */
+class SHA256
+{
+public:
+	SHA256() {}
+	~SHA256() {}
+
+	// Calculate from vector
+	std::vector<uint8_t> operator()(const std::vector<char>& vec);
+
+private:
+	static constexpr int CHUNK_SIZE = 64;
+	static constexpr int TOTAL_LEN_LEN = 8;
+
+	static const uint32_t k[64];
+
+	SHA256(const SHA256&) = delete;
+	SHA256(SHA256&&) = delete;
+	SHA256& operator=(const SHA256&) = delete;
+
+	// Rotate right
+	inline uint32_t rotr(uint32_t value, unsigned int count)
+	{
+		return value >> count | value << (32 - count);
+	};
+
+	void process_chunk(const uint8_t* p, uint32_t* h);
+};
+
+
 inline void flushMsgQueue()
 {
 	MSG msg;

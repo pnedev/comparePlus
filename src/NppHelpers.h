@@ -897,4 +897,4 @@ std::vector<intptr_t> getFoldedLines(int view);
 void setFoldedLines(int view, const std::vector<intptr_t>& foldedLines);
 
 void moveFileToOtherView();
-std::vector<wchar_t> generateContentsSha256(int view, intptr_t startLine = 0, intptr_t endLine = -1);
+std::vector<uint8_t> generateContentsSha256(int view, intptr_t startLine = 0, intptr_t endLine = -1);

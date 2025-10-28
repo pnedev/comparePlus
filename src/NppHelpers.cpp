@@ -1009,23 +1009,8 @@ void moveFileToOtherView()
 }
 
 
-std::vector<wchar_t> generateContentsSha256(int view, intptr_t startLine, intptr_t endLine)
+std::vector<uint8_t> generateContentsSha256(int view, intptr_t startLine, intptr_t endLine)
 {
-	const int currentView = getCurrentViewId();
-
-	if (view != currentView)
-		::SetFocus(getView(view));
-
-	const intptr_t currentPos = CallScintilla(view, SCI_GETCURRENTPOS, 0, 0);
-
-	bool validSelection = !isSelectionVertical(view) && !isMultiSelection(view);
-
-	const intptr_t selectionStart = CallScintilla(view, SCI_GETSELECTIONSTART, 0, 0);
-	const intptr_t selectionEnd = CallScintilla(view, SCI_GETSELECTIONEND, 0, 0);
-
-	if (validSelection)
-		validSelection = selectionStart != selectionEnd;
-
 	if (startLine < 0)
 		startLine = 0;
 
@@ -1038,25 +1023,8 @@ std::vector<wchar_t> generateContentsSha256(int view, intptr_t startLine, intptr
 	if (selStart == selEnd)
 		return {};
 
-	// Store current clipboard content
-	auto clipboardContent = getFromClipboard();
+	auto text = getText(view, selStart, selEnd);
+	text.pop_back();
 
-	setSelection(view, selStart, selEnd);
-
-	::SendMessageW(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_TOOL_SHA256_GENERATEINTOCLIPBOARD);
-
-	auto sha256 = getFromClipboard();
-
-	if (validSelection)
-		setSelection(view, selectionStart, selectionEnd);
-	else
-		setSelection(view, currentPos, currentPos);
-
-	// Restore previous clipboard content
-	setToClipboard(clipboardContent);
-
-	if (view != currentView)
-		::SetFocus(getView(currentView));
-
-	return sha256;
+	return SHA256()(text);
 }

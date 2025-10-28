@@ -1241,7 +1241,7 @@ void ComparedPair::setStatus()
 
 			if (options.bookmarksAsSync)
 			{
-				const int len = _snwprintf_s(buf, _countof(buf), _TRUNCATE, L"    Manual Sync Points: %lld",
+				const int len = _snwprintf_s(buf, _countof(buf), _TRUNCATE, L"    Manual Sync Points: %Id",
 						options.syncPoints.size());
 
 				wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
@@ -3017,12 +3017,12 @@ inline bool compareSHAs(const CompareList_t::iterator& cmpPair)
 {
     bool filesSHAsDiffer = true;
 
-    const std::vector<wchar_t> mainComparedContentSHA2 =
+    const std::vector<uint8_t> mainComparedContentSHA2 =
         cmpPair->options.selectionCompare ? generateContentsSha256(MAIN_VIEW,
         cmpPair->options.selections[MAIN_VIEW].first, cmpPair->options.selections[MAIN_VIEW].second) :
         generateContentsSha256(MAIN_VIEW);
 
-    const std::vector<wchar_t> subComparedContentSHA2 =
+    const std::vector<uint8_t> subComparedContentSHA2 =
         cmpPair->options.selectionCompare ? generateContentsSha256(SUB_VIEW,
         cmpPair->options.selections[SUB_VIEW].first, cmpPair->options.selections[SUB_VIEW].second) :
         generateContentsSha256(SUB_VIEW);
@@ -3720,7 +3720,7 @@ void ActiveCompareSummary()
 
 	if (cmpPair->options.bookmarksAsSync)
 	{
-		_snwprintf_s(buf, _countof(buf), _TRUNCATE, L"\n\nManual Sync Points used: %lld.\n\n",
+		_snwprintf_s(buf, _countof(buf), _TRUNCATE, L"\n\nManual Sync Points used: %Id.\n\n",
 				cmpPair->options.syncPoints.size());
 		wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
 	}
