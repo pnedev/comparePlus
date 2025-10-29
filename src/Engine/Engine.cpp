@@ -1340,7 +1340,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 		const std::vector<Word> lineWords2 = getLineWords(doc2.view, doc2.lines[blockDiff2.off + line2].line, options);
 
 		// First use word granularity (find matching words) for better precision
-		const auto lineDiffs = DiffCalc<Word>(lineWords1, lineWords2)(true, true);
+		const auto lineDiffs = DiffCalc<Word>(lineWords1, lineWords2)(true, true, true);
 		const intptr_t lineDiffsSize = static_cast<intptr_t>(lineDiffs.size());
 
 		PRINT_DIFFS("WORD DIFFS", lineDiffs);
