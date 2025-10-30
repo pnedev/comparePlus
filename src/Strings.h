@@ -1,5 +1,6 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
+ * Copyright (C)2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,39 +19,39 @@
 #pragma once
 
 #include <string>
-#include "PluginInterface.h"
-#include "DockingFeature/StaticDialog.h"
-#include "resource.h"
-#include "UserSettings.h"
+#include <unordered_map>
 
 
-class CompareOptionsDialog : public StaticDialog
+class Strings
 {
 public:
-	CompareOptionsDialog(HINSTANCE hInst, HWND hWnd)
+	static Strings& get()
 	{
-		Window::init(hInst, hWnd);
+		static Strings inst;
+		return inst;
 	};
 
-	~CompareOptionsDialog()
+	const std::string& currentLocale() const
 	{
-		destroy();
-	}
+		return _currentLocale;
+	};
 
-	UINT doDialog(UserSettings* settings);
+	bool read(const std::string& localization);
 
-	virtual void destroy() {};
-
-protected:
-	virtual INT_PTR CALLBACK run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam);
+	std::wstring operator[](const std::string& key) const;
 
 private:
-	void updateLocalization();
+	static const char* c_localization_files_relative_path;
 
-	void SetParams();
-	bool GetParams();
+	Strings();
 
-	bool isRegexValid(const wchar_t* regexStr);
+	Strings(const Strings&) = delete;
+	Strings(Strings&&) = delete;
 
-	struct UserSettings* _Settings;
+	Strings& operator=(const Strings&) = delete;
+
+	bool readFromFile(const std::string& json_locale_file);
+
+	std::string _currentLocale;
+	std::unordered_map<std::string, std::string> _strings;
 };

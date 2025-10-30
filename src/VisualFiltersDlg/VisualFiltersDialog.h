@@ -24,17 +24,13 @@
 #include "UserSettings.h"
 
 
-using namespace std;
-
-
 class VisualFiltersDialog : public StaticDialog
 {
 
 public:
-	VisualFiltersDialog(HINSTANCE hInst, NppData nppDataParam) : StaticDialog()
+	VisualFiltersDialog(HINSTANCE hInst, HWND hWnd)
 	{
-		_nppData = nppDataParam;
-		Window::init(hInst, nppDataParam._nppHandle);
+		Window::init(hInst, hWnd);
 	};
 
 	~VisualFiltersDialog()
@@ -46,15 +42,14 @@ public:
 
 	virtual void destroy() {};
 
-protected :
-	INT_PTR CALLBACK run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam);
+protected:
+	virtual INT_PTR CALLBACK run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam);
+
+private:
+	void updateLocalization();
 
 	void SetParams();
 	void GetParams();
-
-private:
-	/* Handles */
-	NppData _nppData;
 
 	struct UserSettings* _Settings;
 };

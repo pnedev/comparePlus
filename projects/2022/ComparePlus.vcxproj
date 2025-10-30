@@ -144,7 +144,7 @@
       <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;../../src/nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0600;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;_DEBUG;MULTITHREAD;BOOST_REGEX_STANDALONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -168,6 +168,9 @@
       <Command>echo Copying additional libs to plugins\ComparePlus\libs
 if not exist "$(OutDir)libs" mkdir "$(OutDir)libs"
 copy "..\..\libs\x86\*.dll" "$(OutDir)libs"</Command>
+      <Command>echo Copying localization files to plugins\ComparePlus\localization
+if not exist "$(OutDir)localization" mkdir "$(OutDir)localization"
+copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -178,7 +181,7 @@ copy "..\..\libs\x86\*.dll" "$(OutDir)libs"</Command>
       <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;../../src/nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0600;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;_DEBUG;WIN64;MULTITHREAD;BOOST_REGEX_STANDALONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -201,6 +204,9 @@ copy "..\..\libs\x86\*.dll" "$(OutDir)libs"</Command>
       <Command>echo Copying additional libs to plugins\ComparePlus\libs
 if not exist "$(OutDir)libs" mkdir "$(OutDir)libs"
 copy "..\..\libs\x64\*.dll" "$(OutDir)libs"</Command>
+      <Command>echo Copying localization files to plugins\ComparePlus\localization
+if not exist "$(OutDir)localization" mkdir "$(OutDir)localization"
+copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
@@ -211,7 +217,7 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)libs"</Command>
       <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;../../src/nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0600;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;_DEBUG;WIN64;MULTITHREAD;BOOST_REGEX_STANDALONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -234,6 +240,9 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)libs"</Command>
       <Command>echo Copying additional libs to plugins\ComparePlus\libs
 if not exist "$(OutDir)libs" mkdir "$(OutDir)libs"
 copy "..\..\libs\arm64\*.dll" "$(OutDir)libs"</Command>
+      <Command>echo Copying localization files to plugins\ComparePlus\localization
+if not exist "$(OutDir)localization" mkdir "$(OutDir)localization"
+copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -246,7 +255,7 @@ copy "..\..\libs\arm64\*.dll" "$(OutDir)libs"</Command>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;../../src/nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0600;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;NDEBUG;MULTITHREAD;BOOST_REGEX_STANDALONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -275,6 +284,9 @@ copy "..\..\libs\arm64\*.dll" "$(OutDir)libs"</Command>
       <Command>echo Copying additional libs to plugins\ComparePlus\libs
 if not exist "$(OutDir)libs" mkdir "$(OutDir)libs"
 copy "..\..\libs\x86\*.dll" "$(OutDir)libs"</Command>
+      <Command>echo Copying localization files to plugins\ComparePlus\localization
+if not exist "$(OutDir)localization" mkdir "$(OutDir)localization"
+copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -287,7 +299,7 @@ copy "..\..\libs\x86\*.dll" "$(OutDir)libs"</Command>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;../../src/nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0600;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;NDEBUG;WIN64;MULTITHREAD;BOOST_REGEX_STANDALONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -315,6 +327,9 @@ copy "..\..\libs\x86\*.dll" "$(OutDir)libs"</Command>
       <Command>echo Copying additional libs to plugins\ComparePlus\libs
 if not exist "$(OutDir)libs" mkdir "$(OutDir)libs"
 copy "..\..\libs\x64\*.dll" "$(OutDir)libs"</Command>
+      <Command>echo Copying localization files to plugins\ComparePlus\localization
+if not exist "$(OutDir)localization" mkdir "$(OutDir)localization"
+copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
@@ -327,7 +342,7 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)libs"</Command>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;../../src/nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0600;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;NDEBUG;WIN64;MULTITHREAD;BOOST_REGEX_STANDALONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -355,6 +370,9 @@ copy "..\..\libs\x64\*.dll" "$(OutDir)libs"</Command>
       <Command>echo Copying additional libs to plugins\ComparePlus\libs
 if not exist "$(OutDir)libs" mkdir "$(OutDir)libs"
 copy "..\..\libs\arm64\*.dll" "$(OutDir)libs"</Command>
+      <Command>echo Copying localization files to plugins\ComparePlus\localization
+if not exist "$(OutDir)localization" mkdir "$(OutDir)localization"
+copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -376,6 +394,7 @@ copy "..\..\libs\arm64\*.dll" "$(OutDir)libs"</Command>
     <ClCompile Include="..\..\src\ProgressDlg\ProgressDlg.cpp" />
     <ClCompile Include="..\..\src\LibHelpers.cpp" />
     <ClCompile Include="..\..\src\SQLite\SqliteHelper.cpp" />
+    <ClCompile Include="..\..\src\Strings.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\AboutDlg\URLCtrl.h" />
@@ -416,6 +435,7 @@ copy "..\..\libs\arm64\*.dll" "$(OutDir)libs"</Command>
     <ClInclude Include="..\..\src\Engine\fast_myers_diff.h" />
     <ClInclude Include="..\..\src\LibHelpers.h" />
     <ClInclude Include="..\..\src\SQLite\SqliteHelper.h" />
+    <ClInclude Include="..\..\src\Strings.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\src\Compare.rc" />
@@ -424,40 +444,40 @@ copy "..\..\libs\arm64\*.dll" "$(OutDir)libs"</Command>
     <None Include="..\..\license.txt" />
     <None Include="..\..\README.md" />
     <None Include="..\..\Help.md" />
-    <None Include="..\..\res\Standard\FirstToCompare.bmp" />
-    <None Include="..\..\res\Standard\FirstToCompareRTL.bmp" />
-    <None Include="..\..\res\Standard\Compare.bmp" />
-    <None Include="..\..\res\Standard\CompareLines.bmp" />
-    <None Include="..\..\res\Standard\ClearCompare.bmp" />
-    <None Include="..\..\res\Standard\First.bmp" />
-    <None Include="..\..\res\Standard\Last.bmp" />
-    <None Include="..\..\res\Standard\Prev.bmp" />
-    <None Include="..\..\res\Standard\Next.bmp" />
-    <None Include="..\..\res\Standard\DiffsFilters.bmp" />
-    <None Include="..\..\res\Standard\NavBar.bmp" />
-    <None Include="..\..\res\Standard\CompareDocking.ico" />
-    <None Include="..\..\res\Fluent\FirstToCompareFluent.ico" />
-    <None Include="..\..\res\Fluent\FirstToCompareRTLFluent.ico" />
-    <None Include="..\..\res\Fluent\CompareFluent.ico" />
-    <None Include="..\..\res\Fluent\CompareLinesFluent.ico" />
-    <None Include="..\..\res\Fluent\ClearCompareFluent.ico" />
-    <None Include="..\..\res\Fluent\FirstFluent.ico" />
-    <None Include="..\..\res\Fluent\LastFluent.ico" />
-    <None Include="..\..\res\Fluent\PrevFluent.ico" />
-    <None Include="..\..\res\Fluent\NextFluent.ico" />
-    <None Include="..\..\res\Fluent\DiffsFiltersFluent.ico" />
-    <None Include="..\..\res\Fluent\NavBarFluent.ico" />
-    <None Include="..\..\res\FluentDM\FirstToCompareFluentDM.ico" />
-    <None Include="..\..\res\FluentDM\FirstToCompareRTLFluentDM.ico" />
-    <None Include="..\..\res\FluentDM\CompareFluentDM.ico" />
-    <None Include="..\..\res\FluentDM\CompareLinesFluentDM.ico" />
-    <None Include="..\..\res\FluentDM\ClearCompareFluentDM.ico" />
-    <None Include="..\..\res\FluentDM\FirstFluentDM.ico" />
-    <None Include="..\..\res\FluentDM\LastFluentDM.ico" />
-    <None Include="..\..\res\FluentDM\PrevFluentDM.ico" />
-    <None Include="..\..\res\FluentDM\NextFluentDM.ico" />
-    <None Include="..\..\res\FluentDM\DiffsFiltersFluentDM.ico" />
-    <None Include="..\..\res\FluentDM\NavBarFluentDM.ico" />
+    <None Include="..\..\res\icons\Standard\FirstToCompare.bmp" />
+    <None Include="..\..\res\icons\Standard\FirstToCompareRTL.bmp" />
+    <None Include="..\..\res\icons\Standard\Compare.bmp" />
+    <None Include="..\..\res\icons\Standard\CompareLines.bmp" />
+    <None Include="..\..\res\icons\Standard\ClearCompare.bmp" />
+    <None Include="..\..\res\icons\Standard\First.bmp" />
+    <None Include="..\..\res\icons\Standard\Last.bmp" />
+    <None Include="..\..\res\icons\Standard\Prev.bmp" />
+    <None Include="..\..\res\icons\Standard\Next.bmp" />
+    <None Include="..\..\res\icons\Standard\DiffsFilters.bmp" />
+    <None Include="..\..\res\icons\Standard\NavBar.bmp" />
+    <None Include="..\..\res\icons\Standard\CompareDocking.ico" />
+    <None Include="..\..\res\icons\Fluent\FirstToCompareFluent.ico" />
+    <None Include="..\..\res\icons\Fluent\FirstToCompareRTLFluent.ico" />
+    <None Include="..\..\res\icons\Fluent\CompareFluent.ico" />
+    <None Include="..\..\res\icons\Fluent\CompareLinesFluent.ico" />
+    <None Include="..\..\res\icons\Fluent\ClearCompareFluent.ico" />
+    <None Include="..\..\res\icons\Fluent\FirstFluent.ico" />
+    <None Include="..\..\res\icons\Fluent\LastFluent.ico" />
+    <None Include="..\..\res\icons\Fluent\PrevFluent.ico" />
+    <None Include="..\..\res\icons\Fluent\NextFluent.ico" />
+    <None Include="..\..\res\icons\Fluent\DiffsFiltersFluent.ico" />
+    <None Include="..\..\res\icons\Fluent\NavBarFluent.ico" />
+    <None Include="..\..\res\icons\FluentDM\FirstToCompareFluentDM.ico" />
+    <None Include="..\..\res\icons\FluentDM\FirstToCompareRTLFluentDM.ico" />
+    <None Include="..\..\res\icons\FluentDM\CompareFluentDM.ico" />
+    <None Include="..\..\res\icons\FluentDM\CompareLinesFluentDM.ico" />
+    <None Include="..\..\res\icons\FluentDM\ClearCompareFluentDM.ico" />
+    <None Include="..\..\res\icons\FluentDM\FirstFluentDM.ico" />
+    <None Include="..\..\res\icons\FluentDM\LastFluentDM.ico" />
+    <None Include="..\..\res\icons\FluentDM\PrevFluentDM.ico" />
+    <None Include="..\..\res\icons\FluentDM\NextFluentDM.ico" />
+    <None Include="..\..\res\icons\FluentDM\DiffsFiltersFluentDM.ico" />
+    <None Include="..\..\res\icons\FluentDM\NavBarFluentDM.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

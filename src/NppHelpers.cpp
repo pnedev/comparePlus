@@ -564,13 +564,13 @@ bool isCurrentFileSaved()
 {
 	HMENU hMenu = (HMENU)::SendMessageW(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
 
-	MENUITEMINFOW menuItemInfo	= { 0 };
-	menuItemInfo.cbSize			= sizeof(menuItemInfo);
-	menuItemInfo.fMask			= MIIM_STATE;
+	MENUITEMINFOW mi { 0 };
+	mi.cbSize = sizeof(mi);
+	mi.fMask = MIIM_STATE;
 
-	::GetMenuItemInfoW(hMenu, IDM_FILE_SAVE, FALSE, &menuItemInfo);
+	::GetMenuItemInfoW(hMenu, IDM_FILE_SAVE, FALSE, &mi);
 
-	return (menuItemInfo.fState & MFS_DISABLED);
+	return (mi.fState & MFS_DISABLED);
 }
 
 

@@ -27,6 +27,8 @@
 #include <boost/regex.hpp>
 
 #include "NppHelpers.h"
+#include "Strings.h"
+#include "Tools.h"
 
 
 UINT CompareOptionsDialog::doDialog(UserSettings* settings)
@@ -49,6 +51,10 @@ INT_PTR CALLBACK CompareOptionsDialog::run_dlgProc(UINT Message, WPARAM wParam, 
 			goToCenter();
 
 			::EnableThemeDialogTexture(_hSelf, ETDT_ENABLETAB);
+
+			// Dialog opens by default in english
+			if (Strings::get().currentLocale() != "english")
+				updateLocalization();
 
 			SetParams();
 		}
@@ -130,6 +136,41 @@ INT_PTR CALLBACK CompareOptionsDialog::run_dlgProc(UINT Message, WPARAM wParam, 
 	}
 
 	return FALSE;
+}
+
+
+void CompareOptionsDialog::updateLocalization()
+{
+	const auto& str = Strings::get();
+
+	::SetWindowTextW(_hSelf, (std::wstring(PLUGIN_NAME) + std::wstring(L"   ") + str["COMPARE_OPTIONS"]).c_str());
+
+	::SetDlgItemTextW(_hSelf, IDOK,			str["IDOK"].c_str());
+	::SetDlgItemTextW(_hSelf, IDCANCEL,		str["IDCANCEL"].c_str());
+	::SetDlgItemTextW(_hSelf, IDC_DETECT,	str["IDC_DETECT"].c_str());
+	::SetDlgItemTextW(_hSelf, IDC_IGNORE,	str["IDC_IGNORE"].c_str());
+	::SetDlgItemTextW(_hSelf, IDC_REGEX,	str["IDC_REGEX"].c_str());
+
+	HDC hdc = ::GetDC(_hSelf);
+
+	updateDlgOptionTxt(hdc, _hSelf, IDC_DETECT_MOVES,				str["IDC_DETECT_MOVES"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_DETECT_SUB_BLOCK_DIFFS,		str["IDC_DETECT_SUB_BLOCK_DIFFS"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_DETECT_SUB_LINE_MOVES,		str["IDC_DETECT_SUB_LINE_MOVES"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_DETECT_CHAR_DIFFS,			str["IDC_DETECT_CHAR_DIFFS"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_IGNORE_EMPTY_LINES,			str["IDC_IGNORE_EMPTY_LINES"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_IGNORE_FOLDED_LINES,		str["IDC_IGNORE_FOLDED_LINES"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_IGNORE_HIDDEN_LINES,		str["IDC_IGNORE_HIDDEN_LINES"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_IGNORE_CHANGED_SPACES,		str["IDC_IGNORE_CHANGED_SPACES"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_IGNORE_ALL_SPACES,			str["IDC_IGNORE_ALL_SPACES"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_IGNORE_EOL,					str["IDC_IGNORE_EOL"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_IGNORE_CASE,				str["IDC_IGNORE_CASE"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_IGNORE_REGEX,				str["IDC_IGNORE_REGEX"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_REGEX_MODE_IGNORE,			str["IDC_REGEX_MODE_IGNORE"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_REGEX_MODE_MATCH,			str["IDC_REGEX_MODE_MATCH"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_REGEX_INCL_NOMATCH_LINES,	str["IDC_REGEX_INCL_NOMATCH_LINES"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_HIGHLIGHT_REGEX_IGNORES,	str["IDC_HIGHLIGHT_REGEX_IGNORES"]);
+
+	::ReleaseDC(_hSelf, hdc);
 }
 
 

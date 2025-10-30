@@ -23,7 +23,10 @@
 #include <windows.h>
 #include <commdlg.h>
 #include <stdlib.h>
+
 #include "ColorPopup.h"
+#include "NppHelpers.h"
+#include "Strings.h"
 
 
 DWORD colorItems[] = {
@@ -92,6 +95,12 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 	{
 		case WM_INITDIALOG:
 		{
+			registerDlgForDarkMode(_hSelf);
+
+			// Dialog opens by default in english
+			if (Strings::get().currentLocale() != "english")
+				::SetDlgItemTextW(_hSelf, IDC_MORE_COLORS, Strings::get()["IDC_MORE_COLORS"].c_str());
+
 			for (unsigned nColor = 0 ; nColor < _countof(colorItems); nColor++)
 			{
 				::SendDlgItemMessageW(_hSelf, IDC_COLOR_LIST, LB_ADDSTRING, nColor, (LPARAM)L"");
@@ -100,9 +109,6 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 
 			return TRUE;
 		}
-
-		case WM_CTLCOLORLISTBOX:
-			return (LRESULT)::GetSysColorBrush(COLOR_3DFACE);
 
 		case WM_DRAWITEM:
 		{
@@ -186,7 +192,7 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 		case WM_COMMAND:
 			switch (LOWORD(wParam))
 			{
-				case IDOK :
+				case IDC_MORE_COLORS:
 				{
 					static COLORREF acrCustClr[16] = {
 						RGB(0xFF,0xFF,0xFF), RGB(0xFF,0xFF,0xFF), RGB(0xFF,0xFF,0xFF), RGB(0xFF,0xFF,0xFF),
@@ -216,7 +222,7 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 					return TRUE;
 				}
 
-				case IDC_COLOR_LIST :
+				case IDC_COLOR_LIST:
 				{
 					if (HIWORD(wParam) == LBN_SELCHANGE)
 					{
@@ -229,6 +235,14 @@ INT_PTR CALLBACK ColorPopup::run_dlgProc(UINT message, WPARAM wParam, LPARAM lPa
 
 					return FALSE;
 				}
+
+				case IDCANCEL:
+					if (!_isColorChooserLaunched)
+						::SendMessageW(_hParent, COLOR_POPUP_CANCEL, 0, 0);
+
+					::EndDialog(_hSelf, 0);
+
+				return TRUE;
 			}
 
 			return FALSE;

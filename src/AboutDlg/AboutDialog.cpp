@@ -27,11 +27,13 @@
 
 #include "NppHelpers.h"
 #include "Tools.h"
+#include "Strings.h"
 
 
+static const wchar_t cAuthor[]		= L"Pavel Nedev";
 static const wchar_t cDonate_URL[]	= L"https://www.paypal.com/paypalme/pnedev";
 static const wchar_t cRepo_URL[]	= L"https://github.com/pnedev/comparePlus";
-static const wchar_t cHelp_URL[]	= L"https://github.com/pnedev/comparePlus/blob/master/Help.md";
+static const wchar_t cGuide_URL[]	= L"https://github.com/pnedev/comparePlus/blob/master/Help.md";
 
 
 UINT AboutDialog::doDialog()
@@ -45,35 +47,59 @@ INT_PTR CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*
 {
 	switch (Message)
 	{
-		case WM_INITDIALOG :
+		case WM_INITDIALOG:
 		{
 			registerDlgForDarkMode(_hSelf);
 
 			goToCenter();
 
-			wchar_t buildInfo[256];
+			const auto& str = Strings::get();
 
-			_snwprintf_s(buildInfo, _countof(buildInfo), _TRUNCATE, L"Build time:  %S, %S", __DATE__, __TIME__);
+			// Dialog opens by default in english
+			if (str.currentLocale() != "english")
+				updateLocalization();
 
-			::SetDlgItemTextW(_hSelf, IDC_BUILD_TIME, buildInfo);
+			std::wstring txt = str["IDC_VERSION"];
+			txt += L" ";
+			txt += MBtoWC(TO_STR(PLUGIN_VERSION));
 
-			std::wstring libInfo = L"LibGit2 version:  ";
+			::SetDlgItemTextW(_hSelf, IDC_VERSION, txt.c_str());
+
+			txt = str["IDC_BUILD_TIME"];
+			txt += L":  ";
+			txt += MBtoWC(__DATE__);
+			txt += L", ";
+			txt += MBtoWC(__TIME__);
+
+			::SetDlgItemTextW(_hSelf, IDC_BUILD_TIME, txt.c_str());
+
+			txt = str["IDC_AUTHOR"];
+			txt += L":  ";
+			txt += cAuthor;
+
+			::SetDlgItemTextW(_hSelf, IDC_AUTHOR, txt.c_str());
+
+			txt = L"LibGit2 ";
+			txt += str["IDC_VERSION"];
+			txt += L":  ";
 
 			if (_libGit2Ver.empty())
-				libInfo += L"lib not found";
+				txt += str["LIB_NOT_FOUND"];
 			else
-				libInfo += _libGit2Ver.c_str();
+				txt += _libGit2Ver;
 
-			::SetDlgItemTextW(_hSelf, IDC_GITLIB_VER, libInfo.c_str());
+			::SetDlgItemTextW(_hSelf, IDC_GITLIB_VER, txt.c_str());
 
-			libInfo = L"SQLite3 version:  ";
+			txt = L"SQLite3 ";
+			txt += str["IDC_VERSION"];
+			txt += L":  ";
 
 			if (_sqlite3Ver.empty())
-				libInfo += L"lib not found";
+				txt += str["LIB_NOT_FOUND"];
 			else
-				libInfo += _sqlite3Ver.c_str();
+				txt += _sqlite3Ver;
 
-			::SetDlgItemTextW(_hSelf, IDC_SQLITE3_VER, libInfo.c_str());
+			::SetDlgItemTextW(_hSelf, IDC_SQLITE3_VER, txt.c_str());
 
 			COLORREF linkColor = ::GetSysColor(COLOR_HOTLIGHT);
 
@@ -87,24 +113,26 @@ INT_PTR CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*
 			_urlRepo.init(_hInst, _hSelf);
 			_urlRepo.create(::GetDlgItem(_hSelf, IDC_REPO_URL), cRepo_URL, linkColor);
 			_helpLink.init(_hInst, _hSelf);
-			_helpLink.create(::GetDlgItem(_hSelf, IDC_HELP_URL), cHelp_URL, linkColor);
+			_helpLink.create(::GetDlgItem(_hSelf, IDC_GUIDE_URL), cGuide_URL, linkColor);
+
+			redraw(true);
 
 			return TRUE;
 		}
-		case WM_COMMAND :
+		case WM_COMMAND:
 		{
 			switch (wParam)
 			{
-				case IDC_ABOUT_CLOSE_BUTTON :
-				case IDCANCEL :
+				case IDC_CLOSE:
+				case IDCANCEL:
 					::EndDialog(_hSelf, 0);
 				return TRUE;
 
-				case IDC_DONATE_BUTTON :
+				case IDC_DONATE:
 					::ShellExecuteW(NULL, L"open", cDonate_URL, NULL, NULL, SW_SHOWNORMAL);
 				return TRUE;
 
-				default :
+				default:
 				break;
 			}
 			break;
@@ -112,4 +140,18 @@ INT_PTR CALLBACK AboutDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM /*
 	}
 
 	return FALSE;
+}
+
+
+void AboutDialog::updateLocalization()
+{
+	const auto& str = Strings::get();
+
+	::SetDlgItemTextW(_hSelf, IDC_CLOSE,		str["IDC_CLOSE"].c_str());
+	::SetDlgItemTextW(_hSelf, IDC_DONATE,		str["IDC_DONATE"].c_str());
+	::SetDlgItemTextW(_hSelf, IDC_INFO,			str["IDC_INFO"].c_str());
+	::SetDlgItemTextW(_hSelf, IDC_LIBS,			str["IDC_LIBS"].c_str());
+	::SetDlgItemTextW(_hSelf, IDC_LINKS,		str["IDC_LINKS"].c_str());
+	::SetDlgItemTextW(_hSelf, IDC_REPO_URL,		str["IDC_REPO_URL"].c_str());
+	::SetDlgItemTextW(_hSelf, IDC_GUIDE_URL,	str["IDC_GUIDE_URL"].c_str());
 }

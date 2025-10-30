@@ -26,6 +26,8 @@
 #include <uxtheme.h>
 
 #include "NppHelpers.h"
+#include "Strings.h"
+#include "Tools.h"
 
 
 static const int c_Highlight_transp_min		= 0;
@@ -83,10 +85,20 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 			hCtrl = ::GetDlgItem(_hSelf, IDC_THRESHOLD_SPIN_CTL);
 			::SendMessageW(hCtrl, UDM_SETRANGE, 0L, MAKELONG(c_Threshold_perc_max, c_Threshold_perc_min));
 
+			// Dialog opens by default in english
+			if (Strings::get().currentLocale() != "english")
+				updateLocalization();
+
 			if (isRTLwindow(nppData._nppHandle))
 			{
-				SetDlgItemTextW(_hSelf, IDC_NEW_IN_SUB, L"New file in left view");
-				SetDlgItemTextW(_hSelf, IDC_OLD_IN_SUB, L"Old file in left view");
+				const auto& str = Strings::get();
+
+				HDC hdc = ::GetDC(_hSelf);
+
+				updateDlgOptionTxt(hdc, _hSelf, IDC_NEW_IN_SUB,	str["IDC_NEW_IN_SUB_RTL"]);
+				updateDlgOptionTxt(hdc, _hSelf, IDC_OLD_IN_SUB,	str["IDC_OLD_IN_SUB_RTL"]);
+
+				::ReleaseDC(_hSelf, hdc);
 			}
 
 			SetParams();
@@ -124,6 +136,8 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					settings.WrapAround				= (bool) DEFAULT_WRAP_AROUND;
 					settings.GotoFirstDiff			= (bool) DEFAULT_GOTO_FIRST_DIFF;
 
+					settings.StatusInfo				= static_cast<StatusType>(DEFAULT_STATUS_INFO);
+
 					if (isDarkMode())
 					{
 						settings.useDarkColors();
@@ -153,7 +167,7 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 						settings.colors().caret_line_transparency	= DEFAULT_CARET_LINE_TRANSP;
 					}
 
-					settings.ChangedThresholdPercent	= DEFAULT_CHANGED_THRESHOLD;
+					settings.ChangedThresholdPercent = DEFAULT_CHANGED_THRESHOLD;
 
 					settings.EnableToolbar	= (bool) DEFAULT_ENABLE_TOOLBAR_TB;
 					settings.SetAsFirstTB	= (bool) DEFAULT_SET_AS_FIRST_TB;
@@ -246,6 +260,68 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 }
 
 
+void SettingsDialog::updateLocalization()
+{
+	const auto& str = Strings::get();
+
+	::SetWindowTextW(_hSelf, (std::wstring(PLUGIN_NAME) + std::wstring(L"   ") + str["SETTINGS"]).c_str());
+
+	::SetDlgItemTextW(_hSelf, IDOK,					str["IDOK"].c_str());
+	::SetDlgItemTextW(_hSelf, IDCANCEL,				str["IDCANCEL"].c_str());
+	::SetDlgItemTextW(_hSelf, IDDEFAULT,			str["IDDEFAULT"].c_str());
+	::SetDlgItemTextW(_hSelf, IDC_MAIN,				str["IDC_MAIN"].c_str());
+	::SetDlgItemTextW(_hSelf, IDC_FIRST,			str["IDC_FIRST"].c_str());
+	::SetDlgItemTextW(_hSelf, IDC_FILES_POS,		str["IDC_FILES_POS"].c_str());
+	::SetDlgItemTextW(_hSelf, IDC_DEFAULT_COMPARE,	str["IDC_DEFAULT_COMPARE"].c_str());
+	::SetDlgItemTextW(_hSelf, IDC_STATUS_BAR,		str["IDC_STATUS_BAR"].c_str());
+	::SetDlgItemTextW(_hSelf, IDC_MISC,				str["IDC_MISC"].c_str());
+	::SetDlgItemTextW(_hSelf, IDC_COLORS,			str["IDC_COLORS"].c_str());
+	::SetDlgItemTextW(_hSelf, IDC_TOOLBAR,			str["IDC_TOOLBAR"].c_str());
+
+	HDC hdc = ::GetDC(_hSelf);
+
+	updateDlgOptionTxt(hdc, _hSelf, IDC_FIRST_NEW,				str["IDC_FIRST_NEW"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_FIRST_OLD,				str["IDC_FIRST_OLD"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_NEW_IN_SUB,				str["IDC_NEW_IN_SUB"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_OLD_IN_SUB,				str["IDC_OLD_IN_SUB"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_COMPARE_TO_PREV,		str["IDC_COMPARE_TO_PREV"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_COMPARE_TO_NEXT,		str["IDC_COMPARE_TO_NEXT"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_DIFFS_SUMMARY,			str["IDC_DIFFS_SUMMARY"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_COMPARE_OPTIONS,		str["IDC_COMPARE_OPTIONS"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_STATUS_DISABLED,		str["IDC_STATUS_DISABLED"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_ENCODINGS_CHECK,		str["IDC_ENCODINGS_CHECK"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_SIZES_CHECK,			str["IDC_SIZES_CHECK"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_MANUAL_SYNC_CHECK,		str["IDC_MANUAL_SYNC_CHECK"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_CLOSE_ON_MATCH,			str["IDC_CLOSE_ON_MATCH"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_HIDE_MARGIN,			str["IDC_HIDE_MARGIN"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_NEVER_MARK_IGNORED,		str["IDC_NEVER_MARK_IGNORED"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_FOLLOWING_CARET,		str["IDC_FOLLOWING_CARET"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_WRAP_AROUND,			str["IDC_WRAP_AROUND"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_GOTO_FIRST_DIFF,		str["IDC_GOTO_FIRST_DIFF"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_ENABLE_TOOLBAR,			str["IDC_ENABLE_TOOLBAR"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_SET_AS_FIRST_TB,		str["IDC_SET_AS_FIRST_TB"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_COMPARE_TB,				str["IDC_COMPARE_TB"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_COMPARE_SELECTIONS_TB,	str["IDC_COMPARE_SELECTIONS_TB"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_CLEAR_COMPARE_TB,		str["IDC_CLEAR_COMPARE_TB"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_NAVIGATION_TB,			str["IDC_NAVIGATION_TB"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_DIFFS_FILTERS_TB,		str["IDC_DIFFS_FILTERS_TB"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_NAV_BAR_TB,				str["IDC_NAV_BAR_TB"]);
+
+	updateDlgTxt(hdc, _hSelf, IDC_ADDED,			str["IDC_ADDED"]);
+	updateDlgTxt(hdc, _hSelf, IDC_REMOVED,			str["IDC_REMOVED"]);
+	updateDlgTxt(hdc, _hSelf, IDC_MOVED,			str["IDC_MOVED"]);
+	updateDlgTxt(hdc, _hSelf, IDC_CHANGED,			str["IDC_CHANGED"]);
+	updateDlgTxt(hdc, _hSelf, IDC_ADD_HIGHLIGHT,	str["IDC_ADD_HIGHLIGHT"]);
+	updateDlgTxt(hdc, _hSelf, IDC_REM_HIGHLIGHT,	str["IDC_REM_HIGHLIGHT"]);
+	updateDlgTxt(hdc, _hSelf, IDC_MOV_HIGHLIGHT,	str["IDC_MOV_HIGHLIGHT"]);
+	updateDlgTxt(hdc, _hSelf, IDC_HIGHLIGHT_TRANSP,	str["IDC_HIGHLIGHT_TRANSP"]);
+	updateDlgTxt(hdc, _hSelf, IDC_CARET_TRANSP,		str["IDC_CARET_TRANSP"]);
+	updateDlgTxt(hdc, _hSelf, IDC_CHANGE_RESEMBL,	str["IDC_CHANGE_RESEMBL"]);
+
+	::ReleaseDC(_hSelf, hdc);
+}
+
+
 void SettingsDialog::SetParams(UserSettings* settings)
 {
 	if (settings == nullptr)
@@ -289,7 +365,7 @@ void SettingsDialog::SetParams(UserSettings* settings)
 			settings->SizesCheck ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_MANUAL_SYNC_CHECK),
 			settings->ManualSyncCheck ? BST_CHECKED : BST_UNCHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, IDC_PROMPT_CLOSE_ON_MATCH),
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_CLOSE_ON_MATCH),
 			settings->PromptToCloseOnMatch ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_HIDE_MARGIN),
 			settings->HideMargin ? BST_CHECKED : BST_UNCHECKED);
@@ -379,7 +455,7 @@ void SettingsDialog::GetParams()
 	_Settings->EncodingsCheck		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENCODINGS_CHECK)) == BST_CHECKED);
 	_Settings->SizesCheck			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_SIZES_CHECK)) == BST_CHECKED);
 	_Settings->ManualSyncCheck		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_MANUAL_SYNC_CHECK)) == BST_CHECKED);
-	_Settings->PromptToCloseOnMatch	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_PROMPT_CLOSE_ON_MATCH)) == BST_CHECKED);
+	_Settings->PromptToCloseOnMatch	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_CLOSE_ON_MATCH)) == BST_CHECKED);
 	_Settings->HideMargin			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_HIDE_MARGIN)) == BST_CHECKED);
 	_Settings->NeverMarkIgnored		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_NEVER_MARK_IGNORED)) == BST_CHECKED);
 	_Settings->FollowingCaret		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_FOLLOWING_CARET)) == BST_CHECKED);

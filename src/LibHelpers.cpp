@@ -26,6 +26,7 @@
 #include "SQLite/SqliteHelper.h"
 #include "LibGit2/LibGit2Helper.h"
 #include "Tools.h"
+#include "Strings.h"
 
 
 namespace // anonymous namespace
@@ -156,8 +157,7 @@ bool GetSvnFile(const wchar_t* fullFilePath, wchar_t* svnFile, unsigned svnFileS
 		{
 			if (!InitSQLite())
 			{
-				::MessageBoxW(nppData._nppHandle, L"Failed to initialize SQLite - operation aborted.",
-						PLUGIN_NAME, MB_OK);
+				::MessageBoxW(nppData._nppHandle, Strings::get()["SQLITE_FAIL"].c_str(), PLUGIN_NAME, MB_OK);
 				return false;
 			}
 
@@ -226,7 +226,7 @@ bool GetSvnFile(const wchar_t* fullFilePath, wchar_t* svnFile, unsigned svnFileS
 	}
 
 	if (!ret)
-		::MessageBoxW(nppData._nppHandle, L"No SVN data found.", PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["NO_SVN"].c_str(), PLUGIN_NAME, MB_OK);
 
 	return ret;
 }
@@ -239,7 +239,7 @@ std::vector<char> GetGitFileContent(const wchar_t* fullFilePath)
 	std::unique_ptr<LibGit>& gitLib = LibGit::load();
 	if (!gitLib)
 	{
-		::MessageBoxW(nppData._nppHandle, L"Failed to initialize LibGit2 - operation aborted.", PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["LIBGIT_FAIL"].c_str(), PLUGIN_NAME, MB_OK);
 		return gitFileContent;
 	}
 
@@ -299,7 +299,7 @@ std::vector<char> GetGitFileContent(const wchar_t* fullFilePath)
 	}
 
 	if (gitFileContent.empty())
-		::MessageBoxW(nppData._nppHandle, L"No Git data found.", PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["NO_GIT"].c_str(), PLUGIN_NAME, MB_OK);
 
 	return gitFileContent;
 }

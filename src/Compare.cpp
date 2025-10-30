@@ -41,6 +41,7 @@
 #include <commdlg.h>
 
 #include "Tools.h"
+#include "Strings.h"
 #include "Compare.h"
 #include "NppHelpers.h"
 #include "LibHelpers.h"
@@ -102,18 +103,21 @@ constexpr intptr_t SCN_MODIFIED_NOTIF_FLAGS_USED =
  *  \class
  *  \brief
  */
-class NppSettings
+class NppState
 {
 public:
-	static NppSettings& get()
+	static NppState& get()
 	{
-		static NppSettings instance;
+		static NppState instance;
 		return instance;
 	}
 
 	void enableClearCommands(bool enable) const;
 	void enableNppScrollCommands(bool enable) const;
-	void updatePluginMenu();
+
+	void updateLocalization();
+	void updateMenuAndToolbar();
+
 	void setNormalMode(bool forceUpdate = false);
 	void setCompareMode(bool clearHorizontalScroll = false);
 
@@ -135,7 +139,7 @@ public:
 	bool compareMode;
 
 private:
-	NppSettings() : compareMode(false), _restoreMultilineTab(false), _mainZoom(0), _subZoom(0), _compareZoom(0) {}
+	NppState() : compareMode(false), _restoreMultilineTab(false), _mainZoom(0), _subZoom(0), _compareZoom(0) {}
 
 	void save();
 	void toSingleLineTab();
@@ -143,16 +147,16 @@ private:
 	void refreshTabBar(HWND hTabBar);
 	void refreshTabBars();
 
-	bool	_restoreMultilineTab;
+	bool		_restoreMultilineTab;
 
-	bool	_syncVScroll;
-	bool	_syncHScroll;
+	bool		_syncVScroll;
+	bool		_syncHScroll;
 
-	int		_lineNumMode;
+	int			_lineNumMode;
 
-	int		_mainZoom;
-	int		_subZoom;
-	int		_compareZoom;
+	int			_mainZoom;
+	int			_subZoom;
+	int			_compareZoom;
 };
 
 
@@ -372,6 +376,7 @@ public:
 	void restoreFiles(LRESULT currentBuffId);
 
 	void setStatus();
+	std::wstring getSummary();
 
 	void adjustAlignment(int view, intptr_t line, intptr_t offset);
 
@@ -553,17 +558,17 @@ private:
 struct TempMark_t
 {
 	const wchar_t*	fileMark;
-	const wchar_t*	tabMark;
+	const char*		tabMark;
 };
 
 
 static const TempMark_t tempMark[] =
 {
-	{ L"",				L"" },
-	{ L"_LastSave",		L" ** Last Save" },
-	{ L"Clipboard_",	L" ** Clipboard" },
-	{ L"_SVN",			L" ** SVN" },
-	{ L"_Git",			L" ** Git" }
+	{ L"",				"" },
+	{ L"_LastSave",		"MARK_LAST_SAVE" },
+	{ L"Clipboard_",	"MARK_CLIPBOARD" },
+	{ L"_SVN",			"MARK_SVN" },
+	{ L"_Git",			"MARK_GIT" }
 };
 
 
@@ -611,7 +616,7 @@ intptr_t getAlignmentIdxAfter(const AlignmentViewData AlignmentPair::*pView, con
 intptr_t getAlignmentLine(const AlignmentInfo_t &alignInfo, int view, intptr_t line);
 
 
-void NppSettings::enableClearCommands(bool enable) const
+void NppState::enableClearCommands(bool enable) const
 {
 	HMENU hMenu = (HMENU)::SendMessageW(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
 
@@ -629,7 +634,7 @@ void NppSettings::enableClearCommands(bool enable) const
 }
 
 
-void NppSettings::enableNppScrollCommands(bool enable) const
+void NppState::enableNppScrollCommands(bool enable) const
 {
 	HMENU hMenu = (HMENU)::SendMessageW(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
 	const int flag = MF_BYCOMMAND | (enable ? MF_ENABLED : MF_GRAYED);
@@ -648,7 +653,96 @@ void NppSettings::enableNppScrollCommands(bool enable) const
 }
 
 
-void NppSettings::updatePluginMenu()
+// Update plugin localization and set menu items accordingly
+void NppState::updateLocalization()
+{
+	if (!Strings::get().read(getLocalization()))
+	{
+		updateMenuAndToolbar();
+		return;
+	}
+
+	HMENU hMenu = (HMENU)::SendMessageW(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
+
+	if (!hMenu)
+		return;
+
+	const struct { int id; const char* key; } items[] = {
+		{ CMD_SET_FIRST,			"CMD_SET_FIRST" },
+		{ CMD_COMPARE,				"CMD_COMPARE" },
+		{ CMD_COMPARE_SEL,			"CMD_COMPARE_SEL" },
+		{ CMD_FIND_UNIQUE,			"CMD_FIND_UNIQUE" },
+		{ CMD_FIND_UNIQUE_SEL,		"CMD_FIND_UNIQUE_SEL" },
+		{ CMD_LAST_SAVE_DIFF,		"CMD_LAST_SAVE_DIFF" },
+		{ CMD_CLIPBOARD_DIFF,		"CMD_CLIPBOARD_DIFF" },
+		{ CMD_SVN_DIFF,				"CMD_SVN_DIFF" },
+		{ CMD_GIT_DIFF,				"CMD_GIT_DIFF" },
+		{ CMD_CLEAR_ACTIVE,			"CMD_CLEAR_ACTIVE" },
+		{ CMD_CLEAR_ALL,			"CMD_CLEAR_ALL" },
+		{ CMD_PREV,					"CMD_PREV" },
+		{ CMD_NEXT,					"CMD_NEXT" },
+		{ CMD_FIRST,				"CMD_FIRST" },
+		{ CMD_LAST,					"CMD_LAST" },
+		{ CMD_PREV_CHANGE_POS,		"CMD_PREV_CHANGE_POS" },
+		{ CMD_NEXT_CHANGE_POS,		"CMD_NEXT_CHANGE_POS" },
+		{ CMD_COMPARE_SUMMARY,		"CMD_COMPARE_SUMMARY" },
+		{ CMD_COPY_VISIBLE,			"CMD_COPY_VISIBLE" },
+		{ CMD_DELETE_VISIBLE,		"CMD_DELETE_VISIBLE" },
+		{ CMD_BOOKMARK_VISIBLE,		"CMD_BOOKMARK_VISIBLE" },
+		{ CMD_GENERATE_PATCH,		"CMD_GENERATE_PATCH" },
+		{ CMD_APPLY_PATCH,			"CMD_APPLY_PATCH" },
+		{ CMD_REVERT_PATCH,			"CMD_REVERT_PATCH" },
+		{ CMD_COMPARE_OPTIONS,		"CMD_COMPARE_OPTIONS" },
+		{ CMD_BOOKMARKS_SYNC,		"CMD_BOOKMARKS_SYNC" },
+		{ CMD_DIFFS_VISUAL_FILTERS,	"CMD_DIFFS_VISUAL_FILTERS" },
+		{ CMD_NAV_BAR,				"CMD_NAV_BAR" },
+		{ CMD_AUTO_RECOMPARE,		"CMD_AUTO_RECOMPARE" },
+		{ CMD_SETTINGS,				"CMD_SETTINGS" },
+		{ CMD_ABOUT,				"CMD_ABOUT" }
+	};
+
+	const auto& str = Strings::get();
+
+	wchar_t current[128];
+
+	MENUITEMINFOW mi {0};
+	mi.cbSize = sizeof(mi);
+	mi.fMask = MIIM_STRING;
+
+	for (const auto& it : items)
+	{
+		std::wstring cmdStr = str[it.key];
+
+		// Basic menu item length precaution
+		if (cmdStr.empty() || cmdStr.size() > 64)
+			continue;
+
+		mi.dwTypeData = NULL;
+
+		if (::GetMenuItemInfoW(hMenu, funcItem[it.id]._cmdID, FALSE, &mi))
+		{
+			if (++mi.cch < _countof(current))
+			{
+				mi.dwTypeData = current;
+
+				::GetMenuItemInfoW(hMenu, funcItem[it.id]._cmdID, FALSE, &mi);
+
+				wchar_t* tab = wcschr(current, L'\t');
+				if (tab)
+					cmdStr.append(tab); // keep existing accelerator part (e.g. "\tCtrl+Alt+C")
+			}
+		}
+
+		mi.dwTypeData = const_cast<wchar_t*>(cmdStr.c_str());
+
+		::SetMenuItemInfoW(hMenu, funcItem[it.id]._cmdID, FALSE, &mi);
+	}
+
+	updateMenuAndToolbar();
+}
+
+
+void NppState::updateMenuAndToolbar()
 {
 	HMENU hMenu = (HMENU)::SendMessageW(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
 	const int flag = MF_BYCOMMAND | (compareMode ? MF_ENABLED : MF_GRAYED);
@@ -682,7 +776,7 @@ void NppSettings::updatePluginMenu()
 }
 
 
-void NppSettings::save()
+void NppState::save()
 {
 	HMENU hMenu = (HMENU)::SendMessageW(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
 
@@ -699,7 +793,7 @@ void NppSettings::save()
 }
 
 
-void NppSettings::setNormalMode(bool forceUpdate)
+void NppState::setNormalMode(bool forceUpdate)
 {
 	if (compareMode)
 	{
@@ -731,7 +825,7 @@ void NppSettings::setNormalMode(bool forceUpdate)
 		CallScintilla(MAIN_VIEW, SCI_SETZOOM, _mainZoom, 0);
 		CallScintilla(SUB_VIEW, SCI_SETZOOM, _subZoom, 0);
 
-		updatePluginMenu();
+		updateMenuAndToolbar();
 	}
 	else if (forceUpdate)
 	{
@@ -740,12 +834,12 @@ void NppSettings::setNormalMode(bool forceUpdate)
 		CallScintilla(MAIN_VIEW, SCI_SETZOOM, _mainZoom, 0);
 		CallScintilla(SUB_VIEW, SCI_SETZOOM, _subZoom, 0);
 
-		updatePluginMenu();
+		updateMenuAndToolbar();
 	}
 }
 
 
-void NppSettings::setCompareMode(bool clearHorizontalScroll)
+void NppState::setCompareMode(bool clearHorizontalScroll)
 {
 	if (compareMode)
 		return;
@@ -786,11 +880,11 @@ void NppSettings::setCompareMode(bool clearHorizontalScroll)
 	}
 
 	enableNppScrollCommands(false);
-	updatePluginMenu();
+	updateMenuAndToolbar();
 }
 
 
-void NppSettings::refreshTabBar(HWND hTabBar)
+void NppState::refreshTabBar(HWND hTabBar)
 {
 	if (::IsWindowVisible(hTabBar) && (TabCtrl_GetItemCount(hTabBar) > 1))
 		{
@@ -802,7 +896,7 @@ void NppSettings::refreshTabBar(HWND hTabBar)
 }
 
 
-void NppSettings::refreshTabBars()
+void NppState::refreshTabBars()
 {
 	HWND hNppMainTabBar	= NppTabHandleGetter::get(MAIN_VIEW);
 	HWND hNppSubTabBar	= NppTabHandleGetter::get(SUB_VIEW);
@@ -819,7 +913,7 @@ void NppSettings::refreshTabBars()
 }
 
 
-void NppSettings::toSingleLineTab()
+void NppState::toSingleLineTab()
 {
 	if (!_restoreMultilineTab)
 	{
@@ -864,7 +958,7 @@ void NppSettings::toSingleLineTab()
 }
 
 
-void NppSettings::restoreMultilineTab()
+void NppState::restoreMultilineTab()
 {
 	if (_restoreMultilineTab)
 	{
@@ -929,7 +1023,7 @@ void ComparedFile::updateFromCurrent()
 			{
 				tabName[i] = 0;
 				wcscat_s(tabName, _countof(tabName), fileExt);
-				wcscat_s(tabName, _countof(tabName), tempMark[isTemp].tabMark);
+				wcscat_s(tabName, _countof(tabName), Strings::get()[tempMark[isTemp].tabMark].c_str());
 
 				TCITEMW tab;
 				tab.mask = TCIF_TEXT;
@@ -1178,30 +1272,43 @@ void ComparedPair::setStatus()
 	if (Settings.StatusInfo == StatusType::STATUS_DISABLED)
 		return;
 
-	wchar_t info[512];
+	const auto& str = Strings::get();
+
+	std::wstring info;
 
 	if (compareDirty)
 	{
 		if (manuallyChanged)
-			wcscpy_s(info, _countof(info), L"FILE MANUALLY CHANGED, PLEASE RE-COMPARE!");
+			info = str["STATUS_MANUALLY_CHANGED"];
 		else
-			wcscpy_s(info, _countof(info), L"FILE CHANGED, COMPARE RESULTS MIGHT BE INACCURATE!");
+			info = str["STATUS_CHANGED"];
 	}
 	else
 	{
-		wchar_t buf[256] = L"    ";
-
-		int infoCurrentPos = 0;
-
 		if (options.selectionCompare)
 		{
-			_snwprintf_s(buf, _countof(buf), _TRUNCATE, L" Selections: %Id-%Id vs. %Id-%Id    ",
-					options.selections[MAIN_VIEW].first + 1, options.selections[MAIN_VIEW].second + 1,
-					options.selections[SUB_VIEW].first + 1, options.selections[SUB_VIEW].second + 1);
-		}
+			if (options.findUniqueMode)
+				info = str["STATUS_FIND_UNIQUE_SEL"];
+			else
+				info = str["STATUS_COMPARE_SEL"];
 
-		infoCurrentPos = _snwprintf_s(info, _countof(info), _TRUNCATE, L"%s%s",
-				options.findUniqueMode ? L"Find Unique" : L"Compare", buf);
+			info += L": [";
+			info += std::to_wstring(options.selections[MAIN_VIEW].first + 1);
+			info += L'-';
+			info += std::to_wstring(options.selections[MAIN_VIEW].second + 1);
+			info += L"] [";
+			info += std::to_wstring(options.selections[SUB_VIEW].first + 1);
+			info += L'-';
+			info += std::to_wstring(options.selections[SUB_VIEW].second + 1);
+			info += L']';
+		}
+		else
+		{
+			if (options.findUniqueMode)
+				info = str["STATUS_FIND_UNIQUE"];
+			else
+				info = str["STATUS_COMPARE"];
+		}
 
 		if (Settings.StatusInfo == StatusType::COMPARE_OPTIONS)
 		{
@@ -1210,105 +1317,246 @@ void ComparedPair::setStatus()
 
 			if (hasDetectOpts)
 			{
-				const int len = _snwprintf_s(buf, _countof(buf), _TRUNCATE, L"Detect: %s%s%s%s",
-						options.detectMoves			? L"/Moves "			: L"",
-						options.detectSubBlockDiffs	? L"/Sub-block Diffs "	: L"",
-						options.detectSubLineMoves	? L"/Sub-line Moves "	: L"",
-						options.detectCharDiffs		? L"/Char Diffs "		: L"") - 1;
+				info += L"    ";
+				info += str["STATUS_DETECT"];
 
-				wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-				infoCurrentPos += len;
+				if (options.detectMoves)
+					info += str["STATUS_MOVES"];
+
+				if (options.detectSubBlockDiffs)
+				{
+					info += str["STATUS_SUB_BLOCKS"];
+
+					if (options.detectSubLineMoves)
+						info += str["STATUS_SUB_MOVES"];
+					if (options.detectCharDiffs)
+						info += str["STATUS_CHARS"];
+				}
 			}
 
 			if (options.ignoreChangedSpaces || options.ignoreAllSpaces || options.ignoreEOL ||
 				options.ignoreEmptyLines || options.ignoreCase || options.ignoreRegex || options.ignoreFoldedLines ||
 				options.ignoreHiddenLines)
 			{
-				const int len = _snwprintf_s(buf, _countof(buf), _TRUNCATE, L"%sIgnore: %s%s%s%s%s%s%s",
-						hasDetectOpts				? L"    "				: L"",
-						options.ignoreEmptyLines	? L"/Empty Lines "		: L"",
-						options.ignoreFoldedLines	? L"/Folded Lines "		: L"",
-						options.ignoreHiddenLines	? L"/Hidden Lines "		: L"",
-						options.ignoreEOL			? L"/EOL "				: L"",
-						options.ignoreAllSpaces		? L"/All Spaces "		:
-						options.ignoreChangedSpaces	? L"/Changed Spaces "	: L"",
-						options.ignoreCase			? L"/Case "				: L"",
-						options.ignoreRegex			? L"/Regex "			: L"") - 1;
+				info += L"    ";
+				info += str["STATUS_IGNORE"];
 
-				wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-				infoCurrentPos += len;
+				if (options.ignoreEmptyLines)
+					info += str["STATUS_EMPTY_LINES"];
+				if (options.ignoreFoldedLines)
+					info += str["STATUS_FOLDED_LINES"];
+				if (options.ignoreHiddenLines)
+					info += str["STATUS_HIDDEN_LINES"];
+				if (options.ignoreEOL)
+					info += str["STATUS_EOL"];
+				if (options.ignoreAllSpaces)
+					info += str["STATUS_ALL_SPACES"];
+				else if (options.ignoreChangedSpaces)
+					info += str["STATUS_CHANGED_SPACES"];
+				if (options.ignoreCase)
+					info += str["STATUS_CASE"];
+				if (options.ignoreRegex)
+					info += str["STATUS_REGEX"];
 			}
 
 			if (options.bookmarksAsSync)
 			{
-				const int len = _snwprintf_s(buf, _countof(buf), _TRUNCATE, L"    Manual Sync Points: %Id",
-						options.syncPoints.size());
-
-				wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-				infoCurrentPos += len;
+				info += L"    ";
+				info += str["STATUS_SYNC_POINTS"];
+				info += std::to_wstring(options.syncPoints.size());
 			}
-
-			info[infoCurrentPos] = L'\0';
 		}
 		else if (Settings.StatusInfo == StatusType::DIFFS_SUMMARY)
 		{
-			if (options.findUniqueMode || summary.diffLines)
-			{
-				const int len =
-					_snwprintf_s(buf, _countof(buf), _TRUNCATE, L"%Id Diff Lines:",
-							options.findUniqueMode ? summary.added + summary.removed : summary.diffLines);
+			info += L"    ";
+			info += str["STATUS_DIFF_LINES"];
+			info += std::to_wstring(summary.diffLines);
 
-				wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-				infoCurrentPos += len;
-			}
 			if (summary.added)
 			{
-				const int len =
-					_snwprintf_s(buf, _countof(buf), _TRUNCATE, L" %Id Added,", summary.added);
-
-				wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-				infoCurrentPos += len;
+				info += str["STATUS_ADDED_LINES"];
+				info += std::to_wstring(summary.added);
 			}
 			if (summary.removed)
 			{
-				const int len =
-					_snwprintf_s(buf, _countof(buf), _TRUNCATE, L" %Id Removed,", summary.removed);
-
-				wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-				infoCurrentPos += len;
+				info += str["STATUS_REMOVED_LINES"];
+				info += std::to_wstring(summary.removed);
 			}
 			if (summary.moved)
 			{
-				const int len =
-					_snwprintf_s(buf, _countof(buf), _TRUNCATE, L" %Id Moved,", summary.moved);
-
-				wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-				infoCurrentPos += len;
+				info += str["STATUS_MOVED_LINES"];
+				info += std::to_wstring(summary.moved);
 			}
 			if (summary.changed)
 			{
-				const int len =
-					_snwprintf_s(buf, _countof(buf), _TRUNCATE, L" %Id Changed,", summary.changed);
-
-				wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-				infoCurrentPos += len;
+				info += str["STATUS_CHANGED_LINES"];
+				info += std::to_wstring(summary.changed);
 			}
-
-			--infoCurrentPos;
-
 			if (summary.match)
 			{
-				_snwprintf_s(buf, _countof(buf), _TRUNCATE, L".  %Id Matching Lines", summary.match);
-				wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-			}
-			else
-			{
-				info[infoCurrentPos] = L'\0';
+				info += L".  ";
+				info += str["STATUS_MATCHING_LINES"];
+				info += std::to_wstring(summary.match);
 			}
 		}
 	}
 
-	::SendMessageW(nppData._nppHandle, NPPM_SETSTATUSBAR, STATUSBAR_DOC_TYPE, static_cast<LPARAM>((LONG_PTR)info));
+	::SendMessageW(nppData._nppHandle, NPPM_SETSTATUSBAR, STATUSBAR_DOC_TYPE,
+			static_cast<LPARAM>((LONG_PTR)info.c_str()));
+}
+
+
+std::wstring ComparedPair::getSummary()
+{
+	const auto& str = Strings::get();
+
+	std::wstring info;
+
+	if (options.findUniqueMode)
+		info = str["SUMMARY_FIND_UNIQUE"];
+	else
+		info = str["SUMMARY_COMPARE"];
+
+	info += L'\n';
+	info += str["STATUS_DIFF_LINES"];
+	info += std::to_wstring(summary.diffLines);
+	info += L'\n';
+
+	if (summary.added)
+	{
+		info += str["STATUS_ADDED_LINES"];
+		info += std::to_wstring(summary.added);
+		info += L'\n';
+	}
+	if (summary.removed)
+	{
+		info += str["STATUS_REMOVED_LINES"];
+		info += std::to_wstring(summary.removed);
+		info += L'\n';
+	}
+	if (summary.moved)
+	{
+		info += str["STATUS_MOVED_LINES"];
+		info += std::to_wstring(summary.moved);
+		info += L'\n';
+	}
+	if (summary.changed)
+	{
+		info += str["STATUS_CHANGED_LINES"];
+		info += std::to_wstring(summary.changed);
+		info += L'\n';
+	}
+	if (summary.match)
+	{
+		info += str["STATUS_MATCHING_LINES"];
+		info += std::to_wstring(summary.match);
+		info += L'\n';
+	}
+
+	info += L'\n';
+	info += str["SUMMARY_OPTIONS"];
+
+	const bool hasDetectOpts = (!options.findUniqueMode && (options.detectSubBlockDiffs || options.detectMoves));
+
+	if (hasDetectOpts)
+	{
+		info += L'\n';
+		info += str["STATUS_DETECT"];
+		info += L'\n';
+
+		if (options.detectMoves)
+		{
+			info += str["STATUS_MOVES"];
+			info += L'\n';
+		}
+
+		if (options.detectSubBlockDiffs)
+		{
+			info += str["STATUS_SUB_BLOCKS"];
+			info += L'\n';
+
+			if (options.detectSubLineMoves)
+			{
+				info += str["STATUS_SUB_MOVES"];
+				info += L'\n';
+			}
+			if (options.detectCharDiffs)
+			{
+				info += str["STATUS_CHARS"];
+				info += L'\n';
+			}
+		}
+	}
+
+	const bool hasIgnoreOpts = (options.ignoreChangedSpaces || options.ignoreAllSpaces || options.ignoreEOL ||
+								options.ignoreEmptyLines || options.ignoreCase || options.ignoreRegex ||
+								options.ignoreFoldedLines || options.ignoreHiddenLines);
+
+	if (hasIgnoreOpts)
+	{
+		info += L'\n';
+		info += str["STATUS_IGNORE"];
+		info += L'\n';
+
+		if (options.ignoreEmptyLines)
+		{
+			info += str["STATUS_EMPTY_LINES"];
+			info += L'\n';
+		}
+		if (options.ignoreFoldedLines)
+		{
+			info += str["STATUS_FOLDED_LINES"];
+			info += L'\n';
+		}
+		if (options.ignoreHiddenLines)
+		{
+			info += str["STATUS_HIDDEN_LINES"];
+			info += L'\n';
+		}
+		if (options.ignoreEOL)
+		{
+			info += str["STATUS_EOL"];
+			info += L'\n';
+		}
+		if (options.ignoreAllSpaces)
+		{
+			info += str["STATUS_ALL_SPACES"];
+			info += L'\n';
+		}
+		else if (options.ignoreChangedSpaces)
+		{
+			info += str["STATUS_CHANGED_SPACES"];
+			info += L'\n';
+		}
+		if (options.ignoreCase)
+		{
+			info += str["STATUS_CASE"];
+			info += L'\n';
+		}
+		if (options.ignoreRegex)
+		{
+			info += str["STATUS_REGEX"];
+			info += L'\n';
+		}
+	}
+
+	if (!hasDetectOpts && !hasIgnoreOpts)
+	{
+		info += L'\n';
+		info += str["SUMMARY_NO_IGNORE"];
+	}
+
+	if (options.bookmarksAsSync)
+	{
+		info += L'\n';
+		info += str["STATUS_SYNC_POINTS"];
+		info += std::to_wstring(options.syncPoints.size());
+		info += L'\n';
+	}
+
+	info += L'\n';
+
+	return info;
 }
 
 
@@ -1346,7 +1594,7 @@ NewCompare::NewCompare(bool currFileIsNew, bool markFirstName)
 	pair.file[0].initFromCurrent(currFileIsNew);
 
 	// Enable commands to be able to clear the first file that was just set
-	NppSettings::get().enableClearCommands(true);
+	NppState::get().enableClearCommands(true);
 
 	if (markFirstName)
 	{
@@ -1361,11 +1609,11 @@ NewCompare::NewCompare(bool currFileIsNew, bool markFirstName)
 
 			TabCtrl_GetItem(hNppTabBar, pair.file[0].originalPos, &tab);
 
-			wchar_t tabText[MAX_PATH];
-			tab.pszText = tabText;
+			std::wstring tabText = _firstTabText;
+			tabText += (currFileIsNew) ? Strings::get()["MARK_NEW"] : Strings::get()["MARK_OLD"];
 
-			_snwprintf_s(tabText, _countof(tabText), _TRUNCATE, L"%s ** %s to Compare",
-					_firstTabText, currFileIsNew ? L"New" : L"Old");
+			tab.pszText = const_cast<wchar_t*>(tabText.c_str());
+			tab.cchTextMax = static_cast<int>(tabText.size());
 
 			::SendMessageW(nppData._nppHandle, NPPM_HIDETABBAR, 0, TRUE);
 
@@ -1391,6 +1639,7 @@ NewCompare::~NewCompare()
 			TCITEMW tab;
 			tab.mask = TCIF_TEXT;
 			tab.pszText = _firstTabText;
+			tab.cchTextMax = _countof(_firstTabText);
 
 			::SendMessageW(nppData._nppHandle, NPPM_HIDETABBAR, 0, TRUE);
 
@@ -1400,8 +1649,8 @@ NewCompare::~NewCompare()
 		}
 	}
 
-	if (!NppSettings::get().compareMode)
-		NppSettings::get().enableClearCommands(false);
+	if (!NppState::get().compareMode)
+		NppState::get().enableClearCommands(false);
 }
 
 
@@ -2533,10 +2782,7 @@ void doAlignment(bool forceAlign = false)
 	{
 		cmpPair->nppReplaceDone = false;
 
-		::MessageBoxW(nppData._nppHandle,
-				L"Compared file text replaced by Notepad++. Please manually re-compare "
-				L"to make sure compare results are valid!",
-				PLUGIN_NAME, MB_OK | MB_ICONWARNING);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_REPLACED"].c_str(), PLUGIN_NAME, MB_OK | MB_ICONWARNING);
 	}
 
 	if (goToFirst)
@@ -2561,8 +2807,7 @@ bool isFileCompared(int view)
 		const wchar_t* fname = ::PathFindFileNameW(cmpPair->getFileBySciDoc(sciDoc).name);
 
 		wchar_t msg[MAX_PATH];
-		_snwprintf_s(msg, _countof(msg), _TRUNCATE,
-				L"File \"%s\" is already compared - operation ignored.", fname);
+		_snwprintf_s(msg, _countof(msg), _TRUNCATE, Strings::get()["MSG_ALREADY_COMPARED"].c_str(), fname);
 		::MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK);
 
 		return true;
@@ -2577,10 +2822,8 @@ bool isEncodingOK(const ComparedPair& cmpPair)
 	// Warn about encoding mismatches as that might compromise the compare
 	if (getEncoding(cmpPair.file[0].buffId) != getEncoding(cmpPair.file[1].buffId))
 	{
-		if (::MessageBoxW(nppData._nppHandle,
-			L"Trying to compare files with different encodings - "
-			L"the result might be inaccurate and misleading.\n\n"
-			L"Compare anyway?", PLUGIN_NAME, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) != IDYES)
+		if (::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_ENCODINGS"].c_str(),
+			PLUGIN_NAME, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) != IDYES)
 		{
 			return false;
 		}
@@ -2612,7 +2855,7 @@ bool areSelectionsValid(LRESULT currentBuffId = -1, LRESULT otherBuffId = -1)
 	}
 
 	if (!valid)
-		::MessageBoxW(nppData._nppHandle, L"No valid selections to compare - operation ignored.", PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_NO_SELECTIONS"].c_str(), PLUGIN_NAME, MB_OK);
 
 	return valid;
 }
@@ -2648,7 +2891,7 @@ bool checkFileExists(const wchar_t *file)
 {
 	if (::PathFileExistsW(file) == FALSE)
 	{
-		::MessageBoxW(nppData._nppHandle, L"File is not written to disk - operation ignored.", PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_NOT_WRITTEN"].c_str(), PLUGIN_NAME, MB_OK);
 		return false;
 	}
 
@@ -2755,7 +2998,7 @@ bool createTempFile(const wchar_t *file, Temp_t tempType)
 		}
 	}
 
-	::MessageBoxW(nppData._nppHandle, L"Creating temp file failed - operation aborted.", PLUGIN_NAME, MB_OK);
+	::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_TEMP_FAIL"].c_str(), PLUGIN_NAME, MB_OK);
 
 	newCompare = nullptr;
 
@@ -2819,7 +3062,7 @@ bool initNewCompare()
 		{
 			if (getNumberOfFiles(getCurrentViewId()) < 2)
 			{
-				::MessageBoxW(nppData._nppHandle, L"Only one file opened - operation ignored.", PLUGIN_NAME, MB_OK);
+				::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_ONLY_ONE"].c_str(), PLUGIN_NAME, MB_OK);
 				return false;
 			}
 
@@ -2835,8 +3078,7 @@ bool initNewCompare()
 			// Check if comparing to cloned self
 			if (getDocId(MAIN_VIEW) == getDocId(SUB_VIEW))
 			{
-				::MessageBoxW(nppData._nppHandle, L"Trying to compare file to its clone - operation ignored.",
-						PLUGIN_NAME, MB_OK);
+				::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_COMPARE_TO_CLONE"].c_str(), PLUGIN_NAME, MB_OK);
 				return false;
 			}
 
@@ -2969,10 +3211,8 @@ bool setupCompare(CompareList_t::iterator& cmpPair, bool selectionCompare, bool 
 
 			if (largeFilesWarning)
 			{
-				if (::MessageBoxW(nppData._nppHandle,
-					L"Comparing large files such as these might take significant time "
-					L"especially if they differ a lot.\n\n"
-					L"Compare anyway?", PLUGIN_NAME, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) != IDYES)
+				if (::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_LARGE_FILES"].c_str(),
+						PLUGIN_NAME, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) != IDYES)
 				{
 					return false;
 				}
@@ -2983,11 +3223,9 @@ bool setupCompare(CompareList_t::iterator& cmpPair, bool selectionCompare, bool 
 			(CallScintilla(MAIN_VIEW, SCI_GETEOLMODE, 0, 0) != CallScintilla(SUB_VIEW, SCI_GETEOLMODE, 0, 0)) &&
 			!cmpPair->options.ignoreEOL)
 		{
-			if (::MessageBoxW(nppData._nppHandle,
-					L"Seems like files differ in line endings (EOL). "
-					L"If that's the case all lines will appear different.\n\n"
-					L"Would you like to ignore EOL differences for this compare?",
-					cmpPair->options.findUniqueMode ? L"Find Unique" : L"Compare",
+			if (::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_EOL_DIFFERENT"].c_str(),
+					cmpPair->options.findUniqueMode ?
+					Strings::get()["STATUS_FIND_UNIQUE"].c_str() : Strings::get()["STATUS_COMPARE"].c_str(),
 					MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) == IDYES)
 			{
 				cmpPair->options.ignoreEOL = true;
@@ -2997,10 +3235,8 @@ bool setupCompare(CompareList_t::iterator& cmpPair, bool selectionCompare, bool 
 
 		if (cmpPair->options.bookmarksAsSync && Settings.ManualSyncCheck)
 		{
-			if (::MessageBoxW(nppData._nppHandle,
-					L"There are existing bookmarks that will be used as manual sync points.\n\n"
-					L"If that's not done on purpose, would you like to disable manual sync for this compare?",
-					L"Compare", MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) == IDYES)
+			if (::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_MANUAL_SYNC"].c_str(),
+					Strings::get()["STATUS_COMPARE"].c_str(), MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) == IDYES)
 			{
 				cmpPair->options.bookmarksAsSync = false;
 				cmpPair->options.syncPoints.clear();
@@ -3045,8 +3281,7 @@ CompareResult runCompare(CompareList_t::iterator& cmpPair)
 
 	wchar_t progressInfo[MAX_PATH];
 	_snwprintf_s(progressInfo, _countof(progressInfo), _TRUNCATE, cmpPair->options.selectionCompare ?
-			L"Comparing selected lines in \"%s\" vs. selected lines in \"%s\"..." :
-			L"Comparing \"%s\" vs. \"%s\"...", newName, oldName);
+			Strings::get()["MSG_SEL_COMPARING"].c_str() : Strings::get()["MSG_COMPARING"].c_str(), newName, oldName);
 
 	return compareViews(cmpPair->options, progressInfo, cmpPair->summary);
 }
@@ -3213,7 +3448,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 			if (Settings.ShowNavBar)
 				showNavBar();
 
-			NppSettings::get().setCompareMode(true);
+			NppState::get().setCompareMode(true);
 
 			setCompareView(MAIN_VIEW, !Settings.HideMargin,
 					Settings.colors().blank, Settings.colors().caret_line_transparency);
@@ -3251,6 +3486,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 		case CompareResult::COMPARE_MATCH:
 		{
+			const auto& str = Strings::get();
+
             // Files match when recompared - check if they fully match or because of active ignored options
             if (recompare)
                 filesSHAsDiffer = compareSHAs(cmpPair);
@@ -3267,58 +3504,93 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 			{
 				if (recompare)
 				{
-					_snwprintf_s(msg, _countof(msg), _TRUNCATE,
-							L"%s \"%s\" and \"%s\" %s.\n\nTemp file will be closed.",
-							selectionCompare ? L"Selections in files" : L"Files",
-							newName, ::PathFindFileNameW(oldFile.name),
-							cmpPair->options.findUniqueMode ? L"do not contain unique lines" : L"match");
+					if (selectionCompare)
+					{
+						if (cmpPair->options.findUniqueMode)
+							_snwprintf_s(msg, _countof(msg), _TRUNCATE, str["MSG_SEL_NO_UNIQUE"].c_str(),
+									newName, ::PathFindFileNameW(oldFile.name));
+						else
+							_snwprintf_s(msg, _countof(msg), _TRUNCATE, str["MSG_SEL_MATCH"].c_str(),
+									newName, ::PathFindFileNameW(oldFile.name));
+					}
+					else
+					{
+						if (cmpPair->options.findUniqueMode)
+							_snwprintf_s(msg, _countof(msg), _TRUNCATE, str["MSG_NO_UNIQUE"].c_str(),
+									newName, ::PathFindFileNameW(oldFile.name));
+						else
+							_snwprintf_s(msg, _countof(msg), _TRUNCATE, str["MSG_MATCH"].c_str(),
+									newName, ::PathFindFileNameW(oldFile.name));
+					}
+
+					wcscat_s(msg, _countof(msg), str["MSG_IGNORED_DIFFS"].c_str());
 				}
 				else
 				{
 					if (oldFile.isTemp == LAST_SAVED_TEMP)
 					{
-						_snwprintf_s(msg, _countof(msg), _TRUNCATE,
-								L"File \"%s\" has not been modified since last Save.", newName);
+						_snwprintf_s(msg, _countof(msg), _TRUNCATE, str["MSG_NOT_MODIFIED"].c_str(), newName);
 					}
 					else if (oldFile.isTemp == CLIPBOARD_TEMP)
 					{
-						_snwprintf_s(msg, _countof(msg), _TRUNCATE,
-								L"%s \"%s\" has no changes against clipboard.",
-								selectionCompare ? L"Selection in file" : L"File", newName);
+						if (selectionCompare)
+							_snwprintf_s(msg, _countof(msg), _TRUNCATE, str["MSG_SEL_CLIPBOARD_MATCH"].c_str(),
+										newName);
+						else
+							_snwprintf_s(msg, _countof(msg), _TRUNCATE, str["MSG_CLIPBOARD_MATCH"].c_str(), newName);
 					}
 					else
 					{
-						_snwprintf_s(msg, _countof(msg), _TRUNCATE,
-								L"File \"%s\" has no changes against %s.", newName,
-								oldFile.isTemp == GIT_TEMP ? L"Git" : L"SVN");
+						if (oldFile.isTemp == GIT_TEMP)
+							_snwprintf_s(msg, _countof(msg), _TRUNCATE, str["MSG_GIT_MATCH"].c_str(), newName);
+						else
+							_snwprintf_s(msg, _countof(msg), _TRUNCATE, str["MSG_SVN_MATCH"].c_str(), newName);
 					}
 				}
 
 				if (filesSHAsDiffer)
-					wcscat_s(msg, _countof(msg),
-							L"\n\nDiffs exist but have been ignored due to the compare options.");
+					wcscat_s(msg, _countof(msg), str["MSG_IGNORED_DIFFS"].c_str());
 
 				::MessageBoxW(nppData._nppHandle, msg, cmpPair->options.findUniqueMode ?
-						L"Find Unique" : L"Compare", MB_OK);
+						str["STATUS_FIND_UNIQUE"].c_str() : str["STATUS_COMPARE"].c_str(), MB_OK);
 			}
 			else
 			{
-				_snwprintf_s(msg, _countof(msg), _TRUNCATE,
-						L"%s \"%s\" and \"%s\" %s.%s%s",
-						selectionCompare ? L"Selections in files" : L"Files",
-						newName, ::PathFindFileNameW(oldFile.name),
-						cmpPair->options.findUniqueMode ? L"do not contain unique lines" : L"match",
-						filesSHAsDiffer ?
-							L"\n\nDiffs exist but have been ignored due to the compare options." : L"",
-						Settings.PromptToCloseOnMatch ? L"\n\nClose compared files?" : L"");
+				if (selectionCompare)
+				{
+					if (cmpPair->options.findUniqueMode)
+						_snwprintf_s(msg, _countof(msg), _TRUNCATE, str["MSG_SEL_NO_UNIQUE"].c_str(),
+								newName, ::PathFindFileNameW(oldFile.name));
+					else
+						_snwprintf_s(msg, _countof(msg), _TRUNCATE, str["MSG_SEL_MATCH"].c_str(),
+								newName, ::PathFindFileNameW(oldFile.name));
+				}
+				else
+				{
+					if (cmpPair->options.findUniqueMode)
+						_snwprintf_s(msg, _countof(msg), _TRUNCATE, str["MSG_NO_UNIQUE"].c_str(),
+								newName, ::PathFindFileNameW(oldFile.name));
+					else
+						_snwprintf_s(msg, _countof(msg), _TRUNCATE, str["MSG_MATCH"].c_str(),
+								newName, ::PathFindFileNameW(oldFile.name));
+				}
+
+				if (filesSHAsDiffer)
+					wcscat_s(msg, _countof(msg), str["MSG_IGNORED_DIFFS"].c_str());
 
 				if (Settings.PromptToCloseOnMatch)
-					choice = ::MessageBoxW(nppData._nppHandle, msg,
-							cmpPair->options.findUniqueMode ? L"Find Unique" : L"Compare",
-							MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON1);
+				{
+					wcscat_s(msg, _countof(msg), str["MSG_PROMPT_CLOSE"].c_str());
+
+					choice = ::MessageBoxW(nppData._nppHandle, msg, cmpPair->options.findUniqueMode ?
+										str["STATUS_FIND_UNIQUE"].c_str() : str["STATUS_COMPARE"].c_str(),
+										MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON1);
+				}
 				else
-					::MessageBoxW(nppData._nppHandle, msg,
-							cmpPair->options.findUniqueMode ? L"Find Unique" : L"Compare", MB_OK);
+				{
+					::MessageBoxW(nppData._nppHandle, msg, cmpPair->options.findUniqueMode ?
+								str["STATUS_FIND_UNIQUE"].c_str() : str["STATUS_COMPARE"].c_str(), MB_OK);
+				}
 			}
 
 			if (choice == IDYES)
@@ -3329,8 +3601,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 		break;
 
 		case CompareResult::COMPARE_ERROR:
-			::MessageBoxW(nppData._nppHandle, L"Failure allocating resources, compare aborted",
-					PLUGIN_NAME, MB_OK | MB_ICONERROR);
+			::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_COMPARE_FAIL"].c_str(),
+						PLUGIN_NAME, MB_OK | MB_ICONERROR);
 
 		default:
 			clearComparePair(getCurrentBuffId());
@@ -3397,7 +3669,7 @@ void ClipboardDiff()
 
 		if (::PathFileExistsW(file) == FALSE)
 		{
-			::MessageBoxW(nppData._nppHandle, L"File is empty - operation ignored.", PLUGIN_NAME, MB_OK);
+			::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_FILE_EMPTY"].c_str(), PLUGIN_NAME, MB_OK);
 			return;
 		}
 	}
@@ -3408,7 +3680,7 @@ void ClipboardDiff()
 
 	if (content.empty())
 	{
-		::MessageBoxW(nppData._nppHandle, L"Clipboard does not contain any text to compare.", PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_CLIPBOARD_EMPTY"].c_str(), PLUGIN_NAME, MB_OK);
 		return;
 	}
 
@@ -3468,7 +3740,7 @@ void ClearActiveCompare()
 {
 	newCompare = nullptr;
 
-	if (NppSettings::get().compareMode)
+	if (NppState::get().compareMode)
 		clearComparePair(getCurrentBuffId());
 }
 
@@ -3493,7 +3765,7 @@ void ClearAllCompares()
 
 	compareList.clear();
 
-	NppSettings::get().setNormalMode(true);
+	NppState::get().setNormalMode(true);
 
 	if (!isSingleView())
 		activateBufferID(otherBuffId);
@@ -3504,7 +3776,7 @@ void ClearAllCompares()
 
 void First()
 {
-	if (NppSettings::get().compareMode)
+	if (NppState::get().compareMode)
 	{
 		ScopedIncrementerInt incr(notificationsLock);
 
@@ -3515,7 +3787,7 @@ void First()
 
 void Prev()
 {
-	if (NppSettings::get().compareMode)
+	if (NppState::get().compareMode)
 	{
 		ScopedIncrementerInt incr(notificationsLock);
 
@@ -3526,7 +3798,7 @@ void Prev()
 
 void Next()
 {
-	if (NppSettings::get().compareMode)
+	if (NppState::get().compareMode)
 	{
 		ScopedIncrementerInt incr(notificationsLock);
 
@@ -3537,7 +3809,7 @@ void Next()
 
 void Last()
 {
-	if (NppSettings::get().compareMode)
+	if (NppState::get().compareMode)
 	{
 		ScopedIncrementerInt incr(notificationsLock);
 
@@ -3548,7 +3820,7 @@ void Last()
 
 void PrevChangePos()
 {
-	if (NppSettings::get().compareMode)
+	if (NppState::get().compareMode)
 	{
 		ScopedIncrementerInt incr(notificationsLock);
 
@@ -3574,7 +3846,7 @@ void PrevChangePos()
 
 void NextChangePos()
 {
-	if (NppSettings::get().compareMode)
+	if (NppState::get().compareMode)
 	{
 		ScopedIncrementerInt incr(notificationsLock);
 
@@ -3604,132 +3876,7 @@ void ActiveCompareSummary()
 	if (cmpPair == compareList.end())
 		return;
 
-	wchar_t info[1024];
-
-	int infoCurrentPos = _snwprintf_s(info, _countof(info), _TRUNCATE, L"%s Summary:\n\n",
-			cmpPair->options.findUniqueMode ? L"Find Unique" : L"Compare");
-
-	wchar_t buf[256];
-
-	if (cmpPair->options.findUniqueMode || cmpPair->summary.diffLines)
-	{
-		const int len =
-			_snwprintf_s(buf, _countof(buf), _TRUNCATE, L"%Id Diff Lines:\n",
-					cmpPair->options.findUniqueMode ?
-							cmpPair->summary.added + cmpPair->summary.removed : cmpPair->summary.diffLines);
-
-		wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-		infoCurrentPos += len;
-	}
-	if (cmpPair->summary.added)
-	{
-		const int len =
-			_snwprintf_s(buf, _countof(buf), _TRUNCATE, L" %Id Added,", cmpPair->summary.added);
-
-		wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-		infoCurrentPos += len;
-	}
-	if (cmpPair->summary.removed)
-	{
-		const int len =
-			_snwprintf_s(buf, _countof(buf), _TRUNCATE, L" %Id Removed,", cmpPair->summary.removed);
-
-		wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-		infoCurrentPos += len;
-	}
-	if (cmpPair->summary.moved)
-	{
-		const int len =
-			_snwprintf_s(buf, _countof(buf), _TRUNCATE, L" %Id Moved,", cmpPair->summary.moved);
-
-		wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-		infoCurrentPos += len;
-	}
-	if (cmpPair->summary.changed)
-	{
-		const int len =
-			_snwprintf_s(buf, _countof(buf), _TRUNCATE, L" %Id Changed,", cmpPair->summary.changed);
-
-		wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-		infoCurrentPos += len;
-	}
-
-	--infoCurrentPos;
-
-	if (cmpPair->summary.match)
-	{
-		const int len =
-			_snwprintf_s(buf, _countof(buf), _TRUNCATE, L".\n%Id Matching Lines.", cmpPair->summary.match);
-
-		wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-		infoCurrentPos += len;
-	}
-
-	{
-		constexpr wchar_t comparisonOptStr[] = L"\n\nComparison options:\n\n";
-
-		wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, comparisonOptStr);
-		infoCurrentPos += _countof(comparisonOptStr) - 1;
-	}
-
-	const bool hasDetectOpts = (!cmpPair->options.findUniqueMode &&
-			(cmpPair->options.detectSubBlockDiffs || cmpPair->options.detectMoves));
-
-	if (hasDetectOpts)
-	{
-		const int len = _snwprintf_s(buf, _countof(buf), _TRUNCATE, L"Detect: %s%s%s%s",
-				cmpPair->options.detectMoves			? L"/Moves "			: L"",
-				cmpPair->options.detectSubBlockDiffs	? L"/Sub-block Diffs "	: L"",
-				cmpPair->options.detectSubLineMoves		? L"/Sub-line Moves "	: L"",
-				cmpPair->options.detectCharDiffs		? L"/Char Diffs "		: L"") - 1;
-
-		wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-		infoCurrentPos += len;
-	}
-
-	const bool hasIgnoreOpts =
-		(cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreAllSpaces || cmpPair->options.ignoreEOL ||
-		cmpPair->options.ignoreEmptyLines || cmpPair->options.ignoreCase || cmpPair->options.ignoreRegex ||
-		cmpPair->options.ignoreFoldedLines || cmpPair->options.ignoreHiddenLines);
-
-	if (hasIgnoreOpts)
-	{
-		const int len = _snwprintf_s(buf, _countof(buf), _TRUNCATE, L"%sIgnore: %s%s%s%s%s%s%s",
-				hasDetectOpts							? L"\n"					: L"",
-				cmpPair->options.ignoreEmptyLines		? L"/Empty Lines "		: L"",
-				cmpPair->options.ignoreFoldedLines		? L"/Folded Lines "		: L"",
-				cmpPair->options.ignoreHiddenLines		? L"/Hidden Lines "		: L"",
-				cmpPair->options.ignoreEOL				? L"/EOL "				: L"",
-				cmpPair->options.ignoreAllSpaces		? L"/All Spaces "		:
-				cmpPair->options.ignoreChangedSpaces	? L"/Changed Spaces "	: L"",
-				cmpPair->options.ignoreCase				? L"/Case "				: L"",
-				cmpPair->options.ignoreRegex			? L"/Regex "			: L"") - 1;
-
-		wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-		infoCurrentPos += len;
-	}
-
-	if (!hasDetectOpts && !hasIgnoreOpts)
-	{
-		const int len = _snwprintf_s(buf, _countof(buf), _TRUNCATE, L"No%s Ignore options used.",
-				cmpPair->options.findUniqueMode ? L"" : L" Detect and");
-
-		wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-		infoCurrentPos += len;
-	}
-
-	if (cmpPair->options.bookmarksAsSync)
-	{
-		_snwprintf_s(buf, _countof(buf), _TRUNCATE, L"\n\nManual Sync Points used: %Id.\n\n",
-				cmpPair->options.syncPoints.size());
-		wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, buf);
-	}
-	else
-	{
-		wcscpy_s(info + infoCurrentPos, _countof(info) - infoCurrentPos, L"\n\n");
-	}
-
-	::MessageBoxW(nppData._nppHandle, info, PLUGIN_NAME, MB_OK);
+	::MessageBoxW(nppData._nppHandle, cmpPair->getSummary().c_str(), PLUGIN_NAME, MB_OK);
 }
 
 
@@ -4094,18 +4241,17 @@ void GeneratePatch()
 	if (cmpPair == compareList.end())
 		return;
 
+	const auto& str = Strings::get();
+
 	if (cmpPair->options.findUniqueMode)
 	{
-		::MessageBoxW(nppData._nppHandle,
-				L"Patch generation for 'Find Unique' commands is currently not supported.\n", PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_NO_UNIQUE"].c_str(), PLUGIN_NAME, MB_OK);
 		return;
 	}
 
 	if (cmpPair->compareDirty)
 	{
-		::MessageBoxW(nppData._nppHandle,
-				L"Compared file is modified after compare, generating patch is not possible.\n"
-				L"Please manually re-compare and try again.", PLUGIN_NAME, MB_OK | MB_ICONWARNING);
+		::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_NO_MODIFIED"].c_str(), PLUGIN_NAME, MB_OK | MB_ICONWARNING);
 		return;
 	}
 
@@ -4115,11 +4261,7 @@ void GeneratePatch()
 		cmpPair->options.ignoreFoldedLines || cmpPair->options.ignoreHiddenLines);
 
 	if (hasIgnoreOpts)
-	{
-		::MessageBoxW(nppData._nppHandle,
-				L"Some ignore options are enabled - please note that the patch file might contain ignored files "
-				L"portions and migth insert such when applied!", PLUGIN_NAME, MB_OK | MB_ICONWARNING);
-	}
+		::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_WARN_IGNORE"].c_str(), PLUGIN_NAME, MB_OK | MB_ICONWARNING);
 
 	std::ofstream ofs;
 	{
@@ -4130,13 +4272,18 @@ void GeneratePatch()
 		::ZeroMemory(&fname, sizeof(fname));
 		::ZeroMemory(&ofn, sizeof(ofn));
 
+		std::wstring filter = str["PATCH_FILTER_ALL"];
+		filter.insert(filter.end(), L'\0');
+		filter += L"*.*";
+		filter.insert(filter.end(), L'\0');
+
 		ofn.lStructSize		= sizeof(ofn);
 		ofn.hwndOwner		= nppData._nppHandle;
-		ofn.lpstrFilter		= L"All Files\0*.*\0\0";
+		ofn.lpstrFilter		= filter.c_str();
 		ofn.lpstrFile		= fname;
 		ofn.nMaxFile		= _countof(fname);
 		ofn.lpstrInitialDir	= nullptr;
-		ofn.lpstrTitle		= L"Save patch file as:";
+		ofn.lpstrTitle		= str["PATCH_SAVE_AS"].c_str();
 		ofn.Flags			= OFN_DONTADDTORECENT | OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST;
 
 		if (!::GetSaveFileNameW(&ofn))
@@ -4146,7 +4293,7 @@ void GeneratePatch()
 
 		if (!ofs.is_open())
 		{
-			::MessageBoxW(nppData._nppHandle, L"Failure to open file for writing.", PLUGIN_NAME, MB_OK | MB_ICONERROR);
+			::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_SAVE_FAIL"].c_str(), PLUGIN_NAME, MB_OK | MB_ICONERROR);
 			return;
 		}
 	}
@@ -4293,6 +4440,8 @@ bool readAndApplyPatch(std::ifstream& patchFile, bool revert)
 
 void applyPatch(bool revert = false)
 {
+	const auto& str = Strings::get();
+
 	std::ifstream ifs;
 	{
 		wchar_t fname[2048];
@@ -4302,13 +4451,23 @@ void applyPatch(bool revert = false)
 		::ZeroMemory(&fname, sizeof(fname));
 		::ZeroMemory(&ofn, sizeof(ofn));
 
+		std::wstring filter = str["PATCH_FILTER_PATCH"];
+		filter += L" (*.patch, *.diff)";
+		filter.insert(filter.end(), L'\0');
+		filter += L"*.patch;*.diff";
+		filter.insert(filter.end(), L'\0');
+		filter += str["PATCH_FILTER_ALL"];
+		filter.insert(filter.end(), L'\0');
+		filter += L"*.*";
+		filter.insert(filter.end(), L'\0');
+
 		ofn.lStructSize		= sizeof(ofn);
 		ofn.hwndOwner		= nppData._nppHandle;
-		ofn.lpstrFilter		= L"Patch Files (*.patch, *.diff)\0*.patch;*.diff\0All Files\0*.*\0\0";
+		ofn.lpstrFilter		= filter.c_str();
 		ofn.lpstrFile		= fname;
 		ofn.nMaxFile		= _countof(fname);
 		ofn.lpstrInitialDir	= nullptr;
-		ofn.lpstrTitle		= L"Select patch file:";
+		ofn.lpstrTitle		= str["PATCH_SELECT"].c_str();
 		ofn.Flags			= OFN_DONTADDTORECENT | OFN_FILEMUSTEXIST;
 
 		if (!::GetOpenFileNameW(&ofn))
@@ -4318,7 +4477,7 @@ void applyPatch(bool revert = false)
 
 		if (!ifs.is_open())
 		{
-			::MessageBoxW(nppData._nppHandle, L"Failure to open patch file.", PLUGIN_NAME, MB_OK | MB_ICONERROR);
+			::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_OPEN_FAIL"].c_str(), PLUGIN_NAME, MB_OK | MB_ICONERROR);
 			return;
 		}
 	}
@@ -4329,11 +4488,11 @@ void applyPatch(bool revert = false)
 
 		::SendMessageW(nppData._nppHandle, NPPM_GETFILENAME, _countof(fname), (LPARAM)fname);
 
-		std::wstring msg = L"Patch file failed to apply on \"";
-		msg += fname;
-		msg += L"\".\nFile is probably modified or patch file is invalid.";
+		wchar_t msg[MAX_PATH + 256];
 
-		::MessageBoxW(nppData._nppHandle, msg.c_str(), PLUGIN_NAME, MB_OK | MB_ICONERROR);
+		_snwprintf_s(msg, _countof(msg), _TRUNCATE, str["MSG_PATCH_APPLY_FAIL"].c_str(), fname);
+
+		::MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK | MB_ICONERROR);
 	}
 
 	ifs.close();
@@ -4354,7 +4513,7 @@ void RevertPatch()
 
 void OpenCompareOptionsDlg()
 {
-	CompareOptionsDialog compareOptionsDlg(hInstance, nppData);
+	CompareOptionsDialog compareOptionsDlg(hInstance, nppData._nppHandle);
 
 	if (compareOptionsDlg.doDialog(&Settings) != IDOK)
 		return;
@@ -4376,7 +4535,7 @@ void BookmarksAsSyncPoints()
 
 void OpenVisualFiltersDlg()
 {
-	VisualFiltersDialog visualFiltersDlg(hInstance, nppData);
+	VisualFiltersDialog visualFiltersDlg(hInstance, nppData._nppHandle);
 
 	if (visualFiltersDlg.doDialog(&Settings) != IDOK)
 		return;
@@ -4441,7 +4600,7 @@ void AutoRecompare()
 
 void OpenSettingsDlg(void)
 {
-	SettingsDialog settingsDlg(hInstance, nppData);
+	SettingsDialog settingsDlg(hInstance, nppData._nppHandle);
 
 	if (settingsDlg.doDialog(&Settings) == IDOK)
 	{
@@ -4454,7 +4613,7 @@ void OpenSettingsDlg(void)
 			setStyles(Settings);
 			NavDlg.SetColors(Settings.colors(), isDarkMode());
 
-			if (NppSettings::get().compareMode)
+			if (NppState::get().compareMode)
 			{
 				setCompareView(MAIN_VIEW, !Settings.HideMargin,
 						Settings.colors().blank, Settings.colors().caret_line_transparency);
@@ -4503,7 +4662,7 @@ void OpenAboutDlg()
 
 #else
 
-	AboutDialog aboutDlg(hInstance, nppData, GetLibGit2Ver(), GetSQLite3Ver());
+	AboutDialog aboutDlg(hInstance, nppData._nppHandle, GetLibGit2Ver(), GetSQLite3Ver());
 	aboutDlg.doDialog();
 
 #endif
@@ -4512,7 +4671,9 @@ void OpenAboutDlg()
 
 void createMenu()
 {
-	wcscpy_s(funcItem[CMD_SET_FIRST]._itemName, menuItemSize, L"Set as First to Compare");
+	const auto& str = Strings::get();
+
+	wcscpy_s(funcItem[CMD_SET_FIRST]._itemName, menuItemSize, str["CMD_SET_FIRST"].c_str());
 	funcItem[CMD_SET_FIRST]._pFunc					= SetAsFirst;
 	funcItem[CMD_SET_FIRST]._pShKey					= new ShortcutKey;
 	funcItem[CMD_SET_FIRST]._pShKey->_isAlt			= true;
@@ -4520,7 +4681,7 @@ void createMenu()
 	funcItem[CMD_SET_FIRST]._pShKey->_isShift		= false;
 	funcItem[CMD_SET_FIRST]._pShKey->_key			= '1';
 
-	wcscpy_s(funcItem[CMD_COMPARE]._itemName, menuItemSize, L"Compare");
+	wcscpy_s(funcItem[CMD_COMPARE]._itemName, menuItemSize, str["CMD_COMPARE"].c_str());
 	funcItem[CMD_COMPARE]._pFunc					= CompareWhole;
 	funcItem[CMD_COMPARE]._pShKey					= new ShortcutKey;
 	funcItem[CMD_COMPARE]._pShKey->_isAlt			= true;
@@ -4528,7 +4689,7 @@ void createMenu()
 	funcItem[CMD_COMPARE]._pShKey->_isShift			= false;
 	funcItem[CMD_COMPARE]._pShKey->_key				= 'C';
 
-	wcscpy_s(funcItem[CMD_COMPARE_SEL]._itemName, menuItemSize, L"Compare Selections");
+	wcscpy_s(funcItem[CMD_COMPARE_SEL]._itemName, menuItemSize, str["CMD_COMPARE_SEL"].c_str());
 	funcItem[CMD_COMPARE_SEL]._pFunc				= CompareSelections;
 	funcItem[CMD_COMPARE_SEL]._pShKey				= new ShortcutKey;
 	funcItem[CMD_COMPARE_SEL]._pShKey->_isAlt		= true;
@@ -4536,7 +4697,7 @@ void createMenu()
 	funcItem[CMD_COMPARE_SEL]._pShKey->_isShift		= false;
 	funcItem[CMD_COMPARE_SEL]._pShKey->_key			= 'N';
 
-	wcscpy_s(funcItem[CMD_FIND_UNIQUE]._itemName, menuItemSize, L"Find Unique Lines");
+	wcscpy_s(funcItem[CMD_FIND_UNIQUE]._itemName, menuItemSize, str["CMD_FIND_UNIQUE"].c_str());
 	funcItem[CMD_FIND_UNIQUE]._pFunc				= FindUnique;
 	funcItem[CMD_FIND_UNIQUE]._pShKey				= new ShortcutKey;
 	funcItem[CMD_FIND_UNIQUE]._pShKey->_isAlt		= true;
@@ -4544,7 +4705,7 @@ void createMenu()
 	funcItem[CMD_FIND_UNIQUE]._pShKey->_isShift		= true;
 	funcItem[CMD_FIND_UNIQUE]._pShKey->_key			= 'C';
 
-	wcscpy_s(funcItem[CMD_FIND_UNIQUE_SEL]._itemName, menuItemSize, L"Find Unique Lines in Selections");
+	wcscpy_s(funcItem[CMD_FIND_UNIQUE_SEL]._itemName, menuItemSize, str["CMD_FIND_UNIQUE_SEL"].c_str());
 	funcItem[CMD_FIND_UNIQUE_SEL]._pFunc			= FindSelectionsUnique;
 	funcItem[CMD_FIND_UNIQUE_SEL]._pShKey			= new ShortcutKey;
 	funcItem[CMD_FIND_UNIQUE_SEL]._pShKey->_isAlt	= true;
@@ -4552,7 +4713,7 @@ void createMenu()
 	funcItem[CMD_FIND_UNIQUE_SEL]._pShKey->_isShift	= true;
 	funcItem[CMD_FIND_UNIQUE_SEL]._pShKey->_key		= 'N';
 
-	wcscpy_s(funcItem[CMD_LAST_SAVE_DIFF]._itemName, menuItemSize, L"Diff since last Save");
+	wcscpy_s(funcItem[CMD_LAST_SAVE_DIFF]._itemName, menuItemSize, str["CMD_LAST_SAVE_DIFF"].c_str());
 	funcItem[CMD_LAST_SAVE_DIFF]._pFunc				= LastSaveDiff;
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey->_isAlt 	= true;
@@ -4560,7 +4721,7 @@ void createMenu()
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey->_isShift	= false;
 	funcItem[CMD_LAST_SAVE_DIFF]._pShKey->_key 		= 'D';
 
-	wcscpy_s(funcItem[CMD_CLIPBOARD_DIFF]._itemName, menuItemSize, L"Compare file/selection to Clipboard");
+	wcscpy_s(funcItem[CMD_CLIPBOARD_DIFF]._itemName, menuItemSize, str["CMD_CLIPBOARD_DIFF"].c_str());
 	funcItem[CMD_CLIPBOARD_DIFF]._pFunc 			= ClipboardDiff;
 	funcItem[CMD_CLIPBOARD_DIFF]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_CLIPBOARD_DIFF]._pShKey->_isAlt 	= true;
@@ -4568,7 +4729,7 @@ void createMenu()
 	funcItem[CMD_CLIPBOARD_DIFF]._pShKey->_isShift	= false;
 	funcItem[CMD_CLIPBOARD_DIFF]._pShKey->_key 		= 'M';
 
-	wcscpy_s(funcItem[CMD_SVN_DIFF]._itemName, menuItemSize, L"SVN Diff");
+	wcscpy_s(funcItem[CMD_SVN_DIFF]._itemName, menuItemSize, str["CMD_SVN_DIFF"].c_str());
 	funcItem[CMD_SVN_DIFF]._pFunc 					= SvnDiff;
 	funcItem[CMD_SVN_DIFF]._pShKey 					= new ShortcutKey;
 	funcItem[CMD_SVN_DIFF]._pShKey->_isAlt 			= true;
@@ -4576,7 +4737,7 @@ void createMenu()
 	funcItem[CMD_SVN_DIFF]._pShKey->_isShift		= false;
 	funcItem[CMD_SVN_DIFF]._pShKey->_key 			= 'V';
 
-	wcscpy_s(funcItem[CMD_GIT_DIFF]._itemName, menuItemSize, L"Git Diff");
+	wcscpy_s(funcItem[CMD_GIT_DIFF]._itemName, menuItemSize, str["CMD_GIT_DIFF"].c_str());
 	funcItem[CMD_GIT_DIFF]._pFunc 					= GitDiff;
 	funcItem[CMD_GIT_DIFF]._pShKey 					= new ShortcutKey;
 	funcItem[CMD_GIT_DIFF]._pShKey->_isAlt 			= true;
@@ -4584,7 +4745,7 @@ void createMenu()
 	funcItem[CMD_GIT_DIFF]._pShKey->_isShift		= false;
 	funcItem[CMD_GIT_DIFF]._pShKey->_key 			= 'G';
 
-	wcscpy_s(funcItem[CMD_CLEAR_ACTIVE]._itemName, menuItemSize, L"Clear Active Compare");
+	wcscpy_s(funcItem[CMD_CLEAR_ACTIVE]._itemName, menuItemSize, str["CMD_CLEAR_ACTIVE"].c_str());
 	funcItem[CMD_CLEAR_ACTIVE]._pFunc				= ClearActiveCompare;
 	funcItem[CMD_CLEAR_ACTIVE]._pShKey 				= new ShortcutKey;
 	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_isAlt 		= true;
@@ -4592,10 +4753,10 @@ void createMenu()
 	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_isShift	= false;
 	funcItem[CMD_CLEAR_ACTIVE]._pShKey->_key 		= 'X';
 
-	wcscpy_s(funcItem[CMD_CLEAR_ALL]._itemName, menuItemSize, L"Clear All Compares");
+	wcscpy_s(funcItem[CMD_CLEAR_ALL]._itemName, menuItemSize, str["CMD_CLEAR_ALL"].c_str());
 	funcItem[CMD_CLEAR_ALL]._pFunc	= ClearAllCompares;
 
-	wcscpy_s(funcItem[CMD_FIRST]._itemName, menuItemSize, L"First Diff Block");
+	wcscpy_s(funcItem[CMD_FIRST]._itemName, menuItemSize, str["CMD_FIRST"].c_str());
 	funcItem[CMD_FIRST]._pFunc 				= First;
 	funcItem[CMD_FIRST]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_FIRST]._pShKey->_isAlt 	= true;
@@ -4603,7 +4764,7 @@ void createMenu()
 	funcItem[CMD_FIRST]._pShKey->_isShift	= false;
 	funcItem[CMD_FIRST]._pShKey->_key 		= VK_PRIOR;
 
-	wcscpy_s(funcItem[CMD_PREV]._itemName, menuItemSize, L"Previous Diff Block");
+	wcscpy_s(funcItem[CMD_PREV]._itemName, menuItemSize, str["CMD_PREV"].c_str());
 	funcItem[CMD_PREV]._pFunc 				= Prev;
 	funcItem[CMD_PREV]._pShKey 				= new ShortcutKey;
 	funcItem[CMD_PREV]._pShKey->_isAlt 		= true;
@@ -4611,7 +4772,7 @@ void createMenu()
 	funcItem[CMD_PREV]._pShKey->_isShift	= false;
 	funcItem[CMD_PREV]._pShKey->_key 		= VK_PRIOR;
 
-	wcscpy_s(funcItem[CMD_NEXT]._itemName, menuItemSize, L"Next Diff Block");
+	wcscpy_s(funcItem[CMD_NEXT]._itemName, menuItemSize, str["CMD_NEXT"].c_str());
 	funcItem[CMD_NEXT]._pFunc 				= Next;
 	funcItem[CMD_NEXT]._pShKey 				= new ShortcutKey;
 	funcItem[CMD_NEXT]._pShKey->_isAlt 		= true;
@@ -4619,7 +4780,7 @@ void createMenu()
 	funcItem[CMD_NEXT]._pShKey->_isShift	= false;
 	funcItem[CMD_NEXT]._pShKey->_key 		= VK_NEXT;
 
-	wcscpy_s(funcItem[CMD_LAST]._itemName, menuItemSize, L"Last Diff Block");
+	wcscpy_s(funcItem[CMD_LAST]._itemName, menuItemSize, str["CMD_LAST"].c_str());
 	funcItem[CMD_LAST]._pFunc 				= Last;
 	funcItem[CMD_LAST]._pShKey 				= new ShortcutKey;
 	funcItem[CMD_LAST]._pShKey->_isAlt 		= true;
@@ -4627,7 +4788,7 @@ void createMenu()
 	funcItem[CMD_LAST]._pShKey->_isShift	= false;
 	funcItem[CMD_LAST]._pShKey->_key 		= VK_NEXT;
 
-	wcscpy_s(funcItem[CMD_PREV_CHANGE_POS]._itemName, menuItemSize, L"Previous Diff in Changed Line");
+	wcscpy_s(funcItem[CMD_PREV_CHANGE_POS]._itemName, menuItemSize, str["CMD_PREV_CHANGE_POS"].c_str());
 	funcItem[CMD_PREV_CHANGE_POS]._pFunc 			= PrevChangePos;
 	funcItem[CMD_PREV_CHANGE_POS]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_PREV_CHANGE_POS]._pShKey->_isAlt 	= true;
@@ -4635,7 +4796,7 @@ void createMenu()
 	funcItem[CMD_PREV_CHANGE_POS]._pShKey->_isShift	= true;
 	funcItem[CMD_PREV_CHANGE_POS]._pShKey->_key 	= VK_PRIOR;
 
-	wcscpy_s(funcItem[CMD_NEXT_CHANGE_POS]._itemName, menuItemSize, L"Next Diff in Changed Line");
+	wcscpy_s(funcItem[CMD_NEXT_CHANGE_POS]._itemName, menuItemSize, str["CMD_NEXT_CHANGE_POS"].c_str());
 	funcItem[CMD_NEXT_CHANGE_POS]._pFunc 			= NextChangePos;
 	funcItem[CMD_NEXT_CHANGE_POS]._pShKey 			= new ShortcutKey;
 	funcItem[CMD_NEXT_CHANGE_POS]._pShKey->_isAlt 	= true;
@@ -4643,50 +4804,46 @@ void createMenu()
 	funcItem[CMD_NEXT_CHANGE_POS]._pShKey->_isShift	= true;
 	funcItem[CMD_NEXT_CHANGE_POS]._pShKey->_key 	= VK_NEXT;
 
-	wcscpy_s(funcItem[CMD_COMPARE_SUMMARY]._itemName, menuItemSize, L"Active Compare Summary");
+	wcscpy_s(funcItem[CMD_COMPARE_SUMMARY]._itemName, menuItemSize, str["CMD_COMPARE_SUMMARY"].c_str());
 	funcItem[CMD_COMPARE_SUMMARY]._pFunc = ActiveCompareSummary;
 
-	wcscpy_s(funcItem[CMD_COPY_VISIBLE]._itemName, menuItemSize, L"Copy all/selected visible lines");
+	wcscpy_s(funcItem[CMD_COPY_VISIBLE]._itemName, menuItemSize, str["CMD_COPY_VISIBLE"].c_str());
 	funcItem[CMD_COPY_VISIBLE]._pFunc = CopyVisibleLines;
 
-	wcscpy_s(funcItem[CMD_DELETE_VISIBLE]._itemName, menuItemSize, L"Delete all/selected visible lines");
+	wcscpy_s(funcItem[CMD_DELETE_VISIBLE]._itemName, menuItemSize, str["CMD_DELETE_VISIBLE"].c_str());
 	funcItem[CMD_DELETE_VISIBLE]._pFunc = DeleteVisibleLines;
 
-	wcscpy_s(funcItem[CMD_BOOKMARK_VISIBLE]._itemName, menuItemSize, L"Bookmark all/selected visible lines");
+	wcscpy_s(funcItem[CMD_BOOKMARK_VISIBLE]._itemName, menuItemSize, str["CMD_BOOKMARK_VISIBLE"].c_str());
 	funcItem[CMD_BOOKMARK_VISIBLE]._pFunc = BookmarkVisibleLines;
 
-	wcscpy_s(funcItem[CMD_GENERATE_PATCH]._itemName, menuItemSize, L"Generate Patch");
+	wcscpy_s(funcItem[CMD_GENERATE_PATCH]._itemName, menuItemSize, str["CMD_GENERATE_PATCH"].c_str());
 	funcItem[CMD_GENERATE_PATCH]._pFunc = GeneratePatch;
 
-	wcscpy_s(funcItem[CMD_APPLY_PATCH]._itemName, menuItemSize, L"Apply Patch on current file");
+	wcscpy_s(funcItem[CMD_APPLY_PATCH]._itemName, menuItemSize, str["CMD_APPLY_PATCH"].c_str());
 	funcItem[CMD_APPLY_PATCH]._pFunc = ApplyPatch;
 
-	wcscpy_s(funcItem[CMD_REVERT_PATCH]._itemName, menuItemSize, L"Revert Patch on current file");
+	wcscpy_s(funcItem[CMD_REVERT_PATCH]._itemName, menuItemSize, str["CMD_REVERT_PATCH"].c_str());
 	funcItem[CMD_REVERT_PATCH]._pFunc = RevertPatch;
 
-	wcscpy_s(funcItem[CMD_COMPARE_OPTIONS]._itemName, menuItemSize, L"Compare Options (ignore, etc.)...");
+	wcscpy_s(funcItem[CMD_COMPARE_OPTIONS]._itemName, menuItemSize, str["CMD_COMPARE_OPTIONS"].c_str());
 	funcItem[CMD_COMPARE_OPTIONS]._pFunc = OpenCompareOptionsDlg;
 
-	wcscpy_s(funcItem[CMD_BOOKMARKS_SYNC]._itemName, menuItemSize, L"Use Bookmarks as Manual Sync Points");
+	wcscpy_s(funcItem[CMD_BOOKMARKS_SYNC]._itemName, menuItemSize, str["CMD_BOOKMARKS_SYNC"].c_str());
 	funcItem[CMD_BOOKMARKS_SYNC]._pFunc = BookmarksAsSyncPoints;
 
-	wcscpy_s(funcItem[CMD_DIFFS_VISUAL_FILTERS]._itemName, menuItemSize, L"Diffs Visual Filters...");
+	wcscpy_s(funcItem[CMD_DIFFS_VISUAL_FILTERS]._itemName, menuItemSize, str["CMD_DIFFS_VISUAL_FILTERS"].c_str());
 	funcItem[CMD_DIFFS_VISUAL_FILTERS]._pFunc = OpenVisualFiltersDlg;
 
-	wcscpy_s(funcItem[CMD_NAV_BAR]._itemName, menuItemSize, L"Navigation Bar");
+	wcscpy_s(funcItem[CMD_NAV_BAR]._itemName, menuItemSize, str["CMD_NAV_BAR"].c_str());
 	funcItem[CMD_NAV_BAR]._pFunc = ToggleNavigationBar;
 
-	wcscpy_s(funcItem[CMD_AUTO_RECOMPARE]._itemName, menuItemSize, L"Auto Re-Compare on Change");
+	wcscpy_s(funcItem[CMD_AUTO_RECOMPARE]._itemName, menuItemSize, str["CMD_AUTO_RECOMPARE"].c_str());
 	funcItem[CMD_AUTO_RECOMPARE]._pFunc = AutoRecompare;
 
-	wcscpy_s(funcItem[CMD_SETTINGS]._itemName, menuItemSize, L"Settings...");
+	wcscpy_s(funcItem[CMD_SETTINGS]._itemName, menuItemSize, str["CMD_SETTINGS"].c_str());
 	funcItem[CMD_SETTINGS]._pFunc = OpenSettingsDlg;
 
-#ifdef DLOG
-	wcscpy_s(funcItem[CMD_ABOUT]._itemName, menuItemSize, L"Show debug log");
-#else
-	wcscpy_s(funcItem[CMD_ABOUT]._itemName, menuItemSize, L"Help / About...");
-#endif
+	wcscpy_s(funcItem[CMD_ABOUT]._itemName, menuItemSize, str["CMD_ABOUT"].c_str());
 	funcItem[CMD_ABOUT]._pFunc = OpenAboutDlg;
 }
 
@@ -4736,14 +4893,14 @@ void deinitPlugin()
 
 void comparedFileActivated()
 {
-	if (!NppSettings::get().compareMode)
+	if (!NppState::get().compareMode)
 	{
 		if (Settings.ShowNavBar && !NavDlg.isVisible())
 			showNavBar();
 
 		ScopedIncrementerInt incr(notificationsLock);
 
-		NppSettings::get().setCompareMode();
+		NppState::get().setCompareMode();
 	}
 
 	CallScintilla(MAIN_VIEW,	SCI_MARKERDELETEALL, MARKER_ARROW_SYMBOL, 0);
@@ -4937,10 +5094,7 @@ void checkCmdLine()
 
 	if (!constructFullFilePaths(files))
 	{
-		::MessageBoxW(nppData._nppHandle,
-				L"Command line file name ambiguous (several opened files with that name) - compare aborted."
-				L"\nEither use full file paths or add '-nosession' option to command line.",
-				PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_CMD_LINE_AMBIGUOUS"].c_str(), PLUGIN_NAME, MB_OK);
 		return;
 	}
 
@@ -5123,9 +5277,11 @@ void onToolBarReady()
 
 void onNppReady()
 {
+	NppState::get().updateLocalization();
+
 	// It's N++'s job actually to disable its scroll menu commands but since it's not the case provide this as a patch
 	if (isSingleView())
-		NppSettings::get().enableNppScrollCommands(false);
+		NppState::get().enableNppScrollCommands(false);
 
 	::SendMessageW(nppData._nppHandle, NPPM_SETMENUITEMCHECK, funcItem[CMD_COMPARE_OPTIONS]._cmdID, (LPARAM)
 		(Settings.IgnoreChangedSpaces || Settings.IgnoreAllSpaces || Settings.IgnoreEOL || Settings.IgnoreCase ||
@@ -5147,9 +5303,7 @@ void onNppReady()
 	{
 		wchar_t msg[256];
 
-		_snwprintf_s(msg, _countof(msg), _TRUNCATE,
-				L"%s v%S is not compatible with current Notepad++ version.\nPlugin commands will be disabled.",
-				PLUGIN_NAME, TO_STR(PLUGIN_VERSION));
+		_snwprintf_s(msg, _countof(msg), _TRUNCATE, Strings::get()["MSG_NOT_COMPATIBLE"].c_str(), PLUGIN_NAME);
 
 		MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK | MB_ICONWARNING);
 
@@ -5178,16 +5332,11 @@ void onNppReady()
 	else
 	{
 		if (!allocateIndicator())
-			::MessageBoxW(nppData._nppHandle,
-					L"Notepad++ marker allocation for visualizing diff changes failed -"
-					L"\nusing default one but conflicts with other plugins might appear."
-					L"\nPlease switch to Notepad++ version 8.5.6 or newer.",
+			::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_MARKER_ALLOC_FAIL"].c_str(),
 					PLUGIN_NAME, MB_OK | MB_ICONWARNING);
 
 		if (!allocateMarginNum())
-			::MessageBoxW(nppData._nppHandle,
-					L"Allocating new margin for compare diff symbols failed."
-					L"\nLines diff symbols will not be visible.",
+			::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_MARGIN_ALLOC_FAIL"].c_str(),
 					PLUGIN_NAME, MB_OK | MB_ICONWARNING);
 
 		if (isDarkMode())
@@ -5213,8 +5362,6 @@ void onNppReady()
 
 		if (getNotepadVersion() >= ((8 << 16) | 760)) // Necessary for Notepad++ versions above 8.7.6 (included)
 			::SendMessageW(nppData._nppHandle, NPPM_ADDSCNMODIFIEDFLAGS, 0, (LPARAM)SCN_MODIFIED_NOTIF_FLAGS_USED);
-
-		NppSettings::get().updatePluginMenu();
 
 		// // This is a Scintilla performance tweak that is added here for testing but needs to be handled properly
 		// // in Notepad++ itself (in Notepad++ versions <= 8.8.7 it is disabled and not used)
@@ -5607,7 +5754,7 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 
 	if (Settings.HideNewLines || Settings.HideChangedLines || Settings.HideMovedLines)
 	{
-		::MessageBoxW(nppData._nppHandle, L"Operation not possible while diffs are hidden.", PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_HIDDEN_NOT_POSSIBLE"].c_str(), PLUGIN_NAME, MB_OK);
 		return;
 	}
 
@@ -5978,7 +6125,7 @@ void onSciZoom()
 	const int zoom = static_cast<int>(CallScintilla(getCurrentViewId(), SCI_GETZOOM, 0, 0));
 	CallScintilla(getOtherViewId(), SCI_SETZOOM, zoom, 0);
 
-	NppSettings::get().setCompareZoom(zoom);
+	NppState::get().setCompareZoom(zoom);
 }
 
 
@@ -6028,7 +6175,7 @@ void onBufferActivated(LRESULT buffId)
 
 	// If compared pair was not active explicitly release mouse key as it might have been pressed and make a
 	// false selection when files are activated and compare mode is set
-	if (!NppSettings::get().compareMode)
+	if (!NppState::get().compareMode)
 	{
 		INPUT inputs[1] = {};
 		::ZeroMemory(inputs, sizeof(inputs));
@@ -6046,7 +6193,7 @@ void onBufferActivated(LRESULT buffId)
 	CompareList_t::iterator cmpPair = getCompare(buffId);
 	if (cmpPair == compareList.end())
 	{
-		NppSettings::get().setNormalMode();
+		NppState::get().setNormalMode();
 		setNormalView(getCurrentViewId());
 		resetCompareView(getOtherViewId());
 
@@ -6192,7 +6339,7 @@ void onFileSaved(LRESULT buffId)
 			const int tabPos = posFromBuffId(otherFile.buffId);
 			TabCtrl_GetItem(hNppTabBar, tabPos, &tab);
 
-			wcscat_s(tabText, _countof(tabText), L" - Outdated");
+			wcscat_s(tabText, _countof(tabText), Strings::get()["MARK_OUTDATED"].c_str());
 
 			::SendMessageW(nppData._nppHandle, NPPM_HIDETABBAR, 0, TRUE);
 
@@ -6219,7 +6366,7 @@ void ToggleNavigationBar()
 			(LPARAM)Settings.ShowNavBar);
 	Settings.markAsDirty();
 
-	if (NppSettings::get().compareMode)
+	if (NppState::get().compareMode)
 	{
 		if (Settings.ShowNavBar)
 			showNavBar();
@@ -6297,7 +6444,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 	{
 		// Vertical scroll sync
 		case SCN_UPDATEUI:
-			if (NppSettings::get().compareMode && !notificationsLock && !storedLocation &&
+			if (NppState::get().compareMode && !notificationsLock && !storedLocation &&
 					(notifyCode->updated & (SC_UPDATE_SELECTION | SC_UPDATE_V_SCROLL)) &&
 					!delayedRecompare && !delayedActivation && !delayedClosure)
 				onSciUpdateUI((HWND)notifyCode->nmhdr.hwndFrom);
@@ -6305,14 +6452,14 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 
 		// Handle word-wrap refresh
 		case SCN_PAINTED:
-			if (NppSettings::get().compareMode && !notificationsLock && storedLocation &&
+			if (NppState::get().compareMode && !notificationsLock && storedLocation &&
 					!delayedRecompare && !delayedActivation && !delayedClosure)
 				onSciPaint();
 		break;
 
 		// This is used to monitor fold state and deletion of lines to properly clear their compare markings
 		case SCN_MODIFIED:
-			if (NppSettings::get().compareMode && !notificationsLock)
+			if (NppState::get().compareMode && !notificationsLock)
 				onSciModified(notifyCode);
 		break;
 
@@ -6323,7 +6470,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 
 		// Copy/equalize diffs
 		case SCN_MARGINCLICK:
-			if (NppSettings::get().compareMode && !notificationsLock && (notifyCode->margin == marginNum) &&
+			if (NppState::get().compareMode && !notificationsLock && (notifyCode->margin == marginNum) &&
 					!delayedRecompare && !delayedAlign && !delayedActivation && !delayedClosure)
 				onMarginClick((HWND)notifyCode->nmhdr.hwndFrom, notifyCode->position, notifyCode->modifiers);
 		break;
@@ -6371,20 +6518,20 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 		case SCN_ZOOM:
 			if (!notificationsLock)
 			{
-				if (NppSettings::get().compareMode)
+				if (NppState::get().compareMode)
 				{
 					onSciZoom();
 				}
 				else
 				{
-					NppSettings::get().setMainZoom(static_cast<int>(CallScintilla(MAIN_VIEW, SCI_GETZOOM, 0, 0)));
-					NppSettings::get().setSubZoom(static_cast<int>(CallScintilla(SUB_VIEW, SCI_GETZOOM, 0, 0)));
+					NppState::get().setMainZoom(static_cast<int>(CallScintilla(MAIN_VIEW, SCI_GETZOOM, 0, 0)));
+					NppState::get().setSubZoom(static_cast<int>(CallScintilla(SUB_VIEW, SCI_GETZOOM, 0, 0)));
 				}
 			}
 		break;
 
 		case NPPN_LANGCHANGED:
-			if (NppSettings::get().compareMode)
+			if (NppState::get().compareMode)
 			{
 				CompareList_t::iterator	cmpPair = getCompare(notifyCode->nmhdr.idFrom);
 				if (cmpPair != compareList.end())
@@ -6407,7 +6554,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 				setStyles(Settings);
 				NavDlg.SetColors(Settings.colors(), darkMode);
 
-				if (NppSettings::get().compareMode)
+				if (NppState::get().compareMode)
 				{
 					setCompareView(MAIN_VIEW, !Settings.HideMargin,
 							Settings.colors().blank, Settings.colors().caret_line_transparency);
@@ -6419,7 +6566,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 		// Intentional fall-through
 
 		case NPPN_TOOLBARICONSETCHANGED:
-			NppSettings::get().updatePluginMenu();
+			NppState::get().updateMenuAndToolbar();
 		break;
 
 		case NPPN_TBMODIFICATION:
@@ -6433,6 +6580,10 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 		// case NPPN_CMDLINEPLUGINMSG:
 			// onPluginMsg(reinterpret_cast<wchar_t*>(notifyCode->nmhdr.idFrom));
 		// break;
+
+		case NPPN_NATIVELANGCHANGED:
+			NppState::get().updateLocalization();
+		break;
 
 		case NPPN_BEFORESHUTDOWN:
 			ClearAllCompares();

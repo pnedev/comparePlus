@@ -18,6 +18,7 @@
 
 #include "Compare.h"
 #include "UserSettings.h"
+#include "Strings.h"
 
 #include <shlwapi.h>
 #include <cstdlib>
@@ -285,9 +286,7 @@ void UserSettings::save()
 		{
 			wchar_t msg[MAX_PATH + 128];
 
-			_snwprintf_s(msg, _countof(msg), _TRUNCATE,
-					L"Notepad++ plugins config folder\n'%s'\ndoesn't exist and failed to be created."
-					L"\nCannot write configuration file.", ini);
+			_snwprintf_s(msg, _countof(msg), _TRUNCATE, Strings::get()["CONFIG_DIR_FAIL"].c_str(), ini);
 			::MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK | MB_ICONWARNING);
 
 			return;
@@ -310,7 +309,7 @@ void UserSettings::save()
 	{
 		wchar_t msg[MAX_PATH + 64];
 
-		_snwprintf_s(msg, _countof(msg), _TRUNCATE, L"Failed to write\n'%s'\nconfiguration file.", ini);
+		_snwprintf_s(msg, _countof(msg), _TRUNCATE, Strings::get()["CONFIG_WRITE_FAIL"].c_str(), ini);
 		::MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK | MB_ICONWARNING);
 
 		return;

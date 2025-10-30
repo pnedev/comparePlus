@@ -24,6 +24,7 @@
 #include "Compare.h"
 #include "ProgressDlg.h"
 #include "Tools.h"
+#include "Strings.h"
 
 
 const wchar_t ProgressDlg::cClassName[]		= L"ComparePlusProgressClass";
@@ -246,7 +247,7 @@ void ProgressDlg::cancel()
 	::ResetEvent(_hActiveState);
 	::EnableWindow(_hBtn, FALSE);
 
-	SetInfo(L"Cancelling compare, please wait...");
+	SetInfo(Strings::get()["COMPARE_CANCELLING"].c_str());
 }
 
 
@@ -332,7 +333,7 @@ BOOL ProgressDlg::createProgressWindow()
 			_hwnd, NULL, _hInst, NULL);
 	::SendMessageW(_hPBar, PBM_SETRANGE, 0, MAKELPARAM(0, cPhases[_countof(cPhases) - 1]));
 
-	_hBtn = ::CreateWindowExW(0, L"BUTTON", L"Cancel",
+	_hBtn = ::CreateWindowExW(0, L"BUTTON", Strings::get()["IDCANCEL"].c_str(),
 			WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON | BS_TEXT,
 			(width - cBTNwidth) / 2, height - cBTNheight - 5,
 			cBTNwidth, cBTNheight, _hwnd, NULL, _hInst, NULL);

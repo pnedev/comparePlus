@@ -2150,7 +2150,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 
 			const intptr_t movedLines = bd.info.movedCount();
 
-			summary.diffLines	+= bd.len;
+			summary.diffLines	+= bd.len - movedLines;
 			summary.moved		+= movedLines;
 
 			if (cmpInfo.doc2.blockDiffMask == MARKER_MASK_ADDED)
@@ -2229,8 +2229,6 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 							markSection(cmpInfo.doc2, *bd.info.matchBlock, options);
 							alignLines.second += cmpInfo.doc2.section.len;
 						}
-
-						summary.diffLines += std::max(cmpInfo.doc1.section.len, cmpInfo.doc2.section.len);
 					}
 
 					pMainAlignData->diffMask	= MARKER_MASK_CHANGED;
@@ -2308,8 +2306,6 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 						markSection(cmpInfo.doc2, *bd.info.matchBlock, options);
 						alignLines.second += cmpInfo.doc2.section.len;
 					}
-
-					summary.diffLines += std::max(cmpInfo.doc1.section.len, cmpInfo.doc2.section.len);
 				}
 
 				const intptr_t movedLines1 = bd.info.movedCount();
@@ -2318,7 +2314,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 				const intptr_t newLines1 = bd.len - changedLinesCount - movedLines1;
 				const intptr_t newLines2 = bd.info.matchBlock->len - changedLinesCount - movedLines2;
 
-				summary.diffLines	+= changedLinesCount;
+				summary.diffLines	+= newLines1 + newLines2 + changedLinesCount;
 				summary.changed		+= changedLinesCount;
 				summary.moved		+= movedLines1 + movedLines2;
 
@@ -2351,7 +2347,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 
 				const intptr_t movedLines = bd.info.movedCount();
 
-				summary.diffLines	+= bd.len;
+				summary.diffLines	+= bd.len - movedLines;
 				summary.moved		+= movedLines;
 
 				if (cmpInfo.doc1.blockDiffMask == MARKER_MASK_ADDED)
@@ -2624,6 +2620,8 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 		else
 			summary.removed += uniqueLine.second.size();
 	}
+
+	summary.diffLines = summary.added + summary.removed;
 
 	AlignmentPair align;
 	align.main.line	= doc1.section.off;

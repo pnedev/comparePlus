@@ -25,6 +25,8 @@
 #include <uxtheme.h>
 
 #include "NppHelpers.h"
+#include "Strings.h"
+#include "Tools.h"
 
 
 UINT VisualFiltersDialog::doDialog(UserSettings* settings)
@@ -47,6 +49,10 @@ INT_PTR CALLBACK VisualFiltersDialog::run_dlgProc(UINT Message, WPARAM wParam, L
 			goToCenter();
 
 			::EnableThemeDialogTexture(_hSelf, ETDT_ENABLETAB);
+
+			// Dialog opens by default in english
+			if (Strings::get().currentLocale() != "english")
+				updateLocalization();
 
 			SetParams();
 		}
@@ -105,6 +111,31 @@ INT_PTR CALLBACK VisualFiltersDialog::run_dlgProc(UINT Message, WPARAM wParam, L
 	}
 
 	return FALSE;
+}
+
+
+void VisualFiltersDialog::updateLocalization()
+{
+	const auto& str = Strings::get();
+
+	::SetWindowTextW(_hSelf, (std::wstring(PLUGIN_NAME) + std::wstring(L"   ") + str["VISUAL_FILTERS"]).c_str());
+
+	::SetDlgItemTextW(_hSelf, IDOK,			str["IDOK"].c_str());
+	::SetDlgItemTextW(_hSelf, IDCANCEL,		str["IDCANCEL"].c_str());
+	::SetDlgItemTextW(_hSelf, IDC_FILTERS,	str["IDC_FILTERS"].c_str());
+
+	HDC hdc = ::GetDC(_hSelf);
+
+	updateDlgTxt(hdc, _hSelf, IDC_NOTE,	str["IDC_NOTE"]);
+
+	updateDlgOptionTxt(hdc, _hSelf, IDC_HIDE_MATCHES,			str["IDC_HIDE_MATCHES"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_HIDE_ALL_DIFFS,			str["IDC_HIDE_ALL_DIFFS"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_HIDE_NEW_LINES,			str["IDC_HIDE_NEW_LINES"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_HIDE_CHANGED_LINES,		str["IDC_HIDE_CHANGED_LINES"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_HIDE_MOVED_LINES,		str["IDC_HIDE_MOVED_LINES"]);
+	updateDlgOptionTxt(hdc, _hSelf, IDC_SHOW_ONLY_SELECTIONS,	str["IDC_SHOW_ONLY_SELECTIONS"]);
+
+	::ReleaseDC(_hSelf, hdc);
 }
 
 
