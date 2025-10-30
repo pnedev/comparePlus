@@ -196,13 +196,48 @@ inline bool fileExists(const wchar_t* filePath)
 }
 
 
+inline void updateDlgCtrlTxt(HDC hdc, HWND hDlgWnd, int ctrlId, const std::wstring& txt)
+{
+	if (hdc == nullptr || hDlgWnd == nullptr)
+		return;
+
+	::SetDlgItemTextW(hDlgWnd, ctrlId, txt.c_str());
+
+	SIZE sz;
+
+	::GetTextExtentPoint32W(hdc, txt.c_str(), static_cast<int>(txt.size()), &sz);
+	sz.cx += ::GetSystemMetrics(SM_CXICON);
+	::SetWindowPos(::GetDlgItem(hDlgWnd, ctrlId), nullptr, 0, 0, sz.cx, sz.cy, SWP_NOMOVE | SWP_NOZORDER);
+}
+
+
+// inline void updateDlgCtrlTxt(HDC hdc, HWND hDlgWnd, int ctrlId, const std::wstring& txt)
+// {
+	// if (hdc == nullptr || hDlgWnd == nullptr)
+		// return;
+
+	// ::SetDlgItemTextW(hDlgWnd, ctrlId, txt.c_str());
+
+	// HWND hCtrl = ::GetDlgItem(hDlgWnd, ctrlId);
+	// RECT rc;
+
+	// ::GetClientRect(hCtrl, &rc);
+	// ::MapDialogRect(hDlgWnd, &rc);
+
+	// rc.right = ::MulDiv(rc.right, 72, ::GetDeviceCaps(hdc, LOGPIXELSX));
+	// rc.bottom = ::MulDiv(rc.bottom, 72, ::GetDeviceCaps(hdc, LOGPIXELSY));
+
+	// ::SetWindowPos(hCtrl, nullptr, 0, 0, rc.right, rc.bottom, SWP_NOMOVE | SWP_NOZORDER);
+// }
+
+
 std::vector<wchar_t> getFromClipboard(bool addLeadingNewLine = false);
 bool setToClipboard(const std::vector<wchar_t>& txt);
 
 void toLowerCase(std::vector<char>& text, int codepage = CP_UTF8);
 
-std::wstring MBtoWC(const char* mb, int len, int codepage = CP_UTF8);
-std::string WCtoMB(const wchar_t* wc, int len, int codepage = CP_UTF8);
+std::wstring MBtoWC(const char* mb, int len = -1, int codepage = CP_UTF8);
+std::string WCtoMB(const wchar_t* wc, int len = -1, int codepage = CP_UTF8);
 
 
 enum class SysFont {

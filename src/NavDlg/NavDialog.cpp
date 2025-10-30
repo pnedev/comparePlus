@@ -236,7 +236,7 @@ void NavDialog::doDialog()
 		_data.pszName       = L"ComparePlus NavBar";
 		_data.pszModuleName	= getPluginFileName();
 		_data.dlgID			= CMD_NAV_BAR;
-		_data.hIconTab		= (HICON)::LoadImageW(GetModuleHandleW(L"ComparePlus.dll"),
+		_data.hIconTab		= (HICON)::LoadImageW(::GetModuleHandleW(L"ComparePlus.dll"),
 									MAKEINTRESOURCEW(IDB_DOCKING_ICON), IMAGE_ICON, 14, 14,
 									LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
 

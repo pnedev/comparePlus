@@ -29,11 +29,10 @@ class AboutDialog : public StaticDialog
 {
 
 public:
-	AboutDialog(HINSTANCE hInst, NppData nppDataParam,
-		const std::wstring& libGit2Ver, const std::wstring& sqlite3Ver) : StaticDialog(),
+	AboutDialog(HINSTANCE hInst, HWND hWnd, const std::wstring& libGit2Ver, const std::wstring& sqlite3Ver) :
 		_libGit2Ver(libGit2Ver), _sqlite3Ver(sqlite3Ver)
 	{
-		Window::init(hInst, nppDataParam._nppHandle);
+		Window::init(hInst, hWnd);
 	}
 
 	~AboutDialog()
@@ -49,10 +48,12 @@ public:
 		_helpLink.destroy();
 	};
 
-protected :
+protected:
 	virtual INT_PTR CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
+	void updateLocalization();
+
 	URLCtrl			_urlRepo;
 	URLCtrl			_helpLink;
 

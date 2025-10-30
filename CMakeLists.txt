@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.12)
+cmake_minimum_required (VERSION 3.5)
 
 set (CMAKE_SYSTEM_NAME Windows)
 
@@ -110,6 +110,7 @@ set (project_sources
 	src/NppHelpers.cpp
 	src/LibHelpers.cpp
 	src/SQLite/SqliteHelper.cpp
+	src/Strings.cpp
 )
 
 include_directories (
@@ -128,6 +129,7 @@ include_directories (
 	src/SQLite/
 	src/LibGit2/
 	src/boost_regex/include/
+	src/nlohmann/
 )
 
 add_definitions (${defs})
@@ -198,3 +200,7 @@ else()
 		DESTINATION "${INSTALL_PATH}/libs"
 	)
 endif()
+
+install (DIRECTORY res/localization/
+	DESTINATION "${INSTALL_PATH}/localization"
+)

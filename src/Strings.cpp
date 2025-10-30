@@ -1,0 +1,230 @@
+/*
+ * This file is part of ComparePlus plugin for Notepad++
+ * Copyright (C)2025 Pavel Nedev (pg.nedev@gmail.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <fstream>
+#include "Strings.h"
+#include "Tools.h"
+#include "NppHelpers.h"
+#include "nlohmann/json.hpp"
+
+
+const char* Strings::c_localization_files_relative_path = "\\ComparePlus\\localization\\";
+
+
+using json = nlohmann::json;
+
+
+Strings::Strings() : _currentLocale {"english"}
+{
+	//Default strings in English
+	_strings = {
+		{ "CMD_SET_FIRST",					"Set as First to Compare" },
+		{ "CMD_COMPARE",					"Compare" },
+		{ "CMD_COMPARE_SEL",				"Compare Selections" },
+		{ "CMD_FIND_UNIQUE",				"Find Unique Lines" },
+		{ "CMD_FIND_UNIQUE_SEL",			"Find Unique Lines in Selections" },
+		{ "CMD_LAST_SAVE_DIFF",				"Diff since last Save" },
+		{ "CMD_CLIPBOARD_DIFF",				"Compare file/selection to Clipboard" },
+		{ "CMD_SVN_DIFF",					"SVN Diff" },
+		{ "CMD_GIT_DIFF",					"Git Diff" },
+		{ "CMD_CLEAR_ACTIVE",				"Clear Active Compare" },
+		{ "CMD_CLEAR_ALL",					"Clear All Compares" },
+		{ "CMD_PREV",						"Previous Diff Block" },
+		{ "CMD_NEXT",						"Next Diff Block" },
+		{ "CMD_FIRST",						"First Diff Block" },
+		{ "CMD_LAST",						"Last Diff Block" },
+		{ "CMD_PREV_CHANGE_POS",			"Previous Diff in Changed Line" },
+		{ "CMD_NEXT_CHANGE_POS",			"Next Diff in Changed Line" },
+		{ "CMD_COMPARE_SUMMARY",			"Active Compare Summary" },
+		{ "CMD_COPY_VISIBLE",				"Copy all/selected visible lines" },
+		{ "CMD_DELETE_VISIBLE",				"Delete all/selected visible lines" },
+		{ "CMD_BOOKMARK_VISIBLE",			"Bookmark all/selected visible lines" },
+		{ "CMD_GENERATE_PATCH",				"Generate Patch" },
+		{ "CMD_APPLY_PATCH",				"Apply Patch on current file" },
+		{ "CMD_REVERT_PATCH",				"Revert Patch on current file" },
+		{ "CMD_COMPARE_OPTIONS",			"Compare Options (ignore, etc.)..." },
+		{ "CMD_BOOKMARKS_SYNC",				"Use Bookmarks as Manual Sync Points" },
+		{ "CMD_DIFFS_VISUAL_FILTERS",		"Diffs Visual Filters..." },
+		{ "CMD_NAV_BAR",					"Navigation Bar" },
+		{ "CMD_AUTO_RECOMPARE",				"Auto Re-Compare on Change" },
+		{ "CMD_SETTINGS",					"Settings..." },
+		{ "CMD_ABOUT",						"Help / About..." },
+
+		{ "IDOK",							"OK" },
+		{ "IDCANCEL",						"Cancel" },
+		{ "IDDEFAULT",						"Reset" },
+
+		{ "IDC_MAIN",						"Main Settings" },
+		{ "IDC_FIRST",						"Set as First to Compare" },
+		{ "IDC_FIRST_NEW",					"Set as new file" },
+		{ "IDC_FIRST_OLD",					"Set as old file" },
+		{ "IDC_FILES_POS",					"Files Position" },
+		{ "IDC_NEW_IN_SUB",					"New file in right/bottom view" },
+		{ "IDC_OLD_IN_SUB",					"Old file in right/bottom view" },
+		{ "IDC_DEFAULT_COMPARE",			"Default Compare in Single-View" },
+		{ "IDC_COMPARE_TO_PREV",			"Current and previous files" },
+		{ "IDC_COMPARE_TO_NEXT",			"Current and next files" },
+		{ "IDC_STATUS_BAR",					"Compare StatusBar Info" },
+		{ "IDC_DIFFS_SUMMARY",				"Diffs summary" },
+		{ "IDC_COMPARE_OPTIONS",			"Compare options" },
+		{ "IDC_STATUS_DISABLED",			"Disabled" },
+		{ "IDC_MISC",						"Misc." },
+		{ "IDC_ENCODINGS_CHECK",			"Warn about encodings mismatch" },
+		{ "IDC_SIZES_CHECK",				"Warn before comparing big files" },
+		{ "IDC_MANUAL_SYNC_CHECK",			"Warn about active manual sync points" },
+		{ "IDC_CLOSE_ON_MATCH",				"Prompt to close files on match" },
+		{ "IDC_HIDE_MARGIN",				"Hide compare margin" },
+		{ "IDC_NEVER_MARK_IGNORED",			"Never colorize ignored lines" },
+		{ "IDC_GOTO_FIRST_DIFF",			"Go to first diff after re-Compare" },
+		{ "IDC_COLORS",						"Color and Highlight Settings" },
+		{ "IDC_ADDED",						"Added line" },
+		{ "IDC_REMOVED",					"Removed line" },
+		{ "IDC_CHANGED",					"Changed line" },
+		{ "IDC_ADD_HIGHLIGHT",				"Added Highlight" },
+		{ "IDC_REM_HIGHLIGHT",				"Removed Highlight" },
+		{ "IDC_MOV_HIGHLIGHT",				"Moved Highlight" },
+		{ "IDC_HIGHLIGHT_TRANSP",			"Highlight transparency [%]" },
+		{ "IDC_CARET_TRANSP",				"Caret line transparency [%]" },
+		{ "IDC_CHANGE_RESEMBL",				"Min line resemblance [%]" },
+		{ "IDC_TOOLBAR",					"Toolbar Settings (require restart)" },
+		{ "IDC_ENABLE_TOOLBAR",				"Enable toolbar buttons (TB)" },
+		{ "IDC_SET_AS_FIRST_TB",			"'Set as First to Compare' TB" },
+		{ "IDC_COMPARE_TB",					"'Compare' TB" },
+		{ "IDC_COMPARE_SELECTIONS_TB",		"'Compare Selections' TB" },
+		{ "IDC_CLEAR_COMPARE_TB",			"'Clear Active Compare' TB" },
+		{ "IDC_NAVIGATION_TB",				"Navigation commands TB" },
+		{ "IDC_DIFFS_FILTERS_TB",			"'Diffs Visual Filters' TB" },
+		{ "IDC_NAV_BAR_TB",					"'Navigation Bar' TB" },
+
+		{ "IDC_CLOSE",						"Close" },
+		{ "IDC_DONATE",						"Donate..." },
+		{ "IDC_INFO",						"Info" },
+		{ "IDC_VERSION",					"Version" },
+		{ "IDC_BUILD_TIME",					"Build time" },
+		{ "IDC_AUTHOR",						"Author" },
+		{ "IDC_LIBS",						"External libraries" },
+		{ "IDC_LINKS",						"Links" },
+		{ "IDC_REPO_URL",					"Help and Support" },
+		{ "IDC_GUIDE_URL",					"User Guide" },
+		{ "LIB_NOT_FOUND",					"lib not found" },
+
+		{ "IDC_DETECT",						"Detect" },
+		{ "IDC_DETECT_MOVES",				"Moves" },
+		{ "IDC_DETECT_SUB_BLOCK_DIFFS",		"Sub-block diffs" },
+		{ "IDC_DETECT_SUB_LINE_MOVES",		"Sub-line moves" },
+		{ "IDC_DETECT_CHAR_DIFFS",			"Character diffs" },
+		{ "IDC_IGNORE",						"Ignore" },
+		{ "IDC_IGNORE_EMPTY_LINES",			"Empty lines" },
+		{ "IDC_IGNORE_FOLDED_LINES",		"Folded lines" },
+		{ "IDC_IGNORE_HIDDEN_LINES",		"Hidden lines" },
+		{ "IDC_IGNORE_CHANGED_SPACES",		"Changed spaces" },
+		{ "IDC_IGNORE_ALL_SPACES",			"All spaces" },
+		{ "IDC_IGNORE_EOL",					"Line endings (EOL)" },
+		{ "IDC_IGNORE_CASE",				"Case" },
+		{ "IDC_REGEX",						"Ignore line portions Regex (works per-line)" },
+		{ "IDC_IGNORE_REGEX",				"Enable" },
+		{ "IDC_REGEX_MODE_IGNORE",			"Ignore matches" },
+		{ "IDC_REGEX_MODE_MATCH",			"Compare matches" },
+		{ "IDC_REGEX_INCL_NOMATCH_LINES",	"Compare also lines without match" },
+		{ "IDC_HIGHLIGHT_REGEX_IGNORES",	"Highlight ignored portions" },
+
+		{ "IDC_NOTE",						"NOTE: First line can never be hidden" },
+		{ "IDC_FILTERS",					"Diffs Filters" },
+		{ "IDC_HIDE_MATCHES",				"Hide matches" },
+		{ "IDC_HIDE_ALL_DIFFS",				"Hide all diffs" },
+		{ "IDC_HIDE_NEW_LINES",				"Hide added/removed lines" },
+		{ "IDC_HIDE_CHANGED_LINES",			"Hide changed lines" },
+		{ "IDC_HIDE_MOVED_LINES",			"Hide moved lines" },
+		{ "IDC_SHOW_ONLY_SELECTIONS",		"Show only compared selections" }
+	};
+}
+
+
+bool Strings::readFromFile(const std::string& json_locale_file)
+{
+	if (json_locale_file.empty())
+		return false;
+
+	json loc_strings;
+
+	try
+	{
+		std::ifstream file(json_locale_file);
+
+		if (file.is_open())
+			file >> loc_strings;
+	}
+	catch(std::exception&)
+	{
+		return false;
+	}
+
+	for (const auto& ls : loc_strings.items())
+	{
+		auto str = _strings.find(ls.key());
+
+		if (str != _strings.end())
+			str->second = ls.value();
+	}
+
+	return true;
+}
+
+
+bool Strings::read(const std::string& localization)
+{
+	if (localization.empty() || _currentLocale == localization)
+		return false;
+
+	std::string loc_file = WCtoMB(getPluginsHomePath().c_str());
+	loc_file += c_localization_files_relative_path;
+	loc_file += localization;
+	loc_file += ".json";
+
+	if (readFromFile(loc_file))
+	{
+		_currentLocale = localization;
+		return true;
+	}
+
+	// Try falling back to the default english localization
+	if (_currentLocale != "english" && localization != "english")
+	{
+		loc_file = WCtoMB(getPluginsHomePath().c_str());
+		loc_file += c_localization_files_relative_path;
+		loc_file += "english";
+		loc_file += ".json";
+
+		if (readFromFile(loc_file))
+		{
+			_currentLocale = "english";
+			return true;
+		}
+	}
+
+	return false;
+}
+
+
+std::wstring Strings::operator[](const std::string& key) const
+{
+	auto str = _strings.find(key);
+
+	return (str == _strings.end() ? std::wstring() :
+			MBtoWC(str->second.c_str(), static_cast<int>(str->second.size())));
+}
