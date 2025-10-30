@@ -302,6 +302,39 @@ inline int getNotepadVersion()
 }
 
 
+inline std::wstring getPluginsHomePath()
+{
+	std::wstring path;
+	const int len = (int)::SendMessageW(nppData._nppHandle, NPPM_GETPLUGINHOMEPATH, 0, 0);
+
+	path.resize(len);
+
+	::SendMessageW(nppData._nppHandle, NPPM_GETPLUGINHOMEPATH, len + 1, (LPARAM)path.data());
+
+	return path;
+}
+
+
+inline std::string getLocalization()
+{
+	std::string lang;
+	const int len = (int)::SendMessageW(nppData._nppHandle, NPPM_GETNATIVELANGFILENAME, 0, 0);
+
+	if (len == 0)
+		return {};
+
+	lang.resize(len);
+
+	::SendMessageW(nppData._nppHandle, NPPM_GETNATIVELANGFILENAME, len + 1, (LPARAM)lang.data());
+
+	size_t dotPos = lang.find_last_of('.');
+	if (dotPos != std::string::npos)
+		lang.erase(dotPos);
+
+	return lang;
+}
+
+
 inline BOOL allocateIndicator()
 {
 	if (indicatorHighlight >= 0)

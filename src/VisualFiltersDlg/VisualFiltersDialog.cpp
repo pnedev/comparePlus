@@ -25,6 +25,7 @@
 #include <uxtheme.h>
 
 #include "NppHelpers.h"
+#include "Strings.h"
 
 
 UINT VisualFiltersDialog::doDialog(UserSettings* settings)
@@ -47,6 +48,10 @@ INT_PTR CALLBACK VisualFiltersDialog::run_dlgProc(UINT Message, WPARAM wParam, L
 			goToCenter();
 
 			::EnableThemeDialogTexture(_hSelf, ETDT_ENABLETAB);
+
+			// Dialog opens by default in english
+			if (Strings::get().currentLocale() != "english")
+				updateLocalization();
 
 			SetParams();
 		}
@@ -105,6 +110,15 @@ INT_PTR CALLBACK VisualFiltersDialog::run_dlgProc(UINT Message, WPARAM wParam, L
 	}
 
 	return FALSE;
+}
+
+
+void VisualFiltersDialog::updateLocalization()
+{
+	const auto& str = Strings::get();
+
+	::SetDlgItemTextW(_hSelf, IDOK,							str["IDOK"].c_str());
+	::SetDlgItemTextW(_hSelf, IDCANCEL,						str["IDCANCEL"].c_str());
 }
 
 

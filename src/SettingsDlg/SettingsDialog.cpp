@@ -26,6 +26,7 @@
 #include <uxtheme.h>
 
 #include "NppHelpers.h"
+#include "Strings.h"
 
 
 static const int c_Highlight_transp_min		= 0;
@@ -82,6 +83,10 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 
 			hCtrl = ::GetDlgItem(_hSelf, IDC_THRESHOLD_SPIN_CTL);
 			::SendMessageW(hCtrl, UDM_SETRANGE, 0L, MAKELONG(c_Threshold_perc_max, c_Threshold_perc_min));
+
+			// Dialog opens by default in english
+			if (Strings::get().currentLocale() != "english")
+				updateLocalization();
 
 			if (isRTLwindow(nppData._nppHandle))
 			{
@@ -243,6 +248,15 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 	}
 
 	return FALSE;
+}
+
+
+void SettingsDialog::updateLocalization()
+{
+	const auto& str = Strings::get();
+
+	::SetDlgItemTextW(_hSelf, IDOK,							str["IDOK"].c_str());
+	::SetDlgItemTextW(_hSelf, IDCANCEL,						str["IDCANCEL"].c_str());
 }
 
 

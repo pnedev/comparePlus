@@ -25,17 +25,13 @@
 #include "ColorCombo.h"
 
 
-using namespace std;
-
-
 class SettingsDialog : public StaticDialog
 {
 
 public:
-	SettingsDialog(HINSTANCE hInst, NppData nppDataParam) : StaticDialog()
+	SettingsDialog(HINSTANCE hInst, HWND hWnd)
 	{
-		_nppData = nppDataParam;
-		Window::init(hInst, nppDataParam._nppHandle);
+		Window::init(hInst, hWnd);
 	};
 
 	~SettingsDialog()
@@ -47,15 +43,14 @@ public:
 
 	virtual void destroy() {};
 
-protected :
-	INT_PTR CALLBACK run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam);
+protected:
+	virtual INT_PTR CALLBACK run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam);
+
+private:
+	void updateLocalization();
 
 	void SetParams(UserSettings* settings = nullptr);
 	void GetParams();
-
-private:
-	/* Handles */
-	NppData _nppData;
 
 	// Combo color picker
 	ColorCombo _ColorComboAdded;
