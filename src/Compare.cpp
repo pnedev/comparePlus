@@ -4850,64 +4850,71 @@ bool constructFullFilePaths(std::pair<std::wstring, std::wstring>& files)
 			static_cast<int>(::SendMessageW(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, SECOND_VIEW));
 	const int openedFilesCount = mainViewFilesCount + subViewFilesCount;
 
-	wchar_t** openedFiles = new wchar_t*[openedFilesCount];
+	std::vector<std::wstring> openedFiles(openedFilesCount);
 
 	int i = 0;
 	for (; i < mainViewFilesCount; ++i)
 	{
-		LRESULT buffId = ::SendMessageW(nppData._nppHandle, NPPM_GETBUFFERIDFROMPOS, i, MAIN_VIEW);
-		LRESULT len = ::SendMessageW(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (WPARAM)nullptr);
-		openedFiles[i] = new wchar_t[len + 1];
-		::SendMessageW(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (WPARAM)openedFiles[i]);
+		const LRESULT buffId = ::SendMessageW(nppData._nppHandle, NPPM_GETBUFFERIDFROMPOS, i, MAIN_VIEW);
+		const LRESULT len = ::SendMessageW(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (LPARAM)nullptr);
+		openedFiles[i].resize(len);
+		::SendMessageW(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (LPARAM)openedFiles[i].data());
 	}
 
 	for (int j = 0; j < subViewFilesCount; ++j)
 	{
-		LRESULT buffId = ::SendMessageW(nppData._nppHandle, NPPM_GETBUFFERIDFROMPOS, j, SUB_VIEW);
-		LRESULT len = ::SendMessageW(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (WPARAM)nullptr);
-		openedFiles[i] = new wchar_t[len + 1];
-		::SendMessageW(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (WPARAM)openedFiles[i]);
+		const LRESULT buffId = ::SendMessageW(nppData._nppHandle, NPPM_GETBUFFERIDFROMPOS, j, SUB_VIEW);
+		const LRESULT len = ::SendMessageW(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (LPARAM)nullptr);
+		openedFiles[i].resize(len);
+		::SendMessageW(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (LPARAM)openedFiles[i].data());
 		++i;
 	}
 
-	std::wstring* longerFileName  = files.first.size() >= files.second.size() ? &(files.first) : &(files.second);
-	std::wstring* shorterFileName = &(files.first) == longerFileName ? &(files.second) : &(files.first);
+	std::wstring& longerName = files.first.size() >= files.second.size() ? files.first : files.second;
+	std::wstring& shorterName = files.first.size() >= files.second.size() ? files.second : files.first;
+
+	const size_t longerLen = longerName.size();
+	const size_t shorterLen = shorterName.size();
 
 	int longerFound = 0;
 	int shorterFound = 0;
 
-	std::wstring longer;
-	std::wstring shorter;
+	int longerIdx = 0;
+	int shorteridx = 0;
 
 	for (int j = 0; j < openedFilesCount; ++j)
 	{
-		size_t pathLen = wcslen(openedFiles[j]);
+		const size_t pathLen = openedFiles[j].size();
 
-		if (pathLen >= longerFileName->size() &&
-			wcsstr(openedFiles[j] + pathLen - longerFileName->size(), longerFileName->c_str()))
+		if (pathLen >= longerLen && (pathLen == longerLen ||
+			openedFiles[j][pathLen - longerLen - 1] == L'\\' || openedFiles[j][pathLen - longerLen - 1] == L'/') &&
+			!openedFiles[j].compare(pathLen - longerLen, longerLen, longerName))
 		{
 			if (++longerFound == 1)
-				longer = openedFiles[j];
+				longerIdx = j;
+			else
+				return false;
 		}
-		else if (pathLen >= shorterFileName->size() &&
-			wcsstr(openedFiles[j] + pathLen - shorterFileName->size(), shorterFileName->c_str()))
+		else if (pathLen >= shorterLen && (pathLen == shorterLen ||
+			openedFiles[j][pathLen - shorterLen - 1] == L'\\' || openedFiles[j][pathLen - shorterLen - 1] == L'/') &&
+			!openedFiles[j].compare(pathLen - shorterLen, shorterLen, shorterName))
 		{
 			if (++shorterFound == 1)
-				shorter = openedFiles[j];
+				shorteridx = j;
+			else
+				return false;
 		}
-
-		delete [] openedFiles[j];
 	}
 
-	delete [] openedFiles;
+	if (longerFound && shorterFound)
+	{
+		longerName = std::move(openedFiles[longerIdx]);
+		shorterName = std::move(openedFiles[shorteridx]);
 
-	if (longerFound > 1 || shorterFound > 1)
-		return false;
+		return true;
+	}
 
-	*longerFileName = std::move(longer);
-	*shorterFileName = std::move(shorter);
-
-	return true;
+	return false;
 }
 
 
@@ -4941,17 +4948,17 @@ void checkCmdLine()
 
 		::PathCanonicalizeW(tmp, files.first.c_str());
 
-		files.first = tmp;
+		files.first = tmp[0] == L'\\' || tmp[0] == L'/' ? tmp + 1 : tmp;
 
 		::PathCanonicalizeW(tmp, files.second.c_str());
 
-		files.second = tmp;
+		files.second = tmp[0] == L'\\' || tmp[0] == L'/' ? tmp + 1 : tmp;
 	}
 
 	if (!constructFullFilePaths(files))
 	{
 		::MessageBoxW(nppData._nppHandle,
-				L"Command line file name ambiguous (several openned files with that name). Compare aborted."
+				L"Command line file name ambiguous (several openned files with that name) - compare aborted."
 				L"\nEither use full file paths or add '-nosession' option to command line.",
 				PLUGIN_NAME, MB_OK);
 		return;
@@ -5229,22 +5236,56 @@ void onNppReady()
 
 		NppSettings::get().updatePluginMenu();
 
+		// // This is a Scintilla performance tweak that is added here for testing but needs to be handled properly
+		// // in Notepad++ itself (in Notepad++ versions <= 8.8.7 it is disabled and not used)
 		// if (CallScintilla(MAIN_VIEW, SCI_SUPPORTSFEATURE, SC_SUPPORTS_THREAD_SAFE_MEASURE_WIDTHS, 0) &&
 			// CallScintilla(MAIN_VIEW, SCI_GETLAYOUTTHREADS, 0, 0) == 1)
 		// {
 			// const auto threadsCount = std::thread::hardware_concurrency();
 
-			// CallScintilla(MAIN_VIEW, SCI_SETLAYOUTTHREADS, threadsCount, 0);
-			// CallScintilla(SUB_VIEW, SCI_SETLAYOUTTHREADS, threadsCount, 0);
+			// if (threadsCount > 1)
+			// {
+				// CallScintilla(MAIN_VIEW, SCI_SETLAYOUTTHREADS, threadsCount, 0);
+				// CallScintilla(SUB_VIEW, SCI_SETLAYOUTTHREADS, threadsCount, 0);
+			// }
 
-			// ::MessageBoxW(nppData._nppHandle, L"Enabled multithreading for Scintilla layout calculations",
-					// PLUGIN_NAME, MB_OK);
+			// // ::MessageBoxW(nppData._nppHandle, L"Enabled multithreading for Scintilla layout calculations",
+					// // PLUGIN_NAME, MB_OK);
 		// }
 
 		// if (CallScintilla(MAIN_VIEW, SCI_GETLAYOUTCACHE, 0, 0) < SC_CACHE_PAGE)
 		// {
 			// CallScintilla(MAIN_VIEW, SCI_SETLAYOUTCACHE, SC_CACHE_PAGE, 0);
 			// CallScintilla(SUB_VIEW, SCI_SETLAYOUTCACHE, SC_CACHE_PAGE, 0);
+
+			// // ::MessageBoxW(nppData._nppHandle, L"Set Scintilla layout cache to page mode", PLUGIN_NAME, MB_OK);
+		// }
+
+		// {
+			// int positionCache = (int)CallScintilla(MAIN_VIEW, SCI_GETPOSITIONCACHE, 0, 0);
+
+			// // std::wstring msg = L"Scintilla position cache: ";
+			// // msg += std::to_wstring(positionCache);
+
+			// // ::MessageBoxW(nppData._nppHandle, msg.c_str(), PLUGIN_NAME, MB_OK);
+
+			// positionCache *= 2;
+
+			// CallScintilla(MAIN_VIEW, SCI_SETPOSITIONCACHE, (WPARAM)positionCache, 0);
+			// CallScintilla(SUB_VIEW, SCI_SETPOSITIONCACHE, (WPARAM)positionCache, 0);
+		// }
+
+		// if (CallScintilla(MAIN_VIEW, SCI_GETBIDIRECTIONAL, 0, 0) != SC_BIDIRECTIONAL_DISABLED)
+		// {
+			// std::wstring msg = L"Bidirectional support enabled, value: ";
+			// msg += std::to_wstring((int)CallScintilla(MAIN_VIEW, SCI_GETBIDIRECTIONAL, 0, 0));
+
+			// ::MessageBoxW(nppData._nppHandle, msg.c_str(), PLUGIN_NAME, MB_OK);
+		// }
+
+		// if (!CallScintilla(MAIN_VIEW, SCI_GETBUFFEREDDRAW, 0, 0))
+		// {
+			// ::MessageBoxW(nppData._nppHandle, L"Buffered drawing is OFF (no GDI mode)", PLUGIN_NAME, MB_OK);
 		// }
 
 		checkCmdLine();
