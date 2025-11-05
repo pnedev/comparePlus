@@ -18,7 +18,6 @@
  */
 
 #include "Tools.h"
-#include <versionhelpers.h>
 
 
 // Initialize array of round constants:
@@ -426,7 +425,7 @@ HFONT createFontFromSystemDefault(SysFont font, int size, bool underlined)
 	ncm.cbSize = sizeof(NONCLIENTMETRICS);
 
 #if (WINVER >= 0x0600)
-	if (!IsWindows7OrGreater())
+	if (!::IsWindows7OrGreater())
 		ncm.cbSize -= sizeof(int);
 #endif
 

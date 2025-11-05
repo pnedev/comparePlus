@@ -25,6 +25,8 @@
 #include <fstream>
 #include <windows.h>
 #include <wchar.h>
+#include <uxtheme.h>
+#include <versionhelpers.h>
 
 
 /**
@@ -160,6 +162,20 @@ private:
 
 	void process_chunk(const uint8_t* p, uint32_t* h);
 };
+
+
+inline void setExplorerLightTheme(HWND hwnd)
+{
+	if (::IsWindows10OrGreater())
+		::SetWindowTheme(hwnd, L"Explorer", nullptr);
+}
+
+
+inline void setExplorerDarkTheme(HWND hwnd)
+{
+	if (::IsWindows10OrGreater())
+		::SetWindowTheme(hwnd, L"DarkMode_Explorer", nullptr);
+}
 
 
 inline void flushMsgQueue()

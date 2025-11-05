@@ -1,6 +1,6 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
- * Copyright (C)2017-2022 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2025 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,6 +20,7 @@
 #pragma once
 
 #include "Compare.h"
+#include "Tools.h"
 #include "DockingFeature/Window.h"
 #include "DockingFeature/DockingDlgInterface.h"
 
@@ -42,9 +43,18 @@ public:
 	void Show();
 	void Hide();
 
-	bool SetColors(const ColorSettings& colors)
+	bool SetColors(const ColorSettings& colors, bool isDarkMode = false)
 	{
 		m_clr = colors;
+		m_isDarkMode = isDarkMode;
+
+		if (m_hScroll)
+		{
+			if (m_isDarkMode)
+				setExplorerDarkTheme(m_hScroll);
+			else
+				setExplorerLightTheme(m_hScroll);
+		}
 
 		if (isVisible())
 		{
@@ -138,6 +148,8 @@ private:
 	ColorSettings	m_clr;
 
 	HINSTANCE		m_hInst;
+
+	bool		m_isDarkMode;
 
 	HWND		m_hScroll;
 

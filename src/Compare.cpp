@@ -2546,7 +2546,7 @@ void doAlignment(bool forceAlign = false)
 
 void showNavBar()
 {
-	if (!NavDlg.SetColors(Settings.colors()))
+	if (!NavDlg.SetColors(Settings.colors(), isDarkMode()))
 		NavDlg.Show();
 }
 
@@ -4452,7 +4452,7 @@ void OpenSettingsDlg(void)
 		if (!compareList.empty())
 		{
 			setStyles(Settings);
-			NavDlg.SetColors(Settings.colors());
+			NavDlg.SetColors(Settings.colors(), isDarkMode());
 
 			if (NppSettings::get().compareMode)
 			{
@@ -6414,7 +6414,10 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 
 		case NPPN_WORDSTYLESUPDATED:
 		case NPPN_DARKMODECHANGED:
-			if (isDarkMode())
+		{
+			const bool darkMode = isDarkMode();
+
+			if (darkMode)
 				Settings.useDarkColors();
 			else
 				Settings.useLightColors();
@@ -6422,7 +6425,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 			if (!compareList.empty())
 			{
 				setStyles(Settings);
-				NavDlg.SetColors(Settings.colors());
+				NavDlg.SetColors(Settings.colors(), darkMode);
 
 				if (NppSettings::get().compareMode)
 				{
@@ -6432,7 +6435,8 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 							Settings.colors().blank, Settings.colors().caret_line_transparency);
 				}
 			}
-			// Intentional fall-through
+		}
+		// Intentional fall-through
 
 		case NPPN_TOOLBARICONSETCHANGED:
 			NppSettings::get().updatePluginMenu();

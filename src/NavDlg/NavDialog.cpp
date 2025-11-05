@@ -188,7 +188,7 @@ int NavDialog::NavView::docToBmpLine(intptr_t docLine) const
 
 
 NavDialog::NavDialog() : DockingDlgInterface(IDD_NAV_DIALOG),
-	m_hScroll(NULL), m_hBackBrush(NULL), m_mouseOver(false)
+	m_isDarkMode(false), m_hScroll(NULL), m_hBackBrush(NULL), m_mouseOver(false)
 {
 	_data.hIconTab = NULL;
 }
@@ -413,6 +413,11 @@ void NavDialog::showScroller(RECT& r)
 	else
 		m_hScroll = ::CreateWindowExW(WS_EX_NOPARENTNOTIFY, WC_SCROLLBAR, NULL, WS_CHILD | SBS_VERT,
 				x, y, w, h, _hSelf, NULL, m_hInst, NULL);
+
+	if (m_isDarkMode)
+		setExplorerDarkTheme(m_hScroll);
+	else
+		setExplorerLightTheme(m_hScroll);
 
 	SCROLLINFO si = { 0 };
 	si.cbSize	= sizeof(si);
