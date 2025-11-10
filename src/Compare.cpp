@@ -4844,31 +4844,11 @@ std::pair<std::wstring, std::wstring> getTwoFilenamesFromCmdLine(const wchar_t* 
 // try to construct the command line files full paths
 bool constructFullFilePaths(std::pair<std::wstring, std::wstring>& files)
 {
-	const int mainViewFilesCount =
-			static_cast<int>(::SendMessageW(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, PRIMARY_VIEW));
-	const int subViewFilesCount =
-			static_cast<int>(::SendMessageW(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, SECOND_VIEW));
-	const int openedFilesCount = mainViewFilesCount + subViewFilesCount;
+	std::vector<std::wstring> openedFiles = getOpenedFiles();
+	const int openedFilesCount = static_cast<int>(openedFiles.size());
 
-	std::vector<std::wstring> openedFiles(openedFilesCount);
-
-	int i = 0;
-	for (; i < mainViewFilesCount; ++i)
-	{
-		const LRESULT buffId = ::SendMessageW(nppData._nppHandle, NPPM_GETBUFFERIDFROMPOS, i, MAIN_VIEW);
-		const LRESULT len = ::SendMessageW(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (LPARAM)nullptr);
-		openedFiles[i].resize(len);
-		::SendMessageW(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (LPARAM)openedFiles[i].data());
-	}
-
-	for (int j = 0; j < subViewFilesCount; ++j)
-	{
-		const LRESULT buffId = ::SendMessageW(nppData._nppHandle, NPPM_GETBUFFERIDFROMPOS, j, SUB_VIEW);
-		const LRESULT len = ::SendMessageW(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (LPARAM)nullptr);
-		openedFiles[i].resize(len);
-		::SendMessageW(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (LPARAM)openedFiles[i].data());
-		++i;
-	}
+	if (!openedFilesCount)
+		return false;
 
 	std::wstring& longerName = files.first.size() >= files.second.size() ? files.first : files.second;
 	std::wstring& shorterName = files.first.size() >= files.second.size() ? files.second : files.first;
@@ -4882,25 +4862,25 @@ bool constructFullFilePaths(std::pair<std::wstring, std::wstring>& files)
 	int longerIdx = 0;
 	int shorteridx = 0;
 
-	for (int j = 0; j < openedFilesCount; ++j)
+	for (int i = 0; i < openedFilesCount; ++i)
 	{
-		const size_t pathLen = openedFiles[j].size();
+		const size_t pathLen = openedFiles[i].size();
 
 		if (pathLen >= longerLen && (pathLen == longerLen ||
-			openedFiles[j][pathLen - longerLen - 1] == L'\\' || openedFiles[j][pathLen - longerLen - 1] == L'/') &&
-			!openedFiles[j].compare(pathLen - longerLen, longerLen, longerName))
+			openedFiles[i][pathLen - longerLen - 1] == L'\\' || openedFiles[i][pathLen - longerLen - 1] == L'/') &&
+			!openedFiles[i].compare(pathLen - longerLen, longerLen, longerName))
 		{
 			if (++longerFound == 1)
-				longerIdx = j;
+				longerIdx = i;
 			else
 				return false;
 		}
 		else if (pathLen >= shorterLen && (pathLen == shorterLen ||
-			openedFiles[j][pathLen - shorterLen - 1] == L'\\' || openedFiles[j][pathLen - shorterLen - 1] == L'/') &&
-			!openedFiles[j].compare(pathLen - shorterLen, shorterLen, shorterName))
+			openedFiles[i][pathLen - shorterLen - 1] == L'\\' || openedFiles[i][pathLen - shorterLen - 1] == L'/') &&
+			!openedFiles[i].compare(pathLen - shorterLen, shorterLen, shorterName))
 		{
 			if (++shorterFound == 1)
-				shorteridx = j;
+				shorteridx = i;
 			else
 				return false;
 		}
@@ -4958,7 +4938,7 @@ void checkCmdLine()
 	if (!constructFullFilePaths(files))
 	{
 		::MessageBoxW(nppData._nppHandle,
-				L"Command line file name ambiguous (several openned files with that name) - compare aborted."
+				L"Command line file name ambiguous (several opened files with that name) - compare aborted."
 				L"\nEither use full file paths or add '-nosession' option to command line.",
 				PLUGIN_NAME, MB_OK);
 		return;

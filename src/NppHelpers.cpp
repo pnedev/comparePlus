@@ -482,6 +482,38 @@ std::unique_ptr<NppDarkMode::Colors> getNppDarkModeColors()
 }
 
 
+std::vector<std::wstring> getOpenedFiles()
+{
+	const int mainViewFilesCount =
+			static_cast<int>(::SendMessageW(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, PRIMARY_VIEW));
+	const int subViewFilesCount =
+			static_cast<int>(::SendMessageW(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, SECOND_VIEW));
+	const int openedFilesCount = mainViewFilesCount + subViewFilesCount;
+
+	std::vector<std::wstring> openedFiles(openedFilesCount);
+
+	int i = 0;
+	for (; i < mainViewFilesCount; ++i)
+	{
+		const LRESULT buffId = ::SendMessageW(nppData._nppHandle, NPPM_GETBUFFERIDFROMPOS, i, MAIN_VIEW);
+		const LRESULT len = ::SendMessageW(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (LPARAM)nullptr);
+		openedFiles[i].resize(len);
+		::SendMessageW(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (LPARAM)openedFiles[i].data());
+	}
+
+	for (int j = 0; j < subViewFilesCount; ++j)
+	{
+		const LRESULT buffId = ::SendMessageW(nppData._nppHandle, NPPM_GETBUFFERIDFROMPOS, j, SUB_VIEW);
+		const LRESULT len = ::SendMessageW(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (LPARAM)nullptr);
+		openedFiles[i].resize(len);
+		::SendMessageW(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, buffId, (LPARAM)openedFiles[i].data());
+		++i;
+	}
+
+	return openedFiles;
+}
+
+
 void setStyles(UserSettings& settings)
 {
 	const int bg = static_cast<int>(::SendMessageW(nppData._nppHandle, NPPM_GETEDITORDEFAULTBACKGROUNDCOLOR, 0, 0));

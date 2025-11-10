@@ -812,6 +812,8 @@ bool isDarkMode();
 
 std::unique_ptr<NppDarkMode::Colors> getNppDarkModeColors();
 
+std::vector<std::wstring> getOpenedFiles();
+
 void setStyles(UserSettings& settings);
 
 void clearWindow(int view, bool clearIndicators = true);
