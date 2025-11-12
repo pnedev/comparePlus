@@ -616,10 +616,10 @@ void NppSettings::enableClearCommands(bool enable) const
 	HMENU hMenu = (HMENU)::SendMessageW(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
 
 	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ACTIVE]._cmdID,
-			MF_BYCOMMAND | ((!enable && !compareMode) ? (MF_DISABLED | MF_GRAYED) : MF_ENABLED));
+			MF_BYCOMMAND | ((!enable && !compareMode) ? MF_GRAYED : MF_ENABLED));
 
 	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ALL]._cmdID,
-			MF_BYCOMMAND | ((!enable && compareList.empty()) ? (MF_DISABLED | MF_GRAYED) : MF_ENABLED));
+			MF_BYCOMMAND | ((!enable && compareList.empty()) ? MF_GRAYED : MF_ENABLED));
 
 	::DrawMenuBar(nppData._nppHandle);
 
@@ -632,7 +632,7 @@ void NppSettings::enableClearCommands(bool enable) const
 void NppSettings::enableNppScrollCommands(bool enable) const
 {
 	HMENU hMenu = (HMENU)::SendMessageW(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPMAINMENU, 0);
-	const int flag = MF_BYCOMMAND | (enable ? MF_ENABLED : (MF_DISABLED | MF_GRAYED));
+	const int flag = MF_BYCOMMAND | (enable ? MF_ENABLED : MF_GRAYED);
 
 	::EnableMenuItem(hMenu, IDM_VIEW_SYNSCROLLH, flag);
 	::EnableMenuItem(hMenu, IDM_VIEW_SYNSCROLLV, flag);
@@ -651,13 +651,13 @@ void NppSettings::enableNppScrollCommands(bool enable) const
 void NppSettings::updatePluginMenu()
 {
 	HMENU hMenu = (HMENU)::SendMessageW(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
-	const int flag = MF_BYCOMMAND | (compareMode ? MF_ENABLED : (MF_DISABLED | MF_GRAYED));
+	const int flag = MF_BYCOMMAND | (compareMode ? MF_ENABLED : MF_GRAYED);
 
 	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ACTIVE]._cmdID,
-			MF_BYCOMMAND | ((!compareMode && !newCompare) ? (MF_DISABLED | MF_GRAYED) : MF_ENABLED));
+			MF_BYCOMMAND | ((!compareMode && !newCompare) ? MF_GRAYED : MF_ENABLED));
 
 	::EnableMenuItem(hMenu, funcItem[CMD_CLEAR_ALL]._cmdID,
-			MF_BYCOMMAND | ((compareList.empty() && !newCompare) ? (MF_DISABLED | MF_GRAYED) : MF_ENABLED));
+			MF_BYCOMMAND | ((compareList.empty() && !newCompare) ? MF_GRAYED : MF_ENABLED));
 
 	::EnableMenuItem(hMenu, funcItem[CMD_FIRST]._cmdID, flag);
 	::EnableMenuItem(hMenu, funcItem[CMD_PREV]._cmdID, flag);
@@ -5160,7 +5160,7 @@ void onNppReady()
 		for (size_t i = 0; i < NB_MENU_COMMANDS; ++i)
 		{
 			if (funcItem[i]._pFunc != nullptr)
-				::EnableMenuItem(hMenu, funcItem[i]._cmdID, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+				::EnableMenuItem(hMenu, funcItem[i]._cmdID, MF_BYCOMMAND | MF_GRAYED);
 		}
 
 		::DrawMenuBar(nppData._nppHandle);
@@ -5199,14 +5199,14 @@ void onNppReady()
 		{
 			HMENU hMenu = (HMENU)::SendMessageW(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
 
-			::EnableMenuItem(hMenu, funcItem[CMD_SVN_DIFF]._cmdID, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+			::EnableMenuItem(hMenu, funcItem[CMD_SVN_DIFF]._cmdID, MF_BYCOMMAND | MF_GRAYED);
 		}
 
 		if (!isGITlibFound())
 		{
 			HMENU hMenu = (HMENU)::SendMessageW(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
 
-			::EnableMenuItem(hMenu, funcItem[CMD_GIT_DIFF]._cmdID, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+			::EnableMenuItem(hMenu, funcItem[CMD_GIT_DIFF]._cmdID, MF_BYCOMMAND | MF_GRAYED);
 		}
 
 		readNppBookmarkID();
