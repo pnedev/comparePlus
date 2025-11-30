@@ -1,5 +1,5 @@
 /*
- * This file is part of Compare Plugin for Notepad++
+ * This file is part of ComparePlus Plugin for Notepad++
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,57 +19,52 @@
 
 
 #include "DockingFeature/Window.h"
-#include "ColorPopup.h"
 
 
 class ColorCombo : public Window
 {
 public :
-	ColorCombo() : Window(), _rgbCol(0), _pColorPopup(NULL)
+	ColorCombo() : Window(), _comboBoxInfo { 0 }, _color(0) {};
+
+	~ColorCombo ()
 	{
-		::ZeroMemory(&_comboBoxInfo, sizeof(_comboBoxInfo));
+		destroy();
 	};
 
-	~ColorCombo () {};
-	virtual void init(HINSTANCE hInst, HWND hNpp, HWND hCombo);
+	virtual void init(HINSTANCE hInst, HWND hParent, HWND hCombo);
 	virtual void destroy()
 	{
 		::DestroyWindow(_hSelf);
 	};
 
-	void onSelect(void)
+	void onSelect()
 	{
-		DrawColor();
+		drawColor();
 	};
 
-	void setColor(COLORREF rgbCol)
+	void setColor(COLORREF color)
 	{
-		_rgbCol = rgbCol;
-		::RedrawWindow(_comboBoxInfo.hwndItem, &_comboBoxInfo.rcItem, NULL, RDW_INVALIDATE | RDW_UPDATENOW);
+		_color = color;
+		::RedrawWindow(_comboBoxInfo.hwndCombo, &_comboBoxInfo.rcItem, NULL, RDW_INVALIDATE | RDW_UPDATENOW);
 	};
 
-	void getColor(LPCOLORREF p_rgbCol)
+	COLORREF getColor()
 	{
-		if (p_rgbCol != NULL)
-			*p_rgbCol = _rgbCol;
+		return _color;
 	};
 
 private:
-	void DrawColor(HDC hDcExt = NULL);
-
-private :
-	HWND			_hNpp;
 	COMBOBOXINFO	_comboBoxInfo;
 	WNDPROC			_hDefaultComboProc;
+	COLORREF		_color;
 
-	COLORREF		_rgbCol;
-	ColorPopup*		_pColorPopup;
+	void drawColor();
+	void pickColor();
 
-	/* Subclassing combo boxes */
 	LRESULT runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
 
 	static LRESULT CALLBACK wndDefaultProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 	{
-		return (((ColorCombo *)(::GetWindowLongPtrW(hwnd, GWLP_USERDATA)))->runProc(hwnd, Message, wParam, lParam));
+		return ((ColorCombo*)(::GetWindowLongPtrW(hwnd, GWLP_USERDATA)))->runProc(hwnd, Message, wParam, lParam);
 	};
 };

@@ -59,13 +59,13 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 
 			::EnableThemeDialogTexture(_hSelf, ETDT_ENABLETAB);
 
-			_ColorComboAdded.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_ADDED_COLOR));
-			_ColorComboRemoved.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_REMOVED_COLOR));
-			_ColorComboMoved.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_MOVED_COLOR));
-			_ColorComboChanged.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_CHANGED_COLOR));
-			_ColorComboAddHighlight.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_ADD_HIGHLIGHT_COLOR));
-			_ColorComboRemHighlight.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_REM_HIGHLIGHT_COLOR));
-			_ColorComboMovHighlight.init(_hInst, _hParent, ::GetDlgItem(_hSelf, IDC_COMBO_MOV_HIGHLIGHT_COLOR));
+			_ColorAdded.init(_hInst, _hSelf, ::GetDlgItem(_hSelf, IDC_COMBO_ADDED_COLOR));
+			_ColorRemoved.init(_hInst, _hSelf, ::GetDlgItem(_hSelf, IDC_COMBO_REMOVED_COLOR));
+			_ColorMoved.init(_hInst, _hSelf, ::GetDlgItem(_hSelf, IDC_COMBO_MOVED_COLOR));
+			_ColorChanged.init(_hInst, _hSelf, ::GetDlgItem(_hSelf, IDC_COMBO_CHANGED_COLOR));
+			_ColorAddHighlight.init(_hInst, _hSelf, ::GetDlgItem(_hSelf, IDC_COMBO_ADD_HIGHLIGHT_COLOR));
+			_ColorRemHighlight.init(_hInst, _hSelf, ::GetDlgItem(_hSelf, IDC_COMBO_REM_HIGHLIGHT_COLOR));
+			_ColorMovHighlight.init(_hInst, _hSelf, ::GetDlgItem(_hSelf, IDC_COMBO_MOV_HIGHLIGHT_COLOR));
 
 			HWND hCtrl = ::GetDlgItem(_hSelf, IDC_HIGHLIGHT_SPIN_BOX);
 			::SendMessageW(hCtrl, EM_SETLIMITTEXT, 3L, 0);
@@ -183,31 +183,31 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 				break;
 
 				case IDC_COMBO_ADDED_COLOR:
-					_ColorComboAdded.onSelect();
+					_ColorAdded.onSelect();
 				break;
 
 				case IDC_COMBO_REMOVED_COLOR:
-					_ColorComboRemoved.onSelect();
+					_ColorRemoved.onSelect();
 				break;
 
 				case IDC_COMBO_MOVED_COLOR:
-					_ColorComboMoved.onSelect();
+					_ColorMoved.onSelect();
 				break;
 
 				case IDC_COMBO_CHANGED_COLOR:
-					_ColorComboChanged.onSelect();
+					_ColorChanged.onSelect();
 				break;
 
 				case IDC_COMBO_ADD_HIGHLIGHT_COLOR:
-					_ColorComboAddHighlight.onSelect();
+					_ColorAddHighlight.onSelect();
 				break;
 
 				case IDC_COMBO_REM_HIGHLIGHT_COLOR:
-					_ColorComboRemHighlight.onSelect();
+					_ColorRemHighlight.onSelect();
 				break;
 
 				case IDC_COMBO_MOV_HIGHLIGHT_COLOR:
-					_ColorComboMovHighlight.onSelect();
+					_ColorMovHighlight.onSelect();
 				break;
 
 				case IDC_ENABLE_TOOLBAR:
@@ -379,13 +379,13 @@ void SettingsDialog::SetParams(UserSettings* settings)
 			settings->GotoFirstDiff ? BST_CHECKED : BST_UNCHECKED);
 
 	// Set current colors configured in option dialog
-	_ColorComboAdded.setColor(settings->colors().added);
-	_ColorComboRemoved.setColor(settings->colors().removed);
-	_ColorComboMoved.setColor(settings->colors().moved);
-	_ColorComboChanged.setColor(settings->colors().changed);
-	_ColorComboAddHighlight.setColor(settings->colors().add_highlight);
-	_ColorComboRemHighlight.setColor(settings->colors().rem_highlight);
-	_ColorComboMovHighlight.setColor(settings->colors().mov_highlight);
+	_ColorAdded.setColor(settings->colors().added);
+	_ColorRemoved.setColor(settings->colors().removed);
+	_ColorMoved.setColor(settings->colors().moved);
+	_ColorChanged.setColor(settings->colors().changed);
+	_ColorAddHighlight.setColor(settings->colors().add_highlight);
+	_ColorRemHighlight.setColor(settings->colors().rem_highlight);
+	_ColorMovHighlight.setColor(settings->colors().mov_highlight);
 
 	if (settings->colors().highlight_transparency < c_Highlight_transp_min)
 		settings->colors().highlight_transparency = c_Highlight_transp_min;
@@ -463,13 +463,13 @@ void SettingsDialog::GetParams()
 	_Settings->GotoFirstDiff		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_GOTO_FIRST_DIFF)) == BST_CHECKED);
 
 	// Get color chosen in dialog
-	_ColorComboAdded.getColor((LPCOLORREF)&_Settings->colors().added);
-	_ColorComboRemoved.getColor((LPCOLORREF)&_Settings->colors().removed);
-	_ColorComboMoved.getColor((LPCOLORREF)&_Settings->colors().moved);
-	_ColorComboChanged.getColor((LPCOLORREF)&_Settings->colors().changed);
-	_ColorComboAddHighlight.getColor((LPCOLORREF)&_Settings->colors().add_highlight);
-	_ColorComboRemHighlight.getColor((LPCOLORREF)&_Settings->colors().rem_highlight);
-	_ColorComboMovHighlight.getColor((LPCOLORREF)&_Settings->colors().mov_highlight);
+	_Settings->colors().added			= _ColorAdded.getColor();
+	_Settings->colors().removed			= _ColorRemoved.getColor();
+	_Settings->colors().moved			= _ColorMoved.getColor();
+	_Settings->colors().changed			= _ColorChanged.getColor();
+	_Settings->colors().add_highlight	= _ColorAddHighlight.getColor();
+	_Settings->colors().rem_highlight	= _ColorRemHighlight.getColor();
+	_Settings->colors().mov_highlight	= _ColorMovHighlight.getColor();
 
 	// Get highlight transparency
 	_Settings->colors().highlight_transparency = ::GetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, NULL, FALSE);

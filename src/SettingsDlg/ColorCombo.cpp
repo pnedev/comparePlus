@@ -1,5 +1,5 @@
 /*
- * This file is part of Compare Plugin for Notepad++
+ * This file is part of ComparePlus Plugin for Notepad++
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,20 +15,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma comment (lib, "comdlg32")
+
+
+#include <windows.h>
+#include <commdlg.h>
+
 #include "ColorCombo.h"
-#include "resource.h"
+#include "UserSettings.h"
 
 
-void ColorCombo::init(HINSTANCE hInst, HWND hNpp, HWND hCombo)
+void ColorCombo::init(HINSTANCE hInst, HWND hParent, HWND hCombo)
 {
-	_hNpp	= hNpp;
-	Window::init(hInst, hNpp);
+	Window::init(hInst, hParent);
 
-	/* subclass combo to get edit messages */
+	// Subclass combo to get edit messages
 	_comboBoxInfo.cbSize = sizeof(_comboBoxInfo);
+
 	::SendMessageW(hCombo, CB_GETCOMBOBOXINFO, 0, (LPARAM)&_comboBoxInfo);
-	::SetWindowLongPtrW(_comboBoxInfo.hwndItem, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
-	_hDefaultComboProc = reinterpret_cast<WNDPROC>(::SetWindowLongPtrW(_comboBoxInfo.hwndItem, GWLP_WNDPROC,
+	::SetWindowLongPtrW(_comboBoxInfo.hwndCombo, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+
+	_hDefaultComboProc = reinterpret_cast<WNDPROC>(::SetWindowLongPtrW(_comboBoxInfo.hwndCombo, GWLP_WNDPROC,
 			reinterpret_cast<LONG_PTR>(wndDefaultProc)));
 }
 
@@ -37,53 +44,19 @@ LRESULT ColorCombo::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 {
 	switch (Message)
 	{
-		case COLOR_POPUP_OK:
-		{
-			setColor((COLORREF)wParam);
-
-			_pColorPopup->destroy();
-			delete _pColorPopup;
-			_pColorPopup = NULL;
-
-			return TRUE;
-		}
-
+		case WM_KEYDOWN:
+			if (wParam != VK_SPACE && wParam != VK_DOWN && wParam != VK_RIGHT)
+				return FALSE;
+		// Intentional fall-through
 		case WM_LBUTTONDOWN:
 		case WM_LBUTTONDBLCLK:
-		{
-			RECT	rc;
-			POINT	pt;
-			::GetWindowRect(hwnd, &rc);
-			pt.x = rc.left;
-			pt.y = rc.bottom;
-
-			if (_pColorPopup == NULL)
-			{
-				_pColorPopup = new ColorPopup(_rgbCol);
-				_pColorPopup->init(_hInst, hwnd, _hNpp);
-				_pColorPopup->doDialog(pt);
-			}
-
-			return TRUE;
-		}
-
-		case COLOR_POPUP_CANCEL:
-		case WM_DESTROY:
-		{
-			if (_pColorPopup != NULL)
-			{
-				_pColorPopup->destroy();
-				delete _pColorPopup;
-				_pColorPopup = NULL;
-			}
-
-			break;
-		}
+			pickColor();
+		return TRUE;
 
 		case WM_PAINT:
 		{
 			LRESULT lpRet = ::CallWindowProcW(_hDefaultComboProc, hwnd, Message, wParam, lParam);
-			DrawColor((HDC)wParam);
+			drawColor();
 
 			return lpRet;
 		}
@@ -93,20 +66,13 @@ LRESULT ColorCombo::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 }
 
 
-void ColorCombo::DrawColor(HDC hDcExt)
+void ColorCombo::drawColor()
 {
-	HDC		hDc			= NULL;
-	HBRUSH	hBrush		= ::CreateSolidBrush(_rgbCol);
+	HDC		hDc		= ::GetDC(_comboBoxInfo.hwndCombo);
+	HBRUSH	hBrush	= ::CreateSolidBrush(_color);
 
-	if (hDcExt == NULL)
-		hDc	= ::GetDC(_comboBoxInfo.hwndCombo);
-	else
-		hDc = hDcExt;
-
-	/* draw item */
 	::FillRect(hDc, &_comboBoxInfo.rcItem, hBrush);
 
-	/* draw selection on focus */
 	if (_comboBoxInfo.hwndCombo == ::GetFocus())
 	{
 		RECT rc	= _comboBoxInfo.rcItem;
@@ -115,7 +81,29 @@ void ColorCombo::DrawColor(HDC hDcExt)
 	}
 
 	::DeleteObject(hBrush);
+	::ReleaseDC(_comboBoxInfo.hwndCombo, hDc);
+}
 
-	if (hDcExt == NULL)
-		::ReleaseDC(_comboBoxInfo.hwndCombo, hDc);
+
+void ColorCombo::pickColor()
+{
+	static COLORREF custColors[16] = {
+		DEFAULT_ADDED_COLOR,		DEFAULT_REMOVED_COLOR,			DEFAULT_MOVED_COLOR,
+		DEFAULT_CHANGED_COLOR,		DEFAULT_HIGHLIGHT_COLOR,		DEFAULT_HIGHLIGHT_MOVED_COLOR,
+		RGB(0x00, 0xBB, 0x00),		RGB(0xAA, 0x00, 0x00),
+		DEFAULT_ADDED_COLOR_DARK,	DEFAULT_REMOVED_COLOR_DARK,		DEFAULT_MOVED_COLOR_DARK,
+		DEFAULT_CHANGED_COLOR_DARK,	DEFAULT_HIGHLIGHT_COLOR_DARK,	DEFAULT_HIGHLIGHT_MOVED_COLOR_DARK,
+		RGB(0x00, 0xBB, 0x00),		RGB(0xAA, 0x00, 0x00)
+	};
+
+	CHOOSECOLORW cc { 0 };
+	cc.lStructSize = sizeof(cc);
+	cc.hwndOwner = _hParent;
+
+	cc.lpCustColors = (LPDWORD)custColors;
+	cc.rgbResult = _color;
+	cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+
+	if (::ChooseColorW(&cc) == TRUE)
+		setColor(cc.rgbResult);
 }

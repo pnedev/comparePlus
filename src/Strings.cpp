@@ -105,7 +105,6 @@ Strings::Strings() : _currentLocale {"english"}
 		{ "IDC_WRAP_AROUND",				"Wrap around diffs on navigation" },
 		{ "IDC_GOTO_FIRST_DIFF",			"Go to first diff after re-Compare" },
 		{ "IDC_COLORS",						"Color and Highlight Settings" },
-		{ "IDC_MORE_COLORS",				"More colors..." },
 		{ "IDC_ADDED",						"Added line" },
 		{ "IDC_REMOVED",					"Removed line" },
 		{ "IDC_MOVED",						"Moved line" },

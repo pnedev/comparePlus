@@ -379,7 +379,6 @@ copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     <ClCompile Include="..\..\src\AboutDlg\URLCtrl.cpp" />
     <ClCompile Include="..\..\src\AboutDlg\AboutDialog.cpp" />
     <ClCompile Include="..\..\src\SettingsDlg\ColorCombo.cpp" />
-    <ClCompile Include="..\..\src\SettingsDlg\ColorPopup.cpp" />
     <ClCompile Include="..\..\src\SettingsDlg\SettingsDialog.cpp" />
     <ClCompile Include="..\..\src\CompareOptionsDlg\CompareOptionsDialog.cpp" />
     <ClCompile Include="..\..\src\VisualFiltersDlg\VisualFiltersDialog.cpp" />
@@ -400,7 +399,6 @@ copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     <ClInclude Include="..\..\src\AboutDlg\URLCtrl.h" />
     <ClInclude Include="..\..\src\AboutDlg\AboutDialog.h" />
     <ClInclude Include="..\..\src\SettingsDlg\ColorCombo.h" />
-    <ClInclude Include="..\..\src\SettingsDlg\ColorPopup.h" />
     <ClInclude Include="..\..\src\SettingsDlg\SettingsDialog.h" />
     <ClInclude Include="..\..\src\CompareOptionsDlg\CompareOptionsDialog.h" />
     <ClInclude Include="..\..\src\VisualFiltersDlg\VisualFiltersDialog.h" />

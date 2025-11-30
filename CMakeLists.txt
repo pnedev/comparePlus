@@ -96,7 +96,6 @@ set (project_sources
 	src/AboutDlg/URLCtrl.cpp
 	src/AboutDlg/AboutDialog.cpp
 	src/SettingsDlg/ColorCombo.cpp
-	src/SettingsDlg/ColorPopup.cpp
 	src/SettingsDlg/SettingsDialog.cpp
 	src/CompareOptionsDlg/CompareOptionsDialog.cpp
 	src/VisualFiltersDlg/VisualFiltersDialog.cpp

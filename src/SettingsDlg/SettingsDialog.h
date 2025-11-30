@@ -53,13 +53,13 @@ private:
 	void GetParams();
 
 	// Combo color picker
-	ColorCombo _ColorComboAdded;
-	ColorCombo _ColorComboRemoved;
-	ColorCombo _ColorComboMoved;
-	ColorCombo _ColorComboChanged;
-	ColorCombo _ColorComboAddHighlight;
-	ColorCombo _ColorComboRemHighlight;
-	ColorCombo _ColorComboMovHighlight;
+	ColorCombo _ColorAdded;
+	ColorCombo _ColorRemoved;
+	ColorCombo _ColorMoved;
+	ColorCombo _ColorChanged;
+	ColorCombo _ColorAddHighlight;
+	ColorCombo _ColorRemHighlight;
+	ColorCombo _ColorMovHighlight;
 
 	struct UserSettings* _Settings;
 };
