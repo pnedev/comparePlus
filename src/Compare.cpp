@@ -3150,6 +3150,10 @@ bool setupCompare(CompareList_t::iterator& cmpPair, bool selectionCompare, bool 
 			cmpPair->options.selections[newView] = getSelectionLines(newView);
 			cmpPair->options.selections[tmpView] = std::make_pair(1, getEndNotEmptyLine(tmpView));
 		}
+
+		if (cmpPair->options.selections[MAIN_VIEW].first > cmpPair->options.selections[MAIN_VIEW].second ||
+			cmpPair->options.selections[SUB_VIEW].first > cmpPair->options.selections[SUB_VIEW].second)
+			return false;
 	}
 
 	cmpPair->options.syncPoints.clear();
