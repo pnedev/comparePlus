@@ -1430,7 +1430,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 
 							// Are similarities a considerable portion of the diff?
 							if ((int)((matchLen * 100) / std::max(sec1.size(), sec2.size())) >=
-								options.changedThresholdPercent)
+								options.changedResemblPercent)
 							{
 								for (const auto& sd: sectionDiffs)
 								{
@@ -1513,7 +1513,7 @@ void compareLines(const DocCmpInfo& doc1, const DocCmpInfo& doc2, diffInfo& bloc
 		}
 
 		// Not enough portion of the lines matches - consider them totally different
-		if (((totalLineMatchLen * 100) / std::max(lineLen1, lineLen2)) < options.changedThresholdPercent)
+		if (((totalLineMatchLen * 100) / std::max(lineLen1, lineLen2)) < options.changedResemblPercent)
 		{
 			blockDiff1.info.changedLines.pop_back();
 			blockDiff2.info.changedLines.pop_back();
@@ -1578,7 +1578,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 			const intptr_t minSize = std::min(chunk1[line1].size(), chunk2[line2].size());
 			const intptr_t maxSize = std::max(chunk1[line1].size(), chunk2[line2].size());
 
-			if (((minSize * 100) / maxSize) < options.changedThresholdPercent)
+			if (((minSize * 100) / maxSize) < options.changedResemblPercent)
 			{
 				++linesProgress;
 				continue;
@@ -1640,7 +1640,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const DocCmpInfo& doc1, c
 				}
 			}
 
-			if (((matchesCount * 100) / maxSize) >= options.changedThresholdPercent)
+			if (((matchesCount * 100) / maxSize) >= options.changedResemblPercent)
 			{
 				const float conv =
 						(static_cast<float>(matchesCount) * 100) / maxSize +
@@ -2058,11 +2058,11 @@ void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, intptr_t line
 	intptr_t line = cmpInfo.doc1.lines[bd.off + bd.info.changedLines[lineIdx].line].line;
 	intptr_t linePos = getLineStart(cmpInfo.doc1.view, line);
 	int color = (cmpInfo.doc1.blockDiffMask == MARKER_MASK_ADDED) ?
-			Settings.colors().add_highlight : Settings.colors().rem_highlight;
+			Settings.colors().added_part : Settings.colors().removed_part;
 
 	for (const auto& change: bd.info.changedLines[lineIdx].changes)
 		markTextAsChanged(cmpInfo.doc1.view, linePos + change.off, change.len,
-						change.moved ? Settings.colors().mov_highlight : color);
+						change.moved ? Settings.colors().moved_part : color);
 
 	markLine(cmpInfo.doc1.view, line, cmpInfo.doc1.nonUniqueLines.find(line) == cmpInfo.doc1.nonUniqueLines.end() ?
 			MARKER_MASK_CHANGED : MARKER_MASK_CHANGED_LOCAL);
@@ -2070,11 +2070,11 @@ void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, intptr_t line
 	line = cmpInfo.doc2.lines[bd.info.matchBlock->off + bd.info.matchBlock->info.changedLines[lineIdx].line].line;
 	linePos = getLineStart(cmpInfo.doc2.view, line);
 	color = (cmpInfo.doc2.blockDiffMask == MARKER_MASK_ADDED) ?
-			Settings.colors().add_highlight : Settings.colors().rem_highlight;
+			Settings.colors().added_part : Settings.colors().removed_part;
 
 	for (const auto& change: bd.info.matchBlock->info.changedLines[lineIdx].changes)
 		markTextAsChanged(cmpInfo.doc2.view, linePos + change.off, change.len,
-						change.moved ? Settings.colors().mov_highlight : color);
+						change.moved ? Settings.colors().moved_part : color);
 
 	markLine(cmpInfo.doc2.view, line, cmpInfo.doc2.nonUniqueLines.find(line) == cmpInfo.doc2.nonUniqueLines.end() ?
 			MARKER_MASK_CHANGED : MARKER_MASK_CHANGED_LOCAL);

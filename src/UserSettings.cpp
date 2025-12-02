@@ -76,23 +76,23 @@ const wchar_t UserSettings::addedColorSetting[]				= L"added";
 const wchar_t UserSettings::removedColorSetting[]			= L"removed";
 const wchar_t UserSettings::movedColorSetting[]				= L"moved";
 const wchar_t UserSettings::changedColorSetting[]			= L"changed";
-const wchar_t UserSettings::addHighlightColorSetting[]		= L"added_highlight";
-const wchar_t UserSettings::remHighlightColorSetting[]		= L"removed_highlight";
-const wchar_t UserSettings::movHighlightColorSetting[]		= L"moved_highlight";
-const wchar_t UserSettings::highlightTranspSetting[]		= L"highlight_transparency";
+const wchar_t UserSettings::addedPartColorSetting[]			= L"added_part";
+const wchar_t UserSettings::removedPartColorSetting[]		= L"removed_part";
+const wchar_t UserSettings::movedPartColorSetting[]			= L"moved_part";
+const wchar_t UserSettings::partTranspSetting[]				= L"part_transparency";
 const wchar_t UserSettings::caretLineTranspSetting[]		= L"caret_line_transparency";
 
 const wchar_t UserSettings::addedColorDarkSetting[]			= L"added_dark";
 const wchar_t UserSettings::removedColorDarkSetting[]		= L"removed_dark";
 const wchar_t UserSettings::movedColorDarkSetting[]			= L"moved_dark";
 const wchar_t UserSettings::changedColorDarkSetting[]		= L"changed_dark";
-const wchar_t UserSettings::addHighlightColorDarkSetting[]	= L"added_highlight_dark";
-const wchar_t UserSettings::remHighlightColorDarkSetting[]	= L"removed_highlight_dark";
-const wchar_t UserSettings::movHighlightColorDarkSetting[]	= L"moved_highlight_dark";
-const wchar_t UserSettings::highlightTranspDarkSetting[]	= L"highlight_transparency_dark";
+const wchar_t UserSettings::addedPartColorDarkSetting[]		= L"added_part_dark";
+const wchar_t UserSettings::removedPartColorDarkSetting[]	= L"removed_part_dark";
+const wchar_t UserSettings::movedPartColorDarkSetting[]		= L"moved_part_dark";
+const wchar_t UserSettings::highlightTranspDarkSetting[]	= L"part_transparency_dark";
 const wchar_t UserSettings::caretLineTranspDarkSetting[]	= L"caret_line_transparency_dark";
 
-const wchar_t UserSettings::changedThresholdSetting[]		= L"changed_threshold_percentage";
+const wchar_t UserSettings::changedResemblSetting[]			= L"changed_resemblance";
 
 const wchar_t UserSettings::toolbarSection[]				= L"toolbar_settings";
 
@@ -219,14 +219,14 @@ void UserSettings::load()
 			DEFAULT_MOVED_COLOR, ini);
 	colorsLight.changed						= ::GetPrivateProfileIntW(colorsSection, changedColorSetting,
 			DEFAULT_CHANGED_COLOR, ini);
-	colorsLight.add_highlight				= ::GetPrivateProfileIntW(colorsSection, addHighlightColorSetting,
-			DEFAULT_HIGHLIGHT_COLOR, ini);
-	colorsLight.rem_highlight				= ::GetPrivateProfileIntW(colorsSection, remHighlightColorSetting,
-			DEFAULT_HIGHLIGHT_COLOR, ini);
-	colorsLight.mov_highlight				= ::GetPrivateProfileIntW(colorsSection, movHighlightColorSetting,
-			DEFAULT_HIGHLIGHT_MOVED_COLOR, ini);
-	colorsLight.highlight_transparency		= ::GetPrivateProfileIntW(colorsSection, highlightTranspSetting,
-			DEFAULT_HIGHLIGHT_TRANSP, ini);
+	colorsLight.added_part					= ::GetPrivateProfileIntW(colorsSection, addedPartColorSetting,
+			DEFAULT_PART_COLOR, ini);
+	colorsLight.removed_part				= ::GetPrivateProfileIntW(colorsSection, removedPartColorSetting,
+			DEFAULT_PART_COLOR, ini);
+	colorsLight.moved_part					= ::GetPrivateProfileIntW(colorsSection, movedPartColorSetting,
+			DEFAULT_MOVED_PART_COLOR, ini);
+	colorsLight.part_transparency			= ::GetPrivateProfileIntW(colorsSection, partTranspSetting,
+			DEFAULT_PART_TRANSP, ini);
 	colorsLight.caret_line_transparency		= ::GetPrivateProfileIntW(colorsSection, caretLineTranspSetting,
 			DEFAULT_CARET_LINE_TRANSP, ini);
 
@@ -238,19 +238,19 @@ void UserSettings::load()
 			DEFAULT_MOVED_COLOR_DARK, ini);
 	colorsDark.changed						= ::GetPrivateProfileIntW(colorsSection, changedColorDarkSetting,
 			DEFAULT_CHANGED_COLOR_DARK, ini);
-	colorsDark.add_highlight				= ::GetPrivateProfileIntW(colorsSection, addHighlightColorDarkSetting,
-			DEFAULT_HIGHLIGHT_COLOR_DARK, ini);
-	colorsDark.rem_highlight				= ::GetPrivateProfileIntW(colorsSection, remHighlightColorDarkSetting,
-			DEFAULT_HIGHLIGHT_COLOR_DARK, ini);
-	colorsDark.mov_highlight				= ::GetPrivateProfileIntW(colorsSection, movHighlightColorDarkSetting,
-			DEFAULT_HIGHLIGHT_MOVED_COLOR_DARK, ini);
-	colorsDark.highlight_transparency		= ::GetPrivateProfileIntW(colorsSection, highlightTranspDarkSetting,
-			DEFAULT_HIGHLIGHT_TRANSP_DARK, ini);
+	colorsDark.added_part					= ::GetPrivateProfileIntW(colorsSection, addedPartColorDarkSetting,
+			DEFAULT_PART_COLOR_DARK, ini);
+	colorsDark.removed_part					= ::GetPrivateProfileIntW(colorsSection, removedPartColorDarkSetting,
+			DEFAULT_PART_COLOR_DARK, ini);
+	colorsDark.moved_part					= ::GetPrivateProfileIntW(colorsSection, movedPartColorDarkSetting,
+			DEFAULT_MOVED_PART_COLOR_DARK, ini);
+	colorsDark.part_transparency			= ::GetPrivateProfileIntW(colorsSection, highlightTranspDarkSetting,
+			DEFAULT_PART_TRANSP_DARK, ini);
 	colorsDark.caret_line_transparency		= ::GetPrivateProfileIntW(colorsSection, caretLineTranspDarkSetting,
 			DEFAULT_CARET_LINE_TRANSP_DARK, ini);
 
-	ChangedThresholdPercent	= ::GetPrivateProfileIntW(colorsSection, changedThresholdSetting,
-			DEFAULT_CHANGED_THRESHOLD, ini);
+	ChangedResemblPercent	= ::GetPrivateProfileIntW(colorsSection, changedResemblSetting,
+			DEFAULT_CHANGED_RESEMBLANCE, ini);
 
 	EnableToolbar		= ::GetPrivateProfileIntW(toolbarSection, enableToolbarSetting,
 			DEFAULT_ENABLE_TOOLBAR_TB, ini) != 0;
@@ -382,17 +382,17 @@ void UserSettings::save()
 	_itow_s(colorsLight.changed, buffer, 64, 10);
 	::WritePrivateProfileStringW(colorsSection, changedColorSetting, buffer, ini);
 
-	_itow_s(colorsLight.add_highlight, buffer, 64, 10);
-	::WritePrivateProfileStringW(colorsSection, addHighlightColorSetting, buffer, ini);
+	_itow_s(colorsLight.added_part, buffer, 64, 10);
+	::WritePrivateProfileStringW(colorsSection, addedPartColorSetting, buffer, ini);
 
-	_itow_s(colorsLight.rem_highlight, buffer, 64, 10);
-	::WritePrivateProfileStringW(colorsSection, remHighlightColorSetting, buffer, ini);
+	_itow_s(colorsLight.removed_part, buffer, 64, 10);
+	::WritePrivateProfileStringW(colorsSection, removedPartColorSetting, buffer, ini);
 
-	_itow_s(colorsLight.mov_highlight, buffer, 64, 10);
-	::WritePrivateProfileStringW(colorsSection, movHighlightColorSetting, buffer, ini);
+	_itow_s(colorsLight.moved_part, buffer, 64, 10);
+	::WritePrivateProfileStringW(colorsSection, movedPartColorSetting, buffer, ini);
 
-	_itow_s(colorsLight.highlight_transparency, buffer, 64, 10);
-	::WritePrivateProfileStringW(colorsSection, highlightTranspSetting, buffer, ini);
+	_itow_s(colorsLight.part_transparency, buffer, 64, 10);
+	::WritePrivateProfileStringW(colorsSection, partTranspSetting, buffer, ini);
 
 	_itow_s(colorsLight.caret_line_transparency, buffer, 64, 10);
 	::WritePrivateProfileStringW(colorsSection, caretLineTranspSetting, buffer, ini);
@@ -409,23 +409,23 @@ void UserSettings::save()
 	_itow_s(colorsDark.changed, buffer, 64, 10);
 	::WritePrivateProfileStringW(colorsSection, changedColorDarkSetting, buffer, ini);
 
-	_itow_s(colorsDark.add_highlight, buffer, 64, 10);
-	::WritePrivateProfileStringW(colorsSection, addHighlightColorDarkSetting, buffer, ini);
+	_itow_s(colorsDark.added_part, buffer, 64, 10);
+	::WritePrivateProfileStringW(colorsSection, addedPartColorDarkSetting, buffer, ini);
 
-	_itow_s(colorsDark.rem_highlight, buffer, 64, 10);
-	::WritePrivateProfileStringW(colorsSection, remHighlightColorDarkSetting, buffer, ini);
+	_itow_s(colorsDark.removed_part, buffer, 64, 10);
+	::WritePrivateProfileStringW(colorsSection, removedPartColorDarkSetting, buffer, ini);
 
-	_itow_s(colorsDark.mov_highlight, buffer, 64, 10);
-	::WritePrivateProfileStringW(colorsSection, movHighlightColorDarkSetting, buffer, ini);
+	_itow_s(colorsDark.moved_part, buffer, 64, 10);
+	::WritePrivateProfileStringW(colorsSection, movedPartColorDarkSetting, buffer, ini);
 
-	_itow_s(colorsDark.highlight_transparency, buffer, 64, 10);
+	_itow_s(colorsDark.part_transparency, buffer, 64, 10);
 	::WritePrivateProfileStringW(colorsSection, highlightTranspDarkSetting, buffer, ini);
 
 	_itow_s(colorsDark.caret_line_transparency, buffer, 64, 10);
 	::WritePrivateProfileStringW(colorsSection, caretLineTranspDarkSetting, buffer, ini);
 
-	_itow_s(ChangedThresholdPercent, buffer, 64, 10);
-	::WritePrivateProfileStringW(colorsSection, changedThresholdSetting, buffer, ini);
+	_itow_s(ChangedResemblPercent, buffer, 64, 10);
+	::WritePrivateProfileStringW(colorsSection, changedResemblSetting, buffer, ini);
 
 	::WritePrivateProfileStringW(toolbarSection, enableToolbarSetting,	EnableToolbar	? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(toolbarSection, setAsFirstTBSetting,	SetAsFirstTB	? L"1" : L"0", ini);

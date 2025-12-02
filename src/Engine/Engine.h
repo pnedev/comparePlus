@@ -142,7 +142,7 @@ struct CompareOptions
 	bool							inclRegexNomatchLines;
 	bool							highlightRegexIgnores;
 
-	int		changedThresholdPercent;
+	int		changedResemblPercent;
 
 	bool	selectionCompare;
 

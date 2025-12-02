@@ -556,7 +556,7 @@ void setStyles(UserSettings& settings)
 	defineRgbaSymbol(MARKER_MOVED_BLOCK_MID_SYMBOL,		icon_moved_block_middle);
 	defineRgbaSymbol(MARKER_MOVED_BLOCK_END_SYMBOL,		icon_moved_block_end);
 
-	setTextStyle(settings.colors().highlight_transparency);
+	setTextStyle(settings.colors().part_transparency);
 }
 
 

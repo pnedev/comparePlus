@@ -45,21 +45,21 @@
 #define DEFAULT_REMOVED_COLOR				0xC6C6FF
 #define DEFAULT_MOVED_COLOR					0xFFE6CC
 #define DEFAULT_CHANGED_COLOR				0x98E7E7
-#define DEFAULT_HIGHLIGHT_COLOR				0x0683FF
-#define DEFAULT_HIGHLIGHT_MOVED_COLOR		0xF58742
-#define DEFAULT_HIGHLIGHT_TRANSP			0
+#define DEFAULT_PART_COLOR					0x0683FF
+#define DEFAULT_MOVED_PART_COLOR			0xF58742
+#define DEFAULT_PART_TRANSP					0
 #define DEFAULT_CARET_LINE_TRANSP			60
 
 #define DEFAULT_ADDED_COLOR_DARK			0x055A05
 #define DEFAULT_REMOVED_COLOR_DARK			0x16164F
 #define DEFAULT_MOVED_COLOR_DARK			0x4F361C
 #define DEFAULT_CHANGED_COLOR_DARK			0x145050
-#define DEFAULT_HIGHLIGHT_COLOR_DARK		0x0683FF
-#define DEFAULT_HIGHLIGHT_MOVED_COLOR_DARK	0xF58742
-#define DEFAULT_HIGHLIGHT_TRANSP_DARK		0
+#define DEFAULT_PART_COLOR_DARK				0x0683FF
+#define DEFAULT_MOVED_PART_COLOR_DARK		0xF58742
+#define DEFAULT_PART_TRANSP_DARK			0
 #define DEFAULT_CARET_LINE_TRANSP_DARK		80
 
-#define DEFAULT_CHANGED_THRESHOLD			20
+#define DEFAULT_CHANGED_RESEMBLANCE			20
 
 #define DEFAULT_ENABLE_TOOLBAR_TB			1
 #define DEFAULT_SET_AS_FIRST_TB				1
@@ -88,10 +88,10 @@ struct ColorSettings
 	int moved;
 	int blank;
     int _default;
-	int add_highlight;
-	int rem_highlight;
-	int mov_highlight;
-	int highlight_transparency;
+	int added_part;
+	int removed_part;
+	int moved_part;
+	int part_transparency;
 	int caret_line_transparency;
 };
 
@@ -171,7 +171,7 @@ public:
 	bool			RecompareOnChange;
 	StatusType		StatusInfo;
 
-	int				ChangedThresholdPercent;
+	int				ChangedResemblPercent;
 
 	bool			EnableToolbar;
 	bool			SetAsFirstTB;
@@ -236,23 +236,23 @@ private:
 	static const wchar_t removedColorSetting[];
 	static const wchar_t movedColorSetting[];
 	static const wchar_t changedColorSetting[];
-	static const wchar_t addHighlightColorSetting[];
-	static const wchar_t remHighlightColorSetting[];
-	static const wchar_t movHighlightColorSetting[];
-	static const wchar_t highlightTranspSetting[];
+	static const wchar_t addedPartColorSetting[];
+	static const wchar_t removedPartColorSetting[];
+	static const wchar_t movedPartColorSetting[];
+	static const wchar_t partTranspSetting[];
 	static const wchar_t caretLineTranspSetting[];
 
 	static const wchar_t addedColorDarkSetting[];
 	static const wchar_t removedColorDarkSetting[];
 	static const wchar_t movedColorDarkSetting[];
 	static const wchar_t changedColorDarkSetting[];
-	static const wchar_t addHighlightColorDarkSetting[];
-	static const wchar_t remHighlightColorDarkSetting[];
-	static const wchar_t movHighlightColorDarkSetting[];
+	static const wchar_t addedPartColorDarkSetting[];
+	static const wchar_t removedPartColorDarkSetting[];
+	static const wchar_t movedPartColorDarkSetting[];
 	static const wchar_t highlightTranspDarkSetting[];
 	static const wchar_t caretLineTranspDarkSetting[];
 
-	static const wchar_t changedThresholdSetting[];
+	static const wchar_t changedResemblSetting[];
 
 	static const wchar_t toolbarSection[];
 

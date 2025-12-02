@@ -57,9 +57,9 @@ private:
 	ColorCombo _ColorRemoved;
 	ColorCombo _ColorMoved;
 	ColorCombo _ColorChanged;
-	ColorCombo _ColorAddHighlight;
-	ColorCombo _ColorRemHighlight;
-	ColorCombo _ColorMovHighlight;
+	ColorCombo _ColorAddedPart;
+	ColorCombo _ColorRemovedPart;
+	ColorCombo _ColorMovedPart;
 
 	struct UserSettings* _Settings;
 };

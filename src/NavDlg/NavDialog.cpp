@@ -644,11 +644,11 @@ INT_PTR CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lPar
 	switch (Message)
 	{
 		case WM_INITDIALOG:
-		break;
+		return TRUE;
 
 		case WM_PAINT:
 			onPaint();
-		break;
+		return TRUE;
 
 		case WM_SETFOCUS:
 			::SetFocus(getCurrentView());
@@ -657,28 +657,28 @@ INT_PTR CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lPar
 		case WM_LBUTTONDOWN:
 			::SetCapture(_hSelf);
 			setPos(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-		break;
+		return TRUE;
 
 		case WM_LBUTTONUP:
 			::ReleaseCapture();
-		break;
+		return TRUE;
 
 		case WM_MOUSEMOVE:
 			if (::GetCapture() == _hSelf)
 				setPos(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 			else if (!m_mouseOver)
 				m_mouseOver = true;
-		break;
+		return TRUE;
 
 		case WM_MOUSELEAVE:
 			if (m_mouseOver)
 				m_mouseOver = false;
-		break;
+		return TRUE;
 
 		case WM_MOUSEWHEEL:
 			if (m_mouseOver)
 				onMouseWheel(GET_WHEEL_DELTA_WPARAM(wParam) / 120);
-		break;
+		return TRUE;
 
 		case WM_VSCROLL:
 		{
@@ -692,23 +692,23 @@ INT_PTR CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lPar
 					::SetScrollPos(m_hScroll, SB_CTL, currentScroll, TRUE);
 					::InvalidateRect(_hSelf, NULL, FALSE);
 				}
-				break;
+				return TRUE;
 
 				case SB_PAGEDOWN:
 					adjustScroll(m_navHeight);
-				break;
+				return TRUE;
 
 				case SB_PAGEUP:
 					adjustScroll(-m_navHeight);
-				break;
+				return TRUE;
 
 				case SB_LINEDOWN:
 					adjustScroll(1);
-				break;
+				return TRUE;
 
 				case SB_LINEUP:
 					adjustScroll(-1);
-				break;
+				return TRUE;
 			}
 		}
 		break;
@@ -717,7 +717,7 @@ INT_PTR CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lPar
 		case WM_MOVE:
 			if (isVisible())
 				setScalingFactor();
-		break;
+		return TRUE;
 
 		case WM_NOTIFY:
 		{
@@ -729,17 +729,20 @@ INT_PTR CALLBACK NavDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lPar
 			{
 				ToggleNavigationBar();
 				::SetFocus(getCurrentView());
+				return TRUE;
 			}
 			else if ((pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_FLOAT) ||
 					(pnmh->hwndFrom == _hParent && LOWORD(pnmh->code) == DMN_DOCK))
 			{
 				setScalingFactor();
 				::SetFocus(getCurrentView());
+				return TRUE;
 			}
 			else if (LOWORD(pnmh->code) == DMN_SWITCHIN)
 			{
 				Update();
 				::SetFocus(getCurrentView());
+				return TRUE;
 			}
 		}
 		break;

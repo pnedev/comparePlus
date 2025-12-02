@@ -57,8 +57,9 @@ INT_PTR CALLBACK CompareOptionsDialog::run_dlgProc(UINT Message, WPARAM wParam, 
 				updateLocalization();
 
 			SetParams();
+
 		}
-		break;
+		return TRUE;
 
 		case WM_COMMAND:
 		{
@@ -86,7 +87,7 @@ INT_PTR CALLBACK CompareOptionsDialog::run_dlgProc(UINT Message, WPARAM wParam, 
 					Button_Enable(::GetDlgItem(_hSelf, IDC_DETECT_SUB_LINE_MOVES), subBlockDiffs);
 					Button_Enable(::GetDlgItem(_hSelf, IDC_DETECT_CHAR_DIFFS), subBlockDiffs);
 				}
-				break;
+				return TRUE;
 
 				case IDC_IGNORE_CHANGED_SPACES:
 				{
@@ -96,7 +97,7 @@ INT_PTR CALLBACK CompareOptionsDialog::run_dlgProc(UINT Message, WPARAM wParam, 
 					if (ignoreChangedSpaces)
 						Button_SetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_ALL_SPACES), BST_UNCHECKED);
 				}
-				break;
+				return TRUE;
 
 				case IDC_IGNORE_ALL_SPACES:
 				{
@@ -106,7 +107,7 @@ INT_PTR CALLBACK CompareOptionsDialog::run_dlgProc(UINT Message, WPARAM wParam, 
 					if (ignoreAllSpaces)
 						Button_SetCheck(::GetDlgItem(_hSelf, IDC_IGNORE_CHANGED_SPACES), BST_UNCHECKED);
 				}
-				break;
+				return TRUE;
 
 				case IDC_IGNORE_REGEX:
 				{
@@ -120,13 +121,13 @@ INT_PTR CALLBACK CompareOptionsDialog::run_dlgProc(UINT Message, WPARAM wParam, 
 
 					ComboBox_Enable(::GetDlgItem(_hSelf, IDC_IGNORE_REGEX_STR), ignoreRegex);
 				}
-				break;
+				return TRUE;
 
 				case IDC_REGEX_MODE_IGNORE:
 				case IDC_REGEX_MODE_MATCH:
 					Button_Enable(::GetDlgItem(_hSelf, IDC_REGEX_INCL_NOMATCH_LINES),
 							(Button_GetCheck(::GetDlgItem(_hSelf, IDC_REGEX_MODE_MATCH)) == BST_CHECKED));
-				break;
+				return TRUE;
 
 				default:
 				return FALSE;
@@ -151,26 +152,22 @@ void CompareOptionsDialog::updateLocalization()
 	::SetDlgItemTextW(_hSelf, IDC_IGNORE,	str["IDC_IGNORE"].c_str());
 	::SetDlgItemTextW(_hSelf, IDC_REGEX,	str["IDC_REGEX"].c_str());
 
-	HDC hdc = ::GetDC(_hSelf);
-
-	updateDlgOptionTxt(hdc, _hSelf, IDC_DETECT_MOVES,				str["IDC_DETECT_MOVES"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_DETECT_SUB_BLOCK_DIFFS,		str["IDC_DETECT_SUB_BLOCK_DIFFS"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_DETECT_SUB_LINE_MOVES,		str["IDC_DETECT_SUB_LINE_MOVES"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_DETECT_CHAR_DIFFS,			str["IDC_DETECT_CHAR_DIFFS"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_IGNORE_EMPTY_LINES,			str["IDC_IGNORE_EMPTY_LINES"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_IGNORE_FOLDED_LINES,		str["IDC_IGNORE_FOLDED_LINES"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_IGNORE_HIDDEN_LINES,		str["IDC_IGNORE_HIDDEN_LINES"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_IGNORE_CHANGED_SPACES,		str["IDC_IGNORE_CHANGED_SPACES"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_IGNORE_ALL_SPACES,			str["IDC_IGNORE_ALL_SPACES"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_IGNORE_EOL,					str["IDC_IGNORE_EOL"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_IGNORE_CASE,				str["IDC_IGNORE_CASE"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_IGNORE_REGEX,				str["IDC_IGNORE_REGEX"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_REGEX_MODE_IGNORE,			str["IDC_REGEX_MODE_IGNORE"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_REGEX_MODE_MATCH,			str["IDC_REGEX_MODE_MATCH"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_REGEX_INCL_NOMATCH_LINES,	str["IDC_REGEX_INCL_NOMATCH_LINES"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_HIGHLIGHT_REGEX_IGNORES,	str["IDC_HIGHLIGHT_REGEX_IGNORES"]);
-
-	::ReleaseDC(_hSelf, hdc);
+	updateDlgCtrlTxt(_hSelf, IDC_DETECT_MOVES,				str["IDC_DETECT_MOVES"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_DETECT_SUB_BLOCK_DIFFS,	str["IDC_DETECT_SUB_BLOCK_DIFFS"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_DETECT_SUB_LINE_MOVES,		str["IDC_DETECT_SUB_LINE_MOVES"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_DETECT_CHAR_DIFFS,			str["IDC_DETECT_CHAR_DIFFS"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_IGNORE_EMPTY_LINES,		str["IDC_IGNORE_EMPTY_LINES"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_IGNORE_FOLDED_LINES,		str["IDC_IGNORE_FOLDED_LINES"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_IGNORE_HIDDEN_LINES,		str["IDC_IGNORE_HIDDEN_LINES"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_IGNORE_CHANGED_SPACES,		str["IDC_IGNORE_CHANGED_SPACES"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_IGNORE_ALL_SPACES,			str["IDC_IGNORE_ALL_SPACES"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_IGNORE_EOL,				str["IDC_IGNORE_EOL"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_IGNORE_CASE,				str["IDC_IGNORE_CASE"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_IGNORE_REGEX,				str["IDC_IGNORE_REGEX"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_REGEX_MODE_IGNORE,			str["IDC_REGEX_MODE_IGNORE"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_REGEX_MODE_MATCH,			str["IDC_REGEX_MODE_MATCH"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_REGEX_INCL_NOMATCH_LINES,	str["IDC_REGEX_INCL_NOMATCH_LINES"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_HIGHLIGHT_REGEX_IGNORES,	str["IDC_HIGHLIGHT_REGEX_IGNORES"].c_str(), true);
 }
 
 

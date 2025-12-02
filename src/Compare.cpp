@@ -3129,8 +3129,8 @@ bool setupCompare(CompareList_t::iterator& cmpPair, bool selectionCompare, bool 
 	else
 		cmpPair->options.clearIgnoreRegex();
 
-	cmpPair->options.changedThresholdPercent	= Settings.ChangedThresholdPercent;
-	cmpPair->options.selectionCompare			= selectionCompare;
+	cmpPair->options.changedResemblPercent	= Settings.ChangedResemblPercent;
+	cmpPair->options.selectionCompare		= selectionCompare;
 
 	cmpPair->positionFiles(recompare);
 

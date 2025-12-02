@@ -417,6 +417,52 @@ std::string WCtoMB(const wchar_t* wc, int len, int codepage)
 }
 
 
+void updateDlgCtrlTxt(HWND hDlgWnd, int ctrlId, const wchar_t* txt, bool isCheckBox)
+{
+	if (hDlgWnd == nullptr)
+		return;
+
+	HWND hCtrl = ::GetDlgItem(hDlgWnd, ctrlId);
+
+	// Ensure the control has the BS_MULTILINE style
+	// Note: This needs to be done in the resource file (.rc) for standard controls to behave well
+	// ::SetWindowLongPtrW(hCtrl, GWL_STYLE, ::GetWindowLongPtrW(hCtrl, GWL_STYLE) | BS_MULTILINE);
+
+	::SetWindowTextW(hCtrl, txt);
+
+	HDC hdc = ::GetDC(hCtrl);
+	HFONT hFont = (HFONT)::SendMessageW(hCtrl, WM_GETFONT, 0, 0);
+	HFONT hOldFont = (HFONT)::SelectObject(hdc, hFont);
+
+	// Get the current width of the control to use as the maximum width for wrapping
+	RECT rcCalc;
+	::GetClientRect(hCtrl, &rcCalc);
+
+	// DT_CALCRECT calculates the height needed based on the current width (rcCalc.right)
+	// DT_WORDBREAK ensures wrapping at word boundaries
+	::DrawText(hdc, txt, -1, &rcCalc, DT_CALCRECT | DT_LEFT | DT_WORDBREAK);
+
+	// rcCalc now contains the minimum required height and possibly a modified width
+	::SelectObject(hdc, hOldFont);
+	::ReleaseDC(hCtrl, hdc);
+
+	int desiredWidth = rcCalc.right + 5;
+	int desiredHeight = rcCalc.bottom;
+
+	// Ensure the final width is sufficient for the calculated wrapped text width + the button glyph
+	if (isCheckBox)
+	{
+		desiredWidth += ::GetSystemMetrics(SM_CXMENUCHECK) + 5;
+		desiredHeight += 5;
+	}
+
+	::SetWindowPos(hCtrl, NULL, 0, 0, desiredWidth, desiredHeight, SWP_NOMOVE | SWP_NOZORDER);
+
+	// Invalidate the window to force a repaint with the new layout
+	::InvalidateRect(hCtrl, NULL, TRUE);
+}
+
+
 HFONT createFontFromSystemDefault(SysFont font, int size, bool underlined)
 {
 	HFONT hf {nullptr};

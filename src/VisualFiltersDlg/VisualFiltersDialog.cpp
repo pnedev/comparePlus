@@ -56,7 +56,7 @@ INT_PTR CALLBACK VisualFiltersDialog::run_dlgProc(UINT Message, WPARAM wParam, L
 
 			SetParams();
 		}
-		break;
+		return TRUE;
 
 		case WM_COMMAND:
 		{
@@ -85,7 +85,7 @@ INT_PTR CALLBACK VisualFiltersDialog::run_dlgProc(UINT Message, WPARAM wParam, L
 
 					Button_Enable(::GetDlgItem(_hSelf, IDC_HIDE_MATCHES), !hideAllDiffs);
 				}
-				break;
+				return TRUE;
 
 				case IDC_HIDE_NEW_LINES:
 				case IDC_HIDE_CHANGED_LINES:
@@ -101,7 +101,7 @@ INT_PTR CALLBACK VisualFiltersDialog::run_dlgProc(UINT Message, WPARAM wParam, L
 
 					Button_Enable(::GetDlgItem(_hSelf, IDC_HIDE_MATCHES), !hideAllDiffs);
 				}
-				break;
+				return TRUE;
 
 				default:
 				return FALSE;
@@ -124,18 +124,14 @@ void VisualFiltersDialog::updateLocalization()
 	::SetDlgItemTextW(_hSelf, IDCANCEL,		str["IDCANCEL"].c_str());
 	::SetDlgItemTextW(_hSelf, IDC_FILTERS,	str["IDC_FILTERS"].c_str());
 
-	HDC hdc = ::GetDC(_hSelf);
+	updateDlgCtrlTxt(_hSelf, IDC_NOTE,	str["IDC_NOTE"].c_str());
 
-	updateDlgTxt(hdc, _hSelf, IDC_NOTE,	str["IDC_NOTE"]);
-
-	updateDlgOptionTxt(hdc, _hSelf, IDC_HIDE_MATCHES,			str["IDC_HIDE_MATCHES"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_HIDE_ALL_DIFFS,			str["IDC_HIDE_ALL_DIFFS"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_HIDE_NEW_LINES,			str["IDC_HIDE_NEW_LINES"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_HIDE_CHANGED_LINES,		str["IDC_HIDE_CHANGED_LINES"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_HIDE_MOVED_LINES,		str["IDC_HIDE_MOVED_LINES"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_SHOW_ONLY_SELECTIONS,	str["IDC_SHOW_ONLY_SELECTIONS"]);
-
-	::ReleaseDC(_hSelf, hdc);
+	updateDlgCtrlTxt(_hSelf, IDC_HIDE_MATCHES,			str["IDC_HIDE_MATCHES"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_HIDE_ALL_DIFFS,		str["IDC_HIDE_ALL_DIFFS"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_HIDE_NEW_LINES,		str["IDC_HIDE_NEW_LINES"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_HIDE_CHANGED_LINES,	str["IDC_HIDE_CHANGED_LINES"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_HIDE_MOVED_LINES,		str["IDC_HIDE_MOVED_LINES"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_SHOW_ONLY_SELECTIONS,	str["IDC_SHOW_ONLY_SELECTIONS"].c_str(), true);
 }
 
 

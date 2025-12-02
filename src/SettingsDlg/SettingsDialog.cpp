@@ -30,12 +30,12 @@
 #include "Tools.h"
 
 
-static const int c_Highlight_transp_min		= 0;
-static const int c_Highlight_transp_max		= 100;
+static const int c_Part_transp_min			= 0;
+static const int c_Part_transp_max			= 100;
 static const int c_Caret_line_transp_min	= 0;
 static const int c_Caret_line_transp_max	= 100;
-static const int c_Threshold_perc_min		= 1;
-static const int c_Threshold_perc_max		= 99;
+static const int c_Change_resembl_min		= 1;
+static const int c_Change_resembl_max		= 99;
 
 
 UINT SettingsDialog::doDialog(UserSettings* settings)
@@ -63,27 +63,27 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 			_ColorRemoved.init(_hInst, _hSelf, ::GetDlgItem(_hSelf, IDC_COMBO_REMOVED_COLOR));
 			_ColorMoved.init(_hInst, _hSelf, ::GetDlgItem(_hSelf, IDC_COMBO_MOVED_COLOR));
 			_ColorChanged.init(_hInst, _hSelf, ::GetDlgItem(_hSelf, IDC_COMBO_CHANGED_COLOR));
-			_ColorAddHighlight.init(_hInst, _hSelf, ::GetDlgItem(_hSelf, IDC_COMBO_ADD_HIGHLIGHT_COLOR));
-			_ColorRemHighlight.init(_hInst, _hSelf, ::GetDlgItem(_hSelf, IDC_COMBO_REM_HIGHLIGHT_COLOR));
-			_ColorMovHighlight.init(_hInst, _hSelf, ::GetDlgItem(_hSelf, IDC_COMBO_MOV_HIGHLIGHT_COLOR));
+			_ColorAddedPart.init(_hInst, _hSelf, ::GetDlgItem(_hSelf, IDC_COMBO_ADDED_PART_COLOR));
+			_ColorRemovedPart.init(_hInst, _hSelf, ::GetDlgItem(_hSelf, IDC_COMBO_REMOVED_PART_COLOR));
+			_ColorMovedPart.init(_hInst, _hSelf, ::GetDlgItem(_hSelf, IDC_COMBO_MOVED_PART_COLOR));
 
-			HWND hCtrl = ::GetDlgItem(_hSelf, IDC_HIGHLIGHT_SPIN_BOX);
+			HWND hCtrl = ::GetDlgItem(_hSelf, IDC_PART_TRANSP_EDIT);
 			::SendMessageW(hCtrl, EM_SETLIMITTEXT, 3L, 0);
 
-			hCtrl = ::GetDlgItem(_hSelf, IDC_CARET_LINE_SPIN_BOX);
+			hCtrl = ::GetDlgItem(_hSelf, IDC_CARET_TRANSP_EDIT);
 			::SendMessageW(hCtrl, EM_SETLIMITTEXT, 3L, 0);
 
-			hCtrl = ::GetDlgItem(_hSelf, IDC_THRESHOLD_SPIN_BOX);
+			hCtrl = ::GetDlgItem(_hSelf, IDC_CHANGE_RES_EDIT);
 			::SendMessageW(hCtrl, EM_SETLIMITTEXT, 2L, 0);
 
-			hCtrl = ::GetDlgItem(_hSelf, IDC_HIGHLIGHT_SPIN_CTL);
-			::SendMessageW(hCtrl, UDM_SETRANGE, 0L, MAKELONG(c_Highlight_transp_max, c_Highlight_transp_min));
+			hCtrl = ::GetDlgItem(_hSelf, IDC_PART_TRANSP_SPIN);
+			::SendMessageW(hCtrl, UDM_SETRANGE, 0L, MAKELONG(c_Part_transp_max, c_Part_transp_min));
 
-			hCtrl = ::GetDlgItem(_hSelf, IDC_CARET_LINE_SPIN_CTL);
+			hCtrl = ::GetDlgItem(_hSelf, IDC_CARET_TRANSP_SPIN);
 			::SendMessageW(hCtrl, UDM_SETRANGE, 0L, MAKELONG(c_Caret_line_transp_max, c_Caret_line_transp_min));
 
-			hCtrl = ::GetDlgItem(_hSelf, IDC_THRESHOLD_SPIN_CTL);
-			::SendMessageW(hCtrl, UDM_SETRANGE, 0L, MAKELONG(c_Threshold_perc_max, c_Threshold_perc_min));
+			hCtrl = ::GetDlgItem(_hSelf, IDC_CHANGE_RES_SPIN);
+			::SendMessageW(hCtrl, UDM_SETRANGE, 0L, MAKELONG(c_Change_resembl_max, c_Change_resembl_min));
 
 			// Dialog opens by default in english
 			if (Strings::get().currentLocale() != "english")
@@ -93,17 +93,14 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 			{
 				const auto& str = Strings::get();
 
-				HDC hdc = ::GetDC(_hSelf);
-
-				updateDlgOptionTxt(hdc, _hSelf, IDC_NEW_IN_SUB,	str["IDC_NEW_IN_SUB_RTL"]);
-				updateDlgOptionTxt(hdc, _hSelf, IDC_OLD_IN_SUB,	str["IDC_OLD_IN_SUB_RTL"]);
-
-				::ReleaseDC(_hSelf, hdc);
+				updateDlgCtrlTxt(_hSelf, IDC_NEW_IN_SUB,	str["IDC_NEW_IN_SUB_RTL"].c_str(), true);
+				updateDlgCtrlTxt(_hSelf, IDC_OLD_IN_SUB,	str["IDC_OLD_IN_SUB_RTL"].c_str(), true);
 			}
 
 			SetParams();
+
 		}
-		break;
+		return TRUE;
 
 		case WM_COMMAND:
 		{
@@ -146,10 +143,10 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 						settings.colors().removed					= DEFAULT_REMOVED_COLOR_DARK;
 						settings.colors().moved						= DEFAULT_MOVED_COLOR_DARK;
 						settings.colors().changed					= DEFAULT_CHANGED_COLOR_DARK;
-						settings.colors().add_highlight				= DEFAULT_HIGHLIGHT_COLOR_DARK;
-						settings.colors().rem_highlight				= DEFAULT_HIGHLIGHT_COLOR_DARK;
-						settings.colors().mov_highlight				= DEFAULT_HIGHLIGHT_MOVED_COLOR_DARK;
-						settings.colors().highlight_transparency	= DEFAULT_HIGHLIGHT_TRANSP_DARK;
+						settings.colors().added_part				= DEFAULT_PART_COLOR_DARK;
+						settings.colors().removed_part				= DEFAULT_PART_COLOR_DARK;
+						settings.colors().moved_part				= DEFAULT_MOVED_PART_COLOR_DARK;
+						settings.colors().part_transparency			= DEFAULT_PART_TRANSP_DARK;
 						settings.colors().caret_line_transparency	= DEFAULT_CARET_LINE_TRANSP_DARK;
 					}
 					else
@@ -160,14 +157,14 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 						settings.colors().removed					= DEFAULT_REMOVED_COLOR;
 						settings.colors().moved						= DEFAULT_MOVED_COLOR;
 						settings.colors().changed					= DEFAULT_CHANGED_COLOR;
-						settings.colors().add_highlight				= DEFAULT_HIGHLIGHT_COLOR;
-						settings.colors().rem_highlight				= DEFAULT_HIGHLIGHT_COLOR;
-						settings.colors().mov_highlight				= DEFAULT_HIGHLIGHT_MOVED_COLOR;
-						settings.colors().highlight_transparency	= DEFAULT_HIGHLIGHT_TRANSP;
+						settings.colors().added_part				= DEFAULT_PART_COLOR;
+						settings.colors().removed_part				= DEFAULT_PART_COLOR;
+						settings.colors().moved_part				= DEFAULT_MOVED_PART_COLOR;
+						settings.colors().part_transparency			= DEFAULT_PART_TRANSP;
 						settings.colors().caret_line_transparency	= DEFAULT_CARET_LINE_TRANSP;
 					}
 
-					settings.ChangedThresholdPercent = DEFAULT_CHANGED_THRESHOLD;
+					settings.ChangedResemblPercent = DEFAULT_CHANGED_RESEMBLANCE;
 
 					settings.EnableToolbar	= (bool) DEFAULT_ENABLE_TOOLBAR_TB;
 					settings.SetAsFirstTB	= (bool) DEFAULT_SET_AS_FIRST_TB;
@@ -180,35 +177,35 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 
 					SetParams(&settings);
 				}
-				break;
+				return TRUE;
 
 				case IDC_COMBO_ADDED_COLOR:
 					_ColorAdded.onSelect();
-				break;
+				return TRUE;
 
 				case IDC_COMBO_REMOVED_COLOR:
 					_ColorRemoved.onSelect();
-				break;
+				return TRUE;
 
 				case IDC_COMBO_MOVED_COLOR:
 					_ColorMoved.onSelect();
-				break;
+				return TRUE;
 
 				case IDC_COMBO_CHANGED_COLOR:
 					_ColorChanged.onSelect();
-				break;
+				return TRUE;
 
-				case IDC_COMBO_ADD_HIGHLIGHT_COLOR:
-					_ColorAddHighlight.onSelect();
-				break;
+				case IDC_COMBO_ADDED_PART_COLOR:
+					_ColorAddedPart.onSelect();
+				return TRUE;
 
-				case IDC_COMBO_REM_HIGHLIGHT_COLOR:
-					_ColorRemHighlight.onSelect();
-				break;
+				case IDC_COMBO_REMOVED_PART_COLOR:
+					_ColorRemovedPart.onSelect();
+				return TRUE;
 
-				case IDC_COMBO_MOV_HIGHLIGHT_COLOR:
-					_ColorMovHighlight.onSelect();
-				break;
+				case IDC_COMBO_MOVED_PART_COLOR:
+					_ColorMovedPart.onSelect();
+				return TRUE;
 
 				case IDC_ENABLE_TOOLBAR:
 				{
@@ -222,7 +219,7 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					Button_Enable(::GetDlgItem(_hSelf, IDC_DIFFS_FILTERS_TB),		enableToolbar);
 					Button_Enable(::GetDlgItem(_hSelf, IDC_NAV_BAR_TB),				enableToolbar);
 				}
-				break;
+				return TRUE;
 
 				default:
 				return FALSE;
@@ -251,6 +248,8 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 				}
 
 				lpnmud->iDelta = (newPos * cStep) - lpnmud->iPos;
+
+				return TRUE;
 			}
 		}
 		break;
@@ -278,47 +277,43 @@ void SettingsDialog::updateLocalization()
 	::SetDlgItemTextW(_hSelf, IDC_COLORS,			str["IDC_COLORS"].c_str());
 	::SetDlgItemTextW(_hSelf, IDC_TOOLBAR,			str["IDC_TOOLBAR"].c_str());
 
-	HDC hdc = ::GetDC(_hSelf);
+	updateDlgCtrlTxt(_hSelf, IDC_FIRST_NEW,				str["IDC_FIRST_NEW"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_FIRST_OLD,				str["IDC_FIRST_OLD"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_NEW_IN_SUB,			str["IDC_NEW_IN_SUB"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_OLD_IN_SUB,			str["IDC_OLD_IN_SUB"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_COMPARE_TO_PREV,		str["IDC_COMPARE_TO_PREV"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_COMPARE_TO_NEXT,		str["IDC_COMPARE_TO_NEXT"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_DIFFS_SUMMARY,			str["IDC_DIFFS_SUMMARY"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_COMPARE_OPTIONS,		str["IDC_COMPARE_OPTIONS"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_STATUS_DISABLED,		str["IDC_STATUS_DISABLED"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_ENCODINGS_CHECK,		str["IDC_ENCODINGS_CHECK"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_SIZES_CHECK,			str["IDC_SIZES_CHECK"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_MANUAL_SYNC_CHECK,		str["IDC_MANUAL_SYNC_CHECK"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_CLOSE_ON_MATCH,		str["IDC_CLOSE_ON_MATCH"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_HIDE_MARGIN,			str["IDC_HIDE_MARGIN"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_NEVER_MARK_IGNORED,	str["IDC_NEVER_MARK_IGNORED"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_FOLLOWING_CARET,		str["IDC_FOLLOWING_CARET"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_WRAP_AROUND,			str["IDC_WRAP_AROUND"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_GOTO_FIRST_DIFF,		str["IDC_GOTO_FIRST_DIFF"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_ENABLE_TOOLBAR,		str["IDC_ENABLE_TOOLBAR"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_SET_AS_FIRST_TB,		str["IDC_SET_AS_FIRST_TB"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_COMPARE_TB,			str["IDC_COMPARE_TB"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_COMPARE_SELECTIONS_TB,	str["IDC_COMPARE_SELECTIONS_TB"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_CLEAR_COMPARE_TB,		str["IDC_CLEAR_COMPARE_TB"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_NAVIGATION_TB,			str["IDC_NAVIGATION_TB"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_DIFFS_FILTERS_TB,		str["IDC_DIFFS_FILTERS_TB"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_NAV_BAR_TB,			str["IDC_NAV_BAR_TB"].c_str(), true);
 
-	updateDlgOptionTxt(hdc, _hSelf, IDC_FIRST_NEW,				str["IDC_FIRST_NEW"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_FIRST_OLD,				str["IDC_FIRST_OLD"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_NEW_IN_SUB,				str["IDC_NEW_IN_SUB"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_OLD_IN_SUB,				str["IDC_OLD_IN_SUB"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_COMPARE_TO_PREV,		str["IDC_COMPARE_TO_PREV"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_COMPARE_TO_NEXT,		str["IDC_COMPARE_TO_NEXT"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_DIFFS_SUMMARY,			str["IDC_DIFFS_SUMMARY"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_COMPARE_OPTIONS,		str["IDC_COMPARE_OPTIONS"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_STATUS_DISABLED,		str["IDC_STATUS_DISABLED"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_ENCODINGS_CHECK,		str["IDC_ENCODINGS_CHECK"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_SIZES_CHECK,			str["IDC_SIZES_CHECK"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_MANUAL_SYNC_CHECK,		str["IDC_MANUAL_SYNC_CHECK"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_CLOSE_ON_MATCH,			str["IDC_CLOSE_ON_MATCH"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_HIDE_MARGIN,			str["IDC_HIDE_MARGIN"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_NEVER_MARK_IGNORED,		str["IDC_NEVER_MARK_IGNORED"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_FOLLOWING_CARET,		str["IDC_FOLLOWING_CARET"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_WRAP_AROUND,			str["IDC_WRAP_AROUND"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_GOTO_FIRST_DIFF,		str["IDC_GOTO_FIRST_DIFF"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_ENABLE_TOOLBAR,			str["IDC_ENABLE_TOOLBAR"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_SET_AS_FIRST_TB,		str["IDC_SET_AS_FIRST_TB"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_COMPARE_TB,				str["IDC_COMPARE_TB"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_COMPARE_SELECTIONS_TB,	str["IDC_COMPARE_SELECTIONS_TB"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_CLEAR_COMPARE_TB,		str["IDC_CLEAR_COMPARE_TB"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_NAVIGATION_TB,			str["IDC_NAVIGATION_TB"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_DIFFS_FILTERS_TB,		str["IDC_DIFFS_FILTERS_TB"]);
-	updateDlgOptionTxt(hdc, _hSelf, IDC_NAV_BAR_TB,				str["IDC_NAV_BAR_TB"]);
-
-	updateDlgTxt(hdc, _hSelf, IDC_ADDED,			str["IDC_ADDED"]);
-	updateDlgTxt(hdc, _hSelf, IDC_REMOVED,			str["IDC_REMOVED"]);
-	updateDlgTxt(hdc, _hSelf, IDC_MOVED,			str["IDC_MOVED"]);
-	updateDlgTxt(hdc, _hSelf, IDC_CHANGED,			str["IDC_CHANGED"]);
-	updateDlgTxt(hdc, _hSelf, IDC_ADD_HIGHLIGHT,	str["IDC_ADD_HIGHLIGHT"]);
-	updateDlgTxt(hdc, _hSelf, IDC_REM_HIGHLIGHT,	str["IDC_REM_HIGHLIGHT"]);
-	updateDlgTxt(hdc, _hSelf, IDC_MOV_HIGHLIGHT,	str["IDC_MOV_HIGHLIGHT"]);
-	updateDlgTxt(hdc, _hSelf, IDC_HIGHLIGHT_TRANSP,	str["IDC_HIGHLIGHT_TRANSP"]);
-	updateDlgTxt(hdc, _hSelf, IDC_CARET_TRANSP,		str["IDC_CARET_TRANSP"]);
-	updateDlgTxt(hdc, _hSelf, IDC_CHANGE_RESEMBL,	str["IDC_CHANGE_RESEMBL"]);
-
-	::ReleaseDC(_hSelf, hdc);
+	updateDlgCtrlTxt(_hSelf, IDC_ADDED,				str["IDC_ADDED"].c_str());
+	updateDlgCtrlTxt(_hSelf, IDC_REMOVED,			str["IDC_REMOVED"].c_str());
+	updateDlgCtrlTxt(_hSelf, IDC_MOVED,				str["IDC_MOVED"].c_str());
+	updateDlgCtrlTxt(_hSelf, IDC_CHANGED,			str["IDC_CHANGED"].c_str());
+	updateDlgCtrlTxt(_hSelf, IDC_ADDED_PART,		str["IDC_ADDED_PART"].c_str());
+	updateDlgCtrlTxt(_hSelf, IDC_REMOVED_PART,		str["IDC_REMOVED_PART"].c_str());
+	updateDlgCtrlTxt(_hSelf, IDC_MOVED_PART,		str["IDC_MOVED_PART"].c_str());
+	updateDlgCtrlTxt(_hSelf, IDC_PART_TRANSP,		str["IDC_PART_TRANSP"].c_str());
+	updateDlgCtrlTxt(_hSelf, IDC_CARET_TRANSP,		str["IDC_CARET_TRANSP"].c_str());
+	updateDlgCtrlTxt(_hSelf, IDC_CHANGE_RESEMBL,	str["IDC_CHANGE_RESEMBL"].c_str());
 }
 
 
@@ -383,17 +378,17 @@ void SettingsDialog::SetParams(UserSettings* settings)
 	_ColorRemoved.setColor(settings->colors().removed);
 	_ColorMoved.setColor(settings->colors().moved);
 	_ColorChanged.setColor(settings->colors().changed);
-	_ColorAddHighlight.setColor(settings->colors().add_highlight);
-	_ColorRemHighlight.setColor(settings->colors().rem_highlight);
-	_ColorMovHighlight.setColor(settings->colors().mov_highlight);
+	_ColorAddedPart.setColor(settings->colors().added_part);
+	_ColorRemovedPart.setColor(settings->colors().removed_part);
+	_ColorMovedPart.setColor(settings->colors().moved_part);
 
-	if (settings->colors().highlight_transparency < c_Highlight_transp_min)
-		settings->colors().highlight_transparency = c_Highlight_transp_min;
-	else if (settings->colors().highlight_transparency > c_Highlight_transp_max)
-		settings->colors().highlight_transparency = c_Highlight_transp_max;
+	if (settings->colors().part_transparency < c_Part_transp_min)
+		settings->colors().part_transparency = c_Part_transp_min;
+	else if (settings->colors().part_transparency > c_Part_transp_max)
+		settings->colors().part_transparency = c_Part_transp_max;
 
 	// Set highlight transparency
-	::SetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, settings->colors().highlight_transparency, FALSE);
+	::SetDlgItemInt(_hSelf, IDC_PART_TRANSP_EDIT, settings->colors().part_transparency, FALSE);
 
 	if (settings->colors().caret_line_transparency < c_Caret_line_transp_min)
 		settings->colors().caret_line_transparency = c_Caret_line_transp_min;
@@ -401,15 +396,15 @@ void SettingsDialog::SetParams(UserSettings* settings)
 		settings->colors().caret_line_transparency = c_Caret_line_transp_max;
 
 	// Set caret line transparency
-	::SetDlgItemInt(_hSelf, IDC_CARET_LINE_SPIN_BOX, settings->colors().caret_line_transparency, FALSE);
+	::SetDlgItemInt(_hSelf, IDC_CARET_TRANSP_EDIT, settings->colors().caret_line_transparency, FALSE);
 
-	if (settings->ChangedThresholdPercent < c_Threshold_perc_min)
-		settings->ChangedThresholdPercent = c_Threshold_perc_min;
-	else if (settings->ChangedThresholdPercent > c_Threshold_perc_max)
-		settings->ChangedThresholdPercent = c_Threshold_perc_max;
+	if (settings->ChangedResemblPercent < c_Change_resembl_min)
+		settings->ChangedResemblPercent = c_Change_resembl_min;
+	else if (settings->ChangedResemblPercent > c_Change_resembl_max)
+		settings->ChangedResemblPercent = c_Change_resembl_max;
 
 	// Set changed threshold percentage
-	::SetDlgItemInt(_hSelf, IDC_THRESHOLD_SPIN_BOX, settings->ChangedThresholdPercent, FALSE);
+	::SetDlgItemInt(_hSelf, IDC_CHANGE_RES_EDIT, settings->ChangedResemblPercent, FALSE);
 
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_TOOLBAR),
 			settings->EnableToolbar ? BST_CHECKED : BST_UNCHECKED);
@@ -467,24 +462,24 @@ void SettingsDialog::GetParams()
 	_Settings->colors().removed			= _ColorRemoved.getColor();
 	_Settings->colors().moved			= _ColorMoved.getColor();
 	_Settings->colors().changed			= _ColorChanged.getColor();
-	_Settings->colors().add_highlight	= _ColorAddHighlight.getColor();
-	_Settings->colors().rem_highlight	= _ColorRemHighlight.getColor();
-	_Settings->colors().mov_highlight	= _ColorMovHighlight.getColor();
+	_Settings->colors().added_part 		= _ColorAddedPart.getColor();
+	_Settings->colors().removed_part	= _ColorRemovedPart.getColor();
+	_Settings->colors().moved_part		= _ColorMovedPart.getColor();
 
 	// Get highlight transparency
-	_Settings->colors().highlight_transparency = ::GetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, NULL, FALSE);
-	int setting = _Settings->colors().highlight_transparency;
+	_Settings->colors().part_transparency = ::GetDlgItemInt(_hSelf, IDC_PART_TRANSP_EDIT, NULL, FALSE);
+	int setting = _Settings->colors().part_transparency;
 
-	if (_Settings->colors().highlight_transparency < c_Highlight_transp_min)
-		_Settings->colors().highlight_transparency = c_Highlight_transp_min;
-	else if (_Settings->colors().highlight_transparency > c_Highlight_transp_max)
-		_Settings->colors().highlight_transparency = c_Highlight_transp_max;
+	if (_Settings->colors().part_transparency < c_Part_transp_min)
+		_Settings->colors().part_transparency = c_Part_transp_min;
+	else if (_Settings->colors().part_transparency > c_Part_transp_max)
+		_Settings->colors().part_transparency = c_Part_transp_max;
 
-	if (setting != _Settings->colors().highlight_transparency)
-		::SetDlgItemInt(_hSelf, IDC_HIGHLIGHT_SPIN_BOX, _Settings->colors().highlight_transparency, FALSE);
+	if (setting != _Settings->colors().part_transparency)
+		::SetDlgItemInt(_hSelf, IDC_PART_TRANSP_EDIT, _Settings->colors().part_transparency, FALSE);
 
 	// Get caret line transparency
-	_Settings->colors().caret_line_transparency = ::GetDlgItemInt(_hSelf, IDC_CARET_LINE_SPIN_BOX, NULL, FALSE);
+	_Settings->colors().caret_line_transparency = ::GetDlgItemInt(_hSelf, IDC_CARET_TRANSP_EDIT, NULL, FALSE);
 	setting = _Settings->colors().caret_line_transparency;
 
 	if (_Settings->colors().caret_line_transparency < c_Caret_line_transp_min)
@@ -493,19 +488,19 @@ void SettingsDialog::GetParams()
 		_Settings->colors().caret_line_transparency = c_Caret_line_transp_max;
 
 	if (setting != _Settings->colors().caret_line_transparency)
-		::SetDlgItemInt(_hSelf, IDC_CARET_LINE_SPIN_BOX, _Settings->colors().caret_line_transparency, FALSE);
+		::SetDlgItemInt(_hSelf, IDC_CARET_TRANSP_EDIT, _Settings->colors().caret_line_transparency, FALSE);
 
 	// Get changed threshold percentage
-	_Settings->ChangedThresholdPercent = ::GetDlgItemInt(_hSelf, IDC_THRESHOLD_SPIN_BOX, NULL, FALSE);
-	setting = _Settings->ChangedThresholdPercent;
+	_Settings->ChangedResemblPercent = ::GetDlgItemInt(_hSelf, IDC_CHANGE_RES_EDIT, NULL, FALSE);
+	setting = _Settings->ChangedResemblPercent;
 
-	if (_Settings->ChangedThresholdPercent < c_Threshold_perc_min)
-		_Settings->ChangedThresholdPercent = c_Threshold_perc_min;
-	else if (_Settings->ChangedThresholdPercent > c_Threshold_perc_max)
-		_Settings->ChangedThresholdPercent = c_Threshold_perc_max;
+	if (_Settings->ChangedResemblPercent < c_Change_resembl_min)
+		_Settings->ChangedResemblPercent = c_Change_resembl_min;
+	else if (_Settings->ChangedResemblPercent > c_Change_resembl_max)
+		_Settings->ChangedResemblPercent = c_Change_resembl_max;
 
-	if (setting != _Settings->ChangedThresholdPercent)
-		::SetDlgItemInt(_hSelf, IDC_THRESHOLD_SPIN_BOX, _Settings->ChangedThresholdPercent, FALSE);
+	if (setting != _Settings->ChangedResemblPercent)
+		::SetDlgItemInt(_hSelf, IDC_CHANGE_RES_EDIT, _Settings->ChangedResemblPercent, FALSE);
 
 	_Settings->EnableToolbar	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENABLE_TOOLBAR)) == BST_CHECKED);
 	_Settings->SetAsFirstTB		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_SET_AS_FIRST_TB)) == BST_CHECKED);
