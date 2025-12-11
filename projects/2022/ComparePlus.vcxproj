@@ -431,6 +431,7 @@ copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     <ClInclude Include="..\..\src\Engine\diff.h" />
     <ClInclude Include="..\..\src\Engine\myers_diff.h" />
     <ClInclude Include="..\..\src\Engine\fast_myers_diff.h" />
+    <ClInclude Include="..\..\src\Engine\histogram_diff.h" />
     <ClInclude Include="..\..\src\LibHelpers.h" />
     <ClInclude Include="..\..\src\SQLite\SqliteHelper.h" />
     <ClInclude Include="..\..\src\Strings.h" />

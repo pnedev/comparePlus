@@ -9,7 +9,8 @@
 
 #include "diff_types.h"
 
-#include "myers_diff.h"
+// #include "myers_diff.h"
+#include "histogram_diff.h"
 // #include "fast_myers_diff.h"
 
 
@@ -115,7 +116,8 @@ diff_results<UserDataT> DiffCalc<Elem, UserDataT>::_run_algo(
 	}
 
 	// Compare with swapped sequences as well to see if result is more optimal
-	if (doSwapCheck)
+	// if (doSwapCheck)
+	if (false)
 	{
 		diff_results<UserDataT> swapDiff;
 
@@ -224,11 +226,11 @@ diff_results<UserDataT> DiffCalc<Elem, UserDataT>::operator()(
 	if (_isCancelled && _isCancelled())
 		return {};
 
-	if (doDiffsCombine)
-		_combine_diffs(diff);
+	// if (doDiffsCombine)
+		// _combine_diffs(diff);
 
-	if (doBoundaryShift)
-		_shift_boundaries(diff);
+	// if (doBoundaryShift)
+		// _shift_boundaries(diff);
 
 	return diff;
 }
