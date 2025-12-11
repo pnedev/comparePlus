@@ -71,11 +71,13 @@ enum class charType
 
 struct Line
 {
-	Line(intptr_t l = 0, uint64_t h = cHashSeed) : line(l), hash(h) {}
+	using hash_type = uint64_t;
+
+	Line(intptr_t l = 0, hash_type h = cHashSeed) : line(l), hash(h) {}
 
 	intptr_t line;
 
-	uint64_t hash;
+	hash_type hash;
 
 	inline bool operator==(const Line& rhs) const
 	{
@@ -87,26 +89,33 @@ struct Line
 		return (hash != rhs.hash);
 	}
 
-	inline bool operator==(uint64_t rhs) const
+	inline bool operator==(hash_type rhs) const
 	{
 		return (hash == rhs);
 	}
 
-	inline bool operator!=(uint64_t rhs) const
+	inline bool operator!=(hash_type rhs) const
 	{
 		return (hash != rhs);
+	}
+
+	inline hash_type get_hash() const
+	{
+		return hash;
 	}
 };
 
 
 struct Word
 {
-	Word(intptr_t p, intptr_t l, uint64_t h = cHashSeed) : pos(p), len(l), hash(h) {}
+	using hash_type = uint64_t;
+
+	Word(intptr_t p, intptr_t l, hash_type h = cHashSeed) : pos(p), len(l), hash(h) {}
 
 	intptr_t pos;
 	intptr_t len;
 
-	uint64_t hash;
+	hash_type hash;
 
 	inline bool operator==(const Word& rhs) const
 	{
@@ -118,20 +127,27 @@ struct Word
 		return (hash != rhs.hash);
 	}
 
-	inline bool operator==(uint64_t rhs) const
+	inline bool operator==(hash_type rhs) const
 	{
 		return (hash == rhs);
 	}
 
-	inline bool operator!=(uint64_t rhs) const
+	inline bool operator!=(hash_type rhs) const
 	{
 		return (hash != rhs);
+	}
+
+	inline hash_type get_hash() const
+	{
+		return hash;
 	}
 };
 
 
 struct Char
 {
+	using hash_type = wchar_t;
+
 	Char(wchar_t c, intptr_t p) : ch(c), pos(p) {}
 
 	wchar_t ch;
@@ -147,14 +163,19 @@ struct Char
 		return (ch != rhs.ch);
 	}
 
-	inline bool operator==(wchar_t rhs) const
+	inline bool operator==(hash_type rhs) const
 	{
 		return (ch == rhs);
 	}
 
-	inline bool operator!=(wchar_t rhs) const
+	inline bool operator!=(hash_type rhs) const
 	{
 		return (ch != rhs);
+	}
+
+	inline hash_type get_hash() const
+	{
+		return ch;
 	}
 };
 
