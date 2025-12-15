@@ -21,6 +21,7 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <unordered_map>
 #include <memory>
 #include <utility>
 #include <algorithm>
@@ -139,7 +140,21 @@ public:
 	bool compareMode;
 
 private:
-	NppState() : compareMode(false), _restoreMultilineTab(false), _mainZoom(0), _subZoom(0), _compareZoom(0) {}
+	NppState() : compareMode(false), _restoreMultilineTab(false), _mainZoom(0), _subZoom(0), _compareZoom(0)
+	{
+		_tooltipMap = {
+			{ CMD_SET_FIRST,			{} },
+			{ CMD_COMPARE,				{} },
+			{ CMD_COMPARE_SEL,			{} },
+			{ CMD_CLEAR_ACTIVE,			{} },
+			{ CMD_PREV,					{} },
+			{ CMD_NEXT,					{} },
+			{ CMD_FIRST,				{} },
+			{ CMD_LAST,					{} },
+			{ CMD_DIFFS_VISUAL_FILTERS,	{} },
+			{ CMD_NAV_BAR,				{} }
+		};
+	};
 
 	void save();
 	void toSingleLineTab();
@@ -157,6 +172,8 @@ private:
 	int			_mainZoom;
 	int			_subZoom;
 	int			_compareZoom;
+
+	std::unordered_map<int, std::wstring> _tooltipMap;
 };
 
 
@@ -701,6 +718,12 @@ void NppState::updateLocalization()
 		{ CMD_ABOUT,				"CMD_ABOUT" }
 	};
 
+	HWND hTooltip = NULL;
+	HWND hNppToolbar = NppToolbarHandleGetter::get();
+
+	if (hNppToolbar)
+		hTooltip = reinterpret_cast<HWND>(::SendMessageW(hNppToolbar, TB_GETTOOLTIPS, 0, 0));
+
 	const auto& str = Strings::get();
 
 	wchar_t current[128];
@@ -716,6 +739,23 @@ void NppState::updateLocalization()
 		// Basic menu item length precaution
 		if (cmdStr.empty() || cmdStr.size() > 64)
 			continue;
+
+		if (_tooltipMap.find(it.id) != _tooltipMap.end())
+		{
+			_tooltipMap[it.id] = cmdStr;
+
+			if (hTooltip)
+			{
+				TTTOOLINFOW tti {0};
+				tti.cbSize = sizeof(tti);
+				tti.hwnd = hNppToolbar;
+				tti.uId = funcItem[it.id]._cmdID;
+
+				::SendMessageW(hTooltip, TTM_GETTOOLINFO, 0, reinterpret_cast<LPARAM>(&tti));
+				tti.lpszText = const_cast<wchar_t*>(_tooltipMap[it.id].c_str());
+				::SendMessageW(hTooltip, TTM_SETTOOLINFO, 0, reinterpret_cast<LPARAM>(&tti));
+			}
+		}
 
 		mi.dwTypeData = NULL;
 
