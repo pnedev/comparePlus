@@ -9,8 +9,8 @@
 
 #include "diff_types.h"
 
-// #include "myers_diff.h"
 #include "histogram_diff.h"
+#include "myers_diff.h"
 // #include "fast_myers_diff.h"
 
 
@@ -27,8 +27,7 @@
 
 /**
  *  \class  DiffCalc
- *  \brief  Compares and makes a differences list between two vectors (elements are template, must have operator==).
- *			Uses the diff algorithm implemented as DiffAlgo class from the included headers above
+ *  \brief  Compares and makes a differences list between two vectors (elements are template).
  */
 template <typename Elem, typename UserDataT = void>
 class DiffCalc
@@ -40,16 +39,14 @@ public:
 		IsCancelledFn isCancelled = nullptr);
 
 	// Runs the actual compare and returns the differences
-	diff_results<UserDataT> operator()(
-			bool doSwapCheck = true, bool doDiffsCombine = false, bool doBoundaryShift = false,
+	diff_results<UserDataT> operator()(bool doDiffsCombine = false, bool doBoundaryShift = false,
 			const std::vector<std::pair<intptr_t, intptr_t>>& syncPoints = {});
 
 	DiffCalc(const DiffCalc&) = delete;
 	const DiffCalc& operator=(const DiffCalc&) = delete;
 
 private:
-	diff_results<UserDataT> _run_algo(
-			const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize, bool doSwapCheck);
+	diff_results<UserDataT> _run_algo(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize);
 
 	void _combine_diffs(diff_results<UserDataT>& diff);
 	void _shift_boundaries(diff_results<UserDataT>& diff);
@@ -60,6 +57,9 @@ private:
 	intptr_t _b_size;
 
 	IsCancelledFn _isCancelled;
+
+	bool _diffsCombine;
+	bool _boundaryShift;
 };
 
 
@@ -81,16 +81,16 @@ DiffCalc<Elem, UserDataT>::DiffCalc(const Elem v1[], intptr_t v1_size, const Ele
 
 template <typename Elem, typename UserDataT>
 diff_results<UserDataT> DiffCalc<Elem, UserDataT>::_run_algo(
-	const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize, bool doSwapCheck)
+	const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize)
 {
+	diff_results<UserDataT> diff;
+
 	intptr_t off_s = 0;
 
 	// The diff algorithm assumes we begin with a diff. The following ensures this is true by skipping any matches
 	// in the beginning. This also helps to quickly process sequences that match entirely.
 	while (off_s < asize && off_s < bsize && a[off_s] == b[off_s])
 		++off_s;
-
-	diff_results<UserDataT> diff;
 
 	if (off_s)
 		diff._add(diff_type::DIFF_MATCH, 0, off_s);
@@ -106,6 +106,7 @@ diff_results<UserDataT> DiffCalc<Elem, UserDataT>::_run_algo(
 
 	intptr_t off_e = 0;
 
+	// Check also for matches at the end
 	while (off_e < asize && off_e < bsize && a[aend - off_e] == b[bend - off_e])
 		++off_e;
 
@@ -115,88 +116,85 @@ diff_results<UserDataT> DiffCalc<Elem, UserDataT>::_run_algo(
 		bsize -= off_e;
 	}
 
+	using DiffAlg = HistogramDiff<Elem, UserDataT>;
+
+	DiffAlg diff_alg(_isCancelled);
+
 	// Compare with swapped sequences as well to see if result is more optimal
-	// if (doSwapCheck)
-	if (false)
+	if (diff_alg.needSwapCheck())
 	{
-		diff_results<UserDataT> swapDiff;
+		diff_results<UserDataT> swapped_diff;
 
 		// Add first matching block before continuing
 		if (!diff.empty())
-			swapDiff.push_back(diff[0]);
+			swapped_diff.push_back(diff[0]);
 
 #ifdef MULTITHREAD
+		bool parallel_run = (asize > 10000 && bsize > 10000 && std::thread::hardware_concurrency() > 1);
+#else // MULTITHREAD
+		bool parallel_run = false;
+#endif // MULTITHREAD
 
-		std::thread thr;
-
-		if (asize > 10000 && bsize > 10000 && std::thread::hardware_concurrency() > 1)
+		if (parallel_run)
 		{
-			thr = std::thread([&]()
+			std::thread thr = std::thread([&]()
 			{
-				DiffAlgo<Elem, UserDataT>(b, bsize, a, asize, swapDiff, _isCancelled)(off_s);
+				DiffAlg(_isCancelled).run(b, bsize, a, asize, swapped_diff, off_s);
 			});
+
+			diff_alg.run(a, asize, b, bsize, diff, off_s);
+
+			thr.join();
 		}
 		else
 		{
-			DiffAlgo<Elem, UserDataT>(b, bsize, a, asize, swapDiff, _isCancelled)(off_s);
+			diff_alg.run(a, asize, b, bsize, diff, off_s);
 
 			if (_isCancelled && _isCancelled())
 				return {};
+
+			diff_alg.run(b, bsize, a, asize, swapped_diff, off_s);
 		}
 
-#else // MULTITHREAD
-
-		DiffAlgo<Elem, UserDataT>(b, bsize, a, asize, swapDiff, _isCancelled)(off_s);
-
-		if (_isCancelled && _isCancelled())
-			return {};
-
-#endif // MULTITHREAD
-
-		DiffAlgo<Elem, UserDataT>(a, asize, b, bsize, diff, _isCancelled)(off_s);
-
-#ifdef MULTITHREAD
-
-		if (thr.joinable())
-			thr.join();
-
-#endif // MULTITHREAD
-
-		if (_isCancelled && _isCancelled())
-			return {};
+		const intptr_t swapped_replaces = swapped_diff.count_replaces();
 
 		// Check which result is more optimal
-		if (diff.count_replaces() < swapDiff.count_replaces())
+		if (swapped_replaces && swapped_replaces > diff.count_replaces())
 		{
-			diff = std::move(swapDiff);
+			diff = std::move(swapped_diff);
 			diff._swap_diff1_diff2();
 		}
 	}
 	else
 	{
-		DiffAlgo<Elem, UserDataT>(a, asize, b, bsize, diff, _isCancelled)(off_s);
-
-		if (_isCancelled && _isCancelled())
-			return {};
+		diff_alg.run(a, asize, b, bsize, diff, off_s);
 	}
+
+	if (_isCancelled && _isCancelled())
+		return {};
 
 	if (off_e)
 		diff._add(diff_type::DIFF_MATCH, aend - off_e + 1, off_e);
+
+	_diffsCombine = _diffsCombine && diff_alg.needDiffsCombine();
+	_boundaryShift = _boundaryShift && diff_alg.needBoundaryShift();
 
 	return diff;
 }
 
 
 template <typename Elem, typename UserDataT>
-diff_results<UserDataT> DiffCalc<Elem, UserDataT>::operator()(
-	bool doSwapCheck, bool doDiffsCombine, bool doBoundaryShift,
+diff_results<UserDataT> DiffCalc<Elem, UserDataT>::operator()(bool doDiffsCombine, bool doBoundaryShift,
 	const std::vector<std::pair<intptr_t, intptr_t>>& syncPoints)
 {
 	diff_results<UserDataT> diff;
 
+	_diffsCombine = doDiffsCombine;
+	_boundaryShift = doBoundaryShift;
+
 	if (syncPoints.empty())
 	{
-		diff = _run_algo(_a, _a_size, _b, _b_size, doSwapCheck);
+		diff = _run_algo(_a, _a_size, _b, _b_size);
 	}
 	else
 	{
@@ -210,7 +208,7 @@ diff_results<UserDataT> DiffCalc<Elem, UserDataT>::operator()(
 				break;
 
 			diff._append(
-				_run_algo(&_a[apos], syncP.first - apos, &_b[bpos], syncP.second - bpos, doSwapCheck), apos, bpos);
+				_run_algo(&_a[apos], syncP.first - apos, &_b[bpos], syncP.second - bpos), apos, bpos);
 
 			if (_isCancelled && _isCancelled())
 				return {};
@@ -220,17 +218,17 @@ diff_results<UserDataT> DiffCalc<Elem, UserDataT>::operator()(
 		}
 
 		diff._append(
-			_run_algo(&_a[apos], _a_size - apos, &_b[bpos], _b_size - bpos, doSwapCheck), apos, bpos);
+			_run_algo(&_a[apos], _a_size - apos, &_b[bpos], _b_size - bpos), apos, bpos);
 	}
 
 	if (_isCancelled && _isCancelled())
 		return {};
 
-	// if (doDiffsCombine)
-		// _combine_diffs(diff);
+	if (_diffsCombine)
+		_combine_diffs(diff);
 
-	// if (doBoundaryShift)
-		// _shift_boundaries(diff);
+	if (_boundaryShift)
+		_shift_boundaries(diff);
 
 	return diff;
 }
