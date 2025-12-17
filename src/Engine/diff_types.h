@@ -1,4 +1,4 @@
-/* Common diff types used with DiffCalc and DiffAlgo
+/* Common diff types used with DiffCalc
  * Copyright (C) 2025  Pavel Nedev <pg.nedev@gmail.com>
  */
 
@@ -10,6 +10,7 @@
 #define NOMINMAX	1
 
 
+#include <cstdint>
 #include <vector>
 #include <functional>
 
@@ -66,7 +67,7 @@ struct diff_results : public std::vector<diff_info<UserDataT>>
 		return replaces;
 	};
 
-	inline void _add(diff_type type, intptr_t off, intptr_t len)
+	void _add(diff_type type, intptr_t off, intptr_t len)
 	{
 		if (len == 0)
 			return;
@@ -147,4 +148,33 @@ struct diff_results : public std::vector<diff_info<UserDataT>>
 
 		this->insert(this->end(), dItr, diff.end());
 	};
+};
+
+
+/**
+ *  \class  diff_algorithm
+ *  \brief  Base class that defines the common interface to any diff algorithm.
+			Compares and makes a differences list between two sequences (elements are template,
+			must have operator==, type hash_type and get_hash() function that returns unique hash_type value)
+ */
+template <typename Elem, typename UserDataT = void>
+class diff_algorithm
+{
+public:
+	diff_algorithm(IsCancelledFn isCancelled = nullptr) : _isCancelled(isCancelled) {};
+
+	virtual ~diff_algorithm() {};
+
+	// Runs the actual compare and fills the differences in diff member.
+	// The diff algorithm assumes the sequences begin with a diff so provide here the offset to the first difference.
+	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
+			diff_results<UserDataT>& diff, intptr_t off = 0) = 0;
+
+	// Provides information if the specific algorithm's results can benefit from certain diffs post-processing
+	virtual bool needSwapCheck() = 0;
+	virtual bool needDiffsCombine() = 0;
+	virtual bool needBoundaryShift() = 0;
+
+protected:
+	IsCancelledFn _isCancelled;
 };

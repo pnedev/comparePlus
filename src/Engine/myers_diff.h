@@ -33,7 +33,7 @@
  * This is the same algorithm used by GNU diff(1).
  */
 
-/* Modified into C++ template class DiffAlgo
+/* Modified into C++ template class MyersDiff
  * Copyright (C) 2017-2025  Pavel Nedev <pg.nedev@gmail.com>
  */
 
@@ -47,25 +47,22 @@
 #include <climits>
 
 
-/**
- *  \class  DiffAlgo
- *  \brief  Compares and makes a differences list between two sequences (elements are template, must have operator==)
- */
 template <typename Elem, typename UserDataT = void>
-class DiffAlgo
+class MyersDiff : public diff_algorithm<Elem, UserDataT>
 {
 public:
-	DiffAlgo(const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size, diff_results<UserDataT>& diff,
-			IsCancelledFn isCancelled = nullptr);
+	MyersDiff(IsCancelledFn isCancelled = nullptr) : diff_algorithm<Elem, UserDataT>(isCancelled) {};
 
-	// Runs the actual compare and fills the differences in diff member.
-	// The diff algorithm assumes the sequences begin with a diff so provide here the offset to the first difference.
-	void operator()(intptr_t off);
+	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
+			diff_results<UserDataT>& diff, intptr_t off);
 
-	DiffAlgo(const DiffAlgo&) = delete;
-	const DiffAlgo& operator=(const DiffAlgo&) = delete;
+	virtual bool needSwapCheck() { return true; };
+	virtual bool needDiffsCombine() { return true; };
+	virtual bool needBoundaryShift() { return true; };
 
 private:
+	using diff_algorithm<Elem, UserDataT>::_isCancelled;
+
 	static constexpr int		_cCancelCheckItrInterval {3000};
 	static constexpr intptr_t	_cDmax {INTPTR_MAX};
 
@@ -78,7 +75,7 @@ private:
 
 		// Be very careful when using the returned T reference! It may become invalid on consecutive calls to get()
 		// because the vector memory might be reallocated!
-		inline T& get(size_t i)
+		T& get(size_t i)
 		{
 			if (_buf.size() <= i)
 				_buf.resize(i + 1, { 0 });
@@ -86,7 +83,7 @@ private:
 			return _buf[i];
 		};
 
-		inline std::vector<T>& get()
+		std::vector<T>& get()
 		{
 			return _buf;
 		};
@@ -103,34 +100,30 @@ private:
 	intptr_t _find_middle_snake(intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend, middle_snake& ms);
 	intptr_t _ses(intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend);
 
-	const Elem*	_a;
-	intptr_t _a_size;
-	const Elem*	_b;
-	intptr_t _b_size;
-
-	diff_results<UserDataT>& _diff;
-
-	IsCancelledFn _isCancelled;
 	int _cancelCheckCount;
+
+	const Elem* _a;
+	const Elem* _b;
+
+	diff_results<UserDataT>* _diff;
 
 	varray<intptr_t> _buf;
 };
 
 
 template <typename Elem, typename UserDataT>
-DiffAlgo<Elem, UserDataT>::DiffAlgo(const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size,
-		diff_results<UserDataT>& diff, IsCancelledFn isCancelled) :
-	_a(v1), _a_size(v1_size), _b(v2), _b_size(v2_size), _diff(diff),
-	_isCancelled(isCancelled), _cancelCheckCount(_cCancelCheckItrInterval)
+void MyersDiff<Elem, UserDataT>::run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
+	diff_results<UserDataT>& diff, intptr_t off)
 {
-}
+	_cancelCheckCount = _cCancelCheckItrInterval;
 
+	_a = a;
+	_b = b;
 
-template <typename Elem, typename UserDataT>
-void DiffAlgo<Elem, UserDataT>::operator()(intptr_t off)
-{
-	if (_ses(off, _a_size, off, _b_size) == -1)
-		_diff.clear();
+	_diff = &diff;
+
+	if (_ses(off, asize, off, bsize) == -1)
+		diff.clear();
 
 	// Wipe temporal buffer to free memory
 	_buf.get().clear();
@@ -138,7 +131,7 @@ void DiffAlgo<Elem, UserDataT>::operator()(intptr_t off)
 
 
 template <typename Elem, typename UserDataT>
-inline intptr_t& DiffAlgo<Elem, UserDataT>::_v(intptr_t k, intptr_t r)
+inline intptr_t& MyersDiff<Elem, UserDataT>::_v(intptr_t k, intptr_t r)
 {
 	// Pack -N to N into 0 to 2 * N
 	const intptr_t j = (k <= 0) ? (-k * 4 + r) : (k * 4 + (r - 2));
@@ -148,7 +141,7 @@ inline intptr_t& DiffAlgo<Elem, UserDataT>::_v(intptr_t k, intptr_t r)
 
 
 template <typename Elem, typename UserDataT>
-intptr_t DiffAlgo<Elem, UserDataT>::_find_middle_snake(
+intptr_t MyersDiff<Elem, UserDataT>::_find_middle_snake(
 	intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend, middle_snake& ms)
 {
 	const intptr_t delta = aend - bend;
@@ -248,7 +241,7 @@ intptr_t DiffAlgo<Elem, UserDataT>::_find_middle_snake(
 
 
 template <typename Elem, typename UserDataT>
-intptr_t DiffAlgo<Elem, UserDataT>::_ses(
+intptr_t MyersDiff<Elem, UserDataT>::_ses(
 	intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend)
 {
 	middle_snake ms = { 0 };
@@ -256,12 +249,12 @@ intptr_t DiffAlgo<Elem, UserDataT>::_ses(
 
 	if (aend == 0)
 	{
-		_diff._add(diff_type::DIFF_IN_2, boff, bend);
+		_diff->_add(diff_type::DIFF_IN_2, boff, bend);
 		d = bend;
 	}
 	else if (bend == 0)
 	{
-		_diff._add(diff_type::DIFF_IN_1, aoff, aend);
+		_diff->_add(diff_type::DIFF_IN_1, aoff, aend);
 		d = aend;
 	}
 	else
@@ -280,7 +273,7 @@ intptr_t DiffAlgo<Elem, UserDataT>::_ses(
 			if (_ses(aoff, ms.x, boff, ms.y) == -1)
 				return -1;
 
-			_diff._add(diff_type::DIFF_MATCH, aoff + ms.x, ms.u - ms.x);
+			_diff->_add(diff_type::DIFF_MATCH, aoff + ms.x, ms.u - ms.x);
 
 			aoff += ms.u;
 			boff += ms.v;
@@ -313,26 +306,26 @@ intptr_t DiffAlgo<Elem, UserDataT>::_ses(
 			{
 				if (x == u)
 				{
-					_diff._add(diff_type::DIFF_MATCH, aoff, aend);
-					_diff._add(diff_type::DIFF_IN_2, boff + (bend - 1), 1);
+					_diff->_add(diff_type::DIFF_MATCH, aoff, aend);
+					_diff->_add(diff_type::DIFF_IN_2, boff + (bend - 1), 1);
 				}
 				else
 				{
-					_diff._add(diff_type::DIFF_IN_2, boff, 1);
-					_diff._add(diff_type::DIFF_MATCH, aoff, aend);
+					_diff->_add(diff_type::DIFF_IN_2, boff, 1);
+					_diff->_add(diff_type::DIFF_MATCH, aoff, aend);
 				}
 			}
 			else
 			{
 				if (x == u)
 				{
-					_diff._add(diff_type::DIFF_MATCH, aoff, bend);
-					_diff._add(diff_type::DIFF_IN_1, aoff + (aend - 1), 1);
+					_diff->_add(diff_type::DIFF_MATCH, aoff, bend);
+					_diff->_add(diff_type::DIFF_IN_1, aoff + (aend - 1), 1);
 				}
 				else
 				{
-					_diff._add(diff_type::DIFF_IN_1, aoff, 1);
-					_diff._add(diff_type::DIFF_MATCH, aoff + 1, bend);
+					_diff->_add(diff_type::DIFF_IN_1, aoff, 1);
+					_diff->_add(diff_type::DIFF_MATCH, aoff + 1, bend);
 				}
 			}
 		}

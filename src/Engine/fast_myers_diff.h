@@ -1,5 +1,5 @@
 /* Fast Myers Diff algorithm ported to C++ from TypeScript implementation and
- * modified into template class DiffAlgo
+ * modified into template class FastMyersDiff
  * Copyright (C) 2024-2025  Pavel Nedev <pg.nedev@gmail.com>
  */
 
@@ -15,25 +15,22 @@
 #include <algorithm>
 
 
-/**
- *  \class  DiffAlgo
- *  \brief  Compares and makes a differences list between two sequences (elements are template, must have operator==)
- */
 template <typename Elem, typename UserDataT = void>
-class DiffAlgo
+class FastMyersDiff : public diff_algorithm<Elem, UserDataT>
 {
 public:
-	DiffAlgo(const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size, diff_results<UserDataT>& diff,
-		IsCancelledFn isCancelled = nullptr);
+	FastMyersDiff(IsCancelledFn isCancelled = nullptr) : diff_algorithm<Elem, UserDataT>(isCancelled) {};
 
-	// Runs the actual compare and fills the differences in diff member.
-	// The diff algorithm assumes the sequences begin with a diff so provide here the offset to the first difference.
-	void operator()(intptr_t off);
+	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
+			diff_results<UserDataT>& diff, intptr_t off);
 
-	DiffAlgo(const DiffAlgo&) = delete;
-	const DiffAlgo& operator=(const DiffAlgo&) = delete;
+	virtual bool needSwapCheck() { return true; };
+	virtual bool needDiffsCombine() { return true; };
+	virtual bool needBoundaryShift() { return true; };
 
 private:
+	using diff_algorithm<Elem, UserDataT>::_isCancelled;
+
 	static constexpr int _cCancelCheckItrInterval {300000};
 
 	struct DiffState
@@ -60,42 +57,79 @@ private:
 
 	inline bool _cancel_check();
 
-	inline void _to_diff_blocks(intptr_t& aoff, intptr_t& boff, intptr_t as, intptr_t ae, intptr_t bs, intptr_t be);
+	inline void _to_diff_blocks(diff_results<UserDataT>& diff,
+			intptr_t& aoff, intptr_t& boff, intptr_t as, intptr_t ae, intptr_t bs, intptr_t be);
 
-	intptr_t _diff_core(intptr_t aoff, intptr_t asize, intptr_t boff, intptr_t bsize);
 	int _diff_internal(DiffState& state, int c);
 
-	const Elem*	_a;
-	intptr_t _a_size;
-	const Elem*	_b;
-	intptr_t _b_size;
-
-	diff_results<UserDataT>& _diff;
-
-	IsCancelledFn _isCancelled;
 	int _cancelCheckCount;
+
+	const Elem* _a;
+	const Elem* _b;
 };
 
 
 template <typename Elem, typename UserDataT>
-DiffAlgo<Elem, UserDataT>::DiffAlgo(const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size,
-		diff_results<UserDataT>& diff, IsCancelledFn isCancelled) :
-	_a(v1), _a_size(v1_size), _b(v2), _b_size(v2_size), _diff(diff),
-		_isCancelled(isCancelled), _cancelCheckCount(_cCancelCheckItrInterval)
+void FastMyersDiff<Elem, UserDataT>::run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
+	diff_results<UserDataT>& diff, intptr_t off)
 {
+	_cancelCheckCount = _cCancelCheckItrInterval;
+
+	_a = a;
+	_b = b;
+
+	const intptr_t Z = 2 * (std::min(asize, bsize) + 1);
+
+	std::vector<intptr_t> stack;
+	std::vector<intptr_t> buf;
+
+	intptr_t aoff = off;
+	intptr_t boff = off;
+
+	DiffState state {
+		aoff, asize, boff, bsize, Z,
+		-1, -1, -1, -1,
+		-1, -1, -1, -1,
+		stack, buf
+	};
+
+	for (int c = 0; c < 2;)
+	{
+		c = _diff_internal(state, c);
+
+		if (c < 0)
+		{
+			diff.clear();
+			return;
+		}
+
+		if (c == 1)
+		{
+			// LOGD(LOG_ALGO, "O -> " + std::to_string(state.oxs) + ", " + std::to_string(state.oxe) + " / " +
+			// std::to_string(state.oys) + ", " + std::to_string(state.oye) + "\n");
+
+			_to_diff_blocks(diff, aoff, boff, state.oxs, state.oxe, state.oys, state.oye);
+
+			continue;
+		}
+
+		if (state.pxs >= 0)
+		{
+			// LOGD(LOG_ALGO, "P -> " + std::to_string(state.pxs) + ", " + std::to_string(state.pxe) + " / " +
+			// std::to_string(state.pys) + ", " + std::to_string(state.pye) + "\n");
+
+			_to_diff_blocks(diff, aoff, boff, state.pxs, state.pxe, state.pys, state.pye);
+
+			continue;
+		}
+
+		break;
+	}
 }
 
 
 template <typename Elem, typename UserDataT>
-void DiffAlgo<Elem, UserDataT>::operator()(intptr_t off)
-{
-	if (_diff_core(off, _a_size, off, _b_size) == -1)
-		_diff.clear();
-}
-
-
-template <typename Elem, typename UserDataT>
-inline bool DiffAlgo<Elem, UserDataT>::_cancel_check()
+inline bool FastMyersDiff<Elem, UserDataT>::_cancel_check()
 {
 	if (!--_cancelCheckCount)
 	{
@@ -110,73 +144,24 @@ inline bool DiffAlgo<Elem, UserDataT>::_cancel_check()
 
 
 template <typename Elem, typename UserDataT>
-inline void DiffAlgo<Elem, UserDataT>::_to_diff_blocks(intptr_t& aoff, intptr_t& boff,
-	intptr_t as, intptr_t ae, intptr_t bs, intptr_t be)
+inline void FastMyersDiff<Elem, UserDataT>::_to_diff_blocks(diff_results<UserDataT>& diff,
+	intptr_t& aoff, intptr_t& boff, intptr_t as, intptr_t ae, intptr_t bs, intptr_t be)
 {
 	if (as - aoff > 0)
-		_diff._add(diff_type::DIFF_MATCH, aoff, as - aoff);
+		diff._add(diff_type::DIFF_MATCH, aoff, as - aoff);
 
 	if (ae - as > 0)
 	{
-		_diff._add(diff_type::DIFF_IN_1, as, ae - as);
+		diff._add(diff_type::DIFF_IN_1, as, ae - as);
 		aoff = ae;
 	}
 
 	if (be - bs > 0)
 	{
-		_diff._add(diff_type::DIFF_IN_2, bs, be - bs);
+		diff._add(diff_type::DIFF_IN_2, bs, be - bs);
 		aoff = ae;
 		boff = be;
 	}
-}
-
-
-template <typename Elem, typename UserDataT>
-intptr_t DiffAlgo<Elem, UserDataT>::_diff_core(intptr_t aoff, intptr_t asize, intptr_t boff, intptr_t bsize)
-{
-	const intptr_t Z = 2 * (std::min(asize, bsize) + 1);
-
-	std::vector<intptr_t> stack;
-	std::vector<intptr_t> buf;
-
-	DiffState state {
-		aoff, asize, boff, bsize, Z,
-		-1, -1, -1, -1,
-		-1, -1, -1, -1,
-		stack, buf
-	};
-
-	for (int c = 0; c < 2;)
-	{
-		c = _diff_internal(state, c);
-
-		if (c < 0)
-			return -1;
-
-		if (c == 1)
-		{
-			// LOGD(LOG_ALGO, "O -> " + std::to_string(state.oxs) + ", " + std::to_string(state.oxe) + " / " +
-			// std::to_string(state.oys) + ", " + std::to_string(state.oye) + "\n");
-
-			_to_diff_blocks(aoff, boff, state.oxs, state.oxe, state.oys, state.oye);
-
-			continue;
-		}
-
-		if (state.pxs >= 0)
-		{
-			// LOGD(LOG_ALGO, "P -> " + std::to_string(state.pxs) + ", " + std::to_string(state.pxe) + " / " +
-			// std::to_string(state.pys) + ", " + std::to_string(state.pye) + "\n");
-
-			_to_diff_blocks(aoff, boff, state.pxs, state.pxe, state.pys, state.pye);
-
-			continue;
-		}
-
-		break;
-	}
-
-	return 0;
 }
 
 
@@ -185,7 +170,7 @@ intptr_t DiffAlgo<Elem, UserDataT>::_diff_core(intptr_t aoff, intptr_t asize, in
 // and O(min(N,M)*D) worst-case execution time where
 // D is the number of differences.
 template <typename Elem, typename UserDataT>
-int DiffAlgo<Elem, UserDataT>::_diff_internal(DiffState& state, int c)
+int FastMyersDiff<Elem, UserDataT>::_diff_internal(DiffState& state, int c)
 {
 	intptr_t i = state.i;
 	intptr_t N = state.N;
