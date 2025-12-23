@@ -4579,6 +4579,9 @@ void BookmarksAsSyncPoints()
 
 void OpenVisualFiltersDlg()
 {
+	const int view = getCurrentViewId();
+	const bool showedOnlySelections = Settings.ShowOnlySelections;
+
 	VisualFiltersDialog visualFiltersDlg(hInstance, nppData._nppHandle);
 
 	if (visualFiltersDlg.doDialog(&Settings) != IDOK)
@@ -4590,7 +4593,6 @@ void OpenVisualFiltersDlg()
 	{
 		ScopedIncrementerInt incr(notificationsLock);
 
-		const int view			= getCurrentViewId();
 		intptr_t currentLine	= (Settings.FollowingCaret ? getCurrentLine(view) : getFirstLine(view));
 		bool currentLineChanged = false;
 
@@ -4606,6 +4608,10 @@ void OpenVisualFiltersDlg()
 				currentLine = cmpPair->options.selections[view].second;
 				currentLineChanged = true;
 			}
+		}
+		else if (showedOnlySelections && currentLine == 0 && cmpPair->options.selections[view].first != 1)
+		{
+			currentLine = cmpPair->options.selections[view].first;
 		}
 
 		if (Settings.FollowingCaret && currentLineChanged)
