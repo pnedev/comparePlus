@@ -602,6 +602,7 @@ std::chrono::milliseconds firstUpdateGuardDuration {0};
 std::chrono::steady_clock::time_point prevUpdateTime;
 
 LRESULT currentlyActiveBuffID = 0;
+int skipViewUpdate = -1;
 
 DelayedActivate		delayedActivation;
 DelayedClose		delayedClosure;
@@ -2262,8 +2263,6 @@ void syncViews(int biasView)
 
 		CallScintilla(otherView, SCI_SETFIRSTVISIBLELINE, otherNewFirstVisible, 0);
 
-		::UpdateWindow(getView(otherView));
-
 		LOGD(LOG_SYNC, "Syncing to " + std::string(biasView == MAIN_VIEW ? "MAIN" : "SUB") +
 			" view, visible doc line: " + std::to_string(getDocLineFromVisible(biasView, firstVisible) + 1) + "\n");
 	}
@@ -2287,8 +2286,6 @@ void syncViews(int biasView)
 			ScopedIncrementerInt incr(notificationsLock);
 
 			CallScintilla(otherView, SCI_SETEMPTYSELECTION, pos, 0);
-
-			::UpdateWindow(getView(otherView));
 		}
 	}
 
@@ -2733,6 +2730,9 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 
 void doAlignment(bool forceAlign = false)
 {
+	if (forceAlign)
+		delayedAlign.cancel();
+
 	CompareList_t::iterator	cmpPair = getCompare(getCurrentBuffId());
 
 	if (cmpPair == compareList.end())
@@ -3340,6 +3340,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	// Just to be sure any old state is cleared
 	firstUpdateGuardDuration = std::chrono::milliseconds(0);
 	storedLocation = nullptr;
+	skipViewUpdate = -1;
 	copiedSectionMarks.clear();
 
 	temporaryRangeSelect(-1);
@@ -5482,8 +5483,11 @@ inline void onSciUpdateUI(HWND view)
 
 	const int viewId = getViewIdSafe(view);
 
-	if (viewId >= 0)
+	if (viewId >= 0 && skipViewUpdate != viewId)
+	{
 		storedLocation = std::make_unique<ViewLocation>(viewId);
+		skipViewUpdate = getOtherViewId(viewId);
+	}
 }
 
 
@@ -6502,9 +6506,14 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 
 		// Handle word-wrap refresh
 		case SCN_PAINTED:
-			if (NppState::get().compareMode && !notificationsLock && storedLocation &&
-					!delayedRecompare && !delayedActivation && !delayedClosure)
-				onSciPaint();
+			if (NppState::get().compareMode && !notificationsLock &&
+					!delayedRecompare && !delayedAlign && !delayedActivation && !delayedClosure)
+			{
+				if (storedLocation)
+					onSciPaint();
+				else
+					skipViewUpdate = -1;
+			}
 		break;
 
 		// This is used to monitor fold state and deletion of lines to properly clear their compare markings
