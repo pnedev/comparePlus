@@ -523,8 +523,6 @@ void NavDialog::setPos(int x, int y)
 		else
 			CallScintilla(currentView->m_view, SCI_SETEMPTYSELECTION,
 					getLineStart(currentView->m_view, currentLine), 0);
-
-		::UpdateWindow(getView(currentView->m_view));
 	}
 	else
 	{
