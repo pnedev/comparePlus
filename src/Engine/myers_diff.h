@@ -34,7 +34,7 @@
  */
 
 /* Modified into C++ template class MyersDiff
- * Copyright (C) 2017-2025  Pavel Nedev <pg.nedev@gmail.com>
+ * Copyright (C) 2017-2026  Pavel Nedev <pg.nedev@gmail.com>
  */
 
 
@@ -47,22 +47,15 @@
 #include <climits>
 
 
-template <typename Elem, typename UserDataT = void>
-class MyersDiff : public diff_algorithm<Elem, UserDataT>
+template <typename Elem>
+class MyersDiff : public diff_algorithm<Elem>
 {
 public:
-	MyersDiff(IsCancelledFn isCancelled = nullptr) : diff_algorithm<Elem, UserDataT>(isCancelled) {};
+	MyersDiff(IsCancelledFn cancelledFn = nullptr) : diff_algorithm<Elem>(cancelledFn) {};
 
-	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
-			diff_results<UserDataT>& diff, intptr_t off);
-
-	virtual bool needSwapCheck() { return true; };
-	virtual bool needDiffsCombine() { return true; };
-	virtual bool needBoundaryShift() { return true; };
+	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize, diff_results& diff, intptr_t off);
 
 private:
-	using diff_algorithm<Elem, UserDataT>::_isCancelled;
-
 	static constexpr int		_cCancelCheckItrInterval {3000};
 	static constexpr intptr_t	_cDmax {INTPTR_MAX};
 
@@ -97,23 +90,29 @@ private:
 	};
 
 	inline intptr_t& _v(intptr_t k, intptr_t r);
-	intptr_t _find_middle_snake(intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend, middle_snake& ms);
-	intptr_t _ses(intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend);
+	intptr_t _find_middle_snake(intptr_t aoff, intptr_t alen, intptr_t boff, intptr_t blen, middle_snake& ms);
+	intptr_t _ses(intptr_t aoff, intptr_t alen, intptr_t boff, intptr_t blen);
 
 	int _cancelCheckCount;
 
 	const Elem* _a;
 	const Elem* _b;
 
-	diff_results<UserDataT>* _diff;
+	diff_results* _diff;
 
 	varray<intptr_t> _buf;
+
+	intptr_t	_as;
+	intptr_t	_ae;
+	intptr_t	_bs;
+	intptr_t	_be;
+	bool		_last_was_match;
 };
 
 
-template <typename Elem, typename UserDataT>
-void MyersDiff<Elem, UserDataT>::run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
-	diff_results<UserDataT>& diff, intptr_t off)
+template <typename Elem>
+void MyersDiff<Elem>::run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
+	diff_results& diff, intptr_t off)
 {
 	_cancelCheckCount = _cCancelCheckItrInterval;
 
@@ -122,16 +121,24 @@ void MyersDiff<Elem, UserDataT>::run(const Elem* a, intptr_t asize, const Elem* 
 
 	_diff = &diff;
 
+	_as = off;
+	_ae = off;
+	_bs = off;
+	_be = off;
+	_last_was_match = true;
+
 	if (_ses(off, asize, off, bsize) == -1)
 		diff.clear();
+	else if (!_last_was_match)
+		diff.add(_as, _ae, _bs, _be);
 
 	// Wipe temporal buffer to free memory
 	_buf.get().clear();
 }
 
 
-template <typename Elem, typename UserDataT>
-inline intptr_t& MyersDiff<Elem, UserDataT>::_v(intptr_t k, intptr_t r)
+template <typename Elem>
+inline intptr_t& MyersDiff<Elem>::_v(intptr_t k, intptr_t r)
 {
 	// Pack -N to N into 0 to 2 * N
 	const intptr_t j = (k <= 0) ? (-k * 4 + r) : (k * 4 + (r - 2));
@@ -140,16 +147,16 @@ inline intptr_t& MyersDiff<Elem, UserDataT>::_v(intptr_t k, intptr_t r)
 }
 
 
-template <typename Elem, typename UserDataT>
-intptr_t MyersDiff<Elem, UserDataT>::_find_middle_snake(
-	intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend, middle_snake& ms)
+template <typename Elem>
+intptr_t MyersDiff<Elem>::_find_middle_snake(
+	intptr_t aoff, intptr_t alen, intptr_t boff, intptr_t blen, middle_snake& ms)
 {
-	const intptr_t delta = aend - bend;
+	const intptr_t delta = alen - blen;
 	const intptr_t odd = delta & 1;
-	const intptr_t mid = (aend + bend) / 2 + odd;
+	const intptr_t mid = (alen + blen) / 2 + odd;
 
 	_v(1, 0) = 0;
-	_v(delta - 1, 1) = aend;
+	_v(delta - 1, 1) = alen;
 
 	for (intptr_t d = 0; d <= mid; ++d)
 	{
@@ -160,7 +167,7 @@ intptr_t MyersDiff<Elem, UserDataT>::_find_middle_snake(
 
 		if (!--_cancelCheckCount)
 		{
-			if (_isCancelled && _isCancelled())
+			if (diff_algorithm<Elem>::isCancelled())
 				return -1;
 
 			_cancelCheckCount = _cCancelCheckItrInterval;
@@ -178,7 +185,7 @@ intptr_t MyersDiff<Elem, UserDataT>::_find_middle_snake(
 			ms.x = x;
 			ms.y = y;
 
-			while (x < aend && y < bend &&  _a[aoff + x] == _b[boff + y])
+			while (x < alen && y < blen &&  _a[aoff + x] == _b[boff + y])
 			{
 				++x;
 				++y;
@@ -199,7 +206,7 @@ intptr_t MyersDiff<Elem, UserDataT>::_find_middle_snake(
 
 		for (k = d; k >= -d; k -= 2)
 		{
-			intptr_t kr = (aend - bend) + k;
+			intptr_t kr = (alen - blen) + k;
 
 			if (k == d || (k != -d && _v(kr - 1, 1) < _v(kr + 1, 1)))
 			{
@@ -240,28 +247,52 @@ intptr_t MyersDiff<Elem, UserDataT>::_find_middle_snake(
 }
 
 
-template <typename Elem, typename UserDataT>
-intptr_t MyersDiff<Elem, UserDataT>::_ses(
-	intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend)
+template <typename Elem>
+intptr_t MyersDiff<Elem>::_ses(
+	intptr_t aoff, intptr_t alen, intptr_t boff, intptr_t blen)
 {
 	middle_snake ms = { 0 };
 	intptr_t d;
 
-	if (aend == 0)
+	if (alen == 0)
 	{
-		_diff->_add(diff_type::DIFF_IN_2, boff, bend);
-		d = bend;
+		if (_last_was_match)
+		{
+			_as = aoff;
+			_ae = _as;
+			_bs = boff;
+			_be = _bs + blen;
+			_last_was_match = false;
+		}
+		else
+		{
+			_be += blen;
+		}
+
+		d = blen;
 	}
-	else if (bend == 0)
+	else if (blen == 0)
 	{
-		_diff->_add(diff_type::DIFF_IN_1, aoff, aend);
-		d = aend;
+		if (_last_was_match)
+		{
+			_as = aoff;
+			_ae = _as + alen;
+			_bs = boff;
+			_be = _bs;
+			_last_was_match = false;
+		}
+		else
+		{
+			_ae += alen;
+		}
+
+		d = alen;
 	}
 	else
 	{
 		// Find the middle "snake" around which we
 		// recursively solve the sub-problems.
-		d = _find_middle_snake(aoff, aend, boff, bend, ms);
+		d = _find_middle_snake(aoff, alen, boff, blen, ms);
 		if (d == -1)
 			return -1;
 
@@ -273,14 +304,23 @@ intptr_t MyersDiff<Elem, UserDataT>::_ses(
 			if (_ses(aoff, ms.x, boff, ms.y) == -1)
 				return -1;
 
-			_diff->_add(diff_type::DIFF_MATCH, aoff + ms.x, ms.u - ms.x);
-
 			aoff += ms.u;
 			boff += ms.v;
-			aend -= ms.u;
-			bend -= ms.v;
+			alen -= ms.u;
+			blen -= ms.v;
 
-			if (_ses(aoff, aend, boff, bend) == -1)
+			if (!_last_was_match && ms.u - ms.x > 0)
+			{
+				_diff->add(_as, _ae, _bs, _be);
+
+				_as = aoff;
+				_ae = _as;
+				_bs = boff;
+				_be = _bs;
+				_last_was_match = true;
+			}
+
+			if (_ses(aoff, alen, boff, blen) == -1)
 				return -1;
 		}
 		else
@@ -291,7 +331,7 @@ intptr_t MyersDiff<Elem, UserDataT>::_ses(
 			/* There are only 4 base cases when the
 			 * edit distance is 1.
 			 *
-			 * aend > bend   bend > aend
+			 * alen > blen   blen > alen
 			 *
 			 *   -       |
 			 *    \       \    x != u
@@ -302,30 +342,76 @@ intptr_t MyersDiff<Elem, UserDataT>::_ses(
 			 *     -       |
 			 */
 
-			if (bend > aend)
+			if (blen > alen)
 			{
 				if (x == u)
 				{
-					_diff->_add(diff_type::DIFF_MATCH, aoff, aend);
-					_diff->_add(diff_type::DIFF_IN_2, boff + (bend - 1), 1);
+					if (!_last_was_match)
+						_diff->add(_as, _ae, _bs, _be);
+
+					_as = aoff + alen;
+					_ae = _as;
+					_bs = boff + (blen - 1);
+					_be = _bs + 1;
+					_last_was_match = false;
 				}
 				else
 				{
-					_diff->_add(diff_type::DIFF_IN_2, boff, 1);
-					_diff->_add(diff_type::DIFF_MATCH, aoff, aend);
+					if (_last_was_match)
+					{
+						_as = aoff;
+						_ae = _as;
+						_bs = boff;
+						_be = _bs + 1;
+					}
+					else
+					{
+						_be += 1;
+						_last_was_match = true;
+					}
+
+					_diff->add(_as, _ae, _bs, _be);
+
+					_as = aoff + alen;
+					_ae = _as;
+					_bs = _be + alen;
+					_be = _bs;
 				}
 			}
 			else
 			{
 				if (x == u)
 				{
-					_diff->_add(diff_type::DIFF_MATCH, aoff, bend);
-					_diff->_add(diff_type::DIFF_IN_1, aoff + (aend - 1), 1);
+					if (!_last_was_match)
+						_diff->add(_as, _ae, _bs, _be);
+
+					_as = aoff + (alen - 1);
+					_ae = _as + 1;
+					_bs = _be + blen;
+					_be = _bs;
+					_last_was_match = false;
 				}
 				else
 				{
-					_diff->_add(diff_type::DIFF_IN_1, aoff, 1);
-					_diff->_add(diff_type::DIFF_MATCH, aoff + 1, bend);
+					if (_last_was_match)
+					{
+						_as = aoff;
+						_ae = _as + 1;
+						_bs = boff;
+						_be = _bs;
+					}
+					else
+					{
+						_ae += 1;
+						_last_was_match = true;
+					}
+
+					_diff->add(_as, _ae, _bs, _be);
+
+					_as = aoff + 1 + blen;
+					_ae = _as;
+					_bs = _be + blen;
+					_be = _bs;
 				}
 			}
 		}

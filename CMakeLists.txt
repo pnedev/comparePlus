@@ -2,8 +2,10 @@ cmake_minimum_required (VERSION 3.5)
 
 set (CMAKE_SYSTEM_NAME Windows)
 
+set (CMAKE_BUILD_TYPE	"Release"	CACHE STRING	"")
+
 option (WIN64				"Win 64-bit build"						ON)
-option (MULTITHREAD			"Multithread change detection"			OFF)
+option (MULTITHREAD			"Multithread change detection"			ON)
 option (OTHER_MOVED_ICONS	"Use alternative moves lines icons"		OFF)
 
 # On Cmake invokation if debug logging is desired set the value of DLOG to include the bit-flag of each desired
@@ -12,6 +14,7 @@ option (OTHER_MOVED_ICONS	"Use alternative moves lines icons"		OFF)
 # bit 1 - log views synchronization
 # bit 2 - log Notepad++ and Scintilla notifications
 # bit 3 - log navigation commands diff visiting
+# bit 8 - log changes detection algorithm
 set (DLOG	0	CACHE STRING	"Flags for debug log messages")
 
 if (UNIX OR MINGW)
@@ -43,8 +46,10 @@ if (UNIX OR MINGW)
 		-D_WIN32_WINNT=0x0600 -DWIN32_LEAN_AND_MEAN -DNOCOMM -DUNIX -DBOOST_REGEX_STANDALONE
 	)
 
-	if (NOT DEBUG)
+	if (CMAKE_BUILD_TYPE MATCHES Release)
 		set (defs ${defs} -DNDEBUG)
+	else ()
+		set (defs ${defs} -DDEBUG)
 	endif ()
 
 	if (WIN64)
