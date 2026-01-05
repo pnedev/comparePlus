@@ -1,5 +1,5 @@
 /* Template class DiffCalc for diff generation, wrapping the actual diff algorithm and adding common post-processing
- * Copyright (C) 2025  Pavel Nedev <pg.nedev@gmail.com>
+ * Copyright (C) 2025-2026  Pavel Nedev <pg.nedev@gmail.com>
  */
 
 
@@ -10,7 +10,7 @@
 #include "diff_types.h"
 
 #include "histogram_diff.h"
-#include "myers_diff.h"
+// #include "myers_diff.h"
 // #include "fast_myers_diff.h"
 
 
@@ -29,61 +29,61 @@
  *  \class  DiffCalc
  *  \brief  Compares and makes a differences list between two vectors (elements are template).
  */
-template <typename Elem, typename UserDataT = void>
+template <typename Elem, typename UserData = void>
 class DiffCalc
 {
 public:
-	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
-		IsCancelledFn isCancelled = nullptr);
-	DiffCalc(const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size,
-		IsCancelledFn isCancelled = nullptr);
+	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2, IsCancelledFn cancelledFn = nullptr);
+	DiffCalc(const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size, IsCancelledFn cancelledFn = nullptr);
 
 	// Runs the actual compare and returns the differences
-	diff_results<UserDataT> operator()(bool doDiffsCombine = false, bool doBoundaryShift = false,
+	diff_results<UserData> operator()(bool doDiffsCombine = false, bool doBoundaryShift = false,
 			const std::vector<std::pair<intptr_t, intptr_t>>& syncPoints = {});
 
 	DiffCalc(const DiffCalc&) = delete;
 	const DiffCalc& operator=(const DiffCalc&) = delete;
 
 private:
-	diff_results<UserDataT> _run_algo(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize);
+	diff_results<UserData> _run_algo(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize);
 
-	void _combine_diffs(diff_results<UserDataT>& diff);
-	void _shift_boundaries(diff_results<UserDataT>& diff);
+	void _combine_diffs(diff_results<UserData>& diff);
+	void _shift_boundaries(diff_results<UserData>& diff);
+
+	bool isCancelled() { return (_cancelledFn && _cancelledFn()); };
 
 	const Elem*	_a;
 	intptr_t _a_size;
 	const Elem*	_b;
 	intptr_t _b_size;
 
-	IsCancelledFn _isCancelled;
+	IsCancelledFn _cancelledFn;
 
 	bool _diffsCombine;
 	bool _boundaryShift;
 };
 
 
-template <typename Elem, typename UserDataT>
-DiffCalc<Elem, UserDataT>::DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
-		IsCancelledFn isCancelled) :
-	_a(v1.data()), _a_size(v1.size()), _b(v2.data()), _b_size(v2.size()), _isCancelled(isCancelled)
+template <typename Elem, typename UserData>
+DiffCalc<Elem, UserData>::DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
+		IsCancelledFn cancelledFn) :
+	_a(v1.data()), _a_size(v1.size()), _b(v2.data()), _b_size(v2.size()), _cancelledFn(cancelledFn)
 {
 }
 
 
-template <typename Elem, typename UserDataT>
-DiffCalc<Elem, UserDataT>::DiffCalc(const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size,
-		IsCancelledFn isCancelled) :
-	_a(v1), _a_size(v1_size), _b(v2), _b_size(v2_size), _isCancelled(isCancelled)
+template <typename Elem, typename UserData>
+DiffCalc<Elem, UserData>::DiffCalc(const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size,
+		IsCancelledFn cancelledFn) :
+	_a(v1), _a_size(v1_size), _b(v2), _b_size(v2_size), _cancelledFn(cancelledFn)
 {
 }
 
 
-template <typename Elem, typename UserDataT>
-diff_results<UserDataT> DiffCalc<Elem, UserDataT>::_run_algo(
+template <typename Elem, typename UserData>
+diff_results<UserData> DiffCalc<Elem, UserData>::_run_algo(
 	const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize)
 {
-	diff_results<UserDataT> diff;
+	diff_results<UserData> diff;
 
 	intptr_t off_s = 0;
 
@@ -92,14 +92,11 @@ diff_results<UserDataT> DiffCalc<Elem, UserDataT>::_run_algo(
 	while (off_s < asize && off_s < bsize && a[off_s] == b[off_s])
 		++off_s;
 
-	if (off_s)
-		diff._add(diff_type::DIFF_MATCH, 0, off_s);
-
 	if (asize == bsize && off_s == asize)
 		return diff;
 
-	intptr_t aend = asize - 1;
-	intptr_t bend = bsize - 1;
+	const intptr_t aend = asize - 1;
+	const intptr_t bend = bsize - 1;
 
 	asize -= off_s;
 	bsize -= off_s;
@@ -116,30 +113,23 @@ diff_results<UserDataT> DiffCalc<Elem, UserDataT>::_run_algo(
 		bsize -= off_e;
 	}
 
-	using DiffAlg = HistogramDiff<Elem, UserDataT>;
+	using DiffAlg = HistogramDiff<Elem, UserData>;
 
-	DiffAlg diff_alg(_isCancelled);
+	DiffAlg diff_alg(_cancelledFn);
 
 	// Compare with swapped sequences as well to see if result is more optimal
 	if (diff_alg.needSwapCheck())
 	{
-		diff_results<UserDataT> swapped_diff;
-
-		// Add first matching block before continuing
-		if (!diff.empty())
-			swapped_diff.push_back(diff[0]);
+		diff_results<UserData> swapped_diff;
 
 #ifdef MULTITHREAD
-		bool parallel_run = (asize > 10000 && bsize > 10000 && std::thread::hardware_concurrency() > 1);
-#else // MULTITHREAD
-		bool parallel_run = false;
-#endif // MULTITHREAD
+		const bool parallel_run = (asize > 10000 && bsize > 10000 && std::thread::hardware_concurrency() > 1);
 
 		if (parallel_run)
 		{
 			std::thread thr = std::thread([&]()
 			{
-				DiffAlg(_isCancelled).run(b, bsize, a, asize, swapped_diff, off_s);
+				DiffAlg(_cancelledFn).run(b, bsize, a, asize, swapped_diff, off_s);
 			});
 
 			diff_alg.run(a, asize, b, bsize, diff, off_s);
@@ -147,10 +137,11 @@ diff_results<UserDataT> DiffCalc<Elem, UserDataT>::_run_algo(
 			thr.join();
 		}
 		else
+#endif // MULTITHREAD
 		{
 			diff_alg.run(a, asize, b, bsize, diff, off_s);
 
-			if (_isCancelled && _isCancelled())
+			if (isCancelled())
 				return {};
 
 			diff_alg.run(b, bsize, a, asize, swapped_diff, off_s);
@@ -162,7 +153,7 @@ diff_results<UserDataT> DiffCalc<Elem, UserDataT>::_run_algo(
 		if (swapped_replaces && swapped_replaces > diff.count_replaces())
 		{
 			diff = std::move(swapped_diff);
-			diff._swap_diff1_diff2();
+			diff.swap_ab();
 		}
 	}
 	else
@@ -170,11 +161,8 @@ diff_results<UserDataT> DiffCalc<Elem, UserDataT>::_run_algo(
 		diff_alg.run(a, asize, b, bsize, diff, off_s);
 	}
 
-	if (_isCancelled && _isCancelled())
+	if (isCancelled())
 		return {};
-
-	if (off_e)
-		diff._add(diff_type::DIFF_MATCH, aend - off_e + 1, off_e);
 
 	_diffsCombine = _diffsCombine && diff_alg.needDiffsCombine();
 	_boundaryShift = _boundaryShift && diff_alg.needBoundaryShift();
@@ -183,11 +171,11 @@ diff_results<UserDataT> DiffCalc<Elem, UserDataT>::_run_algo(
 }
 
 
-template <typename Elem, typename UserDataT>
-diff_results<UserDataT> DiffCalc<Elem, UserDataT>::operator()(bool doDiffsCombine, bool doBoundaryShift,
+template <typename Elem, typename UserData>
+diff_results<UserData> DiffCalc<Elem, UserData>::operator()(bool doDiffsCombine, bool doBoundaryShift,
 	const std::vector<std::pair<intptr_t, intptr_t>>& syncPoints)
 {
-	diff_results<UserDataT> diff;
+	diff_results<UserData> diff;
 
 	_diffsCombine = doDiffsCombine;
 	_boundaryShift = doBoundaryShift;
@@ -201,27 +189,25 @@ diff_results<UserDataT> DiffCalc<Elem, UserDataT>::operator()(bool doDiffsCombin
 		intptr_t apos = 0;
 		intptr_t bpos = 0;
 
-		for (const auto& syncP: syncPoints)
+		for (const auto& syncP : syncPoints)
 		{
 			if (syncP.first  < apos || syncP.first  >= _a_size ||
 				syncP.second < bpos || syncP.second >= _b_size)
 				break;
 
-			diff._append(
-				_run_algo(&_a[apos], syncP.first - apos, &_b[bpos], syncP.second - bpos), apos, bpos);
+			diff.append(_run_algo(&_a[apos], syncP.first - apos, &_b[bpos], syncP.second - bpos), apos, bpos);
 
-			if (_isCancelled && _isCancelled())
+			if (isCancelled())
 				return {};
 
 			apos = syncP.first;
 			bpos = syncP.second;
 		}
 
-		diff._append(
-			_run_algo(&_a[apos], _a_size - apos, &_b[bpos], _b_size - bpos), apos, bpos);
+		diff.append(_run_algo(&_a[apos], _a_size - apos, &_b[bpos], _b_size - bpos), apos, bpos);
 	}
 
-	if (_isCancelled && _isCancelled())
+	if (isCancelled())
 		return {};
 
 	if (_diffsCombine)
@@ -237,115 +223,115 @@ diff_results<UserDataT> DiffCalc<Elem, UserDataT>::operator()(bool doDiffsCombin
 // If a whole matching block is contained at the end of the next diff block shift match down:
 // If [] surrounds the marked differences, basically [abc]d[efgd]hi is the same as [abcdefg]dhi
 // We combine diffs to make results more compact and clean
-template <typename Elem, typename UserDataT>
-void DiffCalc<Elem, UserDataT>::_combine_diffs(diff_results<UserDataT>& diff)
+template <typename Elem, typename UserData>
+void DiffCalc<Elem, UserData>::_combine_diffs(diff_results<UserData>& diff)
 {
-	for (intptr_t i = 1; i < static_cast<intptr_t>(diff.size()); ++i)
-	{
-		if (diff[i].type != diff_type::DIFF_MATCH)
-			continue;
+	// for (intptr_t i = 1; i < static_cast<intptr_t>(diff.size()); ++i)
+	// {
+		// if (diff[i].type != diff_type::DIFF_MATCH)
+			// continue;
 
-		if (i + 1 < static_cast<intptr_t>(diff.size()))
-		{
-			const Elem*	el	= _b;
+		// if (i + 1 < static_cast<intptr_t>(diff.size()))
+		// {
+			// const Elem*	el	= _b;
 
-			if (diff[i + 1].type == diff_type::DIFF_IN_1)
-			{
-				// If there is DIFF_IN_2 after DIFF_IN_1 both sequences are changed - diff endings don't match for sure
-				if ((i + 2 < static_cast<intptr_t>(diff.size())) && (diff[i + 2].type == diff_type::DIFF_IN_2))
-				{
-					i += 2;
-					continue;
-				}
+			// if (diff[i + 1].type == diff_type::DIFF_IN_1)
+			// {
+				// // If there is DIFF_IN_2 after DIFF_IN_1 both sequences are changed - diff endings don't match for sure
+				// if ((i + 2 < static_cast<intptr_t>(diff.size())) && (diff[i + 2].type == diff_type::DIFF_IN_2))
+				// {
+					// i += 2;
+					// continue;
+				// }
 
-				el	= _a;
-			}
+				// el	= _a;
+			// }
 
-			diff_info<UserDataT>& match = diff[i];
-			diff_info<UserDataT>* next_diff = &diff[i + 1];
+			// diff_info<UserData>& match = diff[i];
+			// diff_info<UserData>* next_diff = &diff[i + 1];
 
-			if (match.len > next_diff->len)
-			{
-				++i;
-				continue;
-			}
+			// if (match.len > next_diff->len)
+			// {
+				// ++i;
+				// continue;
+			// }
 
-			intptr_t match_len = match.len;
+			// intptr_t match_len = match.len;
 
-			intptr_t match_off = next_diff->off - 1;
-			intptr_t check_off = next_diff->off + next_diff->len - 1;
+			// intptr_t match_off = next_diff->off - 1;
+			// intptr_t check_off = next_diff->off + next_diff->len - 1;
 
-			while ((match_len > 0) && (el[match_off] == el[check_off]))
-			{
-				--match_off;
-				--check_off;
-				--match_len;
-			}
+			// while ((match_len > 0) && (el[match_off] == el[check_off]))
+			// {
+				// --match_off;
+				// --check_off;
+				// --match_len;
+			// }
 
-			if (match_len > 0)
-			{
-				++i;
-				continue;
-			}
+			// if (match_len > 0)
+			// {
+				// ++i;
+				// continue;
+			// }
 
-			// The whole match is contained at the end of the next diff -
-			// move the match down linking the surrounding diffs and matches
+			// // The whole match is contained at the end of the next diff -
+			// // move the match down linking the surrounding diffs and matches
 
-			// Link match to the next matching block
-			if (i + 2 < static_cast<intptr_t>(diff.size()))
-			{
-				diff[i + 2].off -= match.len;
-				diff[i + 2].len += match.len;
-			}
-			// Create new match block at the end
-			else
-			{
-				diff_info<UserDataT> end_match;
+			// // Link match to the next matching block
+			// if (i + 2 < static_cast<intptr_t>(diff.size()))
+			// {
+				// diff[i + 2].off -= match.len;
+				// diff[i + 2].len += match.len;
+			// }
+			// // Create new match block at the end
+			// else
+			// {
+				// diff_info<UserData> end_match;
 
-				end_match.type = diff_type::DIFF_MATCH;
-				end_match.off = match.off + next_diff->len;
-				end_match.len = match.len;
+				// end_match.type = diff_type::DIFF_MATCH;
+				// end_match.off = match.off + next_diff->len;
+				// end_match.len = match.len;
 
-				diff.emplace_back(end_match);
-			}
+				// diff.emplace_back(end_match);
+			// }
 
-			next_diff->off -= match.len;
+			// next_diff->off -= match.len;
 
-			diff.erase(diff.begin() + i);
+			// diff.erase(diff.begin() + i);
 
-			next_diff = &diff[i];
+			// next_diff = &diff[i];
 
-			intptr_t k = i - 1;
+			// intptr_t k = i - 1;
 
-			diff_info<UserDataT>* prev_diff = &diff[k];
+			// diff_info<UserData>* prev_diff = &diff[k];
 
-			if (next_diff->type != prev_diff->type)
-			{
-				if ((k > 0) && (diff[k - 1].type == next_diff->type))
-					prev_diff = &diff[--k];
-			}
+			// if (next_diff->type != prev_diff->type)
+			// {
+				// if ((k > 0) && (diff[k - 1].type == next_diff->type))
+					// prev_diff = &diff[--k];
+			// }
 
-			// Merge diffs
-			if (next_diff->type == prev_diff->type)
-			{
-				prev_diff->len += next_diff->len;
+			// // Merge diffs
+			// if (next_diff->type == prev_diff->type)
+			// {
+				// prev_diff->len += next_diff->len;
 
-				diff.erase(diff.begin() + i);
-				--i;
-			}
-			// Swap diffs to represent block replacement (DIFF_IN_1 followed by DIFF_IN_2)
-			else if (next_diff->type == diff_type::DIFF_IN_1)
-			{
-				std::swap(prev_diff->type, next_diff->type);
-				std::swap(prev_diff->off,  next_diff->off);
-				std::swap(prev_diff->len,  next_diff->len);
-			}
+				// diff.erase(diff.begin() + i);
+				// --i;
+			// }
+			// // Swap diffs to represent block replacement (DIFF_IN_1 followed by DIFF_IN_2)
+			// else if (next_diff->type == diff_type::DIFF_IN_1)
+			// {
+				// std::swap(prev_diff->type, next_diff->type);
+				// std::swap(prev_diff->off,  next_diff->off);
+				// std::swap(prev_diff->len,  next_diff->len);
+			// }
 
-			// Check if previous match is suitable for combining
-			if (k > 1)
-				i = k - 2;
-		}
-	}
+			// // Check if previous match is suitable for combining
+			// if (k > 1)
+				// i = k - 2;
+		// }
+	// }
 }
 
 
@@ -354,86 +340,58 @@ void DiffCalc<Elem, UserDataT>::_combine_diffs(diff_results<UserDataT>& diff)
 // If [] surrounds the marked differences, basically [abb]a is the same as a[bba]
 // Since most languages start with unique elem and end with repetitive elem (end, </node>, }, ], ), >, etc)
 // we shift the differences down to make results look cleaner
-template <typename Elem, typename UserDataT>
-void DiffCalc<Elem, UserDataT>::_shift_boundaries(diff_results<UserDataT>& diff)
+template <typename Elem, typename UserData>
+void DiffCalc<Elem, UserData>::_shift_boundaries(diff_results<UserData>& diff)
 {
-	for (intptr_t i = 0; i < static_cast<intptr_t>(diff.size()); ++i)
+	const intptr_t diffs_size = static_cast<intptr_t>(diff.size());
+
+	for (intptr_t i = 0; i < diffs_size; ++i)
 	{
-		if (diff[i].type == diff_type::DIFF_MATCH)
+		// Both sequences are changed - boundaries do not match for sure
+		if (diff[i].is_replacement())
 			continue;
 
-		if (i + 1 < static_cast<intptr_t>(diff.size()))
+		const range_t* r;
+		const Elem* el;
+		const Elem* following_match_el;
+		intptr_t following_match_len;
+
+		// Changed range (a or b)
+		if (diff[i].a.len())
 		{
-			const Elem*	el	= _b;
+			r = &diff[i].a;
+			el = &_a[r->s];
+			following_match_el = &_a[r->e];
+			following_match_len = (i + 1 < diffs_size) ? r->distance_to(diff[i + 1].a) : r->distance_to(_a_size - 1);
+		}
+		else
+		{
+			r = &diff[i].b;
+			el = &_b[r->s];
+			following_match_el = &_b[r->e];
+			following_match_len = (i + 1 < diffs_size) ? r->distance_to(diff[i + 1].b) : r->distance_to(_b_size - 1);
+		}
 
-			if (diff[i].type == diff_type::DIFF_IN_1)
+		const intptr_t max_len = (r->len() > following_match_len) ? following_match_len : r->len();
+		intptr_t shift = 0;
+
+		while (shift < max_len && *el == *following_match_el)
+		{
+			++el;
+			++following_match_el;
+			++shift;
+		}
+
+		if (shift)
+		{
+			diff[i].shift(shift);
+
+			// Check if next diff should be merged
+			if (i + 1 < diffs_size && diff[i].glue(diff[i + 1]))
 			{
-				// If there is DIFF_IN_2 after DIFF_IN_1 both sequences are changed - boundaries do not match for sure
-				if (diff[i + 1].type == diff_type::DIFF_IN_2)
-				{
-					++i;
-					continue;
-				}
-
-				el	= _a;
-			}
-
-			diff_info<UserDataT>& di = diff[i];
-			diff_info<UserDataT>* next_match_di = &diff[i + 1];
-
-			const intptr_t max_len = (di.len > next_match_di->len) ? next_match_di->len : di.len;
-
-			intptr_t check_off = di.off + di.len;
-			intptr_t shift_len = 0;
-
-			while (shift_len < max_len && el[di.off] == el[check_off])
-			{
-				++di.off;
-				++check_off;
-				++shift_len;
-			}
-
-			// Diff block shifted - we need to adjust the surrounding matching blocks accordingly
-			if (shift_len)
-			{
-				if (i > 0)
-				{
-					diff[i - 1].len += shift_len;
-				}
-				// Create new match block in the beginning
-				else
-				{
-					diff_info<UserDataT> prev_match_di;
-
-					prev_match_di.type = diff_type::DIFF_MATCH;
-					prev_match_di.off = 0;
-					prev_match_di.len = shift_len;
-
-					diff.insert(diff.begin(), prev_match_di);
-					++i;
-				}
-
-				next_match_di = &diff[i + 1];
-
-				next_match_di->off += shift_len;
-				next_match_di->len -= shift_len;
-
-				// The whole match diff shifted - erase it and merge surrounding diff blocks
-				if (next_match_di->len == 0)
-				{
-					intptr_t j = i + 1;
-
-					diff.erase(diff.begin() + j);
-
-					if (j < static_cast<intptr_t>(diff.size()) && diff[i].type == diff[j].type)
-					{
-						diff[i].len += diff[j].len;
-						diff.erase(diff.begin() + j);
-
-						// Diff blocks merged - recheck same diff
-						--i;
-					}
-				}
+				diff.erase(diff.begin() + (i + 1));
+				// Diff blocks merged - recheck same diff idx again
+				--i;
 			}
 		}
 	}

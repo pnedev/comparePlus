@@ -1,5 +1,5 @@
 /* Common diff types used with DiffCalc
- * Copyright (C) 2025  Pavel Nedev <pg.nedev@gmail.com>
+ * Copyright (C) 2025-2026  Pavel Nedev <pg.nedev@gmail.com>
  */
 
 
@@ -12,169 +12,215 @@
 
 #include <cstdint>
 #include <vector>
+#include <string>
 #include <functional>
 
 
-using IsCancelledFn = std::function<bool()>;
-
-
-enum class diff_type
+// Elements range [s, e) - s included, e excluded
+// Very rudimentary structure used for ease, clarity and speed - not meant for generic usage as it relies on external
+// precautions for data integrity
+struct range_t
 {
-	DIFF_MATCH,
-	DIFF_IN_1,
-	DIFF_IN_2
+	range_t() : s(0), e(0) {};
+	range_t(intptr_t start, intptr_t end) : s(start), e(end)
+	{
+		if (e < s)
+			e = s;
+	};
+
+	intptr_t len() const { return e - s; };
+
+	intptr_t distance_from(const range_t& rhs) const { return s - (rhs.len() ? rhs.e + 1 : rhs.e); };
+	intptr_t distance_from(intptr_t el) const { return s - el; };
+	intptr_t distance_to(const range_t& rhs) const { return rhs.s - (len() ? e + 1 : e); };
+	intptr_t distance_to(intptr_t el) const { return el - (len() ? e + 1 : e); };
+
+	bool contains(intptr_t el) const { return (el >= s && el < e); };
+
+	void shift(intptr_t off)
+	{
+		s += off;
+		e += off;
+	};
+
+	bool glue(const range_t& rhs)
+	{
+		if (e == rhs.s)
+		{
+			e = rhs.e;
+			return true;
+		}
+
+		return false;
+	};
+
+	std::string to_string() const
+	{
+		std::string str {"["};
+		str += std::to_string(s);
+		str += ", ";
+		str += std::to_string(e);
+		str += ')';
+
+		return str;
+	};
+
+	intptr_t s;
+	intptr_t e;
 };
 
 
-template <typename UserDataT>
-struct diff_info
+template <typename T>
+struct hash_type
 {
-	diff_type	type;
-	intptr_t	off; // off into 1 if DIFF_MATCH and DIFF_IN_1 but into 2 if DIFF_IN_2
-	intptr_t	len;
+	using HashType = T;
 
-	UserDataT	info;
+	hash_type(HashType h) : hash(h) {};
+
+	HashType hash;
+
+	HashType get_hash() const { return hash; };
+
+	bool operator==(const hash_type& rhs) const { return (hash == rhs.hash); };
+	bool operator!=(const hash_type& rhs) const { return (hash != rhs.hash); };
+	bool operator==(HashType rhs) const { return (hash == rhs); };
+	bool operator!=(HashType rhs) const { return (hash != rhs); };
+};
+
+
+// UserData is not used by the diff algorithm - it is provided as a data placeholder for further user processings
+template <typename UserData>
+struct diff_info : public UserData
+{
+	diff_info(intptr_t as, intptr_t ae, intptr_t bs, intptr_t be) : a(as, ae), b(bs, be) {};
+
+	range_t	a;
+	range_t	b;
+
+	bool is_replacement() const { return (a.len() && b.len()); };
+
+	void shift(intptr_t off)
+	{
+		a.shift(off);
+		b.shift(off);
+	};
+
+	bool glue(const diff_info<UserData>& rhs)
+	{
+		const bool united_a = a.glue(rhs.a);
+		const bool united_b = b.glue(rhs.b);
+
+		return united_a || united_b;
+	};
 };
 
 
 template <>
 struct diff_info<void>
 {
-	diff_type	type;
-	intptr_t	off; // off into 1 if DIFF_MATCH and DIFF_IN_1 but into 2 if DIFF_IN_2
-	intptr_t	len;
+	diff_info(intptr_t as, intptr_t ae, intptr_t bs, intptr_t be) : a(as, ae), b(bs, be) {};
+
+	range_t	a;
+	range_t	b;
+
+	bool is_replacement() const { return (a.len() && b.len()); };
+
+	void shift(intptr_t off)
+	{
+		a.shift(off);
+		b.shift(off);
+	};
+
+	bool glue(const diff_info<void>& rhs)
+	{
+		const bool united_a = a.glue(rhs.a);
+		const bool united_b = b.glue(rhs.b);
+
+		return united_a || united_b;
+	};
 };
 
 
 // It is merely a std::vector with some helper functions
-template <typename UserDataT = void>
-struct diff_results : public std::vector<diff_info<UserDataT>>
+template <typename UserData = void>
+struct diff_results : public std::vector<diff_info<UserData>>
 {
 	intptr_t count_replaces() const
 	{
-		const intptr_t diffSize = static_cast<intptr_t>(this->size()) - 1;
 		intptr_t replaces = 0;
 
-		for (intptr_t i = 0; i < diffSize; ++i)
-		{
-			if (((*this)[i].type == diff_type::DIFF_IN_1) && ((*this)[i + 1].type == diff_type::DIFF_IN_2))
-			{
-				replaces += std::min((*this)[i].len, (*this)[i + 1].len);
-				++i;
-			}
-		}
+		for (const auto& d : *this)
+			replaces += std::min(d.a.len(), d.b.len());
 
 		return replaces;
 	};
 
-	void _add(diff_type type, intptr_t off, intptr_t len)
+	void add(intptr_t as, intptr_t ae, intptr_t bs, intptr_t be)
 	{
-		if (len == 0)
-			return;
-
-		if (this->empty() || (this->back().type != type))
-		{
-			diff_info<UserDataT> new_di;
-
-			new_di.type = type;
-			new_di.off = off;
-			new_di.len = len;
-
-			this->push_back(new_di);
-		}
-		else
-		{
-			this->back().len += len;
-		}
+		this->emplace_back(as, ae, bs, be);
 	};
 
-	void _swap_diff1_diff2()
+	void swap_ab()
 	{
-		intptr_t off2 = 0;
-		diff_info<UserDataT>* reorderDiff = nullptr;
-
-		// Swap DIFF_IN_1 and DIFF_IN_2
 		for (auto& d : *this)
-		{
-			if (d.type == diff_type::DIFF_MATCH)
-			{
-				d.off = off2;
-				off2 += d.len;
-
-				reorderDiff = nullptr;
-			}
-			else if (d.type == diff_type::DIFF_IN_1)
-			{
-				d.type = diff_type::DIFF_IN_2;
-
-				reorderDiff = &d;
-			}
-			else
-			{
-				d.type = diff_type::DIFF_IN_1;
-				off2 += d.len;
-
-				if (reorderDiff)
-				{
-					std::swap(reorderDiff->type, d.type);
-					std::swap(reorderDiff->off,  d.off);
-					std::swap(reorderDiff->len,  d.len);
-
-					reorderDiff = nullptr;
-				}
-			}
-		}
+			std::swap(d.a, d.b);
 	};
 
-	void _append(diff_results<UserDataT>&& diff, intptr_t aoff, intptr_t boff)
+	void append(diff_results<UserData>&& diff, intptr_t aoff, intptr_t boff)
 	{
 		if (diff.empty())
 			return;
 
-		for (auto& d: diff)
-			d.off += (d.type == diff_type::DIFF_IN_2) ? boff : aoff;
+		for (auto& d : diff)
+		{
+			d.a.shift(aoff);
+			d.b.shift(boff);
+		}
 
 		auto dItr = diff.begin();
 
-		if (this->size())
-		{
-			// Unite border diffs
-			if (this->back().type == dItr->type)
-			{
-				this->back().len += dItr->len;
-				dItr++;
-			}
-		}
+		// Unite border diffs
+		if (this->size() && this->back().glue(*dItr))
+			dItr++;
 
 		this->insert(this->end(), dItr, diff.end());
 	};
 };
 
 
+using IsCancelledFn = std::function<bool()>;
+
+
 /**
  *  \class  diff_algorithm
  *  \brief  Base class that defines the common interface to any diff algorithm.
 			Compares and makes a differences list between two sequences (elements are template,
-			must have operator==, type hash_type and get_hash() function that returns unique hash_type value)
+			must have operator==, type HashType and get_hash() function that returns unique HashType value.
+			Best is for Elem to inherit from hash_type<T>)
  */
-template <typename Elem, typename UserDataT = void>
+template <typename Elem, typename UserData = void>
 class diff_algorithm
 {
 public:
-	diff_algorithm(IsCancelledFn isCancelled = nullptr) : _isCancelled(isCancelled) {};
+	// cancelledFn() is function that should be periodically called (if provided) by the specific algorithm
+	// at certain points to check if the user has cancelled the compare operation
+	diff_algorithm(IsCancelledFn cancelledFn = nullptr) : _cancelledFn(cancelledFn) {};
 
 	virtual ~diff_algorithm() {};
 
 	// Runs the actual compare and fills the differences in diff member.
 	// The diff algorithm assumes the sequences begin with a diff so provide here the offset to the first difference.
 	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
-			diff_results<UserDataT>& diff, intptr_t off = 0) = 0;
+			diff_results<UserData>& diff, intptr_t off = 0) = 0;
 
 	// Provides information if the specific algorithm's results can benefit from certain diffs post-processing
-	virtual bool needSwapCheck() = 0;
-	virtual bool needDiffsCombine() = 0;
-	virtual bool needBoundaryShift() = 0;
+	virtual bool needSwapCheck() { return true; };
+	virtual bool needDiffsCombine() { return true; };
+	virtual bool needBoundaryShift() { return true; };
 
 protected:
-	IsCancelledFn _isCancelled;
+	bool isCancelled() { return (_cancelledFn && _cancelledFn()); };
+
+private:
+	IsCancelledFn _cancelledFn;
 };

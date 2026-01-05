@@ -90,10 +90,8 @@
 	#define PRINT_DIFFS(INFO, DIFFS) \
 		if (DLOG & LOG_ALGO) { \
 			LOGD(LOG_ALGO, INFO "\n"); \
-			for (const auto& d: DIFFS) { \
-				LOGD(LOG_ALGO, "\t" + std::string((d.type == diff_type::DIFF_IN_1) ? "D1" : \
-						(d.type == diff_type::DIFF_IN_2 ? "D2" : "M")) + \
-						" off: " + std::to_string(d.off + 1) + " len: " + std::to_string(d.len) + "\n"); \
+			for (const auto& d : DIFFS) { \
+				LOGD(LOG_ALGO, "\tD1 " + d.a.to_string() + "   D2 " + d.b.to_string() + "\n"); \
 			} \
 		}
 

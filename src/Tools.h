@@ -1,6 +1,6 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
- * Copyright (C) 2016-2025 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C) 2016-2026 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <map>
 #include <string>
 #include <vector>

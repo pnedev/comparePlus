@@ -1,6 +1,6 @@
 /* Fast Myers Diff algorithm ported to C++ from TypeScript implementation and
  * modified into template class FastMyersDiff
- * Copyright (C) 2024-2025  Pavel Nedev <pg.nedev@gmail.com>
+ * Copyright (C) 2024-2026  Pavel Nedev <pg.nedev@gmail.com>
  */
 
 
@@ -15,22 +15,16 @@
 #include <algorithm>
 
 
-template <typename Elem, typename UserDataT = void>
-class FastMyersDiff : public diff_algorithm<Elem, UserDataT>
+template <typename Elem, typename UserData = void>
+class FastMyersDiff : public diff_algorithm<Elem, UserData>
 {
 public:
-	FastMyersDiff(IsCancelledFn isCancelled = nullptr) : diff_algorithm<Elem, UserDataT>(isCancelled) {};
+	FastMyersDiff(IsCancelledFn cancelledFn = nullptr) : diff_algorithm<Elem, UserData>(cancelledFn) {};
 
 	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
-			diff_results<UserDataT>& diff, intptr_t off);
-
-	virtual bool needSwapCheck() { return true; };
-	virtual bool needDiffsCombine() { return true; };
-	virtual bool needBoundaryShift() { return true; };
+			diff_results<UserData>& diff, intptr_t off);
 
 private:
-	using diff_algorithm<Elem, UserDataT>::_isCancelled;
-
 	static constexpr int _cCancelCheckItrInterval {300000};
 
 	struct DiffState
@@ -57,7 +51,7 @@ private:
 
 	inline bool _cancel_check();
 
-	inline void _to_diff_blocks(diff_results<UserDataT>& diff,
+	inline void _to_diff_blocks(diff_results<UserData>& diff,
 			intptr_t& aoff, intptr_t& boff, intptr_t as, intptr_t ae, intptr_t bs, intptr_t be);
 
 	int _diff_internal(DiffState& state, int c);
@@ -69,9 +63,9 @@ private:
 };
 
 
-template <typename Elem, typename UserDataT>
-void FastMyersDiff<Elem, UserDataT>::run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
-	diff_results<UserDataT>& diff, intptr_t off)
+template <typename Elem, typename UserData>
+void FastMyersDiff<Elem, UserData>::run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
+	diff_results<UserData>& diff, intptr_t off)
 {
 	_cancelCheckCount = _cCancelCheckItrInterval;
 
@@ -128,12 +122,12 @@ void FastMyersDiff<Elem, UserDataT>::run(const Elem* a, intptr_t asize, const El
 }
 
 
-template <typename Elem, typename UserDataT>
-inline bool FastMyersDiff<Elem, UserDataT>::_cancel_check()
+template <typename Elem, typename UserData>
+inline bool FastMyersDiff<Elem, UserData>::_cancel_check()
 {
 	if (!--_cancelCheckCount)
 	{
-		if (_isCancelled && _isCancelled())
+		if (isCancelled())
 			return true;
 
 		_cancelCheckCount = _cCancelCheckItrInterval;
@@ -143,22 +137,22 @@ inline bool FastMyersDiff<Elem, UserDataT>::_cancel_check()
 }
 
 
-template <typename Elem, typename UserDataT>
-inline void FastMyersDiff<Elem, UserDataT>::_to_diff_blocks(diff_results<UserDataT>& diff,
+template <typename Elem, typename UserData>
+inline void FastMyersDiff<Elem, UserData>::_to_diff_blocks(diff_results<UserData>& diff,
 	intptr_t& aoff, intptr_t& boff, intptr_t as, intptr_t ae, intptr_t bs, intptr_t be)
 {
 	if (as - aoff > 0)
-		diff._add(diff_type::DIFF_MATCH, aoff, as - aoff);
+		diff.add(diff_type::DIFF_MATCH, aoff, as - aoff);
 
 	if (ae - as > 0)
 	{
-		diff._add(diff_type::DIFF_IN_1, as, ae - as);
+		diff.add(diff_type::DIFF_IN_1, as, ae - as);
 		aoff = ae;
 	}
 
 	if (be - bs > 0)
 	{
-		diff._add(diff_type::DIFF_IN_2, bs, be - bs);
+		diff.add(diff_type::DIFF_IN_2, bs, be - bs);
 		aoff = ae;
 		boff = be;
 	}
@@ -169,8 +163,8 @@ inline void FastMyersDiff<Elem, UserDataT>::_to_diff_blocks(diff_results<UserDat
 // recursive subdivision, requring O(min(N,M)) space
 // and O(min(N,M)*D) worst-case execution time where
 // D is the number of differences.
-template <typename Elem, typename UserDataT>
-int FastMyersDiff<Elem, UserDataT>::_diff_internal(DiffState& state, int c)
+template <typename Elem, typename UserData>
+int FastMyersDiff<Elem, UserData>::_diff_internal(DiffState& state, int c)
 {
 	intptr_t i = state.i;
 	intptr_t N = state.N;
