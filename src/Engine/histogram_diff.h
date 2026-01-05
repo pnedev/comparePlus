@@ -1,5 +1,5 @@
 /* Histogram diff algorithm implemented as a C++ template class HistogramDiff
- * Copyright (C) 2025  Pavel Nedev <pg.nedev@gmail.com>
+ * Copyright (C) 2025-2026  Pavel Nedev <pg.nedev@gmail.com>
  * Original algorithm is taken from Ray Gardner's C implementation in 2025
  * License: 0BSD
  */
@@ -13,25 +13,18 @@
 #include <unordered_map>
 
 
-template <typename Elem, typename UserDataT = void>
-class HistogramDiff : public diff_algorithm<Elem, UserDataT>
+template <typename Elem>
+class HistogramDiff : public diff_algorithm<Elem>
 {
 public:
-	HistogramDiff(IsCancelledFn isCancelled = nullptr) : diff_algorithm<Elem, UserDataT>(isCancelled) {};
+	HistogramDiff(IsCancelledFn cancelledFn = nullptr) : diff_algorithm<Elem>(cancelledFn) {};
 
-	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
-			diff_results<UserDataT>& diff, intptr_t off);
+	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize, diff_results& diff, intptr_t off);
 
-	virtual bool needSwapCheck() { return true; };
 	virtual bool needDiffsCombine() { return false; };
-	virtual bool needBoundaryShift() { return false; };
 
 private:
-	using diff_algorithm<Elem, UserDataT>::_isCancelled;
-
 	static constexpr int _cCancelCheckItrInterval {30000};
-
-	void add_diff(diff_results<UserDataT>& diff, intptr_t al, intptr_t ah, intptr_t bl, intptr_t bh);
 
 	void push_quad(std::vector<intptr_t>& stk, intptr_t al, intptr_t ah, intptr_t bl, intptr_t bh)
 	{
@@ -82,44 +75,14 @@ private:
 		intptr_t* malo, intptr_t* mahi, intptr_t* mblo, intptr_t* mbhi);
 
 	int _cancelCheckCount;
-
-	intptr_t _last_a_pos;
 };
 
 
-template <typename Elem, typename UserDataT>
-void HistogramDiff<Elem, UserDataT>::add_diff(diff_results<UserDataT>& diff,
-	intptr_t al, intptr_t ah, intptr_t bl, intptr_t bh)
-{
-	if (al > _last_a_pos)
-		diff._add(diff_type::DIFF_MATCH, _last_a_pos, al - _last_a_pos);
-
-	if (ah > al)
-		diff._add(diff_type::DIFF_IN_1, al, ah - al);
-
-	if (bh > bl)
-		diff._add(diff_type::DIFF_IN_2, bl, bh - bl);
-
-	_last_a_pos = ah;
-}
-
-
-template <typename Elem, typename UserDataT>
-void HistogramDiff<Elem, UserDataT>::run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
-	diff_results<UserDataT>& diff, intptr_t off)
+template <typename Elem>
+void HistogramDiff<Elem>::run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
+	diff_results& diff, intptr_t off)
 {
 	_cancelCheckCount = _cCancelCheckItrInterval;
-
-	_last_a_pos = off;
-
-	for (auto it = diff.rbegin(); it != diff.rend(); ++it)
-	{
-		if (it->type != diff_type::DIFF_IN_2)
-		{
-			_last_a_pos = it->off + it->len;
-			break;
-		}
-	}
 
 	a += off;
 	b += off;
@@ -127,7 +90,7 @@ void HistogramDiff<Elem, UserDataT>::run(const Elem* a, intptr_t asize, const El
 	std::vector<intptr_t> anext(asize + 1, 0);
 	std::vector<intptr_t> bref(bsize + 1, 0);
 	{
-		std::unordered_map<typename Elem::hash_type, intptr_t> amap;
+		std::unordered_map<typename Elem::HashType, intptr_t> amap;
 
 		for (intptr_t i = asize; i; i--)
 		{
@@ -201,16 +164,14 @@ void HistogramDiff<Elem, UserDataT>::run(const Elem* a, intptr_t asize, const El
 		}
 		else
 		{
-			add_diff(diff, alo + off - 1, ahi + off - 1, blo + off - 1, bhi + off - 1);
+			diff.add(alo + off - 1, ahi + off - 1, blo + off - 1, bhi + off - 1);
 		}
 	}
-
-	add_diff(diff, asize + off, asize + off, 0, 0);
 }
 
 
-template <typename Elem, typename UserDataT>
-bool HistogramDiff<Elem, UserDataT>::find_best_matching_region(
+template <typename Elem>
+bool HistogramDiff<Elem>::find_best_matching_region(
 	const std::vector<intptr_t>& acnt, const std::vector<intptr_t>& anext, const std::vector<intptr_t>& bref,
 	intptr_t alo, intptr_t ahi, intptr_t blo, intptr_t bhi,
 	intptr_t* malo, intptr_t* mahi, intptr_t* mblo, intptr_t* mbhi)

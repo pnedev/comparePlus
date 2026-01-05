@@ -12,6 +12,7 @@ option (OTHER_MOVED_ICONS	"Use alternative moves lines icons"		OFF)
 # bit 1 - log views synchronization
 # bit 2 - log Notepad++ and Scintilla notifications
 # bit 3 - log navigation commands diff visiting
+# bit 8 - log changes detection algorithm
 set (DLOG	0	CACHE STRING	"Flags for debug log messages")
 
 if (UNIX OR MINGW)

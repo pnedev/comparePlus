@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017-2025 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2026 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -80,11 +80,25 @@ int gMarginWidth = 0;
 
 #ifdef DLOG
 
+#ifdef MULTITHREAD
+
+#if defined(__MINGW32__) && !defined(_GLIBCXX_HAS_GTHREADS)
+#include "../mingw-std-threads/mingw.thread.h"
+#include "../mingw-std-threads/mingw.mutex.h"
+#else
+#include <thread>
+#include <mutex>
+#endif // __MINGW32__ ...
+
+std::mutex		dLogMutex;
+
+#endif // MULTITHREAD
+
 std::string		dLog("ComparePlus debug log\n\n");
 DWORD			dLogTime_ms = 0;
 static LRESULT	dLogBuf = -1;
 
-#endif
+#endif // DLOG
 
 
 namespace // anonymous namespace
@@ -162,16 +176,16 @@ private:
 	void refreshTabBar(HWND hTabBar);
 	void refreshTabBars();
 
-	bool		_restoreMultilineTab;
+	bool _restoreMultilineTab;
 
-	bool		_syncVScroll;
-	bool		_syncHScroll;
+	bool _syncVScroll;
+	bool _syncHScroll;
 
-	int			_lineNumMode;
+	int _lineNumMode;
 
-	int			_mainZoom;
-	int			_subZoom;
-	int			_compareZoom;
+	int _mainZoom;
+	int _subZoom;
+	int _compareZoom;
 
 	std::unordered_map<int, std::wstring> _tooltipMap;
 };
@@ -3567,8 +3581,6 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 							_snwprintf_s(msg, _countof(msg), _TRUNCATE, str["MSG_MATCH"].c_str(),
 									newName, ::PathFindFileNameW(oldFile.name));
 					}
-
-					wcscat_s(msg, _countof(msg), str["MSG_IGNORED_DIFFS"].c_str());
 				}
 				else
 				{
@@ -3955,7 +3967,7 @@ void CopyVisibleLines()
 
 	std::vector<wchar_t> txt;
 
-	for (auto l: lines)
+	for (auto l : lines)
 	{
 		const auto lineTxt	= getLineText(view, l, true);
 		const auto wLineTxt	= MBtoWC(lineTxt.data(), static_cast<int>(lineTxt.size()), codepage);
@@ -4002,7 +4014,7 @@ void BookmarkVisibleLines()
 	if (lines.empty())
 		return;
 
-	for (auto l: lines)
+	for (auto l : lines)
 		bookmarkLine(view, l);
 }
 
@@ -4078,22 +4090,22 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 		// Calculate current diff sections lines and lengths
 		if (dsi->type == MATCH)
 		{
-			matchContextStart = (dsi->sec1.len < matchContextLen ? dsi->sec1.len : matchContextLen);
+			matchContextStart = (dsi->sec1.len() < matchContextLen ? dsi->sec1.len() : matchContextLen);
 
-			line1 += dsi->sec1.len - matchContextStart;
-			line2 += dsi->sec2.len - matchContextStart;
+			line1 += dsi->sec1.len() - matchContextStart;
+			line2 += dsi->sec2.len() - matchContextStart;
 			len1 = matchContextStart;
 			len2 = matchContextStart;
 		}
 		else if (dsi->type == IN_1)
 		{
-			line1 = dsi->sec1.off;
-			len1 = dsi->sec1.len;
+			line1 = dsi->sec1.s;
+			len1 = dsi->sec1.len();
 		}
 		else
 		{
-			line2 = dsi->sec2.off;
-			len2 = dsi->sec2.len;
+			line2 = dsi->sec2.s;
+			len2 = dsi->sec2.len();
 		}
 
 		auto dsn = dsi + 1;
@@ -4102,7 +4114,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 		{
 			if (dsn->type == MATCH)
 			{
-				if (dsn->sec1.len > 2 * matchContextLen)
+				if (dsn->sec1.len() > 2 * matchContextLen)
 				{
 					matchContextEnd = matchContextLen;
 
@@ -4114,7 +4126,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 
 				if (dsn + 1 == cmpPair.summary.diffSections.end())
 				{
-					matchContextEnd = dsn->sec1.len < matchContextLen ? dsn->sec1.len : matchContextLen;
+					matchContextEnd = dsn->sec1.len() < matchContextLen ? dsn->sec1.len() : matchContextLen;
 
 					len1 += matchContextEnd;
 					len2 += matchContextEnd;
@@ -4122,16 +4134,16 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 					break;
 				}
 
-				len1 += dsn->sec1.len;
-				len2 += dsn->sec2.len;
+				len1 += dsn->sec1.len();
+				len2 += dsn->sec2.len();
 			}
 			else if (dsn->type == IN_1)
 			{
-				len1 += dsn->sec1.len;
+				len1 += dsn->sec1.len();
 			}
 			else
 			{
-				len2 += dsn->sec2.len;
+				len2 += dsn->sec2.len();
 			}
 		}
 
@@ -4144,7 +4156,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 			if (dsr->type == MATCH)
 			{
 				if (!matchContextStart && dsr != dsi)
-					matchContextStart = dsr->sec1.len;
+					matchContextStart = dsr->sec1.len();
 
 				rNewLine += matchContextStart;
 
@@ -4164,7 +4176,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 				{
 					if (oldIs1)
 					{
-						for (intptr_t i = dsr->sec1.len; i; --i)
+						for (intptr_t i = dsr->sec1.len(); i; --i)
 						{
 							patchFile << eol << diffMark1;
 							const auto txt = getLineText(rFile1.compareViewId, line1++);
@@ -4174,7 +4186,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 						if (line1 > endLine1)
 							patchFile << eol << "\\ No newline at end of file";
 
-						for (intptr_t i = dsrn->sec2.len; i; --i)
+						for (intptr_t i = dsrn->sec2.len(); i; --i)
 						{
 							patchFile << eol << diffMark2;
 							const auto txt = getLineText(rFile2.compareViewId, line2++);
@@ -4186,7 +4198,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 					}
 					else
 					{
-						for (intptr_t i = dsrn->sec2.len; i; --i)
+						for (intptr_t i = dsrn->sec2.len(); i; --i)
 						{
 							patchFile << eol << diffMark2;
 							const auto txt = getLineText(rFile2.compareViewId, line2++);
@@ -4196,7 +4208,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 						if (line2 > endLine2)
 							patchFile << eol << "\\ No newline at end of file";
 
-						for (intptr_t i = dsr->sec1.len; i; --i)
+						for (intptr_t i = dsr->sec1.len(); i; --i)
 						{
 							patchFile << eol << diffMark1;
 							const auto txt = getLineText(rFile1.compareViewId, line1++);
@@ -4211,7 +4223,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 				}
 				else
 				{
-					for (intptr_t i = dsr->sec1.len; i; --i)
+					for (intptr_t i = dsr->sec1.len(); i; --i)
 					{
 						patchFile << eol << diffMark1;
 						const auto txt = getLineText(rFile1.compareViewId, line1++);
@@ -4221,7 +4233,7 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 			}
 			else
 			{
-				for (intptr_t i = dsr->sec2.len; i; --i)
+				for (intptr_t i = dsr->sec2.len(); i; --i)
 				{
 					patchFile << eol << diffMark2;
 					const auto txt = getLineText(rFile2.compareViewId, line2++);

@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017-2025 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2026 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 
 #include "Compare.h"
 #include "NppHelpers.h"
+#include "diff_types.h"
 
 
 enum class CompareResult
@@ -37,46 +38,6 @@ enum class CompareResult
 	COMPARE_CANCELLED,
 	COMPARE_MATCH,
 	COMPARE_MISMATCH
-};
-
-
-enum DiffType
-{
-	MATCH	= 0,
-	IN_1	= 1,
-	IN_2	= 2
-};
-
-
-struct section_t
-{
-	section_t() : off(0), len(0) {}
-	section_t(intptr_t o, intptr_t l) : off {o}, len {l} {}
-
-	intptr_t off;
-	intptr_t len;
-};
-
-
-struct line_section_t : public section_t
-{
-	line_section_t() : section_t(), moved {false} {}
-	line_section_t(intptr_t o, intptr_t l) : section_t(o, l), moved {false} {}
-
-	bool moved;
-};
-
-
-struct diff_section_t
-{
-	diff_section_t() : type {DiffType::MATCH} {}
-	diff_section_t(DiffType t, intptr_t o1, intptr_t l1, intptr_t o2, intptr_t l2) :
-			type {t}, sec1 {o1, l1}, sec2 {o2, l2} {}
-
-	DiffType type;
-
-	section_t sec1;
-	section_t sec2;
 };
 
 
@@ -165,6 +126,27 @@ struct AlignmentPair
 
 
 using AlignmentInfo_t = std::vector<AlignmentPair>;
+
+
+enum DiffType
+{
+	MATCH	= 0,
+	IN_1	= 1,
+	IN_2	= 2
+};
+
+
+struct diff_section_t
+{
+	diff_section_t() : type {DiffType::MATCH} {}
+	diff_section_t(DiffType t, intptr_t o1, intptr_t l1, intptr_t o2, intptr_t l2) :
+			type {t}, sec1 {o1, o1 + l1}, sec2 {o2, o2 + l2} {}
+
+	DiffType type;
+
+	range_t sec1;
+	range_t sec2;
+};
 
 
 struct CompareSummary
