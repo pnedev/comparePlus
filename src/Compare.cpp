@@ -1,7 +1,7 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
  * Copyright (C)2011 Jean-Sebastien Leroy (jean.sebastien.leroy@gmail.com)
- * Copyright (C)2017-2025 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C)2017-2026 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -80,11 +80,25 @@ int gMarginWidth = 0;
 
 #ifdef DLOG
 
+#ifdef MULTITHREAD
+
+#if defined(__MINGW32__) && !defined(_GLIBCXX_HAS_GTHREADS)
+#include "../mingw-std-threads/mingw.thread.h"
+#include "../mingw-std-threads/mingw.mutex.h"
+#else
+#include <thread>
+#include <mutex>
+#endif // __MINGW32__ ...
+
+std::mutex		dLogMutex;
+
+#endif // MULTITHREAD
+
 std::string		dLog("ComparePlus debug log\n\n");
 DWORD			dLogTime_ms = 0;
 static LRESULT	dLogBuf = -1;
 
-#endif
+#endif // DLOG
 
 
 namespace // anonymous namespace
@@ -162,16 +176,16 @@ private:
 	void refreshTabBar(HWND hTabBar);
 	void refreshTabBars();
 
-	bool		_restoreMultilineTab;
+	bool _restoreMultilineTab;
 
-	bool		_syncVScroll;
-	bool		_syncHScroll;
+	bool _syncVScroll;
+	bool _syncHScroll;
 
-	int			_lineNumMode;
+	int _lineNumMode;
 
-	int			_mainZoom;
-	int			_subZoom;
-	int			_compareZoom;
+	int _mainZoom;
+	int _subZoom;
+	int _compareZoom;
 
 	std::unordered_map<int, std::wstring> _tooltipMap;
 };
@@ -3567,8 +3581,6 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 							_snwprintf_s(msg, _countof(msg), _TRUNCATE, str["MSG_MATCH"].c_str(),
 									newName, ::PathFindFileNameW(oldFile.name));
 					}
-
-					wcscat_s(msg, _countof(msg), str["MSG_IGNORED_DIFFS"].c_str());
 				}
 				else
 				{
@@ -3955,7 +3967,7 @@ void CopyVisibleLines()
 
 	std::vector<wchar_t> txt;
 
-	for (auto l: lines)
+	for (auto l : lines)
 	{
 		const auto lineTxt	= getLineText(view, l, true);
 		const auto wLineTxt	= MBtoWC(lineTxt.data(), static_cast<int>(lineTxt.size()), codepage);
@@ -4002,7 +4014,7 @@ void BookmarkVisibleLines()
 	if (lines.empty())
 		return;
 
-	for (auto l: lines)
+	for (auto l : lines)
 		bookmarkLine(view, l);
 }
 
@@ -4046,237 +4058,146 @@ void formatAndWritePatch(ComparedPair& cmpPair, std::ofstream& patchFile, int ma
 		patchFile << "+++ " << WCtoMB(&newFile.name[newPos], newLen - newPos);
 	}
 
-	intptr_t line1 = cmpPair.options.selectionCompare ? cmpPair.options.selections[0].first : 0;
-	intptr_t line2 = cmpPair.options.selectionCompare ? cmpPair.options.selections[1].first : 0;
-	intptr_t len1 = 0;
-	intptr_t len2 = 0;
+	const bool oldIsA = (cmpPair.summary.aDiffView == oldFile.compareViewId);
 
-	const bool oldIs1 = (cmpPair.summary.diff1view == oldFile.compareViewId);
+	const range_t diff_info::*oldDiffPtr = oldIsA ? &diff_info::a : &diff_info::b;
+	const range_t diff_info::*newDiffPtr = oldIsA ? &diff_info::b : &diff_info::a;
 
-	const auto& rFile1 = oldIs1 ? oldFile : newFile;
-	const auto& rFile2 = oldIs1 ? newFile : oldFile;
+	const intptr_t oldEndLine = getEndLine(oldFile.compareViewId);
+	const intptr_t newEndLine = getEndLine(newFile.compareViewId);
 
-	const intptr_t endLine1 = getEndLine(rFile1.compareViewId);
-	const intptr_t endLine2 = getEndLine(rFile2.compareViewId);
-
-	intptr_t& rOldLine	= oldIs1 ? line1 : line2;
-	intptr_t& rOldLen	= oldIs1 ? len1 : len2;
-	intptr_t& rNewLine	= oldIs1 ? line2 : line1;
-	intptr_t& rNewLen	= oldIs1 ? len2 : len1;
-
-	const char diffMark1 = oldIs1 ? '-' : '+';
-	const char diffMark2 = oldIs1 ? '+' : '-';
+	intptr_t oldPrevLine =
+			cmpPair.options.selectionCompare ? cmpPair.options.selections[oldFile.compareViewId].first : 0;
+	intptr_t newPrevLine =
+			cmpPair.options.selectionCompare ? cmpPair.options.selections[newFile.compareViewId].first : 0;
 
 	for (auto dsi = cmpPair.summary.diffSections.begin(); dsi != cmpPair.summary.diffSections.end();)
 	{
-		intptr_t matchContextStart	= 0;
-		intptr_t matchContextEnd	= 0;
+		std::string diffSecStr;
 
-		len1 = 0;
-		len2 = 0;
+		intptr_t oldLine	= (*dsi.*oldDiffPtr).s;
+		intptr_t oldLen		= 0;
+		intptr_t newLine	= (*dsi.*newDiffPtr).s;
+		intptr_t newLen		= 0;
 
-		// Calculate current diff sections lines and lengths
-		if (dsi->type == MATCH)
+		intptr_t matchLen;
+
+		if (matchContextLen)
 		{
-			matchContextStart = (dsi->sec1.len < matchContextLen ? dsi->sec1.len : matchContextLen);
+			matchLen = matchContextLen;
 
-			line1 += dsi->sec1.len - matchContextStart;
-			line2 += dsi->sec2.len - matchContextStart;
-			len1 = matchContextStart;
-			len2 = matchContextStart;
-		}
-		else if (dsi->type == IN_1)
-		{
-			line1 = dsi->sec1.off;
-			len1 = dsi->sec1.len;
-		}
-		else
-		{
-			line2 = dsi->sec2.off;
-			len2 = dsi->sec2.len;
-		}
+			if (matchLen > oldLine - oldPrevLine)
+				matchLen = oldLine - oldPrevLine;
+			if (matchLen > newLine - newPrevLine)
+				matchLen = newLine - newPrevLine;
 
-		auto dsn = dsi + 1;
-
-		for (; dsn != cmpPair.summary.diffSections.end(); dsn++)
-		{
-			if (dsn->type == MATCH)
+			if (matchLen > 0)
 			{
-				if (dsn->sec1.len > 2 * matchContextLen)
+				oldLen += matchLen;
+				newLen += matchLen;
+
+				oldLine -= matchLen;
+				newLine -= matchLen;
+
+				for (intptr_t l = oldLine; matchLen; --matchLen)
 				{
-					matchContextEnd = matchContextLen;
-
-					len1 += matchContextEnd;
-					len2 += matchContextEnd;
-
-					break;
-				}
-
-				if (dsn + 1 == cmpPair.summary.diffSections.end())
-				{
-					matchContextEnd = dsn->sec1.len < matchContextLen ? dsn->sec1.len : matchContextLen;
-
-					len1 += matchContextEnd;
-					len2 += matchContextEnd;
-
-					break;
-				}
-
-				len1 += dsn->sec1.len;
-				len2 += dsn->sec2.len;
-			}
-			else if (dsn->type == IN_1)
-			{
-				len1 += dsn->sec1.len;
-			}
-			else
-			{
-				len2 += dsn->sec2.len;
-			}
-		}
-
-		patchFile << eol << "@@ -" << rOldLine + (rOldLen ? 1 : 0) << ',' << rOldLen <<
-								" +" << rNewLine + (rNewLen ? 1 : 0) << ',' << rNewLen << " @@";
-
-		// Write current diff sections and context
-		for (auto dsr = dsi; dsr != dsn; dsr++)
-		{
-			if (dsr->type == MATCH)
-			{
-				if (!matchContextStart && dsr != dsi)
-					matchContextStart = dsr->sec1.len;
-
-				rNewLine += matchContextStart;
-
-				for (; matchContextStart; --matchContextStart)
-				{
-					patchFile << eol << ' ';
-					const auto txt = getLineText(oldFile.compareViewId, rOldLine++);
-					patchFile.write(txt.data(), txt.size());
+					diffSecStr += eol;
+					diffSecStr += ' ';
+					const auto txt = getLineText(oldFile.compareViewId, l++);
+					diffSecStr.append(txt.begin(), txt.end());
 				}
 			}
-			else if (dsr->type == IN_1)
-			{
-				auto dsrn = dsr + 1;
+		}
 
-				// Replacement (changed) diff type - put old diff lines first
-				if (dsrn != dsn && dsrn->type == IN_2)
+		bool consecutiveDiffs;
+
+		do
+		{
+			oldLen += (*dsi.*oldDiffPtr).len();
+			newLen += (*dsi.*newDiffPtr).len();
+
+			for (intptr_t l = (*dsi.*oldDiffPtr).s; l < (*dsi.*oldDiffPtr).e; ++l)
+			{
+				diffSecStr += eol;
+				diffSecStr += '-';
+				const auto txt = getLineText(oldFile.compareViewId, l);
+				diffSecStr.append(txt.begin(), txt.end());
+			}
+
+			if ((*dsi.*oldDiffPtr).len() && (*dsi.*oldDiffPtr).e > oldEndLine)
+			{
+				diffSecStr += eol;
+				diffSecStr += "\\ No newline at end of file";
+			}
+
+			for (intptr_t l = (*dsi.*newDiffPtr).s; l < (*dsi.*newDiffPtr).e; ++l)
+			{
+				diffSecStr += eol;
+				diffSecStr += '+';
+				const auto txt = getLineText(newFile.compareViewId, l);
+				diffSecStr.append(txt.begin(), txt.end());
+			}
+
+			if ((*dsi.*newDiffPtr).len() && (*dsi.*newDiffPtr).e > newEndLine)
+			{
+				diffSecStr += eol;
+				diffSecStr += "\\ No newline at end of file";
+			}
+
+			consecutiveDiffs = (bool)matchContextLen;
+
+			if (matchContextLen)
+			{
+				auto dsn = dsi + 1;
+
+				if (dsn != cmpPair.summary.diffSections.end())
 				{
-					if (oldIs1)
+					matchLen = (*dsn.*oldDiffPtr).distance_from((*dsi.*oldDiffPtr));
+
+					if (matchLen > 2 * matchContextLen)
 					{
-						for (intptr_t i = dsr->sec1.len; i; --i)
-						{
-							patchFile << eol << diffMark1;
-							const auto txt = getLineText(rFile1.compareViewId, line1++);
-							patchFile.write(txt.data(), txt.size());
-						}
+						matchLen = matchContextLen;
 
-						if (line1 > endLine1)
-							patchFile << eol << "\\ No newline at end of file";
+						oldPrevLine = (*dsi.*oldDiffPtr).e;
+						newPrevLine = (*dsi.*newDiffPtr).e;
 
-						for (intptr_t i = dsrn->sec2.len; i; --i)
-						{
-							patchFile << eol << diffMark2;
-							const auto txt = getLineText(rFile2.compareViewId, line2++);
-							patchFile.write(txt.data(), txt.size());
-						}
-
-						if (line2 > endLine2)
-							patchFile << eol << "\\ No newline at end of file";
+						consecutiveDiffs = false;
 					}
-					else
-					{
-						for (intptr_t i = dsrn->sec2.len; i; --i)
-						{
-							patchFile << eol << diffMark2;
-							const auto txt = getLineText(rFile2.compareViewId, line2++);
-							patchFile.write(txt.data(), txt.size());
-						}
-
-						if (line2 > endLine2)
-							patchFile << eol << "\\ No newline at end of file";
-
-						for (intptr_t i = dsr->sec1.len; i; --i)
-						{
-							patchFile << eol << diffMark1;
-							const auto txt = getLineText(rFile1.compareViewId, line1++);
-							patchFile.write(txt.data(), txt.size());
-						}
-
-						if (line1 > endLine1)
-							patchFile << eol << "\\ No newline at end of file";
-					}
-
-					dsr++;
 				}
 				else
 				{
-					for (intptr_t i = dsr->sec1.len; i; --i)
+					matchLen = matchContextLen;
+
+					if (matchLen > (*dsi.*oldDiffPtr).distance_to(oldEndLine))
+						matchLen = (*dsi.*oldDiffPtr).distance_to(oldEndLine);
+					if (matchLen > (*dsi.*newDiffPtr).distance_to(newEndLine))
+						matchLen = (*dsi.*newDiffPtr).distance_to(newEndLine);
+				}
+
+				if (matchLen > 0)
+				{
+					oldLen += matchLen;
+					newLen += matchLen;
+
+					for (intptr_t l = (*dsi.*oldDiffPtr).e; matchLen; --matchLen)
 					{
-						patchFile << eol << diffMark1;
-						const auto txt = getLineText(rFile1.compareViewId, line1++);
-						patchFile.write(txt.data(), txt.size());
+						diffSecStr += eol;
+						diffSecStr += ' ';
+						const auto txt = getLineText(oldFile.compareViewId, l++);
+						diffSecStr.append(txt.begin(), txt.end());
 					}
 				}
 			}
-			else
-			{
-				for (intptr_t i = dsr->sec2.len; i; --i)
-				{
-					patchFile << eol << diffMark2;
-					const auto txt = getLineText(rFile2.compareViewId, line2++);
-					patchFile.write(txt.data(), txt.size());
-				}
-			}
+
+			++dsi;
 		}
+		while (consecutiveDiffs && dsi != cmpPair.summary.diffSections.end());
 
-		if (dsn == cmpPair.summary.diffSections.end())
-		{
-			const auto dsSize = cmpPair.summary.diffSections.size();
-
-			// Replaced section at the end does not require additional processing
-			if (dsSize > 1 && cmpPair.summary.diffSections[dsSize - 2].type != MATCH)
-			{
-				patchFile << eol;
-				return;
-			}
-
-			break;
-		}
-
-		intptr_t oldLine = rOldLine;
-
-		for (; matchContextEnd; --matchContextEnd)
-		{
-			patchFile << eol << ' ';
-			const auto txt = getLineText(oldFile.compareViewId, oldLine++);
-			patchFile.write(txt.data(), txt.size());
-		}
-
-		if (dsn + 1 == cmpPair.summary.diffSections.end())
-		{
-			rNewLine += oldLine - rOldLine;
-			rOldLine = oldLine;
-			break;
-		}
-
-		dsi = dsn;
+		patchFile << eol << "@@ -" << oldLine + (oldLen ? 1 : 0) << ',' << oldLen <<
+							" +" << newLine + (newLen ? 1 : 0) << ',' << newLen << " @@" << diffSecStr;
 	}
 
-	if (cmpPair.summary.diffSections.back().type == IN_2)
-	{
-		if (line2 > endLine2)
-			patchFile << eol << "\\ No newline at end of file" << eol;
-		else
-			patchFile << eol;
-	}
-	else
-	{
-		if (line1 > endLine1)
-			patchFile << eol << "\\ No newline at end of file" << eol;
-		else
-			patchFile << eol;
-	}
+	patchFile << eol;
 }
 
 
@@ -4299,6 +4220,9 @@ void GeneratePatch()
 		::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_NO_MODIFIED"].c_str(), PLUGIN_NAME, MB_OK | MB_ICONWARNING);
 		return;
 	}
+
+	if (cmpPair->summary.diffSections.empty())
+		return;
 
 	const bool hasIgnoreOpts =
 		(cmpPair->options.ignoreChangedSpaces || cmpPair->options.ignoreAllSpaces || cmpPair->options.ignoreEOL ||

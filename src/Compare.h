@@ -37,6 +37,29 @@
 
 	#include "Tools.h"
 
+#ifdef MULTITHREAD
+
+#if defined(__MINGW32__) && !defined(_GLIBCXX_HAS_GTHREADS)
+#include "../mingw-std-threads/mingw.thread.h"
+#include "../mingw-std-threads/mingw.mutex.h"
+#else
+#include <thread>
+#include <mutex>
+#endif // __MINGW32__ ...
+
+	extern std::mutex	dLogMutex;
+
+	#define LOG_LOCK_GUARD		std::lock_guard<std::mutex> __lg(dLogMutex);
+
+#else // MULTITHREAD
+
+	#define LOG_LOCK_GUARD
+
+#endif // MULTITHREAD
+
+	extern std::string	dLog;
+	extern DWORD		dLogTime_ms;
+
 	#define LOG_ALGO			(1 << 0)
 	#define LOG_SYNC			(1 << 1)
 	#define LOG_NOTIF			(1 << 2)
@@ -51,6 +74,7 @@
 
 	#define LOGD(LOG_FILTER, STR) \
 		if (DLOG & LOG_FILTER) { \
+			LOG_LOCK_GUARD \
 			const DWORD time_ms = ::GetTickCount(); \
 			wchar_t file[MAX_PATH]; \
 			::SendMessageW(nppData._nppHandle, NPPM_GETFILENAME, _countof(file), (LPARAM)file); \
@@ -72,6 +96,7 @@
 
 	#define LOGDB(LOG_FILTER, BUFFID, STR) \
 		if (DLOG & LOG_FILTER) { \
+			LOG_LOCK_GUARD \
 			const DWORD time_ms = ::GetTickCount(); \
 			wchar_t file[MAX_PATH]; \
 			::SendMessageW(nppData._nppHandle, NPPM_GETFULLPATHFROMBUFFERID, BUFFID, (LPARAM)file); \
@@ -90,17 +115,12 @@
 	#define PRINT_DIFFS(INFO, DIFFS) \
 		if (DLOG & LOG_ALGO) { \
 			LOGD(LOG_ALGO, INFO "\n"); \
-			for (const auto& d: DIFFS) { \
-				LOGD(LOG_ALGO, "\t" + std::string((d.type == diff_type::DIFF_IN_1) ? "D1" : \
-						(d.type == diff_type::DIFF_IN_2 ? "D2" : "M")) + \
-						" off: " + std::to_string(d.off + 1) + " len: " + std::to_string(d.len) + "\n"); \
+			for (const auto& d : DIFFS) { \
+				LOGD(LOG_ALGO, "\tA " + d.a.to_string() + "   B " + d.b.to_string() + "\n"); \
 			} \
 		}
 
-	extern std::string	dLog;
-	extern DWORD		dLogTime_ms;
-
-#else
+#else // DLOG
 
 	#define LOGD_GET_TIME
 	#define LOGD(LOG_FILTER, STR)
@@ -108,7 +128,7 @@
 	#define LOGDB(LOG_FILTER, BUFFID, STR)
 	#define PRINT_DIFFS(INFO, DIFFS)
 
-#endif
+#endif // DLOG
 
 
 enum MENU_COMMANDS
