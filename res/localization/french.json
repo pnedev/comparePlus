@@ -187,7 +187,7 @@
 	"MSG_MARGIN_ALLOC_FAIL":	"L'attribution d'une nouvelle marge pour comparer les symboles de différence a échoué.\nLes symboles de différence de lignes ne seront pas visibles.",
 	"MSG_ALREADY_COMPARED":		"Le fichier '%s' est déjà comparé - opération ignorée.",
 	"MSG_ENCODINGS":			"Vous essayez de comparer des fichiers avec des encodages différents - le résultat pourrait être inexact et trompeur.\n\nComparer quand même ?",
-	"MSG_NO_SELECTONS":		"Aucune sélection valide à comparer - opération ignorée.",
+	"MSG_NO_SELECTIONS":		"Aucune sélection valide à comparer - opération ignorée.",
 	"MSG_NOT_WRITTEN":			"Le fichier n'est pas écrit sur le disque - opération ignorée.",
 	"MSG_TEMP_FAIL":			"La création du fichier temporaire a échoué - opération abandonnée.",
 	"MSG_ONLY_ONE":				"Un seul fichier ouvert - opération ignorée.",
