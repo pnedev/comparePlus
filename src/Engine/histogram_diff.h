@@ -13,14 +13,13 @@
 #include <unordered_map>
 
 
-template <typename Elem, typename UserData = void>
-class HistogramDiff : public diff_algorithm<Elem, UserData>
+template <typename Elem>
+class HistogramDiff : public diff_algorithm<Elem>
 {
 public:
-	HistogramDiff(IsCancelledFn cancelledFn = nullptr) : diff_algorithm<Elem, UserData>(cancelledFn) {};
+	HistogramDiff(IsCancelledFn cancelledFn = nullptr) : diff_algorithm<Elem>(cancelledFn) {};
 
-	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
-			diff_results<UserData>& diff, intptr_t off);
+	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize, diff_results& diff, intptr_t off);
 
 private:
 	static constexpr int _cCancelCheckItrInterval {30000};
@@ -77,9 +76,9 @@ private:
 };
 
 
-template <typename Elem, typename UserData>
-void HistogramDiff<Elem, UserData>::run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
-	diff_results<UserData>& diff, intptr_t off)
+template <typename Elem>
+void HistogramDiff<Elem>::run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
+	diff_results& diff, intptr_t off)
 {
 	_cancelCheckCount = _cCancelCheckItrInterval;
 
@@ -169,8 +168,8 @@ void HistogramDiff<Elem, UserData>::run(const Elem* a, intptr_t asize, const Ele
 }
 
 
-template <typename Elem, typename UserData>
-bool HistogramDiff<Elem, UserData>::find_best_matching_region(
+template <typename Elem>
+bool HistogramDiff<Elem>::find_best_matching_region(
 	const std::vector<intptr_t>& acnt, const std::vector<intptr_t>& anext, const std::vector<intptr_t>& bref,
 	intptr_t alo, intptr_t ahi, intptr_t blo, intptr_t bhi,
 	intptr_t* malo, intptr_t* mahi, intptr_t* mblo, intptr_t* mbhi)

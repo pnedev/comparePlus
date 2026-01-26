@@ -47,14 +47,13 @@
 #include <climits>
 
 
-template <typename Elem, typename UserData = void>
-class MyersDiff : public diff_algorithm<Elem, UserData>
+template <typename Elem>
+class MyersDiff : public diff_algorithm<Elem>
 {
 public:
-	MyersDiff(IsCancelledFn cancelledFn = nullptr) : diff_algorithm<Elem, UserData>(cancelledFn) {};
+	MyersDiff(IsCancelledFn cancelledFn = nullptr) : diff_algorithm<Elem>(cancelledFn) {};
 
-	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
-			diff_results<UserData>& diff, intptr_t off);
+	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize, diff_results& diff, intptr_t off);
 
 private:
 	static constexpr int		_cCancelCheckItrInterval {3000};
@@ -99,15 +98,15 @@ private:
 	const Elem* _a;
 	const Elem* _b;
 
-	diff_results<UserData>* _diff;
+	diff_results* _diff;
 
 	varray<intptr_t> _buf;
 };
 
 
-template <typename Elem, typename UserData>
-void MyersDiff<Elem, UserData>::run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
-	diff_results<UserData>& diff, intptr_t off)
+template <typename Elem>
+void MyersDiff<Elem>::run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
+	diff_results& diff, intptr_t off)
 {
 	_cancelCheckCount = _cCancelCheckItrInterval;
 
@@ -124,8 +123,8 @@ void MyersDiff<Elem, UserData>::run(const Elem* a, intptr_t asize, const Elem* b
 }
 
 
-template <typename Elem, typename UserData>
-inline intptr_t& MyersDiff<Elem, UserData>::_v(intptr_t k, intptr_t r)
+template <typename Elem>
+inline intptr_t& MyersDiff<Elem>::_v(intptr_t k, intptr_t r)
 {
 	// Pack -N to N into 0 to 2 * N
 	const intptr_t j = (k <= 0) ? (-k * 4 + r) : (k * 4 + (r - 2));
@@ -134,8 +133,8 @@ inline intptr_t& MyersDiff<Elem, UserData>::_v(intptr_t k, intptr_t r)
 }
 
 
-template <typename Elem, typename UserData>
-intptr_t MyersDiff<Elem, UserData>::_find_middle_snake(
+template <typename Elem>
+intptr_t MyersDiff<Elem>::_find_middle_snake(
 	intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend, middle_snake& ms)
 {
 	const intptr_t delta = aend - bend;
@@ -234,8 +233,8 @@ intptr_t MyersDiff<Elem, UserData>::_find_middle_snake(
 }
 
 
-template <typename Elem, typename UserData>
-intptr_t MyersDiff<Elem, UserData>::_ses(
+template <typename Elem>
+intptr_t MyersDiff<Elem>::_ses(
 	intptr_t aoff, intptr_t aend, intptr_t boff, intptr_t bend)
 {
 	middle_snake ms = { 0 };

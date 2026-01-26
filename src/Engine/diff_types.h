@@ -16,6 +16,24 @@
 #include <functional>
 
 
+template <typename T>
+struct hash_type
+{
+	using HashType = T;
+
+	hash_type(HashType h) : hash(h) {};
+
+	HashType hash;
+
+	HashType get_hash() const { return hash; };
+
+	bool operator==(const hash_type& rhs) const { return (hash == rhs.hash); };
+	bool operator!=(const hash_type& rhs) const { return (hash != rhs.hash); };
+	bool operator==(HashType rhs) const { return (hash == rhs); };
+	bool operator!=(HashType rhs) const { return (hash != rhs); };
+};
+
+
 // Elements range [s, e) - s included, e excluded
 // Very rudimentary structure used for ease, clarity and speed - not meant for generic usage as it relies on external
 // precautions for data integrity
@@ -70,27 +88,7 @@ struct range_t
 };
 
 
-template <typename T>
-struct hash_type
-{
-	using HashType = T;
-
-	hash_type(HashType h) : hash(h) {};
-
-	HashType hash;
-
-	HashType get_hash() const { return hash; };
-
-	bool operator==(const hash_type& rhs) const { return (hash == rhs.hash); };
-	bool operator!=(const hash_type& rhs) const { return (hash != rhs.hash); };
-	bool operator==(HashType rhs) const { return (hash == rhs); };
-	bool operator!=(HashType rhs) const { return (hash != rhs); };
-};
-
-
-// UserData is not used by the diff algorithm - it is provided as a data placeholder for further user processings
-template <typename UserData>
-struct diff_info : public UserData
+struct diff_info
 {
 	diff_info(intptr_t as, intptr_t ae, intptr_t bs, intptr_t be) : a(as, ae), b(bs, be) {};
 
@@ -105,33 +103,7 @@ struct diff_info : public UserData
 		b.shift(off);
 	};
 
-	bool glue(const diff_info<UserData>& rhs)
-	{
-		const bool united_a = a.glue(rhs.a);
-		const bool united_b = b.glue(rhs.b);
-
-		return united_a || united_b;
-	};
-};
-
-
-template <>
-struct diff_info<void>
-{
-	diff_info(intptr_t as, intptr_t ae, intptr_t bs, intptr_t be) : a(as, ae), b(bs, be) {};
-
-	range_t	a;
-	range_t	b;
-
-	bool is_replacement() const { return (a.len() && b.len()); };
-
-	void shift(intptr_t off)
-	{
-		a.shift(off);
-		b.shift(off);
-	};
-
-	bool glue(const diff_info<void>& rhs)
+	bool glue(const diff_info& rhs)
 	{
 		const bool united_a = a.glue(rhs.a);
 		const bool united_b = b.glue(rhs.b);
@@ -142,8 +114,7 @@ struct diff_info<void>
 
 
 // It is merely a std::vector with some helper functions
-template <typename UserData = void>
-struct diff_results : public std::vector<diff_info<UserData>>
+struct diff_results : public std::vector<diff_info>
 {
 	intptr_t count_replaces() const
 	{
@@ -166,7 +137,7 @@ struct diff_results : public std::vector<diff_info<UserData>>
 			std::swap(d.a, d.b);
 	};
 
-	void append(diff_results<UserData>&& diff, intptr_t aoff, intptr_t boff)
+	void append(diff_results&& diff, intptr_t aoff, intptr_t boff)
 	{
 		if (diff.empty())
 			return;
@@ -198,7 +169,7 @@ using IsCancelledFn = std::function<bool()>;
 			must have operator==, type HashType and get_hash() function that returns unique HashType value.
 			Best is for Elem to inherit from hash_type<T>)
  */
-template <typename Elem, typename UserData = void>
+template <typename Elem>
 class diff_algorithm
 {
 public:
@@ -211,7 +182,7 @@ public:
 	// Runs the actual compare and fills the differences in diff member.
 	// The diff algorithm assumes the sequences begin with a diff so provide here the offset to the first difference.
 	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
-			diff_results<UserData>& diff, intptr_t off = 0) = 0;
+			diff_results& diff, intptr_t off = 0) = 0;
 
 	// Provides information if the specific algorithm's results can benefit from certain diffs post-processing
 	virtual bool needSwapCheck() { return true; };

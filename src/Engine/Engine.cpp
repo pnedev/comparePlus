@@ -98,24 +98,6 @@ struct Char : public hash_type<wchar_t>
 };
 
 
-struct DocCmpInfo
-{
-	int			view;
-	range_t		range;
-	int			diffMask;
-
-	std::vector<Line>				lines;	// Compared lines (vector's index is not necessarily a doc line!)
-	std::unordered_set<intptr_t>	nonUniqueDocLines;
-
-	inline intptr_t getDocLine(intptr_t idx) const
-	{
-		assert(idx >= 0 && idx < (intptr_t)lines.size());
-
-		return lines[idx].num;
-	}
-};
-
-
 struct changed_range_t : public range_t
 {
 	changed_range_t() : range_t(), moved {false} {}
@@ -131,15 +113,6 @@ struct ChangedLine
 
 	intptr_t idx;
 	std::vector<changed_range_t> changes;
-};
-
-
-struct ChangedPair
-{
-	ChangedPair(intptr_t la, intptr_t lb) : a(la), b(lb) {}
-
-	ChangedLine a;
-	ChangedLine b;
 };
 
 
@@ -182,34 +155,67 @@ struct MovedRanges : public std::vector<range_t>
 };
 
 
-struct BlockDiff
+struct DocCmpInfo
 {
-	std::vector<ChangedPair>	changedLines;
-	MovedRanges					movedA;
-	MovedRanges					movedB;
+	int			view;
+	range_t		range;
+	int			diffMask;
+
+	range_t		diff_info::*diffPtr;
+
+	std::vector<Line>				lines; // Compared lines from 'range' member (vector's index is not a doc line!)
+	std::unordered_set<intptr_t>	nonUniqueDocLines;
+
+	std::vector<std::vector<ChangedLine>>	changedLines;	// Changed lines per block diff after lines compare
+	std::vector<MovedRanges>				movedLines;		// Moved lines ranges per block diff after lines compare
+
+	inline const range_t& diffRange(const diff_info& di) const
+	{
+		return (di.*diffPtr);
+	}
+
+	inline const Line& getLine(intptr_t idx) const
+	{
+		assert(idx >= 0 && idx < (intptr_t)lines.size());
+
+		return lines[idx];
+	}
+
+	inline const Line& getLine(const diff_info& di, intptr_t off = 0) const
+	{
+		assert(off >= 0 && off < (intptr_t)diffRange(di).len());
+
+		return lines[diffRange(di).s + off];
+	}
+
+	inline intptr_t getDocLine(intptr_t idx) const
+	{
+		return getLine(idx).num;
+	}
+
+	inline intptr_t getDocLine(const diff_info& di, intptr_t off = 0) const
+	{
+		return getLine(di, off).num;
+	}
 };
-
-
-using diffInfo = diff_info<BlockDiff>;
 
 
 struct CompareInfo
 {
-	// Input data
-	DocCmpInfo	a;
-	DocCmpInfo	b;
+	DocCmpInfo a;
+	DocCmpInfo b;
 
-	// Output data - filled by the compare engine
-	diff_results<BlockDiff>	blockDiffs;
+	diff_results blockDiffs;
 };
 
 
 struct MatchInfo
 {
-	intptr_t	lookupOff;
-	diffInfo*	matchDiff;
-	intptr_t	matchOff;
-	intptr_t	matchLen;
+	intptr_t	matchDiffIdx {-1};
+	intptr_t	aOff {0};
+	intptr_t	bOff {0};
+	intptr_t	matchLen {0};
+	bool		reverseCheck {false};
 };
 
 
@@ -922,21 +928,23 @@ std::vector<Char> getRegexIgnoreLineChars(int view, intptr_t lineStart, intptr_t
 }
 
 
-std::vector<std::vector<Char>> getLinesChars(const DocCmpInfo& doc, const range_t& range, const MovedRanges& moved,
+std::vector<std::vector<Char>> getLinesChars(const DocCmpInfo& doc, const diff_info& bd, intptr_t diffIdx,
 	const CompareOptions& options)
 {
-	std::vector<std::vector<Char>> chars(range.len());
+	const intptr_t diffRangeLen = doc.diffRange(bd).len();
 
-	for (intptr_t l = 0; l < range.len(); ++l)
+	std::vector<std::vector<Char>> chars(diffRangeLen);
+
+	for (intptr_t l = 0; l < diffRangeLen; ++l)
 	{
 		// Don't get moved lines
-		if (moved.getNextUnmovedLine(l))
+		if (doc.movedLines[diffIdx].getNextUnmovedLine(l))
 		{
 			--l;
 			continue;
 		}
 
-		const intptr_t docLine		= doc.getDocLine(l + range.s);
+		const intptr_t docLine		= doc.getDocLine(bd, l);
 		const intptr_t lineStart	= getLineStart(doc.view, docLine);
 		const intptr_t lineEnd		= getLineEnd(doc.view, docLine);
 
@@ -1004,97 +1012,74 @@ void findUniqueLines(CompareInfo& cmpInfo)
 }
 
 
-// Scan for the best single matching block in the other file
-void findBestMatch(const CompareInfo& cmpInfo, const diffInfo& lookupDiff, intptr_t lookupOff, MatchInfo& mi,
-	bool reverse)
+// Scan for the best single matching block in the other file (a against b)
+void findBestMatch(const CompareInfo& cmpInfo, intptr_t diffIdx, intptr_t aOff, MatchInfo& mi)
 {
+	mi.matchDiffIdx	= -1;
 	mi.matchLen		= 0;
-	mi.matchDiff	= nullptr;
 
-	const std::vector<Line>*		pLookupLines;
-	const std::vector<Line>*		pMatchLines;
-	const range_t*					pLookupRange;
-	const range_t					diffInfo::*pMatchRange;
-	const MovedRanges*				pLookupMoved;
-	const MovedRanges				diffInfo::*pMatchMoved;
-
-	if (reverse)
-	{
-		pLookupLines	= &cmpInfo.b.lines;
-		pMatchLines		= &cmpInfo.a.lines;
-		pLookupRange	= &lookupDiff.b;
-		pMatchRange		= &diffInfo::a;
-		pMatchMoved		= &diffInfo::movedA;
-	}
-	else
-	{
-		pLookupLines	= &cmpInfo.a.lines;
-		pMatchLines		= &cmpInfo.b.lines;
-		pLookupRange	= &lookupDiff.a;
-		pMatchRange		= &diffInfo::b;
-		pMatchMoved		= &diffInfo::movedB;
-	}
+	const DocCmpInfo& a = mi.reverseCheck ? cmpInfo.b : cmpInfo.a;
+	const DocCmpInfo& b = mi.reverseCheck ? cmpInfo.a : cmpInfo.b;
 
 	intptr_t minMatchLen = 1;
 
-	for (const diffInfo& matchDiff : cmpInfo.blockDiffs)
+	for (intptr_t bi = 0; bi >= static_cast<intptr_t>(cmpInfo.blockDiffs.size()); ++bi)
 	{
-		if ((matchDiff.*pMatchRange).len() < minMatchLen)
+		if (b.diffRange(cmpInfo.blockDiffs[bi]).len() < minMatchLen)
 			continue;
 
-		for (intptr_t matchOff = 0; matchOff < (matchDiff.*pMatchRange).len(); ++matchOff)
+		for (intptr_t bOff = 0; bOff < b.diffRange(cmpInfo.blockDiffs[bi]).len(); ++bOff)
 		{
-			if ((*pLookupLines)[pLookupRange->s + lookupOff] != (*pMatchLines)[(matchDiff.*pMatchRange).s + matchOff])
+			if (a.getLine(cmpInfo.blockDiffs[diffIdx], aOff) != b.getLine(cmpInfo.blockDiffs[bi], bOff))
 				continue;
 
-			if ((matchDiff.*pMatchMoved).getNextUnmovedLine(matchOff))
+			if (b.movedLines[bi].getNextUnmovedLine(bOff))
 			{
-				if (matchOff >= (matchDiff.*pMatchRange).len())
+				if (bOff >= b.diffRange(cmpInfo.blockDiffs[bi]).len())
 					break;
 
-				--matchOff;
+				--bOff;
 				continue;
 			}
 
-			intptr_t lookupStart	= lookupOff - 1;
-			intptr_t matchStart		= matchOff - 1;
+			intptr_t aStart = aOff - 1;
+			intptr_t bStart = bOff - 1;
 
-			// Check for the beginning of the matched block (containing lookupOff element)
-			for (; lookupStart >= 0 && matchStart >= 0 &&
-					(*pLookupLines)[pLookupRange->s + lookupStart] ==
-						(*pMatchLines)[(matchDiff.*pMatchRange).s + matchStart] &&
-					!pLookupMoved->rangeLen(lookupStart) && !(matchDiff.*pMatchMoved).rangeLen(matchStart);
-					--lookupStart, --matchStart);
+			// Check for the beginning of the matched block (containing aOff element)
+			for (; aStart >= 0 && bStart >= 0 &&
+					a.getLine(cmpInfo.blockDiffs[diffIdx], aStart) == b.getLine(cmpInfo.blockDiffs[bi], bStart) &&
+					!a.movedLines[diffIdx].rangeLen(aStart) && !b.movedLines[bi].rangeLen(bStart);
+					--aStart, --bStart);
 
-			++lookupStart;
-			++matchStart;
+			++aStart;
+			++bStart;
 
-			intptr_t lookupEnd	= lookupOff + 1;
-			intptr_t matchEnd	= matchOff + 1;
+			intptr_t aEnd = aOff + 1;
+			intptr_t bEnd = bOff + 1;
 
-			// Check for the end of the matched block (containing lookupOff element)
-			for (; lookupEnd < pLookupRange->len() && matchEnd < (matchDiff.*pMatchRange).len() &&
-					(*pLookupLines)[pLookupRange->s + lookupEnd] ==
-						(*pMatchLines)[(matchDiff.*pMatchRange).s + matchEnd] &&
-					!pLookupMoved->rangeLen(lookupEnd) && !(matchDiff.*pMatchMoved).rangeLen(matchEnd);
-					++lookupEnd, ++matchEnd);
+			// Check for the end of the matched block (containing aOff element)
+			for (; aEnd < a.diffRange(cmpInfo.blockDiffs[diffIdx]).len() &&
+					bEnd < b.diffRange(cmpInfo.blockDiffs[bi]).len() &&
+					a.getLine(cmpInfo.blockDiffs[diffIdx], aEnd) == b.getLine(cmpInfo.blockDiffs[bi], bEnd) &&
+					!a.movedLines[diffIdx].rangeLen(aEnd) && !b.movedLines[bi].rangeLen(bEnd);
+					++aEnd, ++bEnd);
 
-			const intptr_t matchLen = lookupEnd - lookupStart;
+			const intptr_t matchLen = aEnd - aStart;
 
 			if (mi.matchLen < matchLen)
 			{
-				mi.lookupOff	= lookupStart;
-				mi.matchDiff	= const_cast<diffInfo*>(&matchDiff);
-				mi.matchOff		= matchStart;
+				mi.matchDiffIdx	= bi;
+				mi.aOff			= aStart;
+				mi.bOff			= bStart;
 				mi.matchLen		= matchLen;
 
-				minMatchLen		= matchLen;
-				matchOff		= matchEnd - 1;
+				minMatchLen	= matchLen;
+				bOff		= bEnd - 1;
 			}
 			else if (mi.matchLen == matchLen)
 			{
-				mi.matchDiff	= nullptr;
-				matchOff		= matchEnd - 1;
+				mi.matchDiffIdx	= -1;
+				bOff			= bEnd - 1;
 			}
 		}
 	}
@@ -1102,30 +1087,32 @@ void findBestMatch(const CompareInfo& cmpInfo, const diffInfo& lookupDiff, intpt
 
 
 // Recursively resolve the best match
-bool resolveMatch(const CompareInfo& cmpInfo, diffInfo& lookupDiff, intptr_t lookupOff, MatchInfo& lookupMi)
+bool resolveMatch(CompareInfo& cmpInfo, intptr_t diffIdx, intptr_t off, MatchInfo& mi)
 {
 	bool ret = false;
 
-	if (lookupMi.matchDiff)
+	off = mi.bOff + (off - mi.aOff);
+
+	MatchInfo reverseMi;
+	reverseMi.reverseCheck = !mi.reverseCheck;
+	findBestMatch(cmpInfo, mi.matchDiffIdx, off, reverseMi);
+
+	if ((reverseMi.matchDiffIdx == diffIdx) && (reverseMi.bOff == mi.aOff))
 	{
-		lookupOff = lookupMi.matchOff + (lookupOff - lookupMi.lookupOff);
+		LOGD(LOG_ALGO, "Move match found, len: " + std::to_string(mi.matchLen) + "\n");
 
-		MatchInfo reverseMi;
-		findBestMatch(cmpInfo, *(lookupMi.matchDiff), lookupOff, reverseMi, true);
+		if (mi.reverseCheck)
+			std::swap(mi.aOff, mi.bOff);
 
-		if ((reverseMi.matchDiff == &lookupDiff) && (reverseMi.matchOff == lookupMi.lookupOff))
-		{
-			LOGD(LOG_ALGO, "Move match found, len: " + std::to_string(lookupMi.matchLen) + "\n");
+		cmpInfo.a.movedLines[diffIdx].emplace_back(mi.aOff, mi.aOff + mi.matchLen);
+		cmpInfo.b.movedLines[mi.matchDiffIdx].emplace_back(mi.bOff, mi.bOff + mi.matchLen);
 
-			lookupDiff.movedA.emplace_back(lookupMi.lookupOff, lookupMi.lookupOff + lookupMi.matchLen);
-			lookupMi.matchDiff->movedB.emplace_back(lookupMi.matchOff, lookupMi.matchOff + lookupMi.matchLen);
-			ret = true;
-		}
-		else if (reverseMi.matchDiff)
-		{
-			ret = resolveMatch(cmpInfo, *(lookupMi.matchDiff), lookupOff, reverseMi);
-			lookupMi.matchLen = 0;
-		}
+		ret = true;
+	}
+	else if (reverseMi.matchDiffIdx >= 0)
+	{
+		mi.matchLen = 0;
+		ret = resolveMatch(cmpInfo, mi.matchDiffIdx, off, reverseMi);
 	}
 
 	return ret;
@@ -1142,38 +1129,40 @@ void findMoves(CompareInfo& cmpInfo)
 	{
 		repeat = false;
 
-		for (diffInfo& lookupDiff : cmpInfo.blockDiffs)
+		// Check a against b for matching lines
+		for (intptr_t bi = 0; bi < static_cast<intptr_t>(cmpInfo.blockDiffs.size()); ++bi)
 		{
-			if (!lookupDiff.a.len())
+			if (!cmpInfo.blockDiffs[bi].a.len())
 				continue;
 
-			LOGD(LOG_ALGO, "Check D1 with off: " + std::to_string(cmpInfo.a.getDocLine(lookupDiff.a.s) + 1) + "\n");
+			LOGD(LOG_ALGO,
+				"Check D1 with off: " + std::to_string(cmpInfo.a.getDocLine(cmpInfo.blockDiffs[bi]) + 1) + "\n");
 
-			// Go through all lookupDiff's elements and check if each is matched
-			for (intptr_t lookupEi = 0; lookupEi < lookupDiff.a.len(); ++lookupEi)
+			// Go through all diff's elements and check if each is matched
+			for (intptr_t l = 0; l < cmpInfo.blockDiffs[bi].a.len(); ++l)
 			{
 				// Skip empty lines (do not show blocks of empty/ignored lines as moved)
-				if (cmpInfo.a.lines[lookupDiff.a.s + lookupEi].hash == cHashSeed)
+				if (cmpInfo.a.getLine(cmpInfo.blockDiffs[bi], l).hash == cHashSeed)
 					continue;
 
 				// Skip already detected moves
-				if (lookupDiff.movedA.getNextUnmovedLine(lookupEi))
+				if (cmpInfo.a.movedLines[bi].getNextUnmovedLine(l))
 				{
-					if (lookupEi >= lookupDiff.a.len())
+					if (l >= cmpInfo.blockDiffs[bi].a.len())
 						break;
 				}
 
 				MatchInfo mi;
-				findBestMatch(cmpInfo, lookupDiff, lookupEi, mi, false);
+				findBestMatch(cmpInfo, bi, l, mi);
 
-				if (resolveMatch(cmpInfo, lookupDiff, lookupEi, mi))
+				if (mi.matchLen && resolveMatch(cmpInfo, bi, l, mi))
 				{
 					repeat = true;
 
 					if (mi.matchLen)
-						lookupEi = mi.lookupOff + mi.matchLen - 1;
+						l = mi.aOff + mi.matchLen - 1;
 					else
-						--lookupEi;
+						--l;
 				}
 			}
 		}
@@ -1181,7 +1170,7 @@ void findMoves(CompareInfo& cmpInfo)
 }
 
 
-inline intptr_t matchBeginEnd(diffInfo& bd,
+inline intptr_t matchBeginEnd(ChangedLine& changedLineA, ChangedLine& changedLineB,
 		const std::vector<Char>& secA, const std::vector<Char>& secB,
 		intptr_t offA, intptr_t offB, intptr_t endA, intptr_t endB,
 		std::function<bool(const wchar_t)>&& charFilter_fn)
@@ -1210,7 +1199,7 @@ inline intptr_t matchBeginEnd(diffInfo& bd,
 
 		change.e = (endMatch ? secA[secA.size() - endMatch - 1].pos + 1 + offA : endA);
 
-		bd.changedLines.back().a.changes.emplace_back(change);
+		changedLineA.changes.emplace_back(change);
 	}
 
 	if ((intptr_t)secB.size() > startMatch + endMatch)
@@ -1221,7 +1210,7 @@ inline intptr_t matchBeginEnd(diffInfo& bd,
 
 		change.e = (endMatch ? secB[secB.size() - endMatch - 1].pos + 1 + offB : endB);
 
-		bd.changedLines.back().b.changes.emplace_back(change);
+		changedLineB.changes.emplace_back(change);
 	}
 
 	return (startMatch + endMatch);
@@ -1283,19 +1272,22 @@ void findSubLineMoves(int view1, intptr_t docLine1, int view2, intptr_t docLine2
 }
 
 
-void compareLines(const DocCmpInfo& a, const DocCmpInfo& b, diffInfo& bd,
-		const std::map<intptr_t, intptr_t>& lineMappings, const CompareOptions& options)
+void compareLines(CompareInfo& cmpInfo, intptr_t diffIdx, const std::map<intptr_t, intptr_t>& lineMappings,
+	const CompareOptions& options)
 {
+	DocCmpInfo&			a = cmpInfo.a;
+	DocCmpInfo&			b = cmpInfo.b;
+	const diff_info&	bd = cmpInfo.blockDiffs[diffIdx];
+
 	for (const auto& lm : lineMappings)
 	{
-		intptr_t lineA = lm.second;
-		intptr_t lineB = lm.first;
+		const intptr_t lineA = a.getDocLine(bd, lm.second);
+		const intptr_t lineB = b.getDocLine(bd, lm.first);
 
-		LOGD(LOG_ALGO, "Compare Lines " + std::to_string(a.getDocLine(bd.a.s + lineA) + 1) + " and " +
-				std::to_string(b.getDocLine(bd.b.s + lineB) + 1) + "\n");
+		LOGD(LOG_ALGO, "Compare Lines " + std::to_string(lineA + 1) + " and " + std::to_string(lineB + 1) + "\n");
 
-		const std::vector<Word> lineWordsA = getLineWords(a.view, a.getDocLine(bd.a.s + lineA), options);
-		const std::vector<Word> lineWordsB = getLineWords(b.view, b.getDocLine(bd.b.s + lineB), options);
+		const std::vector<Word> lineWordsA = getLineWords(a.view, lineA, options);
+		const std::vector<Word> lineWordsB = getLineWords(b.view, lineB, options);
 
 		// First use word granularity (find matching words) for better precision
 		const auto lineDiffs = DiffCalc<Word>(lineWordsA, lineWordsB)(true, true);
@@ -1303,10 +1295,14 @@ void compareLines(const DocCmpInfo& a, const DocCmpInfo& b, diffInfo& bd,
 
 		PRINT_DIFFS("WORD DIFFS", lineDiffs);
 
-		bd.changedLines.emplace_back(lineA, lineB);
+		a.changedLines[diffIdx].emplace_back(lm.second);
+		b.changedLines[diffIdx].emplace_back(lm.first);
 
-		const intptr_t linePosA = getLineStart(a.view, a.getDocLine(lineA + bd.a.s));
-		const intptr_t linePosB = getLineStart(b.view, b.getDocLine(lineB + bd.b.s));
+		auto& changedLineA = a.changedLines[diffIdx].back();
+		auto& changedLineB = b.changedLines[diffIdx].back();
+
+		const intptr_t linePosA = getLineStart(a.view, lineA);
+		const intptr_t linePosB = getLineStart(b.view, lineB);
 
 		intptr_t lineLenA = 0;
 		intptr_t lineLenB = 0;
@@ -1355,7 +1351,7 @@ void compareLines(const DocCmpInfo& a, const DocCmpInfo& b, diffInfo& bd,
 							change.s = secA[sd.a.s].pos + offA;
 							change.e = secA[sd.a.e - 1].pos + offA + 1;
 
-							bd.changedLines.back().a.changes.emplace_back(change);
+							changedLineA.changes.emplace_back(change);
 
 							totalLineMatchLen -= change.len();
 						}
@@ -1366,7 +1362,7 @@ void compareLines(const DocCmpInfo& a, const DocCmpInfo& b, diffInfo& bd,
 							change.s = secB[sd.b.s].pos + offB;
 							change.e = secB[sd.b.e - 1].pos + offB + 1;
 
-							bd.changedLines.back().b.changes.emplace_back(change);
+							changedLineB.changes.emplace_back(change);
 
 							totalLineMatchLen -= change.len();
 						}
@@ -1375,8 +1371,9 @@ void compareLines(const DocCmpInfo& a, const DocCmpInfo& b, diffInfo& bd,
 				// Always match non-alphabetical characters in the beginning and at the end of changed sections
 				else
 				{
-					const intptr_t matchBEcount = matchBeginEnd(bd, secA, secB, offA, offB, endA, endB,
-							[](const wchar_t ch) { return (getCharTypeW(ch) != charType::ALPHANUMCHAR); });
+					const intptr_t matchBEcount =
+							matchBeginEnd(changedLineA, changedLineB, secA, secB, offA, offB, endA, endB,
+								[](const wchar_t ch) { return (getCharTypeW(ch) != charType::ALPHANUMCHAR); });
 
 					totalLineMatchLen -= ((endA - offA) + (endB - offB) - (2 * matchBEcount));
 				}
@@ -1388,7 +1385,7 @@ void compareLines(const DocCmpInfo& a, const DocCmpInfo& b, diffInfo& bd,
 				change.s = lineWordsA[ld.a.s].pos;
 				change.e = lineWordsA[ld.a.e - 1].pos + lineWordsA[ld.a.e - 1].len;
 
-				bd.changedLines.back().a.changes.emplace_back(change);
+				changedLineA.changes.emplace_back(change);
 
 				totalLineMatchLen -= change.len();
 			}
@@ -1399,7 +1396,7 @@ void compareLines(const DocCmpInfo& a, const DocCmpInfo& b, diffInfo& bd,
 				change.s = lineWordsB[ld.b.s].pos;
 				change.e = lineWordsB[ld.b.e - 1].pos + lineWordsB[ld.b.e - 1].len;
 
-				bd.changedLines.back().b.changes.emplace_back(change);
+				changedLineB.changes.emplace_back(change);
 
 				totalLineMatchLen -= change.len();
 			}
@@ -1408,14 +1405,13 @@ void compareLines(const DocCmpInfo& a, const DocCmpInfo& b, diffInfo& bd,
 		// Not enough portion of the lines matches - consider them totally different
 		if (((totalLineMatchLen * 100) / (lineLenA + lineLenB)) < options.changedResemblPercent)
 		{
-			bd.changedLines.pop_back();
+			a.changedLines[diffIdx].pop_back();
+			b.changedLines[diffIdx].pop_back();
 		}
 		else if (options.detectSubLineMoves)
 		{
-			if (!bd.changedLines.back().a.changes.empty() && !bd.changedLines.back().b.changes.empty())
-				findSubLineMoves(
-					a.view, a.getDocLine(bd.a.s + lm.second), b.view, b.getDocLine(bd.b.s + lm.first),
-					bd.changedLines.back().a.changes, bd.changedLines.back().b.changes);
+			if (!changedLineA.changes.empty() && !changedLineB.changes.empty())
+				findSubLineMoves(a.view, lineA, b.view, lineB, changedLineA.changes, changedLineB.changes);
 		}
 	}
 }
@@ -1426,10 +1422,10 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const CompareInfo& cmpInf
 {
 	const DocCmpInfo& a	= cmpInfo.a;
 	const DocCmpInfo& b	= cmpInfo.b;
-	const diffInfo& bd	= cmpInfo.blockDiffs[diffIdx];
+	const diff_info& bd	= cmpInfo.blockDiffs[diffIdx];
 
-	const std::vector<std::vector<Char>> chunkA = getLinesChars(a, bd.a, bd.movedA, options);
-	const std::vector<std::vector<Char>> chunkB = getLinesChars(b, bd.b, bd.movedB, options);
+	const std::vector<std::vector<Char>> chunkA = getLinesChars(a, bd, diffIdx, options);
+	const std::vector<std::vector<Char>> chunkB = getLinesChars(b, bd, diffIdx, options);
 
 	const intptr_t linesCountA = static_cast<intptr_t>(chunkA.size());
 	const intptr_t linesCountB = static_cast<intptr_t>(chunkB.size());
@@ -1440,7 +1436,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const CompareInfo& cmpInf
 	{
 		for (intptr_t lineB = 0; lineB < linesCountB; ++lineB)
 			if (!chunkB[lineB].empty())
-				wordsB[lineB] = getLineWords(b.view, b.getDocLine(bd.b.s + lineB), options);
+				wordsB[lineB] = getLineWords(b.view, b.getDocLine(bd, lineB), options);
 	}
 
 	std::vector<std::set<LinesConv>> linesAConvergence(linesCountA);
@@ -1477,13 +1473,13 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const CompareInfo& cmpInf
 				continue;
 			}
 
-			intptr_t matchesCount	= chunkA[lineA].size() + chunkB[lineB].size();
-			intptr_t longestMatch	= 0;
+			intptr_t matchLen = chunkA[lineA].size() + chunkB[lineB].size();
+			intptr_t longestMatch = 0;
 
 			if (!options.detectCharDiffs || !options.ignoreAllSpaces)
 			{
 				if (wordsA.empty())
-					wordsA = getLineWords(a.view, a.getDocLine(bd.a.s + lineA), options);
+					wordsA = getLineWords(a.view, a.getDocLine(bd, lineA), options);
 
 				const auto wordDiffs = DiffCalc<Word>(wordsA, wordsB[lineB],
 						std::bind(&ProgressDlg::IsCancelled, progress))();
@@ -1498,12 +1494,12 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const CompareInfo& cmpInf
 					if (wordDiffs[i].a.len())
 					{
 						for (intptr_t n = 0; n < wordDiffs[i].a.len(); ++n)
-							matchesCount -= wordsA[wordDiffs[i].a.s + n].len;
+							matchLen -= wordsA[wordDiffs[i].a.s + n].len;
 					}
 					if (wordDiffs[i].b.len())
 					{
 						for (intptr_t n = 0; n < wordDiffs[i].b.len(); ++n)
-							matchesCount -= wordsB[lineB][wordDiffs[i].b.s + n].len;
+							matchLen -= wordsB[lineB][wordDiffs[i].b.s + n].len;
 					}
 				}
 
@@ -1521,17 +1517,17 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const CompareInfo& cmpInf
 				const intptr_t charDiffsSize = static_cast<intptr_t>(charDiffs.size());
 
 				for (intptr_t i = 0; i < charDiffsSize; ++i)
-					matchesCount -= (charDiffs[i].a.len() + charDiffs[i].b.len());
+					matchLen -= (charDiffs[i].a.len() + charDiffs[i].b.len());
 
 				// if (matchLen > longestMatch)
 					// longestMatch = matchLen;
 			}
 
-			if (((matchesCount * 100) / static_cast<intptr_t>(chunkA[lineA].size() + chunkB[lineB].size())) >=
+			if (((matchLen * 100) / static_cast<intptr_t>(chunkA[lineA].size() + chunkB[lineB].size())) >=
 				options.changedResemblPercent)
 			{
 				const float conv =
-						(static_cast<float>(matchesCount) * 100) / (chunkA[lineA].size() + chunkB[lineB].size()) +
+						(static_cast<float>(matchLen) * 100) / (chunkA[lineA].size() + chunkB[lineB].size()) +
 						(static_cast<float>(longestMatch) * 100) / (chunkA[lineA].size() + chunkB[lineB].size());
 
 				if (!progress->Advance(linesProgress + 1))
@@ -1608,22 +1604,22 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const CompareInfo& cmpInf
 
 bool findChanges(CompareInfo& cmpInfo, intptr_t diffIdx, const CompareOptions& options)
 {
-	const DocCmpInfo& a	= cmpInfo.a;
-	const DocCmpInfo& b	= cmpInfo.b;
-	diffInfo& bd		= cmpInfo.blockDiffs[diffIdx];
-
 	std::vector<std::set<LinesConv>> orderedLinesConvergence = getOrderedConvergence(cmpInfo, diffIdx, options);
 
 	if (ProgressDlg::Get()->IsCancelled())
 		return false;
 
 #ifdef DLOG
+	DocCmpInfo&			a = cmpInfo.a;
+	DocCmpInfo&			b = cmpInfo.b;
+	const diff_info&	bd = cmpInfo.blockDiffs[diffIdx];
+
 	for (const auto& oc : orderedLinesConvergence)
 	{
 		if (!oc.empty())
 			LOGD(LOG_ALGO, "Best Matching Lines: " +
-					std::to_string(a.getDocLine(oc.begin()->lineA + bd.a.s) + 1) + " and " +
-					std::to_string(b.getDocLine(oc.begin()->lineB + bd.b.s) + 1) + ", Conv (" +
+					std::to_string(a.getDocLine(bd, oc.begin()->lineA) + 1) + " and " +
+					std::to_string(b.getDocLine(bd, oc.begin()->lineB) + 1) + ", Conv (" +
 					std::to_string(oc.begin()->conv) + ")\n");
 	}
 #endif
@@ -1714,8 +1710,8 @@ bool findChanges(CompareInfo& cmpInfo, intptr_t diffIdx, const CompareOptions& o
 				groupedLines.emplace_back(std::move(subGroup));
 
 				LOGD(LOG_ALGO, "New lines group (" + std::to_string(groupedLines.size()) + " total). Last lines: " +
-						std::to_string(a.getDocLine(ocrItr->lineA + bd.a.s) + 1) + " - " +
-						std::to_string(b.getDocLine(ocrItr->lineB + bd.b.s) + 1) + "\n");
+						std::to_string(a.getDocLine(bd, ocrItr->lineA) + 1) + " - " +
+						std::to_string(b.getDocLine(bd, ocrItr->lineB) + 1) + "\n");
 			}
 		}
 
@@ -1737,7 +1733,7 @@ bool findChanges(CompareInfo& cmpInfo, intptr_t diffIdx, const CompareOptions& o
 		bestLineMappings = std::move(groupedLines[bestGroupIdx]);
 	}
 
-	compareLines(a, b, bd, bestLineMappings, options);
+	compareLines(cmpInfo, diffIdx, bestLineMappings, options);
 
 	return true;
 }
@@ -1828,7 +1824,7 @@ inline void markLine(int view, intptr_t line, int mark)
 }
 
 
-void markSection(const DocCmpInfo& doc, const diffInfo& bd, const MovedRanges& moved, const CompareOptions& options)
+void markSection(const DocCmpInfo& doc, intptr_t bi, const CompareOptions& options)
 {
 	const int diffMaskLocal =
 			(doc.diffMask == MARKER_MASK_ADDED) ? MARKER_MASK_ADDED_LOCAL : MARKER_MASK_REMOVED_LOCAL;
@@ -1836,7 +1832,7 @@ void markSection(const DocCmpInfo& doc, const diffInfo& bd, const MovedRanges& m
 
 	for (intptr_t i = 0, l = doc.range.s; i < secLen; ++i, ++l)
 	{
-		intptr_t movedLen = moved.rangeLen(i);
+		intptr_t movedLen = doc.movedLines[bi].rangeLen(i);
 
 		if (movedLen > doc.range.len())
 			movedLen = doc.range.len();
@@ -1845,7 +1841,7 @@ void markSection(const DocCmpInfo& doc, const diffInfo& bd, const MovedRanges& m
 		{
 			intptr_t prevLine = doc.getDocLine(l) + 1;
 
-			for (; (i < secLen) && (moved.rangeLen(i) == 0); ++i, ++l)
+			for (; (i < secLen) && (doc.movedLines[bi].rangeLen(i) == 0); ++i, ++l)
 			{
 				const intptr_t docLine = doc.getDocLine(l);
 				const int mark = (doc.nonUniqueDocLines.find(docLine) ==
@@ -1905,27 +1901,29 @@ void markSection(const DocCmpInfo& doc, const diffInfo& bd, const MovedRanges& m
 }
 
 
-void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, intptr_t ci)
+void markLineDiffs(const CompareInfo& cmpInfo, intptr_t bi, intptr_t ci)
 {
-	const auto& changedLines = bd.changedLines;
-	intptr_t line = cmpInfo.a.getDocLine(bd.a.s + changedLines[ci].a.idx);
+	const auto& changedLineA = cmpInfo.a.changedLines[bi][ci];
+	const auto& changedLineB = cmpInfo.b.changedLines[bi][ci];
+
+	intptr_t line = cmpInfo.a.getDocLine(cmpInfo.blockDiffs[bi], changedLineA.idx);
 	intptr_t linePos = getLineStart(cmpInfo.a.view, line);
 	int color = (cmpInfo.a.diffMask == MARKER_MASK_ADDED) ?
 			Settings.colors().added_part : Settings.colors().removed_part;
 
-	for (const auto& change : changedLines[ci].a.changes)
+	for (const auto& change : changedLineA.changes)
 		markTextAsChanged(cmpInfo.a.view, linePos + change.s, change.len(),
 						change.moved ? Settings.colors().moved_part : color);
 
 	markLine(cmpInfo.a.view, line, cmpInfo.a.nonUniqueDocLines.find(line) == cmpInfo.a.nonUniqueDocLines.end() ?
 			MARKER_MASK_CHANGED : MARKER_MASK_CHANGED_LOCAL);
 
-	line = cmpInfo.b.getDocLine(bd.b.s + changedLines[ci].b.idx);
+	line = cmpInfo.b.getDocLine(cmpInfo.blockDiffs[bi], changedLineB.idx);
 	linePos = getLineStart(cmpInfo.b.view, line);
 	color = (cmpInfo.b.diffMask == MARKER_MASK_ADDED) ?
 			Settings.colors().added_part : Settings.colors().removed_part;
 
-	for (const auto& change : changedLines[ci].b.changes)
+	for (const auto& change : changedLineB.changes)
 		markTextAsChanged(cmpInfo.b.view, linePos + change.s, change.len(),
 						change.moved ? Settings.colors().moved_part : color);
 
@@ -1934,7 +1932,7 @@ void markLineDiffs(const CompareInfo& cmpInfo, const diffInfo& bd, intptr_t ci)
 }
 
 
-inline void markReplacedBlockDiffRange(CompareInfo& cmpInfo, const diffInfo& bd, const CompareOptions& options,
+inline void markReplacedBlockDiffRange(CompareInfo& cmpInfo, intptr_t bi, const CompareOptions& options,
 	CompareSummary& summary)
 {
 	if (cmpInfo.a.range.len() && cmpInfo.b.range.len())
@@ -1980,10 +1978,10 @@ inline void markReplacedBlockDiffRange(CompareInfo& cmpInfo, const diffInfo& bd,
 	}
 
 	if (cmpInfo.a.range.len())
-		markSection(cmpInfo.a, bd, bd.movedA, options);
+		markSection(cmpInfo.a, bi, options);
 
 	if (cmpInfo.b.range.len())
-		markSection(cmpInfo.b, bd, bd.movedB, options);
+		markSection(cmpInfo.b, bi, options);
 }
 
 
@@ -2003,9 +2001,9 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 
 	AlignmentPair alignPair;
 
-	for (intptr_t i = 0; i < blockDiffsSize; ++i)
+	for (intptr_t bi = 0; bi < blockDiffsSize; ++bi)
 	{
-		const diffInfo& bd = cmpInfo.blockDiffs[i];
+		const diff_info& bd = cmpInfo.blockDiffs[bi];
 		intptr_t matchLen = bd.a.distance_from(alignIdxA);
 
 		if (matchLen > 0)
@@ -2027,16 +2025,16 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 
 		if (bd.is_replacement())
 		{
-			const intptr_t changedCount = static_cast<intptr_t>(bd.changedLines.size());
+			const intptr_t changedCount = static_cast<intptr_t>(cmpInfo.a.changedLines[bi].size());
 
-			for (intptr_t j = 0; j < changedCount; ++j)
+			for (intptr_t ci = 0; ci < changedCount; ++ci)
 			{
 				cmpInfo.a.range.s = alignIdxA;
-				cmpInfo.a.range.e = bd.a.s + bd.changedLines[j].a.idx;
+				cmpInfo.a.range.e = bd.a.s + cmpInfo.a.changedLines[bi][ci].idx;
 				cmpInfo.b.range.s = alignIdxB;
-				cmpInfo.b.range.e = bd.b.s + bd.changedLines[j].b.idx;
+				cmpInfo.b.range.e = bd.b.s + cmpInfo.b.changedLines[bi][ci].idx;
 
-				markReplacedBlockDiffRange(cmpInfo, bd, options, summary);
+				markReplacedBlockDiffRange(cmpInfo, bi, options, summary);
 
 				alignIdxA += cmpInfo.a.range.len();
 				alignIdxB += cmpInfo.b.range.len();
@@ -2049,7 +2047,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 
 				summary.alignmentInfo.emplace_back(alignPair);
 
-				markLineDiffs(cmpInfo, bd, j);
+				markLineDiffs(cmpInfo, bi, ci);
 			}
 
 			cmpInfo.a.range.s = alignIdxA;
@@ -2057,13 +2055,13 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 			cmpInfo.b.range.s = alignIdxB;
 			cmpInfo.b.range.e = bd.b.e;
 
-			markReplacedBlockDiffRange(cmpInfo, bd, options, summary);
+			markReplacedBlockDiffRange(cmpInfo, bi, options, summary);
 
 			alignIdxA += cmpInfo.a.range.len();
 			alignIdxB += cmpInfo.b.range.len();
 
-			const intptr_t movedLinesA = bd.movedA.count();
-			const intptr_t movedLinesB = bd.movedB.count();
+			const intptr_t movedLinesA = cmpInfo.a.movedLines[bi].count();
+			const intptr_t movedLinesB = cmpInfo.b.movedLines[bi].count();
 
 			const intptr_t newLinesA = bd.a.len() - changedCount - movedLinesA;
 			const intptr_t newLinesB = bd.b.len() - changedCount - movedLinesB;
@@ -2087,9 +2085,9 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 		{
 			cmpInfo.a.range.s = alignIdxA;
 			cmpInfo.a.range.e = alignIdxA + bd.a.len();
-			markSection(cmpInfo.a, bd, bd.movedA, options);
+			markSection(cmpInfo.a, bi, options);
 
-			const intptr_t movedLines = bd.movedA.count();
+			const intptr_t movedLines = cmpInfo.a.movedLines[bi].count();
 
 			summary.diffLines	+= bd.a.len() - movedLines;
 			summary.moved		+= movedLines;
@@ -2105,9 +2103,9 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 		{
 			cmpInfo.b.range.s = alignIdxB;
 			cmpInfo.b.range.e = alignIdxB + bd.b.len();
-			markSection(cmpInfo.b, bd, bd.movedB, options);
+			markSection(cmpInfo.b, bi, options);
 
-			const intptr_t movedLines = bd.movedB.count();
+			const intptr_t movedLines = cmpInfo.b.movedLines[bi].count();
 
 			summary.diffLines	+= bd.b.len() - movedLines;
 			summary.moved		+= movedLines;
@@ -2205,16 +2203,19 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 
 	CompareInfo cmpInfo;
 
-	cmpInfo.a.view	= MAIN_VIEW;
-	cmpInfo.b.view	= SUB_VIEW;
+	cmpInfo.a.view = MAIN_VIEW;
+	cmpInfo.b.view = SUB_VIEW;
+
+	cmpInfo.a.diffPtr = &diff_info::a;
+	cmpInfo.b.diffPtr = &diff_info::b;
 
 	if (options.selectionCompare)
 	{
-		cmpInfo.a.range.s	= options.selections[cmpInfo.a.view].first;
-		cmpInfo.a.range.e 	= options.selections[cmpInfo.a.view].second + 1;
+		cmpInfo.a.range.s = options.selections[cmpInfo.a.view].first;
+		cmpInfo.a.range.e = options.selections[cmpInfo.a.view].second + 1;
 
-		cmpInfo.b.range.s	= options.selections[cmpInfo.b.view].first;
-		cmpInfo.b.range.e	= options.selections[cmpInfo.b.view].second + 1;
+		cmpInfo.b.range.s = options.selections[cmpInfo.b.view].first;
+		cmpInfo.b.range.e = options.selections[cmpInfo.b.view].second + 1;
 	}
 
 	cmpInfo.a.diffMask = (options.newFileViewId == cmpInfo.a.view) ? MARKER_MASK_ADDED : MARKER_MASK_REMOVED;
@@ -2232,7 +2233,7 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 	if (!progress->NextPhase())
 		return CompareResult::COMPARE_CANCELLED;
 
-	cmpInfo.blockDiffs = DiffCalc<Line, BlockDiff>(cmpInfo.a.lines, cmpInfo.b.lines,
+	cmpInfo.blockDiffs = DiffCalc<Line>(cmpInfo.a.lines, cmpInfo.b.lines,
 		std::bind(&ProgressDlg::IsCancelled, progress))(
 			options.ignoreAllSpaces || options.ignoreChangedSpaces, true, options.syncPoints);
 
@@ -2244,6 +2245,11 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 
 	if (cmpInfo.blockDiffs.empty())
 		return CompareResult::COMPARE_MATCH;
+
+	cmpInfo.a.changedLines.resize(cmpInfo.blockDiffs.size());
+	cmpInfo.b.changedLines.resize(cmpInfo.blockDiffs.size());
+	cmpInfo.a.movedLines.resize(cmpInfo.blockDiffs.size());
+	cmpInfo.b.movedLines.resize(cmpInfo.blockDiffs.size());
 
 	findUniqueLines(cmpInfo);
 
@@ -2285,16 +2291,16 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 	DocCmpInfo a;
 	DocCmpInfo b;
 
-	a.view	= MAIN_VIEW;
-	b.view	= SUB_VIEW;
+	a.view = MAIN_VIEW;
+	b.view = SUB_VIEW;
 
 	if (options.selectionCompare)
 	{
-		a.range.s	= options.selections[MAIN_VIEW].first;
-		a.range.e	= options.selections[MAIN_VIEW].second + 1;
+		a.range.s = options.selections[MAIN_VIEW].first;
+		a.range.e = options.selections[MAIN_VIEW].second + 1;
 
-		b.range.s	= options.selections[SUB_VIEW].first;
-		b.range.e	= options.selections[SUB_VIEW].second + 1;
+		b.range.s = options.selections[SUB_VIEW].first;
+		b.range.e = options.selections[SUB_VIEW].second + 1;
 	}
 
 	if (options.newFileViewId == MAIN_VIEW)

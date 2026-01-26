@@ -29,25 +29,25 @@
  *  \class  DiffCalc
  *  \brief  Compares and makes a differences list between two vectors (elements are template).
  */
-template <typename Elem, typename UserData = void>
+template <typename Elem>
 class DiffCalc
 {
 public:
 	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2, IsCancelledFn cancelledFn = nullptr);
-	DiffCalc(const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size, IsCancelledFn cancelledFn = nullptr);
+	DiffCalc(const Elem* v1, intptr_t v1_size, const Elem* v2, intptr_t v2_size, IsCancelledFn cancelledFn = nullptr);
 
 	// Runs the actual compare and returns the differences
-	diff_results<UserData> operator()(bool doDiffsCombine = false, bool doBoundaryShift = false,
+	diff_results operator()(bool doDiffsCombine = false, bool doBoundaryShift = false,
 			const std::vector<std::pair<intptr_t, intptr_t>>& syncPoints = {});
 
 	DiffCalc(const DiffCalc&) = delete;
 	const DiffCalc& operator=(const DiffCalc&) = delete;
 
 private:
-	diff_results<UserData> _run_algo(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize);
+	diff_results _run_algo(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize);
 
-	void _combine_diffs(diff_results<UserData>& diff);
-	void _shift_boundaries(diff_results<UserData>& diff);
+	void _combine_diffs(diff_results& diff);
+	void _shift_boundaries(diff_results& diff);
 
 	bool isCancelled() { return (_cancelledFn && _cancelledFn()); };
 
@@ -63,27 +63,26 @@ private:
 };
 
 
-template <typename Elem, typename UserData>
-DiffCalc<Elem, UserData>::DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
+template <typename Elem>
+DiffCalc<Elem>::DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
 		IsCancelledFn cancelledFn) :
 	_a(v1.data()), _a_size(v1.size()), _b(v2.data()), _b_size(v2.size()), _cancelledFn(cancelledFn)
 {
 }
 
 
-template <typename Elem, typename UserData>
-DiffCalc<Elem, UserData>::DiffCalc(const Elem v1[], intptr_t v1_size, const Elem v2[], intptr_t v2_size,
+template <typename Elem>
+DiffCalc<Elem>::DiffCalc(const Elem* v1, intptr_t v1_size, const Elem* v2, intptr_t v2_size,
 		IsCancelledFn cancelledFn) :
 	_a(v1), _a_size(v1_size), _b(v2), _b_size(v2_size), _cancelledFn(cancelledFn)
 {
 }
 
 
-template <typename Elem, typename UserData>
-diff_results<UserData> DiffCalc<Elem, UserData>::_run_algo(
-	const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize)
+template <typename Elem>
+diff_results DiffCalc<Elem>::_run_algo(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize)
 {
-	diff_results<UserData> diff;
+	diff_results diff;
 
 	intptr_t off_s = 0;
 
@@ -113,14 +112,14 @@ diff_results<UserData> DiffCalc<Elem, UserData>::_run_algo(
 		bsize -= off_e;
 	}
 
-	using DiffAlg = HistogramDiff<Elem, UserData>;
+	using DiffAlg = HistogramDiff<Elem>;
 
 	DiffAlg diff_alg(_cancelledFn);
 
 	// Compare with swapped sequences as well to see if result is more optimal
 	if (diff_alg.needSwapCheck())
 	{
-		diff_results<UserData> swapped_diff;
+		diff_results swapped_diff;
 
 #ifdef MULTITHREAD
 		const bool parallel_run = (asize > 10000 && bsize > 10000 && std::thread::hardware_concurrency() > 1);
@@ -171,11 +170,11 @@ diff_results<UserData> DiffCalc<Elem, UserData>::_run_algo(
 }
 
 
-template <typename Elem, typename UserData>
-diff_results<UserData> DiffCalc<Elem, UserData>::operator()(bool doDiffsCombine, bool doBoundaryShift,
+template <typename Elem>
+diff_results DiffCalc<Elem>::operator()(bool doDiffsCombine, bool doBoundaryShift,
 	const std::vector<std::pair<intptr_t, intptr_t>>& syncPoints)
 {
-	diff_results<UserData> diff;
+	diff_results diff;
 
 	_diffsCombine = doDiffsCombine;
 	_boundaryShift = doBoundaryShift;
@@ -223,8 +222,8 @@ diff_results<UserData> DiffCalc<Elem, UserData>::operator()(bool doDiffsCombine,
 // If a whole matching block is contained at the end of the next diff block shift match down:
 // If [] surrounds the marked differences, basically [abc]d[efgd]hi is the same as [abcdefg]dhi
 // We combine diffs to make results more compact and clean
-template <typename Elem, typename UserData>
-void DiffCalc<Elem, UserData>::_combine_diffs(diff_results<UserData>& diff)
+template <typename Elem>
+void DiffCalc<Elem>::_combine_diffs(diff_results& diff)
 {
 	// for (intptr_t i = 1; i < static_cast<intptr_t>(diff.size()); ++i)
 	// {
@@ -247,8 +246,8 @@ void DiffCalc<Elem, UserData>::_combine_diffs(diff_results<UserData>& diff)
 				// el	= _a;
 			// }
 
-			// diff_info<UserData>& match = diff[i];
-			// diff_info<UserData>* next_diff = &diff[i + 1];
+			// diff_info& match = diff[i];
+			// diff_info* next_diff = &diff[i + 1];
 
 			// if (match.len > next_diff->len)
 			// {
@@ -286,7 +285,7 @@ void DiffCalc<Elem, UserData>::_combine_diffs(diff_results<UserData>& diff)
 			// // Create new match block at the end
 			// else
 			// {
-				// diff_info<UserData> end_match;
+				// diff_info end_match;
 
 				// end_match.type = diff_type::DIFF_MATCH;
 				// end_match.off = match.off + next_diff->len;
@@ -303,7 +302,7 @@ void DiffCalc<Elem, UserData>::_combine_diffs(diff_results<UserData>& diff)
 
 			// intptr_t k = i - 1;
 
-			// diff_info<UserData>* prev_diff = &diff[k];
+			// diff_info* prev_diff = &diff[k];
 
 			// if (next_diff->type != prev_diff->type)
 			// {
@@ -340,8 +339,8 @@ void DiffCalc<Elem, UserData>::_combine_diffs(diff_results<UserData>& diff)
 // If [] surrounds the marked differences, basically [abb]a is the same as a[bba]
 // Since most languages start with unique elem and end with repetitive elem (end, </node>, }, ], ), >, etc)
 // we shift the differences down to make results look cleaner
-template <typename Elem, typename UserData>
-void DiffCalc<Elem, UserData>::_shift_boundaries(diff_results<UserData>& diff)
+template <typename Elem>
+void DiffCalc<Elem>::_shift_boundaries(diff_results& diff)
 {
 	const intptr_t diffs_size = static_cast<intptr_t>(diff.size());
 

@@ -15,14 +15,13 @@
 #include <algorithm>
 
 
-template <typename Elem, typename UserData = void>
-class FastMyersDiff : public diff_algorithm<Elem, UserData>
+template <typename Elem>
+class FastMyersDiff : public diff_algorithm<Elem>
 {
 public:
-	FastMyersDiff(IsCancelledFn cancelledFn = nullptr) : diff_algorithm<Elem, UserData>(cancelledFn) {};
+	FastMyersDiff(IsCancelledFn cancelledFn = nullptr) : diff_algorithm<Elem>(cancelledFn) {};
 
-	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
-			diff_results<UserData>& diff, intptr_t off);
+	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize, diff_results& diff, intptr_t off);
 
 private:
 	static constexpr int _cCancelCheckItrInterval {300000};
@@ -51,7 +50,7 @@ private:
 
 	inline bool _cancel_check();
 
-	inline void _to_diff_blocks(diff_results<UserData>& diff,
+	inline void _to_diff_blocks(diff_results& diff,
 			intptr_t& aoff, intptr_t& boff, intptr_t as, intptr_t ae, intptr_t bs, intptr_t be);
 
 	int _diff_internal(DiffState& state, int c);
@@ -63,9 +62,9 @@ private:
 };
 
 
-template <typename Elem, typename UserData>
-void FastMyersDiff<Elem, UserData>::run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
-	diff_results<UserData>& diff, intptr_t off)
+template <typename Elem>
+void FastMyersDiff<Elem>::run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
+	diff_results& diff, intptr_t off)
 {
 	_cancelCheckCount = _cCancelCheckItrInterval;
 
@@ -122,8 +121,8 @@ void FastMyersDiff<Elem, UserData>::run(const Elem* a, intptr_t asize, const Ele
 }
 
 
-template <typename Elem, typename UserData>
-inline bool FastMyersDiff<Elem, UserData>::_cancel_check()
+template <typename Elem>
+inline bool FastMyersDiff<Elem>::_cancel_check()
 {
 	if (!--_cancelCheckCount)
 	{
@@ -137,8 +136,8 @@ inline bool FastMyersDiff<Elem, UserData>::_cancel_check()
 }
 
 
-template <typename Elem, typename UserData>
-inline void FastMyersDiff<Elem, UserData>::_to_diff_blocks(diff_results<UserData>& diff,
+template <typename Elem>
+inline void FastMyersDiff<Elem>::_to_diff_blocks(diff_results& diff,
 	intptr_t& aoff, intptr_t& boff, intptr_t as, intptr_t ae, intptr_t bs, intptr_t be)
 {
 	if (as - aoff > 0)
@@ -163,8 +162,8 @@ inline void FastMyersDiff<Elem, UserData>::_to_diff_blocks(diff_results<UserData
 // recursive subdivision, requring O(min(N,M)) space
 // and O(min(N,M)*D) worst-case execution time where
 // D is the number of differences.
-template <typename Elem, typename UserData>
-int FastMyersDiff<Elem, UserData>::_diff_internal(DiffState& state, int c)
+template <typename Elem>
+int FastMyersDiff<Elem>::_diff_internal(DiffState& state, int c)
 {
 	intptr_t i = state.i;
 	intptr_t N = state.N;
