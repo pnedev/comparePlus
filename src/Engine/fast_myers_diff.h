@@ -98,9 +98,6 @@ void FastMyersDiff<Elem>::run(const Elem* a, intptr_t asize, const Elem* b, intp
 
 		if (c == 1)
 		{
-			// LOGD(LOG_ALGO, "O -> " + std::to_string(state.oxs) + ", " + std::to_string(state.oxe) + " / " +
-			// std::to_string(state.oys) + ", " + std::to_string(state.oye) + "\n");
-
 			_to_diff_blocks(diff, aoff, boff, state.oxs, state.oxe, state.oys, state.oye);
 
 			continue;
@@ -108,9 +105,6 @@ void FastMyersDiff<Elem>::run(const Elem* a, intptr_t asize, const Elem* b, intp
 
 		if (state.pxs >= 0)
 		{
-			// LOGD(LOG_ALGO, "P -> " + std::to_string(state.pxs) + ", " + std::to_string(state.pxe) + " / " +
-			// std::to_string(state.pys) + ", " + std::to_string(state.pye) + "\n");
-
 			_to_diff_blocks(diff, aoff, boff, state.pxs, state.pxe, state.pys, state.pye);
 
 			continue;

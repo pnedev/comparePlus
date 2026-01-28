@@ -19,8 +19,6 @@
 
 #pragma once
 
-#include "diff_types.h"
-
 #include <windows.h>
 #include <cstdint>
 #include <vector>
@@ -31,6 +29,7 @@
 
 #include "Compare.h"
 #include "NppHelpers.h"
+#include "diff_types.h"
 
 
 enum class CompareResult

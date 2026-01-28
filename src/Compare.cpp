@@ -80,11 +80,25 @@ int gMarginWidth = 0;
 
 #ifdef DLOG
 
+#ifdef MULTITHREAD
+
+#if defined(__MINGW32__) && !defined(_GLIBCXX_HAS_GTHREADS)
+#include "../mingw-std-threads/mingw.thread.h"
+#include "../mingw-std-threads/mingw.mutex.h"
+#else
+#include <thread>
+#include <mutex>
+#endif // __MINGW32__ ...
+
+std::mutex		dLogMutex;
+
+#endif // MULTITHREAD
+
 std::string		dLog("ComparePlus debug log\n\n");
 DWORD			dLogTime_ms = 0;
 static LRESULT	dLogBuf = -1;
 
-#endif
+#endif // DLOG
 
 
 namespace // anonymous namespace

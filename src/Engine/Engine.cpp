@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "diff.h"
+#define NOMINMAX	1
 
 #include <cassert>
 #include <climits>
@@ -36,6 +36,7 @@
 
 #include "Tools.h"
 #include "Engine.h"
+#include "diff.h"
 #include "ProgressDlg.h"
 
 
@@ -118,7 +119,7 @@ struct ChangedLine
 
 struct MovedRanges : public std::vector<range_t>
 {
-	inline intptr_t count() const
+	inline intptr_t totalLinesCount() const
 	{
 		intptr_t count = 0;
 
@@ -157,17 +158,22 @@ struct MovedRanges : public std::vector<range_t>
 
 struct DocCmpInfo
 {
-	int			view;
+	DocCmpInfo(int v, const range_t	diff_info::*dptr) : view(v), diffPtr(dptr) {};
+	DocCmpInfo(const DocCmpInfo&) = delete;
+	DocCmpInfo(DocCmpInfo&&) = delete;
+	DocCmpInfo& operator=(const DocCmpInfo&) = delete;
+
+	const int	view;
 	range_t		range;
 	int			diffMask;
 
-	range_t		diff_info::*diffPtr;
+	const range_t	diff_info::*diffPtr;
 
 	std::vector<Line>				lines; // Compared lines from 'range' member (vector's index is not a doc line!)
 	std::unordered_set<intptr_t>	nonUniqueDocLines;
 
 	std::vector<std::vector<ChangedLine>>	changedLines;	// Changed lines per block diff after lines compare
-	std::vector<MovedRanges>				movedLines;		// Moved lines ranges per block diff after lines compare
+	std::vector<MovedRanges>				movedRanges;	// Moved lines ranges per block diff after lines compare
 
 	inline const range_t& diffRange(const diff_info& di) const
 	{
@@ -202,20 +208,15 @@ struct DocCmpInfo
 
 struct CompareInfo
 {
+	CompareInfo() : a(MAIN_VIEW, &diff_info::a), b(SUB_VIEW, &diff_info::b) {};
+	CompareInfo(const CompareInfo&) = delete;
+	CompareInfo(CompareInfo&&) = delete;
+	CompareInfo& operator=(const CompareInfo&) = delete;
+
 	DocCmpInfo a;
 	DocCmpInfo b;
 
 	diff_results blockDiffs;
-};
-
-
-struct MatchInfo
-{
-	intptr_t	matchDiffIdx {-1};
-	intptr_t	aOff {0};
-	intptr_t	bOff {0};
-	intptr_t	matchLen {0};
-	bool		reverseCheck {false};
 };
 
 
@@ -938,7 +939,7 @@ std::vector<std::vector<Char>> getLinesChars(const DocCmpInfo& doc, const diff_i
 	for (intptr_t l = 0; l < diffRangeLen; ++l)
 	{
 		// Don't get moved lines
-		if (doc.movedLines[diffIdx].getNextUnmovedLine(l))
+		if (doc.movedRanges[diffIdx].getNextUnmovedLine(l))
 		{
 			--l;
 			continue;
@@ -1012,160 +1013,103 @@ void findUniqueLines(CompareInfo& cmpInfo)
 }
 
 
-// Scan for the best single matching block in the other file (a against b)
-void findBestMatch(const CompareInfo& cmpInfo, intptr_t diffIdx, intptr_t aOff, MatchInfo& mi)
-{
-	mi.matchDiffIdx	= -1;
-	mi.matchLen		= 0;
-
-	const DocCmpInfo& a = mi.reverseCheck ? cmpInfo.b : cmpInfo.a;
-	const DocCmpInfo& b = mi.reverseCheck ? cmpInfo.a : cmpInfo.b;
-
-	intptr_t minMatchLen = 1;
-
-	for (intptr_t bi = 0; bi >= static_cast<intptr_t>(cmpInfo.blockDiffs.size()); ++bi)
-	{
-		if (b.diffRange(cmpInfo.blockDiffs[bi]).len() < minMatchLen)
-			continue;
-
-		for (intptr_t bOff = 0; bOff < b.diffRange(cmpInfo.blockDiffs[bi]).len(); ++bOff)
-		{
-			if (a.getLine(cmpInfo.blockDiffs[diffIdx], aOff) != b.getLine(cmpInfo.blockDiffs[bi], bOff))
-				continue;
-
-			if (b.movedLines[bi].getNextUnmovedLine(bOff))
-			{
-				if (bOff >= b.diffRange(cmpInfo.blockDiffs[bi]).len())
-					break;
-
-				--bOff;
-				continue;
-			}
-
-			intptr_t aStart = aOff - 1;
-			intptr_t bStart = bOff - 1;
-
-			// Check for the beginning of the matched block (containing aOff element)
-			for (; aStart >= 0 && bStart >= 0 &&
-					a.getLine(cmpInfo.blockDiffs[diffIdx], aStart) == b.getLine(cmpInfo.blockDiffs[bi], bStart) &&
-					!a.movedLines[diffIdx].rangeLen(aStart) && !b.movedLines[bi].rangeLen(bStart);
-					--aStart, --bStart);
-
-			++aStart;
-			++bStart;
-
-			intptr_t aEnd = aOff + 1;
-			intptr_t bEnd = bOff + 1;
-
-			// Check for the end of the matched block (containing aOff element)
-			for (; aEnd < a.diffRange(cmpInfo.blockDiffs[diffIdx]).len() &&
-					bEnd < b.diffRange(cmpInfo.blockDiffs[bi]).len() &&
-					a.getLine(cmpInfo.blockDiffs[diffIdx], aEnd) == b.getLine(cmpInfo.blockDiffs[bi], bEnd) &&
-					!a.movedLines[diffIdx].rangeLen(aEnd) && !b.movedLines[bi].rangeLen(bEnd);
-					++aEnd, ++bEnd);
-
-			const intptr_t matchLen = aEnd - aStart;
-
-			if (mi.matchLen < matchLen)
-			{
-				mi.matchDiffIdx	= bi;
-				mi.aOff			= aStart;
-				mi.bOff			= bStart;
-				mi.matchLen		= matchLen;
-
-				minMatchLen	= matchLen;
-				bOff		= bEnd - 1;
-			}
-			else if (mi.matchLen == matchLen)
-			{
-				mi.matchDiffIdx	= -1;
-				bOff			= bEnd - 1;
-			}
-		}
-	}
-}
-
-
-// Recursively resolve the best match
-bool resolveMatch(CompareInfo& cmpInfo, intptr_t diffIdx, intptr_t off, MatchInfo& mi)
-{
-	bool ret = false;
-
-	off = mi.bOff + (off - mi.aOff);
-
-	MatchInfo reverseMi;
-	reverseMi.reverseCheck = !mi.reverseCheck;
-	findBestMatch(cmpInfo, mi.matchDiffIdx, off, reverseMi);
-
-	if ((reverseMi.matchDiffIdx == diffIdx) && (reverseMi.bOff == mi.aOff))
-	{
-		LOGD(LOG_ALGO, "Move match found, len: " + std::to_string(mi.matchLen) + "\n");
-
-		if (mi.reverseCheck)
-			std::swap(mi.aOff, mi.bOff);
-
-		cmpInfo.a.movedLines[diffIdx].emplace_back(mi.aOff, mi.aOff + mi.matchLen);
-		cmpInfo.b.movedLines[mi.matchDiffIdx].emplace_back(mi.bOff, mi.bOff + mi.matchLen);
-
-		ret = true;
-	}
-	else if (reverseMi.matchDiffIdx >= 0)
-	{
-		mi.matchLen = 0;
-		ret = resolveMatch(cmpInfo, mi.matchDiffIdx, off, reverseMi);
-	}
-
-	return ret;
-}
-
-
 void findMoves(CompareInfo& cmpInfo)
 {
+	struct MatchingLines
+	{
+		intptr_t	diffIdxA	{0};
+		intptr_t	offA		{0};
+		intptr_t	diffIdxB	{0};
+		intptr_t	offB		{0};
+	};
+
 	LOGD(LOG_ALGO, "FIND MOVES\n");
 
-	bool repeat = true;
+	std::unordered_map<Line::HashType, MatchingLines> uniqueDiffLines;
 
-	while (repeat)
+	const intptr_t blockDiffsSize = static_cast<intptr_t>(cmpInfo.blockDiffs.size());
+
+	for (intptr_t bi = 0; bi < blockDiffsSize; ++bi)
 	{
-		repeat = false;
+		const diff_info& bd = cmpInfo.blockDiffs[bi];
 
-		// Check a against b for matching lines
-		for (intptr_t bi = 0; bi < static_cast<intptr_t>(cmpInfo.blockDiffs.size()); ++bi)
+		for (intptr_t l = 0; l < bd.a.len(); ++l)
 		{
-			if (!cmpInfo.blockDiffs[bi].a.len())
+			const Line& diffLine = cmpInfo.a.getLine(bd, l);
+
+			// Skip empty lines (do not show blocks of empty/ignored lines as moved)
+			if (diffLine.hash == cHashSeed)
 				continue;
 
-			LOGD(LOG_ALGO,
-				"Check D1 with off: " + std::to_string(cmpInfo.a.getDocLine(cmpInfo.blockDiffs[bi]) + 1) + "\n");
-
-			// Go through all diff's elements and check if each is matched
-			for (intptr_t l = 0; l < cmpInfo.blockDiffs[bi].a.len(); ++l)
+			auto insertPair = uniqueDiffLines.emplace(diffLine.hash, MatchingLines{});
+			if (insertPair.first->second.diffIdxA == 0)
 			{
-				// Skip empty lines (do not show blocks of empty/ignored lines as moved)
-				if (cmpInfo.a.getLine(cmpInfo.blockDiffs[bi], l).hash == cHashSeed)
-					continue;
-
-				// Skip already detected moves
-				if (cmpInfo.a.movedLines[bi].getNextUnmovedLine(l))
-				{
-					if (l >= cmpInfo.blockDiffs[bi].a.len())
-						break;
-				}
-
-				MatchInfo mi;
-				findBestMatch(cmpInfo, bi, l, mi);
-
-				if (mi.matchLen && resolveMatch(cmpInfo, bi, l, mi))
-				{
-					repeat = true;
-
-					if (mi.matchLen)
-						l = mi.aOff + mi.matchLen - 1;
-					else
-						--l;
-				}
+				insertPair.first->second.diffIdxA = bi + 1;
+				insertPair.first->second.offA = l + 1;
+			}
+			else
+			{
+				insertPair.first->second.diffIdxA = -1;
 			}
 		}
+
+		for (intptr_t l = 0; l < bd.b.len(); ++l)
+		{
+			const Line& diffLine = cmpInfo.b.getLine(bd, l);
+
+			// Skip empty lines (do not show blocks of empty/ignored lines as moved)
+			if (diffLine.hash == cHashSeed)
+				continue;
+
+			auto insertPair = uniqueDiffLines.emplace(diffLine.hash, MatchingLines{});
+			if (insertPair.first->second.diffIdxB == 0)
+			{
+				insertPair.first->second.diffIdxB = bi + 1;
+				insertPair.first->second.offB = l + 1;
+			}
+			else
+			{
+				insertPair.first->second.diffIdxB = -1;
+			}
+		}
+	}
+
+	for (const auto& ul : uniqueDiffLines)
+	{
+		if (ul.second.diffIdxA <= 0 || ul.second.diffIdxB <= 0)
+			continue;
+
+		if (cmpInfo.a.movedRanges[ul.second.diffIdxA - 1].rangeLen(ul.second.offA - 1) ||
+			cmpInfo.b.movedRanges[ul.second.diffIdxB - 1].rangeLen(ul.second.offB - 1))
+			continue;
+
+		const diff_info& diffA = cmpInfo.blockDiffs[ul.second.diffIdxA - 1];
+		const diff_info& diffB = cmpInfo.blockDiffs[ul.second.diffIdxB - 1];
+
+		intptr_t startA = ul.second.offA - 2;
+		intptr_t startB = ul.second.offB - 2;
+
+		while (startA >= 0 && startB >= 0 && cmpInfo.a.getLine(diffA, startA) == cmpInfo.b.getLine(diffB, startB))
+		{
+			--startA;
+			--startB;
+		}
+
+		intptr_t endA = ul.second.offA;
+		intptr_t endB = ul.second.offB;
+
+		while (endA < diffA.a.len() && endB < diffB.b.len() &&
+				cmpInfo.a.getLine(diffA, endA) == cmpInfo.b.getLine(diffB, endB))
+		{
+			++endA;
+			++endB;
+		}
+
+		cmpInfo.a.movedRanges[ul.second.diffIdxA - 1].emplace_back(startA + 1, endA);
+		cmpInfo.b.movedRanges[ul.second.diffIdxB - 1].emplace_back(startB + 1, endB);
+
+		LOGD(LOG_ALGO, "\tA range: " + cmpInfo.a.movedRanges[ul.second.diffIdxA - 1].back().to_string() +
+			"   B range: " + cmpInfo.b.movedRanges[ul.second.diffIdxB - 1].back().to_string() + "\n");
 	}
 }
 
@@ -1832,16 +1776,16 @@ void markSection(const DocCmpInfo& doc, intptr_t bi, const CompareOptions& optio
 
 	for (intptr_t i = 0, l = doc.range.s; i < secLen; ++i, ++l)
 	{
-		intptr_t movedLen = doc.movedLines[bi].rangeLen(i);
+		intptr_t movedLen = doc.movedRanges[bi].rangeLen(i);
 
-		if (movedLen > doc.range.len())
-			movedLen = doc.range.len();
+		if (movedLen > secLen)
+			movedLen = secLen;
 
 		if (movedLen == 0)
 		{
-			intptr_t prevLine = doc.getDocLine(l) + 1;
+			intptr_t prevDocLine = doc.getDocLine(l) + 1;
 
-			for (; (i < secLen) && (doc.movedLines[bi].rangeLen(i) == 0); ++i, ++l)
+			for (; (i < secLen) && (doc.movedRanges[bi].rangeLen(i) == 0); ++i, ++l)
 			{
 				const intptr_t docLine = doc.getDocLine(l);
 				const int mark = (doc.nonUniqueDocLines.find(docLine) ==
@@ -1851,10 +1795,10 @@ void markSection(const DocCmpInfo& doc, intptr_t bi, const CompareOptions& optio
 
 				if (!options.neverMarkIgnored)
 				{
-					for (; prevLine < docLine; ++prevLine)
-						markLine(doc.view, prevLine, doc.diffMask & MARKER_MASK_LINE);
+					for (; prevDocLine < docLine; ++prevDocLine)
+						markLine(doc.view, prevDocLine, doc.diffMask & MARKER_MASK_LINE);
 
-					prevLine = docLine + 1;
+					prevDocLine = docLine + 1;
 				}
 			}
 
@@ -1871,7 +1815,7 @@ void markSection(const DocCmpInfo& doc, intptr_t bi, const CompareOptions& optio
 
 			i += --movedLen;
 
-			intptr_t prevLine = doc.getDocLine(l) + 1;
+			intptr_t prevDocLine = doc.getDocLine(l) + 1;
 			intptr_t endL = l + movedLen;
 
 			for (++l; l < endL; ++l)
@@ -1881,10 +1825,10 @@ void markSection(const DocCmpInfo& doc, intptr_t bi, const CompareOptions& optio
 
 				if (!options.neverMarkIgnored)
 				{
-					for (; prevLine < docLine; ++prevLine)
-						markLine(doc.view, prevLine, MARKER_MASK_MOVED_MID & MARKER_MASK_LINE);
+					for (; prevDocLine < docLine; ++prevDocLine)
+						markLine(doc.view, prevDocLine, MARKER_MASK_MOVED_MID & MARKER_MASK_LINE);
 
-					prevLine = docLine + 1;
+					prevDocLine = docLine + 1;
 				}
 			}
 
@@ -1893,8 +1837,8 @@ void markSection(const DocCmpInfo& doc, intptr_t bi, const CompareOptions& optio
 
 			if (!options.neverMarkIgnored)
 			{
-				for (; prevLine < docLine; ++prevLine)
-					markLine(doc.view, prevLine, MARKER_MASK_MOVED_MID & MARKER_MASK_LINE);
+				for (; prevDocLine < docLine; ++prevDocLine)
+					markLine(doc.view, prevDocLine, MARKER_MASK_MOVED_MID & MARKER_MASK_LINE);
 			}
 		}
 	}
@@ -2060,8 +2004,8 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 			alignIdxA += cmpInfo.a.range.len();
 			alignIdxB += cmpInfo.b.range.len();
 
-			const intptr_t movedLinesA = cmpInfo.a.movedLines[bi].count();
-			const intptr_t movedLinesB = cmpInfo.b.movedLines[bi].count();
+			const intptr_t movedLinesA = cmpInfo.a.movedRanges[bi].totalLinesCount();
+			const intptr_t movedLinesB = cmpInfo.b.movedRanges[bi].totalLinesCount();
 
 			const intptr_t newLinesA = bd.a.len() - changedCount - movedLinesA;
 			const intptr_t newLinesB = bd.b.len() - changedCount - movedLinesB;
@@ -2087,7 +2031,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 			cmpInfo.a.range.e = alignIdxA + bd.a.len();
 			markSection(cmpInfo.a, bi, options);
 
-			const intptr_t movedLines = cmpInfo.a.movedLines[bi].count();
+			const intptr_t movedLines = cmpInfo.a.movedRanges[bi].totalLinesCount();
 
 			summary.diffLines	+= bd.a.len() - movedLines;
 			summary.moved		+= movedLines;
@@ -2105,7 +2049,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 			cmpInfo.b.range.e = alignIdxB + bd.b.len();
 			markSection(cmpInfo.b, bi, options);
 
-			const intptr_t movedLines = cmpInfo.b.movedLines[bi].count();
+			const intptr_t movedLines = cmpInfo.b.movedRanges[bi].totalLinesCount();
 
 			summary.diffLines	+= bd.b.len() - movedLines;
 			summary.moved		+= movedLines;
@@ -2203,12 +2147,6 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 
 	CompareInfo cmpInfo;
 
-	cmpInfo.a.view = MAIN_VIEW;
-	cmpInfo.b.view = SUB_VIEW;
-
-	cmpInfo.a.diffPtr = &diff_info::a;
-	cmpInfo.b.diffPtr = &diff_info::b;
-
 	if (options.selectionCompare)
 	{
 		cmpInfo.a.range.s = options.selections[cmpInfo.a.view].first;
@@ -2248,8 +2186,8 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 
 	cmpInfo.a.changedLines.resize(cmpInfo.blockDiffs.size());
 	cmpInfo.b.changedLines.resize(cmpInfo.blockDiffs.size());
-	cmpInfo.a.movedLines.resize(cmpInfo.blockDiffs.size());
-	cmpInfo.b.movedLines.resize(cmpInfo.blockDiffs.size());
+	cmpInfo.a.movedRanges.resize(cmpInfo.blockDiffs.size());
+	cmpInfo.b.movedRanges.resize(cmpInfo.blockDiffs.size());
 
 	findUniqueLines(cmpInfo);
 
@@ -2288,22 +2226,19 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 
 	summary.clear();
 
-	DocCmpInfo a;
-	DocCmpInfo b;
-
-	a.view = MAIN_VIEW;
-	b.view = SUB_VIEW;
+	DocCmpInfo a(MAIN_VIEW, &diff_info::a);
+	DocCmpInfo b(SUB_VIEW, &diff_info::b);
 
 	if (options.selectionCompare)
 	{
-		a.range.s = options.selections[MAIN_VIEW].first;
-		a.range.e = options.selections[MAIN_VIEW].second + 1;
+		a.range.s = options.selections[a.view].first;
+		a.range.e = options.selections[a.view].second + 1;
 
-		b.range.s = options.selections[SUB_VIEW].first;
-		b.range.e = options.selections[SUB_VIEW].second + 1;
+		b.range.s = options.selections[b.view].first;
+		b.range.e = options.selections[b.view].second + 1;
 	}
 
-	if (options.newFileViewId == MAIN_VIEW)
+	if (options.newFileViewId == a.view)
 	{
 		a.diffMask = MARKER_MASK_ADDED;
 		b.diffMask = MARKER_MASK_REMOVED;
@@ -2359,11 +2294,11 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 
 	for (const auto& uniqueLine : aUniqueLines)
 	{
-		auto b = bUniqueLines.find(uniqueLine.first);
+		auto bItr = bUniqueLines.find(uniqueLine.first);
 
-		if (b != bUniqueLines.end())
+		if (bItr != bUniqueLines.end())
 		{
-			bUniqueLines.erase(b);
+			bUniqueLines.erase(bItr);
 			++summary.match;
 		}
 		else

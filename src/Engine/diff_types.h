@@ -5,11 +5,6 @@
 
 #pragma once
 
-// Should be defined before including windows.h so this header needs to be included above any windows.h inclusion.
-// That cannot be guaranteed but add the define here anyway for completeness
-#define NOMINMAX	1
-
-
 #include <cstdint>
 #include <vector>
 #include <string>
@@ -39,29 +34,29 @@ struct hash_type
 // precautions for data integrity
 struct range_t
 {
-	range_t() : s(0), e(0) {};
-	range_t(intptr_t start, intptr_t end) : s(start), e(end)
+	range_t() noexcept : s(0), e(0) {};
+	range_t(intptr_t start, intptr_t end) noexcept : s(start), e(end)
 	{
 		if (e < s)
 			e = s;
 	};
 
-	intptr_t len() const { return e - s; };
+	intptr_t len() const noexcept { return e - s; };
 
-	intptr_t distance_from(const range_t& rhs) const { return s - (rhs.len() ? rhs.e + 1 : rhs.e); };
-	intptr_t distance_from(intptr_t el) const { return s - el; };
-	intptr_t distance_to(const range_t& rhs) const { return rhs.s - (len() ? e + 1 : e); };
-	intptr_t distance_to(intptr_t el) const { return el - (len() ? e + 1 : e); };
+	intptr_t distance_from(const range_t& rhs) const noexcept { return s - (rhs.len() ? rhs.e + 1 : rhs.e); };
+	intptr_t distance_from(intptr_t el) const noexcept { return s - el; };
+	intptr_t distance_to(const range_t& rhs) const noexcept { return rhs.s - (len() ? e + 1 : e); };
+	intptr_t distance_to(intptr_t el) const noexcept { return el - (len() ? e + 1 : e); };
 
-	bool contains(intptr_t el) const { return (el >= s && el < e); };
+	bool contains(intptr_t el) const noexcept { return (el >= s && el < e); };
 
-	void shift(intptr_t off)
+	void shift(intptr_t off) noexcept
 	{
 		s += off;
 		e += off;
 	};
 
-	bool glue(const range_t& rhs)
+	bool glue(const range_t& rhs) noexcept
 	{
 		if (e == rhs.s)
 		{
@@ -90,20 +85,20 @@ struct range_t
 
 struct diff_info
 {
-	diff_info(intptr_t as, intptr_t ae, intptr_t bs, intptr_t be) : a(as, ae), b(bs, be) {};
+	diff_info(intptr_t as, intptr_t ae, intptr_t bs, intptr_t be) noexcept : a(as, ae), b(bs, be) {};
 
 	range_t	a;
 	range_t	b;
 
-	bool is_replacement() const { return (a.len() && b.len()); };
+	bool is_replacement() const noexcept { return (a.len() && b.len()); };
 
-	void shift(intptr_t off)
+	void shift(intptr_t off) noexcept
 	{
 		a.shift(off);
 		b.shift(off);
 	};
 
-	bool glue(const diff_info& rhs)
+	bool glue(const diff_info& rhs) noexcept
 	{
 		const bool united_a = a.glue(rhs.a);
 		const bool united_b = b.glue(rhs.b);
@@ -116,12 +111,12 @@ struct diff_info
 // It is merely a std::vector with some helper functions
 struct diff_results : public std::vector<diff_info>
 {
-	intptr_t count_replaces() const
+	intptr_t count_replaces() const noexcept
 	{
 		intptr_t replaces = 0;
 
 		for (const auto& d : *this)
-			replaces += std::min(d.a.len(), d.b.len());
+			replaces += (d.a.len() < d.b.len() ? d.a.len() : d.b.len());
 
 		return replaces;
 	};
@@ -131,7 +126,7 @@ struct diff_results : public std::vector<diff_info>
 		this->emplace_back(as, ae, bs, be);
 	};
 
-	void swap_ab()
+	void swap_ab() noexcept
 	{
 		for (auto& d : *this)
 			std::swap(d.a, d.b);
