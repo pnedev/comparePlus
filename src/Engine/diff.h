@@ -256,7 +256,7 @@ void DiffCalc<Elem>::_combine_diffs(diff_results& diff)
 		intptr_t match_idx = d->s - 1;
 		intptr_t diff_idx = d->e - 1;
 
-		while (match_idx >= prev_d->e && diff_idx > d->s && el[match_idx] == el[diff_idx])
+		while (match_idx >= prev_d->e && diff_idx >= d->s && el[match_idx] == el[diff_idx])
 		{
 			--match_idx;
 			--diff_idx;

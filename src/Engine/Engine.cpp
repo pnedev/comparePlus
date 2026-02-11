@@ -82,8 +82,10 @@ struct Line : public hash_type<uint64_t>
 // Compared element 'Word'
 struct Word : public hash_type<uint64_t>
 {
-	Word(intptr_t p, intptr_t l, uint64_t h = cHashSeed) : hash_type<uint64_t>(h),  pos(p), len(l){}
+	Word(intptr_t idx, intptr_t p, intptr_t l, uint64_t h = cHashSeed) :
+		hash_type<uint64_t>(h), lineIdx(idx),  pos(p), len(l) {}
 
+	intptr_t lineIdx;
 	intptr_t pos;
 	intptr_t len;
 };
@@ -611,8 +613,8 @@ inline void recalculateWordPos(int codepage, std::vector<Word>& words, const std
 }
 
 
-inline void getSectionRangeWords(std::vector<Word>& words, std::vector<wchar_t>& line, intptr_t pos, intptr_t endPos,
-		const CompareOptions& options)
+inline void getSectionRangeWords(std::vector<Word>& words, std::vector<wchar_t>& line, intptr_t lineIdx,
+		intptr_t pos, intptr_t endPos, const CompareOptions& options)
 {
 	if (pos >= endPos)
 		return;
@@ -630,7 +632,7 @@ inline void getSectionRangeWords(std::vector<Word>& words, std::vector<wchar_t>&
 
 	charType currentWordType = getCharTypeW(line[pos]);
 
-	Word word {pos, 1};
+	Word word {lineIdx, pos, 1};
 
 	if (options.ignoreChangedSpaces && currentWordType == charType::SPACECHAR)
 		word.hash = Hash(cHashSeed, L' ');
@@ -670,7 +672,7 @@ inline void getSectionRangeWords(std::vector<Word>& words, std::vector<wchar_t>&
 }
 
 
-std::vector<Word> getRegexIgnoreLineWords(std::vector<wchar_t>& line, const CompareOptions& options)
+std::vector<Word> getRegexIgnoreLineWords(std::vector<wchar_t>& line, intptr_t lineIdx, const CompareOptions& options)
 {
 	std::vector<Word> words;
 
@@ -685,7 +687,7 @@ std::vector<Word> getRegexIgnoreLineWords(std::vector<wchar_t>& line, const Comp
 	if (options.invertRegex && (rit != rend || !options.inclRegexNomatchLines))
 	{
 		for (; rit != rend; ++rit)
-			getSectionRangeWords(words, line, rit->position(), rit->position() + rit->length(), options);
+			getSectionRangeWords(words, line, lineIdx, rit->position(), rit->position() + rit->length(), options);
 	}
 	else
 	{
@@ -702,7 +704,7 @@ std::vector<Word> getRegexIgnoreLineWords(std::vector<wchar_t>& line, const Comp
 
 		while (rit != rend)
 		{
-			getSectionRangeWords(words, line, pos, rit->position(), options);
+			getSectionRangeWords(words, line, lineIdx, pos, rit->position(), options);
 
 			pos = rit->position() + rit->length();
 			++rit;
@@ -718,14 +720,15 @@ std::vector<Word> getRegexIgnoreLineWords(std::vector<wchar_t>& line, const Comp
 				return words;
 		}
 
-		getSectionRangeWords(words, line, pos, endPos + 1, options);
+		getSectionRangeWords(words, line, lineIdx, pos, endPos + 1, options);
 	}
 
 	return words;
 }
 
 
-std::vector<Word> getLineWords(int view, intptr_t docLine, const CompareOptions& options)
+std::vector<Word> getLineWords(int view, int codepage, intptr_t docLine,
+	const CompareOptions& options, intptr_t lineIdx = 0)
 {
 	std::vector<Word> words;
 
@@ -734,8 +737,6 @@ std::vector<Word> getLineWords(int view, intptr_t docLine, const CompareOptions&
 
 	if (lineStart >= lineEnd)
 		return words;
-
-	const int codepage = getCodepage(view);
 
 	std::vector<char> line = getText(view, lineStart, lineEnd);
 
@@ -749,7 +750,7 @@ std::vector<Word> getLineWords(int view, intptr_t docLine, const CompareOptions&
 
 	if (options.ignoreRegex)
 	{
-		words = getRegexIgnoreLineWords(wLine, options);
+		words = getRegexIgnoreLineWords(wLine, 0, options);
 	}
 	else
 	{
@@ -766,12 +767,30 @@ std::vector<Word> getLineWords(int view, intptr_t docLine, const CompareOptions&
 			++endPos;
 		}
 
-		getSectionRangeWords(words, wLine, pos, endPos, options);
+		getSectionRangeWords(words, wLine, 0, pos, endPos, options);
 	}
 
 	// In case of UTF-16 or UTF-32 find words byte positions and lengths because Scintilla uses those
 	if (wLen != len)
 		recalculateWordPos(codepage, words, wLine);
+
+	return words;
+}
+
+
+std::vector<Word> getLinesRangeWords(const DocCmpInfo& doc, const range_t& range, const CompareOptions& options)
+{
+	const int codepage = getCodepage(doc.view);
+
+	std::vector<Word> words;
+
+	for (intptr_t l = range.s; l < range.e; ++l)
+	{
+		std::vector<Word> lineWords = getLineWords(doc.view, codepage, doc.getDocLine(l), options, l - range.s);
+
+		if (!lineWords.empty())
+			words.insert(words.end(), lineWords.begin(), lineWords.end());
+	}
 
 	return words;
 }
@@ -1238,8 +1257,8 @@ void compareLines(CompareInfo& cmpInfo, intptr_t diffIdx, const std::map<intptr_
 
 		LOGD(LOG_ALGO, "Compare Lines " + std::to_string(lineA + 1) + " and " + std::to_string(lineB + 1) + "\n");
 
-		const std::vector<Word> lineWordsA = getLineWords(a.view, lineA, options);
-		const std::vector<Word> lineWordsB = getLineWords(b.view, lineB, options);
+		const std::vector<Word> lineWordsA = getLineWords(a.view, getCodepage(a.view), lineA, options);
+		const std::vector<Word> lineWordsB = getLineWords(b.view, getCodepage(b.view), lineB, options);
 
 		// First use word granularity (find matching words) for better precision
 		const auto lineDiffs = DiffCalc<Word>(lineWordsA, lineWordsB)(true);
@@ -1388,7 +1407,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const CompareInfo& cmpInf
 	{
 		for (intptr_t lineB = 0; lineB < linesCountB; ++lineB)
 			if (!chunkB[lineB].empty())
-				wordsB[lineB] = getLineWords(b.view, b.getDocLine(bd, lineB), options);
+				wordsB[lineB] = getLineWords(b.view, getCodepage(b.view), b.getDocLine(bd, lineB), options);
 	}
 
 	std::vector<std::set<LinesConv>> linesAConvergence(linesCountA);
@@ -1431,7 +1450,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const CompareInfo& cmpInf
 			if (!options.detectCharDiffs || !options.ignoreAllSpaces)
 			{
 				if (wordsA.empty())
-					wordsA = getLineWords(a.view, a.getDocLine(bd, lineA), options);
+					wordsA = getLineWords(a.view, getCodepage(a.view), a.getDocLine(bd, lineA), options);
 
 				const auto wordDiffs = DiffCalc<Word>(wordsA, wordsB[lineB],
 						std::bind(&ProgressDlg::IsCancelled, progress))();
@@ -1554,7 +1573,7 @@ std::vector<std::set<LinesConv>> getOrderedConvergence(const CompareInfo& cmpInf
 }
 
 
-bool findChanges(CompareInfo& cmpInfo, intptr_t diffIdx, const CompareOptions& options)
+bool findChangesLineByLine(CompareInfo& cmpInfo, intptr_t diffIdx, const CompareOptions& options)
 {
 	std::vector<std::set<LinesConv>> orderedLinesConvergence = getOrderedConvergence(cmpInfo, diffIdx, options);
 
@@ -1686,6 +1705,155 @@ bool findChanges(CompareInfo& cmpInfo, intptr_t diffIdx, const CompareOptions& o
 	}
 
 	compareLines(cmpInfo, diffIdx, bestLineMappings, options);
+
+	return true;
+}
+
+
+inline intptr_t addLineChange(const std::vector<Word>& wordsRange, intptr_t startWord, intptr_t endWord,
+	std::vector<ChangedLine>& changedLines, intptr_t lastChangedLineIdx)
+{
+	if (wordsRange[startWord].lineIdx != wordsRange[endWord].lineIdx)
+	{
+		if (startWord > 0 && wordsRange[startWord].lineIdx == wordsRange[startWord - 1].lineIdx)
+		{
+			intptr_t lineEndWord = startWord;
+
+			while (wordsRange[++lineEndWord].lineIdx == wordsRange[startWord].lineIdx);
+			--lineEndWord;
+
+			if (lastChangedLineIdx != wordsRange[startWord].lineIdx)
+			{
+				lastChangedLineIdx = wordsRange[startWord].lineIdx;
+				changedLines.emplace_back(lastChangedLineIdx);
+			}
+
+			changedLines.back().changes.emplace_back(wordsRange[startWord].pos,
+					wordsRange[lineEndWord].pos + wordsRange[lineEndWord].len);
+		}
+
+		if (static_cast<size_t>(endWord + 1) < wordsRange.size() &&
+			wordsRange[endWord].lineIdx == wordsRange[endWord + 1].lineIdx)
+		{
+			startWord = endWord;
+
+			while (wordsRange[--startWord].lineIdx == wordsRange[endWord].lineIdx);
+			++startWord;
+
+			lastChangedLineIdx = wordsRange[endWord].lineIdx;
+			changedLines.emplace_back(lastChangedLineIdx);
+			changedLines.back().changes.emplace_back(wordsRange[startWord].pos,
+					wordsRange[endWord].pos + wordsRange[endWord].len);
+		}
+
+	}
+	else if ((startWord > 0 && wordsRange[startWord].lineIdx == wordsRange[startWord - 1].lineIdx) ||
+		(static_cast<size_t>(endWord + 1) < wordsRange.size() &&
+		wordsRange[endWord].lineIdx == wordsRange[endWord + 1].lineIdx))
+	{
+		if (lastChangedLineIdx != wordsRange[startWord].lineIdx)
+		{
+			lastChangedLineIdx = wordsRange[startWord].lineIdx;
+			changedLines.emplace_back(lastChangedLineIdx);
+		}
+
+		changedLines.back().changes.emplace_back(wordsRange[startWord].pos,
+				wordsRange[endWord].pos + wordsRange[endWord].len);
+	}
+
+	return lastChangedLineIdx;
+}
+
+
+bool findChanges(CompareInfo& cmpInfo, intptr_t diffIdx, const CompareOptions& options)
+{
+	const std::vector<Word> wordsRangeA = getLinesRangeWords(cmpInfo.a, cmpInfo.blockDiffs[diffIdx].a, options);
+	const std::vector<Word> wordsRangeB = getLinesRangeWords(cmpInfo.b, cmpInfo.blockDiffs[diffIdx].b, options);
+
+	if (wordsRangeA.empty() || wordsRangeB.empty())
+		return true;
+
+	const auto rangeDiffs = DiffCalc<Word>(wordsRangeA, wordsRangeB)(true);
+
+	if (ProgressDlg::Get()->IsCancelled())
+		return false;
+
+	PRINT_DIFFS("WORD DIFFS", rangeDiffs);
+
+	auto& changedLinesA = cmpInfo.a.changedLines[diffIdx];
+	auto& changedLinesB = cmpInfo.b.changedLines[diffIdx];
+
+	intptr_t lastChangedLineIdxA = -1;
+	intptr_t lastChangedLineIdxB = -1;
+
+	for (const auto& rd : rangeDiffs)
+	{
+		if (rd.a.len())
+		{
+			lastChangedLineIdxA = addLineChange(wordsRangeA, rd.a.s, rd.a.e - 1, changedLinesA, lastChangedLineIdxA);
+		}
+		else
+		{
+			const intptr_t startWord = rd.a.s > 0 ? rd.a.s - 1 : 0;
+
+			if (lastChangedLineIdxA != wordsRangeA[startWord].lineIdx)
+			{
+				lastChangedLineIdxA = wordsRangeA[startWord].lineIdx;
+				changedLinesA.emplace_back(lastChangedLineIdxA);
+			}
+		}
+
+		if (rd.b.len())
+		{
+			lastChangedLineIdxB = addLineChange(wordsRangeB, rd.b.s, rd.b.e - 1, changedLinesB, lastChangedLineIdxB);
+		}
+		else
+		{
+			const intptr_t startWord = rd.b.s > 0 ? rd.b.s - 1 : 0;
+
+			if (lastChangedLineIdxB != wordsRangeB[startWord].lineIdx)
+			{
+				lastChangedLineIdxB = wordsRangeB[startWord].lineIdx;
+				changedLinesB.emplace_back(lastChangedLineIdxB);
+			}
+		}
+	}
+
+	// Temp guard
+	if (changedLinesA.size() != changedLinesB.size())
+	{
+		// std::string msg = "Diff index " + std::to_string(diffIdx + 1) + " - changed lines: " +
+			// std::to_string(changedLinesA.size()) + " vs. " + std::to_string(changedLinesB.size());
+
+		// ::MessageBoxA(nppData._nppHandle, msg.c_str(), "ComparePlus", MB_OK | MB_ICONWARNING);
+
+		changedLinesA.clear();
+		changedLinesB.clear();
+
+		findChangesLineByLine(cmpInfo, diffIdx, options);
+		return true;
+
+		while (changedLinesA.size() > changedLinesB.size())
+			changedLinesA.pop_back();
+		while (changedLinesB.size() > changedLinesA.size())
+			changedLinesB.pop_back();
+	}
+
+	if (options.detectSubLineMoves)
+	{
+		const size_t changedLinesSize =
+				changedLinesA.size() > changedLinesB.size() ? changedLinesB.size() : changedLinesA.size();
+
+		for (size_t i = 0; i < changedLinesSize; ++i)
+		{
+			if (!changedLinesA[i].changes.empty() && !changedLinesB[i].changes.empty())
+				// NOTE: Optimize this making new function directly using already gotten ranges words!
+				findSubLineMoves(
+					cmpInfo.a.view, cmpInfo.a.getDocLine(cmpInfo.blockDiffs[diffIdx], changedLinesA[i].idx),
+					cmpInfo.b.view, cmpInfo.b.getDocLine(cmpInfo.blockDiffs[diffIdx], changedLinesB[i].idx),
+					changedLinesA[i].changes, changedLinesB[i].changes);
+		}
+	}
 
 	return true;
 }

@@ -510,6 +510,12 @@ inline intptr_t getLineEnd(int view, intptr_t line)
 }
 
 
+inline intptr_t getLineFromPos(int view, intptr_t pos)
+{
+	return CallScintilla(view, SCI_LINEFROMPOSITION, pos, 0);
+}
+
+
 inline intptr_t getLinesCount(int view)
 {
 	return CallScintilla(view, SCI_GETLINECOUNT, 0, 0);
