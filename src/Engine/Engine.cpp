@@ -1768,48 +1768,48 @@ void findSubBlockDiffs(CompareInfo& cmpInfo, const CompareOptions& options)
 	if (changedProgressCount > 10000)
 		progress->Show();
 
-#ifdef MULTITHREAD // Do multithreaded block compares
+// #ifdef MULTITHREAD // Do multithreaded block compares
 
-	const int threadsCount = std::thread::hardware_concurrency() - 2;
+	// const int threadsCount = std::thread::hardware_concurrency() - 2;
 
-	if (threadsCount > 0)
-	{
-		LOGD(LOG_ALL, "Changes detection running on " + std::to_string(threadsCount + 1) + " threads\n");
+	// if (threadsCount > 0)
+	// {
+		// LOGD(LOG_ALL, "Changes detection running on " + std::to_string(threadsCount + 1) + " threads\n");
 
-		std::atomic<size_t> blockIdx {0};
+		// std::atomic<size_t> blockIdx {0};
 
-		auto threadFn =
-			[&]()
-			{
-				for (size_t i = blockIdx++; i < changedBlockIdx.size(); i = blockIdx++)
-				{
-					if (!findChanges(cmpInfo, changedBlockIdx[i], options))
-						return;
-				}
-			};
+		// auto threadFn =
+			// [&]()
+			// {
+				// for (size_t i = blockIdx++; i < changedBlockIdx.size(); i = blockIdx++)
+				// {
+					// if (!findChanges(cmpInfo, changedBlockIdx[i], options))
+						// return;
+				// }
+			// };
 
-		std::vector<std::thread> threads(threadsCount);
+		// std::vector<std::thread> threads(threadsCount);
 
-		for (auto& th : threads)
-			th = std::thread(threadFn);
+		// for (auto& th : threads)
+			// th = std::thread(threadFn);
 
-		threadFn();
+		// threadFn();
 
-		for (auto& th : threads)
-			th.join();
-	}
-	else
-	{
-		LOGD(LOG_ALL, "Changes detection running on 1 thread\n");
+		// for (auto& th : threads)
+			// th.join();
+	// }
+	// else
+	// {
+		// LOGD(LOG_ALL, "Changes detection running on 1 thread\n");
 
-		for (intptr_t i : changedBlockIdx)
-		{
-			if (!findChanges(cmpInfo, i, options))
-				break;
-		}
-	}
+		// for (intptr_t i : changedBlockIdx)
+		// {
+			// if (!findChanges(cmpInfo, i, options))
+				// break;
+		// }
+	// }
 
-#else // Do block compares in single thread
+// #else // Do block compares in single thread
 
 	for (intptr_t i : changedBlockIdx)
 	{
@@ -1817,7 +1817,7 @@ void findSubBlockDiffs(CompareInfo& cmpInfo, const CompareOptions& options)
 			break;
 	}
 
-#endif // MULTITHREAD
+// #endif // MULTITHREAD
 }
 
 
