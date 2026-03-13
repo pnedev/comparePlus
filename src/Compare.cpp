@@ -61,12 +61,6 @@
 
 #endif // NDEBUG
 
-#ifdef DLOG
-
-#pragma message("Compiling with debug log messages.")
-
-#endif // DLOG
-
 
 const wchar_t PLUGIN_NAME[] = L"ComparePlus";
 
@@ -79,6 +73,8 @@ UserSettings	Settings;
 int gMarginWidth = 0;
 
 #ifdef DLOG
+
+#pragma message("Compiling with debug messages.")
 
 #ifdef MULTITHREAD
 
@@ -6386,6 +6382,8 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID)
 
 extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 {
+	static_assert(MAIN_VIEW == 0 && SUB_VIEW == 1, "MAIN_VIEW must be 0 and SUB_VIEW must be 1.");
+
 	nppData = notpadPlusData;
 
 	sciFunc		= (SciFnDirect)::SendMessageW(notpadPlusData._scintillaMainHandle, SCI_GETDIRECTFUNCTION, 0, 0);
