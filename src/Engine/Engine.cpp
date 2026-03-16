@@ -194,7 +194,7 @@ struct DocCmpInfo
 
 	inline const Line& getLine(const diff_info& di, intptr_t off = 0) const
 	{
-		assert(off >= 0 && off < diffRange(di).len());
+		assert(off >= 0 && off < diffRange(di).len() && static_cast<size_t>(diffRange(di).s + off) < lines.size());
 
 		return lines[diffRange(di).s + off];
 	}
@@ -204,17 +204,17 @@ struct DocCmpInfo
 		assert(idx >= 0);
 
 		if (static_cast<size_t>(idx) >= lines.size())
-			return lines.back().num + 1;
+			return lines.back().num;
 
 		return lines[idx].num;
 	}
 
 	inline intptr_t getDocLine(const diff_info& di, intptr_t off = 0) const
 	{
-		assert(off >= 0);
+		assert(off >= 0 && off < diffRange(di).len());
 
 		if (static_cast<size_t>(diffRange(di).s + off) >= lines.size())
-			return lines.back().num + 1;
+			return lines.back().num;
 
 		return lines[diffRange(di).s + off].num;
 	}
@@ -2127,13 +2127,20 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 			return false;
 	}
 
-	alignPair.main.diffMask	= 0;
-	alignPair.main.line		= cmpInfo.a.getDocLine(cmpInfo.blockDiffs.back().a.e - 1) + 1;
+	if (!cmpInfo.a.lines.empty() && !cmpInfo.b.lines.empty())
+	{
+		alignPair.main.diffMask	= 0;
+		alignPair.main.line		= cmpInfo.blockDiffs.back().a.e > 0 ?
+			cmpInfo.a.getDocLine(cmpInfo.blockDiffs.back().a.e - 1) + 1 :
+			cmpInfo.a.getDocLine(cmpInfo.blockDiffs.back().a.e);
 
-	alignPair.sub.diffMask	= 0;
-	alignPair.sub.line		= cmpInfo.b.getDocLine(cmpInfo.blockDiffs.back().b.e - 1) + 1;
+		alignPair.sub.diffMask	= 0;
+		alignPair.sub.line		= cmpInfo.blockDiffs.back().b.e > 0 ?
+			cmpInfo.b.getDocLine(cmpInfo.blockDiffs.back().b.e - 1) + 1 :
+			cmpInfo.b.getDocLine(cmpInfo.blockDiffs.back().b.e);
 
-	summary.alignmentInfo.emplace_back(alignPair);
+		summary.alignmentInfo.emplace_back(alignPair);
+	}
 
 	if (blockDiffsSize)
 		summary.match += cmpInfo.a.lines.size() - cmpInfo.blockDiffs.back().a.e;
