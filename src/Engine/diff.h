@@ -111,8 +111,8 @@ diff_results DiffCalc<Elem>::_run_algo(const Elem* a, intptr_t asize, const Elem
 		bsize -= off_e;
 	}
 
-	// using DiffAlg = HistogramDiff<Elem>;
-	using DiffAlg = MyersDiff<Elem>;
+	using DiffAlg = HistogramDiff<Elem>;
+	// using DiffAlg = MyersDiff<Elem>;
 
 	DiffAlg diff_alg(_cancelledFn);
 
@@ -122,7 +122,7 @@ diff_results DiffCalc<Elem>::_run_algo(const Elem* a, intptr_t asize, const Elem
 		diff_results swapped_diff;
 
 #ifdef MULTITHREAD
-		const bool parallel_run = (asize > 30000 && bsize > 30000 && std::thread::hardware_concurrency() > 1);
+		const bool parallel_run = (asize > 10000 && bsize > 10000 && std::thread::hardware_concurrency() > 1);
 
 		if (parallel_run)
 		{

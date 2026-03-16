@@ -24,7 +24,7 @@ public:
 	virtual bool needDiffsCombine() { return false; };
 
 private:
-	static constexpr int _cCancelCheckItrInterval {30000};
+	static constexpr int _cCancelCheckItrInterval {100000};
 
 	void push_quad(std::vector<intptr_t>& stk, intptr_t al, intptr_t ah, intptr_t bl, intptr_t bh)
 	{
@@ -165,6 +165,17 @@ void HistogramDiff<Elem>::run(const Elem* a, intptr_t asize, const Elem* b, intp
 		else
 		{
 			diff.add(alo + off - 1, ahi + off - 1, blo + off - 1, bhi + off - 1);
+		}
+
+		if (!--_cancelCheckCount)
+		{
+			if (diff_algorithm<Elem>::isCancelled())
+			{
+				diff.clear();
+				break;
+			}
+
+			_cancelCheckCount = _cCancelCheckItrInterval;
 		}
 	}
 }
