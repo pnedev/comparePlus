@@ -25,6 +25,7 @@ public:
 
 private:
 	static constexpr int _cCancelCheckItrInterval {100000};
+	static constexpr intptr_t cLowCount {512}; // jgit uses 65
 
 	void push_quad(std::vector<intptr_t>& stk, intptr_t al, intptr_t ah, intptr_t bl, intptr_t bh)
 	{
@@ -187,15 +188,13 @@ bool HistogramDiff<Elem>::find_best_matching_region(
 	intptr_t alo, intptr_t ahi, intptr_t blo, intptr_t bhi,
 	intptr_t* malo, intptr_t* mahi, intptr_t* mblo, intptr_t* mbhi)
 {
-	static constexpr intptr_t cLowcnt = 512; // jgit uses 65
-
 	intptr_t j, lowcnt, rgnlowcnt, cnt, nextj, nexti, nalo, nahi, nblo, nbhi;
 	*malo = 0;
 
 	if (alo == ahi || blo == bhi)
 		return false;
 
-	lowcnt = cLowcnt;
+	lowcnt = cLowCount;
 
 	for (intptr_t i = blo; i < bhi; i = nexti)
 	{
