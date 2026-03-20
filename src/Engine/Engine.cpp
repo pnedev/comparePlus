@@ -1253,7 +1253,7 @@ void compareLines(CompareInfo& cmpInfo, intptr_t diffIdx, const std::map<intptr_
 		const std::vector<Word> lineWordsB = getLineWords(b.view, lineB, options);
 
 		// First use word granularity (find matching words) for better precision
-		const auto lineDiffs = DiffCalc<Word>(lineWordsA, lineWordsB)(DiffAlg::MYERS, true);
+		const auto lineDiffs = DiffCalc<Word>(lineWordsA, lineWordsB)(DiffAlg::MIXED, true);
 		const intptr_t lineDiffsSize = static_cast<intptr_t>(lineDiffs.size());
 
 		PRINT_DIFFS("WORD DIFFS", lineDiffs);
@@ -1301,7 +1301,7 @@ void compareLines(CompareInfo& cmpInfo, intptr_t diffIdx, const std::map<intptr_
 							std::to_string(offB + 1) + " to " + std::to_string(endB + 1) + "\n");
 
 					// Compare changed words
-					const auto sectionDiffs = DiffCalc<Char>(secA, secB)(DiffAlg::MYERS, true);
+					const auto sectionDiffs = DiffCalc<Char>(secA, secB)(DiffAlg::MIXED, true);
 
 					PRINT_DIFFS("CHAR DIFFS", sectionDiffs);
 
@@ -2196,7 +2196,7 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 		return CompareResult::COMPARE_CANCELLED;
 
 	cmpInfo.blockDiffs = DiffCalc<Line>(cmpInfo.a.lines, cmpInfo.b.lines,
-		std::bind(&ProgressDlg::IsCancelled, progress))(DiffAlg::HISTOGRAM,
+		std::bind(&ProgressDlg::IsCancelled, progress))(DiffAlg::MIXED,
 			options.ignoreAllSpaces || options.ignoreChangedSpaces, true, options.syncPoints);
 
 	if (progress->IsCancelled())

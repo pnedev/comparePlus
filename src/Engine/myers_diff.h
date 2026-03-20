@@ -53,7 +53,7 @@ class MyersDiff : public diff_algorithm<Elem>
 public:
 	MyersDiff(IsCancelledFn cancelledFn = nullptr) : diff_algorithm<Elem>(cancelledFn) {};
 
-	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize, diff_results& diff, intptr_t off);
+	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize, diff_results& diffs, intptr_t off);
 
 private:
 	static constexpr int		_cCancelCheckItrInterval {3000};
@@ -98,7 +98,7 @@ private:
 	const Elem* _a;
 	const Elem* _b;
 
-	diff_results* _diff;
+	diff_results* _diffs;
 
 	varray<intptr_t> _buf;
 
@@ -112,14 +112,14 @@ private:
 
 template <typename Elem>
 void MyersDiff<Elem>::run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
-	diff_results& diff, intptr_t off)
+	diff_results& diffs, intptr_t off)
 {
 	_cancelCheckCount = _cCancelCheckItrInterval;
 
 	_a = a;
 	_b = b;
 
-	_diff = &diff;
+	_diffs = &diffs;
 
 	_as = off;
 	_ae = off;
@@ -128,9 +128,9 @@ void MyersDiff<Elem>::run(const Elem* a, intptr_t asize, const Elem* b, intptr_t
 	_last_was_match = true;
 
 	if (_ses(off, asize, off, bsize) == -1)
-		diff.clear();
+		diffs.clear();
 	else if (!_last_was_match)
-		diff.add(_as, _ae, _bs, _be);
+		diffs.add(_as, _ae, _bs, _be);
 
 	// Wipe temporal buffer to free memory
 	_buf.get().clear();
@@ -311,7 +311,7 @@ intptr_t MyersDiff<Elem>::_ses(
 
 			if (!_last_was_match && ms.u - ms.x > 0)
 			{
-				_diff->add(_as, _ae, _bs, _be);
+				_diffs->add(_as, _ae, _bs, _be);
 
 				_as = aoff;
 				_ae = _as;
@@ -347,7 +347,7 @@ intptr_t MyersDiff<Elem>::_ses(
 				if (x == u)
 				{
 					if (!_last_was_match)
-						_diff->add(_as, _ae, _bs, _be);
+						_diffs->add(_as, _ae, _bs, _be);
 
 					_as = aoff + alen;
 					_ae = _as;
@@ -370,7 +370,7 @@ intptr_t MyersDiff<Elem>::_ses(
 						_last_was_match = true;
 					}
 
-					_diff->add(_as, _ae, _bs, _be);
+					_diffs->add(_as, _ae, _bs, _be);
 
 					_as = aoff + alen;
 					_ae = _as;
@@ -383,7 +383,7 @@ intptr_t MyersDiff<Elem>::_ses(
 				if (x == u)
 				{
 					if (!_last_was_match)
-						_diff->add(_as, _ae, _bs, _be);
+						_diffs->add(_as, _ae, _bs, _be);
 
 					_as = aoff + (alen - 1);
 					_ae = _as + 1;
@@ -406,7 +406,7 @@ intptr_t MyersDiff<Elem>::_ses(
 						_last_was_match = true;
 					}
 
-					_diff->add(_as, _ae, _bs, _be);
+					_diffs->add(_as, _ae, _bs, _be);
 
 					_as = aoff + 1 + blen;
 					_ae = _as;

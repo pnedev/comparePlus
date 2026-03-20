@@ -87,6 +87,7 @@ struct range_t
 struct diff_info
 {
 	diff_info(intptr_t as, intptr_t ae, intptr_t bs, intptr_t be) noexcept : a(as, ae), b(bs, be) {};
+	diff_info(const diff_info& rhs) noexcept : a(rhs.a), b(rhs.b) {};
 
 	range_t	a;
 	range_t	b;
@@ -133,24 +134,24 @@ struct diff_results : public std::vector<diff_info>
 			std::swap(d.a, d.b);
 	};
 
-	void append(diff_results&& diff, intptr_t aoff, intptr_t boff)
+	void append(diff_results&& diffs, intptr_t aoff, intptr_t boff)
 	{
-		if (diff.empty())
+		if (diffs.empty())
 			return;
 
-		for (auto& d : diff)
+		for (auto& d : diffs)
 		{
 			d.a.shift(aoff);
 			d.b.shift(boff);
 		}
 
-		auto dItr = diff.begin();
+		auto dItr = diffs.begin();
 
 		// Unite border diffs
 		if (this->size() && this->back().glue(*dItr))
 			dItr++;
 
-		this->insert(this->end(), dItr, diff.end());
+		this->insert(this->end(), dItr, diffs.end());
 	};
 };
 
@@ -178,7 +179,7 @@ public:
 	// Runs the actual compare and fills the differences in diff param.
 	// The diff algorithm assumes the sequences begin with a diff so provide here the offset to the first difference.
 	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
-			diff_results& diff, intptr_t off = 0) = 0;
+			diff_results& diffs, intptr_t off = 0) = 0;
 
 	// Provides information if the specific algorithm's results can benefit from certain diffs post-processing
 	virtual bool needSwapCheck() { return true; };

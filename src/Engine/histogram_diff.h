@@ -17,15 +17,15 @@ template <typename Elem>
 class HistogramDiff : public diff_algorithm<Elem>
 {
 public:
-	HistogramDiff(IsCancelledFn cancelledFn = nullptr) : diff_algorithm<Elem>(cancelledFn) {};
+	HistogramDiff(IsCancelledFn cancelledFn = nullptr, intptr_t lowCount = 250) :
+		diff_algorithm<Elem>(cancelledFn), _lowCount(lowCount) {};
 
-	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize, diff_results& diff, intptr_t off);
+	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize, diff_results& diffs, intptr_t off);
 
 	virtual bool needDiffsCombine() { return false; };
 
 private:
 	static constexpr int _cCancelCheckItrInterval {100000};
-	static constexpr intptr_t cLowCount {512}; // jgit uses 65
 
 	void push_quad(std::vector<intptr_t>& stk, intptr_t al, intptr_t ah, intptr_t bl, intptr_t bh)
 	{
@@ -75,13 +75,14 @@ private:
 		intptr_t alo, intptr_t ahi, intptr_t blo, intptr_t bhi,
 		intptr_t* malo, intptr_t* mahi, intptr_t* mblo, intptr_t* mbhi);
 
-	int _cancelCheckCount;
+	intptr_t	_lowCount;
+	int			_cancelCheckCount;
 };
 
 
 template <typename Elem>
 void HistogramDiff<Elem>::run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize,
-	diff_results& diff, intptr_t off)
+	diff_results& diffs, intptr_t off)
 {
 	_cancelCheckCount = _cCancelCheckItrInterval;
 
@@ -165,14 +166,14 @@ void HistogramDiff<Elem>::run(const Elem* a, intptr_t asize, const Elem* b, intp
 		}
 		else
 		{
-			diff.add(alo + off - 1, ahi + off - 1, blo + off - 1, bhi + off - 1);
+			diffs.add(alo + off - 1, ahi + off - 1, blo + off - 1, bhi + off - 1);
 		}
 
 		if (!--_cancelCheckCount)
 		{
 			if (diff_algorithm<Elem>::isCancelled())
 			{
-				diff.clear();
+				diffs.clear();
 				break;
 			}
 
@@ -194,7 +195,7 @@ bool HistogramDiff<Elem>::find_best_matching_region(
 	if (alo == ahi || blo == bhi)
 		return false;
 
-	lowcnt = cLowCount;
+	lowcnt = _lowCount;
 
 	for (intptr_t i = blo; i < bhi; i = nexti)
 	{

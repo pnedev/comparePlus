@@ -27,7 +27,8 @@
 
 enum class DiffAlg {
 	HISTOGRAM,
-	MYERS
+	MYERS,
+	MIXED
 };
 
 
@@ -43,7 +44,7 @@ public:
 	DiffCalc(const Elem* v1, intptr_t v1_size, const Elem* v2, intptr_t v2_size, IsCancelledFn cancelledFn = nullptr);
 
 	// Runs the actual compare and returns the differences
-	diff_results operator()(DiffAlg alg = DiffAlg::HISTOGRAM,
+	diff_results operator()(DiffAlg alg = DiffAlg::MIXED,
 			bool doDiffsCombine = false, bool doBoundaryShift = false,
 			const std::vector<std::pair<intptr_t, intptr_t>>& syncPoints = {});
 
@@ -53,8 +54,8 @@ public:
 private:
 	diff_results _run_algo(DiffAlg alg, const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize);
 
-	void _combine_diffs(diff_results& diff);
-	void _shift_boundaries(diff_results& diff);
+	void _combine_diffs(diff_results& diffs);
+	void _shift_boundaries(diff_results& diffs);
 
 	bool isCancelled() { return (_cancelledFn && _cancelledFn()); };
 
@@ -89,7 +90,7 @@ DiffCalc<Elem>::DiffCalc(const Elem* v1, intptr_t v1_size, const Elem* v2, intpt
 template <typename Elem>
 diff_results DiffCalc<Elem>::_run_algo(DiffAlg alg, const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize)
 {
-	diff_results diff;
+	diff_results diffs;
 
 	intptr_t off_s = 0;
 
@@ -99,7 +100,7 @@ diff_results DiffCalc<Elem>::_run_algo(DiffAlg alg, const Elem* a, intptr_t asiz
 		++off_s;
 
 	if (asize == bsize && off_s == asize)
-		return diff;
+		return diffs;
 
 	const intptr_t aend = asize - 1;
 	const intptr_t bend = bsize - 1;
@@ -119,17 +120,19 @@ diff_results DiffCalc<Elem>::_run_algo(DiffAlg alg, const Elem* a, intptr_t asiz
 		bsize -= off_e;
 	}
 
+	const intptr_t histogram_lowcnt = (alg == DiffAlg::MIXED) ? 1 : 250;
+
 	std::unique_ptr<diff_algorithm<Elem>> diff_alg;
 
-	if (alg == DiffAlg::HISTOGRAM)
-		diff_alg.reset(new HistogramDiff<Elem>(_cancelledFn));
-	else
+	if (alg == DiffAlg::MYERS)
 		diff_alg.reset(new MyersDiff<Elem>(_cancelledFn));
+	else
+		diff_alg.reset(new HistogramDiff<Elem>(_cancelledFn, histogram_lowcnt));
 
 	// Compare with swapped sequences as well to see if result is more optimal
 	if (diff_alg->needSwapCheck())
 	{
-		diff_results swapped_diff;
+		diff_results swapped_diffs;
 
 #ifdef MULTITHREAD
 		const bool parallel_run = (asize > 10000 && bsize > 10000 && std::thread::hardware_concurrency() > 1);
@@ -138,42 +141,42 @@ diff_results DiffCalc<Elem>::_run_algo(DiffAlg alg, const Elem* a, intptr_t asiz
 		{
 			std::thread thr = std::thread([&]()
 			{
-				if (alg == DiffAlg::HISTOGRAM)
-					HistogramDiff<Elem>(_cancelledFn).run(b, bsize, a, asize, swapped_diff, off_s);
+				if (alg == DiffAlg::MYERS)
+					MyersDiff<Elem>(_cancelledFn).run(b, bsize, a, asize, swapped_diffs, off_s);
 				else
-					MyersDiff<Elem>(_cancelledFn).run(b, bsize, a, asize, swapped_diff, off_s);
+					HistogramDiff<Elem>(_cancelledFn, histogram_lowcnt).run(b, bsize, a, asize, swapped_diffs, off_s);
 			});
 
-			diff_alg->run(a, asize, b, bsize, diff, off_s);
+			diff_alg->run(a, asize, b, bsize, diffs, off_s);
 
 			thr.join();
 		}
 		else
 #endif // MULTITHREAD
 		{
-			diff_alg->run(a, asize, b, bsize, diff, off_s);
+			diff_alg->run(a, asize, b, bsize, diffs, off_s);
 
 			if (isCancelled())
 				return {};
 
-			diff_alg->run(b, bsize, a, asize, swapped_diff, off_s);
+			diff_alg->run(b, bsize, a, asize, swapped_diffs, off_s);
 		}
 
 		if (isCancelled())
 			return {};
 
-		const intptr_t swapped_replaces = swapped_diff.count_replaces();
+		const intptr_t swapped_replaces = swapped_diffs.count_replaces();
 
 		// Check which result is more optimal
-		if (swapped_replaces && swapped_replaces > diff.count_replaces())
+		if (swapped_replaces && swapped_replaces > diffs.count_replaces())
 		{
-			diff = std::move(swapped_diff);
-			diff.swap_ab();
+			diffs = std::move(swapped_diffs);
+			diffs.swap_ab();
 		}
 	}
 	else
 	{
-		diff_alg->run(a, asize, b, bsize, diff, off_s);
+		diff_alg->run(a, asize, b, bsize, diffs, off_s);
 	}
 
 	if (isCancelled())
@@ -182,7 +185,7 @@ diff_results DiffCalc<Elem>::_run_algo(DiffAlg alg, const Elem* a, intptr_t asiz
 	_diffsCombine = _diffsCombine && diff_alg->needDiffsCombine();
 	_boundaryShift = _boundaryShift && diff_alg->needBoundaryShift();
 
-	return diff;
+	return diffs;
 }
 
 
@@ -190,14 +193,14 @@ template <typename Elem>
 diff_results DiffCalc<Elem>::operator()(DiffAlg alg, bool doDiffsCombine, bool doBoundaryShift,
 	const std::vector<std::pair<intptr_t, intptr_t>>& syncPoints)
 {
-	diff_results diff;
-
 	_diffsCombine = doDiffsCombine;
 	_boundaryShift = doBoundaryShift;
 
+	diff_results diffs;
+
 	if (syncPoints.empty())
 	{
-		diff = _run_algo(alg, _a, _a_size, _b, _b_size);
+		diffs = _run_algo(alg, _a, _a_size, _b, _b_size);
 	}
 	else
 	{
@@ -210,7 +213,7 @@ diff_results DiffCalc<Elem>::operator()(DiffAlg alg, bool doDiffsCombine, bool d
 				syncP.second < bpos || syncP.second >= _b_size)
 				break;
 
-			diff.append(_run_algo(alg, &_a[apos], syncP.first - apos, &_b[bpos], syncP.second - bpos), apos, bpos);
+			diffs.append(_run_algo(alg, &_a[apos], syncP.first - apos, &_b[bpos], syncP.second - bpos), apos, bpos);
 
 			if (isCancelled())
 				return {};
@@ -219,51 +222,76 @@ diff_results DiffCalc<Elem>::operator()(DiffAlg alg, bool doDiffsCombine, bool d
 			bpos = syncP.second;
 		}
 
-		diff.append(_run_algo(alg, &_a[apos], _a_size - apos, &_b[bpos], _b_size - bpos), apos, bpos);
+		diffs.append(_run_algo(alg, &_a[apos], _a_size - apos, &_b[bpos], _b_size - bpos), apos, bpos);
 	}
 
 	if (isCancelled())
 		return {};
 
+	if (alg == DiffAlg::MIXED)
+	{
+		_diffsCombine = doDiffsCombine;
+		_boundaryShift = doBoundaryShift;
+
+		diff_results rough_diffs(std::move(diffs));
+
+		for (const auto& d : rough_diffs)
+		{
+			if (d.a.len() > 2 && d.b.len() > 2)
+			{
+				diffs.append(_run_algo(DiffAlg::MYERS, &_a[d.a.s], d.a.len(), &_b[d.b.s], d.b.len()), d.a.s, d.b.s);
+
+				if (isCancelled())
+					return {};
+			}
+			else
+			{
+				diffs.emplace_back(d);
+			}
+		}
+	}
+
 	if (_diffsCombine)
-		_combine_diffs(diff);
+		_combine_diffs(diffs);
 
 	if (_boundaryShift)
-		_shift_boundaries(diff);
+		_shift_boundaries(diffs);
 
-	return diff;
+	return diffs;
 }
 
 
-// If a whole matching block is contained at the end of the next diff block shift match down:
+// If a whole matching block is contained at the end of the next diff block move match down:
 // If [] surrounds the marked differences, basically [abc]d[efgd]hi is the same as [abcdefg]dhi
+// If a whole diff block is contained at the end of the previous match block move diff up:
+// If [] surrounds the marked differences, basically [abc]defg[fg]hi is the same as [abc]de[fg]fghi
 // We combine diffs to make results more compact and clean
 template <typename Elem>
-void DiffCalc<Elem>::_combine_diffs(diff_results& diff)
+void DiffCalc<Elem>::_combine_diffs(diff_results& diffs)
 {
-	intptr_t diffs_size = static_cast<intptr_t>(diff.size());
+	intptr_t diffs_size = static_cast<intptr_t>(diffs.size());
 
 	for (intptr_t i = 1; i < diffs_size; ++i)
 	{
-		// If both sequences are changed diff endings differ for sure -> cannot both match previous match block
-		if (diff[i].is_replacement())
+		// If both sequences are changed diff doesn't match previous match for sure - cannot combine anything
+		if (diffs[i].is_replacement())
 			continue;
 
 		const Elem*		el;
 		const range_t*	d;
 		range_t*		prev_d;
 
-		if (diff[i].a.len())
+		if (diffs[i].a.len())
 		{
 			el = _a;
-			d = &diff[i].a;
-			prev_d = &diff[i - 1].a;
+			d = &diffs[i].a;
+			prev_d = &diffs[i - 1].a;
 		}
 		else
 		{
 			el = _b;
-			d = &diff[i].b;
-			prev_d = &diff[i - 1].b;
+			d = &diffs[i].b;
+			prev_d = &diffs[i - 1].b;
 		}
 
 		intptr_t match_idx = d->s - 1;
@@ -279,13 +307,17 @@ void DiffCalc<Elem>::_combine_diffs(diff_results& diff)
 		// combine diffs shifting match down
 		if (match_idx < prev_d->e)
 		{
-			const intptr_t shift = d->s - 1 - match_idx;
+			prev_d->e = diff_idx + 1;
 
-			prev_d->e = d->e - shift;
-
-			// Diff merged into previous - erase it and recheck same idx again
-			diff.erase(diff.begin() + i);
+			// Diff merged into previous - erase it and recheck previous diff again
+			diffs.erase(diffs.begin() + i);
 			--diffs_size;
+			i -= 2;
+		}
+		// The whole diff block is contained at the end of the previous match -> move diff up and recheck it
+		else if (diff_idx < d->s)
+		{
+			diffs[i].shift(-d->len());
 			--i;
 		}
 	}
@@ -298,14 +330,14 @@ void DiffCalc<Elem>::_combine_diffs(diff_results& diff)
 // Since the most coding languages start with unique elem and end with repetitive elem (end, </node>, }, ], ), >, etc)
 // we shift the differences down to make results look cleaner
 template <typename Elem>
-void DiffCalc<Elem>::_shift_boundaries(diff_results& diff)
+void DiffCalc<Elem>::_shift_boundaries(diff_results& diffs)
 {
-	intptr_t diffs_size = static_cast<intptr_t>(diff.size());
+	intptr_t diffs_size = static_cast<intptr_t>(diffs.size());
 
 	for (intptr_t i = 0; i < diffs_size; ++i)
 	{
 		// If both sequences are changed boundaries differ for sure
-		if (diff[i].is_replacement())
+		if (diffs[i].is_replacement())
 			continue;
 
 		const Elem*		el;
@@ -313,17 +345,17 @@ void DiffCalc<Elem>::_shift_boundaries(diff_results& diff)
 		intptr_t		end_idx;
 
 		// Changed range (a or b)
-		if (diff[i].a.len())
+		if (diffs[i].a.len())
 		{
 			el = _a;
-			d = &diff[i].a;
-			end_idx = (i + 1 < diffs_size) ? diff[i + 1].a.s : _a_size;
+			d = &diffs[i].a;
+			end_idx = (i + 1 < diffs_size) ? diffs[i + 1].a.s : _a_size;
 		}
 		else
 		{
 			el = _b;
-			d = &diff[i].b;
-			end_idx = (i + 1 < diffs_size) ? diff[i + 1].b.s : _b_size;
+			d = &diffs[i].b;
+			end_idx = (i + 1 < diffs_size) ? diffs[i + 1].b.s : _b_size;
 		}
 
 		intptr_t diff_idx = d->s;
@@ -339,13 +371,13 @@ void DiffCalc<Elem>::_shift_boundaries(diff_results& diff)
 
 		if (shift > 0)
 		{
-			diff[i].shift(shift);
+			diffs[i].shift(shift);
 
 			// Check if next diff should be merged
-			if (i + 1 < diffs_size && diff[i].glue(diff[i + 1]))
+			if (i + 1 < diffs_size && diffs[i].glue(diffs[i + 1]))
 			{
 				// Diff blocks merged - erase next and recheck same idx again
-				diff.erase(diff.begin() + (i + 1));
+				diffs.erase(diffs.begin() + (i + 1));
 				--diffs_size;
 				--i;
 			}
