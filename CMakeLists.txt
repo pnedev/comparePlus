@@ -73,7 +73,7 @@ if (UNIX OR MINGW)
 	endif ()
 
 	set (CMAKE_CXX_FLAGS
-		"-std=c++14 -O3 -static-libgcc -static-libstdc++ -Wall -Wno-unknown-pragmas"
+		"-std=c++20 -O3 -static-libgcc -static-libstdc++ -Wall -Wno-unknown-pragmas"
 	)
 
 	set (CMAKE_MODULE_LINKER_FLAGS

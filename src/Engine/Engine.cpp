@@ -25,6 +25,7 @@
 #include <exception>
 #include <utility>
 #include <vector>
+#include <span>
 #include <unordered_set>
 #include <set>
 #include <unordered_map>
@@ -82,10 +83,13 @@ struct Line : public hash_type<uint64_t>
 // Compared element 'Word'
 struct Word : public hash_type<uint64_t>
 {
-	Word(intptr_t p, intptr_t l, uint64_t h = cHashSeed) : hash_type<uint64_t>(h),  pos(p), len(l){}
+	Word(intptr_t idx, intptr_t p, intptr_t l, charType t, uint64_t h = cHashSeed) :
+		hash_type<uint64_t>(h), lineIdx(idx),  pos(p), len(l), type(t) {}
 
+	intptr_t lineIdx;
 	intptr_t pos;
 	intptr_t len;
+	charType type;
 };
 
 
@@ -93,6 +97,8 @@ struct Word : public hash_type<uint64_t>
 // Use directly the character as hash
 struct Char : public hash_type<wchar_t>
 {
+	static const intptr_t len = 1;
+
 	Char(wchar_t c, intptr_t p) : hash_type<wchar_t>(c), pos(p) {}
 
 	intptr_t pos;
@@ -101,10 +107,11 @@ struct Char : public hash_type<wchar_t>
 
 struct changed_range_t : public range_t
 {
-	changed_range_t() : range_t(), moved {false} {}
-	changed_range_t(intptr_t start, intptr_t end) : range_t(start, end), moved {false} {}
+	changed_range_t() : range_t(), moved_to {-1} {}
+	changed_range_t(const range_t& rhs) : range_t(rhs), moved_to {-1} {}
+	changed_range_t(intptr_t start, intptr_t end) : range_t(start, end), moved_to {-1} {}
 
-	bool moved;
+	intptr_t moved_to;
 };
 
 
@@ -177,8 +184,8 @@ struct DocCmpInfo
 	std::vector<Line>				lines; // Compared lines from 'range' member (vector's index is not a doc line!)
 	std::unordered_set<intptr_t>	nonUniqueDocLines;
 
-	std::vector<std::vector<ChangedLine>>	changedLines;	// Changed lines per block diff after lines compare
-	std::vector<MovedRanges>				movedRanges;	// Moved lines ranges per block diff after lines compare
+	std::vector<std::vector<ChangedLine>>	changedLines;	// Changed lines per block diff (sub-block compare)
+	std::vector<MovedRanges>				movedRanges;	// Moved lines ranges per block diff
 
 	inline const range_t& diffRange(const diff_info& di) const
 	{
@@ -232,32 +239,6 @@ struct CompareInfo
 	DocCmpInfo b;
 
 	diff_results blockDiffs;
-};
-
-
-struct LinesConv
-{
-	float conv;
-
-	intptr_t lineA;
-	intptr_t lineB;
-
-	LinesConv() : lineA(-1), lineB(-1) {}
-	LinesConv(float c, intptr_t la, intptr_t lb) : conv(c), lineA(la), lineB(lb) {}
-
-	inline void Set(float c, intptr_t la, intptr_t lb)
-	{
-		conv = c;
-		lineA = la;
-		lineB = lb;
-	}
-
-	inline bool operator<(const LinesConv& rhs) const
-	{
-		return ((conv > rhs.conv) ||
-				((conv == rhs.conv) && ((lineB < rhs.lineB) ||
-										((lineB == rhs.lineB) && (lineA < rhs.lineA)))));
-	}
 };
 
 
@@ -622,8 +603,8 @@ inline void recalculateWordPos(int codepage, std::vector<Word>& words, const std
 }
 
 
-inline void getSectionRangeWords(std::vector<Word>& words, std::vector<wchar_t>& line, intptr_t pos, intptr_t endPos,
-		const CompareOptions& options)
+inline void getSectionRangeWords(std::vector<Word>& words, std::vector<wchar_t>& line, intptr_t lineIdx,
+		intptr_t pos, intptr_t endPos, const CompareOptions& options)
 {
 	if (pos >= endPos)
 		return;
@@ -641,7 +622,7 @@ inline void getSectionRangeWords(std::vector<Word>& words, std::vector<wchar_t>&
 
 	charType currentWordType = getCharTypeW(line[pos]);
 
-	Word word {pos, 1};
+	Word word {lineIdx, pos, 1, currentWordType};
 
 	if (options.ignoreChangedSpaces && currentWordType == charType::SPACECHAR)
 		word.hash = Hash(cHashSeed, L' ');
@@ -668,6 +649,7 @@ inline void getSectionRangeWords(std::vector<Word>& words, std::vector<wchar_t>&
 
 			word.pos = pos;
 			word.len = 1;
+			word.type = currentWordType;
 
 			if (options.ignoreChangedSpaces && currentWordType == charType::SPACECHAR)
 				word.hash = Hash(cHashSeed, L' ');
@@ -681,7 +663,7 @@ inline void getSectionRangeWords(std::vector<Word>& words, std::vector<wchar_t>&
 }
 
 
-std::vector<Word> getRegexIgnoreLineWords(std::vector<wchar_t>& line, const CompareOptions& options)
+std::vector<Word> getRegexIgnoreLineWords(std::vector<wchar_t>& line, intptr_t lineIdx, const CompareOptions& options)
 {
 	std::vector<Word> words;
 
@@ -696,7 +678,7 @@ std::vector<Word> getRegexIgnoreLineWords(std::vector<wchar_t>& line, const Comp
 	if (options.invertRegex && (rit != rend || !options.inclRegexNomatchLines))
 	{
 		for (; rit != rend; ++rit)
-			getSectionRangeWords(words, line, rit->position(), rit->position() + rit->length(), options);
+			getSectionRangeWords(words, line, lineIdx, rit->position(), rit->position() + rit->length(), options);
 	}
 	else
 	{
@@ -713,7 +695,7 @@ std::vector<Word> getRegexIgnoreLineWords(std::vector<wchar_t>& line, const Comp
 
 		while (rit != rend)
 		{
-			getSectionRangeWords(words, line, pos, rit->position(), options);
+			getSectionRangeWords(words, line, lineIdx, pos, rit->position(), options);
 
 			pos = rit->position() + rit->length();
 			++rit;
@@ -729,14 +711,15 @@ std::vector<Word> getRegexIgnoreLineWords(std::vector<wchar_t>& line, const Comp
 				return words;
 		}
 
-		getSectionRangeWords(words, line, pos, endPos + 1, options);
+		getSectionRangeWords(words, line, lineIdx, pos, endPos + 1, options);
 	}
 
 	return words;
 }
 
 
-std::vector<Word> getLineWords(int view, intptr_t docLine, const CompareOptions& options)
+std::vector<Word> getLineWords(int view, int codepage, intptr_t docLine,
+	const CompareOptions& options, intptr_t lineIdx = 0)
 {
 	std::vector<Word> words;
 
@@ -745,8 +728,6 @@ std::vector<Word> getLineWords(int view, intptr_t docLine, const CompareOptions&
 
 	if (lineStart >= lineEnd)
 		return words;
-
-	const int codepage = getCodepage(view);
 
 	std::vector<char> line = getText(view, lineStart, lineEnd);
 
@@ -760,7 +741,7 @@ std::vector<Word> getLineWords(int view, intptr_t docLine, const CompareOptions&
 
 	if (options.ignoreRegex)
 	{
-		words = getRegexIgnoreLineWords(wLine, options);
+		words = getRegexIgnoreLineWords(wLine, lineIdx, options);
 	}
 	else
 	{
@@ -777,7 +758,7 @@ std::vector<Word> getLineWords(int view, intptr_t docLine, const CompareOptions&
 			++endPos;
 		}
 
-		getSectionRangeWords(words, wLine, pos, endPos, options);
+		getSectionRangeWords(words, wLine, lineIdx, pos, endPos, options);
 	}
 
 	// In case of UTF-16 or UTF-32 find words byte positions and lengths because Scintilla uses those
@@ -785,6 +766,39 @@ std::vector<Word> getLineWords(int view, intptr_t docLine, const CompareOptions&
 		recalculateWordPos(codepage, words, wLine);
 
 	return words;
+}
+
+
+std::pair<std::vector<Word>, std::unordered_map<intptr_t, range_t>> getLinesRangeWords(const DocCmpInfo& doc,
+	const range_t& range, intptr_t diffIdx, const CompareOptions& options)
+{
+	const int codepage = getCodepage(doc.view);
+
+	std::vector<Word> words;
+	std::unordered_map<intptr_t, range_t> lineWordsRange;
+
+	for (intptr_t l = range.s; l < range.e; ++l)
+	{
+		intptr_t lIdx = l - range.s;
+
+		if (doc.movedRanges[diffIdx].getNextUnmoved(lIdx))
+		{
+			l = lIdx + range.s;
+			if (l >= range.e)
+				break;
+		}
+
+		std::vector<Word> lineWords = getLineWords(doc.view, codepage, doc.getDocLine(l), options, lIdx);
+
+		if (!lineWords.empty())
+		{
+			const intptr_t rangeS = static_cast<intptr_t>(words.size());
+			words.insert(words.end(), lineWords.begin(), lineWords.end());
+			lineWordsRange.emplace(lIdx, range_t(rangeS, static_cast<intptr_t>(words.size())));
+		}
+	}
+
+	return std::make_pair(words, lineWordsRange);
 }
 
 
@@ -977,19 +991,19 @@ std::vector<std::vector<Char>> getLinesChars(const DocCmpInfo& doc, const diff_i
 
 				if (options.ignoreChangedSpaces && !chars[l].empty())
 				{
-					auto itr = chars[l].begin();
-
-					for (; itr != chars[l].end() && (itr->hash == L' ' || itr->hash == L'\t'); ++itr);
-
-					if (itr != chars[l].begin())
-						chars[l].erase(chars[l].begin(), itr);
-
 					size_t i = chars[l].size() - 1;
 
 					for (; i >= 0 && (chars[l][i] == L' ' || chars[l][i] == L'\t'); --i);
 
 					if (++i != chars[l].size())
 						chars[l].erase(chars[l].begin() + i, chars[l].end());
+
+					auto itr = chars[l].begin();
+
+					for (; itr != chars[l].end() && (itr->hash == L' ' || itr->hash == L'\t'); ++itr);
+
+					if (itr != chars[l].begin())
+						chars[l].erase(chars[l].begin(), itr);
 				}
 			}
 		}
@@ -1033,10 +1047,10 @@ void findMoves(CompareInfo& cmpInfo)
 {
 	struct MatchingLines
 	{
-		intptr_t	diffIdxA	{0};
-		intptr_t	offA		{0};
-		intptr_t	diffIdxB	{0};
-		intptr_t	offB		{0};
+		intptr_t diffIdxA	{0};
+		intptr_t offA		{0};
+		intptr_t diffIdxB	{0};
+		intptr_t offB		{0};
 	};
 
 	LOGD(LOG_ALGO, "FIND MOVES\n");
@@ -1180,56 +1194,58 @@ inline intptr_t matchBeginEnd(ChangedLine& changedLineA, ChangedLine& changedLin
 }
 
 
-void findSubLineMoves(int view1, intptr_t docLine1, int view2, intptr_t docLine2,
-	std::vector<changed_range_t>& line_changes1, std::vector<changed_range_t>& line_changes2)
+// Elem type must have == operator
+template <typename Elem>
+void findMovedRanges(const std::vector<Elem>& dataA, const std::vector<Elem>& dataB,
+	std::vector<changed_range_t>& rangesA, std::vector<changed_range_t>& rangesB)
 {
-	const std::vector<char> lineA = getText(view1, getLineStart(view1, docLine1), getLineEnd(view1, docLine1));
-	const std::vector<char> lineB = getText(view2, getLineStart(view2, docLine2), getLineEnd(view2, docLine2));
+	std::unordered_set<intptr_t> nonUniqueRangeA;
+	std::unordered_set<intptr_t> nonUniqueRangeB;
 
-	for (auto lc1 = line_changes1.begin(); lc1 != line_changes1.end(); lc1++)
+	for (auto ra = rangesA.begin(); ra != rangesA.end(); ra++)
 	{
-		bool sameSectionFound = false;
+		if (nonUniqueRangeA.find(ra->s) != nonUniqueRangeA.end())
+			continue;
 
-		for (auto lc = line_changes1.begin(); lc != line_changes1.end(); lc++)
+		bool sameRangeFound = false;
+
+		for (auto r = ra + 1; r != rangesA.end(); r++)
 		{
-			if (lc->s == lc1->s || lc->moved)
-				continue;
-
-			if (lc->len() == lc1->len() && std::equal(&lineA[lc->s], &lineA[lc->e], &lineA[lc1->s]))
+			if (r->len() == ra->len() && std::equal(&dataA[r->s], &dataA[r->e], &dataA[ra->s]))
 			{
-				sameSectionFound = true;
-				break;
+				nonUniqueRangeA.emplace(r->s);
+				sameRangeFound = true;
 			}
 		}
 
-		if (sameSectionFound)
+		if (sameRangeFound)
 			continue;
 
-		auto lc2same = line_changes2.end();
+		auto rbMatch = rangesB.end();
 
-		for (auto lc2 = line_changes2.begin(); lc2 != line_changes2.end(); lc2++)
+		for (auto rb = rangesB.begin(); rb != rangesB.end(); rb++)
 		{
-			if (lc2->moved)
-				continue;
-
-			if (lc2->len() == lc1->len() && std::equal(&lineB[lc2->s], &lineB[lc2->e], &lineA[lc1->s]))
+			if (rb->len() == ra->len() && rb->moved_to < 0 && nonUniqueRangeB.find(rb->s) == nonUniqueRangeB.end() &&
+				std::equal(&dataB[rb->s], &dataB[rb->e], &dataA[ra->s]))
 			{
-				if (lc2same == line_changes2.end())
+				if (rbMatch == rangesB.end())
 				{
-					lc2same = lc2;
+					rbMatch = rb;
 				}
 				else
 				{
-					lc2same = line_changes2.end();
+					nonUniqueRangeB.emplace(rb->s);
+					nonUniqueRangeB.emplace(rbMatch->s);
+					rbMatch = rangesB.end();
 					break;
 				}
 			}
 		}
 
-		if (lc2same != line_changes2.end())
+		if (rbMatch != rangesB.end())
 		{
-			lc1->moved = true;
-			lc2same->moved = true;
+			ra->moved_to = rbMatch->s;
+			rbMatch->moved_to = ra->s;
 		}
 	}
 }
@@ -1249,12 +1265,17 @@ void compareLines(CompareInfo& cmpInfo, intptr_t diffIdx, const std::map<intptr_
 
 		LOGD(LOG_ALGO, "Compare Lines " + std::to_string(lineA + 1) + " and " + std::to_string(lineB + 1) + "\n");
 
-		const std::vector<Word> lineWordsA = getLineWords(a.view, lineA, options);
-		const std::vector<Word> lineWordsB = getLineWords(b.view, lineB, options);
+		const std::vector<Word> lineWordsA = getLineWords(a.view, getCodepage(a.view), lineA, options);
+		const std::vector<Word> lineWordsB = getLineWords(b.view, getCodepage(b.view), lineB, options);
+
+		std::vector<Char> secA;
+		std::vector<Char> secB;
+
+		std::vector<changed_range_t> changesA;
+		std::vector<changed_range_t> changesB;
 
 		// First use word granularity (find matching words) for better precision
-		const auto lineDiffs = DiffCalc<Word>(lineWordsA, lineWordsB)(DiffAlg::MIXED, true);
-		const intptr_t lineDiffsSize = static_cast<intptr_t>(lineDiffs.size());
+		const auto lineDiffs = DiffCalc<Word>(lineWordsA, lineWordsB)(DiffAlg::MIXED, true, true);
 
 		PRINT_DIFFS("WORD DIFFS", lineDiffs);
 
@@ -1267,21 +1288,8 @@ void compareLines(CompareInfo& cmpInfo, intptr_t diffIdx, const std::map<intptr_
 		const intptr_t linePosA = getLineStart(a.view, lineA);
 		const intptr_t linePosB = getLineStart(b.view, lineB);
 
-		intptr_t lineLenA = 0;
-		intptr_t lineLenB = 0;
-
-		for (const auto& word : lineWordsA)
-			lineLenA += word.len;
-
-		for (const auto& word : lineWordsB)
-			lineLenB += word.len;
-
-		intptr_t totalLineMatchLen = lineLenA + lineLenB;
-
-		for (intptr_t i = 0; i < lineDiffsSize; ++i)
+		for (const auto& ld : lineDiffs)
 		{
-			const auto& ld = lineDiffs[i];
-
 			// Resolve words mismatched pairs to find possible sub-word similarities
 			if (ld.is_replacement())
 			{
@@ -1291,8 +1299,8 @@ void compareLines(CompareInfo& cmpInfo, intptr_t diffIdx, const std::map<intptr_
 				intptr_t offB = lineWordsB[ld.b.s].pos;
 				intptr_t endB = lineWordsB[ld.b.e - 1].pos + lineWordsB[ld.b.e - 1].len;
 
-				const std::vector<Char> secA = getSectionChars(a.view, linePosA + offA, linePosA + endA, options);
-				const std::vector<Char> secB = getSectionChars(b.view, linePosB + offB, linePosB + endB, options);
+				secA = getSectionChars(a.view, linePosA + offA, linePosA + endA, options);
+				secB = getSectionChars(b.view, linePosB + offB, linePosB + endB, options);
 
 				if (options.detectCharDiffs)
 				{
@@ -1301,7 +1309,7 @@ void compareLines(CompareInfo& cmpInfo, intptr_t diffIdx, const std::map<intptr_
 							std::to_string(offB + 1) + " to " + std::to_string(endB + 1) + "\n");
 
 					// Compare changed words
-					const auto sectionDiffs = DiffCalc<Char>(secA, secB)(DiffAlg::MIXED, true);
+					const auto sectionDiffs = DiffCalc<Char>(secA, secB)(DiffAlg::MYERS, true, true);
 
 					PRINT_DIFFS("CHAR DIFFS", sectionDiffs);
 
@@ -1309,436 +1317,510 @@ void compareLines(CompareInfo& cmpInfo, intptr_t diffIdx, const std::map<intptr_
 					{
 						if (sd.a.len())
 						{
-							changed_range_t change;
+							if (options.detectSubLineMoves)
+								changesA.emplace_back(sd.a);
 
-							change.s = secA[sd.a.s].pos + offA;
-							change.e = secA[sd.a.e - 1].pos + offA + 1;
-
-							changedLineA.changes.emplace_back(change);
-
-							totalLineMatchLen -= change.len();
+							changedLineA.changes.emplace_back(
+									offA + secA[sd.a.s].pos, offA + secA[sd.a.e - 1].pos + 1);
 						}
 						if (sd.b.len())
 						{
-							changed_range_t change;
+							if (options.detectSubLineMoves)
+								changesB.emplace_back(sd.b);
 
-							change.s = secB[sd.b.s].pos + offB;
-							change.e = secB[sd.b.e - 1].pos + offB + 1;
-
-							changedLineB.changes.emplace_back(change);
-
-							totalLineMatchLen -= change.len();
+							changedLineB.changes.emplace_back(
+									offB + secB[sd.b.s].pos, offB + secB[sd.b.e - 1].pos + 1);
 						}
 					}
 				}
 				// Always match non-alphabetical characters in the beginning and at the end of changed sections
 				else
 				{
-					const intptr_t matchBEcount =
-							matchBeginEnd(changedLineA, changedLineB, secA, secB, offA, offB, endA, endB,
-								[](const wchar_t ch) { return (getCharTypeW(ch) != charType::ALPHANUMCHAR); });
+					if (options.detectSubLineMoves)
+					{
+						changesA.emplace_back(ld.a);
+						changesB.emplace_back(ld.b);
+					}
 
-					totalLineMatchLen -= ((endA - offA) + (endB - offB) - (2 * matchBEcount));
+					matchBeginEnd(changedLineA, changedLineB, secA, secB, offA, offB, endA, endB,
+								[](const wchar_t ch) { return (getCharTypeW(ch) != charType::ALPHANUMCHAR); });
 				}
 			}
 			else if (ld.a.len())
 			{
-				changed_range_t change;
+				if (options.detectSubLineMoves)
+					changesA.emplace_back(ld.a);
 
-				change.s = lineWordsA[ld.a.s].pos;
-				change.e = lineWordsA[ld.a.e - 1].pos + lineWordsA[ld.a.e - 1].len;
-
-				changedLineA.changes.emplace_back(change);
-
-				totalLineMatchLen -= change.len();
+				changedLineA.changes.emplace_back(
+						lineWordsA[ld.a.s].pos, lineWordsA[ld.a.e - 1].pos + lineWordsA[ld.a.e - 1].len);
 			}
 			else
 			{
-				changed_range_t change;
+				if (options.detectSubLineMoves)
+					changesB.emplace_back(ld.b);
 
-				change.s = lineWordsB[ld.b.s].pos;
-				change.e = lineWordsB[ld.b.e - 1].pos + lineWordsB[ld.b.e - 1].len;
-
-				changedLineB.changes.emplace_back(change);
-
-				totalLineMatchLen -= change.len();
+				changedLineB.changes.emplace_back(
+						lineWordsB[ld.b.s].pos, lineWordsB[ld.b.e - 1].pos + lineWordsB[ld.b.e - 1].len);
 			}
 		}
 
-		// Not enough portion of the lines matches - consider them totally different
-		if (((totalLineMatchLen * 100) / (lineLenA + lineLenB)) < options.changedResemblPercent)
-		{
-			a.changedLines[diffIdx].pop_back();
-			b.changedLines[diffIdx].pop_back();
-		}
-		else if (options.detectSubLineMoves)
+		if (options.detectSubLineMoves)
 		{
 			if (!changedLineA.changes.empty() && !changedLineB.changes.empty())
-				findSubLineMoves(a.view, lineA, b.view, lineB, changedLineA.changes, changedLineB.changes);
+			{
+				if (options.detectCharDiffs)
+					findMovedRanges(secA, secB, changesA, changesB);
+				else
+					findMovedRanges(lineWordsA, lineWordsB, changesA, changesB);
+
+				intptr_t changesCount = static_cast<intptr_t>(changedLineA.changes.size());
+
+				for (intptr_t i = 0; i < changesCount; ++i)
+					changedLineA.changes[i].moved_to = changesA[i].moved_to;
+
+				changesCount = static_cast<intptr_t>(changedLineB.changes.size());
+
+				for (intptr_t i = 0; i < changesCount; ++i)
+					changedLineB.changes[i].moved_to = changesB[i].moved_to;
+			}
 		}
 	}
 }
 
 
-std::vector<std::set<LinesConv>> getOrderedConvergence(const CompareInfo& cmpInfo, intptr_t diffIdx,
-	const CompareOptions& options)
+inline std::span<Word> getLineSpan(
+	std::pair<std::vector<Word>, std::unordered_map<intptr_t, range_t>>& range, intptr_t idx)
 {
-	const DocCmpInfo& a	= cmpInfo.a;
-	const DocCmpInfo& b	= cmpInfo.b;
-	const diff_info& bd	= cmpInfo.blockDiffs[diffIdx];
+	assert(idx >= 0 && static_cast<size_t>(idx) < range.first.size());
 
-	const std::vector<std::vector<Char>> chunkA = getLinesChars(a, bd, diffIdx, options);
-	const std::vector<std::vector<Char>> chunkB = getLinesChars(b, bd, diffIdx, options);
+	auto itr = range.second.find(range.first[idx].lineIdx);
+	assert(itr != range.second.end());
 
-	const intptr_t linesCountA = static_cast<intptr_t>(chunkA.size());
-	const intptr_t linesCountB = static_cast<intptr_t>(chunkB.size());
+	return std::span<Word>(range.first.begin() + itr->second.s, static_cast<size_t>(itr->second.len()));
+}
 
-	std::vector<std::vector<Word>> wordsB(linesCountB);
 
-	if (!options.detectCharDiffs || !options.ignoreAllSpaces)
-	{
-		for (intptr_t lineB = 0; lineB < linesCountB; ++lineB)
-			if (!chunkB[lineB].empty())
-				wordsB[lineB] = getLineWords(b.view, b.getDocLine(bd, lineB), options);
-	}
+float findResemblance(const std::span<Word> sA, const std::span<Word> sB)
+{
+	intptr_t totalLen = 0;
+	intptr_t matchLen = 0;
 
-	std::vector<std::set<LinesConv>> linesAConvergence(linesCountA);
-	std::vector<std::set<LinesConv>> linesBConvergence(linesCountB);
+	for (const auto& w : sA)
+		totalLen += w.len;
+
+	for (const auto& w : sB)
+		totalLen += w.len;
+
+	if (!totalLen)
+		return 0;
 
 	progress_ptr& progress = ProgressDlg::Get();
 
-	intptr_t linesProgress = 0;
+	const auto wordDiffs = DiffCalc<Word>(sA, sB, std::bind(&ProgressDlg::IsCancelled, progress))(DiffAlg::MIXED);
 
-	for (intptr_t lineA = 0; lineA < linesCountA; ++lineA)
+	if (progress->IsCancelled())
+		return 0;
+
+	const intptr_t wordDiffsSize = static_cast<intptr_t>(wordDiffs.size());
+
+	if (!wordDiffsSize)
+		return 100.0;
+
+	for (intptr_t n = 0; n < wordDiffs[0].a.s; ++n)
+		matchLen += sA[n].len;
+
+	for (intptr_t n = wordDiffs[wordDiffsSize - 1].a.e; static_cast<size_t>(n) < sA.size(); ++n)
+		matchLen += sA[n].len;
+
+	for (intptr_t i = 1; i < wordDiffsSize; ++i)
 	{
-		if (chunkA[lineA].empty())
-		{
-			linesProgress += linesCountB;
-			continue;
-		}
-
-		std::vector<Word> wordsA;
-
-		for (intptr_t lineB = 0; lineB < linesCountB; ++lineB)
-		{
-			if (chunkB[lineB].empty())
-			{
-				++linesProgress;
-				continue;
-			}
-
-			const intptr_t minSize = std::min(chunkA[lineA].size(), chunkB[lineB].size());
-			const intptr_t maxSize = std::max(chunkA[lineA].size(), chunkB[lineB].size());
-
-			if (((minSize * 100) / maxSize) < options.changedResemblPercent)
-			{
-				++linesProgress;
-				continue;
-			}
-
-			intptr_t totalMatchLen = chunkA[lineA].size() + chunkB[lineB].size();
-			intptr_t matchLen = 0;
-			intptr_t longestMatch = 0;
-
-			if (!options.detectCharDiffs || !options.ignoreAllSpaces)
-			{
-				if (wordsA.empty())
-					wordsA = getLineWords(a.view, a.getDocLine(bd, lineA), options);
-
-				const auto wordDiffs = DiffCalc<Word>(wordsA, wordsB[lineB],
-						std::bind(&ProgressDlg::IsCancelled, progress))(DiffAlg::MYERS);
-
-				if (progress->IsCancelled())
-					return {};
-
-				const intptr_t wordDiffsSize = static_cast<intptr_t>(wordDiffs.size());
-
-				if (wordDiffsSize)
-				{
-					if (wordDiffs[0].a.len())
-					{
-						for (intptr_t n = wordDiffs[0].a.s; n < wordDiffs[0].a.e; ++n)
-							totalMatchLen -= wordsA[n].len;
-					}
-					if (wordDiffs[0].b.len())
-					{
-						for (intptr_t n = wordDiffs[0].b.s; n < wordDiffs[0].b.e; ++n)
-							totalMatchLen -= wordsB[lineB][n].len;
-					}
-
-					for (intptr_t n = 0; n < wordDiffs[0].a.s; ++n)
-						matchLen += wordsA[n].len;
-
-					for (intptr_t n = wordDiffs[wordDiffsSize - 1].a.e; static_cast<size_t>(n) < wordsA.size(); ++n)
-						longestMatch += wordsA[n].len;
-
-					if (matchLen > longestMatch)
-						longestMatch = matchLen;
-				}
-
-				for (intptr_t i = 1; i < wordDiffsSize; ++i)
-				{
-					if (wordDiffs[i].a.len())
-					{
-						for (intptr_t n = wordDiffs[i].a.s; n < wordDiffs[i].a.e; ++n)
-							totalMatchLen -= wordsA[n].len;
-					}
-					if (wordDiffs[i].b.len())
-					{
-						for (intptr_t n = wordDiffs[i].b.s; n < wordDiffs[i].b.e; ++n)
-							totalMatchLen -= wordsB[lineB][n].len;
-					}
-
-					matchLen = 0;
-
-					for (intptr_t n = wordDiffs[i - 1].a.e; n < wordDiffs[i].a.s; ++n)
-						matchLen += wordsA[n].len;
-
-					if (matchLen > longestMatch)
-						longestMatch = matchLen;
-				}
-			}
-			else
-			{
-				const auto charDiffs = DiffCalc<Char>(chunkA[lineA], chunkB[lineB],
-						std::bind(&ProgressDlg::IsCancelled, progress))(DiffAlg::MYERS);
-
-				if (progress->IsCancelled())
-					return {};
-
-				const intptr_t charDiffsSize = static_cast<intptr_t>(charDiffs.size());
-
-				if (charDiffsSize)
-				{
-					totalMatchLen -= (charDiffs[0].a.len() + charDiffs[0].b.len());
-					matchLen = charDiffs[0].a.s;
-					longestMatch = static_cast<intptr_t>(chunkA[lineA].size()) - charDiffs[charDiffsSize - 1].a.e;
-
-					if (matchLen > longestMatch)
-						longestMatch = matchLen;
-				}
-
-				for (intptr_t i = 1; i < charDiffsSize; ++i)
-				{
-					totalMatchLen -= (charDiffs[i].a.len() + charDiffs[i].b.len());
-					matchLen += charDiffs[i].a.distance_from(charDiffs[i - 1].a);
-				}
-
-				if (matchLen > longestMatch)
-					longestMatch = matchLen;
-			}
-
-			if (((totalMatchLen * 100) / static_cast<intptr_t>(chunkA[lineA].size() + chunkB[lineB].size())) >=
-				options.changedResemblPercent)
-			{
-				const float conv =
-						(static_cast<float>(totalMatchLen) * 100) / (chunkA[lineA].size() + chunkB[lineB].size()) +
-						(static_cast<float>(longestMatch) * 100) / (chunkA[lineA].size() + chunkB[lineB].size());
-
-				if (!progress->Advance(linesProgress + 1))
-					return {};
-
-				linesProgress = 0;
-
-				bool addL1C = false;
-
-				if (linesBConvergence[lineB].empty() || (conv == linesBConvergence[lineB].begin()->conv))
-				{
-					LOGD(LOG_CHANGE_ALGO, "Add L2: " + std::to_string(lineA) + ", " + std::to_string(lineB) +
-							", " + std::to_string(conv) + "\n");
-
-					linesBConvergence[lineB].emplace(conv, lineA, lineB);
-					addL1C = true;
-				}
-				else if (conv > linesBConvergence[lineB].begin()->conv)
-				{
-					LOGD(LOG_CHANGE_ALGO, "Replace L2: " + std::to_string(lineA) + ", " +
-							std::to_string(lineB) + ", " + std::to_string(conv) + "\n");
-
-					for (const auto& l2c : linesBConvergence[lineB])
-					{
-						auto& l1c = linesAConvergence[l2c.lineA];
-
-						for (auto l1cI = l1c.begin(); l1cI != l1c.end(); ++l1cI)
-						{
-							LOGD(LOG_CHANGE_ALGO, "Check L1: " + std::to_string(l2c.lineA) + ", " +
-									std::to_string(l1cI->lineB) + ", " +
-									std::to_string(l1cI->conv) + "\n");
-
-							if (l1cI->lineB == lineB)
-							{
-								LOGD(LOG_CHANGE_ALGO, "Erase\n");
-
-								l1c.erase(l1cI);
-								break;
-							}
-						}
-					}
-
-					linesBConvergence[lineB].clear();
-					linesBConvergence[lineB].emplace(conv, lineA, lineB);
-					addL1C = true;
-				}
-
-				if (addL1C)
-				{
-					if (linesAConvergence[lineA].empty() || (conv == linesAConvergence[lineA].begin()->conv))
-					{
-						linesAConvergence[lineA].emplace(conv, lineA, lineB);
-					}
-					else if (conv > linesAConvergence[lineA].begin()->conv)
-					{
-						linesAConvergence[lineA].clear();
-						linesAConvergence[lineA].emplace(conv, lineA, lineB);
-					}
-				}
-			}
-			else
-			{
-				if (!progress->Advance(linesProgress + 1))
-					return {};
-
-				linesProgress = 0;
-			}
-		}
+		for (intptr_t n = wordDiffs[i - 1].a.e; n < wordDiffs[i].a.s; ++n)
+			matchLen += sA[n].len;
 	}
 
-	return linesAConvergence;
+	return (static_cast<float>(matchLen * 2 * 100)) / totalLen;
 }
 
 
-bool findChanges(CompareInfo& cmpInfo, intptr_t diffIdx, const CompareOptions& options)
+float findResemblance(const std::vector<Char> lA, const std::vector<Char> lB, int changedResemblPercent)
 {
-	std::vector<std::set<LinesConv>> orderedLinesConvergence = getOrderedConvergence(cmpInfo, diffIdx, options);
+	const intptr_t minSize = std::min(lA.size(), lB.size());
+	const intptr_t maxSize = std::max(lA.size(), lB.size());
 
-	if (ProgressDlg::Get()->IsCancelled())
-		return false;
+	if ((static_cast<float>(minSize * 100) / maxSize) < changedResemblPercent)
+		return 0;
 
-#ifdef DLOG
-	DocCmpInfo&			a = cmpInfo.a;
-	DocCmpInfo&			b = cmpInfo.b;
-	const diff_info&	bd = cmpInfo.blockDiffs[diffIdx];
+	progress_ptr& progress = ProgressDlg::Get();
 
-	for (const auto& oc : orderedLinesConvergence)
+	const auto charDiffs = DiffCalc<Char>(lA, lB, std::bind(&ProgressDlg::IsCancelled, progress))(DiffAlg::MYERS);
+
+	if (progress->IsCancelled())
+		return 0;
+
+	if (charDiffs.empty())
+		return 100.0;
+
+	const intptr_t totalLen = lA.size() + lB.size();
+	intptr_t matchLen = totalLen;
+
+	for (const auto& cd : charDiffs)
+		matchLen -= (cd.a.len() + cd.b.len());
+
+	const float conv = (static_cast<float>(matchLen * 100)) / totalLen;
+
+	return conv < changedResemblPercent ? 0 : conv;
+}
+
+
+bool findChangesLineByLine(CompareInfo& cmpInfo, intptr_t diffIdx, const CompareOptions& options)
+{
+	const std::vector<std::vector<Char>> linesA =
+			getLinesChars(cmpInfo.a, cmpInfo.blockDiffs[diffIdx], diffIdx, options);
+	const std::vector<std::vector<Char>> linesB =
+			getLinesChars(cmpInfo.b, cmpInfo.blockDiffs[diffIdx], diffIdx, options);
+
+	if (linesA.empty() || linesB.empty())
+		return true;
+
+	const intptr_t linesCountA = static_cast<intptr_t>(linesA.size());
+	const intptr_t linesCountB = static_cast<intptr_t>(linesB.size());
+
+	std::map<intptr_t, intptr_t> changedLines; // lineB -> lineA
+
+	std::unordered_map<uint64_t, float> linesResemblance;
+
+	float bestResemblance = 0;
+	intptr_t bal = 0;
+	intptr_t bbl = 0;
+
+	for (intptr_t al = 0; al < linesCountA; ++al)
 	{
-		if (!oc.empty())
-			LOGD(LOG_ALGO, "Best Matching Lines: " +
-					std::to_string(a.getDocLine(bd, oc.begin()->lineA) + 1) + " and " +
-					std::to_string(b.getDocLine(bd, oc.begin()->lineB) + 1) + ", Conv (" +
-					std::to_string(oc.begin()->conv) + ")\n");
-	}
-#endif
-
-	std::map<intptr_t, intptr_t> bestLineMappings; // lineB -> lineA
-	{
-		std::vector<std::map<intptr_t, intptr_t>> groupedLines;
-
-		for (const auto& oc : orderedLinesConvergence)
+		for (intptr_t bl = 0; bl < linesCountB; ++bl)
 		{
-			if (oc.empty())
-				continue;
+			const uint64_t lines = (static_cast<uint64_t>(al << 31) | static_cast<uint64_t>(bl));
+			const float resemblance = findResemblance(linesA[al], linesB[bl], options.changedResemblPercent);
+			linesResemblance.emplace(lines, resemblance);
 
-			if (groupedLines.empty())
+			if (resemblance > bestResemblance)
 			{
-				auto ocItr = oc.begin();
+				bestResemblance = resemblance;
+				bal = al;
+				bbl = bl;
+			}
+			else if (resemblance == bestResemblance && (bal + bbl > al + bl))
+			{
+				bal = al;
+				bbl = bl;
+			}
+		}
+	}
 
-				groupedLines.emplace_back();
-				groupedLines.back().emplace(ocItr->lineB, ocItr->lineA);
+	if (!bestResemblance)
+		return true;
 
-				continue;
+	std::vector<range_t> stack;
+
+	changedLines.emplace(bbl, bal);
+
+	if (bal > 0 && bbl > 0)
+	{
+		stack.emplace_back(0, bal);
+		stack.emplace_back(0, bbl);
+	}
+
+	if (bal + 1 < linesCountA && bbl + 1 < linesCountB)
+	{
+		stack.emplace_back(bal + 1, linesCountA);
+		stack.emplace_back(bbl + 1, linesCountB);
+	}
+
+	while (!stack.empty())
+	{
+		range_t rangeB = stack.back();
+		stack.pop_back();
+		range_t rangeA = stack.back();
+		stack.pop_back();
+
+		bestResemblance = 0;
+		bal = 0;
+		bbl = 0;
+
+		for (intptr_t al = rangeA.s; al < rangeA.e; ++al)
+		{
+			for (intptr_t bl = rangeB.s; bl < rangeB.e; ++bl)
+			{
+				const uint64_t lines = (static_cast<uint64_t>(al << 31) | static_cast<uint64_t>(bl));
+				auto lItr = linesResemblance.find(lines);
+				assert(lItr != linesResemblance.end());
+
+				if (lItr->second > bestResemblance)
+				{
+					bestResemblance = lItr->second;
+					bal = al;
+					bbl = bl;
+				}
+				else if (lItr->second == bestResemblance && (bal + bbl > al + bl))
+				{
+					bal = al;
+					bbl = bl;
+				}
+			}
+		}
+
+		if (!bestResemblance)
+			continue;
+
+		changedLines.emplace(bbl, bal);
+
+		if (bal > rangeA.s && bbl > rangeB.s)
+		{
+			stack.emplace_back(rangeA.s, bal);
+			stack.emplace_back(rangeB.s, bbl);
+		}
+
+		if (bal + 1 < rangeA.e && bbl + 1 < rangeB.e)
+		{
+			stack.emplace_back(bal + 1, rangeA.e);
+			stack.emplace_back(bbl + 1, rangeB.e);
+		}
+	}
+
+	compareLines(cmpInfo, diffIdx, changedLines, options);
+
+	return true;
+}
+
+
+inline intptr_t addLineChange(const std::vector<Word>& wordsRange, intptr_t startWord, intptr_t endWord,
+	std::vector<ChangedLine>& changedLines, intptr_t lastChangedLineIdx)
+{
+	if (wordsRange[startWord].lineIdx != wordsRange[endWord].lineIdx)
+	{
+		if (startWord > 0 && wordsRange[startWord].lineIdx == wordsRange[startWord - 1].lineIdx)
+		{
+			intptr_t lineEndWord = startWord;
+
+			while (wordsRange[++lineEndWord].lineIdx == wordsRange[startWord].lineIdx);
+			--lineEndWord;
+
+			if (lastChangedLineIdx != wordsRange[startWord].lineIdx)
+			{
+				lastChangedLineIdx = wordsRange[startWord].lineIdx;
+				changedLines.emplace_back(lastChangedLineIdx);
 			}
 
-			intptr_t addToIdx = -1;
+			changedLines.back().changes.emplace_back(wordsRange[startWord].pos,
+					wordsRange[lineEndWord].pos + wordsRange[lineEndWord].len);
+		}
 
-			for (auto ocItr = oc.begin(); ocItr != oc.end(); ++ocItr)
+		if (static_cast<size_t>(endWord + 1) < wordsRange.size() &&
+			wordsRange[endWord].lineIdx == wordsRange[endWord + 1].lineIdx)
+		{
+			startWord = endWord;
+
+			while (wordsRange[--startWord].lineIdx == wordsRange[endWord].lineIdx);
+			++startWord;
+
+			lastChangedLineIdx = wordsRange[endWord].lineIdx;
+			changedLines.emplace_back(lastChangedLineIdx);
+			changedLines.back().changes.emplace_back(wordsRange[startWord].pos,
+					wordsRange[endWord].pos + wordsRange[endWord].len);
+		}
+
+	}
+	else if ((startWord > 0 && wordsRange[startWord].lineIdx == wordsRange[startWord - 1].lineIdx) ||
+		(static_cast<size_t>(endWord + 1) < wordsRange.size() &&
+		wordsRange[endWord].lineIdx == wordsRange[endWord + 1].lineIdx))
+	{
+		if (lastChangedLineIdx != wordsRange[startWord].lineIdx)
+		{
+			lastChangedLineIdx = wordsRange[startWord].lineIdx;
+			changedLines.emplace_back(lastChangedLineIdx);
+		}
+
+		changedLines.back().changes.emplace_back(wordsRange[startWord].pos,
+				wordsRange[endWord].pos + wordsRange[endWord].len);
+	}
+
+	return lastChangedLineIdx;
+}
+
+
+bool findChangesByWords(CompareInfo& cmpInfo, intptr_t diffIdx, const CompareOptions& options)
+{
+	struct MatchingWord // line idx -> word idx
+	{
+		std::map<intptr_t, intptr_t> a;
+		std::map<intptr_t, intptr_t> b;
+	};
+
+	std::pair<std::vector<Word>, std::unordered_map<intptr_t, range_t>> wordsRangeA =
+			getLinesRangeWords(cmpInfo.a, cmpInfo.blockDiffs[diffIdx].a, diffIdx, options);
+	std::pair<std::vector<Word>, std::unordered_map<intptr_t, range_t>> wordsRangeB =
+			getLinesRangeWords(cmpInfo.b, cmpInfo.blockDiffs[diffIdx].b, diffIdx, options);
+
+	std::vector<Word>& wordsA = wordsRangeA.first;
+	std::vector<Word>& wordsB = wordsRangeB.first;
+	std::unordered_map<intptr_t, range_t>& lineWordsRangeA = wordsRangeA.second;
+	std::unordered_map<intptr_t, range_t>& lineWordsRangeB = wordsRangeB.second;
+
+	if (wordsA.empty() || wordsB.empty())
+		return true;
+
+	std::map<intptr_t, intptr_t> changedLines; // lineB -> lineA
+
+	std::unordered_map<uint64_t, float> linesResemblance;
+	std::vector<range_t> stack;
+
+	stack.emplace_back(0, static_cast<intptr_t>(wordsA.size()));
+	stack.emplace_back(0, static_cast<intptr_t>(wordsB.size()));
+
+	while (!stack.empty())
+	{
+		range_t rangeB = stack.back();
+		stack.pop_back();
+		range_t rangeA = stack.back();
+		stack.pop_back();
+
+		if (wordsA[rangeA.s].lineIdx == wordsA[rangeA.e - 1].lineIdx &&
+			wordsB[rangeB.s].lineIdx == wordsB[rangeB.e - 1].lineIdx)
+		{
+			float resemblance;
+			const uint64_t lines = (
+							static_cast<uint64_t>(wordsA[rangeA.s].lineIdx) << 31) |
+							static_cast<uint64_t>(wordsB[rangeB.s].lineIdx);
+			auto lItr = linesResemblance.find(lines);
+
+			if (lItr != linesResemblance.end())
 			{
-				for (intptr_t i = 0; i < static_cast<intptr_t>(groupedLines.size()); ++i)
-				{
-					const auto& gl = groupedLines[i];
+				resemblance = lItr->second;
+			}
+			else
+			{
+				resemblance = findResemblance(getLineSpan(wordsRangeA, rangeA.s), getLineSpan(wordsRangeB, rangeB.s));
+				linesResemblance.emplace(lines, resemblance);
+			}
 
-					if ((ocItr->lineB) > (gl.rbegin()->first))
+			if (resemblance >= options.changedResemblPercent)
+				changedLines.emplace(wordsB[rangeB.s].lineIdx, wordsA[rangeA.s].lineIdx);
+
+			continue;
+		}
+
+		MatchingWord* bestMatchingWord = nullptr;
+
+		for (int run = 2; run; --run)
+		{
+			std::unordered_map<Word::HashType, MatchingWord> wordMatchMap;
+
+			if (run == 2)
+			{
+				for (intptr_t i = rangeA.s; i < rangeA.e; ++i)
+					if (wordsA[i].type == charType::ALPHANUMCHAR)
+						wordMatchMap.emplace(
+							wordsA[i].hash, MatchingWord{}).first->second.a.emplace(wordsA[i].lineIdx, i);
+
+				for (intptr_t i = rangeB.s; i < rangeB.e; ++i)
+					if (wordsB[i].type == charType::ALPHANUMCHAR)
+						wordMatchMap.emplace(
+							wordsB[i].hash, MatchingWord{}).first->second.b.emplace(wordsB[i].lineIdx, i);
+			}
+			else
+			{
+				for (intptr_t i = rangeA.s; i < rangeA.e; ++i)
+					if (wordsA[i].type != charType::ALPHANUMCHAR)
+						wordMatchMap.emplace(
+							wordsA[i].hash, MatchingWord{}).first->second.a.emplace(wordsA[i].lineIdx, i);
+
+				for (intptr_t i = rangeB.s; i < rangeB.e; ++i)
+					if (wordsB[i].type != charType::ALPHANUMCHAR)
+						wordMatchMap.emplace(
+							wordsB[i].hash, MatchingWord{}).first->second.b.emplace(wordsB[i].lineIdx, i);
+			}
+
+			if (wordMatchMap.empty())
+				continue;
+
+			size_t minOccurrence = SIZE_MAX;
+
+			bestMatchingWord = &(wordMatchMap.begin()->second);
+
+			// It might be beneficial to make convergence checks for each a and b lines of each m
+			// to find the best word matching line
+			for (auto& m : wordMatchMap)
+			{
+				if (m.second.a.empty() || m.second.b.empty())
+					continue;
+
+				const size_t occurrence = m.second.a.size() + m.second.b.size();
+
+				if (occurrence <= minOccurrence)
+				{
+					if (occurrence < minOccurrence || (
+						m.second.a.begin()->first + m.second.b.begin()->first <
+						bestMatchingWord->a.begin()->first + bestMatchingWord->b.begin()->first))
 					{
-						if (addToIdx == -1)
+						float resemblance;
+						const uint64_t lines = (
+										static_cast<uint64_t>(m.second.a.begin()->first) << 31) |
+										static_cast<uint64_t>(m.second.b.begin()->first);
+						auto lItr = linesResemblance.find(lines);
+
+						if (lItr != linesResemblance.end())
 						{
-							addToIdx = i;
-						}
-						else if (groupedLines[addToIdx].size() < gl.size())
-						{
-							groupedLines.erase(groupedLines.begin() + addToIdx);
-							addToIdx = --i;
+							resemblance = lItr->second;
 						}
 						else
 						{
-							groupedLines.erase(groupedLines.begin() + i);
-							--i;
+							resemblance = findResemblance(
+									getLineSpan(wordsRangeA, m.second.a.begin()->second),
+									getLineSpan(wordsRangeB, m.second.b.begin()->second));
+							linesResemblance.emplace(lines, resemblance);
+						}
+
+						if (resemblance >= options.changedResemblPercent)
+						{
+							bestMatchingWord = &m.second;
+							minOccurrence = occurrence;
 						}
 					}
 				}
-
-				if (addToIdx != -1)
-				{
-					auto& gl = groupedLines[addToIdx];
-					gl.emplace_hint(gl.end(), ocItr->lineB, ocItr->lineA);
-
-					break;
-				}
 			}
 
-			if (addToIdx != -1)
-				continue;
+			if (minOccurrence != SIZE_MAX)
+				break;
 
-			auto ocrItr = oc.rbegin();
-
-			std::map<intptr_t, intptr_t> subGroup;
-
-			for (intptr_t i = 0; i < static_cast<intptr_t>(groupedLines.size()); ++i)
-			{
-				auto& gl = groupedLines[i];
-
-				auto glResItr = gl.emplace(ocrItr->lineB, ocrItr->lineA);
-
-				if (glResItr.second)
-				{
-					std::map<intptr_t, intptr_t> newSubGroup;
-					auto sgEndItr = glResItr.first;
-
-					newSubGroup.insert(gl.begin(), ++sgEndItr);
-					gl.erase(glResItr.first);
-
-					if (newSubGroup.size() > subGroup.size())
-						subGroup = std::move(newSubGroup);
-				}
-			}
-
-			if (!subGroup.empty())
-			{
-				groupedLines.emplace_back(std::move(subGroup));
-
-				LOGD(LOG_ALGO, "New lines group (" + std::to_string(groupedLines.size()) + " total). Last lines: " +
-						std::to_string(a.getDocLine(bd, ocrItr->lineA) + 1) + " - " +
-						std::to_string(b.getDocLine(bd, ocrItr->lineB) + 1) + "\n");
-			}
+			bestMatchingWord = nullptr;
 		}
 
-		if (groupedLines.empty())
-			return true;
+		if (bestMatchingWord == nullptr)
+			continue;
 
-		intptr_t	bestGroupIdx = 0;
-		size_t		bestSize = groupedLines[0].size();
+		const intptr_t al = bestMatchingWord->a.begin()->first;
+		const intptr_t bl = bestMatchingWord->b.begin()->first;
 
-		for (intptr_t i = 1; i < static_cast<intptr_t>(groupedLines.size()); ++i)
+		auto lrA = lineWordsRangeA.find(al);
+		assert(lrA != lineWordsRangeA.end());
+
+		auto lrB = lineWordsRangeB.find(bl);
+		assert(lrB != lineWordsRangeB.end());
+
+		changedLines.emplace(bl, al);
+
+		if (lrA->second.s > rangeA.s && lrB->second.s > rangeB.s)
 		{
-			if (bestSize < groupedLines[i].size())
-			{
-				bestSize = groupedLines[i].size();
-				bestGroupIdx = i;
-			}
+			stack.emplace_back(rangeA.s, lrA->second.s);
+			stack.emplace_back(rangeB.s, lrB->second.s);
 		}
 
-		bestLineMappings = std::move(groupedLines[bestGroupIdx]);
+		if (lrA->second.e < rangeA.e && lrB->second.e < rangeB.e)
+		{
+			stack.emplace_back(lrA->second.e, rangeA.e);
+			stack.emplace_back(lrB->second.e, rangeB.e);
+		}
 	}
 
-	compareLines(cmpInfo, diffIdx, bestLineMappings, options);
+	compareLines(cmpInfo, diffIdx, changedLines, options);
 
 	return true;
 }
@@ -1749,7 +1831,6 @@ void findSubBlockDiffs(CompareInfo& cmpInfo, const CompareOptions& options)
 	progress_ptr& progress = ProgressDlg::Get();
 
 	std::vector<intptr_t> changedBlockIdx;
-	intptr_t changedProgressCount = 0;
 
 	const intptr_t blockDiffsSize = static_cast<intptr_t>(cmpInfo.blockDiffs.size());
 
@@ -1757,16 +1838,13 @@ void findSubBlockDiffs(CompareInfo& cmpInfo, const CompareOptions& options)
 	for (intptr_t i = 0; i < blockDiffsSize; ++i)
 	{
 		if (cmpInfo.blockDiffs[i].is_replacement())
-		{
 			changedBlockIdx.emplace_back(i);
-			changedProgressCount += cmpInfo.blockDiffs[i].a.len() * cmpInfo.blockDiffs[i].b.len();
-		}
 	}
 
-	progress->SetMaxCount(changedProgressCount);
+	if (changedBlockIdx.empty())
+		return;
 
-	if (changedProgressCount > 10000)
-		progress->Show();
+	progress->SetMaxCount(static_cast<intptr_t>(changedBlockIdx.size()));
 
 // #ifdef MULTITHREAD // Do multithreaded block compares
 
@@ -1783,7 +1861,7 @@ void findSubBlockDiffs(CompareInfo& cmpInfo, const CompareOptions& options)
 			// {
 				// for (size_t i = blockIdx++; i < changedBlockIdx.size(); i = blockIdx++)
 				// {
-					// if (!findChanges(cmpInfo, changedBlockIdx[i], options))
+					// if (!findChangesLineByLine(cmpInfo, changedBlockIdx[i], options))
 						// return;
 				// }
 			// };
@@ -1804,7 +1882,7 @@ void findSubBlockDiffs(CompareInfo& cmpInfo, const CompareOptions& options)
 
 		// for (intptr_t i : changedBlockIdx)
 		// {
-			// if (!findChanges(cmpInfo, i, options))
+			// if (!findChangesLineByLine(cmpInfo, i, options))
 				// break;
 		// }
 	// }
@@ -1813,8 +1891,18 @@ void findSubBlockDiffs(CompareInfo& cmpInfo, const CompareOptions& options)
 
 	for (intptr_t i : changedBlockIdx)
 	{
-		if (!findChanges(cmpInfo, i, options))
-			break;
+		if (options.detectCharDiffs && options.ignoreAllSpaces)
+		{
+			if (!findChangesLineByLine(cmpInfo, i, options))
+				break;
+		}
+		else
+		{
+			if (!findChangesByWords(cmpInfo, i, options))
+				break;
+		}
+
+		progress->Advance();
 	}
 
 // #endif // MULTITHREAD
@@ -1915,7 +2003,7 @@ void markLineDiffs(const CompareInfo& cmpInfo, intptr_t bi, intptr_t ci)
 
 	for (const auto& change : changedLineA.changes)
 		markTextAsChanged(cmpInfo.a.view, linePos + change.s, change.len(),
-						change.moved ? Settings.colors().moved_part : color);
+						change.moved_to < 0 ? color : Settings.colors().moved_part);
 
 	markLine(cmpInfo.a.view, line, cmpInfo.a.nonUniqueDocLines.find(line) == cmpInfo.a.nonUniqueDocLines.end() ?
 			MARKER_MASK_CHANGED : MARKER_MASK_CHANGED_LOCAL);
@@ -1927,7 +2015,7 @@ void markLineDiffs(const CompareInfo& cmpInfo, intptr_t bi, intptr_t ci)
 
 	for (const auto& change : changedLineB.changes)
 		markTextAsChanged(cmpInfo.b.view, linePos + change.s, change.len(),
-						change.moved ? Settings.colors().moved_part : color);
+						change.moved_to < 0 ? color : Settings.colors().moved_part);
 
 	markLine(cmpInfo.b.view, line, cmpInfo.b.nonUniqueDocLines.find(line) == cmpInfo.b.nonUniqueDocLines.end() ?
 			MARKER_MASK_CHANGED : MARKER_MASK_CHANGED_LOCAL);

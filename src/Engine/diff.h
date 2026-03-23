@@ -7,6 +7,8 @@
 
 #include <utility>
 #include <memory>
+#include <vector>
+#include <span>
 
 #include "diff_types.h"
 
@@ -41,6 +43,7 @@ class DiffCalc
 {
 public:
 	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2, IsCancelledFn cancelledFn = nullptr);
+	DiffCalc(const std::span<Elem>& v1, const std::span<Elem>& v2, IsCancelledFn cancelledFn = nullptr);
 	DiffCalc(const Elem* v1, intptr_t v1_size, const Elem* v2, intptr_t v2_size, IsCancelledFn cancelledFn = nullptr);
 
 	// Runs the actual compare and returns the differences
@@ -75,6 +78,14 @@ template <typename Elem>
 DiffCalc<Elem>::DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
 		IsCancelledFn cancelledFn) :
 	_a(v1.data()), _a_size(v1.size()), _b(v2.data()), _b_size(v2.size()), _cancelledFn(cancelledFn)
+{
+}
+
+
+template <typename Elem>
+DiffCalc<Elem>::DiffCalc(const std::span<Elem>& s1, const std::span<Elem>& s2,
+		IsCancelledFn cancelledFn) :
+	_a(s1.data()), _a_size(s1.size()), _b(s2.data()), _b_size(s2.size()), _cancelledFn(cancelledFn)
 {
 }
 
