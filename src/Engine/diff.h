@@ -63,7 +63,7 @@ private:
 	void _combine_diffs(diff_results& diffs);
 	void _shift_boundaries(diff_results& diffs);
 
-	// void ThrowIfCancelled() { if (_cancelCheck) _cancelCheck(); };
+	void ThrowIfCancelled() { if (_cancelCheck) _cancelCheck(); };
 
 	const Elem*	_a;
 	intptr_t _a_size;
@@ -163,7 +163,7 @@ diff_results DiffCalc<Elem>::_run_algo(DiffAlg alg, const Elem* a, intptr_t asiz
 						HistogramDiff<Elem>(_cancelCheck, histogram_lowcnt).run(
 								b, bsize, a, asize, swapped_diffs, off_s);
 				}
-				catch (const std::exception& e)
+				catch (const std::exception&)
 				{
 				}
 			});
@@ -172,7 +172,7 @@ diff_results DiffCalc<Elem>::_run_algo(DiffAlg alg, const Elem* a, intptr_t asiz
 			{
 				diff_alg->run(a, asize, b, bsize, diffs, off_s);
 			}
-			catch (const std::exception& e)
+			catch (const std::exception&)
 			{
 				std::exception_ptr ep = std::current_exception();
 				thr.join();
@@ -251,7 +251,7 @@ diff_results DiffCalc<Elem>::operator()(DiffAlg alg, bool doDiffsCombine, bool d
 
 		for (const auto& d : rough_diffs)
 		{
-			if (d.a.len() > 2 && d.b.len() > 2)
+			if (d.a.len() > 1 && d.b.len() > 1)
 				diffs.append(_run_algo(DiffAlg::MYERS, &_a[d.a.s], d.a.len(), &_b[d.b.s], d.b.len()), d.a.s, d.b.s);
 			else
 				diffs.emplace_back(d);

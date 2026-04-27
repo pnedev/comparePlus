@@ -3623,12 +3623,15 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 				closeComparePair(cmpPair);
 			else
 				clearComparePair(getCurrentBuffId());
+
+			storedLocation = nullptr;
 		}
 		break;
 
 		case CompareResult::COMPARE_ERROR:
 			::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_COMPARE_FAIL"].c_str(),
 						PLUGIN_NAME, MB_OK | MB_ICONERROR);
+		// Intentional fall-through
 
 		default:
 			clearComparePair(getCurrentBuffId());
