@@ -445,12 +445,7 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 	{
 		if (!(--cancelCheckCount))
 		{
-			if (!progress->Advance())
-			{
-				doc.lines.clear();
-				return;
-			}
-
+			progress->Advance();
 			cancelCheckCount = monitorCancelEveryXLine;
 		}
 
@@ -1414,12 +1409,8 @@ float findResemblance(const std::span<Word> sA, const std::span<Word> sB)
 	if (!totalLen)
 		return 0;
 
-	progress_ptr& progress = ProgressDlg::Get();
-
-	const auto wordDiffs = DiffCalc<Word>(sA, sB, std::bind(&ProgressDlg::IsCancelled, progress))(DiffAlg::MIXED);
-
-	if (progress->IsCancelled())
-		return 0;
+	const auto wordDiffs =
+		DiffCalc<Word>(sA, sB, std::bind(&ProgressDlg::ThrowIfCancelled, ProgressDlg::Get()))(DiffAlg::MIXED);
 
 	const intptr_t wordDiffsSize = static_cast<intptr_t>(wordDiffs.size());
 
@@ -1450,12 +1441,8 @@ float findResemblance(const std::vector<Char> lA, const std::vector<Char> lB, in
 	if ((static_cast<float>(minSize * 100) / maxSize) < changedResemblPercent)
 		return 0;
 
-	progress_ptr& progress = ProgressDlg::Get();
-
-	const auto charDiffs = DiffCalc<Char>(lA, lB, std::bind(&ProgressDlg::IsCancelled, progress))(DiffAlg::MYERS);
-
-	if (progress->IsCancelled())
-		return 0;
+	const auto charDiffs =
+		DiffCalc<Char>(lA, lB, std::bind(&ProgressDlg::ThrowIfCancelled, ProgressDlg::Get()))(DiffAlg::MYERS);
 
 	if (charDiffs.empty())
 		return 100.0;
@@ -1472,7 +1459,7 @@ float findResemblance(const std::vector<Char> lA, const std::vector<Char> lB, in
 }
 
 
-bool findChangesLineByLine(CompareInfo& cmpInfo, intptr_t diffIdx, const CompareOptions& options)
+void findChangesLineByLine(CompareInfo& cmpInfo, intptr_t diffIdx, const CompareOptions& options)
 {
 	const std::vector<std::vector<Char>> linesA =
 			getLinesChars(cmpInfo.a, cmpInfo.blockDiffs[diffIdx], diffIdx, options);
@@ -1480,7 +1467,7 @@ bool findChangesLineByLine(CompareInfo& cmpInfo, intptr_t diffIdx, const Compare
 			getLinesChars(cmpInfo.b, cmpInfo.blockDiffs[diffIdx], diffIdx, options);
 
 	if (linesA.empty() || linesB.empty())
-		return true;
+		return;
 
 	const intptr_t linesCountA = static_cast<intptr_t>(linesA.size());
 	const intptr_t linesCountB = static_cast<intptr_t>(linesB.size());
@@ -1516,7 +1503,7 @@ bool findChangesLineByLine(CompareInfo& cmpInfo, intptr_t diffIdx, const Compare
 	}
 
 	if (!bestResemblance)
-		return true;
+		return;
 
 	std::vector<range_t> stack;
 
@@ -1586,8 +1573,6 @@ bool findChangesLineByLine(CompareInfo& cmpInfo, intptr_t diffIdx, const Compare
 	}
 
 	compareLines(cmpInfo, diffIdx, changedLines, options);
-
-	return true;
 }
 
 
@@ -1646,7 +1631,7 @@ inline intptr_t addLineChange(const std::vector<Word>& wordsRange, intptr_t star
 }
 
 
-bool findChangesByWords(CompareInfo& cmpInfo, intptr_t diffIdx, const CompareOptions& options)
+void findChangesByWords(CompareInfo& cmpInfo, intptr_t diffIdx, const CompareOptions& options)
 {
 	struct MatchingWord // line idx -> word idx
 	{
@@ -1665,7 +1650,7 @@ bool findChangesByWords(CompareInfo& cmpInfo, intptr_t diffIdx, const CompareOpt
 	std::unordered_map<intptr_t, range_t>& lineWordsRangeB = wordsRangeB.second;
 
 	if (wordsA.empty() || wordsB.empty())
-		return true;
+		return;
 
 	std::map<intptr_t, intptr_t> changedLines; // lineB -> lineA
 
@@ -1821,8 +1806,6 @@ bool findChangesByWords(CompareInfo& cmpInfo, intptr_t diffIdx, const CompareOpt
 	}
 
 	compareLines(cmpInfo, diffIdx, changedLines, options);
-
-	return true;
 }
 
 
@@ -1860,10 +1843,7 @@ void findSubBlockDiffs(CompareInfo& cmpInfo, const CompareOptions& options)
 			// [&]()
 			// {
 				// for (size_t i = blockIdx++; i < changedBlockIdx.size(); i = blockIdx++)
-				// {
-					// if (!findChangesLineByLine(cmpInfo, changedBlockIdx[i], options))
-						// return;
-				// }
+					// findChangesLineByLine(cmpInfo, changedBlockIdx[i], options);
 			// };
 
 		// std::vector<std::thread> threads(threadsCount);
@@ -1881,10 +1861,7 @@ void findSubBlockDiffs(CompareInfo& cmpInfo, const CompareOptions& options)
 		// LOGD(LOG_ALL, "Changes detection running on 1 thread\n");
 
 		// for (intptr_t i : changedBlockIdx)
-		// {
-			// if (!findChangesLineByLine(cmpInfo, i, options))
-				// break;
-		// }
+			// findChangesLineByLine(cmpInfo, i, options);
 	// }
 
 // #else // Do block compares in single thread
@@ -1892,15 +1869,9 @@ void findSubBlockDiffs(CompareInfo& cmpInfo, const CompareOptions& options)
 	for (intptr_t i : changedBlockIdx)
 	{
 		if (options.detectCharDiffs && options.ignoreAllSpaces)
-		{
-			if (!findChangesLineByLine(cmpInfo, i, options))
-				break;
-		}
+			findChangesLineByLine(cmpInfo, i, options);
 		else
-		{
-			if (!findChangesByWords(cmpInfo, i, options))
-				break;
-		}
+			findChangesByWords(cmpInfo, i, options);
 
 		progress->Advance();
 	}
@@ -2075,7 +2046,7 @@ inline void markReplacedBlockDiffRange(CompareInfo& cmpInfo, intptr_t bi, const 
 }
 
 
-bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSummary& summary)
+void markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSummary& summary)
 {
 	clearWindow(MAIN_VIEW, false);
 	clearWindow(SUB_VIEW, false);
@@ -2211,8 +2182,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 			alignIdxB = bd.b.e;
 		}
 
-		if (!progress->Advance())
-			return false;
+		progress->Advance();
 	}
 
 	if (!cmpInfo.a.lines.empty() && !cmpInfo.b.lines.empty())
@@ -2235,10 +2205,7 @@ bool markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 
 	summary.moved /= 2;
 
-	if (!progress->NextPhase())
-		return false;
-
-	return true;
+	progress->NextPhase();
 }
 
 
@@ -2282,20 +2249,15 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 
 	getLines(cmpInfo.a, options);
 
-	if (!progress->NextPhase())
-		return CompareResult::COMPARE_CANCELLED;
+	progress->NextPhase();
 
 	getLines(cmpInfo.b, options);
 
-	if (!progress->NextPhase())
-		return CompareResult::COMPARE_CANCELLED;
+	progress->NextPhase();
 
 	cmpInfo.blockDiffs = DiffCalc<Line>(cmpInfo.a.lines, cmpInfo.b.lines,
-		std::bind(&ProgressDlg::IsCancelled, progress))(DiffAlg::MIXED,
+		std::bind(&ProgressDlg::ThrowIfCancelled, progress))(DiffAlg::MIXED,
 			options.ignoreAllSpaces || options.ignoreChangedSpaces, true, options.syncPoints);
-
-	if (progress->IsCancelled())
-		return CompareResult::COMPARE_CANCELLED;
 
 	LOGD_GET_TIME;
 	PRINT_DIFFS("COMPARE START - LINE DIFFS", cmpInfo.blockDiffs);
@@ -2313,14 +2275,12 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 	if (options.detectMoves)
 		findMoves(cmpInfo);
 
-	if (!progress->NextPhase())
-		return CompareResult::COMPARE_CANCELLED;
+	progress->NextPhase();
 
 	if (options.detectSubBlockDiffs)
 		findSubBlockDiffs(cmpInfo, options);
 
-	if (!progress->NextPhase())
-		return CompareResult::COMPARE_CANCELLED;
+	progress->NextPhase();
 
 	// Make sure we have at least one line in each view so the functions' logic below works properly
 	if (cmpInfo.a.lines.empty())
@@ -2328,8 +2288,7 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 	if (cmpInfo.b.lines.empty())
 		cmpInfo.b.lines.emplace_back(0, cHashSeed);
 
-	if (!markAllDiffs(cmpInfo, options, summary))
-		return CompareResult::COMPARE_CANCELLED;
+	markAllDiffs(cmpInfo, options, summary);
 
 	toDocLineDiffSections(cmpInfo);
 
@@ -2374,13 +2333,11 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 
 	getLines(a, options);
 
-	if (!progress->NextPhase())
-		return CompareResult::COMPARE_CANCELLED;
+	progress->NextPhase();
 
 	getLines(b, options);
 
-	if (!progress->NextPhase())
-		return CompareResult::COMPARE_CANCELLED;
+	progress->NextPhase();
 
 	std::unordered_map<Line::HashType, std::vector<intptr_t>> aUniqueLines;
 
@@ -2393,8 +2350,7 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 
 	a.lines.clear();
 
-	if (!progress->NextPhase())
-		return CompareResult::COMPARE_CANCELLED;
+	progress->NextPhase();
 
 	std::unordered_map<Line::HashType, std::vector<intptr_t>> bUniqueLines;
 
@@ -2407,8 +2363,7 @@ CompareResult runFindUnique(const CompareOptions& options, CompareSummary& summa
 
 	b.lines.clear();
 
-	if (!progress->NextPhase())
-		return CompareResult::COMPARE_CANCELLED;
+	progress->NextPhase();
 
 	clearWindow(MAIN_VIEW, false);
 	clearWindow(SUB_VIEW, false);
@@ -2492,12 +2447,15 @@ CompareResult compareViews(const CompareOptions& options, const wchar_t* progres
 			clearWindow(SUB_VIEW);
 		}
 	}
-	catch (std::exception& e)
+	catch (const std::exception& e)
 	{
 		ProgressDlg::Close();
 
 		clearWindow(MAIN_VIEW);
 		clearWindow(SUB_VIEW);
+
+		if (e.what() == ProgressDlg::cCancelledCause)
+			return CompareResult::COMPARE_CANCELLED;
 
 		std::string msg = "Exception occurred: ";
 		msg += e.what();

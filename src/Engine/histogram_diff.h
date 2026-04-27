@@ -17,8 +17,8 @@ template <typename Elem>
 class HistogramDiff : public diff_algorithm<Elem>
 {
 public:
-	HistogramDiff(IsCancelledFn cancelledFn = nullptr, intptr_t lowCount = 250) :
-		diff_algorithm<Elem>(cancelledFn), _lowCount(lowCount) {};
+	HistogramDiff(ThrowIfCancelledFn cancelCheck = nullptr, intptr_t lowCount = 250) :
+		diff_algorithm<Elem>(cancelCheck), _lowCount(lowCount) {};
 
 	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize, diff_results& diffs, intptr_t off);
 
@@ -171,12 +171,7 @@ void HistogramDiff<Elem>::run(const Elem* a, intptr_t asize, const Elem* b, intp
 
 		if (!--_cancelCheckCount)
 		{
-			if (diff_algorithm<Elem>::isCancelled())
-			{
-				diffs.clear();
-				break;
-			}
-
+			diff_algorithm<Elem>::ThrowIfCancelled();
 			_cancelCheckCount = _cCancelCheckItrInterval;
 		}
 	}

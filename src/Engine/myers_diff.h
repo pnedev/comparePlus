@@ -51,7 +51,7 @@ template <typename Elem>
 class MyersDiff : public diff_algorithm<Elem>
 {
 public:
-	MyersDiff(IsCancelledFn cancelledFn = nullptr) : diff_algorithm<Elem>(cancelledFn) {};
+	MyersDiff(ThrowIfCancelledFn cancelCheck = nullptr) : diff_algorithm<Elem>(cancelCheck) {};
 
 	virtual void run(const Elem* a, intptr_t asize, const Elem* b, intptr_t bsize, diff_results& diffs, intptr_t off);
 
@@ -167,9 +167,7 @@ intptr_t MyersDiff<Elem>::_find_middle_snake(
 
 		if (!--_cancelCheckCount)
 		{
-			if (diff_algorithm<Elem>::isCancelled())
-				return -1;
-
+			diff_algorithm<Elem>::ThrowIfCancelled();
 			_cancelCheckCount = _cCancelCheckItrInterval;
 		}
 

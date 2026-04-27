@@ -9,6 +9,7 @@
 #include <memory>
 #include <vector>
 #include <span>
+#include <exception>
 
 #include "diff_types.h"
 
@@ -37,14 +38,16 @@ enum class DiffAlg {
 /**
  *  \class  DiffCalc
  *  \brief  Compares and makes a differences list between two vectors (elements are template).
+			cancelCheck() is a function that shall throw exception on cancel that shall be handled by upper layers
  */
 template <typename Elem>
 class DiffCalc
 {
 public:
-	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2, IsCancelledFn cancelledFn = nullptr);
-	DiffCalc(const std::span<Elem>& v1, const std::span<Elem>& v2, IsCancelledFn cancelledFn = nullptr);
-	DiffCalc(const Elem* v1, intptr_t v1_size, const Elem* v2, intptr_t v2_size, IsCancelledFn cancelledFn = nullptr);
+	DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2, ThrowIfCancelledFn cancelCheck = nullptr);
+	DiffCalc(const std::span<Elem>& v1, const std::span<Elem>& v2, ThrowIfCancelledFn cancelCheck = nullptr);
+	DiffCalc(const Elem* v1, intptr_t v1_size, const Elem* v2, intptr_t v2_size,
+			ThrowIfCancelledFn cancelCheck = nullptr);
 
 	// Runs the actual compare and returns the differences
 	diff_results operator()(DiffAlg alg = DiffAlg::MIXED,
@@ -60,14 +63,14 @@ private:
 	void _combine_diffs(diff_results& diffs);
 	void _shift_boundaries(diff_results& diffs);
 
-	bool isCancelled() { return (_cancelledFn && _cancelledFn()); };
+	// void ThrowIfCancelled() { if (_cancelCheck) _cancelCheck(); };
 
 	const Elem*	_a;
 	intptr_t _a_size;
 	const Elem*	_b;
 	intptr_t _b_size;
 
-	IsCancelledFn _cancelledFn;
+	ThrowIfCancelledFn _cancelCheck;
 
 	bool _diffsCombine;
 	bool _boundaryShift;
@@ -76,24 +79,24 @@ private:
 
 template <typename Elem>
 DiffCalc<Elem>::DiffCalc(const std::vector<Elem>& v1, const std::vector<Elem>& v2,
-		IsCancelledFn cancelledFn) :
-	_a(v1.data()), _a_size(v1.size()), _b(v2.data()), _b_size(v2.size()), _cancelledFn(cancelledFn)
+		ThrowIfCancelledFn cancelCheck) :
+	_a(v1.data()), _a_size(v1.size()), _b(v2.data()), _b_size(v2.size()), _cancelCheck(cancelCheck)
 {
 }
 
 
 template <typename Elem>
 DiffCalc<Elem>::DiffCalc(const std::span<Elem>& s1, const std::span<Elem>& s2,
-		IsCancelledFn cancelledFn) :
-	_a(s1.data()), _a_size(s1.size()), _b(s2.data()), _b_size(s2.size()), _cancelledFn(cancelledFn)
+		ThrowIfCancelledFn cancelCheck) :
+	_a(s1.data()), _a_size(s1.size()), _b(s2.data()), _b_size(s2.size()), _cancelCheck(cancelCheck)
 {
 }
 
 
 template <typename Elem>
 DiffCalc<Elem>::DiffCalc(const Elem* v1, intptr_t v1_size, const Elem* v2, intptr_t v2_size,
-		IsCancelledFn cancelledFn) :
-	_a(v1), _a_size(v1_size), _b(v2), _b_size(v2_size), _cancelledFn(cancelledFn)
+		ThrowIfCancelledFn cancelCheck) :
+	_a(v1), _a_size(v1_size), _b(v2), _b_size(v2_size), _cancelCheck(cancelCheck)
 {
 }
 
@@ -136,9 +139,9 @@ diff_results DiffCalc<Elem>::_run_algo(DiffAlg alg, const Elem* a, intptr_t asiz
 	std::unique_ptr<diff_algorithm<Elem>> diff_alg;
 
 	if (alg == DiffAlg::MYERS)
-		diff_alg.reset(new MyersDiff<Elem>(_cancelledFn));
+		diff_alg.reset(new MyersDiff<Elem>(_cancelCheck));
 	else
-		diff_alg.reset(new HistogramDiff<Elem>(_cancelledFn, histogram_lowcnt));
+		diff_alg.reset(new HistogramDiff<Elem>(_cancelCheck, histogram_lowcnt));
 
 	// Compare with swapped sequences as well to see if result is more optimal
 	if (diff_alg->needSwapCheck())
@@ -152,13 +155,29 @@ diff_results DiffCalc<Elem>::_run_algo(DiffAlg alg, const Elem* a, intptr_t asiz
 		{
 			std::thread thr = std::thread([&]()
 			{
-				if (alg == DiffAlg::MYERS)
-					MyersDiff<Elem>(_cancelledFn).run(b, bsize, a, asize, swapped_diffs, off_s);
-				else
-					HistogramDiff<Elem>(_cancelledFn, histogram_lowcnt).run(b, bsize, a, asize, swapped_diffs, off_s);
+				try
+				{
+					if (alg == DiffAlg::MYERS)
+						MyersDiff<Elem>(_cancelCheck).run(b, bsize, a, asize, swapped_diffs, off_s);
+					else
+						HistogramDiff<Elem>(_cancelCheck, histogram_lowcnt).run(
+								b, bsize, a, asize, swapped_diffs, off_s);
+				}
+				catch (const std::exception& e)
+				{
+				}
 			});
 
-			diff_alg->run(a, asize, b, bsize, diffs, off_s);
+			try
+			{
+				diff_alg->run(a, asize, b, bsize, diffs, off_s);
+			}
+			catch (const std::exception& e)
+			{
+				std::exception_ptr ep = std::current_exception();
+				thr.join();
+				std::rethrow_exception(ep);
+			}
 
 			thr.join();
 		}
@@ -166,15 +185,8 @@ diff_results DiffCalc<Elem>::_run_algo(DiffAlg alg, const Elem* a, intptr_t asiz
 #endif // MULTITHREAD
 		{
 			diff_alg->run(a, asize, b, bsize, diffs, off_s);
-
-			if (isCancelled())
-				return {};
-
 			diff_alg->run(b, bsize, a, asize, swapped_diffs, off_s);
 		}
-
-		if (isCancelled())
-			return {};
 
 		const intptr_t swapped_replaces = swapped_diffs.count_replaces();
 
@@ -189,9 +201,6 @@ diff_results DiffCalc<Elem>::_run_algo(DiffAlg alg, const Elem* a, intptr_t asiz
 	{
 		diff_alg->run(a, asize, b, bsize, diffs, off_s);
 	}
-
-	if (isCancelled())
-		return {};
 
 	_diffsCombine = _diffsCombine && diff_alg->needDiffsCombine();
 	_boundaryShift = _boundaryShift && diff_alg->needBoundaryShift();
@@ -226,18 +235,12 @@ diff_results DiffCalc<Elem>::operator()(DiffAlg alg, bool doDiffsCombine, bool d
 
 			diffs.append(_run_algo(alg, &_a[apos], syncP.first - apos, &_b[bpos], syncP.second - bpos), apos, bpos);
 
-			if (isCancelled())
-				return {};
-
 			apos = syncP.first;
 			bpos = syncP.second;
 		}
 
 		diffs.append(_run_algo(alg, &_a[apos], _a_size - apos, &_b[bpos], _b_size - bpos), apos, bpos);
 	}
-
-	if (isCancelled())
-		return {};
 
 	if (alg == DiffAlg::MIXED)
 	{
@@ -249,16 +252,9 @@ diff_results DiffCalc<Elem>::operator()(DiffAlg alg, bool doDiffsCombine, bool d
 		for (const auto& d : rough_diffs)
 		{
 			if (d.a.len() > 2 && d.b.len() > 2)
-			{
 				diffs.append(_run_algo(DiffAlg::MYERS, &_a[d.a.s], d.a.len(), &_b[d.b.s], d.b.len()), d.a.s, d.b.s);
-
-				if (isCancelled())
-					return {};
-			}
 			else
-			{
 				diffs.emplace_back(d);
-			}
 		}
 	}
 

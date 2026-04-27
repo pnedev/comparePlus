@@ -156,7 +156,7 @@ struct diff_results : public std::vector<diff_info>
 };
 
 
-using IsCancelledFn = std::function<bool()>;
+using ThrowIfCancelledFn = std::function<void()>;
 
 
 /**
@@ -170,9 +170,10 @@ template <typename Elem>
 class diff_algorithm
 {
 public:
-	// cancelledFn() is function that should be periodically called (if provided) by the specific algorithm
-	// at certain points to check if the user has cancelled the compare operation
-	diff_algorithm(IsCancelledFn cancelledFn = nullptr) : _cancelledFn(cancelledFn) {};
+	// cancelCheck() is function that should be periodically called (if provided) by the specific algorithm
+	// at certain points to check if the user has cancelled the compare operation. It shall throw exception on cancel
+	// that shall be handled in upper layers
+	diff_algorithm(ThrowIfCancelledFn cancelCheck = nullptr) : _cancelCheck(cancelCheck) {};
 
 	virtual ~diff_algorithm() {};
 
@@ -187,8 +188,8 @@ public:
 	virtual bool needBoundaryShift() { return true; };
 
 protected:
-	bool isCancelled() { return (_cancelledFn && _cancelledFn()); };
+	void ThrowIfCancelled() { if (_cancelCheck) _cancelCheck(); };
 
 private:
-	IsCancelledFn _cancelledFn;
+	ThrowIfCancelledFn _cancelCheck;
 };

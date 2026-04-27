@@ -25,6 +25,7 @@
 #include <commctrl.h>
 
 #include <memory>
+#include <string>
 
 
 class ProgressDlg;
@@ -34,6 +35,8 @@ using progress_ptr = std::shared_ptr<ProgressDlg>;
 class ProgressDlg
 {
 public:
+	static const std::string cCancelledCause;
+
 	static progress_ptr& Open(const wchar_t* info = NULL);
 
 	static progress_ptr& Get()
@@ -56,11 +59,12 @@ public:
 	void Show() const;
 
 	bool IsCancelled() const;
+	void ThrowIfCancelled() const;
 
 	unsigned NextPhase();
-	bool SetMaxCount(intptr_t max, unsigned phase = 0);
-	bool SetCount(intptr_t cnt, unsigned phase = 0);
-	bool Advance(intptr_t cnt = 1, unsigned phase = 0);
+	void SetMaxCount(intptr_t max, unsigned phase = 0);
+	void SetCount(intptr_t cnt, unsigned phase = 0);
+	void Advance(intptr_t cnt = 1, unsigned phase = 0);
 
 private:
 	static const wchar_t cClassName[];

@@ -20,12 +20,15 @@
 
 #include <windowsx.h>
 #include <cstdlib>
+#include <exception>
 
 #include "Compare.h"
 #include "ProgressDlg.h"
 #include "Tools.h"
 #include "Strings.h"
 
+
+const std::string ProgressDlg::cCancelledCause	= "OpCancelled";
 
 const wchar_t ProgressDlg::cClassName[]		= L"ComparePlusProgressClass";
 const int ProgressDlg::cBackgroundColor		= COLOR_3DFACE;
@@ -99,10 +102,16 @@ bool ProgressDlg::IsCancelled() const
 }
 
 
+void ProgressDlg::ThrowIfCancelled() const
+{
+	if (::WaitForSingleObject(_hActiveState, 0) != WAIT_OBJECT_0)
+		throw std::runtime_error(ProgressDlg::cCancelledCause);
+}
+
+
 unsigned ProgressDlg::NextPhase()
 {
-	if (IsCancelled())
-		return 0;
+	ThrowIfCancelled();
 
 	if (_phase + 1 < _countof(cPhases))
 	{
@@ -121,48 +130,39 @@ unsigned ProgressDlg::NextPhase()
 }
 
 
-bool ProgressDlg::SetMaxCount(intptr_t max, unsigned phase)
+void ProgressDlg::SetMaxCount(intptr_t max, unsigned phase)
 {
-	if (IsCancelled())
-		return false;
+	ThrowIfCancelled();
 
 	if (phase == 0 || phase - 1 == _phase)
 	{
 		_max = max;
 		_count = 0;
 	}
-
-	return true;
 }
 
 
-bool ProgressDlg::SetCount(intptr_t cnt, unsigned phase)
+void ProgressDlg::SetCount(intptr_t cnt, unsigned phase)
 {
-	if (IsCancelled())
-		return false;
+	ThrowIfCancelled();
 
 	if ((phase == 0 || phase - 1 == _phase) && _count < cnt && cnt <= _max)
 	{
 		_count = cnt;
 		update();
 	}
-
-	return true;
 }
 
 
-bool ProgressDlg::Advance(intptr_t cnt, unsigned phase)
+void ProgressDlg::Advance(intptr_t cnt, unsigned phase)
 {
-	if (IsCancelled())
-		return false;
+	ThrowIfCancelled();
 
 	if (phase == 0 || phase - 1 == _phase)
 	{
 		_count += cnt;
 		update();
 	}
-
-	return true;
 }
 
 
