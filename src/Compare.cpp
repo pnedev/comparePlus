@@ -3246,33 +3246,6 @@ bool setupCompare(CompareList_t::iterator& cmpPair, bool selectionCompare, bool 
 	// New compare?
 	if (!recompare)
 	{
-		if (Settings.SizesCheck)
-		{
-			constexpr int cLinesCountWarningLimit = 50000;
-
-			bool largeFilesWarning = false;
-
-			if (selectionCompare)
-				largeFilesWarning =
-					(cmpPair->options.selections[MAIN_VIEW].second -
-					cmpPair->options.selections[MAIN_VIEW].first + 1 > cLinesCountWarningLimit) &&
-					(cmpPair->options.selections[SUB_VIEW].second -
-					cmpPair->options.selections[SUB_VIEW].first + 1 > cLinesCountWarningLimit);
-			else
-				largeFilesWarning =
-					(getLinesCount(MAIN_VIEW) > cLinesCountWarningLimit) &&
-					(getLinesCount(SUB_VIEW) > cLinesCountWarningLimit);
-
-			if (largeFilesWarning)
-			{
-				if (::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_LARGE_FILES"].c_str(),
-						PLUGIN_NAME, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) != IDYES)
-				{
-					return false;
-				}
-			}
-		}
-
 		if ((cmpPair->getOldFile().isTemp != CLIPBOARD_TEMP) &&
 			(CallScintilla(MAIN_VIEW, SCI_GETEOLMODE, 0, 0) != CallScintilla(SUB_VIEW, SCI_GETEOLMODE, 0, 0)) &&
 			!cmpPair->options.ignoreEOL)

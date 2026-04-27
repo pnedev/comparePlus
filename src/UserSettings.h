@@ -30,7 +30,6 @@
 #define DEFAULT_COMPARE_TO_PREV				1
 
 #define DEFAULT_ENCODINGS_CHECK				1
-#define DEFAULT_SIZES_CHECK					1
 #define DEFAULT_MANUAL_SYNC_CHECK			1
 #define DEFAULT_PROMPT_CLOSE_ON_MATCH		0
 #define DEFAULT_HIDE_MARGIN					0
@@ -134,7 +133,6 @@ public:
 	bool			CompareToPrev;
 
 	bool			EncodingsCheck;
-	bool			SizesCheck;
 	bool			ManualSyncCheck;
 	bool			PromptToCloseOnMatch;
 	bool			HideMargin;
@@ -192,7 +190,6 @@ private:
 	static const wchar_t compareToPrevSetting[];
 
 	static const wchar_t encodingsCheckSetting[];
-	static const wchar_t sizesCheckSetting[];
 	static const wchar_t manualSyncCheckSetting[];
 	static const wchar_t promptCloseOnMatchSetting[];
 	static const wchar_t hideMarginSetting[];

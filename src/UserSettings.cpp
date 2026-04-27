@@ -33,7 +33,6 @@ const wchar_t UserSettings::newFileViewSetting[]			= L"new_in_sub_view";
 const wchar_t UserSettings::compareToPrevSetting[]			= L"default_compare_to_prev";
 
 const wchar_t UserSettings::encodingsCheckSetting[]			= L"check_encodings";
-const wchar_t UserSettings::sizesCheckSetting[]				= L"check_sizes";
 const wchar_t UserSettings::manualSyncCheckSetting[]		= L"check_manual_sync";
 const wchar_t UserSettings::promptCloseOnMatchSetting[]		= L"prompt_to_close_on_match";
 const wchar_t UserSettings::hideMarginSetting[]				= L"hide_margin";
@@ -131,8 +130,6 @@ void UserSettings::load()
 			DEFAULT_COMPARE_TO_PREV, ini) != 0;
 	EncodingsCheck			= ::GetPrivateProfileIntW(mainSection, encodingsCheckSetting,
 			DEFAULT_ENCODINGS_CHECK, ini) != 0;
-	SizesCheck				= ::GetPrivateProfileIntW(mainSection, sizesCheckSetting,
-			DEFAULT_SIZES_CHECK, ini) != 0;
 	ManualSyncCheck			= ::GetPrivateProfileIntW(mainSection, manualSyncCheckSetting,
 			DEFAULT_MANUAL_SYNC_CHECK, ini) != 0;
 	PromptToCloseOnMatch	= ::GetPrivateProfileIntW(mainSection, promptCloseOnMatchSetting,
@@ -318,7 +315,6 @@ void UserSettings::save()
 	::WritePrivateProfileStringW(mainSection, newFileViewSetting,	NewFileViewId == SUB_VIEW	  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, compareToPrevSetting,			CompareToPrev		  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, encodingsCheckSetting,		EncodingsCheck		  ? L"1" : L"0", ini);
-	::WritePrivateProfileStringW(mainSection, sizesCheckSetting,			SizesCheck			  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, manualSyncCheckSetting,		ManualSyncCheck		  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, promptCloseOnMatchSetting,	PromptToCloseOnMatch  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, hideMarginSetting,			HideMargin	  		  ? L"1" : L"0", ini);

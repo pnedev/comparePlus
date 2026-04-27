@@ -124,7 +124,6 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					settings.NewFileViewId			= DEFAULT_NEW_IN_SUB_VIEW ? SUB_VIEW : MAIN_VIEW;
 					settings.CompareToPrev			= (bool) DEFAULT_COMPARE_TO_PREV;
 					settings.EncodingsCheck			= (bool) DEFAULT_ENCODINGS_CHECK;
-					settings.SizesCheck				= (bool) DEFAULT_SIZES_CHECK;
 					settings.ManualSyncCheck		= (bool) DEFAULT_MANUAL_SYNC_CHECK;
 					settings.PromptToCloseOnMatch	= (bool) DEFAULT_PROMPT_CLOSE_ON_MATCH;
 					settings.HideMargin				= (bool) DEFAULT_HIDE_MARGIN;
@@ -287,7 +286,6 @@ void SettingsDialog::updateLocalization()
 	updateDlgCtrlTxt(_hSelf, IDC_COMPARE_OPTIONS,		str["IDC_COMPARE_OPTIONS"].c_str(), true);
 	updateDlgCtrlTxt(_hSelf, IDC_STATUS_DISABLED,		str["IDC_STATUS_DISABLED"].c_str(), true);
 	updateDlgCtrlTxt(_hSelf, IDC_ENCODINGS_CHECK,		str["IDC_ENCODINGS_CHECK"].c_str(), true);
-	updateDlgCtrlTxt(_hSelf, IDC_SIZES_CHECK,			str["IDC_SIZES_CHECK"].c_str(), true);
 	updateDlgCtrlTxt(_hSelf, IDC_MANUAL_SYNC_CHECK,		str["IDC_MANUAL_SYNC_CHECK"].c_str(), true);
 	updateDlgCtrlTxt(_hSelf, IDC_CLOSE_ON_MATCH,		str["IDC_CLOSE_ON_MATCH"].c_str(), true);
 	updateDlgCtrlTxt(_hSelf, IDC_HIDE_MARGIN,			str["IDC_HIDE_MARGIN"].c_str(), true);
@@ -356,8 +354,6 @@ void SettingsDialog::SetParams(UserSettings* settings)
 
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_ENCODINGS_CHECK),
 			settings->EncodingsCheck ? BST_CHECKED : BST_UNCHECKED);
-	Button_SetCheck(::GetDlgItem(_hSelf, IDC_SIZES_CHECK),
-			settings->SizesCheck ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_MANUAL_SYNC_CHECK),
 			settings->ManualSyncCheck ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_CLOSE_ON_MATCH),
@@ -448,7 +444,6 @@ void SettingsDialog::GetParams()
 		_Settings->StatusInfo = StatusType::STATUS_DISABLED;
 
 	_Settings->EncodingsCheck		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_ENCODINGS_CHECK)) == BST_CHECKED);
-	_Settings->SizesCheck			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_SIZES_CHECK)) == BST_CHECKED);
 	_Settings->ManualSyncCheck		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_MANUAL_SYNC_CHECK)) == BST_CHECKED);
 	_Settings->PromptToCloseOnMatch	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_CLOSE_ON_MATCH)) == BST_CHECKED);
 	_Settings->HideMargin			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_HIDE_MARGIN)) == BST_CHECKED);
