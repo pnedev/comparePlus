@@ -154,6 +154,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>comctl32.lib;comdlg32.lib;shlwapi.lib;shell32.lib;gdi32.lib;msimg32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -191,6 +192,7 @@ copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>comctl32.lib;comdlg32.lib;shlwapi.lib;shell32.lib;gdi32.lib;msimg32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -227,6 +229,7 @@ copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>comctl32.lib;comdlg32.lib;shlwapi.lib;shell32.lib;gdi32.lib;msimg32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -269,6 +272,7 @@ copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>comctl32.lib;comdlg32.lib;shlwapi.lib;shell32.lib;gdi32.lib;msimg32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -313,6 +317,7 @@ copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>comctl32.lib;comdlg32.lib;shlwapi.lib;shell32.lib;gdi32.lib;msimg32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -356,6 +361,7 @@ copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>comctl32.lib;comdlg32.lib;shlwapi.lib;shell32.lib;gdi32.lib;msimg32.lib;%(AdditionalDependencies)</AdditionalDependencies>
