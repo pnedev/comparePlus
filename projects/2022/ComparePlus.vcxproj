@@ -168,8 +168,8 @@
     <PostBuildEvent>
       <Command>echo Copying additional libs to plugins\ComparePlus\libs
 if not exist "$(OutDir)libs" mkdir "$(OutDir)libs"
-copy "..\..\libs\x86\*.dll" "$(OutDir)libs"</Command>
-      <Command>echo Copying localization files to plugins\ComparePlus\localization
+copy "..\..\libs\x86\*.dll" "$(OutDir)libs"
+echo Copying localization files to plugins\ComparePlus\localization
 if not exist "$(OutDir)localization" mkdir "$(OutDir)localization"
 copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     </PostBuildEvent>
@@ -205,8 +205,8 @@ copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     <PostBuildEvent>
       <Command>echo Copying additional libs to plugins\ComparePlus\libs
 if not exist "$(OutDir)libs" mkdir "$(OutDir)libs"
-copy "..\..\libs\x64\*.dll" "$(OutDir)libs"</Command>
-      <Command>echo Copying localization files to plugins\ComparePlus\localization
+copy "..\..\libs\x64\*.dll" "$(OutDir)libs"
+echo Copying localization files to plugins\ComparePlus\localization
 if not exist "$(OutDir)localization" mkdir "$(OutDir)localization"
 copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     </PostBuildEvent>
@@ -242,8 +242,8 @@ copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     <PostBuildEvent>
       <Command>echo Copying additional libs to plugins\ComparePlus\libs
 if not exist "$(OutDir)libs" mkdir "$(OutDir)libs"
-copy "..\..\libs\arm64\*.dll" "$(OutDir)libs"</Command>
-      <Command>echo Copying localization files to plugins\ComparePlus\localization
+copy "..\..\libs\arm64\*.dll" "$(OutDir)libs"
+echo Copying localization files to plugins\ComparePlus\localization
 if not exist "$(OutDir)localization" mkdir "$(OutDir)localization"
 copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     </PostBuildEvent>
@@ -287,8 +287,8 @@ copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     <PostBuildEvent>
       <Command>echo Copying additional libs to plugins\ComparePlus\libs
 if not exist "$(OutDir)libs" mkdir "$(OutDir)libs"
-copy "..\..\libs\x86\*.dll" "$(OutDir)libs"</Command>
-      <Command>echo Copying localization files to plugins\ComparePlus\localization
+copy "..\..\libs\x86\*.dll" "$(OutDir)libs"
+echo Copying localization files to plugins\ComparePlus\localization
 if not exist "$(OutDir)localization" mkdir "$(OutDir)localization"
 copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     </PostBuildEvent>
@@ -331,8 +331,8 @@ copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     <PostBuildEvent>
       <Command>echo Copying additional libs to plugins\ComparePlus\libs
 if not exist "$(OutDir)libs" mkdir "$(OutDir)libs"
-copy "..\..\libs\x64\*.dll" "$(OutDir)libs"</Command>
-      <Command>echo Copying localization files to plugins\ComparePlus\localization
+copy "..\..\libs\x64\*.dll" "$(OutDir)libs"
+echo Copying localization files to plugins\ComparePlus\localization
 if not exist "$(OutDir)localization" mkdir "$(OutDir)localization"
 copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     </PostBuildEvent>
@@ -375,8 +375,8 @@ copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     <PostBuildEvent>
       <Command>echo Copying additional libs to plugins\ComparePlus\libs
 if not exist "$(OutDir)libs" mkdir "$(OutDir)libs"
-copy "..\..\libs\arm64\*.dll" "$(OutDir)libs"</Command>
-      <Command>echo Copying localization files to plugins\ComparePlus\localization
+copy "..\..\libs\arm64\*.dll" "$(OutDir)libs"
+echo Copying localization files to plugins\ComparePlus\localization
 if not exist "$(OutDir)localization" mkdir "$(OutDir)localization"
 copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     </PostBuildEvent>
