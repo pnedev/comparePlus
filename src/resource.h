@@ -23,10 +23,10 @@
 #define TO_STR(X)				PARAM_TO_STR(X)
 
 
-#define VER_COPYRIGHT			"Copyright (C) 2025\0"
+#define VER_COPYRIGHT			"Copyright (C) 2026\0"
 
-#define PLUGIN_VERSION			2.2.0
-#define VER_FILEVERSION			2,2,0,0
+#define PLUGIN_VERSION			3.0.0
+#define VER_FILEVERSION			3,0,0,0
 #define IS_PRERELEASE			0
 
 #if (IS_PRERELEASE == 1)

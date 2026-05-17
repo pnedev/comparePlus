@@ -2,6 +2,24 @@ ComparePlus Changelog:
 ----------------------
 
 
+18.05.2026
+v3.0.0
+
+	- Rework comparison algorithms and implementation -
+		use Histogram approach for better accuracy and greatly improved speed
+	- Add localization support (only Bulgarian, Chinese, French, German and Korean languages currently added -
+		thanks to NianBroken, Curious Insatiable, Kristjan ESPERANTO, Mr-Update and nadugi GitHub users for the
+		provided translations)
+	- Update dialogs views and strings (due to localization support)
+	- Remove file size warning
+	- Improve compare cancellation response
+	- Fix caret line coloring style issue
+	- Optimize Settings color chooser
+	- Fix crash on DirectWrite Notepad++ rendering mode
+	- Fix crash on comparing totally empty file
+	- Update SQLite3 library to v3.53.1
+
+
 07.11.2025
 v2.2.0
 
