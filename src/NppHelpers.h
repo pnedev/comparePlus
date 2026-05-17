@@ -532,7 +532,7 @@ inline intptr_t getEndNotEmptyLine(int view)
 {
 	intptr_t line = CallScintilla(view, SCI_GETLINECOUNT, 0, 0) - 1;
 
-	return ((getLineEnd(view, line) - getLineStart(view, line)) == 0) ? line - 1 : line;
+	return (line && (getLineEnd(view, line) - getLineStart(view, line)) == 0) ? line - 1 : line;
 }
 
 
