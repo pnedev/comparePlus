@@ -812,6 +812,7 @@ void blinkLine(int view, intptr_t line);
 void blinkRange(int view, intptr_t startPos, intptr_t endPos);
 
 void centerAt(int view, intptr_t line);
+void centerAtWrapEnd(int view, intptr_t line);
 
 void markTextAsChanged(int view, intptr_t start, intptr_t length, int color);
 void clearChangedIndicator(int view, intptr_t start, intptr_t length);

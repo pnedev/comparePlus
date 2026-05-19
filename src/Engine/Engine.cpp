@@ -2289,7 +2289,6 @@ void markAllDiffs(CompareInfo& cmpInfo, const CompareOptions& options, CompareSu
 }
 
 
-// Needed to format patch generation data
 void toDocLineDiffSections(CompareInfo& cmpInfo)
 {
 	DocCmpInfo&	a = cmpInfo.a;
@@ -2372,7 +2371,6 @@ CompareResult runCompare(const CompareOptions& options, CompareSummary& summary)
 
 	toDocLineDiffSections(cmpInfo);
 
-	// Needed for patch generation
 	summary.aDiffView		= cmpInfo.a.view;
 	summary.diffSections	= std::move(cmpInfo.blockDiffs);
 

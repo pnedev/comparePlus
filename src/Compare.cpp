@@ -1806,11 +1806,22 @@ void showBlankAdjacentArrowMark(int view, intptr_t line, bool down)
 	if (line >= 0 && !isLineMarked(view, line, MARKER_MASK_LINE))
 	{
 		if (isAdjacentAnnotationVisible(view, line, down))
+		{
 			setArrowMark(view, line, down);
+		}
 		else if ((line == getEndLine(view)) && isAdjacentAnnotationVisible(view, line, true))
+		{
 			setArrowMark(view, line, true);
-		else
+		}
+		else if (down && isLineAnnotated(view, line))
+		{
 			setArrowMark(-1);
+			centerAtWrapEnd(view, line);
+		}
+		else
+		{
+			setArrowMark(-1);
+		}
 	}
 	else
 	{

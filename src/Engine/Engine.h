@@ -152,7 +152,6 @@ struct CompareSummary
 
 	AlignmentInfo_t	alignmentInfo;
 
-	// Below data is needed in case the user wants to generate patch
 	int				aDiffView;
 	diff_results	diffSections;
 };

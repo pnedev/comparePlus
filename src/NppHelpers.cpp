@@ -400,6 +400,15 @@ void centerAt(int view, intptr_t line)
 }
 
 
+void centerAtWrapEnd(int view, intptr_t line)
+{
+	const intptr_t firstVisible =
+		getVisibleFromDocLine(view, line) + getWrapCount(view, line) - CallScintilla(view, SCI_LINESONSCREEN, 0, 0) / 2;
+
+	CallScintilla(view, SCI_SETFIRSTVISIBLELINE, firstVisible, 0);
+}
+
+
 void setNormalView(int view)
 {
 	if (compareMode[view])
