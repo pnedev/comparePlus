@@ -153,6 +153,82 @@ struct diff_results : public std::vector<diff_info>
 
 		this->insert(this->end(), dItr, diffs.end());
 	};
+
+	intptr_t get_diff_before_a(intptr_t aidx)
+	{
+		if (this->empty() || (*this)[0].a.e > aidx)
+			return -1;
+
+		intptr_t diff_idx = 0;
+
+		for (intptr_t i = static_cast<intptr_t>(this->size()) / 2; i; i /= 2)
+		{
+			if ((*this)[diff_idx + i].a.e <= aidx)
+				diff_idx += i;
+		}
+
+		while ((diff_idx < static_cast<intptr_t>(this->size())) && ((*this)[diff_idx].a.e <= aidx))
+			++diff_idx;
+
+		return --diff_idx;
+	};
+
+	intptr_t get_diff_before_b(intptr_t bidx)
+	{
+		if (this->empty() || (*this)[0].b.e > bidx)
+			return -1;
+
+		intptr_t diff_idx = 0;
+
+		for (intptr_t i = static_cast<intptr_t>(this->size()) / 2; i; i /= 2)
+		{
+			if ((*this)[diff_idx + i].b.e <= bidx)
+				diff_idx += i;
+		}
+
+		while ((diff_idx < static_cast<intptr_t>(this->size())) && ((*this)[diff_idx].b.e <= bidx))
+			++diff_idx;
+
+		return --diff_idx;
+	};
+
+	intptr_t get_diff_after_a(intptr_t aidx)
+	{
+		if (this->empty() || this->back().a.s < aidx)
+			return -1;
+
+		intptr_t diff_idx = 0;
+
+		for (intptr_t i = static_cast<intptr_t>(this->size()) / 2; i; i /= 2)
+		{
+			if ((*this)[diff_idx + i].a.s < aidx)
+				diff_idx += i;
+		}
+
+		while ((diff_idx < static_cast<intptr_t>(this->size())) && ((*this)[diff_idx].a.s < aidx))
+			++diff_idx;
+
+		return diff_idx;
+	};
+
+	intptr_t get_diff_after_b(intptr_t bidx)
+	{
+		if (this->empty() || this->back().b.s < bidx)
+			return -1;
+
+		intptr_t diff_idx = 0;
+
+		for (intptr_t i = static_cast<intptr_t>(this->size()) / 2; i; i /= 2)
+		{
+			if ((*this)[diff_idx + i].b.s < bidx)
+				diff_idx += i;
+		}
+
+		while ((diff_idx < static_cast<intptr_t>(this->size())) && ((*this)[diff_idx].b.s < bidx))
+			++diff_idx;
+
+		return diff_idx;
+	};
 };
 
 

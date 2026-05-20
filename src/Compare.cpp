@@ -435,8 +435,6 @@ public:
 	bool			nppReplaceDone		= false;
 	bool			manuallyChanged		= false;
 	int				inEqualizeMode		= 0;
-
-	int				autoRecompareDelay	= 0;
 };
 
 
@@ -2773,13 +2771,6 @@ void doAlignment(bool forceAlign = false)
 	if (cmpPair == compareList.end())
 		return;
 
-	if (cmpPair->autoRecompareDelay)
-	{
-		delayedRecompare.post(cmpPair->autoRecompareDelay);
-
-		return;
-	}
-
 	bool goToFirst = (firstUpdateGuardDuration.count() != 0);
 
 	if (goToFirst)
@@ -3365,8 +3356,6 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 	{
 		newCompare = nullptr;
 
-		cmpPair->autoRecompareDelay = 0;
-
 		if (!autoUpdating && selectionCompare)
 		{
 			bool checkSelections = false;
@@ -3527,9 +3516,9 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 				firstUpdateGuardDuration = std::chrono::milliseconds(300);
 				prevUpdateTime = std::chrono::steady_clock::now();
-
-				doAlignment(true);
 			}
+
+			doAlignment(true);
 
 			currentlyActiveBuffID = getCurrentBuffId();
 
@@ -5397,17 +5386,19 @@ inline void onSciUpdateUI(HWND view)
 
 	const int viewId = getViewIdSafe(view);
 
-	if (viewId >= 0 && skipViewUpdate != viewId)
+	if (viewId >= 0)
 	{
-		storedLocation = std::make_unique<ViewLocation>(viewId);
-		skipViewUpdate = getOtherViewId(viewId);
+		if (skipViewUpdate != viewId)
+		{
+			storedLocation = std::make_unique<ViewLocation>(viewId);
+			skipViewUpdate = getOtherViewId(viewId);
+			doAlignment();
+		}
+		else
+		{
+			skipViewUpdate = -1;
+		}
 	}
-}
-
-
-inline void onSciPaint()
-{
-	doAlignment();
 }
 
 
@@ -5676,15 +5667,9 @@ void onSciModified(SCNotification* notifyCode)
 
 		if (cmpPair->options.recompareOnChange)
 		{
-			if (notifyCode->linesAdded)
-				cmpPair->autoRecompareDelay = 500;
-			else
-				// Leave bigger delay before re-comparing if change is on single line because the user might be typing
-				// and we should try to avoid interrupting / interfering
-				cmpPair->autoRecompareDelay = 1500;
-
-			if (!storedLocation)
-				storedLocation = std::make_unique<ViewLocation>(view);
+			// Leave bigger delay before re-comparing if change is on single line because the user might be typing
+			// and we should try to avoid interrupting / interfering
+			delayedRecompare.post(notifyCode->linesAdded ? 500 : 1500);
 
 			return;
 		}
@@ -6288,7 +6273,7 @@ void onFileSaved(LRESULT buffId)
 
 	if (!pairIsActive)
 		activateBufferID(buffId);
-	else if (cmpPair->options.recompareOnChange && cmpPair->autoRecompareDelay)
+	else if (cmpPair->options.recompareOnChange && delayedRecompare)
 		delayedRecompare.post(30);
 
 	if (otherFile.isTemp == LAST_SAVED_TEMP)
@@ -6420,18 +6405,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 				onSciUpdateUI((HWND)notifyCode->nmhdr.hwndFrom);
 		break;
 
-		// Handle word-wrap refresh
-		case SCN_PAINTED:
-			if (NppState::get().compareMode && !notificationsLock &&
-					!delayedRecompare && !delayedAlign && !delayedActivation && !delayedClosure)
-			{
-				if (storedLocation)
-					onSciPaint();
-				else
-					skipViewUpdate = -1;
-			}
-		break;
-
 		// This is used to monitor fold state and deletion of lines to properly clear their compare markings
 		case SCN_MODIFIED:
 			if (NppState::get().compareMode && !notificationsLock)
@@ -6477,7 +6450,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 				{
 					if (cmpPair->options.recompareOnChange)
 					{
-						cmpPair->autoRecompareDelay = 200;
+						delayedRecompare.post(200);
 					}
 					else
 					{
