@@ -27,6 +27,7 @@
 #include <windows.h>
 #include <wchar.h>
 #include <uxtheme.h>
+#include <shtypes.h>
 #include <versionhelpers.h>
 
 
@@ -218,3 +219,8 @@ enum class SysFont {
 
 
 HFONT createFontFromSystemDefault(SysFont font, int size = 0, bool underlined = false);
+
+std::wstring OpenFileDialogCID(HWND hWnd, const wchar_t* title, const COMDLG_FILTERSPEC* filters, UINT filtersSize,
+	const wchar_t* defaultExt);
+std::wstring SaveFileDialogCID(HWND hwnd, const wchar_t* title, const COMDLG_FILTERSPEC* filters, UINT filtersSize,
+	const wchar_t* defaultExt);

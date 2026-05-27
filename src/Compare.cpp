@@ -4217,31 +4217,23 @@ void GeneratePatch()
 
 	std::ofstream ofs;
 	{
-		wchar_t fname[2048];
+		std::wstring patchFiles = str["PATCH_FILTER_PATCH"];
+		patchFiles += L" (*.diff, *.patch)";
+		std::wstring allFiles = str["PATCH_FILTER_ALL"];
+		allFiles += L" (*.*)";
 
-		OPENFILENAMEW ofn;
+		COMDLG_FILTERSPEC filters[] = {
+			{patchFiles.c_str(),	L"*.diff;*.patch"},
+			{allFiles.c_str(),		L"*.*"}
+		};
 
-		::ZeroMemory(&fname, sizeof(fname));
-		::ZeroMemory(&ofn, sizeof(ofn));
+		const std::wstring fname =
+			SaveFileDialogCID(nppData._nppHandle, str["PATCH_SAVE_AS"].c_str(), filters, _countof(filters), L"diff");
 
-		std::wstring filter = str["PATCH_FILTER_ALL"];
-		filter.insert(filter.end(), L'\0');
-		filter += L"*.*";
-		filter.insert(filter.end(), L'\0');
-
-		ofn.lStructSize		= sizeof(ofn);
-		ofn.hwndOwner		= nppData._nppHandle;
-		ofn.lpstrFilter		= filter.c_str();
-		ofn.lpstrFile		= fname;
-		ofn.nMaxFile		= _countof(fname);
-		ofn.lpstrInitialDir	= nullptr;
-		ofn.lpstrTitle		= str["PATCH_SAVE_AS"].c_str();
-		ofn.Flags			= OFN_DONTADDTORECENT | OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST;
-
-		if (!::GetSaveFileNameW(&ofn))
+		if (fname.empty())
 			return;
 
-		ofs.open(fname, std::ios_base::trunc | std::ios_base::binary);
+		ofs.open(fname.c_str(), std::ios_base::trunc | std::ios_base::binary);
 
 		if (!ofs.is_open())
 		{
@@ -4396,36 +4388,23 @@ void applyPatch(bool revert = false)
 
 	std::ifstream ifs;
 	{
-		wchar_t fname[2048];
+		std::wstring patchFiles = str["PATCH_FILTER_PATCH"];
+		patchFiles += L" (*.diff, *.patch)";
+		std::wstring allFiles = str["PATCH_FILTER_ALL"];
+		allFiles += L" (*.*)";
 
-		OPENFILENAMEW ofn;
+		COMDLG_FILTERSPEC filters[] = {
+			{patchFiles.c_str(),	L"*.diff;*.patch"},
+			{allFiles.c_str(),		L"*.*"}
+		};
 
-		::ZeroMemory(&fname, sizeof(fname));
-		::ZeroMemory(&ofn, sizeof(ofn));
+		const std::wstring fname =
+			OpenFileDialogCID(nppData._nppHandle, str["PATCH_SELECT"].c_str(), filters, _countof(filters), L"diff");
 
-		std::wstring filter = str["PATCH_FILTER_PATCH"];
-		filter += L" (*.patch, *.diff)";
-		filter.insert(filter.end(), L'\0');
-		filter += L"*.patch;*.diff";
-		filter.insert(filter.end(), L'\0');
-		filter += str["PATCH_FILTER_ALL"];
-		filter.insert(filter.end(), L'\0');
-		filter += L"*.*";
-		filter.insert(filter.end(), L'\0');
-
-		ofn.lStructSize		= sizeof(ofn);
-		ofn.hwndOwner		= nppData._nppHandle;
-		ofn.lpstrFilter		= filter.c_str();
-		ofn.lpstrFile		= fname;
-		ofn.nMaxFile		= _countof(fname);
-		ofn.lpstrInitialDir	= nullptr;
-		ofn.lpstrTitle		= str["PATCH_SELECT"].c_str();
-		ofn.Flags			= OFN_DONTADDTORECENT | OFN_FILEMUSTEXIST;
-
-		if (!::GetOpenFileNameW(&ofn))
+		if (fname.empty())
 			return;
 
-		ifs.open(fname, std::ios_base::binary);
+		ifs.open(fname.c_str(), std::ios_base::binary);
 
 		if (!ifs.is_open())
 		{

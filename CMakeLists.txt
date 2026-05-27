@@ -166,7 +166,12 @@ if (UNIX OR MINGW)
 		PATHS ${win32_lib_dir}
 	)
 
-	target_link_libraries (ComparePlus ${comctl32} ${comdlg32} ${shlwapi} ${msimg32} ${uxtheme})
+	find_library (ole32
+		NAMES libole32.a
+		PATHS ${win32_lib_dir}
+	)
+
+	target_link_libraries (ComparePlus ${comctl32} ${comdlg32} ${shlwapi} ${msimg32} ${uxtheme} ${ole32})
 
 	set (INSTALL_PATH
 		"$ENV{HOME}/wine/drive_c/Program Files/Notepad++/plugins/ComparePlus"
@@ -176,7 +181,7 @@ if (UNIX OR MINGW)
 		DESTINATION "${INSTALL_PATH}"
 	)
 else ()
-	target_link_libraries (ComparePlus comctl32 comdlg32 shlwapi msimg32 uxtheme)
+	target_link_libraries (ComparePlus comctl32 comdlg32 shlwapi msimg32 uxtheme ole32)
 
 	set (INSTALL_PATH
 		"${PROJECT_SOURCE_DIR}/Notepad++/plugins/ComparePlus"

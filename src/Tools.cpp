@@ -1,6 +1,6 @@
 /*
  * This file is part of ComparePlus plugin for Notepad++
- * Copyright (C) 2016-2025 Pavel Nedev (pg.nedev@gmail.com)
+ * Copyright (C) 2016-2026 Pavel Nedev (pg.nedev@gmail.com)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -18,6 +18,7 @@
  */
 
 #include "Tools.h"
+#include <shobjidl.h>
 
 
 // Initialize array of round constants:
@@ -523,4 +524,148 @@ HFONT createFontFromSystemDefault(SysFont font, int size, bool underlined)
 	}
 
 	return hf;
+}
+
+
+std::wstring OpenFileDialogCID(HWND hWnd, const wchar_t* title, const COMDLG_FILTERSPEC* filters, UINT filtersSize,
+	const wchar_t* defaultExt)
+{
+	std::wstring fn;
+
+	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+
+	if (SUCCEEDED(hr))
+	{
+		IFileOpenDialog* pfd = nullptr;
+
+		// Create the FileOpenDialog object
+		hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_IFileOpenDialog,
+			reinterpret_cast<void**>(&pfd));
+
+		if (SUCCEEDED(hr))
+		{
+			DWORD dwFlags;
+
+			hr = pfd->GetOptions(&dwFlags);
+			if (SUCCEEDED(hr))
+				pfd->SetOptions(dwFlags |
+						FOS_FORCEFILESYSTEM | FOS_FILEMUSTEXIST | FOS_DONTADDTORECENT);
+
+			if (title)
+				pfd->SetTitle(title);
+
+			if (filters)
+			{
+				pfd->SetFileTypes(filtersSize, filters);
+				pfd->SetFileTypeIndex(0);
+			}
+
+			if (defaultExt)
+				pfd->SetDefaultExtension(defaultExt);
+
+			// Show the Open dialog box
+			hr = pfd->Show(hWnd);
+
+			if (SUCCEEDED(hr))
+			{
+				IShellItem* pItem;
+				hr = pfd->GetResult(&pItem);
+
+				if (SUCCEEDED(hr))
+				{
+					PWSTR pszFilePath = nullptr;
+					hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+
+					if (SUCCEEDED(hr) && pszFilePath)
+					{
+						const size_t pathLen = wcslen(pszFilePath);
+
+						fn.resize(pathLen);
+						wcsncpy_s(fn.data(), pathLen + 1, pszFilePath, _TRUNCATE);
+						CoTaskMemFree(pszFilePath);
+					}
+
+					pItem->Release();
+				}
+			}
+
+			pfd->Release();
+		}
+
+		CoUninitialize();
+	}
+
+	return fn;
+}
+
+
+std::wstring SaveFileDialogCID(HWND hWnd, const wchar_t* title, const COMDLG_FILTERSPEC* filters, UINT filtersSize,
+	const wchar_t* defaultExt)
+{
+	std::wstring fn;
+
+	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+
+	if (SUCCEEDED(hr))
+	{
+		IFileSaveDialog* pfd = nullptr;
+
+		// Create the FileSaveDialog object
+		hr = CoCreateInstance(CLSID_FileSaveDialog, NULL, CLSCTX_ALL, IID_IFileSaveDialog,
+			reinterpret_cast<void**>(&pfd));
+
+		if (SUCCEEDED(hr))
+		{
+			DWORD dwFlags;
+
+			hr = pfd->GetOptions(&dwFlags);
+			if (SUCCEEDED(hr))
+				pfd->SetOptions(dwFlags |
+						FOS_FORCEFILESYSTEM | FOS_OVERWRITEPROMPT | FOS_PATHMUSTEXIST | FOS_DONTADDTORECENT);
+
+			if (title)
+				pfd->SetTitle(title);
+
+			if (filters)
+			{
+				pfd->SetFileTypes(filtersSize, filters);
+				pfd->SetFileTypeIndex(0);
+			}
+
+			if (defaultExt)
+				pfd->SetDefaultExtension(defaultExt);
+
+			// Show the Save dialog box
+			hr = pfd->Show(hWnd);
+
+			if (SUCCEEDED(hr))
+			{
+				IShellItem* pItem;
+				hr = pfd->GetResult(&pItem);
+
+				if (SUCCEEDED(hr))
+				{
+					PWSTR pszFilePath = nullptr;
+					hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+
+					if (SUCCEEDED(hr) && pszFilePath)
+					{
+						const size_t pathLen = wcslen(pszFilePath);
+
+						fn.resize(pathLen);
+						wcsncpy_s(fn.data(), pathLen + 1, pszFilePath, _TRUNCATE);
+						CoTaskMemFree(pszFilePath);
+					}
+
+					pItem->Release();
+				}
+			}
+
+			pfd->Release();
+		}
+
+		CoUninitialize();
+	}
+
+	return fn;
 }
