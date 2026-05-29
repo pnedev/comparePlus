@@ -211,7 +211,7 @@ struct DocCmpInfo
 		assert(idx >= 0);
 
 		if (static_cast<size_t>(idx) >= lines.size())
-			return lines.back().num;
+			return lines.back().num + 1;
 
 		return lines[idx].num;
 	}
@@ -221,7 +221,7 @@ struct DocCmpInfo
 		assert(off >= 0 && off < diffRange(di).len());
 
 		if (static_cast<size_t>(diffRange(di).s + off) >= lines.size())
-			return lines.back().num;
+			return lines.back().num + 1;
 
 		return lines[diffRange(di).s + off].num;
 	}
