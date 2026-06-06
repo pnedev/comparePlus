@@ -8,6 +8,7 @@ Translations kindly provided by the following GitHub users:
 - French ......... **@Need74** (Curious Insatiable)
 - German ......... **@KristjanESPERANTO** (Kristjan ESPERANTO) with some corrections by **@Mr-Update**
 - Korean ......... **@nadugi** (nadugi)
+- Russian ........ **@cgtalium** (Roman Serov)
 - Turkish ........ **@bilimiyorum**
 
 
