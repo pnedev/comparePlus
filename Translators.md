@@ -10,6 +10,7 @@ Translations kindly provided by the following GitHub users:
 - Korean ......... **@nadugi** (nadugi)
 - Russian ........ **@cgtalium** (Roman Serov)
 - Turkish ........ **@bilimiyorum**
+- Ukrainian ...... **@Naghual** (Oleksiy M.)
 
 
 _Many thanks!_
