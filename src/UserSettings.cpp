@@ -101,6 +101,7 @@ const wchar_t UserSettings::compareTBSetting[]				= L"compare_tb";
 const wchar_t UserSettings::compareSelTBSetting[]			= L"compare_selection_tb";
 const wchar_t UserSettings::clearCompareTBSetting[]			= L"clear_compare_tb";
 const wchar_t UserSettings::navigationTBSetting[]			= L"navigation_tb";
+const wchar_t UserSettings::compareOptsTBSetting[]			= L"compare_options_tb";
 const wchar_t UserSettings::diffsFilterTBSetting[]			= L"diffs_filter_tb";
 const wchar_t UserSettings::navBarTBSetting[]				= L"nav_bar_tb";
 
@@ -261,6 +262,8 @@ void UserSettings::load()
 			DEFAULT_CLEAR_COMPARE_TB, ini) != 0;
 	NavigationTB		= ::GetPrivateProfileIntW(toolbarSection, navigationTBSetting,
 			DEFAULT_NAVIGATION_TB, ini) != 0;
+	CompareOptsTB		= ::GetPrivateProfileIntW(toolbarSection, compareOptsTBSetting,
+			DEFAULT_COMPARE_OPTS_TB, ini) != 0;
 	DiffsFilterTB		= ::GetPrivateProfileIntW(toolbarSection, diffsFilterTBSetting,
 			DEFAULT_DIFFS_FILTER_TB, ini) != 0;
 	NavBarTB			= ::GetPrivateProfileIntW(toolbarSection, navBarTBSetting,
@@ -429,6 +432,7 @@ void UserSettings::save()
 	::WritePrivateProfileStringW(toolbarSection, compareSelTBSetting,	CompareSelTB	? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(toolbarSection, clearCompareTBSetting,	ClearCompareTB	? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(toolbarSection, navigationTBSetting,	NavigationTB	? L"1" : L"0", ini);
+	::WritePrivateProfileStringW(toolbarSection, compareOptsTBSetting,	CompareOptsTB	? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(toolbarSection, diffsFilterTBSetting,	DiffsFilterTB	? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(toolbarSection, navBarTBSetting,		NavBarTB		? L"1" : L"0", ini);
 

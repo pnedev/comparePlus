@@ -87,6 +87,7 @@
 	"IDC_COMPARE_SELECTIONS_TB":	"Порівняти виділене",
 	"IDC_CLEAR_COMPARE_TB":			"Очистити активне порівняння",
 	"IDC_NAVIGATION_TB":			"Команди навігації",
+	"IDC_COMPARE_OPTIONS_TB":		"Параметри порівняння",
 	"IDC_DIFFS_FILTERS_TB":			"Фільтри відображення відмінностей",
 	"IDC_NAV_BAR_TB":				"Панель навігації",
 	"IDOK":							"OK",

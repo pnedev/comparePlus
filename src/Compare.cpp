@@ -161,6 +161,7 @@ private:
 			{ CMD_NEXT,					{} },
 			{ CMD_FIRST,				{} },
 			{ CMD_LAST,					{} },
+			{ CMD_COMPARE_OPTIONS,		{} },
 			{ CMD_DIFFS_VISUAL_FILTERS,	{} },
 			{ CMD_NAV_BAR,				{} }
 		};
@@ -629,6 +630,7 @@ toolbarIconsWithDarkMode	tbFirst			{nullptr, nullptr, nullptr};
 toolbarIconsWithDarkMode	tbPrev			{nullptr, nullptr, nullptr};
 toolbarIconsWithDarkMode	tbNext			{nullptr, nullptr, nullptr};
 toolbarIconsWithDarkMode	tbLast			{nullptr, nullptr, nullptr};
+toolbarIconsWithDarkMode	tbCompareOpts	{nullptr, nullptr, nullptr};
 toolbarIconsWithDarkMode	tbDiffsFilters	{nullptr, nullptr, nullptr};
 toolbarIconsWithDarkMode	tbNavBar		{nullptr, nullptr, nullptr};
 
@@ -4811,6 +4813,7 @@ void deinitPlugin()
 	freeToolbarObjects(tbPrev);
 	freeToolbarObjects(tbNext);
 	freeToolbarObjects(tbLast);
+	freeToolbarObjects(tbCompareOpts);
 	freeToolbarObjects(tbDiffsFilters);
 	freeToolbarObjects(tbNavBar);
 
@@ -5182,6 +5185,19 @@ void onToolBarReady()
 				(WPARAM)funcItem[CMD_NEXT]._cmdID, (LPARAM)&tbNext);
 		::SendMessageW(nppData._nppHandle, NPPM_ADDTOOLBARICON_FORDARKMODE,
 				(WPARAM)funcItem[CMD_LAST]._cmdID, (LPARAM)&tbLast);
+	}
+
+	if (Settings.CompareOptsTB)
+	{
+		tbCompareOpts.hToolbarBmp			= (HBITMAP)
+			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_COMPARE_OPTS), IMAGE_BITMAP, bmpX, bmpY, style);
+		tbCompareOpts.hToolbarIcon			= (HICON)
+			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_COMPARE_OPTS_FL), IMAGE_ICON, icoX, icoY, style);
+		tbCompareOpts.hToolbarIconDarkMode	= (HICON)
+			::LoadImageW(hInstance, MAKEINTRESOURCEW(IDB_COMPARE_OPTS_FL_DM), IMAGE_ICON, icoX, icoY, styleDark);
+
+		::SendMessageW(nppData._nppHandle, NPPM_ADDTOOLBARICON_FORDARKMODE,
+				(WPARAM)funcItem[CMD_COMPARE_OPTIONS]._cmdID, (LPARAM)&tbCompareOpts);
 	}
 
 	if (Settings.DiffsFilterTB)

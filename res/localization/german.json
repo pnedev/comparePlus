@@ -87,6 +87,7 @@
 	"IDC_COMPARE_SELECTIONS_TB":	"Auswahl vergleichen",
 	"IDC_CLEAR_COMPARE_TB":			"Aktiven Vergleich entfernen",
 	"IDC_NAVIGATION_TB":			"Navigationsbefehle",
+	"IDC_COMPARE_OPTIONS_TB":		"Vergleichsoptionen",
 	"IDC_DIFFS_FILTERS_TB":			"Visuelle Filter für Unterschiede",
 	"IDC_NAV_BAR_TB":				"Navigationsleiste",
 	"IDOK":							"OK",

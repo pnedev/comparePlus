@@ -87,6 +87,7 @@
 	"IDC_COMPARE_SELECTIONS_TB":	"Сравни селекциите",
 	"IDC_CLEAR_COMPARE_TB":			"Изчисти текущото сравнение",
 	"IDC_NAVIGATION_TB":			"Навигационни команди",
+	"IDC_COMPARE_OPTIONS_TB":		"Опции при сравнение",
 	"IDC_DIFFS_FILTERS_TB":			"Визуален филтър на промените",
 	"IDC_NAV_BAR_TB":				"Навигационен панел",
 	"IDOK":							"ОК",

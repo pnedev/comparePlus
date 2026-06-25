@@ -135,8 +135,9 @@ BEGIN
 	AUTOCHECKBOX	"Compare Selections", IDC_COMPARE_SELECTIONS_TB, 496, 88, 107, 16, BS_MULTILINE
 	AUTOCHECKBOX	"Clear Active Compare", IDC_CLEAR_COMPARE_TB, 496, 108, 107, 16, BS_MULTILINE
 	AUTOCHECKBOX	"Navigation commands", IDC_NAVIGATION_TB, 496, 128, 107, 16, BS_MULTILINE
-	AUTOCHECKBOX	"Diffs Visual Filters", IDC_DIFFS_FILTERS_TB, 496, 148, 107, 16, BS_MULTILINE
-	AUTOCHECKBOX	"Navigation Bar", IDC_NAV_BAR_TB, 496, 168, 107, 16, BS_MULTILINE
+	AUTOCHECKBOX	"Compare Options", IDC_COMPARE_OPTIONS_TB, 496, 148, 107, 16, BS_MULTILINE
+	AUTOCHECKBOX	"Diffs Visual Filters", IDC_DIFFS_FILTERS_TB, 496, 168, 107, 16, BS_MULTILINE
+	AUTOCHECKBOX	"Navigation Bar", IDC_NAV_BAR_TB, 496, 188, 107, 16, BS_MULTILINE
 	DEFPUSHBUTTON	"OK", IDOK, 204, 327, 50, 16
 	PUSHBUTTON		"Reset", IDDEFAULT, 282, 327, 50, 16
 	PUSHBUTTON		"Cancel", IDCANCEL, 360, 327, 50, 16
@@ -264,6 +265,7 @@ IDB_FIRST				BITMAP	"../res/icons/Standard/First.bmp"
 IDB_LAST				BITMAP	"../res/icons/Standard/Last.bmp"
 IDB_PREV				BITMAP	"../res/icons/Standard/Previous.bmp"
 IDB_NEXT				BITMAP	"../res/icons/Standard/Next.bmp"
+IDB_COMPARE_OPTS		BITMAP	"../res/icons/Standard/CompareOpts.bmp"
 IDB_DIFFS_FILTERS		BITMAP	"../res/icons/Standard/DiffsFilters.bmp"
 IDB_NAVBAR				BITMAP	"../res/icons/Standard/NavBar.bmp"
 
@@ -278,6 +280,7 @@ IDB_FIRST_FL			ICON	"../res/icons/Fluent/FirstFluent.ico"
 IDB_LAST_FL				ICON	"../res/icons/Fluent/LastFluent.ico"
 IDB_PREV_FL				ICON	"../res/icons/Fluent/PreviousFluent.ico"
 IDB_NEXT_FL				ICON	"../res/icons/Fluent/NextFluent.ico"
+IDB_COMPARE_OPTS_FL		ICON	"../res/icons/Fluent/CompareOptsFluent.ico"
 IDB_DIFFS_FILTERS_FL	ICON	"../res/icons/Fluent/DiffsFiltersFluent.ico"
 IDB_NAVBAR_FL			ICON	"../res/icons/Fluent/NavBarFluent.ico"
 
@@ -290,6 +293,7 @@ IDB_FIRST_FL_DM			ICON	"../res/icons/FluentDM/FirstFluentDM.ico"
 IDB_LAST_FL_DM			ICON	"../res/icons/FluentDM/LastFluentDM.ico"
 IDB_PREV_FL_DM			ICON	"../res/icons/FluentDM/PreviousFluentDM.ico"
 IDB_NEXT_FL_DM			ICON	"../res/icons/FluentDM/NextFluentDM.ico"
+IDB_COMPARE_OPTS_FL_DM	ICON	"../res/icons/FluentDM/CompareOptsFluentDM.ico"
 IDB_DIFFS_FILTERS_FL_DM	ICON	"../res/icons/FluentDM/DiffsFiltersFluentDM.ico"
 IDB_NAVBAR_FL_DM		ICON	"../res/icons/FluentDM/NavBarFluentDM.ico"
 

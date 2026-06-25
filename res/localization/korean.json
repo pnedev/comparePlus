@@ -87,6 +87,7 @@
 	"IDC_COMPARE_SELECTIONS_TB":	"선택 영역 비교",
 	"IDC_CLEAR_COMPARE_TB":			"비교 결과 지우기",
 	"IDC_NAVIGATION_TB":			"탐색 명령",
+	"IDC_COMPARE_OPTIONS_TB":		"비교 옵션",
 	"IDC_DIFFS_FILTERS_TB":			"차이점 시각적 필터",
 	"IDC_NAV_BAR_TB":				"탐색 바",
 	"IDOK":							"확인",

@@ -69,8 +69,9 @@
 #define IDB_LAST						126
 #define IDB_PREV						127
 #define IDB_NEXT						128
-#define IDB_DIFFS_FILTERS				129
-#define IDB_NAVBAR						130
+#define IDB_COMPARE_OPTS				129
+#define IDB_DIFFS_FILTERS				130
+#define IDB_NAVBAR						131
 
 #define IDB_SETFIRST_FL					140
 #define IDB_SETFIRST_RTL_FL				141
@@ -81,8 +82,9 @@
 #define IDB_LAST_FL						146
 #define IDB_PREV_FL						147
 #define IDB_NEXT_FL						148
-#define IDB_DIFFS_FILTERS_FL			149
-#define IDB_NAVBAR_FL					150
+#define IDB_COMPARE_OPTS_FL				149
+#define IDB_DIFFS_FILTERS_FL			150
+#define IDB_NAVBAR_FL					151
 
 #define IDB_SETFIRST_FL_DM				160
 #define IDB_SETFIRST_RTL_FL_DM			161
@@ -93,8 +95,9 @@
 #define IDB_LAST_FL_DM					166
 #define IDB_PREV_FL_DM					167
 #define IDB_NEXT_FL_DM					168
-#define IDB_DIFFS_FILTERS_FL_DM			169
-#define IDB_NAVBAR_FL_DM				170
+#define IDB_COMPARE_OPTS_FL_DM			169
+#define IDB_DIFFS_FILTERS_FL_DM			170
+#define IDB_NAVBAR_FL_DM				171
 
 #define IDC_CLOSE						1001
 #define IDC_DONATE						1002
@@ -164,8 +167,9 @@
 #define IDC_COMPARE_SELECTIONS_TB		1072
 #define IDC_CLEAR_COMPARE_TB			1073
 #define IDC_NAVIGATION_TB				1074
-#define IDC_DIFFS_FILTERS_TB			1075
-#define IDC_NAV_BAR_TB					1076
+#define IDC_COMPARE_OPTIONS_TB			1075
+#define IDC_DIFFS_FILTERS_TB			1076
+#define IDC_NAV_BAR_TB					1077
 
 #define IDC_DETECT						1090
 #define IDC_DETECT_MOVES				1091

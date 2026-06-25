@@ -87,6 +87,7 @@
 	"IDC_COMPARE_SELECTIONS_TB":	"Seçimleri karşılaştır",
 	"IDC_CLEAR_COMPARE_TB":			"Aktif karşılaştırmayı temizle",
 	"IDC_NAVIGATION_TB":			"Gezinme komutları",
+	"IDC_COMPARE_OPTIONS_TB":		"Karşılaştırma seçenekleri",
 	"IDC_DIFFS_FILTERS_TB":			"Fark görsel filtreleri",
 	"IDC_NAV_BAR_TB":				"Gezinme çubuğu",
 	"IDOK":							"Tamam",

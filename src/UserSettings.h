@@ -66,6 +66,7 @@
 #define DEFAULT_COMPARE_SEL_TB				1
 #define DEFAULT_CLEAR_COMPARE_TB			1
 #define DEFAULT_NAVIGATION_TB				1
+#define DEFAULT_COMPARE_OPTS_TB				1
 #define DEFAULT_DIFFS_FILTER_TB				1
 #define DEFAULT_NAV_BAR_TB					1
 
@@ -177,6 +178,7 @@ public:
 	bool			CompareSelTB;
 	bool			ClearCompareTB;
 	bool			NavigationTB;
+	bool			CompareOptsTB;
 	bool			DiffsFilterTB;
 	bool			NavBarTB;
 
@@ -259,6 +261,7 @@ private:
 	static const wchar_t compareSelTBSetting[];
 	static const wchar_t clearCompareTBSetting[];
 	static const wchar_t navigationTBSetting[];
+	static const wchar_t compareOptsTBSetting[];
 	static const wchar_t diffsFilterTBSetting[];
 	static const wchar_t navBarTBSetting[];
 

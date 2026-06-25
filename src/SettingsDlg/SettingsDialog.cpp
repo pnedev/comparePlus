@@ -171,6 +171,7 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					settings.CompareSelTB	= (bool) DEFAULT_COMPARE_SEL_TB;
 					settings.ClearCompareTB	= (bool) DEFAULT_CLEAR_COMPARE_TB;
 					settings.NavigationTB	= (bool) DEFAULT_NAVIGATION_TB;
+					settings.CompareOptsTB	= (bool) DEFAULT_COMPARE_OPTS_TB;
 					settings.DiffsFilterTB	= (bool) DEFAULT_DIFFS_FILTER_TB;
 					settings.NavBarTB		= (bool) DEFAULT_NAV_BAR_TB;
 
@@ -299,6 +300,7 @@ void SettingsDialog::updateLocalization()
 	updateDlgCtrlTxt(_hSelf, IDC_COMPARE_SELECTIONS_TB,	str["IDC_COMPARE_SELECTIONS_TB"].c_str(), true);
 	updateDlgCtrlTxt(_hSelf, IDC_CLEAR_COMPARE_TB,		str["IDC_CLEAR_COMPARE_TB"].c_str(), true);
 	updateDlgCtrlTxt(_hSelf, IDC_NAVIGATION_TB,			str["IDC_NAVIGATION_TB"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_COMPARE_OPTIONS_TB,	str["IDC_COMPARE_OPTIONS_TB"].c_str(), true);
 	updateDlgCtrlTxt(_hSelf, IDC_DIFFS_FILTERS_TB,		str["IDC_DIFFS_FILTERS_TB"].c_str(), true);
 	updateDlgCtrlTxt(_hSelf, IDC_NAV_BAR_TB,			str["IDC_NAV_BAR_TB"].c_str(), true);
 
@@ -414,6 +416,8 @@ void SettingsDialog::SetParams(UserSettings* settings)
 			settings->ClearCompareTB ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_NAVIGATION_TB),
 			settings->NavigationTB ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_COMPARE_OPTIONS_TB),
+			settings->CompareOptsTB ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_DIFFS_FILTERS_TB),
 			settings->DiffsFilterTB ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_NAV_BAR_TB),
@@ -503,6 +507,7 @@ void SettingsDialog::GetParams()
 	_Settings->CompareSelTB		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_COMPARE_SELECTIONS_TB)) == BST_CHECKED);
 	_Settings->ClearCompareTB	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_CLEAR_COMPARE_TB)) == BST_CHECKED);
 	_Settings->NavigationTB		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_NAVIGATION_TB)) == BST_CHECKED);
+	_Settings->CompareOptsTB	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_COMPARE_OPTIONS_TB)) == BST_CHECKED);
 	_Settings->DiffsFilterTB	= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_DIFFS_FILTERS_TB)) == BST_CHECKED);
 	_Settings->NavBarTB			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_NAV_BAR_TB)) == BST_CHECKED);
 }

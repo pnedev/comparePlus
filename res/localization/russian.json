@@ -87,6 +87,7 @@
 	"IDC_COMPARE_SELECTIONS_TB":	"Сравнить выделенное",
 	"IDC_CLEAR_COMPARE_TB":			"Очистить активное сравнение",
 	"IDC_NAVIGATION_TB":			"Команды навигации",
+	"IDC_COMPARE_OPTIONS_TB":		"Параметры сравнения",
 	"IDC_DIFFS_FILTERS_TB":			"Фильтры отображения различий",
 	"IDC_NAV_BAR_TB":				"Панель навигации",
 	"IDOK":							"OK",

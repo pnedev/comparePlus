@@ -87,6 +87,7 @@
 	"IDC_COMPARE_SELECTIONS_TB":	"השווה מקטעים נבחרים",
 	"IDC_CLEAR_COMPARE_TB":			"נקה השוואה נוכחית",
 	"IDC_NAVIGATION_TB":			"פקודות ניווט",
+	"IDC_COMPARE_OPTIONS_TB":		"אפשרויות השוואה",
 	"IDC_DIFFS_FILTERS_TB":			"מסנני תצוגת השוואה",
 	"IDC_NAV_BAR_TB":				"פאנל ניווט",
 	"IDOK":							"אישור",

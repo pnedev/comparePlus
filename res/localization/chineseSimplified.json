@@ -87,6 +87,7 @@
 	"IDC_COMPARE_SELECTIONS_TB":	"对比所选内容",
 	"IDC_CLEAR_COMPARE_TB":			"清除当前对比",
 	"IDC_NAVIGATION_TB":			"导航相关命令",
+	"IDC_COMPARE_OPTIONS_TB":		"对比选项",
 	"IDC_DIFFS_FILTERS_TB":			"差异显示过滤器",
 	"IDC_NAV_BAR_TB":				"导航栏",
 	"IDOK":							"确定",

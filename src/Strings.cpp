@@ -121,6 +121,7 @@ Strings::Strings() : _currentLocale {"english"}
 		{ "IDC_COMPARE_SELECTIONS_TB",		"Compare Selections" },
 		{ "IDC_CLEAR_COMPARE_TB",			"Clear Active Compare" },
 		{ "IDC_NAVIGATION_TB",				"Navigation commands" },
+		{ "IDC_COMPARE_OPTIONS_TB",			"Compare Options" },
 		{ "IDC_DIFFS_FILTERS_TB",			"Diffs Visual Filters" },
 		{ "IDC_NAV_BAR_TB",					"Navigation Bar" },
 		{ "IDOK",							"OK" },
