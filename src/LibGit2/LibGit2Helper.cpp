@@ -74,69 +74,129 @@ std::unique_ptr<LibGit>& LibGit::load()
 
 	Inst.reset(new LibGit);
 
-	Inst->_isInit = true;
-
 	Inst->version = (PGITLIBVERSION)::GetProcAddress(libGit2, "git_libgit2_version");
-	if (!Inst->version)
-		Inst->_isInit = false;
-	Inst->repository_open_ext = (PGITREPOSITORYOPENEXT)::GetProcAddress(libGit2, "git_repository_open_ext");
-	if (!Inst->repository_open_ext)
-		Inst->_isInit = false;
-	Inst->repository_workdir = (PGITREPOSITORYWORKDIR)::GetProcAddress(libGit2, "git_repository_workdir");
-	if (!Inst->repository_workdir)
-		Inst->_isInit = false;
-	Inst->repository_index = (PGITREPOSITORYINDEX)::GetProcAddress(libGit2, "git_repository_index");
-	if (!Inst->repository_index)
-		Inst->_isInit = false;
-	Inst->index_get_bypath = (PGITINDEXGETBYPATH)::GetProcAddress(libGit2, "git_index_get_bypath");
-	if (!Inst->index_get_bypath)
-		Inst->_isInit = false;
-	Inst->blob_lookup = (PGITBLOBLOOKUP)::GetProcAddress(libGit2, "git_blob_lookup");
-	if (!Inst->blob_lookup)
-		Inst->_isInit = false;
-	Inst->blob_filtered_content = (PGITBLOBFILTERCONTENT)::GetProcAddress(libGit2, "git_blob_filtered_content");
-	if (!Inst->blob_filtered_content)
-		Inst->_isInit = false;
-	Inst->buf_free = (PGITBUFFREE)::GetProcAddress(libGit2, "git_buf_free");
-	if (!Inst->buf_free)
-		Inst->_isInit = false;
-	Inst->blob_free = (PGITBLOBFREE)::GetProcAddress(libGit2, "git_blob_free");
-	if (!Inst->blob_free)
-		Inst->_isInit = false;
-	Inst->index_free = (PGITINDEXFREE)::GetProcAddress(libGit2, "git_index_free");
-	if (!Inst->index_free)
-		Inst->_isInit = false;
-	Inst->repository_free = (PGITREPOSITORYFREE)::GetProcAddress(libGit2, "git_repository_free");
-	if (!Inst->repository_free)
-		Inst->_isInit = false;
-
-	if (Inst->_isInit)
+	if (Inst->version)
 	{
 		int major, minor, rev;
 		Inst->version(&major, &minor, &rev);
+
+		if (major < 1) // Don't accept old versions of the Git library
+		{
+			Inst.reset();
+			return Inst;
+		}
 
 		Inst->_verStr = std::to_string(major);
 		Inst->_verStr += '.';
 		Inst->_verStr += std::to_string(minor);
 		Inst->_verStr += '.';
 		Inst->_verStr += std::to_string(rev);
-
-		if ((major > 0) || (major == 0 && minor >= 22)) // Those API functions are introduced after version 0.22
-		{
-			Inst->init = (PGITLIBINIT)::GetProcAddress(libGit2, "git_libgit2_init");
-			if (!Inst->init)
-				Inst->_isInit = false;
-			Inst->shutdown = (PGITLIBSHUTDOWN)::GetProcAddress(libGit2, "git_libgit2_shutdown");
-			if (!Inst->shutdown)
-				Inst->_isInit = false;
-
-			if (Inst->_isInit)
-				Inst->init();
-		}
+	}
+	else
+	{
+		Inst.reset();
+		return Inst;
 	}
 
-	if (!Inst->_isInit)
+	Inst->repository_open_ext = (PGITREPOSITORYOPENEXT)::GetProcAddress(libGit2, "git_repository_open_ext");
+	if (!Inst->repository_open_ext)
+	{
 		Inst.reset();
+		return Inst;
+	}
+
+	Inst->repository_workdir = (PGITREPOSITORYWORKDIR)::GetProcAddress(libGit2, "git_repository_workdir");
+	if (!Inst->repository_workdir)
+	{
+		Inst.reset();
+		return Inst;
+	}
+	Inst->repository_index = (PGITREPOSITORYINDEX)::GetProcAddress(libGit2, "git_repository_index");
+	if (!Inst->repository_index)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->index_get_bypath = (PGITINDEXGETBYPATH)::GetProcAddress(libGit2, "git_index_get_bypath");
+	if (!Inst->index_get_bypath)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->blob_lookup = (PGITBLOBLOOKUP)::GetProcAddress(libGit2, "git_blob_lookup");
+	if (!Inst->blob_lookup)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->git_oid_fromstr = (PGITOIDFROMSTR)::GetProcAddress(libGit2, "git_oid_fromstrp");
+	if (!Inst->git_oid_fromstr)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->blob_filter_opt_init = (PGITBLOBFILTEROPTINIT)::GetProcAddress(libGit2, "git_blob_filter_options_init");
+	if (!Inst->blob_filter_opt_init)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->blob_filter = (PGITBLOBFILTER)::GetProcAddress(libGit2, "git_blob_filter");
+	if (!Inst->blob_filter)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->buf_free = (PGITBUFFREE)::GetProcAddress(libGit2, "git_buf_dispose");
+	if (!Inst->buf_free)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->blob_free = (PGITBLOBFREE)::GetProcAddress(libGit2, "git_blob_free");
+	if (!Inst->blob_free)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->index_free = (PGITINDEXFREE)::GetProcAddress(libGit2, "git_index_free");
+	if (!Inst->index_free)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->repository_free = (PGITREPOSITORYFREE)::GetProcAddress(libGit2, "git_repository_free");
+	if (!Inst->repository_free)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->init = (PGITLIBINIT)::GetProcAddress(libGit2, "git_libgit2_init");
+	if (!Inst->init)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	// Get shutdown function address last to properly deinit library
+	Inst->shutdown = (PGITLIBSHUTDOWN)::GetProcAddress(libGit2, "git_libgit2_shutdown");
+	if (!Inst->shutdown)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->init();
 
 	return Inst;
 }

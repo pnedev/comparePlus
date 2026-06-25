@@ -232,7 +232,7 @@ bool GetSvnFile(const wchar_t* fullFilePath, wchar_t* svnFile, unsigned svnFileS
 }
 
 
-std::vector<char> GetGitFileContent(const wchar_t* fullFilePath)
+std::vector<char> GetGitFileContent(const wchar_t* fullFilePath, const char* commitId)
 {
 	std::vector<char> gitFileContent;
 
@@ -243,56 +243,85 @@ std::vector<char> GetGitFileContent(const wchar_t* fullFilePath)
 		return gitFileContent;
 	}
 
-	git_repository* repo = NULL;
+	git_repository* repo = nullptr;
 
 	char ansiGitFilePath[MAX_PATH];
-
 	{
 		char ansiPath[MAX_PATH * 2];
 
 		WCharToChar(fullFilePath, ansiPath, sizeof(ansiPath));
 		::PathRemoveFileSpecA(ansiPath);
 
-		if (!gitLib->repository_open_ext(&repo, ansiPath, 0, NULL))
+		if (!gitLib->repository_open_ext(&repo, ansiPath, 0, nullptr))
 		{
-			const char* ansiGitDir = gitLib->repository_workdir(repo);
+			if (repo)
+			{
+				const char* ansiGitDir = gitLib->repository_workdir(repo);
 
-			//reinit with fullFilePath after modification by PathRemoveFileSpecA(), needed to get the relative path
-			WCharToChar(fullFilePath, ansiPath, sizeof(ansiPath));
+				// reinit with fullFilePath after modification by PathRemoveFileSpecA(), needed to get the relative path
+				WCharToChar(fullFilePath, ansiPath, sizeof(ansiPath));
 
-			RelativePath(ansiPath, ansiGitDir, ansiGitFilePath, sizeof(ansiGitFilePath));
+				RelativePath(ansiPath, ansiGitDir, ansiGitFilePath, sizeof(ansiGitFilePath));
+			}
 		}
 	}
 
 	if (repo)
 	{
-		git_index* index;
+		git_index* index = nullptr;
 
 		if (!gitLib->repository_index(&index, repo))
 		{
-			const git_index_entry* e = gitLib->index_get_bypath(index, ansiGitFilePath, 0);
-
-			if (e)
+			if (index)
 			{
-				git_blob* blob;
+				const git_index_entry* e = gitLib->index_get_bypath(index, ansiGitFilePath, 0);
 
-				if (!gitLib->blob_lookup(&blob, repo, &e->id))
+				if (e)
 				{
-					git_buf gitBuf = { 0 };
+					git_blob* blob = nullptr;
 
-					if (!gitLib->blob_filtered_content(&gitBuf, blob, ansiGitFilePath, 1))
+					if (!gitLib->blob_lookup(&blob, repo, &e->id))
 					{
-						gitFileContent.resize(gitBuf.size + 1, 0);
-						std::memcpy(gitFileContent.data(), gitBuf.ptr, gitBuf.size);
+						if (blob)
+						{
+							git_blob_filter_options opt_filters;
 
-						gitLib->buf_free(&gitBuf);
+							if (!gitLib->blob_filter_opt_init(&opt_filters, 1))
+							{
+								bool faultyCommitId = static_cast<bool>(commitId);
+
+								if (commitId)
+								{
+									opt_filters.flags &= ~GIT_BLOB_FILTER_ATTRIBUTES_FROM_HEAD;
+									opt_filters.flags |= GIT_BLOB_FILTER_ATTRIBUTES_FROM_COMMIT;
+
+									faultyCommitId = static_cast<bool>(
+											gitLib->git_oid_fromstr(&opt_filters.attr_commit_id, commitId));
+
+									opt_filters.commit_id = &opt_filters.attr_commit_id;
+								}
+
+								if (!faultyCommitId)
+								{
+									git_buf gitBuf = { 0 };
+
+									if (!gitLib->blob_filter(&gitBuf, blob, ansiGitFilePath, &opt_filters))
+									{
+										gitFileContent.resize(gitBuf.size + 1, 0);
+										std::memcpy(gitFileContent.data(), gitBuf.ptr, gitBuf.size);
+
+										gitLib->buf_free(&gitBuf);
+									}
+								}
+							}
+
+							gitLib->blob_free(blob);
+						}
 					}
-
-					gitLib->blob_free(blob);
 				}
-			}
 
-			gitLib->index_free(index);
+				gitLib->index_free(index);
+			}
 		}
 
 		gitLib->repository_free(repo);

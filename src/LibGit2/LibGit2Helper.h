@@ -65,6 +65,23 @@ typedef struct {
 } git_buf;
 
 
+enum blob_filter_flags {
+	GIT_BLOB_FILTER_CHECK_FOR_BINARY		= (1 << 0),
+	GIT_BLOB_FILTER_NO_SYSTEM_ATTRIBUTES	= (1 << 1),
+	GIT_BLOB_FILTER_ATTRIBUTES_FROM_HEAD	= (1 << 2),
+	GIT_BLOB_FILTER_ATTRIBUTES_FROM_COMMIT	= (1 << 3)
+};
+
+
+typedef struct {
+	int version;
+	uint32_t flags;
+
+	git_oid *commit_id;
+	git_oid attr_commit_id;
+} git_blob_filter_options;
+
+
 /**
  *  \class
  *  \brief
@@ -74,7 +91,7 @@ class LibGit
 private:
 	static std::unique_ptr<LibGit>	Inst;
 
-	LibGit() {}
+	LibGit() : shutdown{nullptr} {}
 
 	typedef int (*PGITLIBVERSION) (int *major, int *minor, int *rev);
 	typedef int (*PGITLIBINIT) (void);
@@ -85,17 +102,17 @@ private:
 	typedef int (*PGITREPOSITORYINDEX) (git_index **out, git_repository *repo);
 	typedef const git_index_entry* (*PGITINDEXGETBYPATH) (git_index *index, const char *path, int stage);
 	typedef int (*PGITBLOBLOOKUP) (git_blob **blob, git_repository *repo, const git_oid *id);
-	typedef int (*PGITBLOBFILTERCONTENT) (git_buf *out, git_blob *blob, const char *as_path, int check_for_bin_data);
+	typedef int (*PGITOIDFROMSTR) (git_oid *out, const char *str);
+	typedef int (*PGITBLOBFILTEROPTINIT) (git_blob_filter_options *opts, unsigned int version);
+	typedef int (*PGITBLOBFILTER) (git_buf *out, git_blob *blob, const char *as_path, git_blob_filter_options *opts);
 	typedef void (*PGITBUFFREE) (git_buf *buf);
 	typedef void (*PGITBLOBFREE) (const git_blob *blob);
 	typedef void (*PGITINDEXFREE) (git_index *index);
 	typedef void (*PGITREPOSITORYFREE) (git_repository *repo);
 
-	PGITLIBVERSION			version;
-	PGITLIBINIT				init;
-	PGITLIBSHUTDOWN			shutdown;
-
-	bool	_isInit;
+	PGITLIBVERSION		version;
+	PGITLIBINIT			init;
+	PGITLIBSHUTDOWN		shutdown;
 
 	std::string		_verStr;
 
@@ -104,7 +121,7 @@ public:
 
 	~LibGit()
 	{
-		if (_isInit)
+		if (shutdown)
 			shutdown();
 	}
 
@@ -118,7 +135,9 @@ public:
 	PGITREPOSITORYINDEX		repository_index;
 	PGITINDEXGETBYPATH		index_get_bypath;
 	PGITBLOBLOOKUP			blob_lookup;
-	PGITBLOBFILTERCONTENT	blob_filtered_content;
+	PGITOIDFROMSTR			git_oid_fromstr;
+	PGITBLOBFILTEROPTINIT	blob_filter_opt_init;
+	PGITBLOBFILTER			blob_filter;
 	PGITBUFFREE				buf_free;
 	PGITBLOBFREE			blob_free;
 	PGITINDEXFREE			index_free;
