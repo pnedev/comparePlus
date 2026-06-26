@@ -43,7 +43,9 @@
 	"IDC_GUIDE_URL":				"Керівництво користувача",
 	"LIB_NOT_FOUND":				"бібліотеку не знайдено",
 
-	"SETTINGS":						"Налаштування",
+	"HDR_NAV_BAR":					"Панель навігації",
+
+	"HDR_SETTINGS":					"Налаштування",
 	"IDC_MAIN":						"Основні",
 	"IDC_FIRST":					"Встановити першим для порівняння",
 	"IDC_FIRST_NEW":				"Встановити як новий файл",
@@ -94,7 +96,7 @@
 	"IDCANCEL":						"Скасувати",
 	"IDDEFAULT":					"Скинути",
 
-	"COMPARE_OPTIONS":				"Параметри порівняння",
+	"HDR_COMPARE_OPTIONS":			"Параметри порівняння",
 	"IDC_DETECT":					"Виявляти",
 	"IDC_DETECT_MOVES":				"Переміщення",
 	"IDC_DETECT_SUB_BLOCK_DIFFS":	"Відмінності всередині блоку",
@@ -115,7 +117,7 @@
 	"IDC_REGEX_INCL_NOMATCH_LINES":	"Порівнювати також рядки без збігів",
 	"IDC_HIGHLIGHT_REGEX_IGNORES":	"Виділяти ігноровані фрагменти",
 
-	"VISUAL_FILTERS":				"Фільтри відображення",
+	"HDR_VISUAL_FILTERS":			"Фільтри відображення",
 	"IDC_NOTE":						"ПРИМІТКА: Перший рядок не може бути прихований",
 	"IDC_FILTERS":					"Фільтри відмінностей",
 	"IDC_HIDE_MATCHES":				"Сховати збіги",

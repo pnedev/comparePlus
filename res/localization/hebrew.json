@@ -43,7 +43,9 @@
 	"IDC_GUIDE_URL":				"מדריך למשתמש",
 	"LIB_NOT_FOUND":				"ספרייה לא נמצאה",
 
-	"SETTINGS":						"הגדרות",
+	"HDR_NAV_BAR":					"פאנל ניווט",
+
+	"HDR_SETTINGS":					"הגדרות",
 	"IDC_MAIN":						"הגדרות עיקריות",
 	"IDC_FIRST":					"הגדר כראשון להשוואה",
 	"IDC_FIRST_NEW":				"הגדר כקובץ חדש",
@@ -94,7 +96,7 @@
 	"IDCANCEL":						"ביטול",
 	"IDDEFAULT":					"אתחול",
 
-	"COMPARE_OPTIONS":				"אפשרויות השוואה",
+	"HDR_COMPARE_OPTIONS":			"אפשרויות השוואה",
 	"IDC_DETECT":					"סימון",
 	"IDC_DETECT_MOVES":				"שורות מועברות",
 	"IDC_DETECT_SUB_BLOCK_DIFFS":	"שינויים ברמת מקטעים",
@@ -115,7 +117,7 @@
 	"IDC_REGEX_INCL_NOMATCH_LINES":	"השווה גם שורות שאינן תואמות",
 	"IDC_HIGHLIGHT_REGEX_IGNORES":	"סמן \"שורות התעלמות\"",
 
-	"VISUAL_FILTERS":				"מסנני תצוגת השוואה",
+	"HDR_VISUAL_FILTERS":			"מסנני תצוגת השוואה",
 	"IDC_NOTE":						"* לא ניתן להסתיר את השורה הראשונה.",
 	"IDC_FILTERS":					"מסננים",
 	"IDC_HIDE_MATCHES":				"הסתר שורות זהות",

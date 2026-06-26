@@ -77,7 +77,9 @@ Strings::Strings() : _currentLocale {"english"}
 		{ "IDC_GUIDE_URL",					"User Guide" },
 		{ "LIB_NOT_FOUND",					"lib not found" },
 
-		{ "SETTINGS",						"Settings" },
+		{ "HDR_NAV_BAR",					"Navigation Bar" },
+
+		{ "HDR_SETTINGS",					"Settings" },
 		{ "IDC_MAIN",						"Main" },
 		{ "IDC_FIRST",						"Set as First to Compare" },
 		{ "IDC_FIRST_NEW",					"Set as new file" },
@@ -128,7 +130,7 @@ Strings::Strings() : _currentLocale {"english"}
 		{ "IDCANCEL",						"Cancel" },
 		{ "IDDEFAULT",						"Reset" },
 
-		{ "COMPARE_OPTIONS",				"Compare Options" },
+		{ "HDR_COMPARE_OPTIONS",			"Compare Options" },
 		{ "IDC_DETECT",						"Detect" },
 		{ "IDC_DETECT_MOVES",				"Moves" },
 		{ "IDC_DETECT_SUB_BLOCK_DIFFS",		"Sub-block diffs" },
@@ -149,7 +151,7 @@ Strings::Strings() : _currentLocale {"english"}
 		{ "IDC_REGEX_INCL_NOMATCH_LINES",	"Compare also lines without match" },
 		{ "IDC_HIGHLIGHT_REGEX_IGNORES",	"Highlight ignored portions" },
 
-		{ "VISUAL_FILTERS",					"Visual Filters" },
+		{ "HDR_VISUAL_FILTERS",				"Visual Filters" },
 		{ "IDC_NOTE",						"NOTE: First line can never be hidden" },
 		{ "IDC_FILTERS",					"Diffs Filters" },
 		{ "IDC_HIDE_MATCHES",				"Hide matches" },
@@ -291,7 +293,7 @@ bool Strings::readFromFile(const std::string& json_locale_file)
 bool Strings::read(const std::string& localization)
 {
 	if (localization.empty() || _currentLocale == localization)
-		return false;
+		return true;
 
 	std::string loc_file = WCtoMB(getPluginsHomePath().c_str());
 	loc_file += c_localization_files_relative_path;

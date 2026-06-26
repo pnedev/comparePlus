@@ -43,7 +43,9 @@
 	"IDC_GUIDE_URL":				"Ръководство за ползване",
 	"LIB_NOT_FOUND":				"библиотеката не е намерена",
 
-	"SETTINGS":						"Настройки",
+	"HDR_NAV_BAR":					"Навигационен панел",
+
+	"HDR_SETTINGS":					"Настройки",
 	"IDC_MAIN":						"Главни",
 	"IDC_FIRST":					"Задай пръв за сравнение",
 	"IDC_FIRST_NEW":				"Задай нов файл",
@@ -58,7 +60,7 @@
 	"IDC_COMPARE_TO_NEXT":			"Текущ и следващ файл",
 	"IDC_STATUS_BAR":				"Информация в поле за статус",
 	"IDC_DIFFS_SUMMARY":			"Обобщение на разликите",
-	"IDC_COMPARE_OPTIONS":			"Опции за сравнение",
+	"IDC_COMPARE_OPTIONS":			"Опции при сравнение",
 	"IDC_STATUS_DISABLED":			"Изключено",
 	"IDC_MISC":						"Разни",
 	"IDC_ENCODINGS_CHECK":			"Предупреди за разлики в кодирането",
@@ -94,7 +96,7 @@
 	"IDCANCEL":						"Отмяна",
 	"IDDEFAULT":					"Стандартни",
 
-	"COMPARE_OPTIONS":				"Опции при сравнение",
+	"HDR_COMPARE_OPTIONS":			"Опции при сравнение",
 	"IDC_DETECT":					"Търси",
 	"IDC_DETECT_MOVES":				"Премествания",
 	"IDC_DETECT_SUB_BLOCK_DIFFS":	"Под-разлики в блоковете",
@@ -115,7 +117,7 @@
 	"IDC_REGEX_INCL_NOMATCH_LINES":	"Сравни също редовете без съвпадения",
 	"IDC_HIGHLIGHT_REGEX_IGNORES":	"Маркирай игнорираните части",
 
-	"VISUAL_FILTERS":				"Визуални филтри",
+	"HDR_VISUAL_FILTERS":			"Визуални филтри",
 	"IDC_NOTE":						"ВАЖНО: Първият ред е винаги видим",
 	"IDC_FILTERS":					"Филтър на разликите",
 	"IDC_HIDE_MATCHES":				"Скрий съвпаденията",

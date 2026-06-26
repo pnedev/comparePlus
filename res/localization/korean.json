@@ -43,7 +43,9 @@
 	"IDC_GUIDE_URL":				"사용자 가이드",
 	"LIB_NOT_FOUND":				"라이브러리 없음",
 
-	"SETTINGS":						"설정",
+	"HDR_NAV_BAR":					"탐색 바",
+
+	"HDR_SETTINGS":					"설정",
 	"IDC_MAIN":						"기본",
 	"IDC_FIRST":					"첫 번째 비교 대상으로 설정",
 	"IDC_FIRST_NEW":				"새 파일로 설정",
@@ -94,7 +96,7 @@
 	"IDCANCEL":						"취소",
 	"IDDEFAULT":					"초기화",
 
-	"COMPARE_OPTIONS":				"비교 옵션",
+	"HDR_COMPARE_OPTIONS":			"비교 옵션",
 	"IDC_DETECT":					"감지",
 	"IDC_DETECT_MOVES":				"이동",
 	"IDC_DETECT_SUB_BLOCK_DIFFS":	"하위 블록 차이",
@@ -115,7 +117,7 @@
 	"IDC_REGEX_INCL_NOMATCH_LINES":	"미일치 줄도 비교",
 	"IDC_HIGHLIGHT_REGEX_IGNORES":	"무시된 부분 강조",
 
-	"VISUAL_FILTERS":				"시각적 필터",
+	"HDR_VISUAL_FILTERS":			"시각적 필터",
 	"IDC_NOTE":						"참고: 첫 번째 줄은 숨김 불가",
 	"IDC_FILTERS":					"차이점 필터",
 	"IDC_HIDE_MATCHES":				"일치 항목 숨기기",

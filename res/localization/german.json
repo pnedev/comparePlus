@@ -43,7 +43,9 @@
 	"IDC_GUIDE_URL":				"Benutzerhandbuch",
 	"LIB_NOT_FOUND":				"Bibliothek nicht gefunden",
 
-	"SETTINGS":						"Einstellungen",
+	"HDR_NAV_BAR":					"Navigationsleiste",
+
+	"HDR_SETTINGS":					"Einstellungen",
 	"IDC_MAIN":						"Haupteinstellungen",
 	"IDC_FIRST":					"Als erstes zum Vergleich festlegen",
 	"IDC_FIRST_NEW":				"Als neue Datei setzen",
@@ -94,7 +96,7 @@
 	"IDCANCEL":						"Abbrechen",
 	"IDDEFAULT":					"Zurücksetzen",
 
-	"COMPARE_OPTIONS":				"Vergleichsoptionen",
+	"HDR_COMPARE_OPTIONS":			"Vergleichsoptionen",
 	"IDC_DETECT":					"Erkennen",
 	"IDC_DETECT_MOVES":				"Verschiebungen",
 	"IDC_DETECT_SUB_BLOCK_DIFFS":	"Unterblock-Unterschiede",
@@ -115,7 +117,7 @@
 	"IDC_REGEX_INCL_NOMATCH_LINES":	"Auch Zeilen ohne Treffer vergleichen",
 	"IDC_HIGHLIGHT_REGEX_IGNORES":	"Ignorierte Teile hervorheben",
 
-	"VISUAL_FILTERS":				"Visuelle Filter",
+	"HDR_VISUAL_FILTERS":			"Visuelle Filter",
 	"IDC_NOTE":						"HINWEIS: Die erste Zeile kann niemals ausgeblendet werden.",
 	"IDC_FILTERS":					"Unterschiedsfilter",
 	"IDC_HIDE_MATCHES":				"Übereinstimmungen ausblenden",

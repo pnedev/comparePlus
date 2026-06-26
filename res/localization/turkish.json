@@ -43,7 +43,9 @@
 	"IDC_GUIDE_URL":				"Kullanıcı kılavuzu",
 	"LIB_NOT_FOUND":				"Kütüphane bulunamadı",
 
-	"SETTINGS":						"Ayarlar",
+	"HDR_NAV_BAR":					"Gezinme çubuğu",
+
+	"HDR_SETTINGS":					"Ayarlar",
 	"IDC_MAIN":						"Genel",
 	"IDC_FIRST":					"Karşılaştırmada ilk olarak ayarla",
 	"IDC_FIRST_NEW":				"Yeni dosya olarak ayarla",
@@ -94,7 +96,7 @@
 	"IDCANCEL":						"İptal",
 	"IDDEFAULT":					"Sıfırla",
 
-	"COMPARE_OPTIONS":				"Karşılaştırma seçenekleri",
+	"HDR_COMPARE_OPTIONS":			"Karşılaştırma seçenekleri",
 	"IDC_DETECT":					"Algıla",
 	"IDC_DETECT_MOVES":				"Taşınanlar",
 	"IDC_DETECT_SUB_BLOCK_DIFFS":	"Alt blok farkları",
@@ -115,7 +117,7 @@
 	"IDC_REGEX_INCL_NOMATCH_LINES":	"Eşleşmeyen satırları da karşılaştır",
 	"IDC_HIGHLIGHT_REGEX_IGNORES":	"Yok sayılan kısımları vurgula",
 
-	"VISUAL_FILTERS":				"Görsel filtreler",
+	"HDR_VISUAL_FILTERS":			"Görsel filtreler",
 	"IDC_NOTE":						"NOT: İlk satır asla gizlenemez",
 	"IDC_FILTERS":					"Fark filtreleri",
 	"IDC_HIDE_MATCHES":				"Eşleşmeleri gizle",

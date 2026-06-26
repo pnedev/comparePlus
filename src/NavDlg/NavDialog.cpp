@@ -25,6 +25,7 @@
 #define NOMINMAX	1
 
 #include "Compare.h"
+#include "Strings.h"
 #include "NavDialog.h"
 #include "NppHelpers.h"
 #include "resource.h"
@@ -229,11 +230,13 @@ void NavDialog::doDialog()
 
 		::InitCommonControlsEx(&icex);
 
+		_header = Strings::get()["HDR_NAV_BAR"];
+
 		create(&_data);
 
 		// define the default docking behaviour
 		_data.uMask			= DWS_DF_CONT_RIGHT | DWS_ICONTAB;
-		_data.pszName       = L"ComparePlus NavBar";
+		_data.pszName       = _header.c_str();
 		_data.pszModuleName	= getPluginFileName();
 		_data.dlgID			= CMD_NAV_BAR;
 		_data.hIconTab		= (HICON)::LoadImageW(::GetModuleHandleW(L"ComparePlus.dll"),

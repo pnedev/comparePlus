@@ -43,7 +43,9 @@
 	"IDC_GUIDE_URL":				"Руководство пользователя",
 	"LIB_NOT_FOUND":				"библиотека не найдена",
 
-	"SETTINGS":						"Настройки",
+	"HDR_NAV_BAR":					"Панель навигации",
+
+	"HDR_SETTINGS":					"Настройки",
 	"IDC_MAIN":						"Основные",
 	"IDC_FIRST":					"Установить первым для сравнения",
 	"IDC_FIRST_NEW":				"Установить как новый файл",
@@ -94,7 +96,7 @@
 	"IDCANCEL":						"Отмена",
 	"IDDEFAULT":					"Сбросить",
 
-	"COMPARE_OPTIONS":				"Параметры сравнения",
+	"HDR_COMPARE_OPTIONS":			"Параметры сравнения",
 	"IDC_DETECT":					"Обнаруживать",
 	"IDC_DETECT_MOVES":				"Перемещения",
 	"IDC_DETECT_SUB_BLOCK_DIFFS":	"Различия внутри блока",
@@ -115,7 +117,7 @@
 	"IDC_REGEX_INCL_NOMATCH_LINES":	"Сравнивать также строки без совпадений",
 	"IDC_HIGHLIGHT_REGEX_IGNORES":	"Выделять игнорируемые фрагменты",
 
-	"VISUAL_FILTERS":				"Фильтры отображения",
+	"HDR_VISUAL_FILTERS":			"Фильтры отображения",
 	"IDC_NOTE":						"ПРИМЕЧАНИЕ: Первая строка не может быть скрыта",
 	"IDC_FILTERS":					"Фильтры различий",
 	"IDC_HIDE_MATCHES":				"Скрыть совпадения",

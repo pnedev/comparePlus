@@ -25,6 +25,7 @@
 #include "DockingFeature/DockingDlgInterface.h"
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
 
@@ -143,7 +144,8 @@ private:
 	void onPaint();
 	void adjustScroll(int offset);
 
-	tTbData	_data;
+	std::wstring	_header;
+	tTbData			_data;
 
 	ColorSettings	m_clr;
 

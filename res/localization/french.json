@@ -43,7 +43,9 @@
 	"IDC_GUIDE_URL":				"Guide de l'utilisateur",
 	"LIB_NOT_FOUND":				"librairie introuvable",
 
-	"SETTINGS":						"Paramètres",
+	"HDR_NAV_BAR":					"Barre de navigation",
+
+	"HDR_SETTINGS":					"Paramètres",
 	"IDC_MAIN":						"Principal",
 	"IDC_FIRST":					"Définir le premier à comparer",
 	"IDC_FIRST_NEW":				"Définir en nouveau fichier",
@@ -94,7 +96,7 @@
 	"IDCANCEL":						"Annuler",
 	"IDDEFAULT":					"Réinitialiser",
 
-	"COMPARE_OPTIONS":				"Options de 'Comparaison'",
+	"HDR_COMPARE_OPTIONS":			"Options de 'Comparaison'",
 	"IDC_DETECT":					"Détecter",
 	"IDC_DETECT_MOVES":				"Déplacements",
 	"IDC_DETECT_SUB_BLOCK_DIFFS":	"Diffs de sous-blocs",
@@ -115,7 +117,7 @@
 	"IDC_REGEX_INCL_NOMATCH_LINES":	"Comparer aussi les lignes sans correspondance",
 	"IDC_HIGHLIGHT_REGEX_IGNORES":	"Surligner les portions ignorées",
 
-	"VISUAL_FILTERS":				"Filtres visuels",
+	"HDR_VISUAL_FILTERS":			"Filtres visuels",
 	"IDC_NOTE":						"REMARQUE : La première ligne ne peut jamais être masquée",
 	"IDC_FILTERS":					"Filtres de différences",
 	"IDC_HIDE_MATCHES":				"Masquer les correspondances",

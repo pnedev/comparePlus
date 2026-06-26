@@ -144,7 +144,7 @@ void CompareOptionsDialog::updateLocalization()
 {
 	const auto& str = Strings::get();
 
-	::SetWindowTextW(_hSelf, (std::wstring(PLUGIN_NAME) + std::wstring(L"   ") + str["COMPARE_OPTIONS"]).c_str());
+	::SetWindowTextW(_hSelf, (std::wstring(PLUGIN_NAME) + std::wstring(L"   ") + str["HDR_COMPARE_OPTIONS"]).c_str());
 
 	::SetDlgItemTextW(_hSelf, IDOK,			str["IDOK"].c_str());
 	::SetDlgItemTextW(_hSelf, IDCANCEL,		str["IDCANCEL"].c_str());

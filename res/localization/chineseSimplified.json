@@ -43,7 +43,9 @@
 	"IDC_GUIDE_URL":				"用户指南",
 	"LIB_NOT_FOUND":				"未找到库文件",
 
-	"SETTINGS":						"设置",
+	"HDR_NAV_BAR":					"导航栏",
+
+	"HDR_SETTINGS":					"设置",
 	"IDC_MAIN":						"常规",
 	"IDC_FIRST":					"设为第一个对比对象",
 	"IDC_FIRST_NEW":				"设为新文件",
@@ -94,7 +96,7 @@
 	"IDCANCEL":						"取消",
 	"IDDEFAULT":					"重置",
 
-	"COMPARE_OPTIONS":				"对比选项",
+	"HDR_COMPARE_OPTIONS":			"对比选项",
 	"IDC_DETECT":					"检测",
 	"IDC_DETECT_MOVES":				"移动行",
 	"IDC_DETECT_SUB_BLOCK_DIFFS":	"块内差异",
@@ -115,7 +117,7 @@
 	"IDC_REGEX_INCL_NOMATCH_LINES":	"不匹配的行也参与对比",
 	"IDC_HIGHLIGHT_REGEX_IGNORES":	"高亮显示被忽略的部分",
 
-	"VISUAL_FILTERS":				"显示过滤器",
+	"HDR_VISUAL_FILTERS":			"显示过滤器",
 	"IDC_NOTE":						"注意：第一行永远不会被隐藏",
 	"IDC_FILTERS":					"差异过滤器",
 	"IDC_HIDE_MATCHES":				"隐藏完全匹配的行",
