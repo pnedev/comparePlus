@@ -739,7 +739,7 @@ void NppState::updateLocalization()
 
 	const auto& str = Strings::get();
 
-	wchar_t current[128];
+	wchar_t current[menuItemSize];
 
 	MENUITEMINFOW mi {0};
 	mi.cbSize = sizeof(mi);
@@ -750,45 +750,57 @@ void NppState::updateLocalization()
 		std::wstring cmdStr = str[it.key];
 
 		// Basic menu item length precaution
-		if (cmdStr.empty() || cmdStr.size() > 64)
+		if (cmdStr.empty() || cmdStr.size() >= menuItemSize)
 			continue;
-
-		if (_tooltipMap.find(it.id) != _tooltipMap.end())
-		{
-			_tooltipMap[it.id] = cmdStr;
-
-			if (hTooltip)
-			{
-				TTTOOLINFOW tti {0};
-				tti.cbSize = sizeof(tti);
-				tti.hwnd = hNppToolbar;
-				tti.uId = funcItem[it.id]._cmdID;
-
-				::SendMessageW(hTooltip, TTM_GETTOOLINFO, 0, reinterpret_cast<LPARAM>(&tti));
-				tti.lpszText = const_cast<wchar_t*>(_tooltipMap[it.id].c_str());
-				::SendMessageW(hTooltip, TTM_SETTOOLINFO, 0, reinterpret_cast<LPARAM>(&tti));
-			}
-		}
 
 		mi.dwTypeData = NULL;
 
-		if (::GetMenuItemInfoW(hMenu, funcItem[it.id]._cmdID, FALSE, &mi))
+		if (!::GetMenuItemInfoW(hMenu, funcItem[it.id]._cmdID, FALSE, &mi))
+			continue;
+
+		if (++mi.cch > menuItemSize)
+			continue;
+
+		mi.dwTypeData = current;
+
+		if (!::GetMenuItemInfoW(hMenu, funcItem[it.id]._cmdID, FALSE, &mi))
+			continue;
+
+		auto tit = _tooltipMap.end();
+
+		if (hTooltip)
 		{
-			if (++mi.cch < _countof(current))
-			{
-				mi.dwTypeData = current;
+			tit = _tooltipMap.find(it.id);
 
-				::GetMenuItemInfoW(hMenu, funcItem[it.id]._cmdID, FALSE, &mi);
-
-				wchar_t* tab = wcschr(current, L'\t');
-				if (tab)
-					cmdStr.append(tab); // keep existing accelerator part (e.g. "\tCtrl+Alt+C")
-			}
+			if (tit != _tooltipMap.end())
+				tit->second = cmdStr;
 		}
 
-		mi.dwTypeData = const_cast<wchar_t*>(cmdStr.c_str());
+		wchar_t* tab = wcschr(current, L'\t');
+		if (tab)
+		{
+			cmdStr.append(tab); // keep existing accelerator part (e.g. "\tCtrl+Alt+C")
+			if (cmdStr.size() >= menuItemSize)
+				continue;
+		}
+
+		wcscpy_s(funcItem[it.id]._itemName, menuItemSize, cmdStr.c_str());
+
+		mi.dwTypeData = const_cast<wchar_t*>(funcItem[it.id]._itemName);
 
 		::SetMenuItemInfoW(hMenu, funcItem[it.id]._cmdID, FALSE, &mi);
+
+		if (tit != _tooltipMap.end())
+		{
+			TTTOOLINFOW tti {0};
+			tti.cbSize = sizeof(tti);
+			tti.hwnd = hNppToolbar;
+			tti.uId = funcItem[it.id]._cmdID;
+
+			::SendMessageW(hTooltip, TTM_GETTOOLINFO, 0, reinterpret_cast<LPARAM>(&tti));
+			tti.lpszText = const_cast<wchar_t*>(tit->second.c_str());
+			::SendMessageW(hTooltip, TTM_SETTOOLINFO, 0, reinterpret_cast<LPARAM>(&tti));
+		}
 	}
 
 	updateMenuAndToolbar();

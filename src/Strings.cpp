@@ -293,7 +293,7 @@ bool Strings::readFromFile(const std::string& json_locale_file)
 bool Strings::read(const std::string& localization)
 {
 	if (localization.empty() || _currentLocale == localization)
-		return true;
+		return false;
 
 	std::string loc_file = WCtoMB(getPluginsHomePath().c_str());
 	loc_file += c_localization_files_relative_path;
