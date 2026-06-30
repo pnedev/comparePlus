@@ -42,8 +42,26 @@ UINT SettingsDialog::doDialog(UserSettings* settings)
 {
 	_Settings = settings;
 
-	return (UINT)::DialogBoxParamW(_hInst, MAKEINTRESOURCEW(IDD_SETTINGS_DIALOG), _hParent,
-			(DLGPROC)dlgProc, (LPARAM)this);
+	UINT res = 0;
+
+	if (isRTLwindow(_hParent))
+	{
+		DLGTEMPLATE *pMyDlgTemplate = NULL;
+		HGLOBAL hMyDlgTemplate = makeRTLResource(IDD_SETTINGS_DIALOG, &pMyDlgTemplate);
+
+		if (hMyDlgTemplate)
+		{
+			res = (UINT)::DialogBoxIndirectParamW(_hInst, pMyDlgTemplate, _hParent, (DLGPROC)dlgProc, (LPARAM)this);
+			::GlobalFree(hMyDlgTemplate);
+		}
+	}
+	else
+	{
+		res = (UINT)::DialogBoxParamW(_hInst, MAKEINTRESOURCEW(IDD_SETTINGS_DIALOG), _hParent,
+				(DLGPROC)dlgProc, (LPARAM)this);
+	}
+
+	return res;
 }
 
 
