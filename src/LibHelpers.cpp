@@ -268,40 +268,87 @@ std::vector<char> GetGitFileContent(const wchar_t* fullFilePath, const char* com
 
 	if (repo)
 	{
-		git_index* index = nullptr;
-
-		if (!gitLib->repository_index(&index, repo))
+		if (commitId)
 		{
-			if (index)
+			git_oid commitOid;
+
+			if (!gitLib->git_oid_fromstr(&commitOid, commitId))
 			{
-				const git_index_entry* e = gitLib->index_get_bypath(index, ansiGitFilePath, 0);
+				git_commit *commit = nullptr;
 
-				if (e)
+				if (!gitLib->commit_lookup(&commit, repo, &commitOid))
 				{
-					git_blob* blob = nullptr;
-
-					if (!gitLib->blob_lookup(&blob, repo, &e->id))
+					if (commit)
 					{
-						if (blob)
+						git_tree *tree = nullptr;
+
+						if (!gitLib->commit_tree(&tree, commit))
 						{
-							git_blob_filter_options opt_filters;
-
-							if (!gitLib->blob_filter_opt_init(&opt_filters, 1))
+							if (tree)
 							{
-								bool faultyCommitId = static_cast<bool>(commitId);
+								git_tree_entry *tentry = nullptr;
 
-								if (commitId)
+								if (!gitLib->tree_entry_bypath(&tentry, tree, ansiGitFilePath))
 								{
-									opt_filters.flags &= ~GIT_BLOB_FILTER_ATTRIBUTES_FROM_HEAD;
-									opt_filters.flags |= GIT_BLOB_FILTER_ATTRIBUTES_FROM_COMMIT;
+									if (tentry)
+									{
+										git_object *obj = nullptr;
 
-									faultyCommitId = static_cast<bool>(
-											gitLib->git_oid_fromstr(&opt_filters.attr_commit_id, commitId));
+										if (!gitLib->tree_entry_to_object(&obj, repo, tentry))
+										{
+											if (obj)
+											{
+												git_blob* blob = (git_blob*)obj;
 
-									opt_filters.commit_id = &opt_filters.attr_commit_id;
+												const void* content = gitLib->blob_rawcontent(blob);
+
+												if (content)
+												{
+													size_t size = gitLib->blob_rawsize(blob);
+
+													gitFileContent.resize(size + 1, 0);
+													std::memcpy(gitFileContent.data(), content, size);
+												}
+
+												gitLib->object_free(obj);
+											}
+										}
+
+										gitLib->tree_entry_free(tentry);
+									}
+
 								}
 
-								if (!faultyCommitId)
+								gitLib->tree_free(tree);
+							}
+						}
+
+						gitLib->commit_free(commit);
+					}
+				}
+			}
+		}
+		else
+		{
+			git_index* index = nullptr;
+
+			if (!gitLib->repository_index(&index, repo))
+			{
+				if (index)
+				{
+					const git_index_entry* e = gitLib->index_get_bypath(index, ansiGitFilePath, 0);
+
+					if (e)
+					{
+						git_blob* blob = nullptr;
+
+						if (!gitLib->blob_lookup(&blob, repo, &e->id))
+						{
+							if (blob)
+							{
+								git_blob_filter_options opt_filters;
+
+								if (!gitLib->blob_filter_opt_init(&opt_filters, 1))
 								{
 									git_buf gitBuf = { 0 };
 
@@ -313,14 +360,14 @@ std::vector<char> GetGitFileContent(const wchar_t* fullFilePath, const char* com
 										gitLib->buf_free(&gitBuf);
 									}
 								}
-							}
 
-							gitLib->blob_free(blob);
+								gitLib->blob_free(blob);
+							}
 						}
 					}
-				}
 
-				gitLib->index_free(index);
+					gitLib->index_free(index);
+				}
 			}
 		}
 

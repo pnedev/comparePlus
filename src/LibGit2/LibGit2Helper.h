@@ -82,6 +82,13 @@ typedef struct {
 } git_blob_filter_options;
 
 
+typedef struct git_commit git_commit;
+typedef struct git_tree git_tree;
+typedef struct git_tree_entry git_tree_entry;
+typedef struct git_object git_object;
+typedef uint64_t git_object_size_t;
+
+
 /**
  *  \class
  *  \brief
@@ -105,9 +112,19 @@ private:
 	typedef int (*PGITOIDFROMSTR) (git_oid *out, const char *str);
 	typedef int (*PGITBLOBFILTEROPTINIT) (git_blob_filter_options *opts, unsigned int version);
 	typedef int (*PGITBLOBFILTER) (git_buf *out, git_blob *blob, const char *as_path, git_blob_filter_options *opts);
+	typedef int (*PGITCOMMITLOOKUP) (git_commit **commit, git_repository *repo, const git_oid *id);
+	typedef int (*PGITCOMMITTREE) (git_tree **out, const git_commit *commit);
+	typedef int (*PGITTREEENTRYBYPATH) (git_tree_entry **out, const git_tree *root, const char *path);
+	typedef int (*PGITTREEENTRYTOOBJ) (git_object **out, git_repository *repo, const git_tree_entry *entry);
+	typedef const void* (*PGITBLOBRAWCONTENT) (const git_blob *blob);
+	typedef git_object_size_t (*PGITBLOBRAWSIZE) (const git_blob *blob);
 	typedef void (*PGITBUFFREE) (git_buf *buf);
-	typedef void (*PGITBLOBFREE) (const git_blob *blob);
+	typedef void (*PGITBLOBFREE) (git_blob *blob);
 	typedef void (*PGITINDEXFREE) (git_index *index);
+	typedef void (*PGITCOMMITFREE) (git_commit *commit);
+	typedef void (*PGITTREEFREE) (git_tree *tree);
+	typedef void (*PGITTREEENTRYFREE) (git_tree_entry *entry);
+	typedef void (*PGITOBJFREE) (git_object *obj);
 	typedef void (*PGITREPOSITORYFREE) (git_repository *repo);
 
 	PGITLIBVERSION		version;
@@ -138,8 +155,18 @@ public:
 	PGITOIDFROMSTR			git_oid_fromstr;
 	PGITBLOBFILTEROPTINIT	blob_filter_opt_init;
 	PGITBLOBFILTER			blob_filter;
+	PGITCOMMITLOOKUP		commit_lookup;
+	PGITCOMMITTREE			commit_tree;
+	PGITTREEENTRYBYPATH		tree_entry_bypath;
+	PGITTREEENTRYTOOBJ		tree_entry_to_object;
+	PGITBLOBRAWCONTENT		blob_rawcontent;
+	PGITBLOBRAWSIZE			blob_rawsize;
 	PGITBUFFREE				buf_free;
 	PGITBLOBFREE			blob_free;
 	PGITINDEXFREE			index_free;
+	PGITCOMMITFREE			commit_free;
+	PGITTREEFREE			tree_free;
+	PGITTREEENTRYFREE		tree_entry_free;
+	PGITOBJFREE				object_free;
 	PGITREPOSITORYFREE		repository_free;
 };

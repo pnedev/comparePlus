@@ -80,7 +80,7 @@ std::unique_ptr<LibGit>& LibGit::load()
 		int major, minor, rev;
 		Inst->version(&major, &minor, &rev);
 
-		if (major < 1) // Don't accept old versions of the Git library
+		if (major < 1 || (major == 1 && minor < 2)) // Don't accept old versions of the Git library
 		{
 			Inst.reset();
 			return Inst;
@@ -153,6 +153,48 @@ std::unique_ptr<LibGit>& LibGit::load()
 		return Inst;
 	}
 
+	Inst->commit_lookup = (PGITCOMMITLOOKUP)::GetProcAddress(libGit2, "git_commit_lookup");
+	if (!Inst->commit_lookup)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->commit_tree = (PGITCOMMITTREE)::GetProcAddress(libGit2, "git_commit_tree");
+	if (!Inst->commit_tree)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->tree_entry_bypath = (PGITTREEENTRYBYPATH)::GetProcAddress(libGit2, "git_tree_entry_bypath");
+	if (!Inst->tree_entry_bypath)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->tree_entry_to_object = (PGITTREEENTRYTOOBJ)::GetProcAddress(libGit2, "git_tree_entry_to_object");
+	if (!Inst->tree_entry_to_object)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->blob_rawcontent = (PGITBLOBRAWCONTENT)::GetProcAddress(libGit2, "git_blob_rawcontent");
+	if (!Inst->blob_rawcontent)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->blob_rawsize = (PGITBLOBRAWSIZE)::GetProcAddress(libGit2, "git_blob_rawsize");
+	if (!Inst->blob_rawsize)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
 	Inst->buf_free = (PGITBUFFREE)::GetProcAddress(libGit2, "git_buf_dispose");
 	if (!Inst->buf_free)
 	{
@@ -169,6 +211,34 @@ std::unique_ptr<LibGit>& LibGit::load()
 
 	Inst->index_free = (PGITINDEXFREE)::GetProcAddress(libGit2, "git_index_free");
 	if (!Inst->index_free)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->commit_free = (PGITCOMMITFREE)::GetProcAddress(libGit2, "git_commit_free");
+	if (!Inst->commit_free)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->tree_free = (PGITTREEFREE)::GetProcAddress(libGit2, "git_tree_free");
+	if (!Inst->tree_free)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->tree_entry_free = (PGITTREEENTRYFREE)::GetProcAddress(libGit2, "git_tree_entry_free");
+	if (!Inst->tree_entry_free)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->object_free = (PGITOBJFREE)::GetProcAddress(libGit2, "git_object_free");
+	if (!Inst->object_free)
 	{
 		Inst.reset();
 		return Inst;
