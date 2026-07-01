@@ -8,6 +8,7 @@
 	"CMD_CLIPBOARD_DIFF":			"Сравни файл/селекция със системния буфер",
 	"CMD_SVN_DIFF":					"Разлики спрямо SVN",
 	"CMD_GIT_DIFF":					"Разлики спрямо Git",
+	"CMD_GIT_COMMIT_DIFF":			"Разлики спрямо определен Git commit",
 	"CMD_CLEAR_ACTIVE":				"Изчисти текущото сравнение",
 	"CMD_CLEAR_ALL":				"Изчисти всички сравнения",
 	"CMD_PREV":						"Предишен блок с промени",
@@ -126,6 +127,9 @@
 	"IDC_HIDE_CHANGED_LINES":		"Скрий променените редове",
 	"IDC_HIDE_MOVED_LINES":			"Скрий преместванията",
 	"IDC_SHOW_ONLY_SELECTIONS":		"Покажи само сравнените селекции",
+
+	"HDR_GIT_COMMIT":				"Git Commit",
+	"IDC_GIT_COMMIT_MSG":			"Въведете Git commit номер:",
 
 	"CONFIG_DIR_FAIL":			"Директорията с конфигурации на добавки на Notepad++\n'%s'\nне съществува и не може да бъде създадена.\nЗаписът на конфигурационния файл е невъзможен.",
 	"CONFIG_WRITE_FAIL":		"Грешка при запис на конфигурационен файл\n'%s'.",

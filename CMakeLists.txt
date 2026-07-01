@@ -104,6 +104,7 @@ set (project_sources
 	src/SettingsDlg/SettingsDialog.cpp
 	src/CompareOptionsDlg/CompareOptionsDialog.cpp
 	src/VisualFiltersDlg/VisualFiltersDialog.cpp
+	src/GitCommitDlg/GitCommitDialog.cpp
 	src/NavDlg/NavDialog.cpp
 	src/ProgressDlg/ProgressDlg.cpp
 	src/Engine/Engine.cpp
@@ -128,6 +129,7 @@ include_directories (
 	src/SettingsDlg/
 	src/CompareOptionsDlg/
 	src/VisualFiltersDlg/
+	src/GitCommitDlg/
 	src/NavDlg/
 	src/ProgressDlg/
 	src/SQLite/

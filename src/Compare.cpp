@@ -50,6 +50,7 @@
 #include "SettingsDialog.h"
 #include "CompareOptionsDialog.h"
 #include "VisualFiltersDialog.h"
+#include "GitCommitDialog.h"
 #include "NavDialog.h"
 #include "Engine.h"
 #include "resource.h"
@@ -705,6 +706,7 @@ void NppState::updateLocalization()
 		{ CMD_CLIPBOARD_DIFF,		"CMD_CLIPBOARD_DIFF" },
 		{ CMD_SVN_DIFF,				"CMD_SVN_DIFF" },
 		{ CMD_GIT_DIFF,				"CMD_GIT_DIFF" },
+		{ CMD_GIT_COMMIT_DIFF,		"CMD_GIT_COMMIT_DIFF" },
 		{ CMD_CLEAR_ACTIVE,			"CMD_CLEAR_ACTIVE" },
 		{ CMD_CLEAR_ALL,			"CMD_CLEAR_ALL" },
 		{ CMD_PREV,					"CMD_PREV" },
@@ -3779,6 +3781,36 @@ void GitDiff()
 }
 
 
+void GitDiffSinceCommit()
+{
+	wchar_t file[MAX_PATH];
+
+	::SendMessageW(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, _countof(file), (LPARAM)file);
+
+	if (!checkFileExists(file))
+		return;
+
+	std::string commit;
+	GitCommitDialog gitCommitDlg(hInstance, nppData._nppHandle);
+
+	if (gitCommitDlg.doDialog(commit) != IDOK)
+		return;
+
+	std::vector<char> content = GetGitFileContent(file, commit.c_str());
+
+	if (content.empty())
+		return;
+
+	if (!createTempFile(nullptr, GIT_TEMP))
+		return;
+
+	setContent(content.data());
+	content.clear();
+
+	compare();
+}
+
+
 void ClearActiveCompare()
 {
 	newCompare = nullptr;
@@ -4685,6 +4717,14 @@ void createMenu()
 	funcItem[CMD_GIT_DIFF]._pShKey->_isShift		= false;
 	funcItem[CMD_GIT_DIFF]._pShKey->_key 			= 'G';
 
+	wcscpy_s(funcItem[CMD_GIT_COMMIT_DIFF]._itemName, menuItemSize, str["CMD_GIT_COMMIT_DIFF"].c_str());
+	funcItem[CMD_GIT_COMMIT_DIFF]._pFunc 			= GitDiffSinceCommit;
+	funcItem[CMD_GIT_COMMIT_DIFF]._pShKey 			= new ShortcutKey;
+	funcItem[CMD_GIT_COMMIT_DIFF]._pShKey->_isAlt 	= true;
+	funcItem[CMD_GIT_COMMIT_DIFF]._pShKey->_isCtrl 	= true;
+	funcItem[CMD_GIT_COMMIT_DIFF]._pShKey->_isShift	= true;
+	funcItem[CMD_GIT_COMMIT_DIFF]._pShKey->_key 	= 'G';
+
 	wcscpy_s(funcItem[CMD_CLEAR_ACTIVE]._itemName, menuItemSize, str["CMD_CLEAR_ACTIVE"].c_str());
 	funcItem[CMD_CLEAR_ACTIVE]._pFunc				= ClearActiveCompare;
 	funcItem[CMD_CLEAR_ACTIVE]._pShKey 				= new ShortcutKey;
@@ -5310,6 +5350,7 @@ void onNppReady()
 			HMENU hMenu = (HMENU)::SendMessageW(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
 
 			::EnableMenuItem(hMenu, funcItem[CMD_GIT_DIFF]._cmdID, MF_BYCOMMAND | MF_GRAYED);
+			::EnableMenuItem(hMenu, funcItem[CMD_GIT_COMMIT_DIFF]._cmdID, MF_BYCOMMAND | MF_GRAYED);
 		}
 
 		readNppBookmarkID();

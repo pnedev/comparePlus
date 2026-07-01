@@ -8,6 +8,7 @@
 	"CMD_CLIPBOARD_DIFF":			"Compare file/selection to Clipboard",
 	"CMD_SVN_DIFF":					"SVN Diff",
 	"CMD_GIT_DIFF":					"Git Diff",
+	"CMD_GIT_COMMIT_DIFF":			"Git Diff since Commit",
 	"CMD_CLEAR_ACTIVE":				"Clear Active Compare",
 	"CMD_CLEAR_ALL":				"Clear All Compares",
 	"CMD_PREV":						"Previous Diff Block",
@@ -126,6 +127,9 @@
 	"IDC_HIDE_CHANGED_LINES":		"Hide changed lines",
 	"IDC_HIDE_MOVED_LINES":			"Hide moved lines",
 	"IDC_SHOW_ONLY_SELECTIONS":		"Show only compared selections",
+
+	"HDR_GIT_COMMIT":				"Git Commit",
+	"IDC_GIT_COMMIT_MSG":			"Enter Git commit number:",
 
 	"CONFIG_DIR_FAIL":			"Notepad++ plugins config folder\n'%s'\ndoesn't exist and failed to be created.\nCannot write configuration file.",
 	"CONFIG_WRITE_FAIL":		"Failed to write configuration file\n'%s'",

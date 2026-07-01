@@ -144,7 +144,7 @@
       <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;../../src/nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/GitCommitDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;../../src/nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0600;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;_DEBUG;MULTITHREAD;BOOST_REGEX_STANDALONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -182,7 +182,7 @@ copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
       <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;../../src/nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/GitCommitDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;../../src/nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0600;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;_DEBUG;WIN64;MULTITHREAD;BOOST_REGEX_STANDALONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -219,7 +219,7 @@ copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
       <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;../../src/nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/GitCommitDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;../../src/nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0600;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;_DEBUG;WIN64;MULTITHREAD;BOOST_REGEX_STANDALONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -258,7 +258,7 @@ copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;../../src/nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/GitCommitDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;../../src/nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0600;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;NDEBUG;MULTITHREAD;BOOST_REGEX_STANDALONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -303,7 +303,7 @@ copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;../../src/nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/GitCommitDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;../../src/nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0600;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;NDEBUG;WIN64;MULTITHREAD;BOOST_REGEX_STANDALONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -347,7 +347,7 @@ copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
-      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;../../src/nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../src;../../src/Engine;../../src/AboutDlg;../../src/NavDlg;../../src/NppAPI;../../src/SettingsDlg;../../src/CompareOptionsDlg;../../src/VisualFiltersDlg;../../src/GitCommitDlg;../../src/ProgressDlg;../../src/Icons;../../src/boost_regex/include;../../src/nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WIN32_WINNT=0x0600;WIN32_LEAN_AND_MEAN;NOCOMM;_WINDOWS;_USRDLL;COMPARE_EXPORTS;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES;NDEBUG;WIN64;MULTITHREAD;BOOST_REGEX_STANDALONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -388,6 +388,7 @@ copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     <ClCompile Include="..\..\src\SettingsDlg\SettingsDialog.cpp" />
     <ClCompile Include="..\..\src\CompareOptionsDlg\CompareOptionsDialog.cpp" />
     <ClCompile Include="..\..\src\VisualFiltersDlg\VisualFiltersDialog.cpp" />
+    <ClCompile Include="..\..\src\GitCommitDlg\GitCommitDialog.cpp" />
     <ClCompile Include="..\..\src\Tools.cpp" />
     <ClCompile Include="..\..\src\UserSettings.cpp" />
     <ClCompile Include="..\..\src\Compare.cpp" />
@@ -408,6 +409,7 @@ copy "..\..\res\localization\*.json" "$(OutDir)localization"</Command>
     <ClInclude Include="..\..\src\SettingsDlg\SettingsDialog.h" />
     <ClInclude Include="..\..\src\CompareOptionsDlg\CompareOptionsDialog.h" />
     <ClInclude Include="..\..\src\VisualFiltersDlg\VisualFiltersDialog.h" />
+    <ClInclude Include="..\..\src\GitCommitDlg\GitCommitDialog.h" />
     <ClInclude Include="..\..\src\Tools.h" />
     <ClInclude Include="..\..\src\UserSettings.h" />
     <ClInclude Include="..\..\src\Compare.h" />
