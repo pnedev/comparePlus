@@ -634,7 +634,7 @@ toolbarIconsWithDarkMode	tbDiffsFilters	{nullptr, nullptr, nullptr};
 toolbarIconsWithDarkMode	tbNavBar		{nullptr, nullptr, nullptr};
 
 HINSTANCE hInstance;
-FuncItem funcItem[NB_MENU_COMMANDS] = { 0 };
+FuncItem funcItem[NB_MENU_COMMANDS];
 
 // Declare local functions that appear before they are defined
 void onBufferActivated(LRESULT buffId);
@@ -5338,11 +5338,15 @@ void onNppReady()
 		else
 			Settings.useLightColors();
 
+		bool updateMenu = false;
+
 		if (!isSQLlibFound())
 		{
 			HMENU hMenu = (HMENU)::SendMessageW(nppData._nppHandle, NPPM_GETMENUHANDLE, NPPPLUGINMENU, 0);
 
 			::EnableMenuItem(hMenu, funcItem[CMD_SVN_DIFF]._cmdID, MF_BYCOMMAND | MF_GRAYED);
+
+			updateMenu = true;
 		}
 
 		if (!isGITlibFound())
@@ -5351,7 +5355,12 @@ void onNppReady()
 
 			::EnableMenuItem(hMenu, funcItem[CMD_GIT_DIFF]._cmdID, MF_BYCOMMAND | MF_GRAYED);
 			::EnableMenuItem(hMenu, funcItem[CMD_GIT_COMMIT_DIFF]._cmdID, MF_BYCOMMAND | MF_GRAYED);
+
+			updateMenu = true;
 		}
+
+		if (updateMenu)
+			::DrawMenuBar(nppData._nppHandle);
 
 		readNppBookmarkID();
 
