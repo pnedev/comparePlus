@@ -9,6 +9,7 @@ Translations kindly provided by the following GitHub users:
 - German ......... **@KristjanESPERANTO** (Kristjan ESPERANTO) with some corrections by **@Mr-Update**
 - Hebrew ......... (Anonymous)
 - Korean ......... **@nadugi** (nadugi)
+- Polish ......... **@bartlomiejduda** (bartlomiej.duda)
 - Russian ........ **@cgtalium** (Roman Serov)
 - Turkish ........ **@bilimiyorum**
 - Ukrainian ...... **@Naghual** (Oleksiy M.)
