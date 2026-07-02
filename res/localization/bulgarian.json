@@ -128,7 +128,7 @@
 	"IDC_HIDE_MOVED_LINES":			"Скрий преместванията",
 	"IDC_SHOW_ONLY_SELECTIONS":		"Покажи само сравнените селекции",
 
-	"HDR_GIT_COMMIT":				"Git Commit",
+	"HDR_GIT_COMMIT":				"Разлики спрямо Git commit",
 	"IDC_GIT_COMMIT_MSG":			"Въведете Git commit номер:",
 
 	"CONFIG_DIR_FAIL":			"Директорията с конфигурации на добавки на Notepad++\n'%s'\nне съществува и не може да бъде създадена.\nЗаписът на конфигурационния файл е невъзможен.",

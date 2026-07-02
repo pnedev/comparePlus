@@ -128,7 +128,7 @@
 	"IDC_HIDE_MOVED_LINES":			"Hide moved lines",
 	"IDC_SHOW_ONLY_SELECTIONS":		"Show only compared selections",
 
-	"HDR_GIT_COMMIT":				"Git Commit",
+	"HDR_GIT_COMMIT":				"Git Diff since Commit",
 	"IDC_GIT_COMMIT_MSG":			"Enter Git commit number:",
 
 	"CONFIG_DIR_FAIL":			"Notepad++ plugins config folder\n'%s'\ndoesn't exist and failed to be created.\nCannot write configuration file.",
