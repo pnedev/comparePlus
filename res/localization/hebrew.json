@@ -8,6 +8,7 @@
 	"CMD_CLIPBOARD_DIFF":			"השווה קובץ/בחירה ללוח הזיכרון",
 	"CMD_SVN_DIFF":					"השווה ל- SVN",
 	"CMD_GIT_DIFF":					"השווה ל- Git",
+	"CMD_GIT_COMMIT_DIFF":			"השווה ל- Git Commit...",
 	"CMD_CLEAR_ACTIVE":				"נקה השוואה נוכחית",
 	"CMD_CLEAR_ALL":				"נקה את כל ההשוואות",
 	"CMD_PREV":						"מקטע שינוי קודם",
@@ -35,7 +36,7 @@
 	"IDC_DONATE":					"תרום...",
 	"IDC_INFO":						"מידע",
 	"IDC_VERSION":					"גרסה",
-	"IDC_BUILD_TIME":				"זמו יצירה",
+	"IDC_BUILD_TIME":				"זמן יצירה",
 	"IDC_AUTHOR":					"מפתח",
 	"IDC_LIBS":						"ספריות חיצוניות",
 	"IDC_LINKS":					"קישורים",
@@ -43,9 +44,9 @@
 	"IDC_GUIDE_URL":				"מדריך למשתמש",
 	"LIB_NOT_FOUND":				"ספרייה לא נמצאה",
 
-	"HDR_NAV_BAR":					"פאנל ניווט",
+	"HDR_NAV_BAR":						"CP פאנל ניווט",
 
-	"HDR_SETTINGS":					"הגדרות",
+	"HDR_SETTINGS":						"הגדרות",
 	"IDC_MAIN":						"הגדרות עיקריות",
 	"IDC_FIRST":					"הגדר כראשון להשוואה",
 	"IDC_FIRST_NEW":				"הגדר כקובץ חדש",
@@ -96,7 +97,7 @@
 	"IDCANCEL":						"ביטול",
 	"IDDEFAULT":					"אתחול",
 
-	"HDR_COMPARE_OPTIONS":			"אפשרויות השוואה",
+	"HDR_COMPARE_OPTIONS":				"אפשרויות השוואה",
 	"IDC_DETECT":					"סימון",
 	"IDC_DETECT_MOVES":				"שורות מועברות",
 	"IDC_DETECT_SUB_BLOCK_DIFFS":	"שינויים ברמת מקטעים",
@@ -117,7 +118,7 @@
 	"IDC_REGEX_INCL_NOMATCH_LINES":	"השווה גם שורות שאינן תואמות",
 	"IDC_HIGHLIGHT_REGEX_IGNORES":	"סמן \"שורות התעלמות\"",
 
-	"HDR_VISUAL_FILTERS":			"מסנני תצוגת השוואה",
+	"HDR_VISUAL_FILTERS":				"מסנני תצוגת השוואה",
 	"IDC_NOTE":						"* לא ניתן להסתיר את השורה הראשונה.",
 	"IDC_FILTERS":					"מסננים",
 	"IDC_HIDE_MATCHES":				"הסתר שורות זהות",
@@ -126,6 +127,9 @@
 	"IDC_HIDE_CHANGED_LINES":		"הסתר שורות שונות",
 	"IDC_HIDE_MOVED_LINES":			"הסתר שורות מועברות",
 	"IDC_SHOW_ONLY_SELECTIONS":		"הצג מקטעים נבחרים מושווים בלבד",
+
+	"HDR_GIT_COMMIT":					"השוואה ל- Git Commit",
+	"IDC_GIT_COMMIT_MSG":			"הכנס מספר Git commit:",
 
 	"CONFIG_DIR_FAIL":			"תיקיית הגדרות תוספים\n'%s'\nאינה קיימת וניסיון ליוצרה כשל.\n\nכישלון בכתיבת קובץ הגדרות.",
 	"CONFIG_WRITE_FAIL":		"כישלון בכתיבת קובץ ההגדרות\n'%s'",
