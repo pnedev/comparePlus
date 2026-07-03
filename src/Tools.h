@@ -24,7 +24,9 @@
 #include <string>
 #include <vector>
 #include <fstream>
+
 #include <windows.h>
+#include <shlwapi.h>
 #include <wchar.h>
 #include <uxtheme.h>
 #include <shtypes.h>
@@ -195,6 +197,44 @@ inline bool fileExists(const wchar_t* filePath)
 
 	DWORD dwAttrib = ::GetFileAttributesW(filePath);
 	return (bool)(dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+}
+
+
+inline std::wstring getModulePathByName(const wchar_t* moduleName)
+{
+	HMODULE hMod = nullptr;
+
+	::GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, moduleName, &hMod);
+	if (!hMod)
+		return {};
+
+	wchar_t buf[MAX_PATH];
+
+	::GetModuleFileNameW(hMod, (LPWSTR)buf, (DWORD)MAX_PATH);
+	::PathRemoveFileSpecW(buf);
+
+	return std::wstring(buf);
+}
+
+
+inline std::wstring getModulePathByAddress(void* addressInModule)
+{
+	if (!addressInModule)
+		return {};
+
+	HMODULE hMod = nullptr;
+
+	::GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT | GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
+			(LPCWSTR)addressInModule, &hMod);
+	if (!hMod)
+		return {};
+
+	wchar_t buf[MAX_PATH];
+
+	::GetModuleFileNameW(hMod, (LPWSTR)buf, (DWORD)MAX_PATH);
+	::PathRemoveFileSpecW(buf);
+
+	return std::wstring(buf);
 }
 
 

@@ -4643,6 +4643,9 @@ void OpenAboutDlg()
 
 void createMenu()
 {
+	if (nppData._nppHandle)
+		Strings::get().read(getLocalization());
+
 	const auto& str = Strings::get();
 
 	wcscpy_s(funcItem[CMD_SET_FIRST]._itemName, menuItemSize, str["CMD_SET_FIRST"].c_str());
@@ -6387,7 +6390,6 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD  reasonForCall, LPVOID)
 	switch (reasonForCall)
 	{
 		case DLL_PROCESS_ATTACH:
-			createMenu();
 		break;
 
 		case DLL_PROCESS_DETACH:
@@ -6438,6 +6440,8 @@ extern "C" __declspec(dllexport) const TCHAR * getName()
 
 extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int* nbF)
 {
+	createMenu();
+
 	*nbF = NB_MENU_COMMANDS;
 	return funcItem;
 }
