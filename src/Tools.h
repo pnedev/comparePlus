@@ -20,7 +20,7 @@
 #pragma once
 
 #include <cstdint>
-#include <map>
+#include <unordered_map>
 #include <string>
 #include <vector>
 #include <fstream>
@@ -102,7 +102,7 @@ protected:
 private:
 	static VOID CALLBACK timerCB(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
 
-	static std::map<UINT_PTR, DelayedWork*> workMap;
+	static std::unordered_map<UINT_PTR, DelayedWork*> workMap;
 };
 
 

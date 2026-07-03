@@ -35,7 +35,7 @@ const uint32_t SHA256::k[64] = {
 };
 
 
-std::map<UINT_PTR, DelayedWork*> DelayedWork::workMap;
+std::unordered_map<UINT_PTR, DelayedWork*> DelayedWork::workMap;
 
 
 bool DelayedWork::post(UINT delay_ms)
@@ -57,7 +57,7 @@ void DelayedWork::cancel()
 	{
 		::KillTimer(NULL, _timerId);
 
-		std::map<UINT_PTR, DelayedWork*>::iterator it = workMap.find(_timerId);
+		auto it = workMap.find(_timerId);
 		if (it != workMap.end())
 			workMap.erase(it);
 
@@ -68,7 +68,7 @@ void DelayedWork::cancel()
 
 VOID CALLBACK DelayedWork::timerCB(HWND, UINT, UINT_PTR idEvent, DWORD)
 {
-	std::map<UINT_PTR, DelayedWork*>::iterator it = workMap.find(idEvent);
+	auto it = workMap.find(idEvent);
 
 	::KillTimer(NULL, idEvent);
 
