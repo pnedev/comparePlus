@@ -29,7 +29,7 @@ const char* Strings::c_localization_files_relative_path = "\\ComparePlus\\locali
 using json = nlohmann::json;
 
 
-Strings::Strings() : _currentLocale {"english"}
+Strings::Strings() : _localizationSuccessful {false}, _currentLocale {"english"}
 {
 	//Default strings in English
 	_strings = {
@@ -276,6 +276,8 @@ bool Strings::readFromFile(const std::string& json_locale_file)
 
 		if (file.is_open())
 			file >> loc_strings;
+		else
+			return false;
 	}
 	catch(std::exception&)
 	{
@@ -296,8 +298,14 @@ bool Strings::readFromFile(const std::string& json_locale_file)
 
 bool Strings::read(const std::string& localization)
 {
-	if (localization.empty() || _currentLocale == localization)
+	if (localization.empty())
 		return false;
+
+	if (_currentLocale == localization)
+	{
+		_localizationSuccessful = true;
+		return false;
+	}
 
 	std::string loc_file = WCtoMB(getPluginsHomePath().c_str());
 	loc_file += c_localization_files_relative_path;
@@ -307,8 +315,11 @@ bool Strings::read(const std::string& localization)
 	if (readFromFile(loc_file))
 	{
 		_currentLocale = localization;
+		_localizationSuccessful = true;
 		return true;
 	}
+
+	_localizationSuccessful = false;
 
 	// Try falling back to the default english localization
 	if (_currentLocale != "english" && localization != "english")

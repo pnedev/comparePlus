@@ -36,6 +36,11 @@ public:
 		return _currentLocale;
 	};
 
+	bool isLocalizationSuccessful() const
+	{
+		return _localizationSuccessful;
+	};
+
 	bool read(const std::string& localization);
 
 	std::wstring operator[](const std::string& key) const;
@@ -52,6 +57,7 @@ private:
 
 	bool readFromFile(const std::string& json_locale_file);
 
+	bool		_localizationSuccessful;
 	std::string _currentLocale;
 	std::unordered_map<std::string, std::string> _strings;
 };

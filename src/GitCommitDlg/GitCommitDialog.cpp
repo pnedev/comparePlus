@@ -35,7 +35,7 @@ UINT GitCommitDialog::doDialog(std::string& commit)
 
 	UINT res = 0;
 
-	if (isRTLwindow(_hParent))
+	if (isRTLwindow(_hParent) && Strings::get().isLocalizationSuccessful())
 	{
 		DLGTEMPLATE *pMyDlgTemplate = NULL;
 		HGLOBAL hMyDlgTemplate = makeRTLResource(IDD_GIT_COMMIT_DIALOG, &pMyDlgTemplate);

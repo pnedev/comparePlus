@@ -35,7 +35,7 @@ UINT VisualFiltersDialog::doDialog(UserSettings* settings)
 
 	UINT res = 0;
 
-	if (isRTLwindow(_hParent))
+	if (isRTLwindow(_hParent) && Strings::get().isLocalizationSuccessful())
 	{
 		DLGTEMPLATE *pMyDlgTemplate = NULL;
 		HGLOBAL hMyDlgTemplate = makeRTLResource(IDD_VISUAL_FILTERS_DIALOG, &pMyDlgTemplate);
