@@ -6243,7 +6243,7 @@ void DelayedClose::operator()()
 		else
 		{
 			if (otherFile.isOpen())
-				otherFile.restore();
+				otherFile.restore(true);
 		}
 
 		compareList.erase(cmpPair);
