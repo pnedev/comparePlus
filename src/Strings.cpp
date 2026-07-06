@@ -163,7 +163,7 @@ Strings::Strings() : _currentLocale {"english"}
 		{ "IDC_SHOW_ONLY_SELECTIONS",		"Show only compared selections" },
 
 		{ "HDR_GIT_COMMIT",					"Git Diff since Commit" },
-		{ "IDC_GIT_COMMIT_MSG",				"Enter Git commit number:" },
+		{ "IDC_GIT_COMMIT_MSG",				"Enter Git commit number, tag or branch name:" },
 
 		{ "CONFIG_DIR_FAIL",			"Notepad++ plugins config folder\n'%s'\ndoesn't exist and failed to be created.\nCannot write configuration file." },
 		{ "CONFIG_WRITE_FAIL",			"Failed to write configuration file\n'%s'" },

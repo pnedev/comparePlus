@@ -21,6 +21,7 @@
 #include <windows.h>
 #include <wchar.h>
 #include <shlwapi.h>
+#include <string>
 
 #include "LibGit2Helper.h"
 #include "NppHelpers.h"
@@ -139,6 +140,27 @@ std::unique_ptr<LibGit>& LibGit::load()
 		return Inst;
 	}
 
+	Inst->reference_lookup = (PGITREFERENCELOOKUP)::GetProcAddress(libGit2, "git_reference_lookup");
+	if (!Inst->reference_lookup)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->reference_peel = (PGITREFERENCEPEEL)::GetProcAddress(libGit2, "git_reference_peel");
+	if (!Inst->reference_peel)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
+	Inst->object_id = (PGITOBJECTID)::GetProcAddress(libGit2, "git_object_id");
+	if (!Inst->object_id)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
 	Inst->blob_filter_opt_init = (PGITBLOBFILTEROPTINIT)::GetProcAddress(libGit2, "git_blob_filter_options_init");
 	if (!Inst->blob_filter_opt_init)
 	{
@@ -209,6 +231,13 @@ std::unique_ptr<LibGit>& LibGit::load()
 		return Inst;
 	}
 
+	Inst->reference_free = (PGITREFERENCEFREE)::GetProcAddress(libGit2, "git_reference_free");
+	if (!Inst->reference_free)
+	{
+		Inst.reset();
+		return Inst;
+	}
+
 	Inst->index_free = (PGITINDEXFREE)::GetProcAddress(libGit2, "git_index_free");
 	if (!Inst->index_free)
 	{
@@ -269,4 +298,54 @@ std::unique_ptr<LibGit>& LibGit::load()
 	Inst->init();
 
 	return Inst;
+}
+
+
+bool LibGit::commitOidFromName(git_repository* repo, const char* name, git_oid& out_oid) const
+{
+	if (!repo || !name)
+		return false;
+
+	bool ret = false;
+	git_reference* ref = nullptr;
+
+	std::string gitName(name);
+
+	size_t pos = gitName.find_first_of('/');
+	if (pos == std::string::npos)
+	{
+		if (reference_lookup(&ref, repo, (std::string("refs/heads/") + gitName).c_str()))
+			reference_lookup(&ref, repo, (std::string("refs/tags/") + gitName).c_str());
+	}
+	else
+	{
+		pos = gitName.find_first_of('/', pos + 1);
+
+		if (pos == std::string::npos)
+			gitName.insert(0, "refs/remotes/");
+
+		reference_lookup(&ref, repo, gitName.c_str());
+	}
+
+	if (ref)
+	{
+		git_object* obj = nullptr;
+
+		// Peel to get the commit object
+		if (!reference_peel(&obj, ref, GIT_OBJECT_COMMIT))
+		{
+			if (obj)
+			{
+				// Get the OID from the commit
+				out_oid = *object_id(obj);
+				ret = true;
+
+				object_free(obj);
+			}
+		}
+
+		reference_free(ref);
+	}
+
+	return ret;
 }

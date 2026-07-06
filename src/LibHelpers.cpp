@@ -232,7 +232,7 @@ bool GetSvnFile(const wchar_t* fullFilePath, wchar_t* svnFile, unsigned svnFileS
 }
 
 
-std::vector<char> GetGitFileContent(const wchar_t* fullFilePath, const char* commitId)
+std::vector<char> GetGitFileContent(const wchar_t* fullFilePath, const char* gitObjName)
 {
 	std::vector<char> gitFileContent;
 
@@ -268,11 +268,12 @@ std::vector<char> GetGitFileContent(const wchar_t* fullFilePath, const char* com
 
 	if (repo)
 	{
-		if (commitId)
+		if (gitObjName)
 		{
 			git_oid commitOid;
 
-			if (!gitLib->git_oid_fromstr(&commitOid, commitId))
+			if (!gitLib->git_oid_fromstr(&commitOid, gitObjName) ||
+				gitLib->commitOidFromName(repo, gitObjName, commitOid))
 			{
 				git_commit *commit = nullptr;
 

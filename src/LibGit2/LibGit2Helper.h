@@ -73,6 +73,16 @@ enum blob_filter_flags {
 };
 
 
+enum git_object_type {
+	GIT_OBJECT_ANY		= -2,
+	GIT_OBJECT_INVALID	= -1,
+	GIT_OBJECT_COMMIT	= 1,
+	GIT_OBJECT_TREE		= 2,
+	GIT_OBJECT_BLOB		= 3,
+	GIT_OBJECT_TAG		= 4
+};
+
+
 typedef struct {
 	int version;
 	uint32_t flags;
@@ -86,6 +96,7 @@ typedef struct git_commit git_commit;
 typedef struct git_tree git_tree;
 typedef struct git_tree_entry git_tree_entry;
 typedef struct git_object git_object;
+typedef struct git_reference git_reference;
 typedef uint64_t git_object_size_t;
 
 
@@ -110,6 +121,9 @@ private:
 	typedef const git_index_entry* (*PGITINDEXGETBYPATH) (git_index *index, const char *path, int stage);
 	typedef int (*PGITBLOBLOOKUP) (git_blob **blob, git_repository *repo, const git_oid *id);
 	typedef int (*PGITOIDFROMSTR) (git_oid *out, const char *str);
+	typedef int (*PGITREFERENCELOOKUP) (git_reference **out, git_repository *repo, const char *name);
+	typedef int (*PGITREFERENCEPEEL) (git_object **out, git_reference *ref, git_object_type type);
+	typedef const git_oid* (*PGITOBJECTID) (const git_object *obj);
 	typedef int (*PGITBLOBFILTEROPTINIT) (git_blob_filter_options *opts, unsigned int version);
 	typedef int (*PGITBLOBFILTER) (git_buf *out, git_blob *blob, const char *as_path, git_blob_filter_options *opts);
 	typedef int (*PGITCOMMITLOOKUP) (git_commit **commit, git_repository *repo, const git_oid *id);
@@ -120,6 +134,7 @@ private:
 	typedef git_object_size_t (*PGITBLOBRAWSIZE) (const git_blob *blob);
 	typedef void (*PGITBUFFREE) (git_buf *buf);
 	typedef void (*PGITBLOBFREE) (git_blob *blob);
+	typedef void (*PGITREFERENCEFREE) (git_reference *ref);
 	typedef void (*PGITINDEXFREE) (git_index *index);
 	typedef void (*PGITCOMMITFREE) (git_commit *commit);
 	typedef void (*PGITTREEFREE) (git_tree *tree);
@@ -147,12 +162,17 @@ public:
 		return _verStr;
 	}
 
+	bool commitOidFromName(git_repository* repo, const char* name, git_oid& out_oid) const;
+
 	PGITREPOSITORYOPENEXT	repository_open_ext;
 	PGITREPOSITORYWORKDIR	repository_workdir;
 	PGITREPOSITORYINDEX		repository_index;
 	PGITINDEXGETBYPATH		index_get_bypath;
 	PGITBLOBLOOKUP			blob_lookup;
 	PGITOIDFROMSTR			git_oid_fromstr;
+	PGITREFERENCELOOKUP		reference_lookup;
+	PGITREFERENCEPEEL		reference_peel;
+	PGITOBJECTID			object_id;
 	PGITBLOBFILTEROPTINIT	blob_filter_opt_init;
 	PGITBLOBFILTER			blob_filter;
 	PGITCOMMITLOOKUP		commit_lookup;
@@ -163,6 +183,7 @@ public:
 	PGITBLOBRAWSIZE			blob_rawsize;
 	PGITBUFFREE				buf_free;
 	PGITBLOBFREE			blob_free;
+	PGITREFERENCEFREE		reference_free;
 	PGITINDEXFREE			index_free;
 	PGITCOMMITFREE			commit_free;
 	PGITTREEFREE			tree_free;

@@ -28,7 +28,7 @@ bool isSQLlibFound();
 bool isGITlibFound();
 
 bool GetSvnFile(const wchar_t* fullFilePath, wchar_t* svnFile, unsigned svnFileSize);
-std::vector<char> GetGitFileContent(const wchar_t* fullFilePath, const char* commitId = nullptr);
+std::vector<char> GetGitFileContent(const wchar_t* fullFilePath, const char* gitObjName = nullptr);
 
 std::wstring GetLibGit2Ver();
 std::wstring GetSQLite3Ver();
