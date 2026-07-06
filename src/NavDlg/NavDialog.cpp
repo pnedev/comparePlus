@@ -513,7 +513,7 @@ void NavDialog::setPos(int x, int y)
 
 	const intptr_t currentLine = currentView->bmpToDocLine((y + scrollOffset) / m_pixelsPerLine);
 
-	if (!isLineVisible(currentView->m_view, currentLine))
+	// if (!isLineVisible(currentView->m_view, currentLine))
 		centerAt(currentView->m_view, currentLine);
 
 	if (Settings.FollowingCaret)
