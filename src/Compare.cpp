@@ -357,7 +357,7 @@ public:
 	void clear(bool keepDeleteHistory = false);
 	void onBeforeClose() const;
 	void close() const;
-	void restore(bool unhideLines = false) const;
+	void restore() const;
 	bool isOpen() const;
 
 	bool pushDeletedSection(int sciAction, intptr_t startLine, intptr_t len,
@@ -1149,7 +1149,7 @@ void ComparedFile::close() const
 }
 
 
-void ComparedFile::restore(bool unhideLines) const
+void ComparedFile::restore() const
 {
 	if (isTemp)
 	{
@@ -1167,7 +1167,7 @@ void ComparedFile::restore(bool unhideLines) const
 
 	ViewLocation loc(view, biasLine);
 
-	if (unhideLines)
+	if (view == originalViewId)
 		unhideAllLines(view);
 
 	clearWindow(view);
@@ -1177,7 +1177,7 @@ void ComparedFile::restore(bool unhideLines) const
 
 	loc.restore(Settings.FollowingCaret);
 
-	if (viewIdFromBuffId(buffId) != originalViewId)
+	if (view != originalViewId)
 	{
 		moveFileToOtherView();
 
@@ -1318,12 +1318,12 @@ void ComparedPair::restoreFiles(LRESULT currentBuffId = -1)
 
 	if (file[0].originalViewId == file[0].compareViewId)
 	{
-		file[0].restore(file[1].isTemp);
+		file[0].restore();
 		file[1].restore();
 	}
 	else
 	{
-		file[1].restore(file[0].isTemp);
+		file[1].restore();
 		file[0].restore();
 	}
 
@@ -6243,7 +6243,7 @@ void DelayedClose::operator()()
 		else
 		{
 			if (otherFile.isOpen())
-				otherFile.restore(true);
+				otherFile.restore();
 		}
 
 		compareList.erase(cmpPair);
