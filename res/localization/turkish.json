@@ -8,6 +8,7 @@
 	"CMD_CLIPBOARD_DIFF":			"Dosyayı/Seçimi pano ile karşılaştır",
 	"CMD_SVN_DIFF":					"SVN farkları",
 	"CMD_GIT_DIFF":					"Git farkları",
+	"CMD_GIT_COMMIT_DIFF":          "Commit'ten beri Git farkları",
 	"CMD_CLEAR_ACTIVE":				"Aktif karşılaştırmayı temizle",
 	"CMD_CLEAR_ALL":				"Tüm karşılaştırmaları temizle",
 	"CMD_PREV":						"Önceki fark bloğu",
@@ -127,6 +128,9 @@
 	"IDC_HIDE_MOVED_LINES":			"Taşınan satırları gizle",
 	"IDC_SHOW_ONLY_SELECTIONS":		"Sadece karşılaştırılan seçimleri göster",
 
+    "HDR_GIT_COMMIT": "Commit'ten beri Git farkları",
+    "IDC_GIT_COMMIT_MSG": "Git commit numarası, etiket veya dal adı girin:",
+	
 	"CONFIG_DIR_FAIL":			"Notepad++ eklenti yapılandırma klasörü\n'%s'\nbulunamadı ve oluşturulamadı.\nYapılandırma dosyası yazılamıyor.",
 	"CONFIG_WRITE_FAIL":		"Yapılandırma dosyası yazılamadı\n'%s'",
 
