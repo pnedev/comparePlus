@@ -13,8 +13,8 @@
 	"CMD_CLEAR_ALL":				"נקה את כל ההשוואות",
 	"CMD_PREV":						"מקטע שינוי קודם",
 	"CMD_NEXT":						"מקטע שינוי הבא",
-	"CMD_FIRST":					"מקטע שינוי הראשון",
-	"CMD_LAST":						"מקטע שינוי האחרון",
+	"CMD_FIRST":					"מקטע שינוי ראשון",
+	"CMD_LAST":						"מקטע שינוי אחרון",
 	"CMD_PREV_CHANGE_POS":			"הבדל קודם בשורה שונה",
 	"CMD_NEXT_CHANGE_POS":			"הבדל הבא בשורה שונה",
 	"CMD_COMPARE_SUMMARY":			"סיכום השוואה נוכחית...",
@@ -44,9 +44,9 @@
 	"IDC_GUIDE_URL":				"מדריך למשתמש",
 	"LIB_NOT_FOUND":				"ספרייה לא נמצאה",
 
-	"HDR_NAV_BAR":						"CP פאנל ניווט",
+	"HDR_NAV_BAR":					"CP פאנל ניווט",
 
-	"HDR_SETTINGS":						"הגדרות",
+	"HDR_SETTINGS":					"הגדרות",
 	"IDC_MAIN":						"הגדרות עיקריות",
 	"IDC_FIRST":					"הגדר כראשון להשוואה",
 	"IDC_FIRST_NEW":				"הגדר כקובץ חדש",
@@ -90,14 +90,14 @@
 	"IDC_COMPARE_SELECTIONS_TB":	"השווה מקטעים נבחרים",
 	"IDC_CLEAR_COMPARE_TB":			"נקה השוואה נוכחית",
 	"IDC_NAVIGATION_TB":			"פקודות ניווט",
-	"IDC_COMPARE_OPTIONS_TB":		"אפשרויות השוואה",
+	"IDC_COMPARE_OPTIONS_TB":			"אפשרויות השוואה",
 	"IDC_DIFFS_FILTERS_TB":			"מסנני תצוגת השוואה",
 	"IDC_NAV_BAR_TB":				"פאנל ניווט",
 	"IDOK":							"אישור",
 	"IDCANCEL":						"ביטול",
 	"IDDEFAULT":					"אתחול",
 
-	"HDR_COMPARE_OPTIONS":				"אפשרויות השוואה",
+	"HDR_COMPARE_OPTIONS":			"אפשרויות השוואה",
 	"IDC_DETECT":					"סימון",
 	"IDC_DETECT_MOVES":				"שורות מועברות",
 	"IDC_DETECT_SUB_BLOCK_DIFFS":	"שינויים ברמת מקטעים",
@@ -118,7 +118,7 @@
 	"IDC_REGEX_INCL_NOMATCH_LINES":	"השווה גם שורות שאינן תואמות",
 	"IDC_HIGHLIGHT_REGEX_IGNORES":	"סמן \"שורות התעלמות\"",
 
-	"HDR_VISUAL_FILTERS":				"מסנני תצוגת השוואה",
+	"HDR_VISUAL_FILTERS":			"מסנני תצוגת השוואה",
 	"IDC_NOTE":						"* לא ניתן להסתיר את השורה הראשונה.",
 	"IDC_FILTERS":					"מסננים",
 	"IDC_HIDE_MATCHES":				"הסתר שורות זהות",
@@ -128,8 +128,8 @@
 	"IDC_HIDE_MOVED_LINES":			"הסתר שורות מועברות",
 	"IDC_SHOW_ONLY_SELECTIONS":		"הצג מקטעים נבחרים מושווים בלבד",
 
-	"HDR_GIT_COMMIT":					"השוואה ל- Git Commit",
-	"IDC_GIT_COMMIT_MSG":			"הכנס מספר Git commit:",
+	"HDR_GIT_COMMIT":				"השוואה ל- Git Commit",
+	"IDC_GIT_COMMIT_MSG":			"הכנס מספר Git commit, תג או שם ענף:",
 
 	"CONFIG_DIR_FAIL":			"תיקיית הגדרות תוספים\n'%s'\nאינה קיימת וניסיון ליוצרה כשל.\n\nכישלון בכתיבת קובץ הגדרות.",
 	"CONFIG_WRITE_FAIL":		"כישלון בכתיבת קובץ ההגדרות\n'%s'",
@@ -183,7 +183,7 @@
 	"SUMMARY_NO_IGNORE":		"ללא אפשרויות סימון והתעלמות נוספות\n",
 
 	"PATCH_FILTER_ALL":			"כל הקבצים",
-	"PATCH_FILTER_PATCH":		"קובצי Patch",
+	"PATCH_FILTER_PATCH":		"Patch קובצי",
 	"PATCH_SAVE_AS":			"שמירת קובץ Patch",
 	"PATCH_SELECT":				"בחירת קובץ Patch",
 
