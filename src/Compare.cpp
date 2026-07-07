@@ -3128,14 +3128,23 @@ bool initNewCompare()
 
 		if (singleView)
 		{
-			if (getNumberOfFiles(getCurrentViewId()) < 2)
+			const int numberOfFiles = getNumberOfFiles(getCurrentViewId());
+
+			if (numberOfFiles < 2)
 			{
 				::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_ONLY_ONE"].c_str(), PLUGIN_NAME, MB_OK);
 				return false;
 			}
 
-			::SendMessageW(nppData._nppHandle, NPPM_MENUCOMMAND, 0,
-					Settings.CompareToPrev ? IDM_VIEW_TAB_PREV : IDM_VIEW_TAB_NEXT);
+			const int currentPos = posFromBuffId(getCurrentBuffId());
+
+			int viewTabCmdID = IDM_VIEW_TAB_NEXT;
+
+			if ((Settings.CompareToPrev && currentPos > 0) ||
+				(!Settings.CompareToPrev && (currentPos + 1 == numberOfFiles)))
+				viewTabCmdID = IDM_VIEW_TAB_PREV;
+
+			::SendMessageW(nppData._nppHandle, NPPM_MENUCOMMAND, 0, viewTabCmdID);
 		}
 		else
 		{
