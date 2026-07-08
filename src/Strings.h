@@ -44,6 +44,7 @@ public:
 	bool read(const std::string& localization);
 
 	std::wstring operator[](const std::string& key) const;
+	std::string getStr(const std::string& key) const;
 
 private:
 	static const char* c_localization_files_relative_path;
