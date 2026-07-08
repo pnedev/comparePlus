@@ -182,6 +182,11 @@
 	"SUMMARY_OPTIONS":			"Comparison options:\n",
 	"SUMMARY_NO_IGNORE":		"No extra Detect and Ignore options used\n",
 
+	"NFO_SEL_START":			"--- Selection Compare Block Start ---",
+	"NFO_SEL_END":				"--- Selection Compare Block End ---",
+	"NFO_CANNOT_ALIGN":			"Lines above cannot be properly aligned.",
+	"NFO_ZERO_ALIGN":			"Lines above cannot be properly aligned.\nTo see them aligned, please manually insert one empty line\nin the beginning of each file and then re-compare.",
+
 	"PATCH_FILTER_ALL":			"All Files",
 	"PATCH_FILTER_PATCH":		"Patch Files",
 	"PATCH_SAVE_AS":			"Save patch file as:",

@@ -2558,6 +2558,8 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 
 	intptr_t i = 0;
 
+	const auto& str = Strings::get();
+
 	// Handle zero line diffs that cannot be aligned because annotation on line 0 is not supported by Scintilla
 	for (; i < maxSize && alignmentInfo[i].main.line <= mainEndLine && alignmentInfo[i].sub.line <= subEndLine; ++i)
 	{
@@ -2592,16 +2594,16 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 			if (alignmentInfo[i - 1].main.line != 0)
 			{
 				addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first, mainOffset + 1, mainOffset + 1,
-						"--- Selection Compare Block Start ---");
+						str.getStr("NFO_SEL_START").c_str());
 				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, subOffset + 1, subOffset + 1,
-						"Lines above cannot be properly aligned.");
+						str.getStr("NFO_CANNOT_ALIGN").c_str());
 			}
 			else if (alignmentInfo[i - 1].sub.line != 0)
 			{
 				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, mainOffset + 1, mainOffset + 1,
-						"Lines above cannot be properly aligned.");
+						str.getStr("NFO_CANNOT_ALIGN").c_str());
 				addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first, subOffset + 1, subOffset + 1,
-						"--- Selection Compare Block Start ---");
+						str.getStr("NFO_SEL_START").c_str());
 			}
 			else
 			{
@@ -2610,22 +2612,19 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 		}
 		else
 		{
-			constexpr char lineZeroAlignInfo[] =
-						"Lines above cannot be properly aligned.\n"
-						"To see them aligned, please manually insert one empty line\n"
-						"in the beginning of each file and then re-compare.";
+			const std::string lineZeroAlignInfo = str.getStr("NFO_ZERO_ALIGN").c_str();
 
 			if (mismatchLen > 0)
 			{
-				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, 1, 1, lineZeroAlignInfo);
+				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, 1, 1, lineZeroAlignInfo.c_str());
 				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, mismatchLen + 1, mismatchLen + 1,
-						lineZeroAlignInfo);
+						lineZeroAlignInfo.c_str());
 			}
 			else if (mismatchLen < 0)
 			{
 				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, -mismatchLen + 1, -mismatchLen + 1,
-						lineZeroAlignInfo);
-				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, 1, 1, lineZeroAlignInfo);
+						lineZeroAlignInfo.c_str());
+				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, 1, 1, lineZeroAlignInfo.c_str());
 			}
 		}
 
@@ -2735,10 +2734,12 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 			else if (visibleBlockStartMismatch < 0)
 				subAnnotPos += visibleBlockStartMismatch;
 
+			const std::string selStartInfo = str.getStr("NFO_SEL_START").c_str();
+
 			addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first, mainAnnotation, mainAnnotPos,
-					"--- Selection Compare Block Start ---");
+					selStartInfo.c_str());
 			addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first, subAnnotation, subAnnotPos,
-					"--- Selection Compare Block Start ---");
+					selStartInfo.c_str());
 		}
 
 		{
@@ -2754,10 +2755,12 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 				++subAnnotation;
 			}
 
+			const std::string selEndInfo = str.getStr("NFO_SEL_END").c_str();
+
 			addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].second + 1,
-					mainAnnotation, mainAnnotation, "--- Selection Compare Block End ---");
+					mainAnnotation, mainAnnotation, selEndInfo.c_str());
 			addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].second + 1,
-					subAnnotation, subAnnotation, "--- Selection Compare Block End ---");
+					subAnnotation, subAnnotation, selEndInfo.c_str());
 		}
 	}
 }
