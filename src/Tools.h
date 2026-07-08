@@ -168,6 +168,12 @@ private:
 };
 
 
+inline bool isRTLwindow(HWND hWin)
+{
+	return ((::GetWindowLongPtrW(hWin, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0);
+}
+
+
 inline void setExplorerLightTheme(HWND hwnd)
 {
 	if (::IsWindows10OrGreater())

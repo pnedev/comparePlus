@@ -21,6 +21,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "Tools.h"
+
 
 class Strings
 {
@@ -39,6 +41,11 @@ public:
 	bool isLocalizationSuccessful() const
 	{
 		return _localizationSuccessful;
+	};
+
+	UINT MsgBoxRTLFlag(HWND hTopWnd) const
+	{
+		return (isRTLwindow(hTopWnd) && _localizationSuccessful) ? MB_RTLREADING : 0;
 	};
 
 	bool read(const std::string& localization);

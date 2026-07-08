@@ -290,7 +290,8 @@ void UserSettings::save()
 			wchar_t msg[MAX_PATH + 128];
 
 			_snwprintf_s(msg, _countof(msg), _TRUNCATE, Strings::get()["CONFIG_DIR_FAIL"].c_str(), ini);
-			::MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK | MB_ICONWARNING);
+			::MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME,
+					MB_OK | MB_ICONWARNING | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 
 			return;
 		}
@@ -313,7 +314,8 @@ void UserSettings::save()
 		wchar_t msg[MAX_PATH + 64];
 
 		_snwprintf_s(msg, _countof(msg), _TRUNCATE, Strings::get()["CONFIG_WRITE_FAIL"].c_str(), ini);
-		::MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK | MB_ICONWARNING);
+		::MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME,
+				MB_OK | MB_ICONWARNING | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 
 		return;
 	}
