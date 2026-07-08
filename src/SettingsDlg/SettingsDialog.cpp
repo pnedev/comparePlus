@@ -148,6 +148,7 @@ INT_PTR CALLBACK SettingsDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM
 					settings.NeverMarkIgnored		= (bool) DEFAULT_NEVER_MARK_IGNORED;
 					settings.FollowingCaret			= (bool) DEFAULT_FOLLOWING_CARET;
 					settings.WrapAround				= (bool) DEFAULT_WRAP_AROUND;
+					settings.NoBlinking				= (bool) DEFAULT_NO_BLINKING;
 					settings.GotoFirstDiff			= (bool) DEFAULT_GOTO_FIRST_DIFF;
 
 					settings.StatusInfo				= static_cast<StatusType>(DEFAULT_STATUS_INFO);
@@ -311,6 +312,7 @@ void SettingsDialog::updateLocalization()
 	updateDlgCtrlTxt(_hSelf, IDC_NEVER_MARK_IGNORED,	str["IDC_NEVER_MARK_IGNORED"].c_str(), true);
 	updateDlgCtrlTxt(_hSelf, IDC_FOLLOWING_CARET,		str["IDC_FOLLOWING_CARET"].c_str(), true);
 	updateDlgCtrlTxt(_hSelf, IDC_WRAP_AROUND,			str["IDC_WRAP_AROUND"].c_str(), true);
+	updateDlgCtrlTxt(_hSelf, IDC_NO_BLINKING,			str["IDC_NO_BLINKING"].c_str(), true);
 	updateDlgCtrlTxt(_hSelf, IDC_GOTO_FIRST_DIFF,		str["IDC_GOTO_FIRST_DIFF"].c_str(), true);
 	updateDlgCtrlTxt(_hSelf, IDC_ENABLE_TOOLBAR,		str["IDC_ENABLE_TOOLBAR"].c_str(), true);
 	updateDlgCtrlTxt(_hSelf, IDC_SET_AS_FIRST_TB,		str["IDC_SET_AS_FIRST_TB"].c_str(), true);
@@ -386,6 +388,8 @@ void SettingsDialog::SetParams(UserSettings* settings)
 			settings->FollowingCaret ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_WRAP_AROUND),
 			settings->WrapAround ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(::GetDlgItem(_hSelf, IDC_NO_BLINKING),
+			settings->NoBlinking ? BST_CHECKED : BST_UNCHECKED);
 	Button_SetCheck(::GetDlgItem(_hSelf, IDC_GOTO_FIRST_DIFF),
 			settings->GotoFirstDiff ? BST_CHECKED : BST_UNCHECKED);
 
@@ -472,6 +476,7 @@ void SettingsDialog::GetParams()
 	_Settings->NeverMarkIgnored		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_NEVER_MARK_IGNORED)) == BST_CHECKED);
 	_Settings->FollowingCaret		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_FOLLOWING_CARET)) == BST_CHECKED);
 	_Settings->WrapAround			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_WRAP_AROUND)) == BST_CHECKED);
+	_Settings->NoBlinking			= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_NO_BLINKING)) == BST_CHECKED);
 	_Settings->GotoFirstDiff		= (Button_GetCheck(::GetDlgItem(_hSelf, IDC_GOTO_FIRST_DIFF)) == BST_CHECKED);
 
 	// Get color chosen in dialog
