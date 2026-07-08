@@ -2856,7 +2856,8 @@ void doAlignment(bool forceAlign = false)
 	{
 		cmpPair->nppReplaceDone = false;
 
-		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_REPLACED"].c_str(), PLUGIN_NAME, MB_OK | MB_ICONWARNING);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_REPLACED"].c_str(), PLUGIN_NAME,
+				MB_OK | MB_ICONWARNING | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 	}
 
 	if (goToFirst)
@@ -2882,7 +2883,7 @@ bool isFileCompared(int view)
 
 		wchar_t msg[MAX_PATH];
 		_snwprintf_s(msg, _countof(msg), _TRUNCATE, Strings::get()["MSG_ALREADY_COMPARED"].c_str(), fname);
-		::MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 
 		return true;
 	}
@@ -2897,7 +2898,8 @@ bool isEncodingOK(const ComparedPair& cmpPair)
 	if (getEncoding(cmpPair.file[0].buffId) != getEncoding(cmpPair.file[1].buffId))
 	{
 		if (::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_ENCODINGS"].c_str(),
-			PLUGIN_NAME, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) != IDYES)
+			PLUGIN_NAME, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1 |
+			Strings::get().MsgBoxRTLFlag(nppData._nppHandle)) != IDYES)
 		{
 			return false;
 		}
@@ -2929,7 +2931,8 @@ bool areSelectionsValid(LRESULT currentBuffId = -1, LRESULT otherBuffId = -1)
 	}
 
 	if (!valid)
-		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_NO_SELECTIONS"].c_str(), PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_NO_SELECTIONS"].c_str(), PLUGIN_NAME,
+				MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 
 	return valid;
 }
@@ -2965,7 +2968,8 @@ bool checkFileExists(const wchar_t *file)
 {
 	if (::PathFileExistsW(file) == FALSE)
 	{
-		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_NOT_WRITTEN"].c_str(), PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_NOT_WRITTEN"].c_str(), PLUGIN_NAME,
+				MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 		return false;
 	}
 
@@ -3072,7 +3076,8 @@ bool createTempFile(const wchar_t *file, Temp_t tempType)
 		}
 	}
 
-	::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_TEMP_FAIL"].c_str(), PLUGIN_NAME, MB_OK);
+	::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_TEMP_FAIL"].c_str(), PLUGIN_NAME,
+			MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 
 	newCompare = nullptr;
 
@@ -3138,7 +3143,8 @@ bool initNewCompare()
 
 			if (numberOfFiles < 2)
 			{
-				::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_ONLY_ONE"].c_str(), PLUGIN_NAME, MB_OK);
+				::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_ONLY_ONE"].c_str(), PLUGIN_NAME,
+						MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 				return false;
 			}
 
@@ -3161,7 +3167,8 @@ bool initNewCompare()
 			// Check if comparing to cloned self
 			if (getDocId(MAIN_VIEW) == getDocId(SUB_VIEW))
 			{
-				::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_COMPARE_TO_CLONE"].c_str(), PLUGIN_NAME, MB_OK);
+				::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_COMPARE_TO_CLONE"].c_str(), PLUGIN_NAME,
+						MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 				return false;
 			}
 
@@ -3286,7 +3293,8 @@ bool setupCompare(CompareList_t::iterator& cmpPair, bool selectionCompare, bool 
 			if (::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_EOL_DIFFERENT"].c_str(),
 					cmpPair->options.findUniqueMode ?
 					Strings::get()["STATUS_FIND_UNIQUE"].c_str() : Strings::get()["STATUS_COMPARE"].c_str(),
-					MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) == IDYES)
+					MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1 |
+					Strings::get().MsgBoxRTLFlag(nppData._nppHandle)) == IDYES)
 			{
 				cmpPair->options.ignoreEOL = true;
 				cmpPair->forcedIgnoreEOL = true;
@@ -3296,7 +3304,8 @@ bool setupCompare(CompareList_t::iterator& cmpPair, bool selectionCompare, bool 
 		if (cmpPair->options.bookmarksAsSync && Settings.ManualSyncCheck)
 		{
 			if (::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_MANUAL_SYNC"].c_str(),
-					Strings::get()["STATUS_COMPARE"].c_str(), MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) == IDYES)
+					Strings::get()["STATUS_COMPARE"].c_str(), MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1 |
+					Strings::get().MsgBoxRTLFlag(nppData._nppHandle)) == IDYES)
 			{
 				cmpPair->options.bookmarksAsSync = false;
 				cmpPair->options.syncPoints.clear();
@@ -3609,7 +3618,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 					wcscat_s(msg, _countof(msg), str["MSG_IGNORED_DIFFS"].c_str());
 
 				::MessageBoxW(nppData._nppHandle, msg, cmpPair->options.findUniqueMode ?
-						str["STATUS_FIND_UNIQUE"].c_str() : str["STATUS_COMPARE"].c_str(), MB_OK);
+						str["STATUS_FIND_UNIQUE"].c_str() : str["STATUS_COMPARE"].c_str(),
+						MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 			}
 			else
 			{
@@ -3641,12 +3651,14 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 					choice = ::MessageBoxW(nppData._nppHandle, msg, cmpPair->options.findUniqueMode ?
 										str["STATUS_FIND_UNIQUE"].c_str() : str["STATUS_COMPARE"].c_str(),
-										MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON1);
+										MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON1 |
+										Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 				}
 				else
 				{
 					::MessageBoxW(nppData._nppHandle, msg, cmpPair->options.findUniqueMode ?
-								str["STATUS_FIND_UNIQUE"].c_str() : str["STATUS_COMPARE"].c_str(), MB_OK);
+								str["STATUS_FIND_UNIQUE"].c_str() : str["STATUS_COMPARE"].c_str(),
+								MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 				}
 			}
 
@@ -3661,7 +3673,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 		case CompareResult::COMPARE_ERROR:
 			::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_COMPARE_FAIL"].c_str(),
-						PLUGIN_NAME, MB_OK | MB_ICONERROR);
+						PLUGIN_NAME, MB_OK | MB_ICONERROR | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 		// Intentional fall-through
 
 		default:
@@ -3729,7 +3741,8 @@ void ClipboardDiff()
 
 		if (::PathFileExistsW(file) == FALSE)
 		{
-			::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_FILE_EMPTY"].c_str(), PLUGIN_NAME, MB_OK);
+			::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_FILE_EMPTY"].c_str(), PLUGIN_NAME,
+					MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 			return;
 		}
 	}
@@ -3740,7 +3753,8 @@ void ClipboardDiff()
 
 	if (content.empty())
 	{
-		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_CLIPBOARD_EMPTY"].c_str(), PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_CLIPBOARD_EMPTY"].c_str(), PLUGIN_NAME,
+				MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 		return;
 	}
 
@@ -3966,7 +3980,8 @@ void ActiveCompareSummary()
 	if (cmpPair == compareList.end())
 		return;
 
-	::MessageBoxW(nppData._nppHandle, cmpPair->getSummary().c_str(), PLUGIN_NAME, MB_OK);
+	::MessageBoxW(nppData._nppHandle, cmpPair->getSummary().c_str(), PLUGIN_NAME,
+			MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 }
 
 
@@ -4244,13 +4259,15 @@ void GeneratePatch()
 
 	if (cmpPair->options.findUniqueMode)
 	{
-		::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_NO_UNIQUE"].c_str(), PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_NO_UNIQUE"].c_str(), PLUGIN_NAME,
+				MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 		return;
 	}
 
 	if (cmpPair->compareDirty)
 	{
-		::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_NO_MODIFIED"].c_str(), PLUGIN_NAME, MB_OK | MB_ICONWARNING);
+		::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_NO_MODIFIED"].c_str(), PLUGIN_NAME,
+				MB_OK | MB_ICONWARNING | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 		return;
 	}
 
@@ -4263,7 +4280,8 @@ void GeneratePatch()
 		cmpPair->options.ignoreFoldedLines || cmpPair->options.ignoreHiddenLines);
 
 	if (hasIgnoreOpts)
-		::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_WARN_IGNORE"].c_str(), PLUGIN_NAME, MB_OK | MB_ICONWARNING);
+		::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_WARN_IGNORE"].c_str(), PLUGIN_NAME,
+				MB_OK | MB_ICONWARNING | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 
 	std::ofstream ofs;
 	{
@@ -4287,7 +4305,8 @@ void GeneratePatch()
 
 		if (!ofs.is_open())
 		{
-			::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_SAVE_FAIL"].c_str(), PLUGIN_NAME, MB_OK | MB_ICONERROR);
+			::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_SAVE_FAIL"].c_str(), PLUGIN_NAME,
+					MB_OK | MB_ICONERROR | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 			return;
 		}
 	}
@@ -4458,7 +4477,8 @@ void applyPatch(bool revert = false)
 
 		if (!ifs.is_open())
 		{
-			::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_OPEN_FAIL"].c_str(), PLUGIN_NAME, MB_OK | MB_ICONERROR);
+			::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_OPEN_FAIL"].c_str(), PLUGIN_NAME,
+					MB_OK | MB_ICONERROR | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 			return;
 		}
 	}
@@ -4473,7 +4493,8 @@ void applyPatch(bool revert = false)
 
 		_snwprintf_s(msg, _countof(msg), _TRUNCATE, str["MSG_PATCH_APPLY_FAIL"].c_str(), fname);
 
-		::MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK | MB_ICONERROR);
+		::MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME,
+				MB_OK | MB_ICONERROR | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 	}
 
 	ifs.close();
@@ -5093,7 +5114,8 @@ void checkCmdLine()
 
 	if (!constructFullFilePaths(files))
 	{
-		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_CMD_LINE_AMBIGUOUS"].c_str(), PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_CMD_LINE_AMBIGUOUS"].c_str(), PLUGIN_NAME,
+				MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 		return;
 	}
 
@@ -5317,7 +5339,8 @@ void onNppReady()
 
 		_snwprintf_s(msg, _countof(msg), _TRUNCATE, Strings::get()["MSG_NOT_COMPATIBLE"].c_str(), PLUGIN_NAME);
 
-		MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK | MB_ICONWARNING);
+		::MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME,
+				MB_OK | MB_ICONWARNING | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 
 		notificationsLock = 1;
 
@@ -5344,12 +5367,12 @@ void onNppReady()
 	else
 	{
 		if (!allocateIndicator())
-			::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_MARKER_ALLOC_FAIL"].c_str(),
-					PLUGIN_NAME, MB_OK | MB_ICONWARNING);
+			::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_MARKER_ALLOC_FAIL"].c_str(), PLUGIN_NAME,
+					MB_OK | MB_ICONWARNING | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 
 		if (!allocateMarginNum())
-			::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_MARGIN_ALLOC_FAIL"].c_str(),
-					PLUGIN_NAME, MB_OK | MB_ICONWARNING);
+			::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_MARGIN_ALLOC_FAIL"].c_str(), PLUGIN_NAME,
+					MB_OK | MB_ICONWARNING | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 
 		if (isDarkMode())
 			Settings.useDarkColors();
@@ -5775,7 +5798,8 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 
 	if (Settings.HideNewLines || Settings.HideChangedLines || Settings.HideMovedLines)
 	{
-		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_HIDDEN_NOT_POSSIBLE"].c_str(), PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_HIDDEN_NOT_POSSIBLE"].c_str(), PLUGIN_NAME,
+				MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 		return;
 	}
 

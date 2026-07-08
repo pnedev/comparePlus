@@ -157,7 +157,8 @@ bool GetSvnFile(const wchar_t* fullFilePath, wchar_t* svnFile, unsigned svnFileS
 		{
 			if (!InitSQLite())
 			{
-				::MessageBoxW(nppData._nppHandle, Strings::get()["SQLITE_FAIL"].c_str(), PLUGIN_NAME, MB_OK);
+				::MessageBoxW(nppData._nppHandle, Strings::get()["SQLITE_FAIL"].c_str(), PLUGIN_NAME,
+						MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 				return false;
 			}
 
@@ -226,7 +227,8 @@ bool GetSvnFile(const wchar_t* fullFilePath, wchar_t* svnFile, unsigned svnFileS
 	}
 
 	if (!ret)
-		::MessageBoxW(nppData._nppHandle, Strings::get()["NO_SVN"].c_str(), PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["NO_SVN"].c_str(), PLUGIN_NAME,
+				MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 
 	return ret;
 }
@@ -239,7 +241,8 @@ std::vector<char> GetGitFileContent(const wchar_t* fullFilePath, const char* git
 	std::unique_ptr<LibGit>& gitLib = LibGit::load();
 	if (!gitLib)
 	{
-		::MessageBoxW(nppData._nppHandle, Strings::get()["LIBGIT_FAIL"].c_str(), PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["LIBGIT_FAIL"].c_str(), PLUGIN_NAME,
+				MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 		return gitFileContent;
 	}
 
@@ -376,7 +379,8 @@ std::vector<char> GetGitFileContent(const wchar_t* fullFilePath, const char* git
 	}
 
 	if (gitFileContent.empty())
-		::MessageBoxW(nppData._nppHandle, Strings::get()["NO_GIT"].c_str(), PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["NO_GIT"].c_str(), PLUGIN_NAME,
+				MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 
 	return gitFileContent;
 }

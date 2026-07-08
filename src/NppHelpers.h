@@ -278,12 +278,6 @@ private:
 };
 
 
-inline bool isRTLwindow(HWND hWin)
-{
-	return ((::GetWindowLongPtrW(hWin, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0);
-}
-
-
 inline bool isSingleView()
 {
 	return (!::IsWindowVisible(nppData._scintillaSecondHandle) || !::IsWindowVisible(nppData._scintillaMainHandle));
