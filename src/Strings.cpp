@@ -105,6 +105,7 @@ Strings::Strings() : _localizationSuccessful {false}, _currentLocale {"english"}
 		{ "IDC_NEVER_MARK_IGNORED",			"Never colorize ignored lines" },
 		{ "IDC_FOLLOWING_CARET",			"Move caret on navigation" },
 		{ "IDC_WRAP_AROUND",				"Wrap around diffs on navigation" },
+		{ "IDC_NO_BLINKING",				"Don't blink first/last diff lines" },
 		{ "IDC_GOTO_FIRST_DIFF",			"Go to first diff after re-Compare" },
 		{ "IDC_COLORS",						"Coloring" },
 		{ "IDC_ADDED",						"Added line" },

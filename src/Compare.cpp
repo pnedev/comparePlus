@@ -2062,10 +2062,13 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 		if ((down && (line >= currentLine) && (line > edgeLine)) ||
 			(!down && (line <= currentLine) && (line < edgeLine)))
 		{
-			if (isLineVisible(view, line))
-				blinkLine(view, line);
-			else
-				blinkLine(view, down ? getLastLine(view) : getFirstLine(view));
+			if (!Settings.NoBlinking)
+			{
+				if (isLineVisible(view, line))
+					blinkLine(view, line);
+				else
+					blinkLine(view, down ? getLastLine(view) : getFirstLine(view));
+			}
 
 			// Adjust the direction of the blank annotation mark in case of selections compare corners
 			if (cmpPair->options.selectionCompare && Settings.ShowOnlySelections && !down &&
@@ -2117,7 +2120,7 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 		doNotBlink = true;
 	}
 
-	if (!doNotBlink)
+	if (!doNotBlink && !Settings.NoBlinking)
 		blinkLine(view, line);
 
 	showBlankAdjacentArrowMark(view, line, down);
@@ -3920,10 +3923,10 @@ void PrevChangePos()
 		{
 			if (line == CallScintilla(viewId, SCI_LINEFROMPOSITION, pos, 0))
 				CallScintilla(viewId, SCI_GOTOPOS, pos, 0);
-			else
+			else if (!Settings.NoBlinking)
 				blinkLine(viewId, line);
 		}
-		else
+		else if (!Settings.NoBlinking)
 		{
 			blinkLine(viewId, line);
 		}
@@ -3946,10 +3949,10 @@ void NextChangePos()
 		{
 			if (line == CallScintilla(viewId, SCI_LINEFROMPOSITION, pos, 0))
 				CallScintilla(viewId, SCI_GOTOPOS, pos, 0);
-			else
+			else if (!Settings.NoBlinking)
 				blinkLine(viewId, line);
 		}
-		else
+		else if (!Settings.NoBlinking)
 		{
 			blinkLine(viewId, line);
 		}

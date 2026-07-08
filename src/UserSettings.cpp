@@ -39,6 +39,7 @@ const wchar_t UserSettings::hideMarginSetting[]				= L"hide_margin";
 const wchar_t UserSettings::markIgnoredLinesSetting[]		= L"never_colorize_ignored_lines";
 const wchar_t UserSettings::followingCaretSetting[]			= L"following_caret";
 const wchar_t UserSettings::wrapAroundSetting[]				= L"wrap_around";
+const wchar_t UserSettings::noBlinkingSetting[]				= L"no_line_blinking";
 const wchar_t UserSettings::gotoFirstDiffSetting[]			= L"go_to_first_on_recompare";
 
 const wchar_t UserSettings::detectMovesSetting[]			= L"detect_moves";
@@ -143,6 +144,8 @@ void UserSettings::load()
 			DEFAULT_FOLLOWING_CARET, ini) != 0;
 	WrapAround				= ::GetPrivateProfileIntW(mainSection, wrapAroundSetting,
 			DEFAULT_WRAP_AROUND, ini) != 0;
+	NoBlinking				= ::GetPrivateProfileIntW(mainSection, noBlinkingSetting,
+			DEFAULT_NO_BLINKING, ini) != 0;
 	GotoFirstDiff			= ::GetPrivateProfileIntW(mainSection, gotoFirstDiffSetting,
 			DEFAULT_GOTO_FIRST_DIFF, ini) != 0;
 
@@ -324,6 +327,7 @@ void UserSettings::save()
 	::WritePrivateProfileStringW(mainSection, markIgnoredLinesSetting,		NeverMarkIgnored	  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, followingCaretSetting,		FollowingCaret		  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, wrapAroundSetting,			WrapAround			  ? L"1" : L"0", ini);
+	::WritePrivateProfileStringW(mainSection, noBlinkingSetting,			NoBlinking			  ? L"1" : L"0", ini);
 	::WritePrivateProfileStringW(mainSection, gotoFirstDiffSetting,			GotoFirstDiff		  ? L"1" : L"0", ini);
 
 	::WritePrivateProfileStringW(mainSection, detectMovesSetting,			DetectMoves			  ? L"1" : L"0", ini);

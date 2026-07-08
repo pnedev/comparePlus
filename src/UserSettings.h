@@ -36,6 +36,7 @@
 #define DEFAULT_NEVER_MARK_IGNORED			0
 #define DEFAULT_FOLLOWING_CARET				1
 #define DEFAULT_WRAP_AROUND					0
+#define DEFAULT_NO_BLINKING					0
 #define DEFAULT_GOTO_FIRST_DIFF				1
 
 #define DEFAULT_STATUS_INFO					0
@@ -140,6 +141,7 @@ public:
 	bool			NeverMarkIgnored;
 	bool			FollowingCaret;
 	bool			WrapAround;
+	bool			NoBlinking;
 	bool			GotoFirstDiff;
 
 	bool			DetectMoves;
@@ -198,6 +200,7 @@ private:
 	static const wchar_t markIgnoredLinesSetting[];
 	static const wchar_t followingCaretSetting[];
 	static const wchar_t wrapAroundSetting[];
+	static const wchar_t noBlinkingSetting[];
 	static const wchar_t gotoFirstDiffSetting[];
 
 	static const wchar_t detectMovesSetting[];
