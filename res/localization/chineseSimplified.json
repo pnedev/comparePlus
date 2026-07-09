@@ -8,6 +8,7 @@
 	"CMD_CLIPBOARD_DIFF":			"将文件/选中内容与剪贴板比较",
 	"CMD_SVN_DIFF":					"SVN 差异对比",
 	"CMD_GIT_DIFF":					"Git 差异对比",
+	"CMD_GIT_COMMIT_DIFF":			"Git Diff since Commit",
 	"CMD_CLEAR_ACTIVE":				"清除当前对比",
 	"CMD_CLEAR_ALL":				"清除所有对比",
 	"CMD_PREV":						"上一处差异块",
@@ -70,6 +71,7 @@
 	"IDC_NEVER_MARK_IGNORED":		"从不高亮显示被忽略的行",
 	"IDC_FOLLOWING_CARET":			"导航时同步移动光标",
 	"IDC_WRAP_AROUND":				"在差异之间循环导航",
+	"IDC_NO_BLINKING":				"Don't blink first/last diff lines",
 	"IDC_GOTO_FIRST_DIFF":			"重新对比后跳转到第一处差异",
 	"IDC_COLORS":					"配色",
 	"IDC_ADDED":					"新增的行",
@@ -127,6 +129,9 @@
 	"IDC_HIDE_MOVED_LINES":			"隐藏移动的行",
 	"IDC_SHOW_ONLY_SELECTIONS":		"只显示参与对比的选中内容",
 
+	"HDR_GIT_COMMIT":				"Git Diff since Commit",
+	"IDC_GIT_COMMIT_MSG":			"Enter Git commit number, tag or branch name:",
+
 	"CONFIG_DIR_FAIL":			"Notepad++ 插件配置文件夹\n'%s'\n不存在且创建失败。\n无法写入配置文件。",
 	"CONFIG_WRITE_FAIL":		"写入配置文件失败\n'%s'",
 
@@ -177,6 +182,11 @@
 	"SUMMARY_COMPARE":			"对比结果汇总：\n",
 	"SUMMARY_OPTIONS":			"使用的对比选项：\n",
 	"SUMMARY_NO_IGNORE":		"未使用额外的检测或忽略选项\n",
+
+	"NFO_SEL_START":			"--- Selection Compare Block Start ---",
+	"NFO_SEL_END":				"--- Selection Compare Block End ---",
+	"NFO_CANNOT_ALIGN":			"Lines above cannot be properly aligned.",
+	"NFO_ZERO_ALIGN":			"Lines above cannot be properly aligned.\nTo see them aligned, please manually insert one empty line\nin the beginning of each file and then re-compare.",
 
 	"PATCH_FILTER_ALL":			"所有文件",
 	"PATCH_FILTER_PATCH":		"补丁文件",

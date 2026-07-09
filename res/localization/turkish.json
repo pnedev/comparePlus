@@ -71,6 +71,7 @@
 	"IDC_NEVER_MARK_IGNORED":		"Yok sayılan satırları asla renklendirme",
 	"IDC_FOLLOWING_CARET":			"Gezinirken imleci taşı",
 	"IDC_WRAP_AROUND":				"Gezinirken farkları başa sar",
+	"IDC_NO_BLINKING":				"Don't blink first/last diff lines",
 	"IDC_GOTO_FIRST_DIFF":			"Yeniden karşılaştırma sonrası ilk farka git",
 	"IDC_COLORS":					"Renklendirme",
 	"IDC_ADDED":					"Eklenen satır",
@@ -130,7 +131,7 @@
 
     "HDR_GIT_COMMIT": "Commit'ten beri Git farkları",
     "IDC_GIT_COMMIT_MSG": "Git commit numarası, etiket veya dal adı girin:",
-	
+
 	"CONFIG_DIR_FAIL":			"Notepad++ eklenti yapılandırma klasörü\n'%s'\nbulunamadı ve oluşturulamadı.\nYapılandırma dosyası yazılamıyor.",
 	"CONFIG_WRITE_FAIL":		"Yapılandırma dosyası yazılamadı\n'%s'",
 
@@ -181,6 +182,11 @@
 	"SUMMARY_COMPARE":			"Karşılaştırma özeti:\n",
 	"SUMMARY_OPTIONS":			"Karşılaştırma seçenekleri:\n",
 	"SUMMARY_NO_IGNORE":		"Ek algılama ve yok sayma seçeneği kullanılmadı\n",
+
+	"NFO_SEL_START":			"--- Selection Compare Block Start ---",
+	"NFO_SEL_END":				"--- Selection Compare Block End ---",
+	"NFO_CANNOT_ALIGN":			"Lines above cannot be properly aligned.",
+	"NFO_ZERO_ALIGN":			"Lines above cannot be properly aligned.\nTo see them aligned, please manually insert one empty line\nin the beginning of each file and then re-compare.",
 
 	"PATCH_FILTER_ALL":			"Tüm dosyalar",
 	"PATCH_FILTER_PATCH":		"Yama dosyaları",

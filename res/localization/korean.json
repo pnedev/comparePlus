@@ -8,6 +8,7 @@
 	"CMD_CLIPBOARD_DIFF":			"파일/선택 영역을 클립보드와 비교",
 	"CMD_SVN_DIFF":					"SVN Diff",
 	"CMD_GIT_DIFF":					"Git Diff",
+	"CMD_GIT_COMMIT_DIFF":			"Git Diff since Commit",
 	"CMD_CLEAR_ACTIVE":				"현재 비교 결과 지우기",
 	"CMD_CLEAR_ALL":				"모든 비교 결과 지우기",
 	"CMD_PREV":						"이전 차이점 블록",
@@ -70,6 +71,7 @@
 	"IDC_NEVER_MARK_IGNORED":		"무시된 줄에 색상 미표시",
 	"IDC_FOLLOWING_CARET":			"탐색 시 캐럿 이동",
 	"IDC_WRAP_AROUND":				"탐색 시 처음/끝으로 순환",
+	"IDC_NO_BLINKING":				"Don't blink first/last diff lines",
 	"IDC_GOTO_FIRST_DIFF":			"재비교 후 첫 차이점으로 이동",
 	"IDC_COLORS":					"색상",
 	"IDC_ADDED":					"추가된 줄",
@@ -127,6 +129,9 @@
 	"IDC_HIDE_MOVED_LINES":			"이동된 줄 숨기기",
 	"IDC_SHOW_ONLY_SELECTIONS":		"비교된 선택 영역만 표시",
 
+	"HDR_GIT_COMMIT":				"Git Diff since Commit",
+	"IDC_GIT_COMMIT_MSG":			"Enter Git commit number, tag or branch name:",
+
 	"CONFIG_DIR_FAIL":			"설정 폴더 생성 실패:\n'%s'\n파일을 쓸 수 없음",
 	"CONFIG_WRITE_FAIL":		"설정 파일 기록 실패:\n'%s'",
 
@@ -177,6 +182,11 @@
 	"SUMMARY_COMPARE":			"비교 요약:\n",
 	"SUMMARY_OPTIONS":			"비교 옵션:\n",
 	"SUMMARY_NO_IGNORE":		"추가 감지/무시 옵션 없음\n",
+
+	"NFO_SEL_START":			"--- Selection Compare Block Start ---",
+	"NFO_SEL_END":				"--- Selection Compare Block End ---",
+	"NFO_CANNOT_ALIGN":			"Lines above cannot be properly aligned.",
+	"NFO_ZERO_ALIGN":			"Lines above cannot be properly aligned.\nTo see them aligned, please manually insert one empty line\nin the beginning of each file and then re-compare.",
 
 	"PATCH_FILTER_ALL":			"모든 파일",
 	"PATCH_FILTER_PATCH":		"패치 파일",

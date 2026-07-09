@@ -8,6 +8,7 @@
 	"CMD_CLIPBOARD_DIFF":			"Comparer le fichier ou la sélection au presse-papiers",
 	"CMD_SVN_DIFF":					"Diff SVN",
 	"CMD_GIT_DIFF":					"Diff Git",
+	"CMD_GIT_COMMIT_DIFF":			"Git Diff since Commit",
 	"CMD_CLEAR_ACTIVE":				"Effacer la comparaison active",
 	"CMD_CLEAR_ALL":				"Effacer toutes les comparaisons",
 	"CMD_PREV":						"Bloc de comparaison précédent",
@@ -70,6 +71,7 @@
 	"IDC_NEVER_MARK_IGNORED":		"Ne jamais coloriser les lignes ignorées",
 	"IDC_FOLLOWING_CARET":			"Déplacer le curseur lors de la navigation",
 	"IDC_WRAP_AROUND":				"Retourner les différences lors de la navigation",
+	"IDC_NO_BLINKING":				"Don't blink first/last diff lines",
 	"IDC_GOTO_FIRST_DIFF":			"Aller à la première différence après une nouvelle comparaison",
 	"IDC_COLORS":					"Coloration",
 	"IDC_ADDED":					"Ligne ajoutée",
@@ -127,6 +129,9 @@
 	"IDC_HIDE_MOVED_LINES":			"Masquer les lignes déplacées",
 	"IDC_SHOW_ONLY_SELECTIONS":		"Afficher uniquement les sélections comparées",
 
+	"HDR_GIT_COMMIT":				"Git Diff since Commit",
+	"IDC_GIT_COMMIT_MSG":			"Enter Git commit number, tag or branch name:",
+
 	"CONFIG_DIR_FAIL":			"Le dossier de configuration des plugins Notepad++\n'%s'\nn'existe pas et n'a pas pu être créé.\nImpossible d'écrire le fichier de configuration.",
 	"CONFIG_WRITE_FAIL":		"Échec de l'écriture du fichier de configuration\n'%s'",
 
@@ -177,6 +182,11 @@
 	"SUMMARY_COMPARE":			"Résumé de comparaison :\n",
 	"SUMMARY_OPTIONS":			"Options de comparaison :\n",
 	"SUMMARY_NO_IGNORE":		"Aucune option supplémentaire utilisée pour détecter et ignorer\n",
+
+	"NFO_SEL_START":			"--- Selection Compare Block Start ---",
+	"NFO_SEL_END":				"--- Selection Compare Block End ---",
+	"NFO_CANNOT_ALIGN":			"Lines above cannot be properly aligned.",
+	"NFO_ZERO_ALIGN":			"Lines above cannot be properly aligned.\nTo see them aligned, please manually insert one empty line\nin the beginning of each file and then re-compare.",
 
 	"PATCH_FILTER_ALL":			"Tous les fichiers",
 	"PATCH_FILTER_PATCH":		"Fichiers de correctifs",

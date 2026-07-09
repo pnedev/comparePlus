@@ -8,6 +8,7 @@
 	"CMD_CLIPBOARD_DIFF":			"Datei/Auswahl mit Zwischenablage vergleichen",
 	"CMD_SVN_DIFF":					"SVN-Diff",
 	"CMD_GIT_DIFF":					"Git-Diff",
+	"CMD_GIT_COMMIT_DIFF":			"Git Diff since Commit",
 	"CMD_CLEAR_ACTIVE":				"Aktiven Vergleich entfernen",
 	"CMD_CLEAR_ALL":				"Alle Vergleiche entfernen",
 	"CMD_PREV":						"Vorheriger Unterschiedsblock",
@@ -70,6 +71,7 @@
 	"IDC_NEVER_MARK_IGNORED":		"Ignorierte Zeilen niemals einfärben",
 	"IDC_FOLLOWING_CARET":			"Cursor bei Navigation bewegen",
 	"IDC_WRAP_AROUND":				"Bei Navigation umbrechen",
+	"IDC_NO_BLINKING":				"Don't blink first/last diff lines",
 	"IDC_GOTO_FIRST_DIFF":			"Nach Neuvergleich zum ersten Unterschied springen",
 	"IDC_COLORS":					"Färbung",
 	"IDC_ADDED":					"Hinzugefügte Zeile",
@@ -127,6 +129,9 @@
 	"IDC_HIDE_MOVED_LINES":			"Verschobene Zeilen ausblenden",
 	"IDC_SHOW_ONLY_SELECTIONS":		"Nur verglichene Auswahl anzeigen",
 
+	"HDR_GIT_COMMIT":				"Git Diff since Commit",
+	"IDC_GIT_COMMIT_MSG":			"Enter Git commit number, tag or branch name:",
+
 	"CONFIG_DIR_FAIL":			"Notepad++-Plugin-Konfigurationsordner\n'%s'\nexistiert nicht und konnte nicht erstellt werden.\nKonfigurationsdatei kann nicht geschrieben werden.",
 	"CONFIG_WRITE_FAIL":		"Fehler beim Schreiben der Konfigurationsdatei\n'%s'",
 
@@ -177,6 +182,11 @@
 	"SUMMARY_COMPARE":			"Zusammenfassung des Vergleichs:\n",
 	"SUMMARY_OPTIONS":			"Vergleichsoptionen:\n",
 	"SUMMARY_NO_IGNORE":		"Keine zusätzlichen Erkennungs- und Ignorieroptionen verwendet\n",
+
+	"NFO_SEL_START":			"--- Selection Compare Block Start ---",
+	"NFO_SEL_END":				"--- Selection Compare Block End ---",
+	"NFO_CANNOT_ALIGN":			"Lines above cannot be properly aligned.",
+	"NFO_ZERO_ALIGN":			"Lines above cannot be properly aligned.\nTo see them aligned, please manually insert one empty line\nin the beginning of each file and then re-compare.",
 
 	"PATCH_FILTER_ALL":			"Alle Dateien",
 	"PATCH_FILTER_PATCH":		"Patch-Dateien",

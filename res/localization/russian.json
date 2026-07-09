@@ -8,6 +8,7 @@
 	"CMD_CLIPBOARD_DIFF":			"Сравнить Файл/Выделенный фрагмент с буфером обмена",
 	"CMD_SVN_DIFF":					"Различия относительно SVN",
 	"CMD_GIT_DIFF":					"Различия относительно Git",
+	"CMD_GIT_COMMIT_DIFF":			"Git Diff since Commit",
 	"CMD_CLEAR_ACTIVE":				"Очистить активное сравнение",
 	"CMD_CLEAR_ALL":				"Очистить все сравнения",
 	"CMD_PREV":						"Предыдущий блок различий",
@@ -70,6 +71,7 @@
 	"IDC_NEVER_MARK_IGNORED":		"Никогда не выделять цветом игнорируемые строки",
 	"IDC_FOLLOWING_CARET":			"Перемещать курсор при навигации",
 	"IDC_WRAP_AROUND":				"Циклическая навигация по различиям",
+	"IDC_NO_BLINKING":				"Don't blink first/last diff lines",
 	"IDC_GOTO_FIRST_DIFF":			"Перейти к первому различию после повторного сравнения",
 	"IDC_COLORS":					"Подсветка",
 	"IDC_ADDED":					"Добавленная строка",
@@ -127,6 +129,9 @@
 	"IDC_HIDE_MOVED_LINES":			"Скрыть перемещённые строки",
 	"IDC_SHOW_ONLY_SELECTIONS":		"Показывать только сравниваемые фрагменты",
 
+	"HDR_GIT_COMMIT":				"Git Diff since Commit",
+	"IDC_GIT_COMMIT_MSG":			"Enter Git commit number, tag or branch name:",
+
 	"CONFIG_DIR_FAIL":			"Папка конфигурации плагинов Notepad++\n'%s'\nне существует и не удалось её создать.\nФайл конфигурации не может быть записан.",
 	"CONFIG_WRITE_FAIL":		"Не удалось открыть для записи файл конфигурации\n'%s'",
 
@@ -177,6 +182,11 @@
 	"SUMMARY_COMPARE":			"Результат сравнения:\n",
 	"SUMMARY_OPTIONS":			"Опции сравнения:\n",
 	"SUMMARY_NO_IGNORE":		"Дополнительные опции обнаружения и игнорирования не использовались\n",
+
+	"NFO_SEL_START":			"--- Selection Compare Block Start ---",
+	"NFO_SEL_END":				"--- Selection Compare Block End ---",
+	"NFO_CANNOT_ALIGN":			"Lines above cannot be properly aligned.",
+	"NFO_ZERO_ALIGN":			"Lines above cannot be properly aligned.\nTo see them aligned, please manually insert one empty line\nin the beginning of each file and then re-compare.",
 
 	"PATCH_FILTER_ALL":			"Все файлы",
 	"PATCH_FILTER_PATCH":		"Патч-файлы",
