@@ -8,6 +8,7 @@
 	"CMD_CLIPBOARD_DIFF":			"Porównaj plik/zaznaczenie ze Schowkiem",
 	"CMD_SVN_DIFF":					"Różnica SVN",
 	"CMD_GIT_DIFF":					"Różnica Git",
+	"CMD_GIT_COMMIT_DIFF":			"Git Diff since Commit",
 	"CMD_CLEAR_ACTIVE":				"Wyczyść Aktywne Porównanie",
 	"CMD_CLEAR_ALL":				"Wyczyść Wszystkie Porównania",
 	"CMD_PREV":						"Poprzedni Blok Różnicowy",
@@ -70,6 +71,7 @@
 	"IDC_NEVER_MARK_IGNORED":		"Nigdy nie koloruj ignorowanych linii",
 	"IDC_FOLLOWING_CARET":			"Przesuń kursor w nawigacji",
 	"IDC_WRAP_AROUND":				"Zawijaj różnice w nawigacji",
+	"IDC_NO_BLINKING":				"Don't blink first/last diff lines",
 	"IDC_GOTO_FIRST_DIFF":			"Przejdź do pierwszej różnicy po ponownym porównaniu",
 	"IDC_COLORS":					"Kolorowanie",
 	"IDC_ADDED":					"Dodana linia",
@@ -127,6 +129,9 @@
 	"IDC_HIDE_MOVED_LINES":			"Ukryj przeniesione linie",
 	"IDC_SHOW_ONLY_SELECTIONS":		"Pokaż tylko porównywane zaznaczenia",
 
+	"HDR_GIT_COMMIT":				"Git Diff since Commit",
+	"IDC_GIT_COMMIT_MSG":			"Enter Git commit number, tag or branch name:",
+
 	"CONFIG_DIR_FAIL":			"Folder konfiguracyjny wtyczek Notepad++ \n'%s'\nnie istnieje i nie udało się go utworzyć.\nNie można zapisać pliku konfiguracyjnego.",
 	"CONFIG_WRITE_FAIL":		"Nie udało się zapisać pliku konfiguracyjnego\n'%s'",
 
@@ -177,6 +182,11 @@
 	"SUMMARY_COMPARE":			"Podsumowanie Porównania:\n",
 	"SUMMARY_OPTIONS":			"Opcje porównania:\n",
 	"SUMMARY_NO_IGNORE":		"Nie użyto żadnych dodatkowych opcji wykrywania i ignorowania\n",
+
+	"NFO_SEL_START":			"--- Selection Compare Block Start ---",
+	"NFO_SEL_END":				"--- Selection Compare Block End ---",
+	"NFO_CANNOT_ALIGN":			"Lines above cannot be properly aligned.",
+	"NFO_ZERO_ALIGN":			"Lines above cannot be properly aligned.\nTo see them aligned, please manually insert one empty line\nin the beginning of each file and then re-compare.",
 
 	"PATCH_FILTER_ALL":			"Wszystkie Pliki",
 	"PATCH_FILTER_PATCH":		"Pliki Poprawek",
