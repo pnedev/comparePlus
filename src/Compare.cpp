@@ -3132,10 +3132,7 @@ bool initNewCompare()
 	if (!firstIsSet)
 	{
 		const bool singleView = isSingleView();
-		const bool isNew = singleView ? Settings.FirstFileIsNew : getCurrentViewId() == Settings.NewFileViewId;
-
-		if (!setFirst(isNew))
-			return false;
+		bool isNew = singleView ? Settings.FirstFileIsNew : getCurrentViewId() == Settings.NewFileViewId;
 
 		if (singleView)
 		{
@@ -3150,16 +3147,25 @@ bool initNewCompare()
 
 			const int currentPos = posFromBuffId(getCurrentBuffId());
 
-			int viewTabCmdID = IDM_VIEW_TAB_NEXT;
+			const int viewTabCmdID =
+				((Settings.CompareToPrev && currentPos > 0) ||
+				(!Settings.CompareToPrev && (currentPos + 1 == numberOfFiles))) ?
+				IDM_VIEW_TAB_PREV : IDM_VIEW_TAB_NEXT;
 
-			if ((Settings.CompareToPrev && currentPos > 0) ||
-				(!Settings.CompareToPrev && (currentPos + 1 == numberOfFiles)))
-				viewTabCmdID = IDM_VIEW_TAB_PREV;
+			if (((Settings.CompareToPrev && currentPos == 0) ||
+				(!Settings.CompareToPrev && (currentPos + 1 == numberOfFiles))))
+				isNew = !isNew;
+
+			if (!setFirst(isNew))
+				return false;
 
 			::SendMessageW(nppData._nppHandle, NPPM_MENUCOMMAND, 0, viewTabCmdID);
 		}
 		else
 		{
+			if (!setFirst(isNew))
+				return false;
+
 			// Check if the file in the other view is compared already
 			if (isFileCompared(getOtherViewId()))
 				return false;
