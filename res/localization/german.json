@@ -8,6 +8,7 @@
 	"CMD_CLIPBOARD_DIFF":			"Datei/Auswahl mit Zwischenablage vergleichen",
 	"CMD_SVN_DIFF":					"SVN-Diff",
 	"CMD_GIT_DIFF":					"Git-Diff",
+	"CMD_GIT_COMMIT_DIFF":			"Git-Diff seit Commit",
 	"CMD_CLEAR_ACTIVE":				"Aktiven Vergleich entfernen",
 	"CMD_CLEAR_ALL":				"Alle Vergleiche entfernen",
 	"CMD_PREV":						"Vorheriger Unterschiedsblock",
@@ -126,6 +127,9 @@
 	"IDC_HIDE_CHANGED_LINES":		"Geänderte Zeilen ausblenden",
 	"IDC_HIDE_MOVED_LINES":			"Verschobene Zeilen ausblenden",
 	"IDC_SHOW_ONLY_SELECTIONS":		"Nur verglichene Auswahl anzeigen",
+
+	"HDR_GIT_COMMIT":				"Git-Diff seit Commit",
+	"IDC_GIT_COMMIT_MSG":			"Git-Commit-Nummer, Tag oder Branch-Namen eingeben:",
 
 	"CONFIG_DIR_FAIL":			"Notepad++-Plugin-Konfigurationsordner\n'%s'\nexistiert nicht und konnte nicht erstellt werden.\nKonfigurationsdatei kann nicht geschrieben werden.",
 	"CONFIG_WRITE_FAIL":		"Fehler beim Schreiben der Konfigurationsdatei\n'%s'",
