@@ -105,6 +105,7 @@ Strings::Strings() : _localizationSuccessful {false}, _currentLocale {"english"}
 		{ "IDC_NEVER_MARK_IGNORED",			"Never colorize ignored lines" },
 		{ "IDC_FOLLOWING_CARET",			"Move caret on navigation" },
 		{ "IDC_WRAP_AROUND",				"Wrap around diffs on navigation" },
+		{ "IDC_NO_BLINKING",				"Don't blink first/last diff lines" },
 		{ "IDC_GOTO_FIRST_DIFF",			"Go to first diff after re-Compare" },
 		{ "IDC_COLORS",						"Coloring" },
 		{ "IDC_ADDED",						"Added line" },
@@ -210,6 +211,11 @@ Strings::Strings() : _localizationSuccessful {false}, _currentLocale {"english"}
 		{ "STATUS_MOVED_LINES",			"  Moved: " },
 		{ "STATUS_CHANGED_LINES",		"  Changed: " },
 		{ "STATUS_MATCHING_LINES",		"Matching Lines: " },
+
+		{ "NFO_SEL_START",				"--- Selection Compare Block Start ---" },
+		{ "NFO_SEL_END",				"--- Selection Compare Block End ---" },
+		{ "NFO_CANNOT_ALIGN",			"Lines above cannot be properly aligned." },
+		{ "NFO_ZERO_ALIGN",				"Lines above cannot be properly aligned.\nTo see them aligned, please manually insert one empty line\nin the beginning of each file and then re-compare." },
 
 		{ "SUMMARY_FIND_UNIQUE",		"Find Unique Summary:\n" },
 		{ "SUMMARY_COMPARE",			"Compare Summary:\n" },
@@ -346,4 +352,12 @@ std::wstring Strings::operator[](const std::string& key) const
 
 	return (str == _strings.end() ? std::wstring() :
 			MBtoWC(str->second.c_str(), static_cast<int>(str->second.size())));
+}
+
+
+std::string Strings::getStr(const std::string& key) const
+{
+	auto str = _strings.find(key);
+
+	return (str == _strings.end() ? std::string() : str->second);
 }

@@ -21,6 +21,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "Tools.h"
+
 
 class Strings
 {
@@ -41,9 +43,15 @@ public:
 		return _localizationSuccessful;
 	};
 
+	UINT MsgBoxRTLFlag(HWND hTopWnd) const
+	{
+		return (isRTLwindow(hTopWnd) && _localizationSuccessful) ? MB_RTLREADING : 0;
+	};
+
 	bool read(const std::string& localization);
 
 	std::wstring operator[](const std::string& key) const;
+	std::string getStr(const std::string& key) const;
 
 private:
 	static const char* c_localization_files_relative_path;

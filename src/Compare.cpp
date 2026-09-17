@@ -2062,10 +2062,13 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 		if ((down && (line >= currentLine) && (line > edgeLine)) ||
 			(!down && (line <= currentLine) && (line < edgeLine)))
 		{
-			if (isLineVisible(view, line))
-				blinkLine(view, line);
-			else
-				blinkLine(view, down ? getLastLine(view) : getFirstLine(view));
+			if (!Settings.NoBlinking)
+			{
+				if (isLineVisible(view, line))
+					blinkLine(view, line);
+				else
+					blinkLine(view, down ? getLastLine(view) : getFirstLine(view));
+			}
 
 			// Adjust the direction of the blank annotation mark in case of selections compare corners
 			if (cmpPair->options.selectionCompare && Settings.ShowOnlySelections && !down &&
@@ -2117,7 +2120,7 @@ std::pair<int, intptr_t> jumpToNextChange(intptr_t mainStartLine, intptr_t subSt
 		doNotBlink = true;
 	}
 
-	if (!doNotBlink)
+	if (!doNotBlink && !Settings.NoBlinking)
 		blinkLine(view, line);
 
 	showBlankAdjacentArrowMark(view, line, down);
@@ -2558,6 +2561,8 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 
 	intptr_t i = 0;
 
+	const auto& str = Strings::get();
+
 	// Handle zero line diffs that cannot be aligned because annotation on line 0 is not supported by Scintilla
 	for (; i < maxSize && alignmentInfo[i].main.line <= mainEndLine && alignmentInfo[i].sub.line <= subEndLine; ++i)
 	{
@@ -2592,16 +2597,16 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 			if (alignmentInfo[i - 1].main.line != 0)
 			{
 				addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first, mainOffset + 1, mainOffset + 1,
-						"--- Selection Compare Block Start ---");
+						str.getStr("NFO_SEL_START").c_str());
 				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, subOffset + 1, subOffset + 1,
-						"Lines above cannot be properly aligned.");
+						str.getStr("NFO_CANNOT_ALIGN").c_str());
 			}
 			else if (alignmentInfo[i - 1].sub.line != 0)
 			{
 				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, mainOffset + 1, mainOffset + 1,
-						"Lines above cannot be properly aligned.");
+						str.getStr("NFO_CANNOT_ALIGN").c_str());
 				addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first, subOffset + 1, subOffset + 1,
-						"--- Selection Compare Block Start ---");
+						str.getStr("NFO_SEL_START").c_str());
 			}
 			else
 			{
@@ -2610,22 +2615,19 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 		}
 		else
 		{
-			constexpr char lineZeroAlignInfo[] =
-						"Lines above cannot be properly aligned.\n"
-						"To see them aligned, please manually insert one empty line\n"
-						"in the beginning of each file and then re-compare.";
+			const std::string lineZeroAlignInfo = str.getStr("NFO_ZERO_ALIGN").c_str();
 
 			if (mismatchLen > 0)
 			{
-				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, 1, 1, lineZeroAlignInfo);
+				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, 1, 1, lineZeroAlignInfo.c_str());
 				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, mismatchLen + 1, mismatchLen + 1,
-						lineZeroAlignInfo);
+						lineZeroAlignInfo.c_str());
 			}
 			else if (mismatchLen < 0)
 			{
 				addBlankSection(MAIN_VIEW, alignmentInfo[i].main.line, -mismatchLen + 1, -mismatchLen + 1,
-						lineZeroAlignInfo);
-				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, 1, 1, lineZeroAlignInfo);
+						lineZeroAlignInfo.c_str());
+				addBlankSection(SUB_VIEW, alignmentInfo[i].sub.line, 1, 1, lineZeroAlignInfo.c_str());
 			}
 		}
 
@@ -2735,10 +2737,12 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 			else if (visibleBlockStartMismatch < 0)
 				subAnnotPos += visibleBlockStartMismatch;
 
+			const std::string selStartInfo = str.getStr("NFO_SEL_START").c_str();
+
 			addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].first, mainAnnotation, mainAnnotPos,
-					"--- Selection Compare Block Start ---");
+					selStartInfo.c_str());
 			addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].first, subAnnotation, subAnnotPos,
-					"--- Selection Compare Block Start ---");
+					selStartInfo.c_str());
 		}
 
 		{
@@ -2754,10 +2758,12 @@ void alignDiffs(CompareList_t::iterator& cmpPair)
 				++subAnnotation;
 			}
 
+			const std::string selEndInfo = str.getStr("NFO_SEL_END").c_str();
+
 			addBlankSection(MAIN_VIEW, cmpPair->options.selections[MAIN_VIEW].second + 1,
-					mainAnnotation, mainAnnotation, "--- Selection Compare Block End ---");
+					mainAnnotation, mainAnnotation, selEndInfo.c_str());
 			addBlankSection(SUB_VIEW, cmpPair->options.selections[SUB_VIEW].second + 1,
-					subAnnotation, subAnnotation, "--- Selection Compare Block End ---");
+					subAnnotation, subAnnotation, selEndInfo.c_str());
 		}
 	}
 }
@@ -2850,7 +2856,8 @@ void doAlignment(bool forceAlign = false)
 	{
 		cmpPair->nppReplaceDone = false;
 
-		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_REPLACED"].c_str(), PLUGIN_NAME, MB_OK | MB_ICONWARNING);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_REPLACED"].c_str(), PLUGIN_NAME,
+				MB_OK | MB_ICONWARNING | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 	}
 
 	if (goToFirst)
@@ -2876,7 +2883,7 @@ bool isFileCompared(int view)
 
 		wchar_t msg[MAX_PATH];
 		_snwprintf_s(msg, _countof(msg), _TRUNCATE, Strings::get()["MSG_ALREADY_COMPARED"].c_str(), fname);
-		::MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 
 		return true;
 	}
@@ -2891,7 +2898,8 @@ bool isEncodingOK(const ComparedPair& cmpPair)
 	if (getEncoding(cmpPair.file[0].buffId) != getEncoding(cmpPair.file[1].buffId))
 	{
 		if (::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_ENCODINGS"].c_str(),
-			PLUGIN_NAME, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) != IDYES)
+			PLUGIN_NAME, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1 |
+			Strings::get().MsgBoxRTLFlag(nppData._nppHandle)) != IDYES)
 		{
 			return false;
 		}
@@ -2923,7 +2931,8 @@ bool areSelectionsValid(LRESULT currentBuffId = -1, LRESULT otherBuffId = -1)
 	}
 
 	if (!valid)
-		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_NO_SELECTIONS"].c_str(), PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_NO_SELECTIONS"].c_str(), PLUGIN_NAME,
+				MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 
 	return valid;
 }
@@ -2959,7 +2968,8 @@ bool checkFileExists(const wchar_t *file)
 {
 	if (::PathFileExistsW(file) == FALSE)
 	{
-		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_NOT_WRITTEN"].c_str(), PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_NOT_WRITTEN"].c_str(), PLUGIN_NAME,
+				MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 		return false;
 	}
 
@@ -3066,7 +3076,8 @@ bool createTempFile(const wchar_t *file, Temp_t tempType)
 		}
 	}
 
-	::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_TEMP_FAIL"].c_str(), PLUGIN_NAME, MB_OK);
+	::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_TEMP_FAIL"].c_str(), PLUGIN_NAME,
+			MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 
 	newCompare = nullptr;
 
@@ -3121,10 +3132,7 @@ bool initNewCompare()
 	if (!firstIsSet)
 	{
 		const bool singleView = isSingleView();
-		const bool isNew = singleView ? Settings.FirstFileIsNew : getCurrentViewId() == Settings.NewFileViewId;
-
-		if (!setFirst(isNew))
-			return false;
+		bool isNew = singleView ? Settings.FirstFileIsNew : getCurrentViewId() == Settings.NewFileViewId;
 
 		if (singleView)
 		{
@@ -3132,22 +3140,32 @@ bool initNewCompare()
 
 			if (numberOfFiles < 2)
 			{
-				::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_ONLY_ONE"].c_str(), PLUGIN_NAME, MB_OK);
+				::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_ONLY_ONE"].c_str(), PLUGIN_NAME,
+						MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 				return false;
 			}
 
 			const int currentPos = posFromBuffId(getCurrentBuffId());
 
-			int viewTabCmdID = IDM_VIEW_TAB_NEXT;
+			const int viewTabCmdID =
+				((Settings.CompareToPrev && currentPos > 0) ||
+				(!Settings.CompareToPrev && (currentPos + 1 == numberOfFiles))) ?
+				IDM_VIEW_TAB_PREV : IDM_VIEW_TAB_NEXT;
 
-			if ((Settings.CompareToPrev && currentPos > 0) ||
-				(!Settings.CompareToPrev && (currentPos + 1 == numberOfFiles)))
-				viewTabCmdID = IDM_VIEW_TAB_PREV;
+			if (((Settings.CompareToPrev && currentPos == 0) ||
+				(!Settings.CompareToPrev && (currentPos + 1 == numberOfFiles))))
+				isNew = !isNew;
+
+			if (!setFirst(isNew))
+				return false;
 
 			::SendMessageW(nppData._nppHandle, NPPM_MENUCOMMAND, 0, viewTabCmdID);
 		}
 		else
 		{
+			if (!setFirst(isNew))
+				return false;
+
 			// Check if the file in the other view is compared already
 			if (isFileCompared(getOtherViewId()))
 				return false;
@@ -3155,7 +3173,8 @@ bool initNewCompare()
 			// Check if comparing to cloned self
 			if (getDocId(MAIN_VIEW) == getDocId(SUB_VIEW))
 			{
-				::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_COMPARE_TO_CLONE"].c_str(), PLUGIN_NAME, MB_OK);
+				::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_COMPARE_TO_CLONE"].c_str(), PLUGIN_NAME,
+						MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 				return false;
 			}
 
@@ -3280,7 +3299,8 @@ bool setupCompare(CompareList_t::iterator& cmpPair, bool selectionCompare, bool 
 			if (::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_EOL_DIFFERENT"].c_str(),
 					cmpPair->options.findUniqueMode ?
 					Strings::get()["STATUS_FIND_UNIQUE"].c_str() : Strings::get()["STATUS_COMPARE"].c_str(),
-					MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) == IDYES)
+					MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1 |
+					Strings::get().MsgBoxRTLFlag(nppData._nppHandle)) == IDYES)
 			{
 				cmpPair->options.ignoreEOL = true;
 				cmpPair->forcedIgnoreEOL = true;
@@ -3290,7 +3310,8 @@ bool setupCompare(CompareList_t::iterator& cmpPair, bool selectionCompare, bool 
 		if (cmpPair->options.bookmarksAsSync && Settings.ManualSyncCheck)
 		{
 			if (::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_MANUAL_SYNC"].c_str(),
-					Strings::get()["STATUS_COMPARE"].c_str(), MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1) == IDYES)
+					Strings::get()["STATUS_COMPARE"].c_str(), MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON1 |
+					Strings::get().MsgBoxRTLFlag(nppData._nppHandle)) == IDYES)
 			{
 				cmpPair->options.bookmarksAsSync = false;
 				cmpPair->options.syncPoints.clear();
@@ -3603,7 +3624,8 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 					wcscat_s(msg, _countof(msg), str["MSG_IGNORED_DIFFS"].c_str());
 
 				::MessageBoxW(nppData._nppHandle, msg, cmpPair->options.findUniqueMode ?
-						str["STATUS_FIND_UNIQUE"].c_str() : str["STATUS_COMPARE"].c_str(), MB_OK);
+						str["STATUS_FIND_UNIQUE"].c_str() : str["STATUS_COMPARE"].c_str(),
+						MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 			}
 			else
 			{
@@ -3635,12 +3657,14 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 					choice = ::MessageBoxW(nppData._nppHandle, msg, cmpPair->options.findUniqueMode ?
 										str["STATUS_FIND_UNIQUE"].c_str() : str["STATUS_COMPARE"].c_str(),
-										MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON1);
+										MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON1 |
+										Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 				}
 				else
 				{
 					::MessageBoxW(nppData._nppHandle, msg, cmpPair->options.findUniqueMode ?
-								str["STATUS_FIND_UNIQUE"].c_str() : str["STATUS_COMPARE"].c_str(), MB_OK);
+								str["STATUS_FIND_UNIQUE"].c_str() : str["STATUS_COMPARE"].c_str(),
+								MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 				}
 			}
 
@@ -3655,7 +3679,7 @@ void compare(bool selectionCompare = false, bool findUniqueMode = false, bool au
 
 		case CompareResult::COMPARE_ERROR:
 			::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_COMPARE_FAIL"].c_str(),
-						PLUGIN_NAME, MB_OK | MB_ICONERROR);
+						PLUGIN_NAME, MB_OK | MB_ICONERROR | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 		// Intentional fall-through
 
 		default:
@@ -3723,7 +3747,8 @@ void ClipboardDiff()
 
 		if (::PathFileExistsW(file) == FALSE)
 		{
-			::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_FILE_EMPTY"].c_str(), PLUGIN_NAME, MB_OK);
+			::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_FILE_EMPTY"].c_str(), PLUGIN_NAME,
+					MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 			return;
 		}
 	}
@@ -3734,7 +3759,8 @@ void ClipboardDiff()
 
 	if (content.empty())
 	{
-		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_CLIPBOARD_EMPTY"].c_str(), PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_CLIPBOARD_EMPTY"].c_str(), PLUGIN_NAME,
+				MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 		return;
 	}
 
@@ -3917,10 +3943,10 @@ void PrevChangePos()
 		{
 			if (line == CallScintilla(viewId, SCI_LINEFROMPOSITION, pos, 0))
 				CallScintilla(viewId, SCI_GOTOPOS, pos, 0);
-			else
+			else if (!Settings.NoBlinking)
 				blinkLine(viewId, line);
 		}
-		else
+		else if (!Settings.NoBlinking)
 		{
 			blinkLine(viewId, line);
 		}
@@ -3943,10 +3969,10 @@ void NextChangePos()
 		{
 			if (line == CallScintilla(viewId, SCI_LINEFROMPOSITION, pos, 0))
 				CallScintilla(viewId, SCI_GOTOPOS, pos, 0);
-			else
+			else if (!Settings.NoBlinking)
 				blinkLine(viewId, line);
 		}
-		else
+		else if (!Settings.NoBlinking)
 		{
 			blinkLine(viewId, line);
 		}
@@ -3960,7 +3986,8 @@ void ActiveCompareSummary()
 	if (cmpPair == compareList.end())
 		return;
 
-	::MessageBoxW(nppData._nppHandle, cmpPair->getSummary().c_str(), PLUGIN_NAME, MB_OK);
+	::MessageBoxW(nppData._nppHandle, cmpPair->getSummary().c_str(), PLUGIN_NAME,
+			MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 }
 
 
@@ -4238,13 +4265,15 @@ void GeneratePatch()
 
 	if (cmpPair->options.findUniqueMode)
 	{
-		::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_NO_UNIQUE"].c_str(), PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_NO_UNIQUE"].c_str(), PLUGIN_NAME,
+				MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 		return;
 	}
 
 	if (cmpPair->compareDirty)
 	{
-		::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_NO_MODIFIED"].c_str(), PLUGIN_NAME, MB_OK | MB_ICONWARNING);
+		::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_NO_MODIFIED"].c_str(), PLUGIN_NAME,
+				MB_OK | MB_ICONWARNING | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 		return;
 	}
 
@@ -4257,7 +4286,8 @@ void GeneratePatch()
 		cmpPair->options.ignoreFoldedLines || cmpPair->options.ignoreHiddenLines);
 
 	if (hasIgnoreOpts)
-		::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_WARN_IGNORE"].c_str(), PLUGIN_NAME, MB_OK | MB_ICONWARNING);
+		::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_WARN_IGNORE"].c_str(), PLUGIN_NAME,
+				MB_OK | MB_ICONWARNING | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 
 	std::ofstream ofs;
 	{
@@ -4281,7 +4311,8 @@ void GeneratePatch()
 
 		if (!ofs.is_open())
 		{
-			::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_SAVE_FAIL"].c_str(), PLUGIN_NAME, MB_OK | MB_ICONERROR);
+			::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_SAVE_FAIL"].c_str(), PLUGIN_NAME,
+					MB_OK | MB_ICONERROR | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 			return;
 		}
 	}
@@ -4452,7 +4483,8 @@ void applyPatch(bool revert = false)
 
 		if (!ifs.is_open())
 		{
-			::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_OPEN_FAIL"].c_str(), PLUGIN_NAME, MB_OK | MB_ICONERROR);
+			::MessageBoxW(nppData._nppHandle, str["MSG_PATCH_OPEN_FAIL"].c_str(), PLUGIN_NAME,
+					MB_OK | MB_ICONERROR | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 			return;
 		}
 	}
@@ -4467,7 +4499,8 @@ void applyPatch(bool revert = false)
 
 		_snwprintf_s(msg, _countof(msg), _TRUNCATE, str["MSG_PATCH_APPLY_FAIL"].c_str(), fname);
 
-		::MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK | MB_ICONERROR);
+		::MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME,
+				MB_OK | MB_ICONERROR | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 	}
 
 	ifs.close();
@@ -5087,7 +5120,8 @@ void checkCmdLine()
 
 	if (!constructFullFilePaths(files))
 	{
-		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_CMD_LINE_AMBIGUOUS"].c_str(), PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_CMD_LINE_AMBIGUOUS"].c_str(), PLUGIN_NAME,
+				MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 		return;
 	}
 
@@ -5311,7 +5345,8 @@ void onNppReady()
 
 		_snwprintf_s(msg, _countof(msg), _TRUNCATE, Strings::get()["MSG_NOT_COMPATIBLE"].c_str(), PLUGIN_NAME);
 
-		MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME, MB_OK | MB_ICONWARNING);
+		::MessageBoxW(nppData._nppHandle, msg, PLUGIN_NAME,
+				MB_OK | MB_ICONWARNING | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 
 		notificationsLock = 1;
 
@@ -5338,12 +5373,12 @@ void onNppReady()
 	else
 	{
 		if (!allocateIndicator())
-			::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_MARKER_ALLOC_FAIL"].c_str(),
-					PLUGIN_NAME, MB_OK | MB_ICONWARNING);
+			::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_MARKER_ALLOC_FAIL"].c_str(), PLUGIN_NAME,
+					MB_OK | MB_ICONWARNING | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 
 		if (!allocateMarginNum())
-			::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_MARGIN_ALLOC_FAIL"].c_str(),
-					PLUGIN_NAME, MB_OK | MB_ICONWARNING);
+			::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_MARGIN_ALLOC_FAIL"].c_str(), PLUGIN_NAME,
+					MB_OK | MB_ICONWARNING | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 
 		if (isDarkMode())
 			Settings.useDarkColors();
@@ -5769,7 +5804,8 @@ void onMarginClick(HWND view, intptr_t pos, int keyMods)
 
 	if (Settings.HideNewLines || Settings.HideChangedLines || Settings.HideMovedLines)
 	{
-		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_HIDDEN_NOT_POSSIBLE"].c_str(), PLUGIN_NAME, MB_OK);
+		::MessageBoxW(nppData._nppHandle, Strings::get()["MSG_HIDDEN_NOT_POSSIBLE"].c_str(), PLUGIN_NAME,
+				MB_OK | Strings::get().MsgBoxRTLFlag(nppData._nppHandle));
 		return;
 	}
 

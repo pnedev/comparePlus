@@ -28,6 +28,7 @@
 #include "Strings.h"
 #include "NavDialog.h"
 #include "NppHelpers.h"
+#include "Tools.h"
 #include "resource.h"
 
 #include <windowsx.h>
