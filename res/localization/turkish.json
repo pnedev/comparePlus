@@ -71,7 +71,7 @@
 	"IDC_NEVER_MARK_IGNORED":		"Yok sayılan satırları asla renklendirme",
 	"IDC_FOLLOWING_CARET":			"Gezinirken imleci taşı",
 	"IDC_WRAP_AROUND":				"Gezinirken farkları başa sar",
-	"IDC_NO_BLINKING":				"Don't blink first/last diff lines",
+	"IDC_NO_BLINKING":				"İlk/son fark satırlarını kırpmayı kapat",
 	"IDC_GOTO_FIRST_DIFF":			"Yeniden karşılaştırma sonrası ilk farka git",
 	"IDC_COLORS":					"Renklendirme",
 	"IDC_ADDED":					"Eklenen satır",
@@ -183,10 +183,10 @@
 	"SUMMARY_OPTIONS":			"Karşılaştırma seçenekleri:\n",
 	"SUMMARY_NO_IGNORE":		"Ek algılama ve yok sayma seçeneği kullanılmadı\n",
 
-	"NFO_SEL_START":			"--- Selection Compare Block Start ---",
-	"NFO_SEL_END":				"--- Selection Compare Block End ---",
-	"NFO_CANNOT_ALIGN":			"Lines above cannot be properly aligned.",
-	"NFO_ZERO_ALIGN":			"Lines above cannot be properly aligned.\nTo see them aligned, please manually insert one empty line\nin the beginning of each file and then re-compare.",
+	"NFO_SEL_START":			"--- Seçim karşılaştırma bloğu başlangıcı ---",
+	"NFO_SEL_END":				"--- Seçim karşılaştırma bloğu sonu ---",
+	"NFO_CANNOT_ALIGN":			"Üstteki satırlar düzgün hizalanamıyor.",
+	"NFO_ZERO_ALIGN":			"Üstteki satırlar düzgün hizalanamıyor.\nBunları hizalanmış görmek için lütfen her dosyanın başına\nel birer boş satır ekleyin ve yeniden karşılaştırın.",
 
 	"PATCH_FILTER_ALL":			"Tüm dosyalar",
 	"PATCH_FILTER_PATCH":		"Yama dosyaları",
