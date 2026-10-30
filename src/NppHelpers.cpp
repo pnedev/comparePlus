@@ -936,7 +936,7 @@ std::vector<char> getLineText(int view, intptr_t line, bool includeEOL)
 	const intptr_t startPos	= getLineStart(view, line);
 	const intptr_t endPos	= includeEOL ?
 			startPos + CallScintilla(view, SCI_LINELENGTH, line, 0) : getLineEnd(view, line);
-	const int len			= static_cast<int>(endPos - startPos);
+	const intptr_t len		= endPos - startPos;
 
 	if (len <= 0)
 		return {};

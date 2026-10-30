@@ -4641,6 +4641,24 @@ void OpenSettingsDlg(void)
 
 void OpenAboutDlg()
 {
+	auto view = getCurrentViewId();
+	auto line = getCurrentLine(view);
+
+	auto sp = getLineStart(view, line);
+	auto ep = getLineEnd(view, line);
+
+	auto txt = getText(view, sp, ep);
+	auto lt = getLineText(view, line);
+
+	std::string stxt {txt.begin(), txt.end()};
+	std::string slt {lt.begin(), lt.end()};
+
+	std::string msg = " Start pos:   " + std::to_string(sp) + "\n End pos:   " + std::to_string(ep) +
+						"\n getText():   " + stxt  + "\n getLineText():   " + slt;
+
+	::MessageBoxA(nppData._nppHandle, msg.c_str(), "ComparePlus", MB_OK);
+	return;
+
 #ifdef DLOG
 
 	if (dLogBuf == -1)

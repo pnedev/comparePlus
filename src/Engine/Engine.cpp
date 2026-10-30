@@ -305,15 +305,20 @@ inline uint64_t getSectionRangeHash(uint64_t hashSeed, std::vector<wchar_t>& sec
 }
 
 
-uint64_t getRegexIgnoreLineHash(int view, intptr_t off, uint64_t hashSeed, int codepage, const std::vector<char>& line,
-	const CompareOptions& options)
+uint64_t getRegexIgnoreLineHash(int view, intptr_t off, intptr_t eolLen, uint64_t hashSeed, int codepage,
+	const std::vector<char>& line, const CompareOptions& options)
 {
 	const int len = static_cast<int>(line.size());
 
 	if (len == 0)
 		return hashSeed;
 
+	if (eolLen < 0)
+		eolLen = 0;
+
 	const int wLen = ::MultiByteToWideChar(codepage, 0, line.data(), len, NULL, 0);
+	const int wEolLen = eolLen ?
+			::MultiByteToWideChar(codepage, 0, line.data() + len - eolLen, eolLen, NULL, 0) : 0;
 
 	std::vector<wchar_t> wLine(wLen);
 
@@ -323,14 +328,14 @@ uint64_t getRegexIgnoreLineHash(int view, intptr_t off, uint64_t hashSeed, int c
 	LOGD(LOG_ALGO, "line len " + std::to_string(len) + " to wide char len " + std::to_string(wLen) + "\n");
 #endif
 
-	boost::regex_iterator<std::vector<wchar_t>::iterator>		rit(wLine.begin(), wLine.end(), *options.ignoreRegex);
+	boost::regex_iterator<std::vector<wchar_t>::iterator>
+			rit(wLine.begin(), wLine.end() - wEolLen, *options.ignoreRegex);
 	const boost::regex_iterator<std::vector<wchar_t>::iterator>	rend;
-
-	intptr_t mbPos = 0;
 
 	if (options.invertRegex && (rit != rend || !options.inclRegexNomatchLines))
 	{
 		intptr_t pos = 0;
+		intptr_t mbPos = 0;
 
 		for (; rit != rend; ++rit)
 		{
@@ -353,14 +358,17 @@ uint64_t getRegexIgnoreLineHash(int view, intptr_t off, uint64_t hashSeed, int c
 		}
 
 		if (options.highlightRegexIgnores)
-			markTextAsChanged(view, off + mbPos, len - 1 - mbPos, Settings.colors().blank);
+			markTextAsChanged(view, off + mbPos, len - eolLen - mbPos - 1, Settings.colors().blank);
 	}
 	else
 	{
 		intptr_t pos = 0;
+		intptr_t mbPos = 0;
 		intptr_t highlightPos = 0;
 		intptr_t endPos = wLen - 1;
 
+		// Remove all spaces in line's beginning if only changed spaces are to be ignored.
+		// This removes flagging changed spaces in line's beginning
 		if (options.ignoreChangedSpaces && (wLine[pos] == L' ' || wLine[pos] == L'\t'))
 		{
 			while (++pos < endPos && (wLine[pos] == L' ' || wLine[pos] == L'\t'));
@@ -369,12 +377,14 @@ uint64_t getRegexIgnoreLineHash(int view, intptr_t off, uint64_t hashSeed, int c
 				return hashSeed;
 		}
 
-		while (rit != rend)
+		for (; rit != rend; ++rit)
 		{
 #ifndef MULTITHREAD
 			LOGD(LOG_ALGO, "pos " + std::to_string(rit->position()) + ", len " + std::to_string(rit->length()) + "\n");
 #endif
 			hashSeed = getSectionRangeHash(hashSeed, wLine, pos, rit->position(), options);
+
+			pos = rit->position() + rit->length();
 
 			if (options.highlightRegexIgnores)
 			{
@@ -386,18 +396,26 @@ uint64_t getRegexIgnoreLineHash(int view, intptr_t off, uint64_t hashSeed, int c
 				markTextAsChanged(view, off + mbPos, mbLen, Settings.colors().blank);
 
 				mbPos += mbLen;
+				highlightPos = pos;
 			}
-
-			highlightPos = pos = rit->position() + rit->length();
-			++rit;
 		}
+
+		if (wEolLen)
+			hashSeed = getSectionRangeHash(hashSeed, wLine, pos, pos + wEolLen, options);
 
 		if (options.ignoreChangedSpaces)
 		{
-			intptr_t eolPos = endPos;
-			while (--eolPos >= pos && (wLine[eolPos] == L'\n' || wLine[eolPos] == L'\r'));
+			// Remove all spaces in line's end if only changed spaces are to be ignored.
+			// This removes flagging changed spaces in line's end (but still - keep EOL diffs detection)
+			intptr_t eolPos = wEolLen ? endPos - wEolLen : endPos;
 
-			if (++eolPos > pos)
+			if (!wEolLen)
+			{
+				while (--eolPos >= pos && (wLine[eolPos] == L'\n' || wLine[eolPos] == L'\r'));
+				eolPos++;
+			}
+
+			if (eolPos > pos)
 			{
 				intptr_t p = eolPos;
 				while (--p >= pos && (wLine[p] == L' ' || wLine[p] == L'\t'));
@@ -406,7 +424,7 @@ uint64_t getRegexIgnoreLineHash(int view, intptr_t off, uint64_t hashSeed, int c
 					hashSeed = getSectionRangeHash(hashSeed, wLine, pos, p, options);
 			}
 
-			hashSeed = getSectionRangeHash(hashSeed, wLine, eolPos, endPos, options);
+			hashSeed = getSectionRangeHash(hashSeed, wLine, wEolLen, endPos, options);
 		}
 		else
 		{
@@ -514,7 +532,8 @@ void getLines(DocCmpInfo& doc, const CompareOptions& options)
 				LOGD(LOG_ALGO, "Regex Ignore on line " + std::to_string(docLine + 1) +
 						", view " + std::to_string(doc.view) + "\n");
 #endif
-				newLine.hash = getRegexIgnoreLineHash(doc.view, lineStart, newLine.hash, codepage, line, options);
+				newLine.hash = getRegexIgnoreLineHash(doc.view, lineStart, lineEnd - lineEndNoEOL,
+						newLine.hash, codepage, line, options);
 
 				if (newLine.hash != cHashSeed || inclRegexEmptyLines)
 					doc.lines.emplace_back(newLine);
