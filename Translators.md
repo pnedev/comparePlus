@@ -11,6 +11,7 @@ Translations kindly provided by the following GitHub users:
 - Korean ......... **@nadugi** (nadugi)
 - Polish ......... **@bartlomiejduda** (bartlomiej.duda)
 - Russian ........ **@cgtalium** (Roman Serov)
+- Spanish ........ **@PedroFlores199** (Pedro Flores)
 - Turkish ........ **@bilimiyorum**
 - Ukrainian ...... **@Naghual** (Oleksiy M.)
 
